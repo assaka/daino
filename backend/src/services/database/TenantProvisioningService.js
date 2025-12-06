@@ -826,6 +826,8 @@ VALUES (
       const configsDir = path.resolve(__dirname, '../../configs/slot');
       const configPath = path.join(configsDir, `${pageType}-config.js`);
 
+      console.log(`📂 Loading config from: ${configPath}`);
+
       // Use require for CommonJS modules
       const configModule = require(configPath);
       const config = configModule[configExport];
@@ -835,9 +837,13 @@ VALUES (
         return null;
       }
 
+      const slotsCount = config.slots ? Object.keys(config.slots).length : 0;
+      console.log(`✅ Loaded ${pageType} config with ${slotsCount} slots`);
+
       return config;
     } catch (error) {
       console.error(`Failed to load ${pageType}-config.js:`, error.message);
+      console.error(error.stack);
       return null;
     }
   }
@@ -898,6 +904,8 @@ VALUES (
             page_type: pageType,
             is_active: true,
             status: 'published',
+            version: '1.0',
+            version_number: 1,
             created_at: now,
             updated_at: now
           });
@@ -995,7 +1003,7 @@ VALUES (
 
           // Insert PUBLISHED version
           insertStatements.push(`
-INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, created_at, updated_at)
+INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, version, version_number, created_at, updated_at)
 VALUES (
   '${publishedId}',
   '${options.userId}',
@@ -1004,6 +1012,8 @@ VALUES (
   '${pageType}',
   true,
   'published',
+  '1.0',
+  1,
   NOW(),
   NOW()
 ) ON CONFLICT DO NOTHING;`);
