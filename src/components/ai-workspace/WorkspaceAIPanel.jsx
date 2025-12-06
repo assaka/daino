@@ -1389,8 +1389,8 @@ const WorkspaceAIPanel = () => {
                     "disabled:opacity-50 disabled:cursor-not-allowed"
                   )}
                 >
-                  <span>{currentModel.icon}</span>
-                  <span className="font-medium">{PROVIDER_NAMES[currentModel.provider]}</span>
+                  <span>{currentModel?.icon}</span>
+                  <span className="font-medium">{PROVIDER_NAMES[currentModel?.provider]}</span>
                   <ChevronDown className={cn("w-2.5 h-2.5 transition-transform", showModelDropdown && "rotate-180")} />
                 </button>
 
