@@ -911,6 +911,8 @@ VALUES (
             page_type: pageType,
             is_active: true,
             status: 'draft',
+            version: '2.0',
+            version_number: 2,
             created_at: now,
             updated_at: now
           });
@@ -1008,7 +1010,7 @@ VALUES (
 
           // Insert DRAFT version (copy of published, ready for edits)
           insertStatements.push(`
-INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, created_at, updated_at)
+INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, version, version_number, created_at, updated_at)
 VALUES (
   '${draftId}',
   '${options.userId}',
@@ -1017,6 +1019,8 @@ VALUES (
   '${pageType}',
   true,
   'draft',
+  '2.0',
+  2,
   NOW(),
   NOW()
 ) ON CONFLICT DO NOTHING;`);
