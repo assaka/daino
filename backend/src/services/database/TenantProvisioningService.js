@@ -79,21 +79,7 @@ class TenantProvisioningService {
         };
       }
 
-      // 4. Create store record in tenant DB
-      if (tenantDb) {
-        // Use Supabase client
-        console.log('Creating store record via Supabase client...');
-        await this.createStoreRecord(tenantDb, storeId, options, result);
-      } else if (options.oauthAccessToken && options.projectId) {
-        // Use Management API to execute SQL
-        console.log('Creating store record via Management API SQL...');
-        await this.createStoreRecordViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
-      } else {
-        console.warn('⚠️ Cannot create store record - no tenantDb or OAuth credentials');
-        result.errors.push({ step: 'create_store', error: 'No database client available' });
-      }
-
-      // 5. Create agency user record in tenant DB
+      // 4. Create agency user record FIRST (stores.user_id references users.id)
       if (tenantDb && options.userId && options.userEmail) {
         // Use Supabase client
         console.log('Creating user record via Supabase client...');
@@ -107,6 +93,20 @@ class TenantProvisioningService {
       } else {
         console.warn('⚠️ Cannot create user record - no tenantDb or OAuth credentials');
         result.errors.push({ step: 'create_user', error: 'No database client available' });
+      }
+
+      // 5. Create store record AFTER user (stores.user_id FK)
+      if (tenantDb) {
+        // Use Supabase client
+        console.log('Creating store record via Supabase client...');
+        await this.createStoreRecord(tenantDb, storeId, options, result);
+      } else if (options.oauthAccessToken && options.projectId) {
+        // Use Management API to execute SQL
+        console.log('Creating store record via Management API SQL...');
+        await this.createStoreRecordViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+      } else {
+        console.warn('⚠️ Cannot create store record - no tenantDb or OAuth credentials');
+        result.errors.push({ step: 'create_store', error: 'No database client available' });
       }
 
       // 5.5. Now run seed data (AFTER store/user records exist for FK constraints)
