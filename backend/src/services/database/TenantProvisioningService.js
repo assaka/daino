@@ -936,6 +936,12 @@ VALUES (
         return false;
       }
 
+      // Log what we're about to insert
+      console.log(`📝 Preparing to insert ${configsToInsert.length} slot configurations:`);
+      configsToInsert.forEach((config, i) => {
+        console.log(`  ${i + 1}. ${config.page_type} (${config.status}) - version: ${config.version}, version_number: ${config.version_number}`);
+      });
+
       // Insert all configurations
       const { data, error } = await tenantDb
         .from('slot_configurations')
@@ -943,6 +949,7 @@ VALUES (
         .select();
 
       if (error) {
+        console.error('❌ Insert error details:', JSON.stringify(error, null, 2));
         throw new Error(`Failed to insert slot configurations: ${error.message}`);
       }
 
