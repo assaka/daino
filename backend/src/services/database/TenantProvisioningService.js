@@ -320,15 +320,20 @@ END $$;`;
             }
           );
 
-          console.log('✅ Seed API response:', seedResponse.data);
+          console.log('✅ Seed API response:', JSON.stringify(seedResponse.data, null, 2));
 
           // Check if seeding actually succeeded
           if (seedResponse.data && seedResponse.data.error) {
-            console.warn('⚠️ Seed data warning:', seedResponse.data.error);
+            console.error('❌ Seed data FAILED:', seedResponse.data.error);
+            result.errors.push({
+              step: 'seed_data',
+              error: `Seed data failed: ${seedResponse.data.error}`
+            });
+            // Don't mark as success if there was an error
+          } else {
+            console.log('✅ Seed data complete - 6,598 rows inserted');
+            result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
           }
-
-          console.log('✅ Seed data complete - 6,598 rows inserted');
-          result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
 
           return true;
 
