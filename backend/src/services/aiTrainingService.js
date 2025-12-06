@@ -590,6 +590,201 @@ class AITrainingService {
     this.rulesCache = null;
     this.rulesCacheExpiry = null;
   }
+
+  // ============================================
+  // CORRECTION DETECTION & CONFIRMATION SYSTEM
+  // ============================================
+
+  // Patterns that indicate user is correcting/undoing previous action
+  static CORRECTION_PATTERNS = [
+    // Undo/revert requests
+    /\b(undo|revert|cancel|rollback|undo that|take that back)\b/i,
+    // Explicit corrections
+    /\b(wrong|incorrect|not what I|that's not|that wasn't)\b/i,
+    /\b(I meant|I wanted|I said|should have been|should be)\b/i,
+    // Retry patterns
+    /\b(try again|do it again|redo|let me rephrase)\b/i,
+    // Complaints about result
+    /\b(doesn't work|didn't work|failed|broken|not working)\b/i,
+    /\b(that's wrong|you misunderstood|no,? I)\b/i
+  ];
+
+  // In-memory storage for pending confirmations (per session)
+  static pendingConfirmations = new Map();
+
+  /**
+   * Mark a training candidate as pending confirmation
+   * Called after action execution instead of immediate success
+   */
+  async markPendingConfirmation(candidateId, sessionId, actionDescription = '') {
+    try {
+      // Update database status
+      await masterDbClient
+        .from('ai_training_candidates')
+        .update({
+          outcome_status: 'pending_confirmation',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', candidateId);
+
+      // Store in memory for quick lookup
+      AITrainingService.pendingConfirmations.set(sessionId, {
+        candidateId,
+        actionTimestamp: Date.now(),
+        actionDescription
+      });
+
+      // Auto-expire after 10 minutes
+      setTimeout(() => {
+        const pending = AITrainingService.pendingConfirmations.get(sessionId);
+        if (pending && pending.candidateId === candidateId) {
+          // If still pending after 10 min, assume success (user moved on)
+          this.confirmSuccess(candidateId, { autoConfirmed: true, reason: 'timeout' });
+          AITrainingService.pendingConfirmations.delete(sessionId);
+        }
+      }, 10 * 60 * 1000);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[AITrainingService] Error marking pending confirmation:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Check if a message indicates correction of previous action
+   */
+  checkForCorrection(message) {
+    if (!message || typeof message !== 'string') return false;
+
+    for (const pattern of AITrainingService.CORRECTION_PATTERNS) {
+      if (pattern.test(message)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Get pending confirmation for a session
+   */
+  getPendingConfirmation(sessionId) {
+    return AITrainingService.pendingConfirmations.get(sessionId) || null;
+  }
+
+  /**
+   * Confirm success after no correction detected
+   */
+  async confirmSuccess(candidateId, details = {}) {
+    try {
+      await masterDbClient
+        .from('ai_training_candidates')
+        .update({
+          outcome_status: 'success',
+          success_count: masterDbClient.raw('COALESCE(success_count, 0) + 1'),
+          metadata: masterDbClient.raw(`
+            COALESCE(metadata, '{}'::jsonb) || '${JSON.stringify({
+              confirmed_at: new Date().toISOString(),
+              confirmation_type: 'no_correction',
+              ...details
+            })}'::jsonb
+          `),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', candidateId);
+
+      // Check training rules after success confirmation
+      await this.checkAndApplyRules(candidateId);
+
+      // Generate embedding for successful candidate (async)
+      const embeddingService = require('./embeddingService');
+      embeddingService.embedTrainingCandidateAsync(candidateId);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[AITrainingService] Error confirming success:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Mark as failure due to correction
+   */
+  async markCorrected(candidateId, correctionMessage, sessionId = null) {
+    try {
+      await masterDbClient
+        .from('ai_training_candidates')
+        .update({
+          outcome_status: 'failure',
+          failure_count: masterDbClient.raw('COALESCE(failure_count, 0) + 1'),
+          metadata: masterDbClient.raw(`
+            COALESCE(metadata, '{}'::jsonb) || '${JSON.stringify({
+              corrected_at: new Date().toISOString(),
+              correction_message: correctionMessage?.substring(0, 500),
+              correction_type: 'user_correction'
+            })}'::jsonb
+          `),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', candidateId);
+
+      // Remove from pending
+      if (sessionId) {
+        AITrainingService.pendingConfirmations.delete(sessionId);
+      }
+
+      // Check training rules after failure
+      await this.checkAndApplyRules(candidateId);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[AITrainingService] Error marking corrected:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Process next message for pending confirmations
+   * Call this at the start of each chat message processing
+   */
+  async processNextMessage(sessionId, userMessage) {
+    const pending = this.getPendingConfirmation(sessionId);
+
+    if (!pending) {
+      return { hadPending: false };
+    }
+
+    const isCorrection = this.checkForCorrection(userMessage);
+
+    if (isCorrection) {
+      await this.markCorrected(pending.candidateId, userMessage, sessionId);
+      AITrainingService.pendingConfirmations.delete(sessionId);
+      return {
+        hadPending: true,
+        wasCorrection: true,
+        candidateId: pending.candidateId
+      };
+    } else {
+      await this.confirmSuccess(pending.candidateId, {
+        confirmedBy: 'next_message',
+        nextMessage: userMessage.substring(0, 100)
+      });
+      AITrainingService.pendingConfirmations.delete(sessionId);
+      return {
+        hadPending: true,
+        wasCorrection: false,
+        candidateId: pending.candidateId
+      };
+    }
+  }
+
+  /**
+   * Clear pending confirmation without processing
+   */
+  clearPendingConfirmation(sessionId) {
+    AITrainingService.pendingConfirmations.delete(sessionId);
+  }
 }
 
 module.exports = new AITrainingService();

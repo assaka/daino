@@ -3540,6 +3540,20 @@ router.post('/chat', authMiddleware, async (req, res) => {
     // Generate session ID for tracking this conversation
     const sessionId = req.body.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Process pending confirmations from previous actions
+    // This checks if the current message is a correction of the previous AI action
+    try {
+      const confirmationResult = await aiTrainingService.processNextMessage(sessionId, message);
+      if (confirmationResult.hadPending) {
+        console.log('📊 Processed pending confirmation:', {
+          wasCorrection: confirmationResult.wasCorrection,
+          candidateId: confirmationResult.candidateId
+        });
+      }
+    } catch (confirmErr) {
+      console.error('Error processing confirmation:', confirmErr);
+    }
+
     // Save user message for learning (async, don't block)
     aiContextService.saveChatMessage({
       userId,

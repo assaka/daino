@@ -626,6 +626,196 @@ class AIContextService {
       ttl: 5 * 60 * 1000
     };
   }
+
+  // ============================================
+  // VECTOR SEARCH METHODS (Semantic Similarity)
+  // ============================================
+
+  /**
+   * Search documents using vector similarity
+   * Falls back to keyword search if vector search fails
+   */
+  async searchDocumentsByVector(query, options = {}) {
+    const { limit = 5, threshold = 0.7, mode = null, category = null } = options;
+
+    try {
+      const embeddingService = require('./embeddingService');
+
+      // Generate embedding for query
+      const queryEmbedding = await embeddingService.generateEmbedding(query);
+      const vectorStr = embeddingService.formatVectorForPg(queryEmbedding);
+
+      // Call vector search function
+      const { data, error } = await masterDbClient.rpc('search_ai_documents_by_embedding', {
+        query_embedding: vectorStr,
+        match_threshold: threshold,
+        match_count: limit,
+        filter_mode: mode,
+        filter_category: category
+      });
+
+      if (error) {
+        console.error('[AIContextService] Vector search error:', error);
+        return this.getRelevantDocuments({ mode, category, limit });
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[AIContextService] Error in vector search:', error);
+      // Fallback to keyword search
+      return this.getRelevantDocuments({ mode, category, limit });
+    }
+  }
+
+  /**
+   * Search examples using vector similarity
+   */
+  async searchExamplesByVector(query, options = {}) {
+    const { limit = 3, threshold = 0.7, category = null } = options;
+
+    try {
+      const embeddingService = require('./embeddingService');
+      const queryEmbedding = await embeddingService.generateEmbedding(query);
+      const vectorStr = embeddingService.formatVectorForPg(queryEmbedding);
+
+      const { data, error } = await masterDbClient.rpc('search_ai_examples_by_embedding', {
+        query_embedding: vectorStr,
+        match_threshold: threshold,
+        match_count: limit,
+        filter_category: category
+      });
+
+      if (error) {
+        console.error('[AIContextService] Vector example search error:', error);
+        return this.getRelevantExamples({ category, limit });
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[AIContextService] Error in vector example search:', error);
+      return this.getRelevantExamples({ category, limit });
+    }
+  }
+
+  /**
+   * Search training patterns using vector similarity
+   */
+  async searchPatternsByVector(query, options = {}) {
+    const { limit = 5, threshold = 0.7, entity = null } = options;
+
+    try {
+      const embeddingService = require('./embeddingService');
+      const queryEmbedding = await embeddingService.generateEmbedding(query);
+      const vectorStr = embeddingService.formatVectorForPg(queryEmbedding);
+
+      const { data, error } = await masterDbClient.rpc('search_training_patterns_by_embedding', {
+        query_embedding: vectorStr,
+        match_threshold: threshold,
+        match_count: limit,
+        filter_entity: entity
+      });
+
+      if (error) {
+        console.error('[AIContextService] Vector pattern search error:', error);
+        return this.getRelevantPatterns({ entity, limit });
+      }
+
+      // Format as patterns for backward compatibility
+      return (data || []).map(r => ({
+        id: r.id,
+        name: `${r.detected_entity || 'general'} - ${r.detected_operation || 'query'}`,
+        pattern_type: 'successful_prompt',
+        description: r.user_prompt,
+        code: r.ai_response,
+        similarity: r.similarity,
+        usage_count: r.success_count
+      }));
+    } catch (error) {
+      console.error('[AIContextService] Error in vector pattern search:', error);
+      return this.getRelevantPatterns({ entity, limit });
+    }
+  }
+
+  /**
+   * Search entity definitions using vector similarity
+   */
+  async searchEntitiesByVector(query, options = {}) {
+    const { limit = 5, threshold = 0.7 } = options;
+
+    try {
+      const embeddingService = require('./embeddingService');
+      const queryEmbedding = await embeddingService.generateEmbedding(query);
+      const vectorStr = embeddingService.formatVectorForPg(queryEmbedding);
+
+      const { data, error } = await masterDbClient.rpc('search_ai_entities_by_embedding', {
+        query_embedding: vectorStr,
+        match_threshold: threshold,
+        match_count: limit
+      });
+
+      if (error) {
+        console.error('[AIContextService] Vector entity search error:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[AIContextService] Error in vector entity search:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Enhanced getContextForQuery with vector search
+   * Uses semantic similarity instead of keyword matching
+   */
+  async getContextForQueryWithVectors({ mode, category, query, storeId = null, limit = 10, useVectors = true }) {
+    // Fall back to keyword search if no query or vectors disabled
+    if (!useVectors || !query) {
+      return this.getContextForQuery({ mode, category, query, storeId, limit });
+    }
+
+    try {
+      const context = {
+        documents: await this.searchDocumentsByVector(query, { limit: 5, threshold: 0.7, mode, category }),
+        examples: await this.searchExamplesByVector(query, { limit: 3, threshold: 0.7, category }),
+        patterns: await this.searchPatternsByVector(query, { limit: 5, threshold: 0.7 })
+      };
+
+      return this.formatContextForAI(context);
+    } catch (error) {
+      console.error('[AIContextService] Error in vector context query:', error);
+      // Fallback to keyword search
+      return this.getContextForQuery({ mode, category, query, storeId, limit });
+    }
+  }
+
+  /**
+   * Find similar existing prompts (for deduplication)
+   */
+  async findSimilarPrompts(query, threshold = 0.95) {
+    try {
+      const embeddingService = require('./embeddingService');
+      const queryEmbedding = await embeddingService.generateEmbedding(query);
+      const vectorStr = embeddingService.formatVectorForPg(queryEmbedding);
+
+      const { data, error } = await masterDbClient.rpc('find_similar_training_candidates', {
+        query_embedding: vectorStr,
+        similarity_threshold: threshold,
+        max_results: 3
+      });
+
+      if (error) {
+        console.error('[AIContextService] Error finding similar prompts:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[AIContextService] Error in similarity search:', error);
+      return [];
+    }
+  }
 }
 
 module.exports = new AIContextService();
