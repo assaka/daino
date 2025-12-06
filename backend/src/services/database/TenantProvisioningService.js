@@ -828,12 +828,16 @@ VALUES (
 
       console.log(`📂 Loading config from: ${configPath}`);
 
+      // Clear require cache to ensure fresh load
+      delete require.cache[require.resolve(configPath)];
+
       // Use require for CommonJS modules
       const configModule = require(configPath);
       const config = configModule[configExport];
 
       if (!config) {
         console.warn(`Config export '${configExport}' not found in ${configPath}`);
+        console.warn(`Available exports:`, Object.keys(configModule));
         return null;
       }
 
