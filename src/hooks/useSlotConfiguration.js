@@ -8,7 +8,6 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { SlotManager } from '@/utils/slotUtils';
 import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
-import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 // ===============================
 // UTILITY HOOKS FOR SLOT EDITORS
@@ -696,103 +695,8 @@ export const sortSlotsByGridCoordinates = (filteredSlots) => {
   });
 };
 
-// Helper function to dynamically load page-specific config
-async function loadPageConfig(pageType) {
-  let config;
-  switch (pageType) {
-    case 'header': {
-      const { headerConfig } = await import('@/components/editor/slot/configs/header-config');
-      config = headerConfig;
-      break;
-    }
-    case 'cart': {
-      const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
-      config = cartConfig;
-      break;
-    }
-    case 'category': {
-      const { categoryConfig } = await import('@/components/editor/slot/configs/category-config');
-      config = categoryConfig;
-      break;
-    }
-    case 'product': {
-      const { productConfig } = await import('@/components/editor/slot/configs/product-config');
-      config = productConfig;
-      break;
-    }
-    case 'account': {
-      const { accountConfig } = await import('@/components/editor/slot/configs/account-config');
-      config = accountConfig;
-      break;
-    }
-    case 'login': {
-      const { loginConfig } = await import('@/components/editor/slot/configs/login-config');
-      config = loginConfig;
-      break;
-    }
-    case 'checkout': {
-      const { checkoutConfig } = await import('@/components/editor/slot/configs/checkout-config');
-      config = checkoutConfig;
-      break;
-    }
-    case 'success': {
-      const { successConfig } = await import('@/components/editor/slot/configs/success-config');
-      config = successConfig;
-      break;
-    }
-    default: {
-      console.warn('⚠️ Unknown pageType, falling back to cart:', pageType);
-      const { cartConfig: fallbackConfig } = await import('@/components/editor/slot/configs/cart-config');
-      config = fallbackConfig;
-    }
-  }
-  return config;
-}
-
-// Helper function to create clean slots from config
-function createCleanSlots(config) {
-  const cleanSlots = {};
-
-  // Get demo variable context for processing template variables
-  const variableContext = generateDemoData('category');
-
-  if (config.slots) {
-    Object.entries(config.slots).forEach(([key, slot]) => {
-      // Process styles to replace template variables with actual values
-      const processedStyles = {};
-      if (slot.styles) {
-        Object.entries(slot.styles).forEach(([styleKey, styleValue]) => {
-          if (typeof styleValue === 'string') {
-            // Process any template variables in the style value
-            processedStyles[styleKey] = processVariables(styleValue, variableContext);
-          } else {
-            processedStyles[styleKey] = styleValue;
-          }
-        });
-      }
-
-      // Only copy serializable properties, ensure no undefined values
-      cleanSlots[key] = {
-        id: slot.id || key,
-        type: slot.type || 'container',
-        component: slot.component || null, // ← CRITICAL: Component name for component slots
-        content: slot.content || '',
-        className: slot.className || '',
-        parentClassName: slot.parentClassName || '',
-        styles: processedStyles,
-        parentId: slot.parentId === undefined ? null : slot.parentId,
-        layout: slot.layout || null,
-        gridCols: slot.gridCols || null,
-        colSpan: slot.colSpan || 12,
-        rowSpan: slot.rowSpan || 1,
-        position: slot.position ? { ...slot.position } : null,
-        viewMode: slot.viewMode ? [...slot.viewMode] : [],
-        metadata: slot.metadata ? { ...slot.metadata } : {}
-      };
-    });
-  }
-  return cleanSlots;
-}
+// Note: Static config loading removed - all configs are now seeded in database during tenant provisioning
+// Both draft and published versions are created, so fallbacks to static files are no longer needed
 
 export function useSlotConfiguration({
   pageType,
@@ -801,7 +705,7 @@ export function useSlotConfiguration({
   selectedStore
 }) {
 
-  // Generic reset layout function
+  // Generic reset layout function - resets to last published version from database
   const handleResetLayout = useCallback(async () => {
     try {
       const storeId = selectedStore?.id;
@@ -809,41 +713,18 @@ export function useSlotConfiguration({
         throw new Error('No store selected');
       }
 
-      // First, try to get the last published configuration
+      // Get the last published configuration from database
       const publishedResponse = await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
-      let config;
 
-      if (publishedResponse.success && publishedResponse.data?.configuration) {
-        config = publishedResponse.data.configuration;
-      } else {
-        // Load the clean static configuration for this page type
-        config = await loadPageConfig(pageType);
-
-        if (!config || !config.slots) {
-          throw new Error(`${pageType} configuration is invalid or missing slots`);
-        }
-
-        // Create clean slots
-        const cleanSlots = createCleanSlots(config);
-
-        config = {
-          page_name: config.page_name || pageName,
-          slot_type: config.slot_type || slotType,
-          slots: cleanSlots,
-          metadata: {
-            created: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
-            version: '1.0',
-            pageType: pageType,
-            source: `${pageType}-config.js`
-          },
-          cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
-        };
+      if (!publishedResponse.success || !publishedResponse.data?.configuration) {
+        throw new Error(`No published configuration found for ${pageType}. Please ensure the store was properly provisioned.`);
       }
+
+      const config = publishedResponse.data.configuration;
 
       // Verify config has slots before saving
       if (!config.slots || Object.keys(config.slots).length === 0) {
-        console.error('❌ Reset layout failed: config has no slots', config);
+        console.error('❌ Reset layout failed: published config has no slots', config);
         throw new Error('Cannot reset to empty configuration');
       }
 
@@ -856,7 +737,7 @@ export function useSlotConfiguration({
       console.error(`❌ Failed to reset ${pageType} layout:`, error);
       throw error;
     }
-  }, [selectedStore, pageType, pageName, slotType]);
+  }, [selectedStore, pageType]);
 
   // Generic publish configuration function
   const handlePublishConfiguration = useCallback(async () => {
@@ -907,34 +788,8 @@ export function useSlotConfiguration({
     }
   }, [selectedStore, pageType]);
 
-  // Generic load static configuration function
-  const loadStaticConfiguration = useCallback(async () => {
-
-    const config = await loadPageConfig(pageType);
-
-    if (!config || !config.slots) {
-      throw new Error(`${pageType} configuration is invalid or missing slots`);
-    }
-
-    const cleanSlots = createCleanSlots(config);
-
-    const configToUse = {
-      page_name: config.page_name || pageName,
-      slot_type: config.slot_type || slotType,
-      slots: cleanSlots,
-      metadata: {
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        version: '1.0',
-        pageType: pageType
-      },
-      cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
-    };
-
-    return configToUse;
-  }, [pageType, pageName, slotType]);
-
-  // Get draft configuration for editor - populate with static config if empty
+  // Get draft configuration for editor
+  // Note: Drafts are now seeded during tenant provisioning, so initialization from static files is no longer needed
   const getDraftConfiguration = useCallback(async () => {
     const storeId = selectedStore?.id;
 
@@ -943,35 +798,41 @@ export function useSlotConfiguration({
     }
 
     try {
-
-      // Get draft from database (may be empty on first load)
+      // Get draft from database
       const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
         const draftConfig = savedConfig.data.configuration;
         const draftStatus = savedConfig.data.status;
 
-        // Check if draft needs initialization (status = 'init' OR empty slots)
+        // Check if draft needs initialization (edge case - should not happen with proper provisioning)
         const needsInitialization = draftStatus === 'init' || !draftConfig.slots || Object.keys(draftConfig.slots).length === 0;
 
         if (needsInitialization) {
-          // Load static config to populate draft
-          const staticConfig = await loadStaticConfiguration();
-          // Create complete configuration from static config
+          // Fallback: Load from published version in database
+          console.warn(`⚠️ Draft needs initialization for ${pageType}, loading from published version...`);
+          const publishedResponse = await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
+
+          if (!publishedResponse.success || !publishedResponse.data?.configuration) {
+            throw new Error(`No published configuration found for ${pageType}. Please ensure the store was properly provisioned.`);
+          }
+
+          const publishedConfig = publishedResponse.data.configuration;
+
+          // Create complete configuration from published config
           const populatedConfig = {
             ...draftConfig,
-            slots: staticConfig.slots,
-            cmsBlocks: staticConfig.cmsBlocks || [],
+            slots: publishedConfig.slots,
+            cmsBlocks: publishedConfig.cmsBlocks || [],
             metadata: {
               ...draftConfig.metadata,
-              populatedFromStatic: true,
+              populatedFromPublished: true,
               populatedAt: new Date().toISOString(),
-              version: staticConfig.metadata?.version || '1.0'
+              version: publishedConfig.metadata?.version || '1.0'
             }
           };
 
           // Save the populated configuration back to database
-          // This should change status from 'init' to 'draft'
           try {
             await slotConfigurationService.updateDraftConfiguration(
               savedConfig.data.id,
@@ -981,24 +842,23 @@ export function useSlotConfiguration({
             );
           } catch (saveError) {
             console.error('❌ [getDraftConfiguration] Failed to save populated config:', saveError);
-            // Continue with populated config even if save fails
           }
 
           return populatedConfig;
-        } else if (draftStatus === 'draft') {
+        } else if (draftStatus === 'draft' || draftStatus === 'published') {
           return draftConfig;
         } else {
           console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
           return draftConfig;
         }
       } else {
-        throw new Error('No valid draft configuration found - this should not happen in editor context');
+        throw new Error('No valid draft configuration found - please ensure the store was properly provisioned');
       }
     } catch (error) {
       console.error('❌ EDITOR - Failed to load draft configuration:', error);
       throw error;
     }
-  }, [selectedStore, pageType, loadStaticConfiguration]);
+  }, [selectedStore, pageType]);
 
   // Generic validation function for slot configurations
   const validateSlotConfiguration = useCallback((slots) => {
