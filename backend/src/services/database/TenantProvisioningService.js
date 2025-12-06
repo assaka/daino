@@ -79,6 +79,16 @@ class TenantProvisioningService {
         };
       }
 
+      // Debug: Log what credentials we have
+      console.log('🔍 Provisioning context:', {
+        hasTenantDb: !!tenantDb,
+        hasOAuthToken: !!options.oauthAccessToken,
+        hasProjectId: !!options.projectId,
+        hasUserId: !!options.userId,
+        hasUserEmail: !!options.userEmail,
+        hasSeedSQL: !!this._processedSeedSQL
+      });
+
       // 4. Create agency user record FIRST (stores.user_id references users.id)
       if (tenantDb && options.userId && options.userEmail) {
         // Use Supabase client
@@ -90,6 +100,8 @@ class TenantProvisioningService {
         await this.createUserRecordViaAPI(options.oauthAccessToken, options.projectId, options, result);
       } else if (!options.userId || !options.userEmail) {
         console.log('⏭️ Skipping user record creation - no user data provided');
+        console.log('   userId:', options.userId);
+        console.log('   userEmail:', options.userEmail);
       } else {
         console.warn('⚠️ Cannot create user record - no tenantDb or OAuth credentials');
         result.errors.push({ step: 'create_user', error: 'No database client available' });
@@ -113,6 +125,12 @@ class TenantProvisioningService {
       if (options.oauthAccessToken && options.projectId && this._processedSeedSQL) {
         console.log('Running seed data via Management API (after store/user creation)...');
         await this.runSeedDataViaAPI(options.oauthAccessToken, options.projectId, result);
+      } else {
+        console.log('⏭️ Skipping seed data via API:', {
+          hasOAuthToken: !!options.oauthAccessToken,
+          hasProjectId: !!options.projectId,
+          hasSeedSQL: !!this._processedSeedSQL
+        });
       }
 
       // 6. Seed slot configurations from config files
@@ -131,6 +149,25 @@ class TenantProvisioningService {
       } else if (options.oauthAccessToken && options.projectId) {
         console.log('Seeding default SEO settings via Management API SQL...');
         await this.seedDefaultSeoSettingsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+      }
+
+      // Check if critical steps failed
+      const hasUserError = result.errors.some(e => e.step === 'create_user');
+      const hasStoreError = result.errors.some(e => e.step === 'create_store');
+      const hasSeedError = result.errors.some(e => e.step === 'seed_data');
+
+      if (hasUserError || hasStoreError) {
+        console.error('❌ Tenant provisioning failed - user or store creation error');
+        console.error('   Errors:', JSON.stringify(result.errors, null, 2));
+        return {
+          ...result,
+          success: false,
+          message: 'Database provisioning failed - could not create user or store records'
+        };
+      }
+
+      if (hasSeedError) {
+        console.warn('⚠️ Tenant provisioning completed with seed data warnings');
       }
 
       console.log(`✅ Tenant provisioning complete for store ${storeId}`);
@@ -454,9 +491,22 @@ END $$;`;
         .single();
 
       if (error) {
-        throw new Error(`Failed to create store record: ${error.message}`);
+        // Check if it's a duplicate key error (store already exists)
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          console.log('Store already exists, skipping creation');
+          result.dataSeeded.push('Store record (already exists)');
+          return null;
+        }
+        // For other errors, log and add to errors
+        console.error('❌ Store creation FAILED:', error.message);
+        result.errors.push({
+          step: 'create_store',
+          error: `Failed to create store: ${error.message}`
+        });
+        return null;
       }
 
+      console.log('✅ Store record created:', storeId);
       result.dataSeeded.push('Store record');
 
       return data;
@@ -466,7 +516,7 @@ END $$;`;
         step: 'create_store',
         error: error.message
       });
-      throw error;
+      return null;
     }
   }
 
@@ -497,12 +547,22 @@ END $$;`;
         .single();
 
       if (error) {
-        // User might already exist, that's okay
-        console.warn('User creation warning:', error.message);
-        result.dataSeeded.push('User record (may already exist)');
+        // Check if it's a duplicate key error (user already exists)
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          console.log('User already exists, skipping creation');
+          result.dataSeeded.push('User record (already exists)');
+          return null;
+        }
+        // For other errors, log and add to errors
+        console.error('❌ User creation FAILED:', error.message);
+        result.errors.push({
+          step: 'create_user',
+          error: `Failed to create user: ${error.message}`
+        });
         return null;
       }
 
+      console.log('✅ User record created:', options.userEmail);
       result.dataSeeded.push('User record');
 
       return data;
