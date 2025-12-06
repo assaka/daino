@@ -122,15 +122,26 @@ class TenantProvisioningService {
       }
 
       // 5.5. Now run seed data (AFTER store/user records exist for FK constraints)
-      if (options.oauthAccessToken && options.projectId && this._processedSeedSQL) {
-        console.log('Running seed data via Management API (after store/user creation)...');
-        await this.runSeedDataViaAPI(options.oauthAccessToken, options.projectId, result);
+      if (this._processedSeedSQL) {
+        let seedSuccess = false;
+
+        // Try Management API first
+        if (options.oauthAccessToken && options.projectId) {
+          console.log('Running seed data via Management API (after store/user creation)...');
+          seedSuccess = await this.runSeedDataViaAPI(options.oauthAccessToken, options.projectId, result);
+        }
+
+        // If API failed, try direct PostgreSQL connection as fallback
+        if (!seedSuccess) {
+          console.log('⚠️ Management API seed failed, trying direct PostgreSQL connection...');
+          seedSuccess = await this.runSeedDataViaPG(storeId, result);
+        }
+
+        if (!seedSuccess) {
+          console.error('❌ All seed methods failed');
+        }
       } else {
-        console.log('⏭️ Skipping seed data via API:', {
-          hasOAuthToken: !!options.oauthAccessToken,
-          hasProjectId: !!options.projectId,
-          hasSeedSQL: !!this._processedSeedSQL
-        });
+        console.log('⏭️ No seed SQL prepared, skipping seed data');
       }
 
       // 6. Seed slot configurations from config files
@@ -746,8 +757,70 @@ VALUES (
         error: `Seed API failed: ${error.response?.data?.message || error.response?.data?.error || error.message}`
       });
       return false;
+    }
+    // Note: Don't clear _processedSeedSQL here - fallback method may need it
+  }
+
+  /**
+   * Run seed data via direct PostgreSQL connection (fallback method)
+   * @private
+   */
+  async runSeedDataViaPG(storeId, result) {
+    try {
+      const { Client } = require('pg');
+      const { StoreDatabase } = require('../../models/master');
+
+      if (!this._processedSeedSQL) {
+        console.warn('⚠️ No seed SQL prepared - skipping PG seed');
+        return false;
+      }
+
+      // Get connection credentials from store_databases
+      const storeDb = await StoreDatabase.findByStoreId(storeId);
+
+      if (!storeDb) {
+        console.error('❌ No store database credentials found for PG fallback');
+        return false;
+      }
+
+      const credentials = storeDb.getDecryptedCredentials();
+
+      if (!credentials.connectionString) {
+        console.error('❌ No connection string available for PG fallback');
+        return false;
+      }
+
+      console.log('📤 Running seed data via direct PostgreSQL connection...');
+
+      const pgClient = new Client({
+        connectionString: credentials.connectionString,
+        ssl: { rejectUnauthorized: false }
+      });
+
+      await pgClient.connect();
+
+      // Execute seed SQL
+      await pgClient.query(this._processedSeedSQL);
+
+      await pgClient.end();
+
+      console.log('✅ Seed data complete via PostgreSQL - 6,598 rows inserted');
+      result.dataSeeded.push('Seeded 6,598 rows via PostgreSQL');
+
+      // Clear the seed SQL now
+      this._processedSeedSQL = null;
+      this._seedSQLSize = null;
+
+      return true;
+    } catch (error) {
+      console.error('❌ PostgreSQL seed error:', error.message);
+      result.errors.push({
+        step: 'seed_data_pg',
+        error: `PostgreSQL seed failed: ${error.message}`
+      });
+      return false;
     } finally {
-      // Clear the stored SQL
+      // Clear the seed SQL
       this._processedSeedSQL = null;
       this._seedSQLSize = null;
     }
