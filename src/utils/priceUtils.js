@@ -47,18 +47,22 @@ export const safeNumber = (value) => {
  */
 export const formatPrice = (value, decimals = 2) => {
     const context = _getStoreContext();
+    const num = safeNumber(value);
 
     if (!context) {
-        throw new Error('❌ formatPrice: Store context not available! Make sure PriceUtilsProvider wraps your app.');
+        // Return formatted number without symbol as fallback during initial load
+        console.warn('⚠️ formatPrice: Store context not yet available, returning price without symbol');
+        return num.toFixed(decimals);
     }
 
     const symbol = context.settings?.currency_symbol;
 
     if (!symbol) {
-        throw new Error('❌ formatPrice: currency_symbol not found in store context!');
+        // Return formatted number without symbol as fallback
+        console.warn('⚠️ formatPrice: currency_symbol not found in store context');
+        return num.toFixed(decimals);
     }
 
-    const num = safeNumber(value);
     return `${symbol}${num.toFixed(decimals)}`;
 };
 
@@ -112,7 +116,9 @@ export const calculateDisplayPrice = (basePrice, taxRules = null, country = null
 
     const context = _getStoreContext();
     if (!context) {
-        throw new Error('❌ calculateDisplayPrice: Store context not available!');
+        // Return base price as fallback during initial load
+        console.warn('⚠️ calculateDisplayPrice: Store context not yet available, returning base price');
+        return price;
     }
 
     // Get from context
