@@ -737,9 +737,13 @@ VALUES (
       }
     } catch (error) {
       console.error('❌ Seed data API error:', error.message);
+      console.error('   Response status:', error.response?.status);
+      console.error('   Response data:', JSON.stringify(error.response?.data, null, 2));
+      // Log first 500 chars of seed SQL for debugging
+      console.error('   Seed SQL preview:', this._processedSeedSQL?.substring(0, 500));
       result.errors.push({
         step: 'seed_data',
-        error: `Seed API failed: ${error.message}`
+        error: `Seed API failed: ${error.response?.data?.message || error.response?.data?.error || error.message}`
       });
       return false;
     } finally {
