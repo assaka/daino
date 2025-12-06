@@ -3029,37 +3029,6 @@ CREATE TABLE IF NOT EXISTS store_uptime (
   UNIQUE(store_id, charged_date)
 );
 
--- CREATE TABLE IF NOT EXISTS subscriptions (
---   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
---   store_id UUID NOT NULL,
---   plan_name VARCHAR(50) NOT NULL,
---   status VARCHAR(50) DEFAULT 'trial'::character varying NOT NULL,
---   price_monthly NUMERIC,
---   price_annual NUMERIC,
---   billing_cycle VARCHAR(20) DEFAULT 'monthly'::character varying,
---   currency VARCHAR(3) DEFAULT 'USD'::character varying,
---   max_products INTEGER,
---   max_orders_per_month INTEGER,
---   max_storage_gb INTEGER,
---   max_api_calls_per_month INTEGER,
---   max_admin_users INTEGER DEFAULT 5,
---   started_at TIMESTAMP WITH TIME ZONE NOT NULL,
---   trial_ends_at TIMESTAMP WITH TIME ZONE,
---   current_period_start TIMESTAMP WITH TIME ZONE,
---   current_period_end TIMESTAMP WITH TIME ZONE,
---   cancelled_at TIMESTAMP WITH TIME ZONE,
---   cancellation_reason TEXT,
---   metadata JSONB DEFAULT '{}'::jsonb,
---   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
---   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
--- );
-
--- ============================================
--- REMOVED: supabase_oauth_tokens, supabase_project_keys, and store_media_storages tables
--- All integration configs (including storage) now use integration_configs table
--- Use integration_type: 'supabase-oauth', 'supabase-keys', 'supabase-storage', 'aws-s3', etc.
--- ============================================
-
 CREATE TABLE IF NOT EXISTS taxes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
@@ -4453,8 +4422,6 @@ ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (
 ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE stores ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
 ALTER TABLE taxes ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
