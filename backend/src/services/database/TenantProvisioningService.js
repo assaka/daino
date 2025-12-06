@@ -109,6 +109,12 @@ class TenantProvisioningService {
         result.errors.push({ step: 'create_user', error: 'No database client available' });
       }
 
+      // 5.5. Now run seed data (AFTER store/user records exist for FK constraints)
+      if (options.oauthAccessToken && options.projectId && this._processedSeedSQL) {
+        console.log('Running seed data via Management API (after store/user creation)...');
+        await this.runSeedDataViaAPI(options.oauthAccessToken, options.projectId, result);
+      }
+
       // 6. Seed slot configurations from config files
       if (tenantDb) {
         console.log('Seeding slot configurations via Supabase client...');
@@ -303,37 +309,11 @@ END $$;`;
             }
           }
 
-          // Execute seed data separately (6,598 rows - large file)
-          console.log('📊 Seed SQL size:', (processedSeedSQL.length / 1024).toFixed(2), 'KB');
-          console.log('📤 Running seed data via Management API...');
-
-          const seedResponse = await axios.post(
-            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: processedSeedSQL },
-            {
-              headers: {
-                'Authorization': `Bearer ${options.oauthAccessToken}`,
-                'Content-Type': 'application/json'
-              },
-              maxBodyLength: Infinity,
-              timeout: 180000 // 3 minutes for seed data
-            }
-          );
-
-          console.log('✅ Seed API response:', JSON.stringify(seedResponse.data, null, 2));
-
-          // Check if seeding actually succeeded
-          if (seedResponse.data && seedResponse.data.error) {
-            console.error('❌ Seed data FAILED:', seedResponse.data.error);
-            result.errors.push({
-              step: 'seed_data',
-              error: `Seed data failed: ${seedResponse.data.error}`
-            });
-            // Don't mark as success if there was an error
-          } else {
-            console.log('✅ Seed data complete - 6,598 rows inserted');
-            result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
-          }
+          // Store processed seed SQL for later execution (after store/user records created)
+          // Seed data has FK references to stores table, so must run after store is created
+          this._processedSeedSQL = processedSeedSQL;
+          this._seedSQLSize = (processedSeedSQL.length / 1024).toFixed(2);
+          console.log('📊 Seed SQL prepared:', this._seedSQLSize, 'KB (will run after store/user creation)');
 
           return true;
 
@@ -648,6 +628,64 @@ VALUES (
       });
       // Don't throw - non-blocking
       return false;
+    }
+  }
+
+  /**
+   * Run seed data via Management API (called AFTER store/user records exist)
+   * @private
+   */
+  async runSeedDataViaAPI(oauthAccessToken, projectId, result) {
+    try {
+      const axios = require('axios');
+
+      if (!this._processedSeedSQL) {
+        console.warn('⚠️ No seed SQL prepared - skipping seed data');
+        return false;
+      }
+
+      console.log('📊 Seed SQL size:', this._seedSQLSize, 'KB');
+      console.log('📤 Running seed data via Management API...');
+
+      const seedResponse = await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: this._processedSeedSQL },
+        {
+          headers: {
+            'Authorization': `Bearer ${oauthAccessToken}`,
+            'Content-Type': 'application/json'
+          },
+          maxBodyLength: Infinity,
+          timeout: 180000 // 3 minutes for seed data
+        }
+      );
+
+      console.log('✅ Seed API response:', JSON.stringify(seedResponse.data, null, 2));
+
+      // Check if seeding actually succeeded
+      if (seedResponse.data && seedResponse.data.error) {
+        console.error('❌ Seed data FAILED:', seedResponse.data.error);
+        result.errors.push({
+          step: 'seed_data',
+          error: `Seed data failed: ${seedResponse.data.error}`
+        });
+        return false;
+      } else {
+        console.log('✅ Seed data complete - 6,598 rows inserted');
+        result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ Seed data API error:', error.message);
+      result.errors.push({
+        step: 'seed_data',
+        error: `Seed API failed: ${error.message}`
+      });
+      return false;
+    } finally {
+      // Clear the stored SQL
+      this._processedSeedSQL = null;
+      this._seedSQLSize = null;
     }
   }
 
