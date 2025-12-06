@@ -41,7 +41,7 @@ export const StoreSelectionProvider = ({ children }) => {
       return false; // Don't load stores on auth/onboarding
     }
 
-    return path.startsWith('/admin') || path.startsWith('/editor') || path.startsWith('/plugins');
+    return path.startsWith('/admin') || path.startsWith('/editor') || path.startsWith('/plugins') || path.startsWith('/ai-workspace');
   };
 
   // Load available stores on mount only if on admin pages
