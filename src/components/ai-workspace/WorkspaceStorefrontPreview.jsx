@@ -39,7 +39,7 @@ const WorkspaceStorefrontPreview = () => {
     const fetchFirstProduct = async () => {
       if (!storeId) return;
       try {
-        const products = await StorefrontProduct.findAll({ limit: 1 });
+        const products = await StorefrontProduct.findAll({ limit: 1, store_id: storeId });
         if (products && products.length > 0) {
           setFirstProductSlug(products[0].slug || products[0].id);
         }
@@ -51,7 +51,7 @@ const WorkspaceStorefrontPreview = () => {
     const fetchFirstCategory = async () => {
       if (!storeId) return;
       try {
-        const categories = await StorefrontCategory.findAll({ limit: 1 });
+        const categories = await StorefrontCategory.findAll({ limit: 1, store_id: storeId });
         if (categories && categories.length > 0) {
           setFirstCategorySlug(categories[0].slug || categories[0].id);
         }
