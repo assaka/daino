@@ -904,41 +904,51 @@ const LayeredNavigation = createSlotComponent({
   }
 });
 
-// Sort Selector Component with processVariables
+// Sort Selector Component - React-based for proper translations
 const SortSelector = createSlotComponent({
   name: 'SortSelector',
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
-    const containerRef = useRef(null);
+    const { t } = useTranslation();
+    const currentSort = variableContext?.sorting?.current || categoryContext?.sortOption || '';
 
-    // Use template from slot.content or fallback
-    const template = slot?.content || `
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-gray-700 font-medium">Sort by:</label>
-        <select class="border border-gray-300 rounded px-3 py-1.5 text-sm"
-                data-action="change-sort">
-          <option value="position">Position</option>
-          <option value="name_asc">Name (A-Z)</option>
-          <option value="price_asc">Price (Low to High)</option>
-        </select>
+    // Sort options with translations
+    const sortOptions = [
+      { value: '', label: t('sort.default', 'Default') },
+      { value: 'name-asc', label: t('sort.name_asc', 'Name (A-Z)') },
+      { value: 'name-desc', label: t('sort.name_desc', 'Name (Z-A)') },
+      { value: 'price-asc', label: t('sort.price_asc', 'Price (Low to High)') },
+      { value: 'price-desc', label: t('sort.price_desc', 'Price (High to Low)') },
+      { value: 'newest', label: t('sort.newest', 'Newest First') },
+      { value: 'oldest', label: t('sort.oldest', 'Oldest First') }
+    ];
+
+    const handleChange = (e) => {
+      if (categoryContext?.handleSortChange) {
+        categoryContext.handleSortChange(e.target.value);
+      }
+    };
+
+    return (
+      <div className={className || slot.className} style={styles || slot.styles}>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-700 font-medium">
+            {t('sort.sort_by', 'Sort by:')}
+          </label>
+          <select
+            className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+            value={currentSort}
+            onChange={handleChange}
+            disabled={context === 'editor'}
+          >
+            {sortOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-    `;
-
-    const html = processVariables(template, variableContext);
-
-    // Attach event listeners in storefront
-    useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
-
-      const selectElement = containerRef.current.querySelector('[data-action="change-sort"]');
-      if (!selectElement) return;
-
-      const handleChange = (e) => {
-        if (categoryContext?.handleSortChange) {
-          categoryContext.handleSortChange(e.target.value);
-        }
-      };
-
-      selectElement.addEventListener('change', handleChange);
+    );
       return () => {
         selectElement.removeEventListener('change', handleChange);
       };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Send, ShoppingBag, Package, Tag, Store, CreditCard, Truck } from 'lucide-react';
+import { ArrowRight, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Hero() {
@@ -57,27 +57,6 @@ export default function Hero() {
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 pt-20">
 
-            {/* E-commerce themed background with Lucide icons */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.07]">
-                <div className="absolute top-[5%] left-[8%]"><ShoppingBag size={32} /></div>
-                <div className="absolute top-[12%] right-[15%]"><Package size={28} /></div>
-                <div className="absolute top-[25%] left-[20%]"><Tag size={24} /></div>
-                <div className="absolute top-[8%] left-[45%]"><Store size={30} /></div>
-                <div className="absolute top-[30%] right-[8%]"><CreditCard size={26} /></div>
-                <div className="absolute top-[18%] right-[35%]"><Truck size={28} /></div>
-
-                <div className="absolute top-[45%] left-[5%]"><Package size={26} /></div>
-                <div className="absolute top-[55%] right-[5%]"><ShoppingBag size={30} /></div>
-                <div className="absolute top-[50%] left-[25%]"><CreditCard size={24} /></div>
-                <div className="absolute top-[40%] right-[22%]"><Tag size={28} /></div>
-
-                <div className="absolute bottom-[25%] left-[12%]"><Store size={28} /></div>
-                <div className="absolute bottom-[30%] right-[18%]"><Package size={32} /></div>
-                <div className="absolute bottom-[15%] left-[35%]"><Truck size={26} /></div>
-                <div className="absolute bottom-[20%] right-[40%]"><ShoppingBag size={24} /></div>
-                <div className="absolute bottom-[8%] left-[8%]"><Tag size={30} /></div>
-                <div className="absolute bottom-[10%] right-[10%]"><CreditCard size={28} /></div>
-            </div>
 
             {/* Content */}
             <div className="relative z-10 max-w-3xl mx-auto px-6 py-12 text-center">
