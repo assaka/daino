@@ -13,6 +13,9 @@ import { categoryConfig } from '@/components/editor/slot/configs/category-config
 import { formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { FileText, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 // React Query hooks for optimized API calls
 import { useCategory, useSlotConfiguration } from '@/hooks/useApiQueries';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -27,6 +30,15 @@ export default function Category() {
   const { store, settings, loading: storeLoading, categories, filterableAttributes } = useStore();
   const { showNotFound } = useNotFound();
   const { t } = useTranslation();
+  const { isPublishedPreview, clearPreviewMode } = usePreviewMode();
+
+  const handleExitVersionPreview = () => {
+    clearPreviewMode();
+    const url = new URL(window.location.href);
+    url.searchParams.delete('version');
+    url.searchParams.delete('mode');
+    window.location.href = url.toString();
+  };
 
   const { storeCode } = useParams();
   const location = useLocation();
@@ -572,8 +584,34 @@ export default function Category() {
   const pageTitle = currentCategory ? getCategoryName(currentCategory, getCurrentLanguage()) : (categorySlug ? "Category Not Found" : "All Products");
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
-      <SeoHeadManager
+    <div>
+      {/* Published version preview banner */}
+      {isPublishedPreview && (
+        <div className="bg-blue-600 text-white px-4 py-2 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5" />
+              <div>
+                <span className="font-medium">Published Preview</span>
+                <span className="ml-2 text-blue-200 text-sm">Viewing the published version of this category</span>
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExitVersionPreview}
+              className="text-white hover:bg-blue-700 hover:text-white"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Exit Preview
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <SeoHeadManager
         pageType="category"
         pageData={currentCategory ? {
           ...currentCategory,
@@ -613,6 +651,7 @@ export default function Category() {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

@@ -5,11 +5,12 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { buildCmsBreadcrumbs } from '@/utils/breadcrumbUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from '@/utils/notFoundUtils';
 import { getPageTitle, getPageContent, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
+import { Search, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -39,6 +40,15 @@ export default function CmsPageViewer() {
     const { settings, store } = useStore();
     const slug = pageSlug;
     const { showNotFound } = useNotFound();
+    const { isPublishedPreview, clearPreviewMode } = usePreviewMode();
+
+    const handleExitVersionPreview = () => {
+        clearPreviewMode();
+        const url = new URL(window.location.href);
+        url.searchParams.delete('version');
+        url.searchParams.delete('mode');
+        window.location.href = url.toString();
+    };
     const [page, setPage] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
@@ -175,8 +185,34 @@ export default function CmsPageViewer() {
     const pageContent = processStoreVariables(rawPageContent, store, settings);
 
     return (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <SeoHeadManager
+        <div>
+            {/* Published version preview banner */}
+            {isPublishedPreview && (
+                <div className="bg-blue-600 text-white px-4 py-2 shadow-lg">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5" />
+                            <div>
+                                <span className="font-medium">Published Preview</span>
+                                <span className="ml-2 text-blue-200 text-sm">Viewing the published version of this page</span>
+                            </div>
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleExitVersionPreview}
+                            className="text-white hover:bg-blue-700 hover:text-white"
+                        >
+                            <X className="w-4 h-4 mr-1" />
+                            Exit Preview
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <SeoHeadManager
                 pageType="cms_page"
                 pageData={{
                     ...page,
@@ -225,6 +261,7 @@ export default function CmsPageViewer() {
                     )}
                 </div>
             )}
+            </div>
         </div>
     );
 }
