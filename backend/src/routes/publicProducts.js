@@ -36,22 +36,29 @@ router.get('/', cacheProducts(180), async (req, res) => {
       .eq('store_id', store_id)
       .eq('status', 'active');
 
-    // Skip visibility filter for custom option products (they may be hidden from catalog but still usable as options)
-    if (!(is_custom_option === 'true' || is_custom_option === true)) {
-      query = query.eq('visibility', 'visible');
+    // Skip visibility and stock filters for custom option products
+    // (they may be hidden from catalog but still usable as options, stock is checked on frontend)
+    const isCustomOptionRequest = is_custom_option === 'true' || is_custom_option === true;
+
+    if (isCustomOptionRequest) {
+      console.log('🔍 Custom option products request - skipping visibility and stock filters');
     }
 
-    // Stock filtering based on store settings
-    try {
-      const storeSettings = await getStoreSettings(store_id);
-      const displayOutOfStock = storeSettings?.display_out_of_stock !== false;
+    if (!isCustomOptionRequest) {
+      query = query.eq('visibility', 'visible');
 
-      if (!displayOutOfStock) {
-        // Show products that are: configurable OR infinite_stock OR not managing stock OR in stock
-        query = query.or('type.eq.configurable,infinite_stock.eq.true,manage_stock.eq.false,and(manage_stock.eq.true,stock_quantity.gt.0)');
+      // Stock filtering based on store settings
+      try {
+        const storeSettings = await getStoreSettings(store_id);
+        const displayOutOfStock = storeSettings?.display_out_of_stock !== false;
+
+        if (!displayOutOfStock) {
+          // Show products that are: configurable OR infinite_stock OR not managing stock OR in stock
+          query = query.or('type.eq.configurable,infinite_stock.eq.true,manage_stock.eq.false,and(manage_stock.eq.true,stock_quantity.gt.0)');
+        }
+      } catch (error) {
+        console.warn('Could not load store settings for stock filtering:', error.message);
       }
-    } catch (error) {
-      console.warn('Could not load store settings for stock filtering:', error.message);
     }
 
     // Category filtering will be done in JavaScript after fetch
