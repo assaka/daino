@@ -8,16 +8,16 @@
 import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 
-// Create default slots function - loads from static config as fallback when no draft exists
+// Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
   try {
-    const configModule = await import('@/components/editor/slot/configs/login-config');
-    const loginConfig = configModule.loginConfig || configModule.default;
-    if (!loginConfig || !loginConfig.slots) {
-      console.error('Invalid login config - no slots found');
+    const response = await fetch('/api/slot-configurations/defaults/login');
+    const result = await response.json();
+    if (!result.success || !result.data?.slots) {
+      console.error('Invalid login config from API');
       return null;
     }
-    return loginConfig.slots;
+    return result.data.slots;
   } catch (error) {
     console.error('Failed to load login config:', error);
     return null;

@@ -11,16 +11,16 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Store } from '@/api/entities';
 
-// Create default slots function - loads from static config as fallback when no draft exists
+// Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
   try {
-    const configModule = await import('@/components/editor/slot/configs/header-config');
-    const headerConfig = configModule.headerConfig || configModule.default;
-    if (!headerConfig || !headerConfig.slots) {
-      console.error('Invalid header config - no slots found');
+    const response = await fetch('/api/slot-configurations/defaults/header');
+    const result = await response.json();
+    if (!result.success || !result.data?.slots) {
+      console.error('Invalid header config from API');
       return null;
     }
-    return headerConfig.slots;
+    return result.data.slots;
   } catch (error) {
     console.error('Failed to load header config:', error);
     return null;

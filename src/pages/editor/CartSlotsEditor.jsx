@@ -10,16 +10,16 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { getSlotComponent } from '@/components/editor/slot/SlotComponentRegistry';
 import { formatPrice } from '@/utils/priceUtils';
 
-// Create default slots function - loads from static config as fallback when no draft exists
+// Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
   try {
-    const configModule = await import('@/components/editor/slot/configs/cart-config');
-    const cartConfig = configModule.cartConfig || configModule.default;
-    if (!cartConfig || !cartConfig.slots) {
-      console.error('Invalid cart config - no slots found');
+    const response = await fetch('/api/slot-configurations/defaults/cart');
+    const result = await response.json();
+    if (!result.success || !result.data?.slots) {
+      console.error('Invalid cart config from API');
       return null;
     }
-    return cartConfig.slots;
+    return result.data.slots;
   } catch (error) {
     console.error('Failed to load cart config:', error);
     return null;

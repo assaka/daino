@@ -10,16 +10,16 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockProductContext } from '@/utils/mockProductData';
 // Unified components are now handled by UnifiedSlotRenderer automatically
 
-// Create default slots function - loads from static config as fallback when no draft exists
+// Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
   try {
-    const configModule = await import('@/components/editor/slot/configs/product-config');
-    const productConfig = configModule.productConfig || configModule.default;
-    if (!productConfig || !productConfig.slots) {
-      console.error('Invalid product config - no slots found');
+    const response = await fetch('/api/slot-configurations/defaults/product');
+    const result = await response.json();
+    if (!result.success || !result.data?.slots) {
+      console.error('Invalid product config from API');
       return null;
     }
-    return productConfig.slots;
+    return result.data.slots;
   } catch (error) {
     console.error('Failed to load product config:', error);
     return null;

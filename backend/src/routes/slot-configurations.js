@@ -117,6 +117,36 @@ async function ensureFullConfiguration(configuration, pageType) {
   return fullConfiguration;
 }
 
+// Public endpoint to get default config from static files (for editor fallback)
+router.get('/defaults/:pageType', async (req, res) => {
+  try {
+    const { pageType } = req.params;
+    const config = await loadPageConfig(pageType);
+
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: `No default config found for page type: ${pageType}`
+      });
+    }
+
+    // Return only serializable parts (no functions)
+    const serializableConfig = {
+      page_name: config.page_name,
+      slot_type: config.slot_type,
+      slots: config.slots || {},
+      metadata: config.metadata || {},
+      cmsBlocks: config.cmsBlocks || [],
+      views: config.views ? config.views.map(v => ({ id: v.id, label: v.label })) : []
+    };
+
+    res.json({ success: true, data: serializableConfig });
+  } catch (error) {
+    console.error('Error loading default config:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Public endpoint to get active slot configurations for storefront
 router.get('/public', async (req, res) => {
   try {

@@ -8,16 +8,16 @@
 import { ShoppingBag, CreditCard } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 
-// Create default slots function - loads from static config as fallback when no draft exists
+// Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
   try {
-    const configModule = await import('@/components/editor/slot/configs/checkout-config');
-    const checkoutConfig = configModule.checkoutConfig || configModule.default;
-    if (!checkoutConfig || !checkoutConfig.slots) {
-      console.error('Invalid checkout config - no slots found');
+    const response = await fetch('/api/slot-configurations/defaults/checkout');
+    const result = await response.json();
+    if (!result.success || !result.data?.slots) {
+      console.error('Invalid checkout config from API');
       return null;
     }
-    return checkoutConfig.slots;
+    return result.data.slots;
   } catch (error) {
     console.error('Failed to load checkout config:', error);
     return null;
