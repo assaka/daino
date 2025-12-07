@@ -940,23 +940,33 @@ const PaginationComponent = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
 
+    // Don't render pagination if there's only 1 page or no pages
+    const totalPages = variableContext?.pagination?.totalPages || 0;
+    if (totalPages <= 1 && context !== 'editor') {
+      return null;
+    }
+
     // Use template from slot.content or fallback
     const template = slot?.content || `
+      {{#if (gt pagination.totalPages 1)}}
       <div class="flex justify-center mt-8">
         <nav class="flex items-center gap-1">
-          <button class="px-3 py-2 border rounded hover:bg-gray-50"
+          <button class="px-3 py-2 border rounded hover:bg-gray-50 {{#unless pagination.hasPrev}}opacity-50 cursor-not-allowed{{/unless}}"
                   data-action="go-to-page"
-                  data-page="prev">
+                  data-page="prev"
+                  {{#unless pagination.hasPrev}}disabled{{/unless}}>
             Previous
           </button>
-          <span class="px-3 py-2">1 of 10</span>
-          <button class="px-3 py-2 border rounded hover:bg-gray-50"
+          <span class="px-3 py-2">{{pagination.currentPage}} of {{pagination.totalPages}}</span>
+          <button class="px-3 py-2 border rounded hover:bg-gray-50 {{#unless pagination.hasNext}}opacity-50 cursor-not-allowed{{/unless}}"
                   data-action="go-to-page"
-                  data-page="next">
+                  data-page="next"
+                  {{#unless pagination.hasNext}}disabled{{/unless}}>
             Next
           </button>
         </nav>
       </div>
+      {{/if}}
     `;
 
     const html = processVariables(template, variableContext);
