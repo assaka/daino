@@ -171,7 +171,34 @@ const cartConfig = {
       id: 'cart_items',
       type: 'component',
       component: 'CartItemsSlot',
-      content: '',
+      content: `{{#each cartItems}}
+<div class="cart-item py-4 flex items-start gap-4" data-item-id="{{this.id}}" data-price="{{this.price}}" data-quantity="{{this.quantity}}">
+  <div class="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+    <img src="{{this.product.image_url}}" alt="{{this.product.name}}" class="w-full h-full object-cover" />
+  </div>
+  <div class="flex-1 min-w-0">
+    <h3 class="text-base font-medium text-gray-900 truncate">{{this.product.name}}</h3>
+    <div class="text-sm text-gray-600">{{this.price}} × {{this.quantity}}</div>
+    <div data-selected-options class="mt-1"></div>
+  </div>
+  <div class="flex flex-col items-end gap-2">
+    <div class="flex items-center gap-2">
+      <button data-action="decrease-quantity" data-item-id="{{this.id}}" class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+      </button>
+      <span class="w-8 text-center font-medium">{{this.quantity}}</span>
+      <button data-action="increase-quantity" data-item-id="{{this.id}}" class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      </button>
+    </div>
+    <div data-item-total class="text-base font-semibold text-gray-900"></div>
+    <button data-action="remove-item" data-item-id="{{this.id}}" class="text-red-600 hover:text-red-800 text-sm flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+      Remove
+    </button>
+  </div>
+</div>
+{{/each}}`,
       className: 'cart-items-container bg-white divide-y divide-gray-400',
       styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'content_area',
@@ -188,7 +215,27 @@ const cartConfig = {
       id: 'coupon_section',
       type: 'component',
       component: 'CartCouponSlot',
-      content: '',
+      content: `<div class="space-y-4">
+  <h3 class="text-lg font-semibold text-gray-900">{{t "cart.have_coupon"}}</h3>
+  <div data-coupon-input-section class="flex gap-2">
+    <input data-coupon-input type="text" placeholder="{{t 'cart.enter_coupon_code'}}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+    <button data-action="apply-coupon" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{{t "common.apply"}}</button>
+  </div>
+  <div data-applied-coupon-section class="hidden">
+    <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div>
+          <span data-coupon-name class="font-medium text-green-800"></span>
+          <span data-coupon-discount class="text-sm text-green-600 ml-2"></span>
+        </div>
+      </div>
+      <button data-action="remove-coupon" class="text-red-600 hover:text-red-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+  </div>
+</div>`,
       className: 'bg-white',
       styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'sidebar_area',
@@ -205,7 +252,36 @@ const cartConfig = {
       id: 'order_summary',
       type: 'component',
       component: 'CartOrderSummarySlot',
-      content: '',
+      content: `<div class="space-y-4">
+  <h3 class="text-lg font-semibold text-gray-900">{{t "cart.order_summary"}}</h3>
+  <div class="space-y-2">
+    <div class="flex justify-between text-gray-600">
+      <span>{{t "cart.subtotal"}}</span>
+      <span data-subtotal class="font-medium"></span>
+    </div>
+    <div data-custom-options-row class="flex justify-between text-gray-600" style="display: none;">
+      <span>{{t "cart.custom_options"}}</span>
+      <span data-custom-options-total class="font-medium"></span>
+    </div>
+    <div data-discount-row class="flex justify-between text-green-600" style="display: none;">
+      <span data-discount-label>{{t "cart.discount"}}</span>
+      <span data-discount class="font-medium"></span>
+    </div>
+    <div class="flex justify-between text-gray-600">
+      <span>{{t "cart.tax"}}</span>
+      <span data-tax class="font-medium"></span>
+    </div>
+    <div class="border-t pt-2 mt-2">
+      <div class="flex justify-between text-lg font-bold text-gray-900">
+        <span>{{t "cart.total"}}</span>
+        <span data-total></span>
+      </div>
+    </div>
+  </div>
+  <button data-action="checkout" class="w-full py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium">
+    {{t "cart.proceed_to_checkout"}}
+  </button>
+</div>`,
       className: 'bg-white',
       styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'sidebar_area',

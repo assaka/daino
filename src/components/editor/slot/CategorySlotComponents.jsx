@@ -169,18 +169,155 @@ const LayeredNavigation = createSlotComponent({
     }
 
     // Storefront: Use template from slot.content or fallback
+    // Default template with price slider and dynamic attribute filters
     const template = slot?.content || `
-      <div class="space-y-6">
-        <h3 class="text-lg font-semibold text-gray-900">Filter By</h3>
-        <div>
-          <h4 class="font-medium text-gray-700 mb-2">Price</h4>
-          <div class="space-y-2">
-            <label class="flex items-center">
-              <input type="checkbox" class="mr-2" />
-              <span class="text-sm">Under $25</span>
-            </label>
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold text-gray-900" style="color: {{attributeLabelStyles.color}}">Filter By</h3>
+
+        {{#if filters.price}}
+        <!-- Price Slider Section -->
+        <div class="border-b pb-4">
+          <button
+            data-action="toggle-section"
+            data-section="price-filter"
+            class="flex items-center justify-between w-full py-2 text-left font-medium"
+            style="color: {{attributeLabelStyles.color}}"
+          >
+            <span>Price</span>
+            <svg class="w-4 h-4 transform transition-transform" data-collapse-icon="price-filter" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div data-section-content="price-filter" class="mt-3">
+            <div class="px-2">
+              <!-- Dual range slider container -->
+              <div class="relative h-6 flex items-center">
+                <!-- Background track -->
+                <div class="absolute w-full h-1 bg-gray-200 rounded"></div>
+                <!-- Colored track between thumbs -->
+                <div id="price-range-track" class="absolute h-1 bg-blue-500 rounded" style="left: 0%; width: 100%;"></div>
+                <!-- Min slider -->
+                <input
+                  type="range"
+                  id="price-slider-min"
+                  data-action="price-slider"
+                  data-slider-type="min"
+                  min="{{filters.price.min}}"
+                  max="{{filters.price.max}}"
+                  value="{{filters.price.min}}"
+                  class="absolute w-full h-1 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
+                />
+                <!-- Max slider -->
+                <input
+                  type="range"
+                  id="price-slider-max"
+                  data-action="price-slider"
+                  data-slider-type="max"
+                  min="{{filters.price.min}}"
+                  max="{{filters.price.max}}"
+                  value="{{filters.price.max}}"
+                  class="absolute w-full h-1 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
+                />
+              </div>
+              <!-- Price display -->
+              <div class="flex justify-between text-sm text-gray-600 mt-2">
+                <span>{{settings.currency_symbol}}<span id="selected-min">{{filters.price.min}}</span></span>
+                <span>{{settings.currency_symbol}}<span id="selected-max">{{filters.price.max}}</span></span>
+              </div>
+            </div>
           </div>
         </div>
+        {{/if}}
+
+        {{#each filters.attributes}}
+        <!-- Attribute Filter: {{this.label}} -->
+        <div class="border-b pb-4">
+          <button
+            data-action="toggle-section"
+            data-section="filter-{{this.code}}"
+            class="flex items-center justify-between w-full py-2 text-left font-medium"
+            style="color: {{../attributeLabelStyles.color}}"
+          >
+            <span>{{this.label}}</span>
+            <svg class="w-4 h-4 transform transition-transform" data-collapse-icon="filter-{{this.code}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div data-section-content="filter-{{this.code}}" class="mt-2 space-y-2">
+            {{#if (eq this.filter_type "slider")}}
+            <!-- Slider for numeric attribute -->
+            <div class="px-2">
+              <div class="relative h-6 flex items-center">
+                <div class="absolute w-full h-1 bg-gray-200 rounded"></div>
+                <div id="{{this.code}}-range-track" class="absolute h-1 bg-blue-500 rounded" style="left: 0%; width: 100%;"></div>
+                <input
+                  type="range"
+                  id="{{this.code}}-slider-min"
+                  data-action="attribute-slider"
+                  data-slider-type="min"
+                  data-attribute-code="{{this.code}}"
+                  min="{{this.min}}"
+                  max="{{this.max}}"
+                  value="{{this.min}}"
+                  class="absolute w-full h-1 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                />
+                <input
+                  type="range"
+                  id="{{this.code}}-slider-max"
+                  data-action="attribute-slider"
+                  data-slider-type="max"
+                  data-attribute-code="{{this.code}}"
+                  min="{{this.min}}"
+                  max="{{this.max}}"
+                  value="{{this.max}}"
+                  class="absolute w-full h-1 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                />
+              </div>
+              <div class="flex justify-between text-sm text-gray-600 mt-2">
+                <span id="{{this.code}}-selected-min">{{this.min}}</span>
+                <span id="{{this.code}}-selected-max">{{this.max}}</span>
+              </div>
+            </div>
+            {{else}}
+            <!-- Checkbox/Radio options -->
+            {{#each this.options}}
+            <label class="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-1 rounded">
+              <div class="flex items-center">
+                {{#if (eq ../filter_type "select")}}
+                <input
+                  type="radio"
+                  name="filter-{{../code}}"
+                  data-action="toggle-filter"
+                  data-filter-type="attribute"
+                  data-filter-input-type="select"
+                  data-attribute-code="{{../code}}"
+                  data-filter-value="{{this.value}}"
+                  {{#if this.active}}checked{{/if}}
+                  class="h-4 w-4 mr-2"
+                  style="accent-color: {{../../filterOptionStyles.checkboxColor}}"
+                />
+                {{else}}
+                <input
+                  type="checkbox"
+                  data-action="toggle-filter"
+                  data-filter-type="attribute"
+                  data-filter-input-type="multiselect"
+                  data-attribute-code="{{../code}}"
+                  data-filter-value="{{this.value}}"
+                  {{#if this.active}}checked{{/if}}
+                  class="h-4 w-4 mr-2 rounded"
+                  style="accent-color: {{../../filterOptionStyles.checkboxColor}}"
+                />
+                {{/if}}
+                <span class="text-sm" style="color: {{../../filterOptionStyles.optionTextColor}}">{{this.label}}</span>
+              </div>
+              <span class="text-xs" style="color: {{../../filterOptionStyles.optionCountColor}}">({{this.count}})</span>
+            </label>
+            {{/each}}
+            {{/if}}
+          </div>
+        </div>
+        {{/each}}
       </div>
     `;
 
