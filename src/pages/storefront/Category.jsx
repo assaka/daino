@@ -482,8 +482,20 @@ export default function Category() {
     const currentLang = getCurrentLanguage();
 
     Object.entries(activeFilters).forEach(([attributeCode, values]) => {
-      // Skip price range - it's shown in the slider UI, not as a removable chip
+      // Handle price range filter
       if (attributeCode === 'priceRange') {
+        if (Array.isArray(values) && values.length === 2) {
+          const [min, max] = values;
+          const currencySymbol = settings?.currency_symbol || '$';
+          activeFiltersArray.push({
+            type: 'priceRange',
+            attributeCode: 'priceRange',
+            label: t('common.price', 'Price'),
+            value: `${currencySymbol}${min} - ${currencySymbol}${max}`,
+            min: min,
+            max: max
+          });
+        }
         return;
       }
 
