@@ -34,8 +34,12 @@ router.get('/', cacheProducts(180), async (req, res) => {
       .from('products')
       .select('*', { count: 'exact' })
       .eq('store_id', store_id)
-      .eq('status', 'active')
-      .eq('visibility', 'visible');
+      .eq('status', 'active');
+
+    // Skip visibility filter for custom option products (they may be hidden from catalog but still usable as options)
+    if (!(is_custom_option === 'true' || is_custom_option === true)) {
+      query = query.eq('visibility', 'visible');
+    }
 
     // Stock filtering based on store settings
     try {
