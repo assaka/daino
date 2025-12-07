@@ -21,11 +21,11 @@ const plans = [
     {
         name: "Go Live",
         price: "3",
-        priceNote: "one-time",
-        description: "Publish your production-ready store",
+        priceNote: "30 days",
+        description: "1 credit = 1 day live",
         features: [
             "Everything in Free Setup",
-            "30 credits to launch your store",
+            "30 credits = 30 days published",
             "Live production storefront",
             "Custom domain support",
             "SSL certificate included",
@@ -68,7 +68,7 @@ export default function Pricing() {
                         Free Setup. $3 to Go Live.
                     </h2>
                     <p className="text-xl text-neutral-600 max-w-2xl">
-                        Register and configure your shop for free. Pay just $3 (30 credits) to publish. AI features are pay-as-you-go.
+                        Register and configure for free. $3 = 30 days live (1 credit/day). AI features are pay-as-you-go.
                     </p>
                 </motion.div>
 
