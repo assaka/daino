@@ -459,9 +459,10 @@ const LayeredNavigation = createSlotComponent({
         rangeTrack.style.width = (percentMax - percentMin) + '%';
       };
 
-      const handlePriceSlider = (e) => {
+      // Handle price slider input (live UI update only, no filter change)
+      const handlePriceSliderInput = (e) => {
         const slider = e.target.closest('[data-action="price-slider"]');
-        if (!slider || !categoryContext?.handleFilterChange) return;
+        if (!slider) return;
 
         const sliderType = slider.getAttribute('data-slider-type');
         const value = parseInt(slider.value);
@@ -485,14 +486,28 @@ const LayeredNavigation = createSlotComponent({
           maxSlider.value = maxValue;
         }
 
-        // Update display
+        // Update display only (no filter change yet)
         if (selectedMin) selectedMin.textContent = minValue;
         if (selectedMax) selectedMax.textContent = maxValue;
 
         // Update the colored track between thumbs
         updatePriceSliderTrack();
+      };
 
-        // Update filters
+      // Handle price slider change (when user releases - apply filter)
+      const handlePriceSliderChange = (e) => {
+        const slider = e.target.closest('[data-action="price-slider"]');
+        if (!slider || !categoryContext?.handleFilterChange) return;
+
+        const minSlider = containerRef.current.querySelector('#price-slider-min');
+        const maxSlider = containerRef.current.querySelector('#price-slider-max');
+
+        if (!minSlider || !maxSlider) return;
+
+        const minValue = parseInt(minSlider.value);
+        const maxValue = parseInt(maxSlider.value);
+
+        // Update filters only when user releases the slider
         const currentFilters = categoryContext.selectedFilters || {};
         const newFilters = { ...currentFilters };
         newFilters.priceRange = [minValue, maxValue];
@@ -851,7 +866,8 @@ const LayeredNavigation = createSlotComponent({
       };
 
       containerRef.current.addEventListener('change', handleChange);
-      containerRef.current.addEventListener('input', handlePriceSlider);
+      containerRef.current.addEventListener('input', handlePriceSliderInput);  // Live UI update while dragging
+      containerRef.current.addEventListener('change', handlePriceSliderChange); // Apply filter on release
       containerRef.current.addEventListener('input', handleAttributeSlider);
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
@@ -865,7 +881,8 @@ const LayeredNavigation = createSlotComponent({
       return () => {
         if (containerRef.current) {
           containerRef.current.removeEventListener('change', handleChange);
-          containerRef.current.removeEventListener('input', handlePriceSlider);
+          containerRef.current.removeEventListener('input', handlePriceSliderInput);
+          containerRef.current.removeEventListener('change', handlePriceSliderChange);
           containerRef.current.removeEventListener('input', handleAttributeSlider);
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
