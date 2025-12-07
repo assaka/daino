@@ -799,7 +799,7 @@ class AIContextService {
       const queryEmbedding = await embeddingService.generateEmbedding(query);
       const vectorStr = embeddingService.formatVectorForPg(queryEmbedding);
 
-      const { data, error } = await masterDbClient.rpc('find_similar_training_candidates', {
+      const { data, error } = await masterDbClient.rpc('search_similar_training_candidates', {
         query_embedding: vectorStr,
         similarity_threshold: threshold,
         max_results: 3
