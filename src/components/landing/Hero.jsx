@@ -59,18 +59,23 @@ export default function Hero() {
 
             {/* E-commerce themed background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* Subtle floating icons - shopping bags, carts, tags */}
-                <svg className="absolute w-full h-full opacity-[0.15]" xmlns="http://www.w3.org/2000/svg">
+                <svg className="absolute w-full h-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
                     <defs>
-                        <pattern id="ecommerce-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
-                            {/* Shopping bag */}
-                            <path d="M20 35 L20 25 C20 20 25 15 30 15 C35 15 40 20 40 25 L40 35 M15 35 L45 35 L45 55 L15 55 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-                            {/* Price tag */}
-                            <path d="M75 20 L95 20 L95 40 L80 55 L65 40 Z M85 30 A2 2 0 1 0 85 30.01" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-                            {/* Cart */}
-                            <path d="M20 85 L25 85 L35 100 L55 100 M30 90 L55 90 L52 100 M35 107 A3 3 0 1 0 35 107.01 M52 107 A3 3 0 1 0 52 107.01" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-                            {/* Star/sparkle */}
-                            <path d="M90 80 L92 88 L100 90 L92 92 L90 100 L88 92 L80 90 L88 88 Z" fill="none" stroke="currentColor" strokeWidth="1"/>
+                        <pattern id="ecommerce-pattern" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+                            {/* Minimal shopping bag outline */}
+                            <rect x="25" y="35" width="30" height="35" rx="2" fill="none" stroke="currentColor" strokeWidth="1"/>
+                            <path d="M32 35 V28 A8 8 0 0 1 48 28 V35" fill="none" stroke="currentColor" strokeWidth="1"/>
+                            {/* Simple box/package */}
+                            <rect x="140" y="30" width="35" height="25" fill="none" stroke="currentColor" strokeWidth="1"/>
+                            <line x1="140" y1="42" x2="175" y2="42" stroke="currentColor" strokeWidth="1"/>
+                            <line x1="157" y1="30" x2="157" y2="55" stroke="currentColor" strokeWidth="1"/>
+                            {/* Minimal tag */}
+                            <path d="M30 130 L50 130 L60 140 L50 150 L30 150 Z" fill="none" stroke="currentColor" strokeWidth="1"/>
+                            <circle cx="38" cy="140" r="2" fill="none" stroke="currentColor" strokeWidth="1"/>
+                            {/* Simple storefront */}
+                            <rect x="130" y="125" width="40" height="30" fill="none" stroke="currentColor" strokeWidth="1"/>
+                            <line x1="130" y1="135" x2="170" y2="135" stroke="currentColor" strokeWidth="1"/>
+                            <rect x="145" y="140" width="10" height="15" fill="none" stroke="currentColor" strokeWidth="1"/>
                         </pattern>
                     </defs>
                     <rect width="100%" height="100%" fill="url(#ecommerce-pattern)" />
