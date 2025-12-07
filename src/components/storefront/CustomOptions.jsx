@@ -101,9 +101,11 @@ export default function CustomOptions({
             if (rule.optional_product_ids && rule.optional_product_ids.length > 0) {
                 try {
                     const optionProducts = [];
-                    console.log('🔍 CustomOptions - Loading', rule.optional_product_ids.length, 'products from rule');
+                    // Deduplicate product IDs
+                    const uniqueProductIds = [...new Set(rule.optional_product_ids)];
+                    console.log('🔍 CustomOptions - Loading', uniqueProductIds.length, 'unique products from rule');
 
-                    for (const productId of rule.optional_product_ids) {
+                    for (const productId of uniqueProductIds) {
                         // Skip if this is the current product being viewed
                         if (productId === product.id) {
                             console.log('🔍 CustomOptions - Skipping current product:', productId);
