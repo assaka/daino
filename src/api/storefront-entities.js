@@ -539,6 +539,7 @@ export const StorefrontSeoSetting = new StorefrontBaseEntity('seo-settings');
 export const StorefrontCookieConsentSettings = new StorefrontBaseEntity('cookie-consent-settings');
 export const StorefrontCmsPage = new StorefrontBaseEntity('cms-pages');
 export const StorefrontCmsBlock = new StorefrontBaseEntity('cms-blocks');
+export const StorefrontCustomOptionRule = new StorefrontBaseEntity('custom-option-rules');
 
 // Customer entities (authentication required)
 export const CustomerCart = new StorefrontCartService();

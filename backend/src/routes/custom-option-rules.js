@@ -26,7 +26,7 @@ router.get('/health', async (req, res) => {
 // Get all custom option rules
 router.get('/', async (req, res) => {
   try {
-    const { store_id, order_by = '-created_at', limit, offset } = req.query;
+    const { store_id, order_by = '-created_at', limit, offset, is_active } = req.query;
 
     if (!store_id) {
       return res.status(400).json({ error: 'store_id is required' });
@@ -40,6 +40,13 @@ router.get('/', async (req, res) => {
 
     if (store_id) {
       query = query.eq('store_id', store_id);
+    }
+
+    // Filter by is_active if specified
+    if (is_active === 'true' || is_active === true) {
+      query = query.eq('is_active', true);
+    } else if (is_active === 'false' || is_active === false) {
+      query = query.eq('is_active', false);
     }
 
     // Handle ordering

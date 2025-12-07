@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CustomOptionRule } from '@/api/entities';
-import { StorefrontProduct } from '@/api/storefront-entities';
+import { StorefrontProduct, StorefrontCustomOptionRule } from '@/api/storefront-entities';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,10 +52,10 @@ export default function CustomOptions({
             setLoading(true);
             setIsLoading(true);
 
-            // Fetch all active custom option rules for the store
+            // Fetch all active custom option rules for the store (using public API)
             let rules = [];
             try {
-                rules = await CustomOptionRule.filter({
+                rules = await StorefrontCustomOptionRule.filter({
                     store_id: store.id,
                     is_active: true
                 });
