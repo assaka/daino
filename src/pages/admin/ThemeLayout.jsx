@@ -422,9 +422,7 @@ export default function ThemeLayout() {
                     breadcrumb_mobile_font_size: '0.75rem', // text-xs
                     breadcrumb_font_weight: '400', // font-normal
                     // Override with existing settings if they exist
-                    ...((fullStore?.settings || {}).theme || {}),
-                    // Ensure custom_fonts is preserved (array might not spread correctly)
-                    custom_fonts: (fullStore?.settings?.theme?.custom_fonts || [])
+                    ...((fullStore?.settings || {}).theme || {})
                 },
             };
             

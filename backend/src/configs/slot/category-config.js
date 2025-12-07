@@ -118,6 +118,25 @@ const categoryConfig = {
       }
     },
 
+    empty_products_message: {
+      id: 'empty_products_message',
+      type: 'component',
+      component: 'EmptyProductsMessage',
+      content: '',
+      className: 'text-center py-12',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 4 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Empty Products Message',
+        showWhen: 'products.length === 0'
+      }
+    },
+
     pagination_container: {
       id: 'pagination_container',
       type: 'component',

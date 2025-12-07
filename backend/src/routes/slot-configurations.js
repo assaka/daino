@@ -4,10 +4,10 @@ const path = require('path');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
-// Helper function to load page configuration from frontend config files
+// Helper function to load page configuration from backend config files
 async function loadPageConfig(pageType) {
   try {
-    const configsDir = path.resolve(__dirname, '../../../src/components/editor/slot/configs');
+    const configsDir = path.resolve(__dirname, '../configs/slot');
     let configPath, configExport;
 
     switch (pageType) {
