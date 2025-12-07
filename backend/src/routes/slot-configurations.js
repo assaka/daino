@@ -517,6 +517,105 @@ router.put('/slot-configurations/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Merge new slots from default config into existing published configuration
+// This allows adding new features (like sort/view controls) without losing customizations
+router.post('/merge-defaults/:storeId/:pageType', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType } = req.params;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'storeId is required' });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Load default config from file
+    const defaultConfig = await loadPageConfig(pageType);
+    if (!defaultConfig) {
+      return res.status(404).json({
+        success: false,
+        error: `No default config found for page type: ${pageType}`
+      });
+    }
+
+    // Find published configuration for this page type
+    const { data: existing, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!existing || findError) {
+      return res.status(404).json({
+        success: false,
+        error: 'No published configuration found for this store'
+      });
+    }
+
+    // Get existing slots
+    const existingSlots = existing.configuration?.slots || {};
+    const defaultSlots = defaultConfig.slots || {};
+
+    // Merge: add new slots from default that don't exist in current config
+    const mergedSlots = { ...existingSlots };
+    let addedSlots = [];
+
+    for (const [slotId, slotConfig] of Object.entries(defaultSlots)) {
+      if (!existingSlots[slotId]) {
+        mergedSlots[slotId] = slotConfig;
+        addedSlots.push(slotId);
+      }
+    }
+
+    if (addedSlots.length === 0) {
+      return res.json({
+        success: true,
+        message: 'Configuration is already up to date',
+        addedSlots: []
+      });
+    }
+
+    // Update the configuration with merged slots
+    const updatedConfiguration = {
+      ...existing.configuration,
+      slots: mergedSlots,
+      metadata: {
+        ...(existing.configuration?.metadata || {}),
+        lastModified: new Date().toISOString(),
+        mergedFrom: `${pageType}-config.js`
+      }
+    };
+
+    const { data: updated, error: updateError } = await tenantDb
+      .from('slot_configurations')
+      .update({
+        configuration: updatedConfiguration,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    console.log(`✅ Merged ${addedSlots.length} new slots into ${pageType} config for store ${storeId}:`, addedSlots);
+
+    res.json({
+      success: true,
+      message: `Added ${addedSlots.length} new slots`,
+      addedSlots,
+      data: updated
+    });
+  } catch (error) {
+    console.error('Error merging default slots:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Delete slot configuration
 router.delete('/slot-configurations/:id', authMiddleware, async (req, res) => {
   try {
