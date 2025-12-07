@@ -46,6 +46,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
       skus: [],
       attribute_conditions: []
     },
+    optional_product_ids: [],
     store_id: '',
     translations: {}
   });
@@ -161,6 +162,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
         display_label: translations.en?.display_label || 'Custom Options',
         is_active: rule.is_active !== false,
         conditions: rule.conditions || { categories: [], attribute_sets: [], skus: [], attribute_conditions: [] },
+        optional_product_ids: Array.isArray(rule.optional_product_ids) ? rule.optional_product_ids : [],
         store_id: rule.store_id || '',
         translations: translations
       });
@@ -204,10 +206,18 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     const newValues = currentValues.includes(id)
       ? currentValues.filter(item => item !== id)
       : [...currentValues, id];
-    
+
     handleConditionChange(condition, newValues);
   };
 
+  const handleProductToggle = (productId) => {
+    const currentIds = formData.optional_product_ids || [];
+    const newIds = currentIds.includes(productId)
+      ? currentIds.filter(id => id !== productId)
+      : [...currentIds, productId];
+
+    handleInputChange('optional_product_ids', newIds);
+  };
 
   const handleSkuAdd = () => {
     const trimmedSku = skuInput.trim();
@@ -256,7 +266,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     e.preventDefault();
 
     if (!isFormValid) {
-      showWarning('Please fill in all required fields: Rule Name is required.');
+      showWarning('Please fill in all required fields: Rule Name and at least one Custom Option product.');
       return;
     }
 
@@ -383,7 +393,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     );
   };
 
-  const isFormValid = formData.name && formData.store_id;
+  const isFormValid = formData.name && formData.store_id && formData.optional_product_ids?.length > 0;
 
 
   return (
@@ -468,12 +478,17 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
               <Label htmlFor="is_active">Active</Label>
             </div>
 
-            {/* Available Custom Options (Read-only display) */}
+            {/* Available Custom Options */}
             <Card>
               <CardHeader>
-                <CardTitle>Available Custom Options</CardTitle>
+                <CardTitle>Select Custom Options *</CardTitle>
                 <p className="text-sm text-gray-600">
-                  Products with "Set as Custom Option" enabled will automatically appear when this rule's conditions are met.
+                  Select which custom option products to include in this rule.
+                  {formData.optional_product_ids.length > 0 && (
+                    <span className="ml-2 text-blue-600 font-medium">
+                      ({formData.optional_product_ids.length} selected)
+                    </span>
+                  )}
                 </p>
               </CardHeader>
               <CardContent>
@@ -484,9 +499,20 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
                     {customOptionProducts.map((product) => (
                       <div
                         key={product.id}
-                        className="p-4 border rounded-lg border-gray-200 bg-gray-50"
+                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                          formData.optional_product_ids.includes(product.id)
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => handleProductToggle(product.id)}
                       >
                         <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={formData.optional_product_ids.includes(product.id)}
+                            onChange={() => handleProductToggle(product.id)}
+                            className="rounded"
+                          />
                           <div>
                             <h4 className="font-medium">{product.name}</h4>
                             <p className="text-sm text-gray-500">SKU: {product.sku}</p>

@@ -51,12 +51,20 @@
         }
       }
     },
+    "optional_product_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of selected custom option product IDs for this rule"
+    },
     "store_id": {
       "type": "string"
     }
   },
   "required": [
     "name",
+    "optional_product_ids",
     "store_id"
   ]
 }
