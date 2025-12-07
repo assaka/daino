@@ -49,7 +49,7 @@ export default function StorefrontPreviewBanner() {
     const hasSchedule = storefront.publish_start_at || storefront.publish_end_at;
 
     return (
-      <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white px-4 py-2 z-[100] shadow-lg">
+      <div className="bg-amber-500 text-white px-4 py-2 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Eye className="w-5 h-5" />
@@ -87,7 +87,7 @@ export default function StorefrontPreviewBanner() {
   // Show published version preview banner
   if (isPublishedPreview) {
     return (
-      <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white px-4 py-2 z-[100] shadow-lg">
+      <div className="bg-blue-600 text-white px-4 py-2 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5" />
