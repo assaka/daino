@@ -408,7 +408,7 @@ export default function StoreOnboarding() {
           {/* Step Indicators */}
           <div className="flex items-center justify-between mt-6 mb-4">
             {STEPS.map((step, index) => (
-              <div key={step.id} className="flex items-center">
+              <div key={step.id} className="flex items-center w-full">
                 <div className={`flex flex-col items-center ${index < STEPS.length - 1 ? 'flex-1' : ''}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     completedSteps.includes(step.id)

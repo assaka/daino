@@ -138,8 +138,16 @@ export default function CustomOptions({
                         }
                     }
 
-                    console.log('🔍 CustomOptions - Final optionProducts:', optionProducts.length);
-                    setCustomOptions(optionProducts);
+                    // Deduplicate by product ID (in case of any duplicate entries)
+                    const seenIds = new Set();
+                    const uniqueProducts = optionProducts.filter(p => {
+                        if (seenIds.has(p.id)) return false;
+                        seenIds.add(p.id);
+                        return true;
+                    });
+
+                    console.log('🔍 CustomOptions - Final optionProducts:', uniqueProducts.length);
+                    setCustomOptions(uniqueProducts);
                 } catch (error) {
                     console.error('Error loading custom option products:', error);
                     setCustomOptions([]);
