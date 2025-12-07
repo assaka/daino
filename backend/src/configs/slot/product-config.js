@@ -378,7 +378,7 @@ const productConfig = {
           <div class="space-y-3">
               {{#each customOptions}}
                 <div
-                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-gray-700 bg-purple-50 shadow-sm{{else}}border-gray-700 hover:border-gray-900 hover:shadow-sm{{/if}}"
+                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-gray-700 bg-gray-50 shadow-sm{{else}}border-gray-700 hover:border-gray-900 hover:shadow-sm{{/if}}"
                   data-option-id="{{this.id}}"
                   data-action="toggle-option"
                 >
@@ -417,7 +417,7 @@ const productConfig = {
                                 </div>
                               </div>
                             {{else}}
-                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold text-purple-800 {{#if this.isSelected}}bg-purple-600 text-white border-purple-600{{else}}bg-purple-100 border-purple-300{{/if}}">
+                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold text-gray-800 {{#if this.isSelected}}bg-gray-600 text-white border-gray-600{{else}}bg-gray-100 border-gray-300{{/if}}">
                                 +{{this.displayPrice}}
                               </span>
                             {{/if}}
@@ -445,12 +445,12 @@ const productConfig = {
         hierarchical: true,
         component: 'CustomOptions',
         colorTheme: {
-          selectedBorder: 'border-purple-500',
-          selectedBg: 'bg-purple-50',
-          selectedCheckbox: 'border-purple-500 bg-purple-500',
-          unselectedCheckbox: 'border-purple-300',
-          hoverBorder: 'hover:border-purple-300',
-          defaultBorder: 'border-purple-200',
+          selectedBorder: 'border-gray-500',
+          selectedBg: 'bg-gray-50',
+          selectedCheckbox: 'border-gray-500 bg-gray-500',
+          unselectedCheckbox: 'border-gray-300',
+          hoverBorder: 'hover:border-gray-300',
+          defaultBorder: 'border-gray-200',
           saleBadgeBg: 'bg-red-100',
           saleBadgeText: 'text-red-800',
           saleBadgeBorder: 'border-red-300'
