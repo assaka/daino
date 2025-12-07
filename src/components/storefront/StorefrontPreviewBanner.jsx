@@ -10,7 +10,7 @@
 import React from 'react';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
-import { X, Eye, Calendar, FileText, Pencil } from 'lucide-react';
+import { X, Eye, Calendar, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function StorefrontPreviewBanner() {
@@ -111,32 +111,8 @@ export default function StorefrontPreviewBanner() {
     );
   }
 
-  // Show workspace/draft mode banner
-  if (isWorkspaceMode) {
-    return (
-      <div className="fixed top-0 left-0 right-0 bg-purple-600 text-white px-4 py-2 z-[100] shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Pencil className="w-5 h-5" />
-            <div>
-              <span className="font-medium">AI Workspace Mode</span>
-              <span className="ml-2 text-purple-200 text-sm">Viewing draft/workspace version</span>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleExitVersionPreview}
-            className="text-white hover:bg-purple-700 hover:text-white"
-          >
-            <X className="w-4 h-4 mr-1" />
-            Exit Workspace
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Workspace mode - no banner needed (used in AI workspace iframe)
+  // isWorkspaceMode bypasses pause modal but doesn't show any banner
 
   return null;
 }

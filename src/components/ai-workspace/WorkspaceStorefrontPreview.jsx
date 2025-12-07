@@ -79,7 +79,7 @@ const WorkspaceStorefrontPreview = () => {
     // Build the full storefront URL with draft mode parameter
     const url = getExternalStoreUrl(storeSlug, '', baseUrl);
 
-    // Add workspace mode parameter and cache-busting timestamp
+    // Add workspace mode to show draft version and bypass pause modal
     return `${url}?mode=workspace&_t=${refreshKey}`;
   }, [storeSlug, selectedStore, refreshKey]);
 
