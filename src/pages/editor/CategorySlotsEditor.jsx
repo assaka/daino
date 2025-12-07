@@ -17,6 +17,33 @@ import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistr
 import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 
+// Create default slots function - loads from static config as fallback when no draft exists
+const createDefaultSlots = async () => {
+  try {
+    const configModule = await import('@/components/editor/slot/configs/category-config');
+    const categoryConfig = configModule.categoryConfig || configModule.default;
+    if (!categoryConfig || !categoryConfig.slots) {
+      console.error('Invalid category config - no slots found');
+      return null;
+    }
+    return {
+      page_name: 'Category',
+      slot_type: 'category_layout',
+      slots: categoryConfig.slots,
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        version: '1.0',
+        pageType: 'category'
+      },
+      cmsBlocks: categoryConfig.cmsBlocks || []
+    };
+  } catch (error) {
+    console.error('Failed to load category config:', error);
+    return null;
+  }
+};
+
 // Helper function to generate grid classes from store settings
 const getGridClasses = (storeSettings) => {
   const gridConfig = storeSettings?.product_grid;
@@ -424,7 +451,7 @@ const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
     const storeSettings = selectedStore?.settings || null;
     return generateMockCategoryContext(filterableAttributes, storeSettings);
   },
-  // Slots come from database via UnifiedSlotsEditor - no static defaults needed
+  createDefaultSlots,
   viewModeAdjustments: {
     filters_container: {
       colSpan: {

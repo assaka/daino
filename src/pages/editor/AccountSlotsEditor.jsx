@@ -8,6 +8,22 @@
 import { User, UserCircle } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 
+// Create default slots function - loads from static config as fallback when no draft exists
+const createDefaultSlots = async () => {
+  try {
+    const configModule = await import('@/components/editor/slot/configs/account-config');
+    const accountConfig = configModule.accountConfig || configModule.default;
+    if (!accountConfig || !accountConfig.slots) {
+      console.error('Invalid account config - no slots found');
+      return null;
+    }
+    return accountConfig.slots;
+  } catch (error) {
+    console.error('Failed to load account config:', error);
+    return null;
+  }
+};
+
 // Generate account context based on view mode
 const generateAccountContext = (viewMode) => {
   // Intro view - no user logged in
@@ -52,6 +68,7 @@ const accountEditorConfig = {
   ],
   slotComponents: {},
   generateContext: generateAccountContext,
+  createDefaultSlots,
   viewModeAdjustments: {},
   cmsBlockPositions: ['account_top', 'account_bottom', 'account_sidebar']
 };

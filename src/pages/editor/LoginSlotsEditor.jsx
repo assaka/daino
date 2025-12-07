@@ -8,6 +8,22 @@
 import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 
+// Create default slots function - loads from static config as fallback when no draft exists
+const createDefaultSlots = async () => {
+  try {
+    const configModule = await import('@/components/editor/slot/configs/login-config');
+    const loginConfig = configModule.loginConfig || configModule.default;
+    if (!loginConfig || !loginConfig.slots) {
+      console.error('Invalid login config - no slots found');
+      return null;
+    }
+    return loginConfig.slots;
+  } catch (error) {
+    console.error('Failed to load login config:', error);
+    return null;
+  }
+};
+
 // Generate login context based on view mode
 const generateLoginContext = (viewMode) => ({
   authMode: viewMode === 'register' ? 'register' : 'login',
@@ -28,6 +44,7 @@ const loginEditorConfig = {
   ],
   slotComponents: {},
   generateContext: generateLoginContext,
+  createDefaultSlots,
   viewModeAdjustments: {},
   cmsBlockPositions: ['login_top', 'login_bottom', 'login_sidebar']
 };

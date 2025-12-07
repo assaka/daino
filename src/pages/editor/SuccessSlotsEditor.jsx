@@ -8,6 +8,22 @@
 import { CheckCircle, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 
+// Create default slots function - loads from static config as fallback when no draft exists
+const createDefaultSlots = async () => {
+  try {
+    const configModule = await import('@/components/editor/slot/configs/success-config');
+    const successConfig = configModule.successConfig || configModule.default;
+    if (!successConfig || !successConfig.slots) {
+      console.error('Invalid success config - no slots found');
+      return null;
+    }
+    return successConfig.slots;
+  } catch (error) {
+    console.error('Failed to load success config:', error);
+    return null;
+  }
+};
+
 // Generate success page context based on view mode
 const generateSuccessContext = (viewMode) => ({
   order: viewMode === 'withOrder' ? {
@@ -69,6 +85,7 @@ const successEditorConfig = {
   ],
   slotComponents: {},
   generateContext: generateSuccessContext,
+  createDefaultSlots,
   viewModeAdjustments: {},
   cmsBlockPositions: ['success_top', 'success_bottom']
 };

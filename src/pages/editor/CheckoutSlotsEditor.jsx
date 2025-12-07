@@ -8,6 +8,22 @@
 import { ShoppingBag, CreditCard } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 
+// Create default slots function - loads from static config as fallback when no draft exists
+const createDefaultSlots = async () => {
+  try {
+    const configModule = await import('@/components/editor/slot/configs/checkout-config');
+    const checkoutConfig = configModule.checkoutConfig || configModule.default;
+    if (!checkoutConfig || !checkoutConfig.slots) {
+      console.error('Invalid checkout config - no slots found');
+      return null;
+    }
+    return checkoutConfig.slots;
+  } catch (error) {
+    console.error('Failed to load checkout config:', error);
+    return null;
+  }
+};
+
 // Generate checkout context based on view mode
 const generateCheckoutContext = (viewMode) => ({
   cartItems: [
@@ -50,6 +66,7 @@ const checkoutEditorConfig = {
   ],
   slotComponents: {},
   generateContext: generateCheckoutContext,
+  createDefaultSlots,
   viewModeAdjustments: {},
   cmsBlockPositions: ['checkout_top', 'checkout_bottom', 'checkout_sidebar']
 };

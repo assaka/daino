@@ -10,6 +10,22 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { getSlotComponent } from '@/components/editor/slot/SlotComponentRegistry';
 import { formatPrice } from '@/utils/priceUtils';
 
+// Create default slots function - loads from static config as fallback when no draft exists
+const createDefaultSlots = async () => {
+  try {
+    const configModule = await import('@/components/editor/slot/configs/cart-config');
+    const cartConfig = configModule.cartConfig || configModule.default;
+    if (!cartConfig || !cartConfig.slots) {
+      console.error('Invalid cart config - no slots found');
+      return null;
+    }
+    return cartConfig.slots;
+  } catch (error) {
+    console.error('Failed to load cart config:', error);
+    return null;
+  }
+};
+
 // Generate cart context based on view mode
 const generateCartContext = (viewMode) => ({
   cartItems: viewMode === 'withProducts' ? [
@@ -60,6 +76,7 @@ const cartEditorConfig = {
   ],
   slotComponents: {},
   generateContext: generateCartContext,
+  createDefaultSlots,
   viewModeAdjustments: {
     content_area: {
       colSpan: {
