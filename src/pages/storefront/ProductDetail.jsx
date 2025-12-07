@@ -5,7 +5,6 @@ import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage, getTranslatedField } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
-import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import eventSystem from '@/core/EventSystem';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
@@ -20,7 +19,7 @@ import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, get
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import { getStockLabel as getStockLabelUtil, getStockLabelStyle, isProductOutOfStock } from "@/utils/stockUtils";
 import {
-  ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye, FileText, X
+  ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,15 +90,6 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
   const { t, currentLanguage, translations } = useTranslation();
-  const { isPublishedPreview, clearPreviewMode } = usePreviewMode();
-
-  const handleExitVersionPreview = () => {
-    clearPreviewMode();
-    const url = new URL(window.location.href);
-    url.searchParams.delete('version');
-    url.searchParams.delete('mode');
-    window.location.href = url.toString();
-  };
 
   // Use React Query hooks for optimized API calls with automatic deduplication
   const { data: user } = useUser();
@@ -827,31 +817,6 @@ export default function ProductDetail() {
 
   return (
     <div>
-      {/* Published version preview banner */}
-      {isPublishedPreview && (
-        <div className="bg-blue-600 text-white px-4 py-2 shadow-lg">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5" />
-              <div>
-                <span className="font-medium">Published Preview</span>
-                <span className="ml-2 text-blue-200 text-sm">Viewing the published version of this product</span>
-              </div>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExitVersionPreview}
-              className="text-white hover:bg-blue-700 hover:text-white"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Exit Preview
-            </Button>
-          </div>
-        </div>
-      )}
-
       {flashMessage && (
         <div className="mb-6 max-w-6xl mx-auto px-4">
           <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
