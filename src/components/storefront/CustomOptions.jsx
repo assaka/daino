@@ -97,57 +97,48 @@ export default function CustomOptions({
             const translatedLabel = getTranslatedField(rule, 'display_label', currentLang) || 'Custom Options';
             setDisplayLabel(translatedLabel);
 
-            // Load custom option products from the rule's optional_product_ids
+            // Load custom option products - fetch all with is_custom_option=true, then filter by rule's IDs
             if (rule.optional_product_ids && rule.optional_product_ids.length > 0) {
                 try {
-                    const optionProducts = [];
-                    // Deduplicate product IDs
-                    const uniqueProductIds = [...new Set(rule.optional_product_ids)];
-                    console.log('🔍 CustomOptions - Loading', uniqueProductIds.length, 'unique products from rule');
+                    // Deduplicate product IDs from rule
+                    const ruleProductIds = [...new Set(rule.optional_product_ids)];
+                    console.log('🔍 CustomOptions - Rule has', ruleProductIds.length, 'unique product IDs');
 
-                    for (const productId of uniqueProductIds) {
+                    // Fetch all custom option products in one call
+                    const allCustomOptionProducts = await StorefrontProduct.filter({
+                        is_custom_option: true,
+                        status: 'active'
+                    });
+                    console.log('🔍 CustomOptions - Fetched', allCustomOptionProducts?.length || 0, 'custom option products');
+
+                    // Filter to only products in the rule's optional_product_ids
+                    const optionProducts = (allCustomOptionProducts || []).filter(customOptionProduct => {
+                        // Must be in the rule's product IDs
+                        if (!ruleProductIds.includes(customOptionProduct.id)) {
+                            return false;
+                        }
+
                         // Skip if this is the current product being viewed
-                        if (productId === product.id) {
-                            console.log('🔍 CustomOptions - Skipping current product:', productId);
-                            continue;
+                        if (customOptionProduct.id === product.id) {
+                            console.log('🔍 CustomOptions - Skipping current product:', customOptionProduct.id);
+                            return false;
                         }
 
-                        try {
-                            const products = await StorefrontProduct.filter({
-                                id: productId,
-                                status: 'active'
-                            });
+                        // Check stock availability
+                        const trackStock = settings?.track_stock !== false;
+                        const isInStock = trackStock
+                            ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
+                            : true;
 
-                            if (products && products.length > 0) {
-                                const customOptionProduct = products[0];
-
-                                // Check stock availability
-                                const trackStock = settings?.track_stock !== false;
-                                const isInStock = trackStock
-                                    ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
-                                    : true;
-
-                                if (isInStock) {
-                                    optionProducts.push(customOptionProduct);
-                                } else {
-                                    console.log('🔍 CustomOptions - Product out of stock:', productId);
-                                }
-                            }
-                        } catch (productError) {
-                            console.error(`Failed to load custom option product ${productId}:`, productError);
+                        if (!isInStock) {
+                            console.log('🔍 CustomOptions - Product out of stock:', customOptionProduct.id);
                         }
-                    }
 
-                    // Deduplicate by product ID (in case of any duplicate entries)
-                    const seenIds = new Set();
-                    const uniqueProducts = optionProducts.filter(p => {
-                        if (seenIds.has(p.id)) return false;
-                        seenIds.add(p.id);
-                        return true;
+                        return isInStock;
                     });
 
-                    console.log('🔍 CustomOptions - Final optionProducts:', uniqueProducts.length);
-                    setCustomOptions(uniqueProducts);
+                    console.log('🔍 CustomOptions - Final optionProducts:', optionProducts.length);
+                    setCustomOptions(optionProducts);
                 } catch (error) {
                     console.error('Error loading custom option products:', error);
                     setCustomOptions([]);
