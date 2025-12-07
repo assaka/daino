@@ -14,10 +14,10 @@ export default function CTA() {
                     transition={{ duration: 0.6 }}
                 >
                     {/* Main CTA Box */}
-                    <div className="bg-indigo-900 p-12 md:p-16 rounded-2xl relative overflow-hidden">
+                    <div className="bg-indigo-900 p-12 md:p-16 rounded-2xl relative">
                         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2" />
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600 rounded-full blur-3xl opacity-20 translate-y-1/2 -translate-x-1/2" />
-                        <div className="absolute -top-6 left-8 bg-indigo-500 text-white px-6 py-2 font-bold text-lg rounded-full shadow-lg ring-4 ring-white">
+                        <div className="absolute -top-5 left-8 bg-indigo-500 text-white px-6 py-2 font-bold text-lg rounded-full shadow-lg ring-4 ring-white z-10">
                             LIMITED TIME OFFER
                         </div>
 
