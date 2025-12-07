@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from './StoreProvider';
 import { CustomerActivity } from '@/api/entities';
 
@@ -7,6 +7,30 @@ import { CustomerActivity } from '@/api/entities';
 if (typeof window !== 'undefined' && !window.dataLayer) {
   window.dataLayer = [];
 }
+
+// Tracking deduplication - prevents duplicate calls for the same page
+const trackedPages = new Set();
+const pendingTracking = new Map(); // For debouncing
+
+// Clear tracked pages when URL changes (for SPA navigation)
+let lastKnownUrl = typeof window !== 'undefined' ? window.location.href : '';
+export const clearPageTrackingForUrl = (url) => {
+  // Remove any tracked pages for the old URL
+  const keysToRemove = [];
+  trackedPages.forEach(key => {
+    if (key.includes(lastKnownUrl) && key !== `page_view:${url}`) {
+      // Keep the current URL tracking, but allow tracking on new URLs
+    }
+  });
+  lastKnownUrl = url;
+};
+
+// Export for testing/debugging
+export const resetTracking = () => {
+  trackedPages.clear();
+  pendingTracking.forEach(timeoutId => clearTimeout(timeoutId));
+  pendingTracking.clear();
+};
 
 export const pushToDataLayer = (event) => {
   if (typeof window !== 'undefined' && window.dataLayer) {
@@ -31,14 +55,17 @@ export const trackEvent = (eventName, eventData = {}) => {
 let sessionId = localStorage.getItem('guest_session_id');
 let userId = localStorage.getItem('customer_user_id');
 
+// Debounce time for tracking calls (prevents duplicate rapid calls)
+const TRACKING_DEBOUNCE_MS = 500;
+
 export const trackActivity = async (activityType, data = {}) => {
   try {
-    
+
     if (!sessionId) {
       sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem('guest_session_id', sessionId);
     }
-    
+
     // Get store ID from the data payload if provided, otherwise check context
     let storeId = data.store_id;
     if (!storeId) {
@@ -52,12 +79,30 @@ export const trackActivity = async (activityType, data = {}) => {
         }
     }
 
+    // Create a unique key for this tracking event to prevent duplicates
+    const pageUrl = window.location.href;
+    const trackingKey = `${activityType}:${storeId}:${pageUrl}`;
+
+    // For page_view events, check if we've already tracked this exact page in this session
+    if (activityType === 'page_view') {
+      if (trackedPages.has(trackingKey)) {
+        // Already tracked this page view, skip
+        return;
+      }
+      trackedPages.add(trackingKey);
+    }
+
+    // Debounce: Cancel any pending tracking for the same key
+    if (pendingTracking.has(trackingKey)) {
+      clearTimeout(pendingTracking.get(trackingKey));
+    }
+
     const activityData = {
       user_id: userId,
       session_id: sessionId,
       store_id: storeId,
       activity_type: activityType,
-      page_url: window.location.href,
+      page_url: pageUrl,
       referrer: document.referrer,
       user_agent: navigator.userAgent,
       language: navigator.language || navigator.userLanguage || null,
@@ -72,11 +117,14 @@ export const trackActivity = async (activityType, data = {}) => {
         delete activityData[key];
       }
     });
-    
+
     // Only track if we have store_id to prevent validation errors
     if (storeId) {
       // DEFER analytics tracking to improve LCP (don't block page render)
-      setTimeout(async () => {
+      // Use debounced timeout to prevent duplicate calls
+      const timeoutId = setTimeout(async () => {
+        pendingTracking.delete(trackingKey);
+
         try {
           // Use direct fetch instead of CustomerActivity.create to avoid auth issues
           const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -90,51 +138,31 @@ export const trackActivity = async (activityType, data = {}) => {
           body: JSON.stringify(activityData),
           credentials: 'include'
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error('❌ API Error response:', errorText);
-          console.error('❌ Full response details:', {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
-            body: errorText
-          });
-          throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
         }
-        
+
         const responseData = await response.json();
 
         // Additional verification
         if (!(responseData.success && responseData.data && responseData.data.id)) {
           console.warn('⚠️ Unexpected response format:', responseData);
         }
-        
+
       } catch (apiError) {
-        console.error('❌ CRITICAL ERROR - API call failed:', {
-          error: apiError,
-          message: apiError.message,
-          stack: apiError.stack,
-          apiUrl: apiUrl,
-          activityData: activityData
-        });
-        
         // Check if it's a network error
         if (apiError.name === 'TypeError' && apiError.message.includes('fetch')) {
           console.error('🚨 Network connectivity issue detected!');
         }
-        
-        // Log the error for debugging (removed alert for production)
         }
-      }, 2000); // Defer by 2 seconds - after LCP
-    } else {
-      console.warn('🚫 CRITICAL: Skipping activity tracking - no store_id available', {
-        storeId: storeId,
-        activityType: activityType,
-        activityData: activityData
-      });
+      }, 2000 + TRACKING_DEBOUNCE_MS); // Defer by 2 seconds + debounce
+
+      pendingTracking.set(trackingKey, timeoutId);
     }
-    
+
   } catch (error) {
     console.error('❌ Failed to track activity:', error);
   }
@@ -544,12 +572,14 @@ export const trackSearch = (query, resultsCount = 0, filters = {}) => {
 
 export default function DataLayerManager() {
   const { store, settings } = useStore();
+  const hasTrackedPageRef = useRef(false);
+  const lastTrackedUrlRef = useRef(null);
 
+  // Set up global context and tracking functions (doesn't need store.id stability)
   useEffect(() => {
-    // Set global store context for activity tracking
     if (store) {
       window.__STORE_CONTEXT__ = { store, settings };
-      
+
       // Make tracking functions globally available
       window.daino = {
         // Core tracking
@@ -577,27 +607,43 @@ export default function DataLayerManager() {
         trackQuickView
       };
     }
+  }, [store, settings]);
 
-    // Initialize GTM dataLayer with basic info
-    if (store && store.id) { // CRITICAL FIX: Ensure store.id exists before tracking
-      pushToDataLayer({
-        event: 'page_view',
-        page_title: document.title,
-        page_url: window.location.href,
-        store_name: store.name,
-        store_id: store.id,
-        currency: store.currency || 'No Currency'
-      });
-      
-      // Track page view activity
-      trackActivity('page_view', {
-        page_url: window.location.href,
-        page_title: document.title,
-        store_id: store.id // Pass store_id explicitly
-      });
+  // Track page view - use store.id as dependency to prevent re-runs on object reference changes
+  useEffect(() => {
+    const storeId = store?.id;
+    const currentUrl = window.location.href;
+
+    // Skip if no store ID or if we've already tracked this exact URL
+    if (!storeId) return;
+    if (hasTrackedPageRef.current && lastTrackedUrlRef.current === currentUrl) {
+      return;
     }
 
-    // Add event listener
+    // Mark as tracked for this URL
+    hasTrackedPageRef.current = true;
+    lastTrackedUrlRef.current = currentUrl;
+
+    // Initialize GTM dataLayer with basic info
+    pushToDataLayer({
+      event: 'page_view',
+      page_title: document.title,
+      page_url: currentUrl,
+      store_name: store.name,
+      store_id: storeId,
+      currency: store.currency || 'No Currency'
+    });
+
+    // Track page view activity (deduplication is also handled in trackActivity)
+    trackActivity('page_view', {
+      page_url: currentUrl,
+      page_title: document.title,
+      store_id: storeId
+    });
+  }, [store?.id]); // Use store.id as dependency - stable primitive value
+
+  // Add event listener for dataLayer pushes
+  useEffect(() => {
     const handleDataLayerPush = (e) => {
       // Event listener for future use
     };
@@ -607,7 +653,7 @@ export default function DataLayerManager() {
     return () => {
       window.removeEventListener('dataLayerPush', handleDataLayerPush);
     };
-  }, [store]);
+  }, []);
 
   return null;
 }
