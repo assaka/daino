@@ -42,8 +42,10 @@ export default function CustomOptions({
     }, [product?.id, store?.id]);
 
     const loadCustomOptions = async () => {
+        console.log('🔍 CustomOptions - loadCustomOptions called', { product: product?.id, storeId: store?.id, isLoading });
 
         if (!product || !store?.id || isLoading) {
+            console.log('🔍 CustomOptions - Early return: missing product, store.id, or already loading');
             setLoading(false);
             return;
         }
@@ -55,10 +57,12 @@ export default function CustomOptions({
             // Fetch all active custom option rules for the store (using public API)
             let rules = [];
             try {
+                console.log('🔍 CustomOptions - Fetching rules for store:', store.id);
                 rules = await StorefrontCustomOptionRule.filter({
                     store_id: store.id,
                     is_active: true
                 });
+                console.log('🔍 CustomOptions - Rules fetched:', rules);
             } catch (apiError) {
                 console.error('Error fetching custom option rules:', apiError);
                 setCustomOptions([]);
