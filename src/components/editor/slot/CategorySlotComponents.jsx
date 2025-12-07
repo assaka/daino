@@ -236,7 +236,7 @@ const LayeredNavigation = createSlotComponent({
             data-action="toggle-section"
             data-section="filter-{{this.code}}"
             class="flex items-center justify-between w-full py-2 text-left font-medium"
-            style="color: {{../attributeLabelStyles.color}}"
+            style="color: {{attributeLabelStyles.color}}"
           >
             <span>{{this.label}}</span>
             <svg class="w-4 h-4 transform transition-transform" data-collapse-icon="filter-{{this.code}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,18 +283,18 @@ const LayeredNavigation = createSlotComponent({
             {{#each this.options}}
             <label class="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-1 rounded">
               <div class="flex items-center">
-                {{#if (eq ../filter_type "select")}}
+                {{#if (eq this.filter_type "select")}}
                 <input
                   type="radio"
-                  name="filter-{{../code}}"
+                  name="filter-{{this.attributeCode}}"
                   data-action="toggle-filter"
                   data-filter-type="attribute"
                   data-filter-input-type="select"
-                  data-attribute-code="{{../code}}"
+                  data-attribute-code="{{this.attributeCode}}"
                   data-filter-value="{{this.value}}"
                   {{#if this.active}}checked{{/if}}
                   class="h-4 w-4 mr-2"
-                  style="accent-color: {{../../filterOptionStyles.checkboxColor}}"
+                  style="accent-color: {{filterOptionStyles.checkboxColor}}"
                 />
                 {{else}}
                 <input
@@ -302,16 +302,16 @@ const LayeredNavigation = createSlotComponent({
                   data-action="toggle-filter"
                   data-filter-type="attribute"
                   data-filter-input-type="multiselect"
-                  data-attribute-code="{{../code}}"
+                  data-attribute-code="{{this.attributeCode}}"
                   data-filter-value="{{this.value}}"
                   {{#if this.active}}checked{{/if}}
                   class="h-4 w-4 mr-2 rounded"
-                  style="accent-color: {{../../filterOptionStyles.checkboxColor}}"
+                  style="accent-color: {{filterOptionStyles.checkboxColor}}"
                 />
                 {{/if}}
-                <span class="text-sm" style="color: {{../../filterOptionStyles.optionTextColor}}">{{this.label}}</span>
+                <span class="text-sm" style="color: {{filterOptionStyles.optionTextColor}}">{{this.label}}</span>
               </div>
-              <span class="text-xs" style="color: {{../../filterOptionStyles.optionCountColor}}">({{this.count}})</span>
+              <span class="text-xs" style="color: {{filterOptionStyles.optionCountColor}}">({{this.count}})</span>
             </label>
             {{/each}}
             {{/if}}
