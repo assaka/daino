@@ -118,6 +118,175 @@ const categoryConfig = {
       }
     },
 
+    // Product Card Template - defines the structure of each product card
+    // This is repeated for each product in the grid
+    product_card_template: {
+      id: 'product_card_template',
+      type: 'container',
+      content: '',
+      className: 'group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_items',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 1, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        isTemplate: true,
+        displayName: 'Product Card Template'
+      }
+    },
+
+    product_card_image: {
+      id: 'product_card_image',
+      type: 'image',
+      content: '{{this.image_url}}',
+      className: 'w-full aspect-square object-cover',
+      parentClassName: 'relative overflow-hidden',
+      styles: {},
+      parentId: 'product_card_template',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 3 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Product Image',
+        isTemplate: true
+      }
+    },
+
+    product_card_content: {
+      id: 'product_card_content',
+      type: 'container',
+      content: '',
+      className: 'p-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_template',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 9 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        isTemplate: true,
+        displayName: 'Product Card Content'
+      }
+    },
+
+    product_card_name: {
+      id: 'product_card_name',
+      type: 'text',
+      content: '<a href="{{this.url}}" class="hover:text-blue-600 transition-colors">{{this.name}}</a>',
+      className: 'text-sm font-medium text-gray-900 mb-2 line-clamp-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_content',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Product Name',
+        isTemplate: true
+      }
+    },
+
+    product_card_price_container: {
+      id: 'product_card_price_container',
+      type: 'container',
+      content: '',
+      className: 'flex items-center gap-2 mb-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_content',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        isTemplate: true,
+        displayName: 'Price Container'
+      }
+    },
+
+    product_card_price: {
+      id: 'product_card_price',
+      type: 'text',
+      content: '{{this.price_formatted}}',
+      className: 'text-lg font-bold text-gray-900',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_price_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Product Price',
+        isTemplate: true
+      }
+    },
+
+    product_card_compare_price: {
+      id: 'product_card_compare_price',
+      type: 'text',
+      content: '{{#if this.compare_price_formatted}}<span class="line-through text-gray-400">{{this.compare_price_formatted}}</span>{{/if}}',
+      className: 'text-sm text-gray-400 line-through',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_price_container',
+      position: { col: 2, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid', 'list'],
+      conditionalDisplay: 'this.compare_price_formatted',
+      metadata: {
+        hierarchical: false,
+        displayName: 'Compare Price',
+        isTemplate: true
+      }
+    },
+
+    product_card_stock_label: {
+      id: 'product_card_stock_label',
+      type: 'text',
+      content: '{{this.stock_label}}',
+      className: 'text-xs px-2 py-1 rounded-full inline-block',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_content',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      conditionalDisplay: 'settings.show_stock_label',
+      metadata: {
+        hierarchical: false,
+        displayName: 'Stock Label',
+        isTemplate: true
+      }
+    },
+
+    product_card_add_to_cart: {
+      id: 'product_card_add_to_cart',
+      type: 'button',
+      content: 'Add to Cart',
+      className: 'w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors',
+      parentClassName: '',
+      styles: {
+        backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
+      },
+      parentId: 'product_card_content',
+      position: { col: 1, row: 4 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Add to Cart Button',
+        isTemplate: true,
+        action: 'addToCart'
+      }
+    },
+
     empty_products_message: {
       id: 'empty_products_message',
       type: 'component',
