@@ -110,10 +110,8 @@ export default function CustomOptions({
                             if (products && products.length > 0) {
                                 const customOptionProduct = products[0];
 
-                                // Only include if it's marked as a custom option
-                                if (!customOptionProduct.is_custom_option) {
-                                    continue;
-                                }
+                                // Product is in the rule's optional_product_ids, so it should show
+                                // No need to check is_custom_option flag - being in the rule is sufficient
 
                                 // Check stock availability - only check products.stock_quantity and products.infinite_stock
                                 const trackStock = settings?.track_stock !== false; // Default to true
