@@ -624,10 +624,13 @@ function LayoutInner({ children, currentPageName }) {
                         if (storeSlug) {
                             if (fullStore?.published) {
                                 const baseUrl = getStoreBaseUrl(fullStore);
-                                window.open(getExternalStoreUrl(storeSlug, '', baseUrl), '_blank');
+                                // Add ?version=published to view published/live version
+                                const storeUrl = getExternalStoreUrl(storeSlug, '', baseUrl);
+                                const separator = storeUrl.includes('?') ? '&' : '?';
+                                window.open(`${storeUrl}${separator}version=published`, '_blank');
                             } else {
-                                // Use preview URL when store is not running
-                                window.open(`/public/${storeSlug}`, '_blank');
+                                // Use preview URL when store is not running (still add version=published to bypass pause modal)
+                                window.open(`/public/${storeSlug}?version=published`, '_blank');
                             }
                         }
                     } catch (error) {

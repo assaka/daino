@@ -430,7 +430,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
         </Button>
         <Button
           variant="outline"
-          onClick={() => window.open(`/store/${storeId}`, '_blank')}
+          onClick={() => window.open(`/store/${storeId}?version=published`, '_blank')}
           size="lg"
         >
           <ExternalLink className="w-5 h-5 mr-2" />
