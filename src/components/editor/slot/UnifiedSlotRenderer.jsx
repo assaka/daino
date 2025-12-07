@@ -144,7 +144,7 @@ import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import { ComponentRegistry } from './SlotComponentRegistry';
 import { createProductUrl, getStoreBaseUrl, createPublicUrl } from '@/utils/urlUtils';
 import cartService from '@/services/cartService';
-import { headerConfig } from '@/components/editor/slot/configs/header-config';
+// Slot configurations come from database - renderConditions handled via slot metadata
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice, formatPriceNumber } from '@/utils/priceUtils';
@@ -502,21 +502,27 @@ export function UnifiedSlotRenderer({
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
-  // Apply renderCondition filtering from the static config (not runtime config)
-  // This is necessary because functions can't be serialized to JSON
+  // Apply renderCondition filtering based on slot metadata
+  // renderConditions are now stored as string identifiers in slot.metadata.renderCondition
   const conditionFilteredSlots = filteredSlots.filter(slot => {
-    // Check if this is a header slot by looking at the imported headerConfig
-    const configSlot = headerConfig?.slots?.[slot.id];
+    const renderCondition = slot.metadata?.renderCondition;
+    if (!renderCondition) return true; // No condition = always render
 
-    if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
-      // Use headerContext for header slots
-      const contextToUse = headerContext || categoryData || cartData || {};
-      const shouldRender = configSlot.renderCondition(contextToUse);
-      return shouldRender;
+    const contextToUse = headerContext || categoryData || cartData || {};
+
+    // Handle standard render conditions by identifier
+    switch (renderCondition) {
+      case 'hideOnMobileMenu':
+        return !contextToUse.mobileMenuOpen;
+      case 'showOnMobileMenu':
+        return contextToUse.mobileMenuOpen;
+      case 'hideOnMobileSearch':
+        return !contextToUse.mobileSearchOpen;
+      case 'showOnMobileSearch':
+        return contextToUse.mobileSearchOpen;
+      default:
+        return true;
     }
-
-    // No renderCondition = always render
-    return true;
   });
 
   // Sort slots by grid coordinates for proper rendering order

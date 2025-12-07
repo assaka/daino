@@ -9,27 +9,7 @@ import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockProductContext } from '@/utils/mockProductData';
 // Unified components are now handled by UnifiedSlotRenderer automatically
-
-// Create default slots function for product layout
-const createDefaultSlots = async () => {
-  try {
-    console.log('🔧 LOADING PRODUCT CONFIG FROM createDefaultSlots...');
-    const configModule = await import('@/components/editor/slot/configs/product-config');
-
-    const productConfig = configModule.productConfig || configModule.default;
-
-    if (!productConfig || !productConfig.slots) {
-      console.error('❌ Invalid product config - no slots found');
-      return null;
-    }
-
-    console.log('✅ Successfully loaded product config with slots:', Object.keys(productConfig.slots));
-    return productConfig.slots;
-  } catch (error) {
-    console.error('❌ Failed to load product config:', error);
-    return null;
-  }
-};
+// Slots come from database via UnifiedSlotsEditor - no static defaults needed
 
 // Product Editor Configuration
 const productEditorConfig = {

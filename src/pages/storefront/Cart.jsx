@@ -24,7 +24,7 @@ import eventSystem from '@/core/EventSystem.js';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
-import { cartConfig } from '@/components/editor/slot/configs/cart-config';
+// Slot configurations are loaded from database via slotConfigurationService
 import { PageLoader } from '@/components/ui/page-loader';
 
 const getSessionId = () => {
@@ -168,40 +168,15 @@ export default function Cart() {
                     setConfigLoaded(true);
 
                 } else {
-                    // Fallback to cart-config.js
-                    const fallbackConfig = {
-                        slots: { ...cartConfig.slots },
-                        metadata: {
-                            ...cartConfig.metadata,
-                            fallbackUsed: true,
-                            fallbackReason: `No valid published configuration`
-                        }
-                    };
-
-                    // Cache the fallback too
-                    window.__slotConfigCache[cacheKey] = { data: fallbackConfig, timestamp: Date.now() };
-
-                    setCartLayoutConfig(fallbackConfig);
+                    // No published config exists - this should not happen if store was provisioned correctly
+                    console.warn('No published cart configuration found. Store may not be provisioned correctly.');
+                    setCartLayoutConfig(null);
                     setConfigLoaded(true);
                 }
             } catch (error) {
                 delete window.__slotConfigFetching[cacheKey]; // Clear fetching flag
                 console.error('❌ CART: Error loading published slot configuration:', error);
-
-                // Fallback to cart-config.js
-                const fallbackConfig = {
-                    slots: { ...cartConfig.slots },
-                    metadata: {
-                        ...cartConfig.metadata,
-                        fallbackUsed: true,
-                        fallbackReason: `Error loading configuration: ${error.message}`
-                    }
-                };
-
-                // Cache the fallback
-                window.__slotConfigCache[cacheKey] = { data: fallbackConfig, timestamp: Date.now() };
-
-                setCartLayoutConfig(fallbackConfig);
+                setCartLayoutConfig(null);
                 setConfigLoaded(true);
             }
         };

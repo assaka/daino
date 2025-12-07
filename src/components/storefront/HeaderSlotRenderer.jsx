@@ -13,7 +13,7 @@ import WishlistDropdown from './WishlistDropdown';
 import CategoryNav from './CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
 import CmsBlockRenderer from './CmsBlockRenderer';
-import { headerConfig } from '@/components/editor/slot/configs/header-config';
+// Slot configurations come from database - renderConditions handled via slot metadata
 import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
@@ -53,17 +53,25 @@ export function HeaderSlotRenderer({
   // Filter by viewMode if applicable
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
-  // Apply renderCondition filtering from header-config
+  // Apply renderCondition filtering based on slot metadata
+  // renderConditions are now stored as string identifiers in slot.metadata.renderCondition
   const conditionFilteredSlots = filteredSlots.filter(slot => {
-    // Check if this slot has a renderCondition in the config
-    const configSlot = headerConfig?.slots?.[slot.id];
+    const renderCondition = slot.metadata?.renderCondition;
+    if (!renderCondition) return true; // No condition = always render
 
-    if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
-      const shouldRender = configSlot.renderCondition(headerContext);
-      return shouldRender;
+    // Handle standard render conditions by identifier
+    switch (renderCondition) {
+      case 'hideOnMobileMenu':
+        return !headerContext.mobileMenuOpen;
+      case 'showOnMobileMenu':
+        return headerContext.mobileMenuOpen;
+      case 'hideOnMobileSearch':
+        return !headerContext.mobileSearchOpen;
+      case 'showOnMobileSearch':
+        return headerContext.mobileSearchOpen;
+      default:
+        return true;
     }
-    // No renderCondition = always render
-    return true;
   });
 
   // Sort slots using grid coordinates for precise positioning

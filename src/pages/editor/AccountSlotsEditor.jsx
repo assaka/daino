@@ -7,7 +7,6 @@
 
 import { User, UserCircle } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { accountConfig } from '@/components/editor/slot/configs/account-config';
 
 // Generate account context based on view mode
 const generateAccountContext = (viewMode) => {
@@ -40,25 +39,21 @@ const generateAccountContext = (viewMode) => {
 };
 
 // Account Editor Configuration
+// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const accountEditorConfig = {
   pageType: 'account',
   pageName: 'Customer Account',
   slotType: 'account_layout',
   defaultViewMode: 'overview',
-  viewModes: accountConfig.views.map(view => ({
-    key: view.id,
-    label: view.label,
-    icon: view.icon
-  })),
+  viewModes: [
+    { key: 'intro', label: 'Intro', icon: UserCircle },
+    { key: 'overview', label: 'Overview', icon: User },
+    { key: 'profile', label: 'Profile', icon: User }
+  ],
   slotComponents: {},
   generateContext: generateAccountContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: accountConfig.cmsBlocks.map(block => block.position),
-  // Include the config data for reference
-  slots: accountConfig.slots,
-  metadata: accountConfig.metadata,
-  views: accountConfig.views,
-  cmsBlocks: accountConfig.cmsBlocks
+  cmsBlockPositions: ['account_top', 'account_bottom', 'account_sidebar']
 };
 
 const AccountSlotsEditor = ({

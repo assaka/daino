@@ -7,7 +7,6 @@
 
 import { ShoppingBag, CreditCard } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { checkoutConfig } from '@/components/editor/slot/configs/checkout-config';
 
 // Generate checkout context based on view mode
 const generateCheckoutContext = (viewMode) => ({
@@ -39,25 +38,20 @@ const generateCheckoutContext = (viewMode) => ({
 });
 
 // Checkout Editor Configuration
+// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const checkoutEditorConfig = {
   pageType: 'checkout',
   pageName: 'Checkout',
   slotType: 'checkout_layout',
   defaultViewMode: 'default',
-  viewModes: checkoutConfig.views.map(view => ({
-    key: view.id,
-    label: view.label,
-    icon: view.icon
-  })),
+  viewModes: [
+    { key: 'default', label: 'Default', icon: ShoppingBag },
+    { key: 'processing', label: 'Processing', icon: CreditCard }
+  ],
   slotComponents: {},
   generateContext: generateCheckoutContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: checkoutConfig.cmsBlocks,
-  // Include the config data for reference
-  slots: checkoutConfig.slots,
-  metadata: checkoutConfig.metadata,
-  views: checkoutConfig.views,
-  cmsBlocks: checkoutConfig.cmsBlocks
+  cmsBlockPositions: ['checkout_top', 'checkout_bottom', 'checkout_sidebar']
 };
 
 const CheckoutSlotsEditor = ({

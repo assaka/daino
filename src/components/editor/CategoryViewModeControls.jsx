@@ -1,11 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { categoryConfig } from '@/components/editor/slot/configs/category-config';
+import { Grid, List } from 'lucide-react';
+
+// View modes defined inline - these are structural, not data from DB
+const categoryViews = [
+  { id: 'grid', label: 'Grid', icon: Grid },
+  { id: 'list', label: 'List', icon: List }
+];
 
 const CategoryViewModeControls = ({ viewMode, onViewModeChange }) => {
   return (
     <div className="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
-      {categoryConfig.views.map((view) => {
+      {categoryViews.map((view) => {
         const IconComponent = view.icon;
         return (
           <button

@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLayoutConfig } from './useSlotConfiguration';
-import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 
@@ -31,7 +30,7 @@ export function useHeaderConfig(store) {
   const { layoutConfig, configLoaded, reloadConfig } = useLayoutConfig(
     store,
     'header',
-    headerConfig,
+    null, // No static fallback - configs come from database
     shouldFetch
   );
 
@@ -47,13 +46,8 @@ export function useHeaderConfig(store) {
     }
 
     // Priority 2: Use fetched layout config (always used in draft preview mode)
-    if (configLoaded && layoutConfig) {
-      const slots = layoutConfig.slots || headerConfig.slots;
-      setHeaderSlots(slots);
-      setHeaderConfigLoaded(true);
-    } else if (configLoaded && !layoutConfig) {
-      // Priority 3: Use default header config
-      setHeaderSlots(headerConfig.slots);
+    if (configLoaded && layoutConfig?.slots) {
+      setHeaderSlots(layoutConfig.slots);
       setHeaderConfigLoaded(true);
     }
   }, [configLoaded, layoutConfig, bootstrapHeaderConfig, isPreviewDraftMode]);

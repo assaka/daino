@@ -17,28 +17,27 @@ import {
   useEditorInitialization,
   useViewModeAdjustments
 } from '@/hooks/useSlotConfiguration';
-import { categoryConfig } from '@/components/editor/slot/configs/category-config';
+// Slot configurations come from database - no static config import
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
-  // Initialize state with category config structure
+  // Initialize with minimal defaults - actual config comes from database
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState({
-    page_name: categoryConfig.page_name,
-    slot_type: categoryConfig.slot_type,
-    slots: { ...categoryConfig.slots }, // Deep copy the slots
+    page_name: 'Category',
+    slot_type: 'category_layout',
+    slots: {},
     metadata: {
       created: new Date().toISOString(),
       lastModified: new Date().toISOString(),
       version: '1.0',
-      pageType: 'category',
-      ...categoryConfig.metadata
+      pageType: 'category'
     },
-    cmsBlocks: categoryConfig.cmsBlocks || [],
-    views: categoryConfig.views,
-    microslots: categoryConfig.microslots
+    cmsBlocks: [],
+    views: [{ id: 'grid', label: 'Grid' }, { id: 'list', label: 'List' }],
+    microslots: {}
   });
 
   // Editor state
@@ -105,9 +104,9 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
     onSave
   });
 
-  // Configuration initialization
+  // Configuration initialization - no static fallback, config comes from DB
   const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
-    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus, categoryConfig
+    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus, null
   );
 
   // Editor initialization
@@ -151,13 +150,15 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
     setIsSidebarVisible
   );
 
-  // Generate view mode adjustment rules
+  // Generate view mode adjustment rules from loaded config
   const categoryAdjustmentRules = useMemo(() => {
-    return Object.keys(categoryConfig.slots).reduce((rules, slotId) => {
-      const slotConfig = categoryConfig.slots[slotId];
+    if (!categoryLayoutConfig?.slots) return {};
+
+    return Object.keys(categoryLayoutConfig.slots).reduce((rules, slotId) => {
+      const slotConfig = categoryLayoutConfig.slots[slotId];
       const slotName = slotId.replace(/_container$/, '').replace(/_/g, '');
 
-      if (slotConfig.colSpan && typeof slotConfig.colSpan === 'object') {
+      if (slotConfig?.colSpan && typeof slotConfig.colSpan === 'object') {
         rules[slotName] = {
           colSpan: {
             shouldAdjust: (currentValue) => typeof currentValue === 'number',
@@ -168,7 +169,7 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
 
       return rules;
     }, {});
-  }, []);
+  }, [categoryLayoutConfig?.slots]);
 
   // View mode adjustments
   useViewModeAdjustments(categoryLayoutConfig, setCategoryLayoutConfig, viewMode, categoryAdjustmentRules);
@@ -221,7 +222,7 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
     handleCreateSlot: handlerFactory.createSlotCreateHandler(createSlot)
   };
 
-  // Reset layout handler
+  // Reset layout handler - no static fallback, reset fetches from DB
   const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
   const { handleResetLayout } = useResetLayoutHandler(
     'category',
@@ -232,7 +233,7 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
       setConfigurationStatus,
       updateLastSavedConfig
     },
-    categoryConfig
+    null
   );
 
   // Publish handler

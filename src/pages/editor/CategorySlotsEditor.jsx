@@ -5,7 +5,7 @@
  * - Maintainable structure
  */
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
@@ -16,38 +16,6 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
-// Create default slots function for category layout
-const createDefaultSlots = async () => {
-  try {
-    const configModule = await import('@/components/editor/slot/configs/category-config');
-
-    const categoryConfig = configModule.categoryConfig || configModule.default;
-
-    if (!categoryConfig || !categoryConfig.slots) {
-      console.error('❌ Invalid category config - no slots found');
-      return null;
-    }
-
-
-    const defaultConfig = {
-      page_name: 'Category',
-      slot_type: 'category_layout',
-      slots: categoryConfig.slots,
-      metadata: {
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        version: '1.0',
-        pageType: 'category'
-      },
-      cmsBlocks: categoryConfig.cmsBlocks || []
-    };
-
-    return defaultConfig;
-  } catch (error) {
-    console.error('❌ Failed to load category config:', error);
-    return null;
-  }
-};
 
 // Helper function to generate grid classes from store settings
 const getGridClasses = (storeSettings) => {
@@ -456,7 +424,7 @@ const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
     const storeSettings = selectedStore?.settings || null;
     return generateMockCategoryContext(filterableAttributes, storeSettings);
   },
-  createDefaultSlots,
+  // Slots come from database via UnifiedSlotsEditor - no static defaults needed
   viewModeAdjustments: {
     filters_container: {
       colSpan: {

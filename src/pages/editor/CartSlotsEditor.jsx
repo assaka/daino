@@ -7,7 +7,6 @@
 
 import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { cartConfig } from '@/components/editor/slot/configs/cart-config';
 import { getSlotComponent } from '@/components/editor/slot/SlotComponentRegistry';
 import { formatPrice } from '@/utils/priceUtils';
 
@@ -49,17 +48,16 @@ const generateCartContext = (viewMode) => ({
 });
 
 // Cart Editor Configuration
+// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const cartEditorConfig = {
-  ...cartConfig,
   pageType: 'cart',
   pageName: 'Cart',
   slotType: 'cart_layout',
   defaultViewMode: 'emptyCart',
-  viewModes: cartConfig.views.map(view => ({
-    key: view.id,
-    label: view.label,
-    icon: view.icon
-  })),
+  viewModes: [
+    { key: 'emptyCart', label: 'Empty Cart', icon: ShoppingCart },
+    { key: 'withProducts', label: 'With Products', icon: Package }
+  ],
   slotComponents: {},
   generateContext: generateCartContext,
   viewModeAdjustments: {
@@ -73,7 +71,7 @@ const cartEditorConfig = {
       }
     }
   },
-  cmsBlockPositions: cartConfig.cmsBlocks
+  cmsBlockPositions: ['cart_top', 'cart_bottom', 'cart_sidebar']
 };
 
 const CartSlotsEditor = ({

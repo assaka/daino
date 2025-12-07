@@ -308,71 +308,14 @@ class SlotConfigurationService {
     }
   }
 
-  // Get initial configuration from appropriate config file based on pageType
+  // Get initial configuration - DEPRECATED
+  // Slot configurations should be fetched from the database via getPublishedConfiguration or getDraftConfiguration
+  // Config files are only used during store provisioning on the backend
   async getInitialConfiguration(pageType = 'cart', fileName = null) {
-    // Dynamic import to get the appropriate config based on pageType
-    let config;
-    if (pageType === 'category') {
-      const { categoryConfig } = await import('@/components/editor/slot/configs/category-config.js');
-      config = categoryConfig;
-    } else {
-      const { cartConfig } = await import('@/components/editor/slot/configs/cart-config.js');
-      config = cartConfig;
-    }
-
-    // Create clean slots with all properties preserved including position coordinates
-    const cleanSlots = {};
-    if (config.slots) {
-      Object.entries(config.slots).forEach(([key, slot]) => {
-        // Copy all serializable properties, ensure no undefined values
-        console.log(`🔧 SLOT ${key}:`, {
-          type: slot.type,
-          component: slot.component,
-          hasComponent: !!slot.component
-        });
-        cleanSlots[key] = {
-          id: slot.id || key,
-          type: slot.type || 'container',
-          component: slot.component || null, // ← MISSING: Component name for component slots
-          content: slot.content || '',
-          className: slot.className || '',
-          parentClassName: slot.parentClassName || '',
-          styles: slot.styles ? { ...slot.styles } : {},
-          parentId: slot.parentId === undefined ? null : slot.parentId,
-          layout: slot.layout || null,
-          gridCols: slot.gridCols || null,
-          colSpan: slot.colSpan || 12,
-          rowSpan: slot.rowSpan || 1,
-          position: slot.position ? { ...slot.position } : null,
-          viewMode: slot.viewMode ? [...slot.viewMode] : [],
-          metadata: slot.metadata ? { ...slot.metadata } : {}
-        };
-      });
-    }
-
-    // Use the new nested structure
-    const initialConfig = {
-      // Use the root slots and nested structure
-      rootSlots: config.rootSlots || [],
-      slotDefinitions: config.slotDefinitions || {},
-      slots: cleanSlots,
-
-      // Add metadata
-      metadata: {
-        name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
-        version: '2.0',
-        system: 'nested-',
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        pageType: pageType,
-        fileName: fileName,
-        source: pageType === 'category' ? 'category-config.js' : 'cart-config.js',
-        page_name: config.page_name,
-        slot_type: config.slot_type
-      }
-    };
-
-    return initialConfig;
+    throw new Error(
+      `getInitialConfiguration is deprecated. Slot configurations should be fetched from the database. ` +
+      `Use getPublishedConfiguration(storeId, '${pageType}') or getDraftConfiguration(storeId, '${pageType}') instead.`
+    );
   }
 
   // Transform CartSlotsEditor configuration to SlotConfiguration API format

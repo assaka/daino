@@ -7,7 +7,6 @@
 
 import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { loginConfig } from '@/components/editor/slot/configs/login-config';
 
 // Generate login context based on view mode
 const generateLoginContext = (viewMode) => ({
@@ -17,25 +16,20 @@ const generateLoginContext = (viewMode) => ({
 });
 
 // Login Editor Configuration
+// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const loginEditorConfig = {
   pageType: 'login',
   pageName: 'Login/Register',
   slotType: 'login_layout',
   defaultViewMode: 'login',
-  viewModes: loginConfig.views.map(view => ({
-    key: view.id,
-    label: view.label,
-    icon: view.icon
-  })),
+  viewModes: [
+    { key: 'login', label: 'Login', icon: LogIn },
+    { key: 'register', label: 'Register', icon: UserPlus }
+  ],
   slotComponents: {},
   generateContext: generateLoginContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: loginConfig.cmsBlocks,
-  // Include the config data for reference
-  slots: loginConfig.slots,
-  metadata: loginConfig.metadata,
-  views: loginConfig.views,
-  cmsBlocks: loginConfig.cmsBlocks
+  cmsBlockPositions: ['login_top', 'login_bottom', 'login_sidebar']
 };
 
 const LoginSlotsEditor = ({

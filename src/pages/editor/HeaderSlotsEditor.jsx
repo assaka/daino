@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Menu, Search } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Store } from '@/api/entities';
 
@@ -128,21 +127,17 @@ export default function HeaderSlotsEditor() {
   }, [storeData, mobileMenuOpen, mobileSearchOpen]);
 
   // Header Editor Configuration - memoized with generateHeaderContext dependency
+  // Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
   const headerEditorConfig = useMemo(() => ({
-    ...headerConfig,
     pageType: 'header',
     pageName: 'Header',
     slotType: 'header_layout',
     defaultViewMode: 'default',
-    viewModes: headerConfig.views.map(view => ({
-      key: view.id,
-      label: view.label,
-      icon: view.icon
-    })),
+    viewModes: [{ key: 'default', label: 'Header Layout', icon: null }],
     slotComponents: {},
     generateContext: generateHeaderContext,
     viewModeAdjustments: {},
-    cmsBlockPositions: headerConfig.cmsBlocks
+    cmsBlockPositions: ['header_top', 'header_middle', 'header_bottom', 'navigation_before', 'navigation_after']
   }), [generateHeaderContext]);
 
   return (

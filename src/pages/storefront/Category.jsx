@@ -9,7 +9,7 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Card, CardContent } from "@/components/ui/card";
-import { categoryConfig } from '@/components/editor/slot/configs/category-config';
+// Slot configurations are loaded from database via useSlotConfiguration hook
 import { formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
@@ -146,16 +146,9 @@ export default function Category() {
       setCategoryLayoutConfig(slotConfig);
       setCategoryConfigLoaded(true);
     } else if (slotConfig === null) {
-      // Use fallback config when no published config exists
-      const fallbackConfig = {
-        slots: { ...categoryConfig.slots },
-        metadata: {
-          ...categoryConfig.metadata,
-          fallbackUsed: true,
-          fallbackReason: 'No published configuration'
-        }
-      };
-      setCategoryLayoutConfig(fallbackConfig);
+      // No published config exists - this should not happen if store was provisioned correctly
+      console.warn('No published category configuration found. Store may not be provisioned correctly.');
+      setCategoryLayoutConfig(null);
       setCategoryConfigLoaded(true);
     }
   }, [slotConfig]);

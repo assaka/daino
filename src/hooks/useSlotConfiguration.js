@@ -7,7 +7,7 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { SlotManager } from '@/utils/slotUtils';
-import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
+// Slot configurations are loaded from database - no static defaults needed
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 // ===============================

@@ -7,7 +7,6 @@
 
 import { CheckCircle, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { successConfig } from '@/components/editor/slot/configs/success-config';
 
 // Generate success page context based on view mode
 const generateSuccessContext = (viewMode) => ({
@@ -58,25 +57,20 @@ const generateSuccessContext = (viewMode) => ({
 });
 
 // Success Editor Configuration
+// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const successEditorConfig = {
   pageType: 'success',
   pageName: 'Order Success',
   slotType: 'success_layout',
   defaultViewMode: 'empty',
-  viewModes: successConfig.views.map(view => ({
-    key: view.id,
-    label: view.label,
-    icon: view.icon
-  })),
+  viewModes: [
+    { key: 'empty', label: 'Empty', icon: CheckCircle },
+    { key: 'withOrder', label: 'With Order', icon: Package }
+  ],
   slotComponents: {},
   generateContext: generateSuccessContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: successConfig.cmsBlocks,
-  // Include the config data for reference
-  slots: successConfig.slots,
-  metadata: successConfig.metadata,
-  views: successConfig.views,
-  cmsBlocks: successConfig.cmsBlocks
+  cmsBlockPositions: ['success_top', 'success_bottom']
 };
 
 const SuccessSlotsEditor = ({

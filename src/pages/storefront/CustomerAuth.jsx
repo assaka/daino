@@ -7,7 +7,7 @@ import { useStore } from "@/components/storefront/StoreProvider";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
-import { loginConfig } from '@/components/editor/slot/configs/login-config';
+// Slot configurations are loaded from database via slotConfigurationService
 import { useTranslation } from '@/contexts/TranslationContext';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -54,33 +54,14 @@ export default function CustomerAuth() {
           setConfigLoaded(true);
 
         } else {
-          // Fallback to login-config.js
-          const fallbackConfig = {
-            slots: { ...loginConfig.slots },
-            metadata: {
-              ...loginConfig.metadata,
-              fallbackUsed: true,
-              fallbackReason: 'No valid published configuration'
-            }
-          };
-
-          setLoginLayoutConfig(fallbackConfig);
+          // No published config exists - this should not happen if store was provisioned correctly
+          console.warn('No published login configuration found. Store may not be provisioned correctly.');
+          setLoginLayoutConfig(null);
           setConfigLoaded(true);
         }
       } catch (error) {
         console.error('❌ CUSTOMER_AUTH: Error loading published slot configuration:', error);
-
-        // Fallback to login-config.js
-        const fallbackConfig = {
-          slots: { ...loginConfig.slots },
-          metadata: {
-            ...loginConfig.metadata,
-            fallbackUsed: true,
-            fallbackReason: `Error loading configuration: ${error.message}`
-          }
-        };
-
-        setLoginLayoutConfig(fallbackConfig);
+        setLoginLayoutConfig(null);
         setConfigLoaded(true);
       }
     };

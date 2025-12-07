@@ -38,7 +38,7 @@ import ConfigurableProductSelector from "@/components/storefront/ConfigurablePro
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
-import { productConfig } from '@/components/editor/slot/configs/product-config';
+// Slot configurations are loaded from database via slotConfigurationService
 import { useABTesting } from '@/hooks/useABTest';
 
 // Utility function to generate a product name from attributes
@@ -215,78 +215,19 @@ export default function ProductDetail() {
 
           const publishedConfig = response.data;
 
-          // Deep merge published config with default config
-          // This preserves default slot properties (type, content, className, etc.)
-          // while only overriding specific properties from the database (position, styles, parentId)
-          const mergedSlots = {};
-
-          // Start with all default slots
-          Object.keys(productConfig.slots).forEach(slotId => {
-            mergedSlots[slotId] = { ...productConfig.slots[slotId] };
-          });
-
-          // Deep merge published customizations
-          if (publishedConfig.configuration?.slots) {
-            Object.keys(publishedConfig.configuration.slots).forEach(slotId => {
-              const publishedSlot = publishedConfig.configuration.slots[slotId];
-              if (mergedSlots[slotId]) {
-                // Deep merge: preserve defaults, override with published
-                mergedSlots[slotId] = {
-                  ...mergedSlots[slotId],
-                  ...publishedSlot,
-                  // Deep merge nested objects
-                  styles: {
-                    ...(mergedSlots[slotId].styles || {}),
-                    ...(publishedSlot.styles || {})
-                  },
-                  position: {
-                    ...(mergedSlots[slotId].position || {}),
-                    ...(publishedSlot.position || {})
-                  }
-                };
-              } else {
-                // New slot from published config (not in defaults)
-                mergedSlots[slotId] = publishedSlot;
-              }
-            });
-          }
-
-          const mergedConfig = {
-            ...publishedConfig.configuration,
-            slots: mergedSlots
-          };
-
-          setProductLayoutConfig(mergedConfig);
+          // Use configuration directly from database - no merging with static defaults
+          setProductLayoutConfig(publishedConfig.configuration);
           setConfigLoaded(true);
 
         } else {
-          // Fallback to product-config.js
-          const fallbackConfig = {
-            slots: { ...productConfig.slots },
-            metadata: {
-              ...productConfig.metadata,
-              fallbackUsed: true,
-              fallbackReason: `No valid published configuration`
-            }
-          };
-
-          setProductLayoutConfig(fallbackConfig);
+          // No published config exists - this should not happen if store was provisioned correctly
+          console.warn('No published product configuration found. Store may not be provisioned correctly.');
+          setProductLayoutConfig(null);
           setConfigLoaded(true);
         }
       } catch (error) {
         console.error('Failed to load product layout config:', error);
-
-        // Final fallback to default config
-        const fallbackConfig = {
-          slots: { ...productConfig.slots },
-          metadata: {
-            ...productConfig.metadata,
-            fallbackUsed: true,
-            fallbackReason: `Error loading configuration: ${error.message}`
-          }
-        };
-
-        setProductLayoutConfig(fallbackConfig);
+        setProductLayoutConfig(null);
         setConfigLoaded(true);
       }
     };
@@ -846,7 +787,7 @@ export default function ProductDetail() {
       })() ? (
         <div className="grid grid-cols-12 gap-2 auto-rows-min">
           <UnifiedSlotRenderer
-            slots={productLayoutConfig?.slots || productConfig.slots}
+            slots={productLayoutConfig?.slots || {}}
             parentId={null}
             viewMode="default"
             context="storefront"
