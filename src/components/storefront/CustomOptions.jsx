@@ -42,10 +42,8 @@ export default function CustomOptions({
     }, [product?.id, store?.id]);
 
     const loadCustomOptions = async () => {
-        console.log('🔍 CustomOptions - loadCustomOptions called', { product: product?.id, storeId: store?.id, isLoading });
 
         if (!product || !store?.id || isLoading) {
-            console.log('🔍 CustomOptions - Early return: missing product, store.id, or already loading');
             setLoading(false);
             return;
         }
@@ -57,14 +55,11 @@ export default function CustomOptions({
             // Fetch all active custom option rules for the store (using public API)
             let rules = [];
             try {
-                console.log('🔍 CustomOptions - Fetching rules for store:', store.id);
                 rules = await StorefrontCustomOptionRule.filter({
                     store_id: store.id,
                     is_active: true
                 });
-                console.log('🔍 CustomOptions - Rules fetched:', rules);
             } catch (apiError) {
-                console.error('Error fetching custom option rules:', apiError);
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -73,17 +68,14 @@ export default function CustomOptions({
             // Find applicable rules for this product
             // Only evaluate rules if we have a valid product with an ID
             if (!product || !product.id) {
-                console.log('🔍 CustomOptions - No product ID');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
             }
 
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
-            console.log('🔍 CustomOptions - Applicable rules:', applicableRules.length, 'out of', rules.length);
 
             if (applicableRules.length === 0) {
-                console.log('🔍 CustomOptions - No applicable rules for this product');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -91,7 +83,6 @@ export default function CustomOptions({
 
             // Use the first applicable rule (you could enhance this to merge multiple rules)
             const rule = applicableRules[0];
-            console.log('🔍 CustomOptions - Using rule:', rule.name, 'with optional_product_ids:', rule.optional_product_ids);
 
             // Get translated display label using standardized translation utility
             const translatedLabel = getTranslatedField(rule, 'display_label', currentLang) || 'Custom Options';
@@ -102,14 +93,12 @@ export default function CustomOptions({
                 try {
                     // Deduplicate product IDs from rule
                     const ruleProductIds = [...new Set(rule.optional_product_ids)];
-                    console.log('🔍 CustomOptions - Rule has', ruleProductIds.length, 'unique product IDs');
 
                     // Fetch all custom option products in one call
                     const allCustomOptionProducts = await StorefrontProduct.filter({
                         is_custom_option: true,
                         status: 'active'
                     });
-                    console.log('🔍 CustomOptions - Fetched', allCustomOptionProducts?.length || 0, 'custom option products');
 
                     // Filter to only products in the rule's optional_product_ids
                     const optionProducts = (allCustomOptionProducts || []).filter(customOptionProduct => {
@@ -120,7 +109,6 @@ export default function CustomOptions({
 
                         // Skip if this is the current product being viewed
                         if (customOptionProduct.id === product.id) {
-                            console.log('🔍 CustomOptions - Skipping current product:', customOptionProduct.id);
                             return false;
                         }
 
@@ -130,25 +118,17 @@ export default function CustomOptions({
                             ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
                             : true;
 
-                        if (!isInStock) {
-                            console.log('🔍 CustomOptions - Product out of stock:', customOptionProduct.id);
-                        }
-
                         return isInStock;
                     });
 
-                    console.log('🔍 CustomOptions - Final optionProducts:', optionProducts.length);
                     setCustomOptions(optionProducts);
                 } catch (error) {
-                    console.error('Error loading custom option products:', error);
                     setCustomOptions([]);
                 }
             } else {
-                console.log('🔍 CustomOptions - No optional_product_ids in rule');
                 setCustomOptions([]);
             }
         } catch (error) {
-            console.error('Error loading custom options:', error);
             setCustomOptions([]);
         } finally {
             setLoading(false);
@@ -165,7 +145,6 @@ export default function CustomOptions({
                 ? JSON.parse(rule.conditions)
                 : rule.conditions;
         } catch (e) {
-            console.error('Failed to parse conditions:', e);
             return false;
         }
 
