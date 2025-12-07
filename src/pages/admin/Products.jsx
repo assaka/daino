@@ -477,13 +477,33 @@ export default function Products() {
     }
   };
 
+  // Helper function to get all parent category IDs recursively
+  const getParentCategoryIds = (categoryId, allCategories) => {
+    const parentIds = [];
+    let currentCategory = allCategories.find(c => c.id === categoryId);
+
+    while (currentCategory && currentCategory.parent_id) {
+      parentIds.push(currentCategory.parent_id);
+      currentCategory = allCategories.find(c => c.id === currentCategory.parent_id);
+    }
+
+    return parentIds;
+  };
+
   const handleBulkCategoryChange = async (categoryId) => {
     if (selectedProducts.size === 0) return;
-    
+
     try {
       const updatePromises = Array.from(selectedProducts).map(id => {
         const product = paginatedProducts.find(p => p.id === id);
-        const newCategories = categoryId ? [categoryId] : [];
+        let newCategories = [];
+
+        if (categoryId) {
+          // Include the selected category and all its parent categories
+          const parentIds = getParentCategoryIds(categoryId, categories);
+          newCategories = [categoryId, ...parentIds];
+        }
+
         return Product.update(id, { ...product, category_ids: newCategories });
       });
       await Promise.all(updatePromises);
