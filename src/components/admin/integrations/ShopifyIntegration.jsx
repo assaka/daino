@@ -637,7 +637,7 @@ const ShopifyIntegration = () => {
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-1">Import Data</h3>
             <p className="text-sm text-gray-600 mb-6">
-              Import your Shopify data into SuprShop
+              Import your Shopify data into DainoStore
             </p>
             <Tabs defaultValue="quick" className="w-full">
               <TabsList className="grid w-full grid-cols-2">

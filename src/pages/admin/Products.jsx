@@ -1282,7 +1282,7 @@ export default function Products() {
                                   </span>
                                 </td>
                                 <td className="py-4 px-4">
-                                  <Badge className={statusColors[product.status]}>
+                                  <Badge variant="outline" className={statusColors[product.status]}>
                                     {product.status}
                                   </Badge>
                                 </td>
