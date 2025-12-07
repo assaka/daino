@@ -5,46 +5,47 @@ import { Check, Sparkles } from 'lucide-react';
 
 const plans = [
     {
-        name: "Free",
+        name: "Free Setup",
         price: "0",
-        description: "Start for free, pay only when you customize",
+        description: "Register and configure your entire shop for free",
         features: [
-            "Full webshop functionality",
-            "Proven templates library",
-            "Complete store management",
-            "Payment & shipping integrations",
+            "Free account registration",
+            "Full store configuration",
+            "Product & catalog management",
+            "Payment & shipping setup",
+            "Template customization",
             "Mobile responsive design",
-            "Community support",
-            "Pay-as-you-go AI features"
+            "Unlimited preview & testing"
         ]
     },
     {
-        name: "Credit Bundle",
-        price: "49",
-        description: "AI credits + exclusive features at a discount",
+        name: "Go Live",
+        price: "3",
+        priceNote: "one-time",
+        description: "Publish your production-ready store",
         features: [
-            "Everything in Free",
-            "$75 worth of AI credits",
-            "20% discount on all AI features",
-            "Priority AI processing",
-            "Advanced analytics dashboard",
-            "Priority support",
-            "Early access to new features"
+            "Everything in Free Setup",
+            "30 credits to launch your store",
+            "Live production storefront",
+            "Custom domain support",
+            "SSL certificate included",
+            "Full e-commerce functionality",
+            "Community support"
         ],
         popular: true
     },
     {
-        name: "Enterprise",
-        price: "Custom",
-        description: "Custom solutions for large operations",
+        name: "AI Enhancements",
+        price: "Pay as you go",
+        description: "Enhance your store with AI-powered features",
         features: [
-            "Everything in Credit Bundle",
-            "Custom AI model training",
-            "White-label options",
-            "Dedicated account manager",
-            "Custom integrations",
-            "Volume discounts on credits",
-            "24/7 dedicated support"
+            "AI translations (multi-language)",
+            "AI workspace assistant",
+            "AI product descriptions",
+            "AI image generation",
+            "AI content optimization",
+            "Only pay for what you use",
+            "No monthly commitments"
         ]
     }
 ];
@@ -61,13 +62,13 @@ export default function Pricing() {
                     className="mb-20"
                 >
                     <div className="inline-block bg-indigo-100 text-indigo-700 px-4 py-2 font-bold text-sm mb-6 rounded-full">
-                        PAY AS YOU GO
+                        FREE TO START
                     </div>
                     <h2 className="text-5xl md:text-6xl font-black mb-6 text-neutral-900">
-                        Start Free, Customize When You Need
+                        Free Setup. $3 to Go Live.
                     </h2>
                     <p className="text-xl text-neutral-600 max-w-2xl">
-                        Run your webshop completely free. Our basic features are extensive. Only pay for AI customizations when you want them.
+                        Register and configure your shop for free. Pay just $3 (30 credits) to publish. AI features are pay-as-you-go.
                     </p>
                 </motion.div>
 
@@ -101,14 +102,14 @@ export default function Pricing() {
                                     {plan.description}
                                 </p>
                                 <div className="flex items-end gap-2">
-                                    {plan.price !== "Custom" && (
+                                    {!isNaN(plan.price) && (
                                         <span className={`text-4xl font-black ${plan.popular ? 'text-white' : 'text-neutral-900'}`}>$</span>
                                     )}
-                                    <span className={`text-7xl font-black ${plan.popular ? 'text-white' : 'text-indigo-900'}`}>
+                                    <span className={`${isNaN(plan.price) ? 'text-3xl' : 'text-7xl'} font-black ${plan.popular ? 'text-white' : 'text-indigo-900'}`}>
                                         {plan.price}
                                     </span>
-                                    {plan.price !== "Custom" && (
-                                        <span className={`mb-3 ${plan.popular ? 'text-white/70' : 'text-neutral-500'}`}>/mo</span>
+                                    {plan.priceNote && (
+                                        <span className={`mb-3 ${plan.popular ? 'text-white/70' : 'text-neutral-500'}`}>{plan.priceNote}</span>
                                     )}
                                 </div>
                             </div>
@@ -131,7 +132,7 @@ export default function Pricing() {
                                 }
                                 `}
                             >
-                                {plan.price === "Custom" ? "LET'S TALK" : plan.name === "Free" ? "START FOR FREE" : "GET CREDITS"}
+                                {plan.name === "Free Setup" ? "START FREE" : plan.name === "Go Live" ? "GO LIVE" : "EXPLORE AI"}
                             </Button>
                         </motion.div>
                     ))}
