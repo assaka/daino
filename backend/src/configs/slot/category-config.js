@@ -90,7 +90,7 @@ const categoryConfig = {
       id: 'sorting_controls',
       type: 'container',
       content: '',
-      className: 'flex justify-between items-center mb-6 gap-4',
+      className: 'flex flex-wrap justify-between items-center mb-6 gap-4',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
@@ -98,6 +98,64 @@ const categoryConfig = {
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
+    },
+
+    product_count_info: {
+      id: 'product_count_info',
+      type: 'component',
+      component: 'ProductCountInfo',
+      content: '',
+      className: 'text-sm text-gray-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 4, list: 4 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ProductCountInfo',
+        displayName: 'Product Count'
+      }
+    },
+
+    sort_selector: {
+      id: 'sort_selector',
+      type: 'component',
+      component: 'SortSelector',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 2, row: 1 },
+      colSpan: { grid: 4, list: 4 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'SortSelector',
+        displayName: 'Sort Selector'
+      }
+    },
+
+    view_mode_toggle: {
+      id: 'view_mode_toggle',
+      type: 'component',
+      component: 'ViewModeToggle',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 3, row: 1 },
+      colSpan: { grid: 4, list: 4 },
+      viewMode: ['grid', 'list'],
+      conditionalDisplay: 'settings.enable_view_mode_toggle',
+      metadata: {
+        hierarchical: false,
+        component: 'ViewModeToggle',
+        displayName: 'View Mode Toggle'
+      }
     },
 
     product_items: {

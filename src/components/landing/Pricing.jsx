@@ -52,12 +52,7 @@ const plans = [
 
 export default function Pricing() {
     return (
-        <section className="py-32 bg-gradient-to-b from-white via-indigo-50/30 to-white relative overflow-hidden">
-            {/* Subtle background elements */}
-            <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-200/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-100/30 rounded-full blur-3xl" />
-
+        <section className="py-32 bg-white relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
