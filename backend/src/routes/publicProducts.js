@@ -24,7 +24,7 @@ router.get('/', cacheProducts(180), async (req, res) => {
       });
     }
 
-    const { page = 1, limit = 100, category_id, status = 'active', search, slug, sku, id, ids, featured } = req.query;
+    const { page = 1, limit = 100, category_id, status = 'active', search, slug, sku, id, ids, featured, is_custom_option } = req.query;
     const offset = (page - 1) * limit;
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
@@ -55,6 +55,7 @@ router.get('/', cacheProducts(180), async (req, res) => {
 
     // Simple filters
     if (featured === 'true' || featured === true) query = query.eq('featured', true);
+    if (is_custom_option === 'true' || is_custom_option === true) query = query.eq('is_custom_option', true);
     if (slug) query = query.eq('slug', slug);
     if (sku) query = query.eq('sku', sku);
     // Handle 'ids' parameter - array of IDs
