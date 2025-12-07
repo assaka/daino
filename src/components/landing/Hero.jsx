@@ -60,7 +60,7 @@ export default function Hero() {
             {/* E-commerce themed background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {/* Subtle floating icons - shopping bags, carts, tags */}
-                <svg className="absolute w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
+                <svg className="absolute w-full h-full opacity-[0.15]" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <pattern id="ecommerce-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
                             {/* Shopping bag */}
