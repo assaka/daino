@@ -371,10 +371,13 @@ export default function Stores() {
                         const storeCode = store.slug || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                         if (store.published) {
                           const baseUrl = getStoreBaseUrl(store);
-                          window.open(getExternalStoreUrl(storeCode, '', baseUrl), '_blank');
+                          // Add ?version=published to view published/live version
+                          const storeUrl = getExternalStoreUrl(storeCode, '', baseUrl);
+                          const separator = storeUrl.includes('?') ? '&' : '?';
+                          window.open(`${storeUrl}${separator}version=published`, '_blank');
                         } else {
-                          // Use preview URL when store is not running
-                          window.open(`/public/${storeCode}`, '_blank');
+                          // Use preview URL when store is not running (still add version=published to bypass pause modal)
+                          window.open(`/public/${storeCode}?version=published`, '_blank');
                         }
                       }}
                     >
