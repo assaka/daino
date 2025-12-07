@@ -1087,18 +1087,16 @@ const getGridClasses = (storeSettings) => {
 const ProductCountInfo = createSlotComponent({
   name: 'ProductCountInfo',
   render: ({ slot, className, styles, categoryContext, variableContext }) => {
-    // Use template from slot.content or fallback
-    const template = slot?.content || `
-      <div class="text-sm text-gray-600">
-        Showing {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
-      </div>
-    `;
-
-    const html = processVariables(template, variableContext);
+    // Use pre-formatted countText from variableContext.pagination
+    // This already handles singular/plural and pagination vs simple count
+    const countText = variableContext?.pagination?.countText || '';
 
     return (
-      <div className={className || slot.className} style={styles || slot.styles}
-           dangerouslySetInnerHTML={{ __html: html }} />
+      <div className={className || slot.className} style={styles || slot.styles}>
+        <div className="text-sm text-gray-600">
+          {countText}
+        </div>
+      </div>
     );
   }
 });
