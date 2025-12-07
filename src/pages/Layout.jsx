@@ -615,7 +615,9 @@ function LayoutInner({ children, currentPageName }) {
 
                         // Fetch complete store data to ensure we have the slug
                         const fullStoreData = await Store.findById(selectedStore.id);
-                        const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
+                        // Extract store from nested response structure
+                        const storeData = fullStoreData?.data?.store || fullStoreData?.store || fullStoreData;
+                        const fullStore = Array.isArray(storeData) ? storeData[0] : storeData;
 
                         const storeSlug = fullStore?.slug || selectedStore?.slug;
 

@@ -38,11 +38,11 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Separate component for the paused overlay that can use the preview mode context
 function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
-    const { isPreviewDraftMode } = usePreviewMode();
+    const { isPreviewDraftMode, isPublishedPreview, isWorkspaceMode } = usePreviewMode();
 
     // Also check URL params as fallback (for initial load before context initializes)
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const isInPreviewModeFromUrl = urlParams?.get('workspace') === 'true' || urlParams?.get('preview') === 'draft';
+    const isInPreviewModeFromUrl = urlParams?.get('version') === 'published' || urlParams?.get('mode') === 'workspace';
 
     const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
     const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
