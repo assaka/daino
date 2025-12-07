@@ -72,7 +72,7 @@ export default function Pricing() {
                     </p>
                 </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
                     {plans.map((plan, index) => (
                         <motion.div
                             key={index}
@@ -81,7 +81,7 @@ export default function Pricing() {
                             viewport={{ once: true }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                             className={`
-                                relative rounded-2xl p-10 border transition-all duration-300 shadow-sm hover:shadow-lg
+                                relative rounded-2xl p-10 border transition-all duration-300 shadow-sm hover:shadow-lg h-full flex flex-col
                                 ${plan.popular
                                 ? 'bg-indigo-900 text-white border-transparent scale-105 shadow-xl'
                                 : 'bg-neutral-50 border-neutral-200 hover:border-slate-400'
@@ -114,7 +114,7 @@ export default function Pricing() {
                                 </div>
                             </div>
 
-                            <ul className="space-y-3 mb-8">
+                            <ul className="space-y-3 mb-8 flex-grow">
                                 {plan.features.map((feature, i) => (
                                     <li key={i} className="flex items-start gap-3">
                                         <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${plan.popular ? 'text-white/80' : 'text-indigo-900'}`} />

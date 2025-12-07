@@ -530,13 +530,26 @@ export function CategorySlotRenderer({
       // Get translated category name (reuse currentLanguage from above)
       const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
 
+      // Get selected price range if any
+      const selectedPriceRange = selectedFilters?.priceRange;
+      const currentPriceMin = selectedPriceRange?.[0] ?? formattedFilters.price?.min;
+      const currentPriceMax = selectedPriceRange?.[1] ?? formattedFilters.price?.max;
+
       const variableContext = {
         category: category ? {
           ...category,
           name: translatedCategoryName
         } : null,
         products: formattedProducts,
-        filters: formattedFilters,
+        filters: {
+          ...formattedFilters,
+          price: formattedFilters.price ? {
+            ...formattedFilters.price,
+            currentMin: currentPriceMin,
+            currentMax: currentPriceMax
+          } : null
+        },
+        selectedFilters: selectedFilters || {},
         activeFilters: categoryContext.activeFilters || [],
         pagination: (() => {
           const total = Number(categoryContext.filteredProductsCount) || 0;

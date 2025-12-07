@@ -242,7 +242,7 @@ const LayeredNavigation = createSlotComponent({
                   data-slider-type="min"
                   min="{{filters.price.min}}"
                   max="{{filters.price.max}}"
-                  value="{{filters.price.min}}"
+                  value="{{filters.price.currentMin}}"
                   class="absolute w-full h-1 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
                 />
                 <!-- Max slider -->
@@ -253,14 +253,14 @@ const LayeredNavigation = createSlotComponent({
                   data-slider-type="max"
                   min="{{filters.price.min}}"
                   max="{{filters.price.max}}"
-                  value="{{filters.price.max}}"
+                  value="{{filters.price.currentMax}}"
                   class="absolute w-full h-1 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
                 />
               </div>
               <!-- Price display -->
               <div class="flex justify-between text-sm text-gray-600 mt-2">
-                <span>{{settings.currency_symbol}}<span id="selected-min">{{filters.price.min}}</span></span>
-                <span>{{settings.currency_symbol}}<span id="selected-max">{{filters.price.max}}</span></span>
+                <span>{{settings.currency_symbol}}<span id="selected-min">{{filters.price.currentMin}}</span></span>
+                <span>{{settings.currency_symbol}}<span id="selected-max">{{filters.price.currentMax}}</span></span>
               </div>
             </div>
           </div>
