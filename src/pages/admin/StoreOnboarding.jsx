@@ -408,7 +408,7 @@ export default function StoreOnboarding() {
           {/* Step Indicators */}
           <div className="flex items-center justify-between mt-6 mb-4">
             {STEPS.map((step, index) => (
-              <div key={step.id} className="flex items-center w-full">
+              <div key={step.id} {`flex items-center ${index < STEPS.length - 1 ? 'w-full' : ''}`}>
                 <div className={`flex flex-col items-center ${index < STEPS.length - 1 ? 'flex-1' : ''}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     completedSteps.includes(step.id)
@@ -423,7 +423,7 @@ export default function StoreOnboarding() {
                       <step.icon className="w-5 h-5" />
                     )}
                   </div>
-                  <span className="text-xs mt-1 text-center hidden sm:block">{step.title}</span>
+                  <span className="text-xs mt-1 text-center hidden sm:block whitespace-nowrap">{step.title}</span>
                 </div>
                 {index < STEPS.length - 1 && (
                   <div className={`h-0.5 w-full mx-2 ${
