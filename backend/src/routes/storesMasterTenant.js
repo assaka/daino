@@ -102,6 +102,56 @@ async function checkDatabaseUrlDuplicate(projectUrl, currentStoreId = null) {
 }
 
 /**
+ * GET /api/stores/check-slug
+ * Check if a store slug is available
+ */
+router.get('/check-slug', authMiddleware, async (req, res) => {
+  try {
+    const { slug } = req.query;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        error: 'Slug is required'
+      });
+    }
+
+    // Normalize the slug
+    const normalizedSlug = slug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+    // Check if any store with this slug exists (regardless of status)
+    const { data: existingStore, error: checkError } = await masterDbClient
+      .from('stores')
+      .select('id, slug, status')
+      .eq('slug', normalizedSlug)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking slug availability:', checkError);
+      throw new Error('Failed to check slug availability');
+    }
+
+    const isAvailable = !existingStore;
+
+    res.json({
+      success: true,
+      slug: normalizedSlug,
+      available: isAvailable,
+      message: isAvailable
+        ? 'This slug is available'
+        : 'This slug is already taken. Please choose a different name.'
+    });
+  } catch (error) {
+    console.error('Check slug error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check slug availability',
+      details: error.message
+    });
+  }
+});
+
+/**
  * POST /api/stores
  * Create a new store in master DB
  */

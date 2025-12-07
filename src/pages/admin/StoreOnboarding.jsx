@@ -41,6 +41,8 @@ export default function StoreOnboarding() {
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
+  const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
+  const slugCheckTimeoutRef = React.useRef(null);
 
   // Auth check - redirect to login if not authenticated
   useEffect(() => {
@@ -79,11 +81,54 @@ export default function StoreOnboarding() {
     return <PageLoader size="lg" text="Checking authentication..." />;
   }
 
+  // Check slug availability with debounce
+  const checkSlugAvailability = async (slug) => {
+    if (!slug || slug.length < 2) {
+      setSlugStatus({ checking: false, available: null, message: '' });
+      return;
+    }
+
+    setSlugStatus({ checking: true, available: null, message: '' });
+
+    try {
+      const response = await apiClient.get(`/stores/check-slug?slug=${encodeURIComponent(slug)}`);
+      if (response.success) {
+        setSlugStatus({
+          checking: false,
+          available: response.available,
+          message: response.message
+        });
+      }
+    } catch (err) {
+      console.error('Error checking slug:', err);
+      setSlugStatus({ checking: false, available: null, message: '' });
+    }
+  };
+
   const handleNameChange = (name) => {
-    setStoreData({
-      name,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    });
+    const newSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    setStoreData({ name, slug: newSlug });
+
+    // Debounce slug check
+    if (slugCheckTimeoutRef.current) {
+      clearTimeout(slugCheckTimeoutRef.current);
+    }
+    slugCheckTimeoutRef.current = setTimeout(() => {
+      checkSlugAvailability(newSlug);
+    }, 500);
+  };
+
+  const handleSlugChange = (slug) => {
+    const normalizedSlug = slug.toLowerCase().replace(/[^a-z0-9-]+/g, '').replace(/^-+|-+$/g, '');
+    setStoreData({ ...storeData, slug: normalizedSlug });
+
+    // Debounce slug check
+    if (slugCheckTimeoutRef.current) {
+      clearTimeout(slugCheckTimeoutRef.current);
+    }
+    slugCheckTimeoutRef.current = setTimeout(() => {
+      checkSlugAvailability(normalizedSlug);
+    }, 500);
   };
 
   const handleCreateStore = async (e) => {
@@ -444,19 +489,35 @@ export default function StoreOnboarding() {
 
               <div>
                 <Label htmlFor="storeSlug">Store URL *</Label>
-                <Input
-                  id="storeSlug"
-                  value={storeData.slug}
-                  onChange={(e) => setStoreData({ ...storeData, slug: e.target.value })}
-                  required
-                  className="mt-2 font-mono"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  {storeData.slug || 'your-store'}.daino.com
+                <div className="relative">
+                  <Input
+                    id="storeSlug"
+                    value={storeData.slug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    required
+                    className={`mt-2 font-mono pr-10 ${
+                      slugStatus.available === false ? 'border-red-500 focus:ring-red-500' :
+                      slugStatus.available === true ? 'border-green-500 focus:ring-green-500' : ''
+                    }`}
+                  />
+                  {slugStatus.checking && (
+                    <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 mt-1 w-4 h-4 animate-spin text-gray-400" />
+                  )}
+                  {!slugStatus.checking && slugStatus.available === true && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 transform -translate-y-1/2 mt-1 w-4 h-4 text-green-500" />
+                  )}
+                  {!slugStatus.checking && slugStatus.available === false && (
+                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 mt-1 w-4 h-4 text-red-500" />
+                  )}
+                </div>
+                <p className={`text-sm mt-1 ${slugStatus.available === false ? 'text-red-500' : 'text-gray-500'}`}>
+                  {slugStatus.available === false
+                    ? slugStatus.message
+                    : `https://www.dainostore.com/public/${storeData.slug || 'your-store'}`}
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading || !storeData.name}>
+              <Button type="submit" className="w-full" disabled={loading || !storeData.name || slugStatus.available === false || slugStatus.checking}>
                 {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</> : <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>}
               </Button>
             </form>
