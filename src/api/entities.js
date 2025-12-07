@@ -663,33 +663,11 @@ class ProductService extends BaseEntity {
     }
   }
 
-  // Public product access (no authentication required)
+  // Filter products - uses findAll which smartly chooses between admin/public API
   async filter(params = {}) {
     try {
-      
-      // Safely serialize params, converting objects to strings
-      const sanitizedParams = {};
-      for (const [key, value] of Object.entries(params)) {
-        if (value !== null && value !== undefined) {
-          if (typeof value === 'object') {
-            // Handle objects by stringifying them or using specific ID
-            sanitizedParams[key] = value.id || JSON.stringify(value);
-          } else {
-            sanitizedParams[key] = value;
-          }
-        }
-      }
-      
-      const queryString = new URLSearchParams(sanitizedParams).toString();
-      const url = queryString ? `products?${queryString}` : 'products';
-      
-      // Use public request for product filtering (no authentication required)
-      const response = await apiClient.publicRequest('GET', url);
-      
-      // Ensure response is always an array
-      const result = Array.isArray(response) ? response : [];
-      
-      return result;
+      const result = await this.findAll(params);
+      return Array.isArray(result) ? result : [];
     } catch (error) {
       console.error(`ProductService.filter() error:`, error.message);
       return [];
