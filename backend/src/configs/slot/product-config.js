@@ -140,7 +140,7 @@ const productConfig = {
       position: { col: 1, row: 1 },
       layout: 'flex',
       colSpan: {
-        default: 'col-span-12 lg:col-span-6'
+        default: 'col-span-12 md:col-span-6'
       },
       viewMode: ['default'],
       metadata: {
@@ -161,7 +161,7 @@ const productConfig = {
       position: { col: 7, row: 1 },
       layout: 'grid',
       colSpan: {
-        default: 'col-span-12 lg:col-span-6'
+        default: 'col-span-12 md:col-span-6'
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }
