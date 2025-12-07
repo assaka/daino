@@ -57,11 +57,27 @@ export default function Hero() {
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 pt-20">
 
-            {/* Animated Background Grid */}
+            {/* E-commerce themed background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-50 blur-3xl opacity-60" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-50 blur-3xl opacity-60" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+                {/* Subtle floating icons - shopping bags, carts, tags */}
+                <svg className="absolute w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <pattern id="ecommerce-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+                            {/* Shopping bag */}
+                            <path d="M20 35 L20 25 C20 20 25 15 30 15 C35 15 40 20 40 25 L40 35 M15 35 L45 35 L45 55 L15 55 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                            {/* Price tag */}
+                            <path d="M75 20 L95 20 L95 40 L80 55 L65 40 Z M85 30 A2 2 0 1 0 85 30.01" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                            {/* Cart */}
+                            <path d="M20 85 L25 85 L35 100 L55 100 M30 90 L55 90 L52 100 M35 107 A3 3 0 1 0 35 107.01 M52 107 A3 3 0 1 0 52 107.01" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                            {/* Star/sparkle */}
+                            <path d="M90 80 L92 88 L100 90 L92 92 L90 100 L88 92 L80 90 L88 88 Z" fill="none" stroke="currentColor" strokeWidth="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#ecommerce-pattern)" />
+                </svg>
+                {/* Soft gradient overlays */}
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-50 to-transparent" />
+                <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-50 to-transparent" />
             </div>
 
             {/* Content */}
