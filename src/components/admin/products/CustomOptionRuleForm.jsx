@@ -50,10 +50,12 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     translations: {}
   });
 
+  const [customOptionProducts, setCustomOptionProducts] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Multi-select states
@@ -113,6 +115,33 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     }
   }, [selectedStore, currentLanguage]);
 
+  // Load custom option products whenever store_id changes (read-only display)
+  useEffect(() => {
+    const loadProductsForStore = async () => {
+      if (!formData.store_id) {
+        setCustomOptionProducts([]);
+        return;
+      }
+      setLoadingProducts(true);
+      try {
+        const { Product } = await import('@/api/entities');
+        // Only load products marked as custom options
+        const products = await Product.filter({
+          is_custom_option: true,
+          status: 'active',
+          store_id: formData.store_id
+        });
+
+        setCustomOptionProducts(Array.isArray(products) ? products : []);
+      } catch (error) {
+        console.error("Error loading custom option products:", error);
+        setCustomOptionProducts([]);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    loadProductsForStore();
+  }, [formData.store_id]);
 
   // Populate form data when a rule is passed (for editing)
   useEffect(() => {
@@ -439,13 +468,42 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
               <Label htmlFor="is_active">Active</Label>
             </div>
 
-            {/* Info about Custom Options */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> All products with "Set as Custom Option" enabled will automatically appear as custom options when this rule's conditions are met.
-                  To add or remove custom option products, edit the product and toggle the "Set as Custom Option" setting.
+            {/* Available Custom Options (Read-only display) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Custom Options</CardTitle>
+                <p className="text-sm text-gray-600">
+                  Products with "Set as Custom Option" enabled will automatically appear when this rule's conditions are met.
                 </p>
+              </CardHeader>
+              <CardContent>
+                {loadingProducts ? (
+                  <div className="text-center py-8 text-gray-500">Loading custom option products...</div>
+                ) : customOptionProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {customOptionProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="p-4 border rounded-lg border-gray-200 bg-gray-50"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div>
+                            <h4 className="font-medium">{product.name}</h4>
+                            <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                            <p className="text-sm font-medium text-green-600">${product.price}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No custom option products available.</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Enable "Set as Custom Option" on products in the Product settings to make them available.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

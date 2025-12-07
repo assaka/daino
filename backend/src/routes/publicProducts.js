@@ -36,29 +36,25 @@ router.get('/', cacheProducts(180), async (req, res) => {
       .eq('store_id', store_id)
       .eq('status', 'active');
 
-    // Skip visibility and stock filters for custom option products
-    // (they may be hidden from catalog but still usable as options, stock is checked on frontend)
+    // For custom option products, skip visibility filter only (they may be hidden from catalog)
+    // but still apply status and stock filters
     const isCustomOptionRequest = is_custom_option === 'true' || is_custom_option === true;
-
-    if (isCustomOptionRequest) {
-      console.log('🔍 Custom option products request - skipping visibility and stock filters');
-    }
 
     if (!isCustomOptionRequest) {
       query = query.eq('visibility', 'visible');
+    }
 
-      // Stock filtering based on store settings
-      try {
-        const storeSettings = await getStoreSettings(store_id);
-        const displayOutOfStock = storeSettings?.display_out_of_stock !== false;
+    // Stock filtering based on store settings (applies to all products including custom options)
+    try {
+      const storeSettings = await getStoreSettings(store_id);
+      const displayOutOfStock = storeSettings?.display_out_of_stock !== false;
 
-        if (!displayOutOfStock) {
-          // Show products that are: configurable OR infinite_stock OR not managing stock OR in stock
-          query = query.or('type.eq.configurable,infinite_stock.eq.true,manage_stock.eq.false,and(manage_stock.eq.true,stock_quantity.gt.0)');
-        }
-      } catch (error) {
-        console.warn('Could not load store settings for stock filtering:', error.message);
+      if (!displayOutOfStock) {
+        // Show products that are: configurable OR infinite_stock OR not managing stock OR in stock
+        query = query.or('type.eq.configurable,infinite_stock.eq.true,manage_stock.eq.false,and(manage_stock.eq.true,stock_quantity.gt.0)');
       }
+    } catch (error) {
+      console.warn('Could not load store settings for stock filtering:', error.message);
     }
 
     // Category filtering will be done in JavaScript after fetch
