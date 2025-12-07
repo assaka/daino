@@ -1567,6 +1567,9 @@ router.get('/:id', authMiddleware, async (req, res) => {
           id: store.id,
           status: store.status,
           is_active: store.is_active,
+          published: store.published || false,
+          published_at: store.published_at || null,
+          slug: store.slug,
           created_at: store.created_at
         },
         hostname: primaryHostname?.hostname || null,
