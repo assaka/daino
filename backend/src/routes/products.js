@@ -18,7 +18,7 @@ const { storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth'
 
 router.get('/', authAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 100, category_id, status, search, slug, sku, id, include_all_translations } = req.query;
+    const { page = 1, limit = 100, category_id, status, search, slug, sku, id, include_all_translations, is_custom_option } = req.query;
     const store_id = req.headers['x-store-id'] || req.query.store_id;
     const offset = (page - 1) * limit;
 
@@ -54,6 +54,7 @@ router.get('/', authAdmin, async (req, res) => {
     if (sku) filters.sku = sku;
     if (id) filters.id = id;
     if (search) filters.search = search;
+    if (is_custom_option === 'true' || is_custom_option === true) filters.is_custom_option = true;
 
     console.log('🔎 Final filters for products query:', JSON.stringify(filters, null, 2));
 

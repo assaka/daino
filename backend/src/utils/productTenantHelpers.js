@@ -42,6 +42,9 @@ async function getProducts(storeId, filters = {}, pagination = {}) {
     // Search in SKU only for now
     query = query.ilike('sku', `%${filters.search}%`);
   }
+  if (filters.is_custom_option === true) {
+    query = query.eq('is_custom_option', true);
+  }
 
   // Get paginated data with count
   query = query
