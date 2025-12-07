@@ -913,13 +913,13 @@ const SortSelector = createSlotComponent({
 
     // Sort options with translations
     const sortOptions = [
-      { value: '', label: t('sort.default', 'Default') },
-      { value: 'name-asc', label: t('sort.name_asc', 'Name (A-Z)') },
-      { value: 'name-desc', label: t('sort.name_desc', 'Name (Z-A)') },
-      { value: 'price-asc', label: t('sort.price_asc', 'Price (Low to High)') },
-      { value: 'price-desc', label: t('sort.price_desc', 'Price (High to Low)') },
-      { value: 'newest', label: t('sort.newest', 'Newest First') },
-      { value: 'oldest', label: t('sort.oldest', 'Oldest First') }
+      { value: '', label: t('common.sort_default', 'Default') },
+      { value: 'name-asc', label: t('common.sort_name_asc', 'Name (A-Z)') },
+      { value: 'name-desc', label: t('common.sort_name_desc', 'Name (Z-A)') },
+      { value: 'price-asc', label: t('common.sort_price_asc', 'Price (Low to High)') },
+      { value: 'price-desc', label: t('common.sort_price_desc', 'Price (High to Low)') },
+      { value: 'newest', label: t('common.sort_newest', 'Newest First') },
+      { value: 'oldest', label: t('common.sort_oldest', 'Oldest First') }
     ];
 
     const handleChange = (e) => {
@@ -932,7 +932,7 @@ const SortSelector = createSlotComponent({
       <div className={className || slot.className} style={styles || slot.styles}>
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-700 font-medium">
-            {t('sort.sort_by', 'Sort by:')}
+            {t('common.sort_by', 'Sort by:')}
           </label>
           <select
             className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
