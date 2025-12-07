@@ -111,34 +111,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Helper function to validate optional_product_ids - only include products with is_custom_option: true
-async function validateOptionalProductIds(tenantDb, productIds) {
-  if (!productIds || productIds.length === 0) {
-    return [];
-  }
-
-  // Query products that have is_custom_option = true
-  const { data: validProducts, error } = await tenantDb
-    .from('products')
-    .select('id')
-    .in('id', productIds)
-    .eq('is_custom_option', true);
-
-  if (error) {
-    console.error('Error validating optional_product_ids:', error);
-    return productIds; // Return original if query fails
-  }
-
-  const validIds = (validProducts || []).map(p => p.id);
-  const invalidIds = productIds.filter(id => !validIds.includes(id));
-
-  if (invalidIds.length > 0) {
-    console.log(`Filtered out ${invalidIds.length} products without is_custom_option=true:`, invalidIds);
-  }
-
-  return validIds;
-}
-
 // Create a new custom option rule
 router.post('/', async (req, res) => {
   try {
@@ -160,15 +132,12 @@ router.post('/', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Validate optional_product_ids - only keep products with is_custom_option: true
-    const validatedProductIds = await validateOptionalProductIds(tenantDb, optional_product_ids);
-
     const ruleData = {
       name,
       display_label,
       is_active,
       conditions,
-      optional_product_ids: validatedProductIds,
+      optional_product_ids,
       store_id,
       translations,
       created_at: new Date().toISOString(),
@@ -222,10 +191,7 @@ router.put('/:id', async (req, res) => {
     if (display_label !== undefined) updateData.display_label = display_label;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (conditions !== undefined) updateData.conditions = conditions;
-    // Validate optional_product_ids - only keep products with is_custom_option: true
-    if (optional_product_ids !== undefined) {
-      updateData.optional_product_ids = await validateOptionalProductIds(tenantDb, optional_product_ids);
-    }
+    if (optional_product_ids !== undefined) updateData.optional_product_ids = optional_product_ids;
     if (store_id !== undefined) updateData.store_id = store_id;
     if (translations !== undefined) updateData.translations = translations;
 
