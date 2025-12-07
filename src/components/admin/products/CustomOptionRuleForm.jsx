@@ -125,10 +125,10 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
       setLoading(true);
       try {
         const { Product } = await import('@/api/entities');
-        const products = await Product.filter({ 
-          is_custom_option: true, 
+        // Load all active products - any product can be selected as a custom option
+        const products = await Product.filter({
           status: 'active',
-          store_id: formData.store_id 
+          store_id: formData.store_id
         });
 
         setCustomOptionProducts(Array.isArray(products) ? products : []);
@@ -488,7 +488,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
               <CardHeader>
                 <CardTitle>Available Custom Options</CardTitle>
                 <p className="text-sm text-gray-600">
-                  Products appear here when you enable "Set as Custom Option for Other Products" in the Product settings.
+                  Select products to offer as custom options. Only selected products will appear on product pages.
                 </p>
               </CardHeader>
               <CardContent>
@@ -524,9 +524,9 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No custom option products available for the selected store.</p>
+                    <p className="text-gray-500">No products available for the selected store.</p>
                     <p className="text-sm text-gray-400 mt-1">
-                      Enable "Set as Custom Option" on products and ensure they are assigned to the selected store to make them available here.
+                      Add products to your store to make them available as custom options.
                     </p>
                   </div>
                 )}
