@@ -51,20 +51,12 @@
         }
       }
     },
-    "optional_product_ids": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of optional product IDs"
-    },
     "store_id": {
       "type": "string"
     }
   },
   "required": [
     "name",
-    "optional_product_ids",
     "store_id"
   ]
 }

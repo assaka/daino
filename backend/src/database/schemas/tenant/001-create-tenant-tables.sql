@@ -1824,7 +1824,6 @@ CREATE TABLE IF NOT EXISTS custom_option_rules (
   display_label VARCHAR(255) DEFAULT 'Custom Options'::character varying,
   is_active BOOLEAN DEFAULT true,
   conditions JSONB DEFAULT '{}'::jsonb,
-  optional_product_ids JSONB DEFAULT '[]'::jsonb,
   store_id UUID NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),

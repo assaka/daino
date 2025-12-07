@@ -119,7 +119,6 @@ router.post('/', async (req, res) => {
       display_label = 'Custom Options',
       is_active = true,
       conditions = {},
-      optional_product_ids = [],
       store_id,
       translations = {}
     } = req.body;
@@ -137,7 +136,6 @@ router.post('/', async (req, res) => {
       display_label,
       is_active,
       conditions,
-      optional_product_ids,
       store_id,
       translations,
       created_at: new Date().toISOString(),
@@ -171,7 +169,6 @@ router.put('/:id', async (req, res) => {
       display_label,
       is_active,
       conditions,
-      optional_product_ids,
       store_id,
       translations
     } = req.body;
@@ -191,7 +188,6 @@ router.put('/:id', async (req, res) => {
     if (display_label !== undefined) updateData.display_label = display_label;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (conditions !== undefined) updateData.conditions = conditions;
-    if (optional_product_ids !== undefined) updateData.optional_product_ids = optional_product_ids;
     if (store_id !== undefined) updateData.store_id = store_id;
     if (translations !== undefined) updateData.translations = translations;
 

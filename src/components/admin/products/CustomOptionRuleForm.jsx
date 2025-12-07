@@ -46,12 +46,10 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
       skus: [],
       attribute_conditions: []
     },
-    optional_product_ids: [],
     store_id: '',
     translations: {}
   });
 
-  const [customOptionProducts, setCustomOptionProducts] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -115,33 +113,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     }
   }, [selectedStore, currentLanguage]);
 
-  // Load custom option products whenever store_id changes
-  useEffect(() => {
-    const loadProductsForStore = async () => {
-      if (!formData.store_id) {
-        setCustomOptionProducts([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const { Product } = await import('@/api/entities');
-        // Only load products marked as custom options
-        const products = await Product.filter({
-          is_custom_option: true,
-          status: 'active',
-          store_id: formData.store_id
-        });
-
-        setCustomOptionProducts(Array.isArray(products) ? products : []);
-      } catch (error) {
-        console.error("Error loading custom option products:", error);
-        setCustomOptionProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProductsForStore();
-  }, [formData.store_id]);
 
   // Populate form data when a rule is passed (for editing)
   useEffect(() => {
@@ -161,7 +132,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
         display_label: translations.en?.display_label || 'Custom Options',
         is_active: rule.is_active !== false,
         conditions: rule.conditions || { categories: [], attribute_sets: [], skus: [], attribute_conditions: [] },
-        optional_product_ids: Array.isArray(rule.optional_product_ids) ? rule.optional_product_ids : [],
         store_id: rule.store_id || '',
         translations: translations
       });
@@ -209,14 +179,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     handleConditionChange(condition, newValues);
   };
 
-  const handleProductToggle = (productId) => {
-    const currentIds = formData.optional_product_ids || [];
-    const newIds = currentIds.includes(productId)
-      ? currentIds.filter(id => id !== productId)
-      : [...currentIds, productId];
-    
-    handleInputChange('optional_product_ids', newIds);
-  };
 
   const handleSkuAdd = () => {
     const trimmedSku = skuInput.trim();
@@ -265,7 +227,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     e.preventDefault();
 
     if (!isFormValid) {
-      showWarning('Please fill in all required fields: Rule Name and at least one Custom Option product.');
+      showWarning('Please fill in all required fields: Rule Name is required.');
       return;
     }
 
@@ -305,11 +267,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const getSelectedCategoryNames = () => {
     if (!Array.isArray(categories)) return [];
     return categories.filter(cat => cat && formData.conditions.categories?.includes(cat.id)).map(cat => cat.name);
-  };
-
-  const getSelectedProductNames = () => {
-    if (!Array.isArray(customOptionProducts)) return [];
-    return customOptionProducts.filter(prod => prod && formData.optional_product_ids?.includes(prod.id)).map(prod => prod.name);
   };
 
   const getSelectedAttributeSetNames = () => {
@@ -397,9 +354,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     );
   };
 
-  const isFormValid = formData.name &&
-                     formData.optional_product_ids?.length > 0 &&
-                     formData.store_id;
+  const isFormValid = formData.name && formData.store_id;
 
 
   return (
@@ -484,53 +439,13 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
               <Label htmlFor="is_active">Active</Label>
             </div>
 
-            {/* Custom Options Selection Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Available Custom Options</CardTitle>
-                <p className="text-sm text-gray-600">
-                  Products appear here when you enable "Set as Custom Option" in the Product settings.
+            {/* Info about Custom Options */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> All products with "Set as Custom Option" enabled will automatically appear as custom options when this rule's conditions are met.
+                  To add or remove custom option products, edit the product and toggle the "Set as Custom Option" setting.
                 </p>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">Loading custom option products...</div>
-                ) : customOptionProducts.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {customOptionProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          formData.optional_product_ids.includes(product.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => handleProductToggle(product.id)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            checked={formData.optional_product_ids.includes(product.id)}
-                            onChange={() => handleProductToggle(product.id)}
-                            className="rounded"
-                          />
-                          <div>
-                            <h4 className="font-medium">{product.name}</h4>
-                            <p className="text-sm text-gray-500">SKU: {product.sku}</p>
-                            <p className="text-sm font-medium text-green-600">${product.price}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No custom option products available.</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Enable "Set as Custom Option" on products in the Product settings to make them available here.
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 

@@ -140,7 +140,9 @@ export default function CustomOptionRules() {
                       <div>
                         <CardTitle className="text-lg">{rule.name}</CardTitle>
                         <p className="text-sm text-gray-500">
-                          {rule.optional_product_ids?.length || 0} custom options
+                          {rule.conditions?.categories?.length || rule.conditions?.attribute_sets?.length || rule.conditions?.skus?.length
+                            ? 'Has conditions'
+                            : 'Applies to all products'}
                         </p>
                       </div>
                     </div>

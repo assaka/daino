@@ -91,69 +91,46 @@ export default function CustomOptions({
 
             // Use the first applicable rule (you could enhance this to merge multiple rules)
             const rule = applicableRules[0];
-            console.log('🔍 CustomOptions - Using rule:', rule.name, 'with optional_product_ids:', rule.optional_product_ids);
+            console.log('🔍 CustomOptions - Using rule:', rule.name);
 
             // Get translated display label using standardized translation utility
             const translatedLabel = getTranslatedField(rule, 'display_label', currentLang) || 'Custom Options';
             setDisplayLabel(translatedLabel);
 
-            // Load the custom option products
-            if (rule.optional_product_ids && rule.optional_product_ids.length > 0) {
-                try {
-                    // Load products individually if $in syntax doesn't work
-                    const optionProducts = [];
-                    console.log('🔍 CustomOptions - Loading', rule.optional_product_ids.length, 'products');
-                    for (const productId of rule.optional_product_ids) {
-                        // Skip if this is the current product being viewed
-                        if (productId === product.id) {
-                            console.log('🔍 CustomOptions - Skipping current product:', productId);
-                            continue;
-                        }
+            // Load all products with is_custom_option = true
+            try {
+                console.log('🔍 CustomOptions - Fetching products with is_custom_option=true');
+                const customOptionProducts = await StorefrontProduct.filter({
+                    is_custom_option: true,
+                    status: 'active'
+                });
+                console.log('🔍 CustomOptions - Found', customOptionProducts?.length || 0, 'custom option products');
 
-                        try {
-                            console.log('🔍 CustomOptions - Fetching product:', productId);
-                            const products = await StorefrontProduct.filter({
-                                id: productId,
-                                status: 'active'
-                            });
-                            console.log('🔍 CustomOptions - Product result for', productId, ':', products);
-
-                            if (products && products.length > 0) {
-                                const customOptionProduct = products[0];
-
-                                // Product is in the rule's optional_product_ids, so it should show
-                                // No need to check is_custom_option flag - being in the rule is sufficient
-
-                                // Check stock availability - only check products.stock_quantity and products.infinite_stock
-                                const trackStock = settings?.track_stock !== false; // Default to true
-
-                                const isInStock = trackStock
-                                    ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
-                                    : true; // If not tracking stock, always show
-
-                                console.log('🔍 CustomOptions - Stock check:', { trackStock, infinite_stock: customOptionProduct.infinite_stock, stock_quantity: customOptionProduct.stock_quantity, isInStock });
-
-                                // Only add to optionProducts if in stock
-                                if (isInStock) {
-                                    optionProducts.push(customOptionProduct);
-                                } else {
-                                    console.log('🔍 CustomOptions - Product out of stock:', productId);
-                                }
-                            } else {
-                                console.log('🔍 CustomOptions - No product found for:', productId);
-                            }
-                        } catch (productError) {
-                            console.error(`Failed to load custom option product ${productId}:`, productError);
-                        }
+                // Filter out current product and check stock
+                const optionProducts = (customOptionProducts || []).filter(customOptionProduct => {
+                    // Skip if this is the current product being viewed
+                    if (customOptionProduct.id === product.id) {
+                        console.log('🔍 CustomOptions - Skipping current product:', customOptionProduct.id);
+                        return false;
                     }
 
-                    console.log('🔍 CustomOptions - Final optionProducts:', optionProducts.length);
-                    setCustomOptions(optionProducts);
-                } catch (error) {
-                    console.error('Error loading custom option products:', error);
-                    setCustomOptions([]);
-                }
-            } else {
+                    // Check stock availability
+                    const trackStock = settings?.track_stock !== false; // Default to true
+                    const isInStock = trackStock
+                        ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
+                        : true;
+
+                    if (!isInStock) {
+                        console.log('🔍 CustomOptions - Product out of stock:', customOptionProduct.id);
+                    }
+
+                    return isInStock;
+                });
+
+                console.log('🔍 CustomOptions - Final optionProducts:', optionProducts.length);
+                setCustomOptions(optionProducts);
+            } catch (error) {
+                console.error('Error loading custom option products:', error);
                 setCustomOptions([]);
             }
         } catch (error) {
