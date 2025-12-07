@@ -79,8 +79,8 @@ const WorkspaceStorefrontPreview = () => {
     // Build the full storefront URL with draft mode parameter
     const url = getExternalStoreUrl(storeSlug, '', baseUrl);
 
-    // Add draft preview parameter and cache-busting timestamp
-    return `${url}?preview=draft&workspace=true&_t=${refreshKey}`;
+    // Add workspace mode parameter and cache-busting timestamp
+    return `${url}?mode=workspace&_t=${refreshKey}`;
   }, [storeSlug, selectedStore, refreshKey]);
 
   // Map page types to storefront paths
@@ -116,7 +116,7 @@ const WorkspaceStorefrontPreview = () => {
     // If pagePath is null (e.g., product page but product not loaded yet), show homepage
     const effectivePath = pagePath === null ? '' : pagePath;
     const newUrl = getExternalStoreUrl(storeSlug, effectivePath, baseUrl);
-    setCurrentUrl(`${newUrl}?preview=draft&workspace=true&_t=${refreshKey}`);
+    setCurrentUrl(`${newUrl}?mode=workspace&_t=${refreshKey}`);
   }, [storeSlug, selectedStore, refreshKey, selectedPageType, firstProductSlug, firstCategorySlug]);
 
   // Viewport dimensions
