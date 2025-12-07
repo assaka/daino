@@ -20,7 +20,7 @@ import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import GridLayoutControl from './GridLayoutControl';
-import categoryConfig from './configs/category-config';
+// Slot configurations come from database - no static config import needed
 import api from '@/utils/api';
 import { useTranslation } from '@/contexts/TranslationContext';
 
@@ -1395,13 +1395,13 @@ const EditorSidebar = ({
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       let databaseClassName = elementSlotConfig?.className || '';
 
-      // If database className is empty, fall back to static config template
+      // If database className is empty, check allSlots for a base template
       if (!databaseClassName) {
         // Extract base template ID (remove _0, _1, etc. suffix for template slots)
         const baseTemplateId = elementSlotId.replace(/_\d+$/, '');
-        const staticSlot = categoryConfig.slots?.[baseTemplateId];
-        if (staticSlot?.className) {
-          databaseClassName = staticSlot.className;
+        const templateSlot = allSlots?.[baseTemplateId];
+        if (templateSlot?.className) {
+          databaseClassName = templateSlot.className;
         }
       }
 
