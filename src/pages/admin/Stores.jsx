@@ -368,9 +368,14 @@ export default function Stores() {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        const baseUrl = getStoreBaseUrl(store);
                         const storeCode = store.slug || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                        window.open(getExternalStoreUrl(storeCode, '', baseUrl), '_blank');
+                        if (store.published) {
+                          const baseUrl = getStoreBaseUrl(store);
+                          window.open(getExternalStoreUrl(storeCode, '', baseUrl), '_blank');
+                        } else {
+                          // Use preview URL when store is not running
+                          window.open(`/public/${storeCode}`, '_blank');
+                        }
                       }}
                     >
                       <Eye className="w-4 h-4 mr-1" />

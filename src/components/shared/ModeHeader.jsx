@@ -186,15 +186,20 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               <DropdownMenuItem onClick={async () => {
                 try {
                   if (!selectedStore?.id) return;
-                  
+
                   const fullStoreData = await Store.findById(selectedStore.id);
                   const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-                  
-                  const baseUrl = getStoreBaseUrl(fullStore);
+
                   const storeSlug = fullStore?.slug || selectedStore?.slug;
-                  
+
                   if (storeSlug) {
-                    window.open(getExternalStoreUrl(storeSlug, '', baseUrl), '_blank');
+                    if (fullStore?.published) {
+                      const baseUrl = getStoreBaseUrl(fullStore);
+                      window.open(getExternalStoreUrl(storeSlug, '', baseUrl), '_blank');
+                    } else {
+                      // Use preview URL when store is not running
+                      window.open(`/public/${storeSlug}`, '_blank');
+                    }
                   } else {
                     console.warn('Store slug not found for store:', selectedStore);
                   }
