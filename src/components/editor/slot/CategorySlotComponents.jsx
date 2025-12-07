@@ -172,7 +172,45 @@ const LayeredNavigation = createSlotComponent({
     // Default template with price slider and dynamic attribute filters
     const template = slot?.content || `
       <div class="space-y-4">
-        <h3 class="text-lg font-semibold text-gray-900" style="color: {{attributeLabelStyles.color}}">Filter By</h3>
+        <!-- Header with Clear All button -->
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900" style="color: {{attributeLabelStyles.color}}">Filter By</h3>
+          {{#if (gt activeFilters.length 0)}}
+          <button
+            data-action="clear-all-filters"
+            class="text-sm text-red-600 hover:text-red-800 font-medium"
+          >
+            Clear All
+          </button>
+          {{/if}}
+        </div>
+
+        <!-- Active Filters / Selected Filters -->
+        {{#if (gt activeFilters.length 0)}}
+        <div class="pb-3 border-b">
+          <div class="flex flex-wrap gap-2">
+            {{#each activeFilters}}
+            <span
+              class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full"
+              style="background-color: {{activeFilterStyles.backgroundColor}}; color: {{activeFilterStyles.textColor}}"
+            >
+              <span>{{this.label}}: {{this.value}}</span>
+              <button
+                data-action="remove-filter"
+                data-filter-type="{{this.type}}"
+                data-attribute-code="{{this.attributeCode}}"
+                data-filter-value="{{this.value}}"
+                class="ml-1 hover:opacity-70"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </span>
+            {{/each}}
+          </div>
+        </div>
+        {{/if}}
 
         {{#if filters.price}}
         <!-- Price Slider Section -->
@@ -742,12 +780,25 @@ const LayeredNavigation = createSlotComponent({
         }
       };
 
+      // Handle clear all filters
+      const handleClearAllFilters = (e) => {
+        const clearAllBtn = e.target.closest('[data-action="clear-all-filters"]');
+        if (!clearAllBtn) return;
+
+        if (categoryContext?.clearFilters) {
+          categoryContext.clearFilters();
+        } else if (categoryContext?.handleFilterChange) {
+          categoryContext.handleFilterChange({});
+        }
+      };
+
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);
       containerRef.current.addEventListener('input', handleAttributeSlider);
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
       containerRef.current.addEventListener('click', handleRemoveFilter);
+      containerRef.current.addEventListener('click', handleClearAllFilters);
 
       // Attach mobile filter toggle to document since button is in a different slot
       document.addEventListener('click', handleMobileFilterToggle);
@@ -761,6 +812,7 @@ const LayeredNavigation = createSlotComponent({
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
           containerRef.current.removeEventListener('click', handleRemoveFilter);
+          containerRef.current.removeEventListener('click', handleClearAllFilters);
         }
         // Clean up document-level listeners
         document.removeEventListener('click', handleMobileFilterToggle);
