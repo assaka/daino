@@ -216,9 +216,9 @@ const cartConfig = {
       type: 'component',
       component: 'CartCouponSlot',
       content: `<div class="space-y-4">
-  <h3 class="text-lg font-semibold text-gray-900">{{t "cart.have_coupon"}}</h3>
+  <h3 class="text-lg font-semibold text-gray-900">{{t "common.apply_coupon"}}</h3>
   <div data-coupon-input-section class="flex gap-2">
-    <input data-coupon-input type="text" placeholder="{{t 'cart.enter_coupon_code'}}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+    <input data-coupon-input type="text" placeholder="{{t 'common.enter_coupon_code'}}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
     <button data-action="apply-coupon" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{{t "common.apply"}}</button>
   </div>
   <div data-applied-coupon-section class="hidden">
@@ -253,33 +253,33 @@ const cartConfig = {
       type: 'component',
       component: 'CartOrderSummarySlot',
       content: `<div class="space-y-4">
-  <h3 class="text-lg font-semibold text-gray-900">{{t "cart.order_summary"}}</h3>
+  <h3 class="text-lg font-semibold text-gray-900">{{t "common.order_summary"}}</h3>
   <div class="space-y-2">
     <div class="flex justify-between text-gray-600">
-      <span>{{t "cart.subtotal"}}</span>
+      <span>{{t "common.subtotal"}}</span>
       <span data-subtotal class="font-medium"></span>
     </div>
     <div data-custom-options-row class="flex justify-between text-gray-600" style="display: none;">
-      <span>{{t "cart.custom_options"}}</span>
+      <span>{{t "checkout.custom_options"}}</span>
       <span data-custom-options-total class="font-medium"></span>
     </div>
     <div data-discount-row class="flex justify-between text-green-600" style="display: none;">
-      <span data-discount-label>{{t "cart.discount"}}</span>
+      <span data-discount-label>{{t "common.discount"}}</span>
       <span data-discount class="font-medium"></span>
     </div>
     <div class="flex justify-between text-gray-600">
-      <span>{{t "cart.tax"}}</span>
+      <span>{{t "common.tax"}}</span>
       <span data-tax class="font-medium"></span>
     </div>
     <div class="border-t pt-2 mt-2">
       <div class="flex justify-between text-lg font-bold text-gray-900">
-        <span>{{t "cart.total"}}</span>
+        <span>{{t "common.total"}}</span>
         <span data-total></span>
       </div>
     </div>
   </div>
   <button data-action="checkout" class="w-full py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium">
-    {{t "cart.proceed_to_checkout"}}
+    {{t "checkout.proceed_to_checkout"}}
   </button>
 </div>`,
       className: 'bg-white',

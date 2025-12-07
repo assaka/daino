@@ -765,6 +765,36 @@ const LayeredNavigation = createSlotComponent({
 
         const currentFilters = categoryContext.selectedFilters || {};
 
+        // Handle price range filter removal
+        if (filterType === 'priceRange') {
+          const newFilters = { ...currentFilters };
+          delete newFilters.priceRange;
+          categoryContext.handleFilterChange(newFilters);
+
+          // Also reset the slider UI to original values
+          const minSlider = containerRef.current?.querySelector('#price-slider-min');
+          const maxSlider = containerRef.current?.querySelector('#price-slider-max');
+          const selectedMin = containerRef.current?.querySelector('#selected-min');
+          const selectedMax = containerRef.current?.querySelector('#selected-max');
+
+          if (minSlider && maxSlider) {
+            const min = parseInt(minSlider.getAttribute('min'));
+            const max = parseInt(minSlider.getAttribute('max'));
+            minSlider.value = min;
+            maxSlider.value = max;
+            if (selectedMin) selectedMin.textContent = min;
+            if (selectedMax) selectedMax.textContent = max;
+
+            // Reset the track
+            const rangeTrack = containerRef.current?.querySelector('#price-range-track');
+            if (rangeTrack) {
+              rangeTrack.style.left = '0%';
+              rangeTrack.style.width = '100%';
+            }
+          }
+          return;
+        }
+
         if (filterType === 'attribute' && attributeCode) {
           const currentValues = currentFilters[attributeCode] || [];
           const newValues = currentValues.filter(v => v !== filterValue);
@@ -790,6 +820,34 @@ const LayeredNavigation = createSlotComponent({
         } else if (categoryContext?.handleFilterChange) {
           categoryContext.handleFilterChange({});
         }
+
+        // Reset the price slider UI to original values
+        const minSlider = containerRef.current?.querySelector('#price-slider-min');
+        const maxSlider = containerRef.current?.querySelector('#price-slider-max');
+        const selectedMin = containerRef.current?.querySelector('#selected-min');
+        const selectedMax = containerRef.current?.querySelector('#selected-max');
+
+        if (minSlider && maxSlider) {
+          const min = parseInt(minSlider.getAttribute('min'));
+          const max = parseInt(minSlider.getAttribute('max'));
+          minSlider.value = min;
+          maxSlider.value = max;
+          if (selectedMin) selectedMin.textContent = min;
+          if (selectedMax) selectedMax.textContent = max;
+
+          // Reset the track
+          const rangeTrack = containerRef.current?.querySelector('#price-range-track');
+          if (rangeTrack) {
+            rangeTrack.style.left = '0%';
+            rangeTrack.style.width = '100%';
+          }
+        }
+
+        // Also uncheck all checkboxes/radio buttons
+        const allInputs = containerRef.current?.querySelectorAll('[data-action="toggle-filter"]');
+        allInputs?.forEach(input => {
+          input.checked = false;
+        });
       };
 
       containerRef.current.addEventListener('change', handleChange);

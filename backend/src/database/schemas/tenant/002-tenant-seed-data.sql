@@ -1981,7 +1981,6 @@ VALUES
   ('5f7e2fc3-f935-4ffc-a65c-436bebfdebff', 'address.default_billing', 'en', 'Set as default billing address', 'address', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('893bf043-d245-47de-89ab-d9d843ed183a', 'common.test', 'en', 'test', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'custom', '{{STORE_ID}}'),
   ('777b2c96-c93e-4c40-9eb7-f1791b9d40c2', 'common.authorized', 'en', 'Authorized', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
-  ('4aef313f-0dfd-49a5-85c9-81a7d00996a8', 'cart.please_enter_coupon_code', 'en', 'Please enter a coupon code.', 'cart', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('7aba0dbb-b0b6-4aad-8b5f-11dac071344f', 'cart.coupon_applied', 'en', 'Coupon "{coupon}" applied!', 'cart', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('0675da96-44bb-489e-b3e0-315f4f9beb9a', 'cart.coupon_removed', 'en', 'Coupon removed.', 'cart', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('8b474753-7b80-4fc2-b7dd-ba8b97df44dc', 'cart.item_removed', 'en', 'Item removed from cart.', 'cart', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),

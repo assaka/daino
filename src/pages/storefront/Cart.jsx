@@ -670,7 +670,7 @@ export default function Cart() {
 
     const handleApplyCoupon = async () => {
         if (!couponCode) {
-            setFlashMessage({ type: 'error', message: t('cart.please_enter_coupon_code', 'Please enter a coupon code.') });
+            setFlashMessage({ type: 'error', message: t('common.enter_coupon_code', 'Please enter a coupon code.') });
             return;
         }
 
