@@ -949,15 +949,6 @@ const SortSelector = createSlotComponent({
         </div>
       </div>
     );
-      return () => {
-        selectElement.removeEventListener('change', handleChange);
-      };
-    }, [categoryContext, context]);
-
-    return (
-      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}
-           dangerouslySetInnerHTML={{ __html: html }} />
-    );
   }
 });
 
