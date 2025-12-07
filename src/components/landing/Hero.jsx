@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Send } from 'lucide-react';
+import { ArrowRight, Send, ShoppingBag, Package, Tag, Store, CreditCard, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Hero() {
@@ -57,32 +57,26 @@ export default function Hero() {
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 pt-20">
 
-            {/* E-commerce themed background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <svg className="absolute w-full h-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <pattern id="ecommerce-pattern" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
-                            {/* Minimal shopping bag outline */}
-                            <rect x="25" y="35" width="30" height="35" rx="2" fill="none" stroke="currentColor" strokeWidth="1"/>
-                            <path d="M32 35 V28 A8 8 0 0 1 48 28 V35" fill="none" stroke="currentColor" strokeWidth="1"/>
-                            {/* Simple box/package */}
-                            <rect x="140" y="30" width="35" height="25" fill="none" stroke="currentColor" strokeWidth="1"/>
-                            <line x1="140" y1="42" x2="175" y2="42" stroke="currentColor" strokeWidth="1"/>
-                            <line x1="157" y1="30" x2="157" y2="55" stroke="currentColor" strokeWidth="1"/>
-                            {/* Minimal tag */}
-                            <path d="M30 130 L50 130 L60 140 L50 150 L30 150 Z" fill="none" stroke="currentColor" strokeWidth="1"/>
-                            <circle cx="38" cy="140" r="2" fill="none" stroke="currentColor" strokeWidth="1"/>
-                            {/* Simple storefront */}
-                            <rect x="130" y="125" width="40" height="30" fill="none" stroke="currentColor" strokeWidth="1"/>
-                            <line x1="130" y1="135" x2="170" y2="135" stroke="currentColor" strokeWidth="1"/>
-                            <rect x="145" y="140" width="10" height="15" fill="none" stroke="currentColor" strokeWidth="1"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#ecommerce-pattern)" />
-                </svg>
-                {/* Soft gradient overlays */}
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-50 to-transparent" />
-                <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-50 to-transparent" />
+            {/* E-commerce themed background with Lucide icons */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.07]">
+                <div className="absolute top-[5%] left-[8%]"><ShoppingBag size={32} /></div>
+                <div className="absolute top-[12%] right-[15%]"><Package size={28} /></div>
+                <div className="absolute top-[25%] left-[20%]"><Tag size={24} /></div>
+                <div className="absolute top-[8%] left-[45%]"><Store size={30} /></div>
+                <div className="absolute top-[30%] right-[8%]"><CreditCard size={26} /></div>
+                <div className="absolute top-[18%] right-[35%]"><Truck size={28} /></div>
+
+                <div className="absolute top-[45%] left-[5%]"><Package size={26} /></div>
+                <div className="absolute top-[55%] right-[5%]"><ShoppingBag size={30} /></div>
+                <div className="absolute top-[50%] left-[25%]"><CreditCard size={24} /></div>
+                <div className="absolute top-[40%] right-[22%]"><Tag size={28} /></div>
+
+                <div className="absolute bottom-[25%] left-[12%]"><Store size={28} /></div>
+                <div className="absolute bottom-[30%] right-[18%]"><Package size={32} /></div>
+                <div className="absolute bottom-[15%] left-[35%]"><Truck size={26} /></div>
+                <div className="absolute bottom-[20%] right-[40%]"><ShoppingBag size={24} /></div>
+                <div className="absolute bottom-[8%] left-[8%]"><Tag size={30} /></div>
+                <div className="absolute bottom-[10%] right-[10%]"><CreditCard size={28} /></div>
             </div>
 
             {/* Content */}
