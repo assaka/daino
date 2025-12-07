@@ -7,7 +7,7 @@ const plans = [
     {
         name: "Free Setup",
         price: "0",
-        description: "Register and configure your entire shop for free",
+        description: "Configure your shop for free",
         features: [
             "Free account registration",
             "Full store configuration",

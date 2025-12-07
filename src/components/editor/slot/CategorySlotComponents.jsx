@@ -1407,8 +1407,19 @@ const ProductItemsGrid = createSlotComponent({
     const products = variableContext?.products || categoryContext?.products || [];
     const { t } = useTranslation();
 
+    // Check if filters are actively applied
+    const selectedFilters = variableContext?.selectedFilters || categoryContext?.selectedFilters || {};
+    const hasActiveFilters = Object.keys(selectedFilters).length > 0;
+
+    // Also check allProducts to determine if the category itself is empty vs filters causing no results
+    const allProducts = categoryContext?.allProducts || [];
+    const categoryHasProducts = allProducts.length > 0;
+
     // Show friendly message when no products match filters
-    if (products.length === 0) {
+    // Only show "no match" message if:
+    // 1. There are no products to display AND
+    // 2. Either filters are applied OR the category has products (meaning filters caused the empty result)
+    if (products.length === 0 && (hasActiveFilters || categoryHasProducts)) {
       return (
         <div className={`${className || slot.className || ''}`} style={styles || slot.styles}>
           <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -1424,6 +1435,11 @@ const ProductItemsGrid = createSlotComponent({
           </div>
         </div>
       );
+    }
+
+    // If no products and no filters, don't render anything - let EmptyProductsMessage handle it
+    if (products.length === 0) {
+      return null;
     }
 
     // Find product card template and descendants
@@ -1613,14 +1629,26 @@ const ViewModeToggle = createSlotComponent({
 });
 
 // Empty Products Message Component
+// This component shows when the category itself has no products (not filtered)
 const EmptyProductsMessage = createSlotComponent({
   name: 'EmptyProductsMessage',
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const { t } = useTranslation();
     const products = variableContext?.products || categoryContext?.products || [];
 
-    // Only show when there are no products
-    if (products.length > 0) {
+    // Check if the category itself has any products (before filtering)
+    const allProducts = categoryContext?.allProducts || [];
+    const categoryHasProducts = allProducts.length > 0;
+
+    // Check if filters are applied
+    const selectedFilters = variableContext?.selectedFilters || categoryContext?.selectedFilters || {};
+    const hasActiveFilters = Object.keys(selectedFilters).length > 0;
+
+    // Only show this message when:
+    // 1. There are no products to display AND
+    // 2. The category itself is empty (no products at all, not due to filtering)
+    // If filters are causing the empty result, ProductItemsGrid will show the "no match" message
+    if (products.length > 0 || categoryHasProducts || hasActiveFilters) {
       return null;
     }
 
