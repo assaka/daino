@@ -219,11 +219,19 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        return defaultValue || key;
+        // Key not found - return default or formatted key
+        const fallback = defaultValue || key;
+        return typeof fallback === 'string' ? fallback : String(fallback || '');
       }
     }
 
-    return typeof value === 'string' ? value : defaultValue || key;
+    // CRITICAL: Always return a string - React error #300 if object is rendered
+    if (typeof value === 'string') {
+      return value;
+    }
+    // Value is not a string (could be object, array, etc.) - use fallback
+    const fallback = defaultValue || key;
+    return typeof fallback === 'string' ? fallback : String(fallback || '');
   }, [translations]);
 
   /**

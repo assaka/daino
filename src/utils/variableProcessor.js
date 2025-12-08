@@ -1005,6 +1005,18 @@ function formatValue(value, path, context, pageData) {
     return new Date(value).toLocaleDateString();
   }
 
+  // CRITICAL: Ensure we never return an object - React error #300
+  // Objects (including arrays, React elements, etc.) are not valid as React children
+  if (value && typeof value === 'object') {
+    // Try to get a string representation
+    if (value.toString && value.toString !== Object.prototype.toString) {
+      return value.toString();
+    }
+    // Last resort - return empty string for objects
+    console.warn('variableProcessor: Attempted to render object as string:', path, value);
+    return '';
+  }
+
   return String(value);
 }
 
