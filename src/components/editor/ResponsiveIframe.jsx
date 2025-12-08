@@ -36,9 +36,7 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
     // Get all stylesheets from parent document
     const parentStylesheets = Array.from(document.styleSheets);
 
-    // Set up iframe document with storefront theme
-    // This ensures the editor preview uses the same CSS variables as the storefront
-    // regardless of what theme the admin Layout.jsx sets
+    // Set up iframe document
     iframeDoc.open();
     iframeDoc.write(`
       <!DOCTYPE html>
@@ -47,29 +45,6 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            /* Storefront theme - must match index.css :root values */
-            :root {
-              --background: 0 0% 100%;
-              --foreground: 0 0% 3.9%;
-              --card: 0 0% 100%;
-              --card-foreground: 0 0% 3.9%;
-              --popover: 0 0% 100%;
-              --popover-foreground: 0 0% 3.9%;
-              --primary: 0 0% 9%;
-              --primary-foreground: 0 0% 98%;
-              --secondary: 0 0% 96.1%;
-              --secondary-foreground: 0 0% 9%;
-              --muted: 0 0% 96.1%;
-              --muted-foreground: 0 0% 45.1%;
-              --accent: 0 0% 96.1%;
-              --accent-foreground: 0 0% 9%;
-              --destructive: 0 84.2% 60.2%;
-              --destructive-foreground: 0 0% 98%;
-              --border: 0 0% 89.8%;
-              --input: 0 0% 89.8%;
-              --ring: 0 0% 3.9%;
-              --radius: 0.5rem;
-            }
             body {
               margin: 0;
               padding: 0;
@@ -106,6 +81,37 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
         console.warn('Could not copy stylesheet:', e);
       }
     });
+
+    // AFTER copying all stylesheets, add storefront theme override
+    // This ensures the editor preview uses the same CSS variables as the storefront
+    // regardless of what theme the admin Layout.jsx sets
+    const storefrontTheme = iframeDoc.createElement('style');
+    storefrontTheme.textContent = `
+      /* Storefront theme override - must be last to take precedence */
+      :root {
+        --background: 0 0% 100% !important;
+        --foreground: 0 0% 3.9% !important;
+        --card: 0 0% 100% !important;
+        --card-foreground: 0 0% 3.9% !important;
+        --popover: 0 0% 100% !important;
+        --popover-foreground: 0 0% 3.9% !important;
+        --primary: 0 0% 9% !important;
+        --primary-foreground: 0 0% 98% !important;
+        --secondary: 0 0% 96.1% !important;
+        --secondary-foreground: 0 0% 9% !important;
+        --muted: 0 0% 96.1% !important;
+        --muted-foreground: 0 0% 45.1% !important;
+        --accent: 0 0% 96.1% !important;
+        --accent-foreground: 0 0% 9% !important;
+        --destructive: 0 84.2% 60.2% !important;
+        --destructive-foreground: 0 0% 98% !important;
+        --border: 0 0% 89.8% !important;
+        --input: 0 0% 89.8% !important;
+        --ring: 0 0% 3.9% !important;
+        --radius: 0.5rem !important;
+      }
+    `;
+    iframeDoc.head.appendChild(storefrontTheme);
 
     setIframeDocument(iframeDoc);
   }, []);
