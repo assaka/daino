@@ -64,6 +64,9 @@ export function EditOverlay({
   currentDragInfo,
   setCurrentDragInfo,
   children,
+  // Grid layout support - pass through the colSpan class to preserve grid layout
+  className = '',
+  style = {},
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -244,9 +247,11 @@ export function EditOverlay({
       ref={overlayRef}
       className={cn(
         'relative group',
+        className, // Pass through grid classes (col-span-X, etc.)
         getBorderClasses(),
         isDragging && 'opacity-50'
       )}
+      style={style}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

@@ -1287,6 +1287,7 @@ export function UnifiedSlotRenderer({
             headerContext={headerContext}
             loginData={loginData}
             accountData={accountData}
+            useOverlay={useOverlay}
           />
         </div>
       );
@@ -1471,6 +1472,8 @@ export function UnifiedSlotRenderer({
           }
         };
 
+        // EditOverlay becomes the grid item directly (with col-span classes)
+        // The slotContent goes inside without the extra wrapper div
         return (
           <EditOverlay
             key={`${slot.id}-${viewportMode}`}
@@ -1485,8 +1488,13 @@ export function UnifiedSlotRenderer({
             onDelete={onSlotDelete ? (slotId) => onSlotDelete(slotId, slot) : null}
             currentDragInfo={currentDragInfo}
             setCurrentDragInfo={setCurrentDragInfo}
+            className={`${colSpanClass} ${processedParentClassName}`}
+            style={{
+              ...(gridColumn ? { gridColumn } : {}),
+              ...slot.containerStyles
+            }}
           >
-            {layoutWrapper}
+            {slotContent}
           </EditOverlay>
         );
       }
