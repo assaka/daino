@@ -68,16 +68,16 @@ export function EditOverlay({
   className = '',
   style = {},
 }) {
+  // =========================================================================
+  // CRITICAL: All hooks must be called unconditionally before any early returns
+  // to comply with React's Rules of Hooks (Error #300: "Rendered fewer hooks")
+  // =========================================================================
+
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropZone, setDropZone] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const overlayRef = useRef(null);
-
-  // Don't render overlay in preview or live mode
-  if (mode !== 'edit') {
-    return children;
-  }
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
 
@@ -206,6 +206,14 @@ export function EditOverlay({
       onDrop(draggedSlotId, slotId, dropZone, slot);
     }
   }, [slotId, slot, dropZone, onDrop]);
+
+  // =========================================================================
+  // Early return AFTER all hooks have been called
+  // In preview/live mode, just render children without overlay
+  // =========================================================================
+  if (mode !== 'edit') {
+    return children;
+  }
 
   // Determine border styling
   const getBorderClasses = () => {
