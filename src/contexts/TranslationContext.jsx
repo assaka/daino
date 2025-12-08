@@ -211,6 +211,11 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
    * Get translated text by key
    */
   const t = useCallback((key, defaultValue = '') => {
+    // Safety check - key must be a string
+    if (!key || typeof key !== 'string') {
+      return defaultValue || '';
+    }
+
     // Support nested keys with dot notation (e.g., "common.button.submit")
     const keys = key.split('.');
     let value = translations;

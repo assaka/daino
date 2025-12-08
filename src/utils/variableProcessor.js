@@ -428,7 +428,8 @@ function processConditionalsStep(content, context, pageData) {
     }
 
     // Extract content parts
-    let trueContent, falseContent = '';
+    let trueContent = '';
+    let falseContent = '';
 
     if (elseIndex !== -1) {
       trueContent = result.substring(conditionEnd + 2, elseIndex);
@@ -537,7 +538,8 @@ function processUnlessStep(content, context, pageData) {
     }
 
     // Extract content parts
-    let falseContent, trueContent = '';
+    let falseContent = '';
+    let trueContent = '';
 
     if (elseIndex !== -1) {
       falseContent = result.substring(conditionEnd + 2, elseIndex);
