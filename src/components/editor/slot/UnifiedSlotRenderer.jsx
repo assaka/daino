@@ -639,17 +639,6 @@ export function UnifiedSlotRenderer({
   // This ensures both editor and storefront use the same data format
   const categorySource = preprocessedData || categoryData;
 
-  // Debug: Log pagination data to trace where it's lost
-  if (context === 'editor' && categorySource) {
-    console.log('[UnifiedSlotRenderer] categorySource pagination:', {
-      hasPreprocessedData: !!preprocessedData,
-      hasCategoryData: !!categoryData,
-      pagination: categorySource?.pagination,
-      currentPage: categorySource?.currentPage,
-      totalPages: categorySource?.totalPages,
-    });
-  }
-
   const variableContext = {
     product: formattedProduct,
     products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available

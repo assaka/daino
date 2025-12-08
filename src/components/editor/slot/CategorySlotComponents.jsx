@@ -601,275 +601,41 @@ const ProductItemsGrid = createSlotComponent({
     viewMode = 'grid' // Add viewMode prop with default
   }) => {
     const containerRef = useRef(null);
+    const isEditor = context === 'editor';
 
-    if (context === 'editor') {
-      // Editor: Render individual product cards as slot-based containers
-      const storeContext = useStore();
-      const storeSettings = storeContext?.settings || null;
-      // Use grid-cols-1 for list view, dynamic grid for grid view
-      const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
+    // UNIFIED: Same logic for both editor and storefront
+    const storeContext = useStore();
+    const storeSettings = storeContext?.settings || null;
+    const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
 
-      // Find product card template early for logging
-      const productCardTemplate = allSlots?.product_card_template;
+    // Get products - use pre-formatted from variableContext, limit to 6 in editor
+    const allProductsRaw = variableContext?.products || categoryContext?.products || [];
+    const products = isEditor ? allProductsRaw.slice(0, 6) : allProductsRaw;
 
-      // Get sample products from categoryContext OR variableContext
-      const rawProducts = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
+    const { t } = useTranslation();
 
-      // Format prices if not already formatted
-      const products = rawProducts.map(p => {
-        const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
-        const price = parseFloat(p.price || 0);
-        const comparePrice = parseFloat(p.compare_price || 0);
-        const hasComparePrice = comparePrice > 0 && comparePrice !== price;
-        return {
-          ...p,
-          price_formatted: p.price_formatted || formatPrice(p.price || 0),
-          compare_price_formatted: hasComparePrice ? formatPrice(p.compare_price) : '',
-          // Price numbers without currency (for conditional currency display)
-          price_number: p.price_number || formatPriceNumber(price),
-          compare_price_number: p.compare_price_number || (hasComparePrice ? formatPriceNumber(comparePrice) : ''),
-          image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
-          in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
-          stock_label: isInStock ? 'In Stock' : 'Out of Stock',
-          stock_label_class: isInStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        };
-      });
+    // Check if filters are actively applied (storefront only)
+    const selectedFilters = variableContext?.selectedFilters || categoryContext?.selectedFilters || {};
+    const hasActiveFilters = Object.keys(selectedFilters).length > 0;
+    const allProducts = categoryContext?.allProducts || [];
+    const categoryHasProducts = allProducts.length > 0;
 
-      if (products.length === 0) {
-        return (
-          <div
-            className={`${className || slot.className || ''}`}
-            style={styles || slot.styles}
-          >
-            <div className="p-4 border-2 border-dashed border-red-300 rounded-lg text-center">
-              <div className="text-red-600 font-bold">Product Items Grid - No products available in editor</div>
-              <div className="text-xs text-gray-500 mt-2">
-                CategoryContext products: {categoryContext?.products?.length || 0}<br />
-                VariableContext products: {variableContext?.products?.length || 0}
-              </div>
+    // Show "no products" message in editor
+    if (products.length === 0 && isEditor) {
+      return (
+        <div className={`${className || slot.className || ''}`} style={styles || slot.styles}>
+          <div className="p-4 border-2 border-dashed border-red-300 rounded-lg text-center">
+            <div className="text-red-600 font-bold">Product Items Grid - No products available</div>
+            <div className="text-xs text-gray-500 mt-2">
+              Products: {allProductsRaw.length || 0}
             </div>
           </div>
-        );
-      }
-
-      // Find ALL descendant slots of product card template (children, grandchildren, etc.)
-      const productCardChildSlots = {};
-
-      if (allSlots) {
-        // Helper to collect all descendants recursively
-        const collectDescendants = (parentId) => {
-          Object.values(allSlots).forEach(slot => {
-            if (slot.parentId === parentId) {
-              productCardChildSlots[slot.id] = slot;
-              // Recursively collect children of this slot
-              collectDescendants(slot.id);
-            }
-          });
-        };
-
-        // Start collecting from product_card_template
-        collectDescendants('product_card_template');
-      }
-
-      // Render each product with its child slots as individual editable elements
-      return (
-        <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
-          {products.map((product, index) => {
-            // Create unique slot IDs for each product instance
-            const productSlots = {};
-            // Add the product card container itself as a grid slot
-            const productCardId = `product_card_${index}`;
-            productSlots[productCardId] = {
-              ...productCardTemplate,
-              id: productCardId,
-              type: 'container', // Make it a container type for proper grid rendering
-              parentId: 'product_items',
-              colSpan: productCardTemplate?.colSpan || { grid: 1, list: 12 }, // Use template's colSpan
-              position: { col: index + 1, row: 1 },
-              styles: {
-                ...productCardTemplate?.styles,
-                width: '100%',
-                height: 'auto'
-              },
-              metadata: {
-                ...productCardTemplate?.metadata,
-                hierarchical: true, // Enable child slot rendering
-                isProductCard: true,
-                productIndex: index
-              }
-            };
-
-            Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
-              // Create unique slot ID for this product instance
-              const templateSlotId = `${slotId}_${index}`;
-
-              // CRITICAL: Check if this specific product slot has saved customizations
-              // First check for product-specific customization (templateSlotId with _index)
-              // Then fall back to template-wide customization (base slotId)
-              const savedSlotConfig = allSlots[templateSlotId] || allSlots[slotId];
-
-              // Replace template variables in styles using processVariables
-              // This will use the variableContext which has settings.theme.add_to_cart_button_color
-              const processedStyles = {};
-
-              // Process each style property from template
-              if (slotConfig.styles) {
-                Object.entries(slotConfig.styles).forEach(([key, value]) => {
-                  if (typeof value === 'string') {
-                    // Use processVariables to replace template variables with actual values
-                    processedStyles[key] = processVariables(value, variableContext);
-                  } else {
-                    processedStyles[key] = value;
-                  }
-                });
-              }
-
-              // Process saved styles to replace template variables
-              const processedSavedStyles = {};
-              if (savedSlotConfig?.styles) {
-                Object.entries(savedSlotConfig.styles).forEach(([key, value]) => {
-                  if (typeof value === 'string') {
-                    // Use processVariables to replace template variables with actual values
-                    processedSavedStyles[key] = processVariables(value, variableContext);
-                  } else {
-                    processedSavedStyles[key] = value;
-                  }
-                });
-              }
-
-              // CRITICAL: Merge saved styles with template styles (saved styles take precedence)
-              const finalStyles = savedSlotConfig
-                ? { ...processedStyles, ...processedSavedStyles }
-                : processedStyles;
-
-              // CRITICAL: Use saved className if available, otherwise use template className
-              const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
-              const finalParentClassName = savedSlotConfig?.parentClassName ?? slotConfig.parentClassName;
-
-              // Check if this is a button slot that should allow text editing
-              const isEditableButton = slotConfig.type === 'button';
-              const isTextSlot = slotConfig.type === 'text';
-              const isImageSlot = slotConfig.type === 'image';
-
-              // Process template variables in content for text AND image slots
-              // CRITICAL: Use processVariables to handle {{#unless}} conditionals and all template variables
-              let processedContent = slotConfig.content;
-              if (isEditableButton) {
-                processedContent = savedSlotConfig?.content || slotConfig.content || 'Button';
-              } else if (isTextSlot || isImageSlot) {
-                // Build product context with 'this' alias for {{this.price_number}} etc.
-                const productContext = {
-                  ...variableContext,
-                  this: product,
-                  product
-                };
-                processedContent = processVariables(slotConfig.content || '', productContext);
-              }
-
-              // Add stock label inline styles dynamically for stock label slot
-              const dynamicStyles = slotConfig.id === 'product_card_stock_label' && product.stock_label_style
-                ? { ...finalStyles, ...product.stock_label_style }
-                : finalStyles;
-
-              productSlots[templateSlotId] = {
-                ...slotConfig,
-                id: templateSlotId,
-                parentId: slotConfig.parentId === 'product_card_template' ? productCardId : `${slotConfig.parentId}_${index}`, // Update parent ID to unique product card
-                content: processedContent,
-                className: finalClassName, // Use merged className
-                parentClassName: finalParentClassName, // Use merged parentClassName
-                styles: dynamicStyles, // Use merged styles with inline stock label colors
-                // CRITICAL: Use saved position and colSpan if available
-                position: savedSlotConfig?.position ?? slotConfig.position,
-                colSpan: savedSlotConfig?.colSpan ?? slotConfig.colSpan,
-                // Remove conditionalDisplay in editor mode so all slots are visible
-                // Mark as styleOnly to prevent content editing (content comes from product data)
-                // Exception: buttons allow text editing but not full HTML
-                // CRITICAL: Merge saved metadata to preserve disableResize and other settings
-                metadata: {
-                  ...slotConfig.metadata,
-                  ...(savedSlotConfig?.metadata || {}), // Merge saved metadata
-                  conditionalDisplay: undefined, // Always remove conditionalDisplay in editor
-                  styleOnly: isEditableButton ? false : true, // Buttons allow text editing
-                  readOnly: isTextSlot ? true : false, // Text slots are read-only, buttons are editable
-                  textOnly: isEditableButton ? true : false // Buttons only allow text editing, not HTML
-                }
-              };
-
-            });
-
-            // Render the product card as a container slot with its children
-            return (
-              <UnifiedSlotRenderer
-                key={`product-${index}`}
-                slots={productSlots}
-                parentId="product_items"
-                context={context}
-                categoryData={{ ...categoryContext, product }}
-                productData={product}
-                variableContext={{ ...variableContext, this: product, product }}
-                mode={mode || "edit"}
-                showBorders={showBorders !== undefined ? showBorders : true}
-                viewMode={viewMode}
-                onElementClick={onElementClick}
-                setPageConfig={setPageConfig}
-                saveConfiguration={saveConfiguration}
-                // Pass grid editing props for draggable functionality
-                onGridResize={onGridResize}
-                onSlotDrop={onSlotDrop}
-                onSlotDelete={onSlotDelete}
-                onSlotHeightResize={onSlotHeightResize}
-                onResizeStart={onResizeStart}
-                onResizeEnd={onResizeEnd}
-                currentDragInfo={currentDragInfo}
-                setCurrentDragInfo={setCurrentDragInfo}
-                selectedElementId={selectedElementId}
-              />
-            );
-          })}
         </div>
       );
     }
 
-    // Storefront version - use same slot-based rendering as editor
-    const storeContext = useStore();
-    const storeSettings = storeContext?.settings || null;
-    // Use grid-cols-1 for list view, dynamic grid for grid view
-    const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
-
-    /**
-     * CRITICAL FIX: Use pre-formatted products from variableContext
-     *
-     * BUG HISTORY:
-     * - Before: This code was re-formatting prices incorrectly:
-     *   ```
-     *   price_formatted: p.price_formatted || formatPrice(p.price),
-     *   compare_price_formatted: p.compare_price ? formatPrice(p.compare_price) : null
-     *   ```
-     * - Problem: Ignored getPriceDisplay logic, showed wrong prices
-     *
-     * - After: Now uses products directly from variableContext
-     * - CategorySlotRenderer already formatted them using getPriceDisplay()
-     * - Products already have: price_formatted, compare_price_formatted, stock_label, etc.
-     *
-     * DO NOT re-format prices here or you'll break the fix!
-     */
-    const products = variableContext?.products || categoryContext?.products || [];
-    const { t } = useTranslation();
-
-    // Check if filters are actively applied
-    const selectedFilters = variableContext?.selectedFilters || categoryContext?.selectedFilters || {};
-    const hasActiveFilters = Object.keys(selectedFilters).length > 0;
-
-    // Also check allProducts to determine if the category itself is empty vs filters causing no results
-    const allProducts = categoryContext?.allProducts || [];
-    const categoryHasProducts = allProducts.length > 0;
-
-    // Show friendly message when no products match filters
-    // Only show "no match" message if:
-    // 1. There are no products to display AND
-    // 2. Either filters are applied OR the category has products (meaning filters caused the empty result)
-    if (products.length === 0 && (hasActiveFilters || categoryHasProducts)) {
+    // Show friendly message when no products match filters (storefront only)
+    if (products.length === 0 && !isEditor && (hasActiveFilters || categoryHasProducts)) {
       return (
         <div className={`${className || slot.className || ''}`} style={styles || slot.styles}>
           <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -887,27 +653,28 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
-    // If no products and no filters, don't render anything - let EmptyProductsMessage handle it
+    // No products at all - let parent handle
     if (products.length === 0) {
       return null;
     }
 
-    // Find product card template and descendants
+    // Find product card template and descendants - same for both contexts
     const productCardTemplate = allSlots?.product_card_template;
     const productCardChildSlots = {};
 
     if (allSlots) {
       const collectDescendants = (parentId) => {
-        Object.values(allSlots).forEach(slot => {
-          if (slot.parentId === parentId) {
-            productCardChildSlots[slot.id] = slot;
-            collectDescendants(slot.id);
+        Object.values(allSlots).forEach(s => {
+          if (s.parentId === parentId) {
+            productCardChildSlots[s.id] = s;
+            collectDescendants(s.id);
           }
         });
       };
       collectDescendants('product_card_template');
     }
 
+    // UNIFIED: Single rendering path for both editor and storefront
     return (
       <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
         {products.map((product, index) => {
@@ -916,7 +683,7 @@ const ProductItemsGrid = createSlotComponent({
           Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
             const savedSlotConfig = allSlots[slotId];
 
-            // Process styles
+            // Process styles - replace template variables
             const processedStyles = {};
             if (slotConfig.styles) {
               Object.entries(slotConfig.styles).forEach(([key, value]) => {
@@ -937,13 +704,11 @@ const ProductItemsGrid = createSlotComponent({
             const isTextSlot = slotConfig.type === 'text';
             const isImageSlot = slotConfig.type === 'image';
 
-            // Process template variables in content for text AND image slots
-            // CRITICAL: Use processVariables to handle {{#unless}} conditionals and all template variables
+            // Process template variables in content
             let processedContent = slotConfig.content;
             if (isEditableButton) {
               processedContent = savedSlotConfig?.content || slotConfig.content || 'Button';
             } else if (isTextSlot || isImageSlot) {
-              // Build product context with 'this' alias for {{this.price_number}} etc.
               const productContext = {
                 ...variableContext,
                 this: product,
@@ -952,7 +717,7 @@ const ProductItemsGrid = createSlotComponent({
               processedContent = processVariables(slotConfig.content || '', productContext);
             }
 
-            // Add stock label inline styles dynamically for stock label slot
+            // Add stock label inline styles dynamically
             const dynamicStyles = slotConfig.id === 'product_card_stock_label' && product.stock_label_style
               ? { ...finalStyles, ...product.stock_label_style }
               : finalStyles;
@@ -962,11 +727,22 @@ const ProductItemsGrid = createSlotComponent({
               content: processedContent,
               className: finalClassName,
               styles: dynamicStyles,
-              metadata: { ...(slotConfig.metadata || {}), ...(savedSlotConfig?.metadata || {}) }
+              metadata: {
+                ...(slotConfig.metadata || {}),
+                ...(savedSlotConfig?.metadata || {}),
+                // Editor-specific metadata
+                ...(isEditor ? {
+                  conditionalDisplay: undefined, // Show all slots in editor
+                  styleOnly: !isEditableButton,
+                  readOnly: isTextSlot,
+                  textOnly: isEditableButton
+                } : {})
+              }
             };
           });
 
-          return (
+          // Render product card - same structure for both contexts
+          const productCard = (
             <div
               key={`product-${product.id || index}`}
               data-slot-id="product_card_template"
@@ -977,7 +753,7 @@ const ProductItemsGrid = createSlotComponent({
               <UnifiedSlotRenderer
                 slots={productSlots}
                 parentId="product_card_template"
-                context="storefront"
+                context={context}
                 categoryData={{ ...categoryContext, product }}
                 productData={{
                   product,
@@ -986,9 +762,28 @@ const ProductItemsGrid = createSlotComponent({
                 }}
                 variableContext={{ ...variableContext, this: product, product }}
                 viewMode={viewMode}
+                // Editor props - only passed when in editor context
+                {...(isEditor ? {
+                  mode: mode || "edit",
+                  showBorders: showBorders !== undefined ? showBorders : true,
+                  onElementClick,
+                  setPageConfig,
+                  saveConfiguration,
+                  onGridResize,
+                  onSlotDrop,
+                  onSlotDelete,
+                  onSlotHeightResize,
+                  onResizeStart,
+                  onResizeEnd,
+                  currentDragInfo,
+                  setCurrentDragInfo,
+                  selectedElementId
+                } : {})}
               />
             </div>
           );
+
+          return productCard;
         })}
       </div>
     );
