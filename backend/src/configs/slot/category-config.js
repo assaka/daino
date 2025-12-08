@@ -416,7 +416,8 @@ const categoryConfig = {
       metadata: {
         hierarchical: false,
         component: 'LayeredNavigation',
-        displayName: 'Product Filters'
+        displayName: 'Product Filters',
+        editorSidebar: 'LayeredNavigationSidebar'
       }
     }
   },

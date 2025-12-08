@@ -153,7 +153,7 @@ import StorefrontLayeredNavigation from '@/components/storefront/LayeredNavigati
 // Layered Navigation Component - uses the same component as storefront
 const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
-  render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots, onElementClick }) => {
     // Use the actual LayeredNavigation component for both editor and storefront
     // This ensures identical behavior and appearance
     const products = categoryContext?.products || variableContext?.products || [];
@@ -175,8 +175,46 @@ const LayeredNavigation = createSlotComponent({
       ? () => {}
       : (categoryContext?.clearFilters || (() => {}));
 
+    // Collect child slots for LayeredNavigation (filter_heading, attribute_filter_label, etc.)
+    const childSlots = {};
+    if (allSlots) {
+      Object.values(allSlots).forEach(childSlot => {
+        if (childSlot.parentId === 'layered_navigation' || childSlot.parentId === slot?.id) {
+          childSlots[childSlot.id] = childSlot;
+        }
+      });
+    }
+
+    // Handle element click - opens sidebar when clicking on editable elements in edit mode
+    const handleElementClick = (slotKey, element) => {
+      if (isEditMode && onElementClick) {
+        // Call the parent's onElementClick handler
+        onElementClick(slotKey, element);
+      }
+    };
+
+    // Handle click on the main wrapper - opens LayeredNavigation sidebar
+    const handleWrapperClick = (e) => {
+      if (isEditMode && onElementClick) {
+        // Only trigger if clicking directly on the wrapper or card, not on specific editable elements
+        const clickedElement = e.target;
+        const isEditableElement = clickedElement.closest('[data-slot-id]');
+
+        if (!isEditableElement) {
+          // Click on non-editable area - open the LayeredNavigation sidebar
+          onElementClick('layered_navigation', e.currentTarget);
+        }
+      }
+    };
+
     return (
-      <div className={className || slot?.className} style={styles || slot?.styles}>
+      <div
+        className={className || slot?.className}
+        style={styles || slot?.styles}
+        data-slot-id="layered_navigation"
+        data-editable="true"
+        onClick={handleWrapperClick}
+      >
         <StorefrontLayeredNavigation
           products={products}
           attributes={filterableAttributes}
@@ -188,8 +226,8 @@ const LayeredNavigation = createSlotComponent({
           slotConfig={slot || {}}
           settings={settings}
           isEditMode={isEditMode}
-          childSlots={{}}
-          onElementClick={() => {}}
+          childSlots={childSlots}
+          onElementClick={handleElementClick}
         />
       </div>
     );
