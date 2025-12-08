@@ -12,7 +12,7 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useCategory, useCategories } from '@/hooks/useApiQueries';
+import { useCategory, useCategories, useFilterableAttributes } from '@/hooks/useApiQueries';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Import component registry to render components consistently with storefront
@@ -442,12 +442,16 @@ const CategorySlotsEditor = ({
   const storeContext = useStore();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeSettings = storeContext?.settings || selectedStore?.settings || null;
-  const filterableAttributes = storeContext?.filterableAttributes || selectedStore?.filterableAttributes || [];
   const storeId = getSelectedStoreId();
 
-  // Fetch categories directly since StoreProvider is skipped for editor pages
+  // Fetch categories and filterable attributes directly since StoreProvider is skipped for editor pages
   const { data: fetchedCategories = [] } = useCategories(storeId, { enabled: !!storeId });
+  const { data: fetchedFilterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
+
   const categories = storeContext?.categories?.length > 0 ? storeContext.categories : fetchedCategories;
+  const filterableAttributes = storeContext?.filterableAttributes?.length > 0
+    ? storeContext.filterableAttributes
+    : fetchedFilterableAttributes;
 
   // State for selected category (for previewing different categories)
   const [selectedCategorySlug, setSelectedCategorySlug] = useState(null);
@@ -615,7 +619,9 @@ const CategorySlotsEditor = ({
     hasRealData: !!realCategoryData?.category,
     productCount: realCategoryData?.products?.length || 0,
     categoriesCount: categories?.length || 0,
-    filtersBuilt: Object.keys(categoryContext?.filters || {})
+    filterableAttributesCount: filterableAttributes?.length || 0,
+    filtersBuilt: Object.keys(categoryContext?.filters || {}),
+    usingMock: !realCategoryData?.category || realCategoryData?.products?.length === 0
   });
 
   // Create editor config with real data
