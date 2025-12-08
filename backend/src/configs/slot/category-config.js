@@ -414,11 +414,85 @@ const categoryConfig = {
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
-        hierarchical: false,
+        hierarchical: true,
         component: 'LayeredNavigation',
         displayName: 'Product Filters',
         editorSidebar: 'LayeredNavigationSidebar'
       }
+    },
+
+    // Child slots for LayeredNavigation styling (used by LayeredNavigationSidebar)
+    filter_heading: {
+      id: 'filter_heading',
+      type: 'text',
+      content: 'Filter By',
+      className: 'text-lg font-semibold',
+      styles: {
+        color: '#111827',
+        fontSize: '1.125rem',
+        fontWeight: '600'
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 1 },
+      viewMode: ['grid', 'list'],
+      metadata: { displayName: 'Filter Heading' }
+    },
+
+    attribute_filter_label: {
+      id: 'attribute_filter_label',
+      type: 'text',
+      content: '',
+      className: 'font-medium',
+      styles: {
+        color: '#374151',
+        fontSize: '0.875rem',
+        fontWeight: '500'
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 2 },
+      viewMode: ['grid', 'list'],
+      metadata: { displayName: 'Filter Labels (Price, Brand, etc.)' }
+    },
+
+    filter_option_styles: {
+      id: 'filter_option_styles',
+      type: 'style',
+      content: '',
+      className: '',
+      styles: {
+        optionTextColor: '#374151',
+        optionHoverColor: '#1F2937',
+        optionCountColor: '#9CA3AF',
+        optionFontSize: '0.875rem',
+        optionFontWeight: '400',
+        checkboxColor: '#3B82F6',
+        activeFilterBgColor: '#DBEAFE',
+        activeFilterTextColor: '#1E40AF'
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 3 },
+      viewMode: ['grid', 'list'],
+      metadata: { displayName: 'Filter Option Styles' }
+    },
+
+    active_filter_styles: {
+      id: 'active_filter_styles',
+      type: 'style',
+      content: '',
+      className: '',
+      styles: {
+        titleText: 'Active Filters',
+        titleColor: '#374151',
+        titleFontSize: '0.875rem',
+        titleFontWeight: '600',
+        backgroundColor: '#DBEAFE',
+        textColor: '#1E40AF',
+        clearAllColor: '#DC2626'
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 4 },
+      viewMode: ['grid', 'list'],
+      metadata: { displayName: 'Active Filter Styles' }
     }
   },
 

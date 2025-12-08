@@ -185,6 +185,19 @@ const LayeredNavigation = createSlotComponent({
       });
     }
 
+    // Build slotConfig in the format StorefrontLayeredNavigation expects
+    // It expects child slots like filter_option_styles, filter_by_label, etc. inside slotConfig
+    const slotConfig = {
+      ...slot,
+      filter_by_label: childSlots.filter_heading || childSlots.filter_by_label || { content: 'Filter By' },
+      filter_card_header: childSlots.filter_heading || { content: 'Filter By' },
+      filter_price_title: childSlots.price_filter_label || { content: 'Price' },
+      filter_option_styles: childSlots.filter_option_styles || { styles: {} },
+      filter_attribute_titles: {
+        attribute_filter_label: childSlots.attribute_filter_label || {}
+      }
+    };
+
     // Handle element click - opens sidebar when clicking on editable elements in edit mode
     const handleElementClick = (slotKey, element) => {
       if (isEditMode && onElementClick) {
@@ -223,7 +236,7 @@ const LayeredNavigation = createSlotComponent({
           selectedFilters={selectedFilters}
           activeFilters={activeFiltersArray}
           showActiveFilters={true}
-          slotConfig={slot || {}}
+          slotConfig={slotConfig}
           settings={settings}
           isEditMode={isEditMode}
           childSlots={childSlots}
