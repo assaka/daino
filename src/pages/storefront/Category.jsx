@@ -20,8 +20,8 @@ import { useCategory, useSlotConfiguration } from '@/hooks/useApiQueries';
 import { PageLoader } from '@/components/ui/page-loader';
 
 // Feature flag: Set to true to use new unified renderer instead of CategorySlotRenderer
-// TEMPORARILY DISABLED: Needs more testing before enabling in production
-const USE_UNIFIED_RENDERER = false;
+// ENABLED: Using unified renderer for consistency between editor and storefront
+const USE_UNIFIED_RENDERER = true;
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
