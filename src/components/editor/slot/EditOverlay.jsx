@@ -209,10 +209,19 @@ export function EditOverlay({
 
   // =========================================================================
   // Early return AFTER all hooks have been called
-  // In preview/live mode, just render children without overlay
+  // In preview/live mode, render with grid classes but without editing controls
   // =========================================================================
   if (mode !== 'edit') {
-    return children;
+    // CRITICAL: Must preserve grid column classes for proper layout
+    return (
+      <div
+        className={className}
+        style={style}
+        data-slot-id={slotId}
+      >
+        {children}
+      </div>
+    );
   }
 
   // Determine border styling
