@@ -174,13 +174,13 @@ const LayeredNavigation = createSlotComponent({
       <div class="space-y-4">
         <!-- Header with Clear All button -->
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900" style="color: {{attributeLabelStyles.color}}">Filter By</h3>
+          <h3 class="text-lg font-semibold text-gray-900" style="color: {{attributeLabelStyles.color}}">{{filterTranslations.filter_by}}</h3>
           {{#if (gt activeFilters.length 0)}}
           <button
             data-action="clear-all-filters"
             class="text-sm text-red-600 hover:text-red-800 font-medium"
           >
-            Clear All
+            {{filterTranslations.clear_all}}
           </button>
           {{/if}}
         </div>
@@ -221,7 +221,7 @@ const LayeredNavigation = createSlotComponent({
             class="flex items-center justify-between w-full py-2 text-left font-medium"
             style="color: {{attributeLabelStyles.color}}"
           >
-            <span>Price</span>
+            <span>{{filterTranslations.price}}</span>
             <svg class="w-4 h-4 transform transition-transform" data-collapse-icon="price-filter" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>

@@ -508,12 +508,18 @@ export default function Category() {
 
       // Add each selected value as a separate active filter
       if (Array.isArray(values)) {
-        values.forEach(value => {
+        values.forEach(valueCode => {
+          // Find the AttributeValue to get translated label
+          const attrValue = attr?.values?.find(av => av.code === valueCode);
+          const translatedValue = attrValue?.translations?.[currentLang]?.label ||
+                                 attrValue?.translations?.en?.label ||
+                                 valueCode;
+
           activeFiltersArray.push({
             type: 'attribute',
             attributeCode: attributeCode,
             label: attributeLabel,
-            value: value
+            value: translatedValue
           });
         });
       }

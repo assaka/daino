@@ -330,11 +330,18 @@ export function CategorySlotRenderer({
 
         // Structure: { label, options: ["inbouw", "onderbouw"] }
         let valueCodes = [];
-        let attributeLabel = attr.name || attr.code || attrCode;
+
+        // Get translated attribute label from attribute_translations
+        let attributeLabel = attr.translations?.[currentLanguage]?.name ||
+                            attr.translations?.en?.name ||
+                            attr.name || attr.code || attrCode;
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
-          attributeLabel = filterData.label || attributeLabel;
+          // Only use filterData.label as fallback if no translation found
+          if (!attr.translations?.[currentLanguage]?.name && !attr.translations?.en?.name) {
+            attributeLabel = filterData.label || attributeLabel;
+          }
         }
 
         // Handle slider type for numeric attributes
@@ -588,6 +595,12 @@ export function CategorySlotRenderer({
         },
         settings: settingsForCategoryPage,
         translations, // Add translations from TranslationContext
+        // Filter UI translations for templates
+        filterTranslations: {
+          filter_by: t('common.filter_by', 'Filter By'),
+          clear_all: t('common.clear_all', 'Clear All'),
+          price: t('common.price', 'Price')
+        },
         filterOptionStyles: filterOptionStyles,
         attributeLabelStyles: attributeLabelStyles,
         activeFilterStyles: activeFilterStyles
