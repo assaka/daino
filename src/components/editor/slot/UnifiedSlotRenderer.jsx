@@ -836,6 +836,17 @@ export function UnifiedSlotRenderer({
         }
       }
 
+      // Transform responsive grid-cols classes based on viewport mode
+      // e.g., "grid md:grid-cols-12" -> "grid grid-cols-12" in desktop mode
+      if (viewportMode === 'desktop' || viewportMode === 'tablet') {
+        // Replace md:grid-cols-X with grid-cols-X for desktop/tablet
+        processedClassName = processedClassName.replace(/\bmd:grid-cols-(\d+)\b/g, 'grid-cols-$1');
+        processedClassName = processedClassName.replace(/\blg:grid-cols-(\d+)\b/g, 'grid-cols-$1');
+        // Also handle md:col-span-X classes that might be in className
+        processedClassName = processedClassName.replace(/\bmd:col-span-(\d+)\b/g, 'col-span-$1');
+        processedClassName = processedClassName.replace(/\blg:col-span-(\d+)\b/g, 'col-span-$1');
+      }
+
       // Clean up multiple spaces
       processedClassName = processedClassName.replace(/\s+/g, ' ').trim();
     }
