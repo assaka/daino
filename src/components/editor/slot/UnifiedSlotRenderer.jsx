@@ -545,6 +545,7 @@ export function UnifiedSlotRenderer({
     optionHoverColor: '#1F2937',
     optionCountColor: '#9CA3AF',
     checkboxColor: '#3B82F6',
+    sliderColor: '#3B82F6',
     activeFilterBgColor: '#DBEAFE',
     activeFilterTextColor: '#1E40AF'
   };

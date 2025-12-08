@@ -104,6 +104,7 @@ export default function LayeredNavigation({
         optionHoverColor = '#1F2937',
         optionCountColor = '#9CA3AF',
         checkboxColor = '#3B82F6',
+        sliderColor = '#3B82F6',
         activeFilterBgColor = '#DBEAFE',
         activeFilterTextColor = '#1E40AF'
     } = optionStyles;
@@ -545,6 +546,7 @@ export default function LayeredNavigation({
                                         onValueChange={isEditMode ? () => {} : handlePriceRangeChange}
                                         disabled={isEditMode}
                                         className={`w-full ${isEditMode ? "pointer-events-none" : ""}`}
+                                        style={{ accentColor: sliderColor }}
                                     />
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">

@@ -331,12 +331,6 @@ export function EditOverlay({
         </>
       )}
 
-      {/* Slot ID label - visible when hovered */}
-      {isHovered && !isSelected && (
-        <div className="absolute bottom-0 left-0 z-20 px-2 py-0.5 text-xs bg-gray-800 text-white rounded-tr pointer-events-none">
-          {slotId}
-        </div>
-      )}
     </div>
   );
 }
