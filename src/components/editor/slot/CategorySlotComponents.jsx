@@ -301,14 +301,9 @@ const PaginationComponent = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
 
-    // Debug logging
-    console.log('[PaginationComponent] variableContext.pagination:', variableContext?.pagination);
-    console.log('[PaginationComponent] categoryContext.totalPages:', categoryContext?.totalPages);
-
     // Don't render pagination if there's only 1 page or no pages
     const totalPages = variableContext?.pagination?.totalPages || 0;
     if (totalPages <= 1 && context !== 'editor') {
-      console.log('[PaginationComponent] Not rendering - totalPages:', totalPages);
       return null;
     }
 
@@ -335,55 +330,40 @@ const PaginationComponent = createSlotComponent({
       {{/if}}
     `;
 
-    let html;
-    try {
-      html = processVariables(template, variableContext);
-      console.log('[PaginationComponent] processVariables completed, html length:', html?.length);
-    } catch (error) {
-      console.error('[PaginationComponent] Error in processVariables:', error);
-      html = '<div>Error rendering pagination</div>';
-    }
+    const html = processVariables(template, variableContext);
 
     // Attach event listeners in storefront
     useEffect(() => {
-      try {
-        if (!containerRef.current || context === 'editor') return;
+      if (!containerRef.current || context === 'editor') return;
 
-        const handleClick = (e) => {
-          const button = e.target.closest('[data-action="go-to-page"]');
-          if (!button || !categoryContext?.handlePageChange) return;
+      const handleClick = (e) => {
+        const button = e.target.closest('[data-action="go-to-page"]');
+        if (!button || !categoryContext?.handlePageChange) return;
 
-          const page = button.getAttribute('data-page');
-          if (page === 'prev' || page === 'next') {
-            // Handle prev/next
-            const currentPage = categoryContext.currentPage || 1;
-            const newPage = page === 'prev' ? currentPage - 1 : currentPage + 1;
-            categoryContext.handlePageChange(newPage);
-          } else {
-            // Handle specific page number
-            const pageNum = parseInt(page, 10);
-            if (!isNaN(pageNum)) {
-              categoryContext.handlePageChange(pageNum);
-            }
+        const page = button.getAttribute('data-page');
+        if (page === 'prev' || page === 'next') {
+          // Handle prev/next
+          const currentPage = categoryContext.currentPage || 1;
+          const newPage = page === 'prev' ? currentPage - 1 : currentPage + 1;
+          categoryContext.handlePageChange(newPage);
+        } else {
+          // Handle specific page number
+          const pageNum = parseInt(page, 10);
+          if (!isNaN(pageNum)) {
+            categoryContext.handlePageChange(pageNum);
           }
-        };
+        }
+      };
 
-        containerRef.current.addEventListener('click', handleClick);
-        return () => {
-          if (containerRef.current) {
-            containerRef.current.removeEventListener('click', handleClick);
-          }
-        };
-      } catch (error) {
-        console.error('[PaginationComponent] Error in useEffect:', error);
-      }
+      containerRef.current.addEventListener('click', handleClick);
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleClick);
+        }
+      };
     }, [categoryContext, context]);
 
-    // Debug: Log what we're passing to the div
-    console.log('[PaginationComponent] className:', className, 'slot?.className:', slot?.className);
-    console.log('[PaginationComponent] styles:', styles, 'slot?.styles:', slot?.styles);
-
-    // Ensure className is a string and styles is an object
+    // Ensure className is a string and styles is an object (fixes React error #310)
     const finalClassName = typeof className === 'string' ? className : (typeof slot?.className === 'string' ? slot?.className : '');
     const finalStyles = (styles && typeof styles === 'object' && !Array.isArray(styles)) ? styles :
                         (slot?.styles && typeof slot?.styles === 'object' && !Array.isArray(slot?.styles)) ? slot?.styles : {};
