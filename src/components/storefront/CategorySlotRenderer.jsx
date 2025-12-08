@@ -337,11 +337,19 @@ export function CategorySlotRenderer({
                             attr.translations?.en?.label ||
                             attr.code || attrCode;
 
+        // Ensure attributeLabel is a string (prevent React error #300)
+        if (typeof attributeLabel === 'object') {
+          attributeLabel = attr.code || attrCode;
+        }
+
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
           // Only use filterData.label as fallback if no translation found
           if (!attr.translations?.[currentLanguage]?.label && !attr.translations?.en?.label) {
-            attributeLabel = filterData.label || attributeLabel;
+            const fallbackLabel = filterData.label;
+            if (fallbackLabel && typeof fallbackLabel === 'string') {
+              attributeLabel = fallbackLabel;
+            }
           }
         }
 
@@ -408,39 +416,49 @@ export function CategorySlotRenderer({
             if (attrValue) {
               // Get translated value label from attribute_value_translations
               // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
-              const valueLabel = attrValue.translations?.[currentLanguage]?.label ||
+              let valueLabel = attrValue.translations?.[currentLanguage]?.label ||
                                 attrValue.translations?.en?.label ||
                                 valueCode;
 
+              // Ensure valueLabel is a string (prevent React error #300)
+              if (typeof valueLabel === 'object') {
+                valueLabel = valueCode;
+              }
+
               return {
-                value: valueCode,
+                value: String(valueCode),
                 label: String(valueLabel || valueCode),
                 count: productCount,
                 active: isActive,
-                attributeCode: attrCode,
+                attributeCode: String(attrCode),
                 sort_order: attrValue.sort_order || 0,
-                filter_type: filterType // Pass filter_type to each option for template access
+                filter_type: String(filterType)
               };
             }
 
             // Fallback if no AttributeValue found
             return {
-              value: valueCode,
-              label: valueCode,
+              value: String(valueCode),
+              label: String(valueCode),
               count: productCount,
               active: isActive,
-              attributeCode: attrCode,
+              attributeCode: String(attrCode),
               sort_order: 999,
-              filter_type: filterType // Pass filter_type to each option for template access
+              filter_type: String(filterType)
             };
           })
           .sort((a, b) => a.sort_order - b.sort_order); // Sort by sort_order
 
+        // Ensure attributeLabel is a string
+        const safeAttributeLabel = typeof attributeLabel === 'object'
+          ? (attrCode || 'Filter')
+          : String(attributeLabel || attrCode);
+
         const result = {
-          code: attrCode,
-          label: attributeLabel, // Use translated label from filter data
+          code: String(attrCode),
+          label: safeAttributeLabel,
           options: formattedOptions,
-          filter_type: attr.filter_type || 'multiselect' // multiselect (checkboxes), select (radio), slider
+          filter_type: String(attr.filter_type || 'multiselect')
         };
 
         return result;
