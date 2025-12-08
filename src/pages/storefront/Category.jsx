@@ -6,7 +6,6 @@ import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
-import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { UnifiedSlotRenderer } from "@/components/editor/slot/UnifiedSlotRenderer";
 import { preprocessSlotData } from "@/utils/slotDataPreprocessor";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
@@ -18,10 +17,6 @@ import { useTranslation } from '@/contexts/TranslationContext';
 // React Query hooks for optimized API calls
 import { useCategory, useSlotConfiguration } from '@/hooks/useApiQueries';
 import { PageLoader } from '@/components/ui/page-loader';
-
-// Feature flag: Set to true to use new unified renderer instead of CategorySlotRenderer
-// ENABLED: Using unified renderer for consistency between editor and storefront
-const USE_UNIFIED_RENDERER = true;
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -527,7 +522,7 @@ export default function Category() {
     return activeFiltersArray;
   };
 
-  // Create category context for CategorySlotRenderer
+  // Create category context for UnifiedSlotRenderer
   const categoryContext = {
     category: currentCategory,
     products: paginatedProducts,
@@ -596,7 +591,7 @@ export default function Category() {
         pageTitle={pageTitle}
       />
 
-      {/* Dynamic layout using CategorySlotRenderer for everything below header */}
+      {/* Dynamic layout using UnifiedSlotRenderer */}
       <div className="max-w-7xl mx-auto">
         {loading || !categoryConfigLoaded ? (
           <div className={`grid ${getGridClasses()} gap-8 min-h-[400px]`}>
@@ -613,53 +608,39 @@ export default function Category() {
             ))}
           </div>
         ) : (
-          <>
-            {/* Always show slot renderer with layered navigation, even when no products */}
-            <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {USE_UNIFIED_RENDERER ? (
-                // NEW: Use UnifiedSlotRenderer with preprocessed data
-                <UnifiedSlotRenderer
-                  slots={categorySlots}
-                  parentId={null}
-                  viewMode={viewMode}
-                  context="storefront"
-                  categoryData={categoryContext}
-                  preprocessedData={preprocessSlotData('category', {
-                    category: currentCategory,
-                    products: paginatedProducts,
-                    allProducts: sortedProducts,
-                    filters: buildFilters(),
-                    filterableAttributes,
-                    breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings),
-                    selectedFilters: activeFilters,
-                    priceRange: {},
-                    categories,
-                    currentPage,
-                    totalPages,
-                    itemsPerPage,
-                    filteredProductsCount: filteredProducts.length,
-                    handleFilterChange: setActiveFilters,
-                    handleSortChange,
-                    handleSearchChange: () => {},
-                    handlePageChange,
-                    clearFilters: () => setActiveFilters({}),
-                    onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug),
-                    navigate: (url) => window.location.href = url,
-                    formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
-                    getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
-                  }, store, settings, { translations: {}, productLabels: [] })}
-                />
-              ) : (
-                // LEGACY: Use CategorySlotRenderer
-                <CategorySlotRenderer
-                  slots={categorySlots}
-                  parentId={null}
-                  viewMode={viewMode}
-                  categoryContext={categoryContext}
-                />
-              )}
-            </div>
-          </>
+          <div className="grid grid-cols-12 gap-2 auto-rows-min">
+            <UnifiedSlotRenderer
+              slots={categorySlots}
+              parentId={null}
+              viewMode={viewMode}
+              context="storefront"
+              categoryData={categoryContext}
+              preprocessedData={preprocessSlotData('category', {
+                category: currentCategory,
+                products: paginatedProducts,
+                allProducts: sortedProducts,
+                filters: buildFilters(),
+                filterableAttributes,
+                breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings),
+                selectedFilters: activeFilters,
+                priceRange: {},
+                categories,
+                currentPage,
+                totalPages,
+                itemsPerPage,
+                filteredProductsCount: filteredProducts.length,
+                handleFilterChange: setActiveFilters,
+                handleSortChange,
+                handleSearchChange: () => {},
+                handlePageChange,
+                clearFilters: () => setActiveFilters({}),
+                onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug),
+                navigate: (url) => window.location.href = url,
+                formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
+                getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+              }, store, settings, { translations: {}, productLabels: [] })}
+            />
+          </div>
         )}
       </div>
     </div>
