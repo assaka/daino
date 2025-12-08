@@ -56,7 +56,7 @@ router.get('/', cacheMiddleware({
           { data: productLabels },
           { data: productTabs }
         ] = await Promise.all([
-          tenantDb.from('attributes').select('*').eq('store_id', store_id).order('name', { ascending: true }),
+          tenantDb.from('attributes').select('*').eq('store_id', store_id).order('code', { ascending: true }),
           tenantDb.from('attribute_sets').select('*').eq('store_id', store_id).order('name', { ascending: true }),
           tenantDb.from('product_labels').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true }),
           tenantDb.from('product_tabs').select('*').eq('store_id', store_id).eq('is_active', true).order('sort_order', { ascending: true })
@@ -95,7 +95,7 @@ router.get('/', cacheMiddleware({
             `)
             .eq('store_id', store_id)
             .eq('is_filterable', true)
-            .order('name', { ascending: true }),
+            .order('code', { ascending: true }),
           tenantDb.from('product_labels').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true })
         ]);
 

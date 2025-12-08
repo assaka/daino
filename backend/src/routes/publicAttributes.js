@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
       .select('*')
       .eq('store_id', store_id)
       .order('sort_order', { ascending: true })
-      .order('name', { ascending: true })
+      .order('code', { ascending: true })
       .range(offset, offset + parseInt(limit) - 1);
 
     // Filter by is_filterable if provided

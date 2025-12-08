@@ -52,7 +52,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     // Apply pagination and ordering
     query = query
       .order('sort_order', { ascending: true })
-      .order('name', { ascending: true })
+      .order('code', { ascending: true })
       .range(offset, offset + parseInt(limit) - 1);
 
     const { data: rows, error, count } = await query;
