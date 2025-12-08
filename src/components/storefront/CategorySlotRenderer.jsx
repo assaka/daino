@@ -331,11 +331,18 @@ export function CategorySlotRenderer({
         // Structure: { label, options: ["inbouw", "onderbouw"] }
         let valueCodes = [];
 
-        // Get translated attribute label from attribute_translations - ensure it's a string
-        const translatedAttrName = attr.translations?.[currentLanguage]?.name ||
-                                   attr.translations?.en?.name;
-        let attributeLabel = (typeof translatedAttrName === 'string' ? translatedAttrName : null) ||
-                            attr.name || attr.code || attrCode;
+        // Safely get translated attribute label - handle missing or malformed translation objects
+        let attributeLabel = attr.name || attr.code || attrCode;
+        if (attr.translations) {
+          const langTranslation = attr.translations[currentLanguage];
+          const enTranslation = attr.translations.en;
+
+          if (langTranslation && typeof langTranslation.name === 'string') {
+            attributeLabel = langTranslation.name;
+          } else if (enTranslation && typeof enTranslation.name === 'string') {
+            attributeLabel = enTranslation.name;
+          }
+        }
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
@@ -406,12 +413,18 @@ export function CategorySlotRenderer({
             const isActive = selectedFilters[attrCode]?.includes(valueCode) || false;
 
             if (attrValue) {
-              // Get translated label - ensure it's a string
-              const translatedLabel = attrValue.translations?.[currentLanguage]?.label ||
-                               attrValue.translations?.en?.label;
-              // Ensure valueLabel is always a string, not an object
-              const valueLabel = (typeof translatedLabel === 'string' ? translatedLabel : null) ||
-                                String(valueCode || '');
+              // Safely get translated label - handle missing or malformed translation objects
+              let valueLabel = String(valueCode || '');
+              if (attrValue.translations) {
+                const langTranslation = attrValue.translations[currentLanguage];
+                const enTranslation = attrValue.translations.en;
+
+                if (langTranslation && typeof langTranslation.label === 'string') {
+                  valueLabel = langTranslation.label;
+                } else if (enTranslation && typeof enTranslation.label === 'string') {
+                  valueLabel = enTranslation.label;
+                }
+              }
 
               return {
                 value: valueCode,

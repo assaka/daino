@@ -513,15 +513,24 @@ export default function Category() {
         values.forEach(valueCode => {
           // Find the AttributeValue to get translated label - ensure it's a string
           const attrValue = attr?.values?.find(av => av.code === valueCode);
-          const translatedValueLabel = attrValue?.translations?.[currentLang]?.label ||
-                                       attrValue?.translations?.en?.label;
-          const translatedValue = (typeof translatedValueLabel === 'string' ? translatedValueLabel : null) ||
-                                 String(valueCode || '');
+
+          // Safely get translated label - handle missing or malformed translation objects
+          let translatedValue = String(valueCode || '');
+          if (attrValue?.translations) {
+            const langTranslation = attrValue.translations[currentLang];
+            const enTranslation = attrValue.translations.en;
+
+            if (langTranslation && typeof langTranslation.label === 'string') {
+              translatedValue = langTranslation.label;
+            } else if (enTranslation && typeof enTranslation.label === 'string') {
+              translatedValue = enTranslation.label;
+            }
+          }
 
           activeFiltersArray.push({
             type: 'attribute',
             attributeCode: attributeCode,
-            label: attributeLabel,
+            label: String(attributeLabel || attributeCode),
             value: translatedValue
           });
         });
