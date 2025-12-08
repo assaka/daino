@@ -527,12 +527,17 @@ export default function Category() {
             }
           }
 
-          activeFiltersArray.push({
+          const filterObj = {
             type: 'attribute',
             attributeCode: attributeCode,
             label: String(attributeLabel || attributeCode),
             value: translatedValue
-          });
+          };
+          // Debug logging for React error #300
+          if (typeof filterObj.label !== 'string' || typeof filterObj.value !== 'string') {
+            console.error('[buildActiveFiltersArray] Non-string value detected:', filterObj);
+          }
+          activeFiltersArray.push(filterObj);
         });
       }
     });

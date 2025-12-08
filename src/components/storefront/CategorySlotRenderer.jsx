@@ -426,7 +426,7 @@ export function CategorySlotRenderer({
                 }
               }
 
-              return {
+              const optionObj = {
                 value: valueCode,
                 label: valueLabel,
                 count: productCount,
@@ -435,6 +435,11 @@ export function CategorySlotRenderer({
                 sort_order: attrValue.sort_order || 0,
                 filter_type: filterType // Pass filter_type to each option for template access
               };
+              // Debug logging for React error #300
+              if (typeof optionObj.label !== 'string' || typeof optionObj.value !== 'string') {
+                console.error('[CategorySlotRenderer] Non-string in filter option:', optionObj);
+              }
+              return optionObj;
             }
 
             // Fallback if no AttributeValue found
