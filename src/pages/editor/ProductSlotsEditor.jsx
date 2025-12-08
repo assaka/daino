@@ -1,7 +1,7 @@
 /**
  * ProductSlotsEditor - Uses real product data from store
  * - Fetches actual product from the store's catalog
- * - Uses preprocessSlotData for consistent rendering with storefront
+ * - Passes productData in SAME format as storefront ProductDetail.jsx
  * - Falls back to mock data if no products available
  */
 
@@ -10,7 +10,6 @@ import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { generateMockProductContext } from '@/utils/mockProductData';
-import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -102,20 +101,21 @@ export default function ProductSlotsEditor({
     fetchRealProduct();
   }, [selectedStore?.id]);
 
-  // Generate context - uses real product if available, falls back to mock
+  // Generate context - MUST match storefront ProductDetail.jsx productData structure exactly
   const generateProductContext = useCallback((viewMode, store) => {
     const storeSettings = store?.settings || selectedStore?.settings || {};
 
-    // If we have a real product, use it
+    // If we have a real product, use it in the SAME format as storefront
     if (realProduct) {
-      const productContext = {
+      // Match storefront ProductDetail.jsx productData structure exactly
+      return {
         product: {
           ...realProduct,
-          // Ensure required fields exist
           images: realProduct.images || [],
           attributes: realProduct.attributes || {},
           in_stock: realProduct.stock_quantity > 0 || realProduct.infinite_stock
         },
+        baseProduct: realProduct,
         productTabs: productTabs.length > 0 ? productTabs : [
           { id: 1, name: 'Description', tab_type: 'description', content: realProduct.description || '', is_active: true, sort_order: 1 },
           { id: 2, name: 'Specifications', tab_type: 'attributes', content: null, is_active: true, sort_order: 2 }
@@ -140,6 +140,7 @@ export default function ProductSlotsEditor({
         activeTab: 0,
         isInWishlist: false,
         canAddToCart: realProduct.stock_quantity > 0 || realProduct.infinite_stock,
+        // Editor-safe handler stubs (match storefront function signatures)
         setQuantity: () => {},
         setSelectedOptions: () => {},
         setActiveImageIndex: () => {},
@@ -153,19 +154,44 @@ export default function ProductSlotsEditor({
         handleVariantChange: () => {},
         translations: {}
       };
-
-      return preprocessSlotData('product', productContext, store || selectedStore || {}, storeSettings, {
-        translations: {},
-        productLabels: productLabels
-      });
     }
 
-    // Fall back to mock data
+    // Fall back to mock data - also in storefront productData format
     const mockContext = generateMockProductContext(storeSettings);
-    return preprocessSlotData('product', mockContext, store || selectedStore || {}, storeSettings, {
-      translations: {},
-      productLabels: []
-    });
+    return {
+      product: {
+        ...mockContext.product,
+        in_stock: true
+      },
+      baseProduct: mockContext.product,
+      productTabs: mockContext.productTabs || [],
+      customOptions: mockContext.customOptions || [],
+      relatedProducts: mockContext.relatedProducts || [],
+      store: store || selectedStore,
+      settings: storeSettings,
+      categories: mockContext.categories || [],
+      breadcrumbs: mockContext.breadcrumbs || [],
+      productLabels: mockContext.productLabels || [],
+      selectedOptions: [],
+      quantity: 1,
+      totalPrice: mockContext.product?.price || 0,
+      activeImageIndex: 0,
+      activeTab: 0,
+      isInWishlist: false,
+      canAddToCart: true,
+      setQuantity: () => {},
+      setSelectedOptions: () => {},
+      setActiveImageIndex: () => {},
+      setActiveTab: () => {},
+      setIsInWishlist: () => {},
+      handleAddToCart: () => {},
+      handleWishlistToggle: () => {},
+      handleOptionChange: () => {},
+      customOptionsLabel: 'Options',
+      selectedVariant: null,
+      handleVariantChange: () => {},
+      translations: {}
+    };
   }, [realProduct, productTabs, customOptions, productLabels, selectedStore]);
 
   // Product Editor Configuration - memoized with generateProductContext dependency
