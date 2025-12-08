@@ -3,13 +3,16 @@
  * - Consistent with other slot editors
  * - AI enhancement ready
  * - Maintainable structure
+ * - Uses real category/product data from database
  */
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useCategory } from '@/hooks/useApiQueries';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Import component registry to render components consistently with storefront
@@ -426,55 +429,8 @@ const categoryCustomSlotRenderer = (slot, context) => {
   return null;
 };
 
-// Category Editor Configuration Factory - creates config with real filterableAttributes and storeSettings
-const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
-  pageType: 'category',
-  pageName: 'Category',
-  slotType: 'category_layout',
-  defaultViewMode: 'grid',
-  viewModes: [
-    {
-      key: 'grid',
-      label: 'Grid',
-      icon: Grid
-    },
-    {
-      key: 'list',
-      label: 'List',
-      icon: List
-    }
-  ],
-  // Slot components are now registered in CategorySlotComponents.jsx via ComponentRegistry
-  generateContext: (viewMode, selectedStore) => {
-    // Use selectedStore from StoreSelectionContext (admin's selected store)
-    // This ensures we use the correct store's settings, not a fallback
-    const storeSettings = selectedStore?.settings || null;
-    return generateMockCategoryContext(filterableAttributes, storeSettings);
-  },
-  createDefaultSlots,
-  viewModeAdjustments: {
-    filters_container: {
-      colSpan: {
-        shouldAdjust: (currentValue) => typeof currentValue === 'number',
-        newValue: {
-          grid: 'col-span-12 lg:col-span-3',
-          list: 'col-span-12 lg:col-span-3'
-        }
-      }
-    },
-    products_container: {
-      colSpan: {
-        shouldAdjust: (currentValue) => typeof currentValue === 'number',
-        newValue: {
-          grid: 'col-span-12 lg:col-span-9',
-          list: 'col-span-12 lg:col-span-9'
-        }
-      }
-    }
-  },
-  customSlotRenderer: categoryCustomSlotRenderer,
-  cmsBlockPositions: ['category_above_products', 'category_below_products']
-});
+// Note: Category editor config is now created inline in CategorySlotsEditor
+// to support real category/product data fetching
 
 const CategorySlotsEditor = ({
   mode = 'edit',
@@ -484,8 +440,32 @@ const CategorySlotsEditor = ({
   // Get store context for settings and filterableAttributes
   // Handle null case when StoreProvider is not available in editor context
   const storeContext = useStore();
-  const storeSettings = storeContext?.settings || null;
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const storeSettings = storeContext?.settings || selectedStore?.settings || null;
   const filterableAttributes = storeContext?.filterableAttributes || [];
+  const categories = storeContext?.categories || [];
+  const storeId = getSelectedStoreId();
+
+  // State for selected category (for previewing different categories)
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState(null);
+
+  // Auto-select first category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategorySlug) {
+      // Find first category with products, or just use first category
+      const firstCategory = categories[0];
+      if (firstCategory?.slug) {
+        setSelectedCategorySlug(firstCategory.slug);
+      }
+    }
+  }, [categories, selectedCategorySlug]);
+
+  // Fetch real category data with products
+  const { data: realCategoryData, isLoading: categoryLoading } = useCategory(
+    selectedCategorySlug,
+    storeId,
+    { enabled: !!selectedCategorySlug && !!storeId }
+  );
 
   // Listen for settings updates from admin panel
   useEffect(() => {
@@ -504,8 +484,86 @@ const CategorySlotsEditor = ({
     }
   }, []);
 
-  // Create editor config with real filterableAttributes and storeSettings from database (same as storefront)
-  const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes, storeSettings);
+  // Build real category context from API data, falling back to mock data
+  const categoryContext = useMemo(() => {
+    // If we have real data, use it
+    if (realCategoryData?.category && realCategoryData?.products?.length > 0) {
+      return {
+        category: realCategoryData.category,
+        products: realCategoryData.products,
+        allProducts: realCategoryData.products,
+        filters: realCategoryData.filters || {},
+        filterableAttributes: filterableAttributes,
+        pagination: {
+          start: 1,
+          end: realCategoryData.products.length,
+          total: realCategoryData.products.length,
+          currentPage: 1,
+          totalPages: 1,
+          perPage: 12,
+          hasPrev: false,
+          hasNext: false
+        },
+        sortOption: 'default',
+        currentPage: 1,
+        totalPages: 1,
+        subcategories: realCategoryData.subcategories || [],
+        breadcrumbs: [
+          { name: 'Home', url: '/' },
+          { name: realCategoryData.category.name, url: `/${realCategoryData.category.slug}` }
+        ],
+        selectedFilters: {},
+        settings: storeSettings || {},
+        store: storeContext?.store || selectedStore || { id: storeId, name: 'Store' },
+        productLabels: storeContext?.productLabels || []
+      };
+    }
+
+    // Fall back to mock data
+    return generateMockCategoryContext(filterableAttributes, storeSettings);
+  }, [realCategoryData, filterableAttributes, storeSettings, storeContext, selectedStore, storeId]);
+
+  // Create editor config with real data
+  const categoryEditorConfig = useMemo(() => ({
+    pageType: 'category',
+    pageName: 'Category',
+    slotType: 'category_layout',
+    defaultViewMode: 'grid',
+    viewModes: [
+      { key: 'grid', label: 'Grid', icon: Grid },
+      { key: 'list', label: 'List', icon: List }
+    ],
+    // Return the pre-built context with real data
+    generateContext: () => categoryContext,
+    createDefaultSlots,
+    viewModeAdjustments: {
+      filters_container: {
+        colSpan: {
+          shouldAdjust: (currentValue) => typeof currentValue === 'number',
+          newValue: {
+            grid: 'col-span-12 lg:col-span-3',
+            list: 'col-span-12 lg:col-span-3'
+          }
+        }
+      },
+      products_container: {
+        colSpan: {
+          shouldAdjust: (currentValue) => typeof currentValue === 'number',
+          newValue: {
+            grid: 'col-span-12 lg:col-span-9',
+            list: 'col-span-12 lg:col-span-9'
+          }
+        }
+      }
+    },
+    customSlotRenderer: categoryCustomSlotRenderer,
+    cmsBlockPositions: ['category_above_products', 'category_below_products'],
+    // Extra: pass available categories for category selector
+    availableCategories: categories,
+    selectedCategorySlug,
+    onCategoryChange: setSelectedCategorySlug,
+    isLoadingCategoryData: categoryLoading
+  }), [categoryContext, categories, selectedCategorySlug, categoryLoading]);
 
   // Create enhanced config with store settings and filterable attributes
   const enhancedConfig = {
