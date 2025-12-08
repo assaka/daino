@@ -1832,13 +1832,13 @@ export {
   ProductGallery,
   // ProductInfo removed - not used in product-config.js
   ProductOptions,
-  CustomOptions,
-  ConfigurableProductSelector,
+  // CustomOptions,
+  // ConfigurableProductSelector,
   ProductTabs,
-  ProductRecommendations,
-  TotalPriceDisplay,
-  StockStatus,
-  ProductImage,
-  ProductThumbnails,
+  // ProductRecommendations,
+  // TotalPriceDisplay,
+  // StockStatus,
+  // ProductImage,
+  // ProductThumbnails,
   CmsBlockRenderer
 };
