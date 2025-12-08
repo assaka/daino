@@ -379,15 +379,19 @@ const PaginationComponent = createSlotComponent({
       }
     }, [categoryContext, context]);
 
-    try {
-      return (
-        <div ref={containerRef} className={className || slot?.className} style={styles || slot?.styles}
-             dangerouslySetInnerHTML={{ __html: html }} />
-      );
-    } catch (error) {
-      console.error('[PaginationComponent] Error in render return:', error);
-      return <div>Pagination error</div>;
-    }
+    // Debug: Log what we're passing to the div
+    console.log('[PaginationComponent] className:', className, 'slot?.className:', slot?.className);
+    console.log('[PaginationComponent] styles:', styles, 'slot?.styles:', slot?.styles);
+
+    // Ensure className is a string and styles is an object
+    const finalClassName = typeof className === 'string' ? className : (typeof slot?.className === 'string' ? slot?.className : '');
+    const finalStyles = (styles && typeof styles === 'object' && !Array.isArray(styles)) ? styles :
+                        (slot?.styles && typeof slot?.styles === 'object' && !Array.isArray(slot?.styles)) ? slot?.styles : {};
+
+    return (
+      <div ref={containerRef} className={finalClassName} style={finalStyles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
   }
 });
 
