@@ -455,8 +455,9 @@ export default function Category() {
       }
 
       // Get translated attribute label for filter header
-      const attributeLabel = attr.translations?.[currentLang]?.name ||
-                            attr.translations?.en?.name ||
+      // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
+      const attributeLabel = attr.translations?.[currentLang]?.label ||
+                            attr.translations?.en?.label ||
                             attr.name ||
                             attrCode;
 
