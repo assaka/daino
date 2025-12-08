@@ -295,82 +295,55 @@ const SortSelector = createSlotComponent({
   }
 });
 
-// Pagination Component with processVariables
+// Pagination Component - Simple React-based implementation
 const PaginationComponent = createSlotComponent({
   name: 'PaginationComponent',
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
-    const containerRef = useRef(null);
-
     // Don't render pagination if there's only 1 page or no pages
-    const totalPages = variableContext?.pagination?.totalPages || 0;
+    const totalPages = variableContext?.pagination?.totalPages || categoryContext?.totalPages || 0;
+    const currentPage = variableContext?.pagination?.currentPage || categoryContext?.currentPage || 1;
+    const hasPrev = currentPage > 1;
+    const hasNext = currentPage < totalPages;
+
     if (totalPages <= 1 && context !== 'editor') {
       return null;
     }
 
-    // Use template from slot.content or fallback
-    const template = slot?.content || `
-      {{#if (gt pagination.totalPages 1)}}
-      <div class="flex justify-center mt-8">
-        <nav class="flex items-center gap-1">
-          <button class="px-3 py-2 border rounded hover:bg-gray-50 {{#unless pagination.hasPrev}}opacity-50 cursor-not-allowed{{/unless}}"
-                  data-action="go-to-page"
-                  data-page="prev"
-                  {{#unless pagination.hasPrev}}disabled{{/unless}}>
-            Previous
-          </button>
-          <span class="px-3 py-2">{{pagination.currentPage}} of {{pagination.totalPages}}</span>
-          <button class="px-3 py-2 border rounded hover:bg-gray-50 {{#unless pagination.hasNext}}opacity-50 cursor-not-allowed{{/unless}}"
-                  data-action="go-to-page"
-                  data-page="next"
-                  {{#unless pagination.hasNext}}disabled{{/unless}}>
-            Next
-          </button>
-        </nav>
-      </div>
-      {{/if}}
-    `;
+    const handlePageChange = (page) => {
+      if (categoryContext?.handlePageChange) {
+        categoryContext.handlePageChange(page);
+      }
+    };
 
-    const html = processVariables(template, variableContext);
-
-    // Attach event listeners in storefront
-    useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
-
-      const handleClick = (e) => {
-        const button = e.target.closest('[data-action="go-to-page"]');
-        if (!button || !categoryContext?.handlePageChange) return;
-
-        const page = button.getAttribute('data-page');
-        if (page === 'prev' || page === 'next') {
-          // Handle prev/next
-          const currentPage = categoryContext.currentPage || 1;
-          const newPage = page === 'prev' ? currentPage - 1 : currentPage + 1;
-          categoryContext.handlePageChange(newPage);
-        } else {
-          // Handle specific page number
-          const pageNum = parseInt(page, 10);
-          if (!isNaN(pageNum)) {
-            categoryContext.handlePageChange(pageNum);
-          }
-        }
-      };
-
-      containerRef.current.addEventListener('click', handleClick);
-      return () => {
-        if (containerRef.current) {
-          containerRef.current.removeEventListener('click', handleClick);
-        }
-      };
-    }, [categoryContext, context]);
-
-    // Ensure className is a string and styles is an object (fixes React error #310)
+    // Ensure className is a string and styles is an object
     const finalClassName = typeof className === 'string' ? className : (typeof slot?.className === 'string' ? slot?.className : '');
     const finalStyles = (styles && typeof styles === 'object' && !Array.isArray(styles)) ? styles :
                         (slot?.styles && typeof slot?.styles === 'object' && !Array.isArray(slot?.styles)) ? slot?.styles : {};
 
     return (
-      <div ref={containerRef} className={finalClassName} style={finalStyles}
-           dangerouslySetInnerHTML={{ __html: html }} />
+      <div className={finalClassName} style={finalStyles}>
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <nav className="flex items-center gap-1">
+              <button
+                className={`px-3 py-2 border rounded hover:bg-gray-50 ${!hasPrev ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => hasPrev && handlePageChange(currentPage - 1)}
+                disabled={!hasPrev || context === 'editor'}
+              >
+                Previous
+              </button>
+              <span className="px-3 py-2">{currentPage} of {totalPages}</span>
+              <button
+                className={`px-3 py-2 border rounded hover:bg-gray-50 ${!hasNext ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => hasNext && handlePageChange(currentPage + 1)}
+                disabled={!hasNext || context === 'editor'}
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        )}
+      </div>
     );
   }
 });
