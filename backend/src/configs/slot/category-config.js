@@ -451,7 +451,23 @@ const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 2 },
       viewMode: ['grid', 'list'],
-      metadata: { displayName: 'Filter Labels (Price, Brand, etc.)' }
+      metadata: { displayName: 'Filter Labels (Brand, Size, etc.)' }
+    },
+
+    price_filter_label: {
+      id: 'price_filter_label',
+      type: 'text',
+      content: 'Price',
+      className: 'font-medium',
+      styles: {
+        color: '#374151',
+        fontSize: '0.875rem',
+        fontWeight: '500'
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 2 },
+      viewMode: ['grid', 'list'],
+      metadata: { displayName: 'Price Filter Label' }
     },
 
     filter_option_styles: {
