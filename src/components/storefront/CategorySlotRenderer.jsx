@@ -331,25 +331,15 @@ export function CategorySlotRenderer({
         // Structure: { label, options: ["inbouw", "onderbouw"] }
         let valueCodes = [];
 
-        // Get translated attribute label from attribute_translations
-        // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
-        let attributeLabel = attr.translations?.[currentLanguage]?.label ||
-                            attr.translations?.en?.label ||
-                            attr.code || attrCode;
-
-        // Ensure attributeLabel is a string (prevent React error #300)
-        if (typeof attributeLabel === 'object') {
-          attributeLabel = attr.code || attrCode;
-        }
+        // Use attr.label - already translated by backend (publicAttributes.js)
+        // Backend returns: label: requestedLang?.label || englishLang?.label || attr.code
+        let attributeLabel = attr.label || attr.code || attrCode;
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
-          // Only use filterData.label as fallback if no translation found
-          if (!attr.translations?.[currentLanguage]?.label && !attr.translations?.en?.label) {
-            const fallbackLabel = filterData.label;
-            if (fallbackLabel && typeof fallbackLabel === 'string') {
-              attributeLabel = fallbackLabel;
-            }
+          // Use filterData.label as fallback if attr.label not available
+          if (!attr.label && filterData.label) {
+            attributeLabel = filterData.label;
           }
         }
 
@@ -414,51 +404,37 @@ export function CategorySlotRenderer({
             const isActive = selectedFilters[attrCode]?.includes(valueCode) || false;
 
             if (attrValue) {
-              // Get translated value label from attribute_value_translations
-              // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
-              let valueLabel = attrValue.translations?.[currentLanguage]?.label ||
-                                attrValue.translations?.en?.label ||
-                                valueCode;
-
-              // Ensure valueLabel is a string (prevent React error #300)
-              if (typeof valueLabel === 'object') {
-                valueLabel = valueCode;
-              }
-
+              // Use attrValue.value - already translated by backend (publicAttributes.js)
+              // Backend returns: value: reqLang?.value || enLang?.value || val.value
               return {
-                value: String(valueCode),
-                label: String(valueLabel || valueCode),
+                value: valueCode,
+                label: attrValue.value || valueCode,
                 count: productCount,
                 active: isActive,
-                attributeCode: String(attrCode),
+                attributeCode: attrCode,
                 sort_order: attrValue.sort_order || 0,
-                filter_type: String(filterType)
+                filter_type: filterType
               };
             }
 
             // Fallback if no AttributeValue found
             return {
-              value: String(valueCode),
-              label: String(valueCode),
+              value: valueCode,
+              label: valueCode,
               count: productCount,
               active: isActive,
-              attributeCode: String(attrCode),
+              attributeCode: attrCode,
               sort_order: 999,
-              filter_type: String(filterType)
+              filter_type: filterType
             };
           })
           .sort((a, b) => a.sort_order - b.sort_order); // Sort by sort_order
 
-        // Ensure attributeLabel is a string
-        const safeAttributeLabel = typeof attributeLabel === 'object'
-          ? (attrCode || 'Filter')
-          : String(attributeLabel || attrCode);
-
         const result = {
-          code: String(attrCode),
-          label: safeAttributeLabel,
+          code: attrCode,
+          label: attributeLabel,
           options: formattedOptions,
-          filter_type: String(attr.filter_type || 'multiselect')
+          filter_type: attr.filter_type || 'multiselect'
         };
 
         return result;

@@ -239,19 +239,11 @@ export default function LayeredNavigation({
 
                     // Only include this attribute if it has values with products
                     if (valuesWithProducts.length > 0) {
-                        // Get translated attribute label
-                        let attributeLabel = attr.translations?.[currentLang]?.label ||
-                                             attr.translations?.en?.label ||
-                                             attr.code;
-
-                        // Ensure attributeLabel is a string (prevent React error #300)
-                        if (typeof attributeLabel === 'object') {
-                            attributeLabel = attr.code || String(attributeLabel);
-                        }
-
+                        // Use attr.label - already translated by backend (publicAttributes.js)
+                        // Backend returns: label: requestedLang?.label || englishLang?.label || attr.code
                         options[attr.code] = {
-                            name: String(attributeLabel),
-                            values: valuesWithProducts.map(v => String(v)), // Ensure all values are strings
+                            name: attr.label || attr.code,
+                            values: valuesWithProducts,
                             filterType: attr.filter_type || 'multiselect' // Default to multiselect (checkboxes)
                         };
                     }

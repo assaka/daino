@@ -454,27 +454,16 @@ export default function Category() {
         });
       }
 
-      // Get translated attribute label for filter header
-      // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
-      let attributeLabel = attr.translations?.[currentLang]?.label ||
-                            attr.translations?.en?.label ||
-                            attrCode;
-
-      // Ensure attributeLabel is a string (prevent React error #300)
-      if (typeof attributeLabel === 'object') {
-        attributeLabel = attrCode;
-      }
-
       // Skip price attribute (handled separately above)
       if (attrCode === 'price') return;
 
       // Only include attributes that have values with count > 0
       if (valueSet.size > 0) {
-        // Store just the value codes array
-        // Labels will be fetched from attribute_values.translations when displaying
+        // Use attr.label - already translated by backend (publicAttributes.js)
+        // Backend returns: label: requestedLang?.label || englishLang?.label || attr.code
         filters[attrCode] = {
-          label: String(attributeLabel),
-          options: Array.from(valueSet).map(v => String(v)) // Ensure all values are strings
+          label: attr.label || attrCode,
+          options: Array.from(valueSet)
         };
       }
     });
@@ -505,41 +494,26 @@ export default function Category() {
       }
 
       // Find the attribute from filterableAttributes
-      // filterableAttributes now has translations: { en: { label: '...' }, nl: { label: '...' } }
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
 
-      // Get translated attribute label, fallback to code
-      let attributeLabel = attr?.translations?.[currentLang]?.label ||
-                          attr?.translations?.en?.label ||
-                          attributeCode;
-
-      // Ensure attributeLabel is a string (prevent React error #300)
-      if (typeof attributeLabel === 'object') {
-        attributeLabel = attributeCode;
-      }
+      // Use attr.label - already translated by backend (publicAttributes.js)
+      const attributeLabel = attr?.label || attributeCode;
 
       // Add each selected value as a separate active filter
       if (Array.isArray(values)) {
         values.forEach(valueCode => {
           // Find the AttributeValue to get translated label
-          // attr.values has: { code, sort_order, translations: { en: { label }, nl: { label } } }
+          // attr.values has: { code, value (translated), sort_order }
           const attrValue = attr?.values?.find(av => av.code === valueCode);
 
-          // Get translated value label, fallback to valueCode
-          let translatedValue = attrValue?.translations?.[currentLang]?.label ||
-                               attrValue?.translations?.en?.label ||
-                               valueCode;
-
-          // Ensure translatedValue is a string (prevent React error #300)
-          if (typeof translatedValue === 'object') {
-            translatedValue = valueCode;
-          }
+          // Use attrValue.value - already translated by backend
+          const translatedValue = attrValue?.value || valueCode;
 
           activeFiltersArray.push({
             type: 'attribute',
-            attributeCode: String(attributeCode),
-            label: String(attributeLabel || attributeCode),
-            value: String(translatedValue || valueCode)
+            attributeCode,
+            label: attributeLabel,
+            value: translatedValue
           });
         });
       }
