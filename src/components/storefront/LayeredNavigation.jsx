@@ -240,13 +240,18 @@ export default function LayeredNavigation({
                     // Only include this attribute if it has values with products
                     if (valuesWithProducts.length > 0) {
                         // Get translated attribute label
-                        const attributeLabel = attr.translations?.[currentLang]?.label ||
+                        let attributeLabel = attr.translations?.[currentLang]?.label ||
                                              attr.translations?.en?.label ||
                                              attr.code;
 
+                        // Ensure attributeLabel is a string (prevent React error #300)
+                        if (typeof attributeLabel === 'object') {
+                            attributeLabel = attr.code || String(attributeLabel);
+                        }
+
                         options[attr.code] = {
-                            name: attributeLabel,
-                            values: valuesWithProducts,
+                            name: String(attributeLabel),
+                            values: valuesWithProducts.map(v => String(v)), // Ensure all values are strings
                             filterType: attr.filter_type || 'multiselect' // Default to multiselect (checkboxes)
                         };
                     }

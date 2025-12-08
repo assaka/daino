@@ -1010,6 +1010,22 @@ function formatValue(value, path, context, pageData) {
   // Ensure we never return an object - React error #300
   // Objects (including arrays, React elements, etc.) are not valid as React children
   if (value && typeof value === 'object') {
+    // Check if it's a translations object { en: { label: '...' }, nl: { label: '...' } }
+    // This commonly happens with attribute translations
+    if (value.en && typeof value.en === 'object' && value.en.label) {
+      // Try current language from localStorage
+      const currentLang = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('daino_language') || 'en'
+        : 'en';
+      const translated = value[currentLang]?.label || value.en?.label;
+      if (translated && typeof translated === 'string') {
+        return translated;
+      }
+    }
+    // Check for direct label property
+    if (value.label && typeof value.label === 'string') {
+      return value.label;
+    }
     // Try to get a string representation
     if (value.toString && value.toString !== Object.prototype.toString) {
       return value.toString();

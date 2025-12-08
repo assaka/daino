@@ -456,9 +456,14 @@ export default function Category() {
 
       // Get translated attribute label for filter header
       // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
-      const attributeLabel = attr.translations?.[currentLang]?.label ||
+      let attributeLabel = attr.translations?.[currentLang]?.label ||
                             attr.translations?.en?.label ||
                             attrCode;
+
+      // Ensure attributeLabel is a string (prevent React error #300)
+      if (typeof attributeLabel === 'object') {
+        attributeLabel = attrCode;
+      }
 
       // Skip price attribute (handled separately above)
       if (attrCode === 'price') return;
@@ -468,8 +473,8 @@ export default function Category() {
         // Store just the value codes array
         // Labels will be fetched from attribute_values.translations when displaying
         filters[attrCode] = {
-          label: attributeLabel,
-          options: Array.from(valueSet) // Just the value codes
+          label: String(attributeLabel),
+          options: Array.from(valueSet).map(v => String(v)) // Ensure all values are strings
         };
       }
     });
@@ -504,9 +509,14 @@ export default function Category() {
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
 
       // Get translated attribute label, fallback to code
-      const attributeLabel = attr?.translations?.[currentLang]?.label ||
-                            attr?.translations?.en?.label ||
-                            attributeCode;
+      let attributeLabel = attr?.translations?.[currentLang]?.label ||
+                          attr?.translations?.en?.label ||
+                          attributeCode;
+
+      // Ensure attributeLabel is a string (prevent React error #300)
+      if (typeof attributeLabel === 'object') {
+        attributeLabel = attributeCode;
+      }
 
       // Add each selected value as a separate active filter
       if (Array.isArray(values)) {
@@ -516,13 +526,18 @@ export default function Category() {
           const attrValue = attr?.values?.find(av => av.code === valueCode);
 
           // Get translated value label, fallback to valueCode
-          const translatedValue = attrValue?.translations?.[currentLang]?.label ||
-                                 attrValue?.translations?.en?.label ||
-                                 valueCode;
+          let translatedValue = attrValue?.translations?.[currentLang]?.label ||
+                               attrValue?.translations?.en?.label ||
+                               valueCode;
+
+          // Ensure translatedValue is a string (prevent React error #300)
+          if (typeof translatedValue === 'object') {
+            translatedValue = valueCode;
+          }
 
           activeFiltersArray.push({
             type: 'attribute',
-            attributeCode: attributeCode,
+            attributeCode: String(attributeCode),
             label: String(attributeLabel || attributeCode),
             value: String(translatedValue || valueCode)
           });
