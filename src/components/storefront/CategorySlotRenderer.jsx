@@ -333,14 +333,14 @@ export function CategorySlotRenderer({
 
         // Get translated attribute label from attribute_translations
         // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
-        const attributeLabel = attr.translations?.[currentLanguage]?.label ||
-                              attr.translations?.en?.label ||
-                              attr.name || attr.code || attrCode;
+        let attributeLabel = attr.translations?.[currentLanguage]?.label ||
+                            attr.translations?.en?.label ||
+                            attr.name || attr.code || attrCode;
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
           // Only use filterData.label as fallback if no translation found
-          if (!attr.translations?.[currentLanguage]?.name && !attr.translations?.en?.name) {
+          if (!attr.translations?.[currentLanguage]?.label && !attr.translations?.en?.label) {
             attributeLabel = filterData.label || attributeLabel;
           }
         }
