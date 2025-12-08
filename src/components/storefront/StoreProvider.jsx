@@ -152,6 +152,8 @@ export const StoreProvider = ({ children }) => {
           wishlist: bootstrap.wishlist || [],
           user: bootstrap.user || null,
           headerSlotConfig: bootstrap.headerSlotConfig || null,
+          // UI translations for TranslationProvider
+          translations: bootstrap.translations || null,
 
           // Layer 3 - Additional data
           taxes: additionalData.taxes || [],
