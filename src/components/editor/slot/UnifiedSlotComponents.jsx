@@ -144,47 +144,47 @@ const QuantitySelector = createSlotComponent({
     category: 'Product'
   }
 });
-
-/**
- * AddToCartButton - Unified add to cart button component
- */
-const AddToCartButton = createSlotComponent({
-  name: 'AddToCartButton',
-  render: ({ slot, productContext, className, styles, context }) => {
-    if (context === 'editor') {
-      // Editor version - visual preview only
-      return (
-        <div className={className} style={styles}>
-          <button className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium">
-            Add to Cart
-          </button>
-        </div>
-      );
-    }
-
-    // Storefront version - full functionality
-    const { handleAddToCart, canAddToCart, product } = productContext;
-
-    const handleClick = (e) => {
-      if (handleAddToCart) {
-        handleAddToCart(e);
-      }
-    };
-
-    return (
-      <div className={className} style={styles}>
-        <Button
-          onClick={handleClick}
-          disabled={!canAddToCart}
-          className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          Add to Cart
-        </Button>
-      </div>
-    );
-  }
-});
+//
+// /**
+//  * AddToCartButton - Unified add to cart button component
+//  */
+// const AddToCartButton = createSlotComponent({
+//   name: 'AddToCartButton',
+//   render: ({ slot, productContext, className, styles, context }) => {
+//     if (context === 'editor') {
+//       // Editor version - visual preview only
+//       return (
+//         <div className={className} style={styles}>
+//           <button className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium">
+//             Add to Cart
+//           </button>
+//         </div>
+//       );
+//     }
+//
+//     // Storefront version - full functionality
+//     const { handleAddToCart, canAddToCart, product } = productContext;
+//
+//     const handleClick = (e) => {
+//       if (handleAddToCart) {
+//         handleAddToCart(e);
+//       }
+//     };
+//
+//     return (
+//       <div className={className} style={styles}>
+//         <Button
+//           onClick={handleClick}
+//           disabled={!canAddToCart}
+//           className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+//         >
+//           <ShoppingCart className="w-5 h-5 mr-2" />
+//           Add to Cart
+//         </Button>
+//       </div>
+//     );
+//   }
+// });
 
 /**
  * ProductBreadcrumbs - Unified breadcrumb component
@@ -913,7 +913,7 @@ const TotalPriceDisplay = createSlotComponent({
 
 // Register all components
 registerSlotComponent('QuantitySelector', QuantitySelector);
-registerSlotComponent('AddToCartButton', AddToCartButton);
+// registerSlotComponent('AddToCartButton', AddToCartButton);
 
 /**
  * CartItemsSlot - Cart items listing with selected options breakdown
