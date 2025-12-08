@@ -137,18 +137,22 @@ export default function LayeredNavigation({
         setPriceRange([minPrice, maxPrice]);
     }, [minPrice, maxPrice]);
 
-    // FIXED: Send filters when they change
+    // Send filters when they change - ONLY in uncontrolled mode
+    // In controlled mode, onFilterChange is called directly from setSelectedFilters
+    const isControlledMode = externalSelectedFilters !== undefined;
     useEffect(() => {
+        // Skip this effect in controlled mode to avoid infinite loops
+        if (isControlledMode) return;
+
         const filtersToSend = { ...selectedFilters };
-        
+
         // Only add price range if it's different from the full range
         if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
             filtersToSend.priceRange = priceRange;
         }
-        
-        
+
         onFilterChange(filtersToSend);
-    }, [selectedFilters, priceRange, minPrice, maxPrice, onFilterChange]);
+    }, [isControlledMode, selectedFilters, priceRange, minPrice, maxPrice, onFilterChange]);
     
     const handleAttributeChange = (attributeCode, value, checked, filterType = 'multiselect') => {
         setSelectedFilters(prev => {
