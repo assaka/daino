@@ -82,37 +82,6 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
       }
     });
 
-    // AFTER copying all stylesheets, add storefront theme override
-    // This ensures the editor preview uses the same CSS variables as the storefront
-    // regardless of what theme the admin Layout.jsx sets
-    const storefrontTheme = iframeDoc.createElement('style');
-    storefrontTheme.textContent = `
-      /* Storefront theme override - must be last to take precedence */
-      :root {
-        --background: 0 0% 100% !important;
-        --foreground: 0 0% 3.9% !important;
-        --card: 0 0% 100% !important;
-        --card-foreground: 0 0% 3.9% !important;
-        --popover: 0 0% 100% !important;
-        --popover-foreground: 0 0% 3.9% !important;
-        --primary: 0 0% 9% !important;
-        --primary-foreground: 0 0% 98% !important;
-        --secondary: 0 0% 96.1% !important;
-        --secondary-foreground: 0 0% 9% !important;
-        --muted: 0 0% 96.1% !important;
-        --muted-foreground: 0 0% 45.1% !important;
-        --accent: 0 0% 96.1% !important;
-        --accent-foreground: 0 0% 9% !important;
-        --destructive: 0 84.2% 60.2% !important;
-        --destructive-foreground: 0 0% 98% !important;
-        --border: 0 0% 89.8% !important;
-        --input: 0 0% 89.8% !important;
-        --ring: 0 0% 3.9% !important;
-        --radius: 0.5rem !important;
-      }
-    `;
-    iframeDoc.head.appendChild(storefrontTheme);
-
     setIframeDocument(iframeDoc);
   }, []);
 
