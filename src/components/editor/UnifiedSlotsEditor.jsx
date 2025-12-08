@@ -142,12 +142,13 @@ const UnifiedSlotsEditor = ({
   const [pageContext, setPageContext] = useState(null);
 
   // Generate page context
+  // Also re-generate when config changes (which happens when real data loads)
   useEffect(() => {
     if (generateContext) {
       const context = generateContext(viewMode, selectedStore);
       setPageContext(context);
     }
-  }, [generateContext, viewMode, selectedStore]);
+  }, [generateContext, viewMode, selectedStore, config]);
 
   // Use extracted hooks
   const { formatTimeAgo } = useTimestampFormatting();

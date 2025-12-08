@@ -484,20 +484,100 @@ const CategorySlotsEditor = ({
     }
   }, []);
 
+  // Build filters from products and filterable attributes (same as storefront Category.jsx)
+  const buildFilters = (products, filterableAttrs) => {
+    const filters = {};
+
+    if (!products || products.length === 0) return filters;
+
+    // Build price filter
+    const allPrices = products.map(p => {
+      let price = parseFloat(p.price || 0);
+      if (p.compare_price && parseFloat(p.compare_price) > 0) {
+        price = Math.min(price, parseFloat(p.compare_price));
+      }
+      return price;
+    }).filter(p => p > 0);
+
+    const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices)) : 0;
+    const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices)) : 0;
+
+    if (minPrice > 0 && maxPrice > 0 && minPrice !== maxPrice) {
+      filters.price = {
+        label: 'Price',
+        min: minPrice,
+        max: maxPrice,
+        currentMin: minPrice,
+        currentMax: maxPrice,
+        selected: [minPrice, maxPrice],
+        type: 'slider'
+      };
+    }
+
+    // Build attribute filters
+    if (filterableAttrs && filterableAttrs.length > 0) {
+      filterableAttrs.forEach(attr => {
+        const attrCode = attr.code || attr.attribute_name;
+        const excludedAttributes = ['name', 'sku', 'description', 'image', 'price'];
+        if (excludedAttributes.includes(attrCode)) return;
+
+        // Count products per value
+        const valueCounts = {};
+        products.forEach(p => {
+          const productAttributes = p.attributes || [];
+          if (!Array.isArray(productAttributes)) return;
+
+          const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+          if (!matchingAttr || (!matchingAttr.rawValue && !matchingAttr.value)) return;
+
+          const valueCode = String(matchingAttr.rawValue || matchingAttr.value);
+          const valueLabel = matchingAttr.value || valueCode;
+          if (valueCode) {
+            if (!valueCounts[valueCode]) {
+              valueCounts[valueCode] = { value: valueCode, label: valueLabel, count: 0 };
+            }
+            valueCounts[valueCode].count++;
+          }
+        });
+
+        const options = Object.values(valueCounts).filter(opt => opt.count > 0);
+        if (options.length > 0) {
+          filters.attributes = filters.attributes || [];
+          filters.attributes.push({
+            code: attrCode,
+            label: attr.label || attrCode,
+            options: options.map(opt => ({
+              value: opt.value,
+              label: opt.label,
+              count: opt.count,
+              active: false,
+              attributeCode: attrCode
+            }))
+          });
+        }
+      });
+    }
+
+    return filters;
+  };
+
   // Build real category context from API data, falling back to mock data
   const categoryContext = useMemo(() => {
     // If we have real data, use it
     if (realCategoryData?.category && realCategoryData?.products?.length > 0) {
+      const products = realCategoryData.products;
+      const filters = buildFilters(products, filterableAttributes);
+
       return {
         category: realCategoryData.category,
-        products: realCategoryData.products,
-        allProducts: realCategoryData.products,
-        filters: realCategoryData.filters || {},
+        products: products,
+        allProducts: products,
+        filters: filters,
         filterableAttributes: filterableAttributes,
         pagination: {
           start: 1,
-          end: realCategoryData.products.length,
-          total: realCategoryData.products.length,
+          end: products.length,
+          total: products.length,
           currentPage: 1,
           totalPages: 1,
           perPage: 12,
@@ -520,8 +600,20 @@ const CategorySlotsEditor = ({
     }
 
     // Fall back to mock data
+    console.log('[CategorySlotsEditor] Using mock data - no real category data available');
     return generateMockCategoryContext(filterableAttributes, storeSettings);
   }, [realCategoryData, filterableAttributes, storeSettings, storeContext, selectedStore, storeId]);
+
+  // Debug logging
+  console.log('[CategorySlotsEditor] State:', {
+    storeId,
+    selectedCategorySlug,
+    categoryLoading,
+    hasRealData: !!realCategoryData?.category,
+    productCount: realCategoryData?.products?.length || 0,
+    categoriesCount: categories?.length || 0,
+    filtersBuilt: Object.keys(categoryContext?.filters || {})
+  });
 
   // Create editor config with real data
   const categoryEditorConfig = useMemo(() => ({
