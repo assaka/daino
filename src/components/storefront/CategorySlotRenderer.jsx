@@ -630,7 +630,8 @@ export function CategorySlotRenderer({
         });
         return result;
       } catch (error) {
-        console.error('🔍 Error in registeredComponent.render:', error);
+        console.error('🔍 Error in registeredComponent.render for component:', finalComponentName, 'slot id:', id);
+        console.error('🔍 Error details:', error);
         return null;
       }
     }
