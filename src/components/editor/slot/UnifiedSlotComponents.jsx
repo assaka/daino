@@ -1828,8 +1828,8 @@ registerSlotComponent('ProductGallery', ProductGallery);
 
 export {
   QuantitySelector,
-  ProductBreadcrumbs,
-  ProductGallery,
+  // ProductBreadcrumbs,
+  // ProductGallery,
   // ProductInfo removed - not used in product-config.js
   ProductOptions,
   // CustomOptions,
@@ -1840,5 +1840,5 @@ export {
   // StockStatus,
   // ProductImage,
   // ProductThumbnails,
-  CmsBlockRenderer
+  // CmsBlockRenderer
 };
