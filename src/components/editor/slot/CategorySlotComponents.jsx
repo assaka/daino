@@ -153,24 +153,9 @@ const LayeredNavigation = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots }) => {
     const containerRef = useRef(null);
 
-    if (context === 'editor') {
-      // Editor: Render template with filters
-      // Style controls are now in the specialized LayeredNavigationSidebar
-      const html = processVariables(slot?.content || '', variableContext);
-
-      return (
-        <div
-          ref={containerRef}
-          className={className || slot.className}
-          style={styles || slot.styles}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      );
-    }
-
-    // Storefront: Use template from slot.content or fallback
     // Default template with price slider and dynamic attribute filters
-    const template = slot?.content || `
+    // Used by both editor and storefront for consistency
+    const defaultTemplate = `
       <div class="space-y-4">
         <!-- Header with Clear All button -->
         <div class="flex items-center justify-between">
@@ -359,17 +344,32 @@ const LayeredNavigation = createSlotComponent({
       </div>
     `;
 
+    // Use slot.content if provided, otherwise use default template
+    const template = slot?.content || defaultTemplate;
+
     // Debug: Log variableContext.filters structure
-    console.log('[LayeredNavigation] variableContext.filters:', JSON.stringify(variableContext?.filters, null, 2));
-    console.log('[LayeredNavigation] variableContext.activeFilters:', JSON.stringify(variableContext?.activeFilters, null, 2));
+    if (context === 'editor') {
+      console.log('[LayeredNavigation] Editor mode - filters:', variableContext?.filters);
+    }
 
     let html;
     try {
       html = processVariables(template, variableContext);
-      console.log('[LayeredNavigation] processVariables completed successfully');
     } catch (error) {
       console.error('[LayeredNavigation] Error in processVariables:', error);
-      html = '<div>Error rendering filters</div>';
+      html = '<div class="p-4 text-red-500">Error rendering filters</div>';
+    }
+
+    // For editor, return early with just the rendered template
+    if (context === 'editor') {
+      return (
+        <div
+          ref={containerRef}
+          className={className || slot.className}
+          style={styles || slot.styles}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
     }
 
     // Sync DOM checkboxes with selectedFilters state when filters are cleared or changed externally
