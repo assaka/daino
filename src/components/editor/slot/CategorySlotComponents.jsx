@@ -353,17 +353,66 @@ const PaginationComponent = createSlotComponent({
       borderColor: activeBgColor,
     };
 
-    const textStyle = {
-      color: buttonTextColor,
-      fontSize: '0.875rem',
-      padding: '0.5rem 0.75rem',
+    // Build page numbers array with ellipsis for many pages
+    const buildPageNumbers = () => {
+      const pages = [];
+      const maxVisiblePages = 5;
+
+      if (totalPages <= maxVisiblePages + 2) {
+        // Show all pages if total is small
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push({ number: i, isEllipsis: false });
+        }
+      } else {
+        // Always show first page
+        pages.push({ number: 1, isEllipsis: false });
+
+        // Calculate range around current page
+        let startPage = Math.max(2, currentPage - 1);
+        let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+        // Adjust if at the beginning
+        if (currentPage <= 3) {
+          startPage = 2;
+          endPage = Math.min(4, totalPages - 1);
+        }
+
+        // Adjust if at the end
+        if (currentPage >= totalPages - 2) {
+          startPage = Math.max(2, totalPages - 3);
+          endPage = totalPages - 1;
+        }
+
+        // Add ellipsis before middle pages if needed
+        if (startPage > 2) {
+          pages.push({ isEllipsis: true });
+        }
+
+        // Add middle pages
+        for (let i = startPage; i <= endPage; i++) {
+          pages.push({ number: i, isEllipsis: false });
+        }
+
+        // Add ellipsis after middle pages if needed
+        if (endPage < totalPages - 1) {
+          pages.push({ isEllipsis: true });
+        }
+
+        // Always show last page
+        pages.push({ number: totalPages, isEllipsis: false });
+      }
+
+      return pages;
     };
+
+    const pageNumbers = buildPageNumbers();
 
     return (
       <div className={finalClassName}>
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
             <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              {/* Previous Button */}
               <button
                 style={hasPrev ? buttonBaseStyle : disabledButtonStyle}
                 onClick={() => hasPrev && handlePageChange(currentPage - 1)}
@@ -373,7 +422,28 @@ const PaginationComponent = createSlotComponent({
               >
                 Previous
               </button>
-              <span style={textStyle}>{currentPage} of {totalPages}</span>
+
+              {/* Page Numbers */}
+              {pageNumbers.map((page, index) => (
+                page.isEllipsis ? (
+                  <span key={`ellipsis-${index}`} style={{ padding: '0.5rem 0.5rem', color: buttonTextColor }}>
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={page.number}
+                    style={page.number === currentPage ? activeButtonStyle : buttonBaseStyle}
+                    onClick={() => page.number !== currentPage && handlePageChange(page.number)}
+                    disabled={context === 'editor'}
+                    onMouseEnter={(e) => page.number !== currentPage && (e.target.style.backgroundColor = buttonHoverBgColor)}
+                    onMouseLeave={(e) => page.number !== currentPage && (e.target.style.backgroundColor = buttonBgColor)}
+                  >
+                    {page.number}
+                  </button>
+                )
+              ))}
+
+              {/* Next Button */}
               <button
                 style={hasNext ? buttonBaseStyle : disabledButtonStyle}
                 onClick={() => hasNext && handlePageChange(currentPage + 1)}
