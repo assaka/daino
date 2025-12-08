@@ -501,19 +501,22 @@ export default function Category() {
 
       // Find the attribute from filterableAttributes and use translated label
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
-      const attributeLabel = attr?.translations?.[currentLang]?.name ||
-                            attr?.translations?.en?.name ||
+      // Ensure attributeLabel is always a string
+      const translatedAttrName = attr?.translations?.[currentLang]?.name ||
+                                attr?.translations?.en?.name;
+      const attributeLabel = (typeof translatedAttrName === 'string' ? translatedAttrName : null) ||
                             attr?.name ||
                             attributeCode;
 
       // Add each selected value as a separate active filter
       if (Array.isArray(values)) {
         values.forEach(valueCode => {
-          // Find the AttributeValue to get translated label
+          // Find the AttributeValue to get translated label - ensure it's a string
           const attrValue = attr?.values?.find(av => av.code === valueCode);
-          const translatedValue = attrValue?.translations?.[currentLang]?.label ||
-                                 attrValue?.translations?.en?.label ||
-                                 valueCode;
+          const translatedValueLabel = attrValue?.translations?.[currentLang]?.label ||
+                                       attrValue?.translations?.en?.label;
+          const translatedValue = (typeof translatedValueLabel === 'string' ? translatedValueLabel : null) ||
+                                 String(valueCode || '');
 
           activeFiltersArray.push({
             type: 'attribute',

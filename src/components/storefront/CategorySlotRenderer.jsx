@@ -331,9 +331,10 @@ export function CategorySlotRenderer({
         // Structure: { label, options: ["inbouw", "onderbouw"] }
         let valueCodes = [];
 
-        // Get translated attribute label from attribute_translations
-        let attributeLabel = attr.translations?.[currentLanguage]?.name ||
-                            attr.translations?.en?.name ||
+        // Get translated attribute label from attribute_translations - ensure it's a string
+        const translatedAttrName = attr.translations?.[currentLanguage]?.name ||
+                                   attr.translations?.en?.name;
+        let attributeLabel = (typeof translatedAttrName === 'string' ? translatedAttrName : null) ||
                             attr.name || attr.code || attrCode;
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
@@ -405,10 +406,12 @@ export function CategorySlotRenderer({
             const isActive = selectedFilters[attrCode]?.includes(valueCode) || false;
 
             if (attrValue) {
-              // Get translated label
-              const valueLabel = attrValue.translations?.[currentLanguage]?.label ||
-                               attrValue.translations?.en?.label ||
-                               valueCode;
+              // Get translated label - ensure it's a string
+              const translatedLabel = attrValue.translations?.[currentLanguage]?.label ||
+                               attrValue.translations?.en?.label;
+              // Ensure valueLabel is always a string, not an object
+              const valueLabel = (typeof translatedLabel === 'string' ? translatedLabel : null) ||
+                                String(valueCode || '');
 
               return {
                 value: valueCode,
