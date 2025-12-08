@@ -1,14 +1,14 @@
 /**
- * Product Tab Helpers using JSONB translations column
+ * Product Tab Helpers for Normalized Translations
  *
- * Translations are stored directly in the product_tabs.translations JSONB column
- * Format: { "en": { "name": "...", "content": "..." }, "nl": { ... } }
+ * Translations are stored in the product_tab_translations table
+ * with columns: product_tab_id, language_code, name, content
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
- * Get product tabs with translations from JSONB column
+ * Get product tabs with translations from normalized tables
  *
  * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
@@ -40,12 +40,41 @@ async function getProductTabsWithTranslations(storeId, where = {}, lang = 'en', 
     return [];
   }
 
-  // If allTranslations is true, return tabs with translations object as-is
+  // Fetch translations for these tabs
+  const tabIds = tabs.map(t => t.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('product_tab_translations')
+    .select('product_tab_id, language_code, name, content')
+    .in('product_tab_id', tabIds);
+
+  if (transError) {
+    console.error('Error fetching product tab translations:', transError);
+  }
+
+  // Group translations by tab_id and language_code
+  const translationsByTab = {};
+  (translations || []).forEach(t => {
+    if (!translationsByTab[t.product_tab_id]) {
+      translationsByTab[t.product_tab_id] = {};
+    }
+    translationsByTab[t.product_tab_id][t.language_code] = {
+      name: t.name,
+      content: t.content
+    };
+  });
+
+  // If allTranslations is true, return tabs with translations object
   if (allTranslations) {
-    const results = tabs.map(tab => ({
-      ...tab,
-      translations: tab.translations || {}
-    }));
+    const results = tabs.map(tab => {
+      const tabTranslations = translationsByTab[tab.id] || {};
+      const englishName = tabTranslations.en?.name || tab.name || '';
+
+      return {
+        ...tab,
+        name: englishName,
+        translations: tabTranslations
+      };
+    });
 
     console.log('✅ Query returned', results.length, 'tabs with all translations');
     return results;
@@ -53,9 +82,9 @@ async function getProductTabsWithTranslations(storeId, where = {}, lang = 'en', 
 
   // Single language mode - merge translation into tab fields
   const results = tabs.map(tab => {
-    const trans = tab.translations || {};
-    const reqLang = trans[lang];
-    const enLang = trans['en'];
+    const tabTranslations = translationsByTab[tab.id] || {};
+    const reqLang = tabTranslations[lang];
+    const enLang = tabTranslations['en'];
 
     return {
       ...tab,
@@ -89,20 +118,27 @@ async function getProductTabById(storeId, id, lang = 'en') {
     return null;
   }
 
-  // Merge translation if it exists
-  const trans = tab.translations || {};
-  const reqLang = trans[lang];
-  const enLang = trans['en'];
+  // Fetch translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('product_tab_translations')
+    .select('language_code, name, content')
+    .eq('product_tab_id', id)
+    .in('language_code', [lang, 'en']);
 
-  if (reqLang) {
-    tab.name = reqLang.name || tab.name;
-    tab.content = reqLang.content || tab.content;
-  } else if (enLang) {
-    tab.name = enLang.name || tab.name;
-    tab.content = enLang.content || tab.content;
+  if (transError) {
+    console.error('Error fetching product tab translations:', transError);
   }
 
-  return tab;
+  // Apply translation with fallback
+  const requestedLang = translations?.find(t => t.language_code === lang);
+  const englishLang = translations?.find(t => t.language_code === 'en');
+  const translation = requestedLang || englishLang;
+
+  return {
+    ...tab,
+    name: translation?.name || tab.name,
+    content: translation?.content || tab.content
+  };
 }
 
 /**
@@ -126,10 +162,31 @@ async function getProductTabWithAllTranslations(storeId, id) {
     return null;
   }
 
-  // Ensure translations object exists
+  // Fetch all translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('product_tab_translations')
+    .select('language_code, name, content')
+    .eq('product_tab_id', id);
+
+  if (transError) {
+    console.error('Error fetching product tab translations:', transError);
+  }
+
+  // Group translations by language_code
+  const translationsObj = {};
+  (translations || []).forEach(t => {
+    translationsObj[t.language_code] = {
+      name: t.name,
+      content: t.content
+    };
+  });
+
+  const englishName = translationsObj.en?.name || tab.name || '';
+
   const result = {
     ...tab,
-    translations: tab.translations || {}
+    name: englishName,
+    translations: translationsObj
   };
 
   console.log('🔍 Backend: Query result:', {
@@ -152,41 +209,60 @@ async function getProductTabWithAllTranslations(storeId, id) {
 async function createProductTabWithTranslations(tabData, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(tabData.store_id);
 
-  // Generate UUID for the new tab
-  const { randomUUID } = require('crypto');
-  const newId = randomUUID();
+  try {
+    // Insert product tab (without translations column)
+    const now = new Date().toISOString();
+    const { data: tab, error } = await tenantDb
+      .from('product_tabs')
+      .insert({
+        store_id: tabData.store_id,
+        name: tabData.name || '',
+        slug: tabData.slug,
+        tab_type: tabData.tab_type || 'text',
+        content: tabData.content || '',
+        attribute_ids: tabData.attribute_ids || [],
+        attribute_set_ids: tabData.attribute_set_ids || [],
+        sort_order: tabData.sort_order || 0,
+        is_active: tabData.is_active !== false,
+        created_at: now,
+        updated_at: now
+      })
+      .select()
+      .single();
 
-  // Insert product tab with translations JSONB
-  const now = new Date().toISOString();
-  const { data: tab, error } = await tenantDb
-    .from('product_tabs')
-    .insert({
-      id: newId,
-      store_id: tabData.store_id,
-      name: tabData.name || '',
-      slug: tabData.slug,
-      tab_type: tabData.tab_type || 'text',
-      content: tabData.content || '',
-      attribute_ids: tabData.attribute_ids || [],
-      attribute_set_ids: tabData.attribute_set_ids || [],
-      sort_order: tabData.sort_order || 0,
-      is_active: tabData.is_active !== false,
-      translations: translations,
-      created_at: now,
-      updated_at: now
-    })
-    .select()
-    .single();
+    if (error) {
+      console.error('Error creating product tab:', error);
+      throw error;
+    }
 
-  if (error) {
+    // Insert translations
+    for (const [langCode, data] of Object.entries(translations)) {
+      if (data && (data.name || data.content)) {
+        const { error: transError } = await tenantDb
+          .from('product_tab_translations')
+          .upsert({
+            product_tab_id: tab.id,
+            language_code: langCode,
+            name: data.name || null,
+            content: data.content || null,
+            created_at: now,
+            updated_at: now
+          }, {
+            onConflict: 'product_tab_id,language_code'
+          });
+
+        if (transError) {
+          console.error(`Error inserting translation for ${langCode}:`, transError);
+        }
+      }
+    }
+
+    // Return the created tab with translations
+    return await getProductTabWithAllTranslations(tabData.store_id, tab.id);
+  } catch (error) {
     console.error('Error creating product tab:', error);
     throw error;
   }
-
-  return {
-    ...tab,
-    translations: tab.translations || {}
-  };
 }
 
 /**
@@ -201,65 +277,68 @@ async function createProductTabWithTranslations(tabData, translations = {}) {
 async function updateProductTabWithTranslations(storeId, id, tabData, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // First get existing tab to merge translations
-  const { data: existingTab } = await tenantDb
-    .from('product_tabs')
-    .select('translations')
-    .eq('id', id)
-    .single();
+  try {
+    // Build update object
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
 
-  // Merge existing translations with new ones
-  const existingTranslations = existingTab?.translations || {};
-  const mergedTranslations = { ...existingTranslations };
+    if (tabData.name !== undefined) updateData.name = tabData.name;
+    if (tabData.slug !== undefined) updateData.slug = tabData.slug;
+    if (tabData.tab_type !== undefined) updateData.tab_type = tabData.tab_type;
+    if (tabData.content !== undefined) updateData.content = tabData.content;
+    if (tabData.attribute_ids !== undefined) updateData.attribute_ids = tabData.attribute_ids;
+    if (tabData.attribute_set_ids !== undefined) updateData.attribute_set_ids = tabData.attribute_set_ids;
+    if (tabData.sort_order !== undefined) updateData.sort_order = tabData.sort_order;
+    if (tabData.is_active !== undefined) updateData.is_active = tabData.is_active;
 
-  // Update/add each language translation
-  for (const [langCode, data] of Object.entries(translations)) {
-    if (data && (data.name !== undefined || data.content !== undefined)) {
-      mergedTranslations[langCode] = {
-        ...(mergedTranslations[langCode] || {}),
-        ...data
-      };
-      console.log(`   💾 Updating translation for language ${langCode}:`, data);
+    const { data: tab, error } = await tenantDb
+      .from('product_tabs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating product tab:', error);
+      throw error;
     }
-  }
 
-  // Build update object
-  const updateData = {
-    updated_at: new Date().toISOString(),
-    translations: mergedTranslations
-  };
+    // Update translations
+    for (const [langCode, data] of Object.entries(translations)) {
+      if (data && (data.name !== undefined || data.content !== undefined)) {
+        console.log(`   💾 Updating translation for language ${langCode}:`, data);
 
-  if (tabData.name !== undefined) updateData.name = tabData.name;
-  if (tabData.slug !== undefined) updateData.slug = tabData.slug;
-  if (tabData.tab_type !== undefined) updateData.tab_type = tabData.tab_type;
-  if (tabData.content !== undefined) updateData.content = tabData.content;
-  if (tabData.attribute_ids !== undefined) updateData.attribute_ids = tabData.attribute_ids;
-  if (tabData.attribute_set_ids !== undefined) updateData.attribute_set_ids = tabData.attribute_set_ids;
-  if (tabData.sort_order !== undefined) updateData.sort_order = tabData.sort_order;
-  if (tabData.is_active !== undefined) updateData.is_active = tabData.is_active;
+        const { error: transError } = await tenantDb
+          .from('product_tab_translations')
+          .upsert({
+            product_tab_id: id,
+            language_code: langCode,
+            name: data.name !== undefined ? data.name : null,
+            content: data.content !== undefined ? data.content : null,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'product_tab_id,language_code'
+          });
 
-  const { data: tab, error } = await tenantDb
-    .from('product_tabs')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single();
+        if (transError) {
+          console.error(`Error updating translation for ${langCode}:`, transError);
+        }
+      }
+    }
 
-  if (error) {
+    console.log(`   ✅ Product tab updated with translations`);
+
+    // Return the updated tab with all translations
+    return await getProductTabWithAllTranslations(storeId, id);
+  } catch (error) {
     console.error('Error updating product tab:', error);
     throw error;
   }
-
-  console.log(`   ✅ Product tab updated with translations`);
-
-  return {
-    ...tab,
-    translations: tab.translations || {}
-  };
 }
 
 /**
- * Delete product tab
+ * Delete product tab (translations are CASCADE deleted)
  *
  * @param {string} storeId - Store ID
  * @param {string} id - Product tab ID
