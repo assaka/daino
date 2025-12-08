@@ -74,13 +74,24 @@ router.get('/', async (req, res) => {
     });
 
     // Apply translations to attributes
+    // Include both `label` (for backward compatibility) and `translations` object (for frontend consistency)
     const attributesWithTranslations = attributes.map(attr => {
       const trans = translationMap[attr.id];
       const requestedLang = trans?.[lang];
       const englishLang = trans?.['en'];
 
+      // Build translations object in the format: { en: { label: '...' }, nl: { label: '...' } }
+      const translations = {};
+      if (trans) {
+        Object.entries(trans).forEach(([langCode, langData]) => {
+          translations[langCode] = { label: langData.label };
+        });
+      }
+
       return {
         ...attr,
+        // Include translations object for frontend consistency with page-bootstrap.js
+        translations,
         // Use translations.label field, fallback to attr.code (attr.name is deprecated)
         label: requestedLang?.label || englishLang?.label || attr.code,
         description: requestedLang?.description || englishLang?.description || attr.description
@@ -123,13 +134,23 @@ router.get('/', async (req, res) => {
         });
 
         // Apply translations to values
+        // Include translations object in same format as page-bootstrap.js: { en: { label: '...' }, nl: { label: '...' } }
         const translatedValues = values.map(val => {
           const valTrans = valueTransMap[val.id];
           const reqLang = valTrans?.[lang];
           const enLang = valTrans?.['en'];
 
+          // Build translations object for value
+          const valTranslations = {};
+          if (valTrans) {
+            Object.entries(valTrans).forEach(([langCode, langData]) => {
+              valTranslations[langCode] = { label: langData.value }; // DB uses 'value', frontend expects 'label'
+            });
+          }
+
           return {
             ...val,
+            translations: valTranslations,
             value: reqLang?.value || enLang?.value || val.value
           };
         });
