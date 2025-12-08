@@ -139,6 +139,7 @@ import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSl
 // @deprecated - EditorInteractionWrapper is not used in UnifiedSlotRenderer (dead import, can be removed)
 // import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { GridColumn } from '@/components/editor/slot/SlotComponents';
+import { EditOverlay } from '@/components/editor/slot/EditOverlay';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import { ComponentRegistry } from './SlotComponentRegistry';
@@ -458,7 +459,16 @@ export function UnifiedSlotRenderer({
   accountData = null, // For account page (handleLogout, user, etc.)
 
   // Config for renderCondition support
-  slotConfig = null
+  slotConfig = null,
+
+  // NEW: Feature flag for using EditOverlay instead of GridColumn wrapper
+  // When true, uses overlay-based editing (same DOM structure as storefront)
+  // When false (default), uses traditional GridColumn wrapper
+  useOverlay = false,
+
+  // NEW: Preprocessed data from slotDataPreprocessor (optional)
+  // When provided, uses this instead of building variableContext internally
+  preprocessedData = null
 }) {
   // Get translation function and translations data
   const { t, translations: contextTranslations, currentLanguage } = useTranslation();

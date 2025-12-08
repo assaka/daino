@@ -99,35 +99,34 @@ router.get('/', cacheMiddleware({
           tenantDb.from('product_labels').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true })
         ]);
 
-        // Transform attribute translations from array to object keyed by language_code
+        // Transform attributes with pre-translated label and value strings
+        // This matches the format from publicAttributes.js for consistency
         const filterableAttributes = (filterableAttributesRaw || []).map(attr => {
-          // Convert attribute_translations array to object: { en: { label: '...' }, nl: { label: '...' } }
-          const translations = {};
-          if (attr.attribute_translations) {
-            attr.attribute_translations.forEach(t => {
-              translations[t.language_code] = { label: t.label };
-            });
-          }
+          // Get translated attribute label (current lang -> en fallback -> code)
+          const attrTranslations = attr.attribute_translations || [];
+          const currentLangTrans = attrTranslations.find(t => t.language_code === language);
+          const enTrans = attrTranslations.find(t => t.language_code === 'en');
+          const label = currentLangTrans?.label || enTrans?.label || attr.code;
 
-          // Convert attribute_values with their translations
+          // Convert attribute_values with pre-translated value string
           const values = (attr.attribute_values || []).map(val => {
-            const valTranslations = {};
-            if (val.attribute_value_translations) {
-              val.attribute_value_translations.forEach(t => {
-                valTranslations[t.language_code] = { label: t.label };
-              });
-            }
+            const valTranslations = val.attribute_value_translations || [];
+            const valCurrentLang = valTranslations.find(t => t.language_code === language);
+            const valEnLang = valTranslations.find(t => t.language_code === 'en');
+
             return {
               id: val.id,
               code: val.code,
               sort_order: val.sort_order,
-              translations: valTranslations
+              // Pre-translated value string (matches publicAttributes.js format)
+              value: valCurrentLang?.label || valEnLang?.label || val.code
             };
           });
 
           return {
             ...attr,
-            translations,
+            // Pre-translated label string (matches publicAttributes.js format)
+            label,
             values,
             // Remove raw arrays
             attribute_translations: undefined,
