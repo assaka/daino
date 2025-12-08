@@ -12,6 +12,11 @@ import { shouldSkipStoreContext } from '@/utils/domainConfig';
 import apiClient from '@/utils/api';
 import { PageLoader } from '@/components/ui/page-loader';
 
+// Get store ID from localStorage for admin/editor contexts
+const getSelectedStoreId = () => {
+  return localStorage.getItem('selectedStoreId') || null;
+};
+
 export function AdminLayoutWrapper({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,7 +82,7 @@ export function AdminLayoutWrapper({ children }) {
   }
 
   return (
-    <TranslationProvider>
+    <TranslationProvider storeId={getSelectedStoreId()}>
       {children}
     </TranslationProvider>
   );
