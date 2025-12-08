@@ -39,6 +39,8 @@ router.get('/', async (req, res) => {
 
     const { data: attributes, error, count } = await attributesQuery;
 
+    console.log(`[publicAttributes] store_id=${store_id}, is_filterable=${is_filterable}, found ${attributes?.length || 0} attributes`);
+
     if (error) {
       console.error('Error fetching attributes:', error);
       return res.status(500).json({
@@ -49,6 +51,7 @@ router.get('/', async (req, res) => {
     }
 
     if (!attributes || attributes.length === 0) {
+      console.log(`[publicAttributes] No attributes found for store_id=${store_id}`);
       return res.json({
         success: true,
         data: [],
@@ -143,6 +146,8 @@ router.get('/', async (req, res) => {
 
     // Apply cache headers based on store settings
     await applyCacheHeaders(res, store_id);
+
+    console.log(`[publicAttributes] Returning ${attributesWithValues.length} attributes, first attr: ${JSON.stringify(attributesWithValues[0]?.code)}, values count: ${attributesWithValues[0]?.values?.length || 0}`);
 
     // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
     res.json(attributesWithValues);
