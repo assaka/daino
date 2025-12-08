@@ -1580,8 +1580,18 @@ const EditorSidebar = ({
   // Check if slot or any parent has a specialized sidebar configured
   // This allows child slots (like filter_option_styles) to use parent's sidebar (LayeredNavigationSidebar)
   const findSpecializedSidebar = useCallback(() => {
+    console.log('🔍 [EditorSidebar] Finding specialized sidebar for:', {
+      slotId,
+      slotConfig,
+      hasMetadata: !!slotConfig?.metadata,
+      editorSidebar: slotConfig?.metadata?.editorSidebar,
+      parentId: slotConfig?.parentId,
+      allSlotsKeys: Object.keys(allSlots || {})
+    });
+
     // First check the current slot
     if (slotConfig?.metadata?.editorSidebar) {
+      console.log('✅ [EditorSidebar] Found editorSidebar on current slot:', slotConfig.metadata.editorSidebar);
       return {
         sidebarName: slotConfig.metadata.editorSidebar,
         parentSlotId: slotId
@@ -1590,17 +1600,27 @@ const EditorSidebar = ({
 
     // Then traverse up the parent chain
     let currentParentId = slotConfig?.parentId;
-    while (currentParentId && allSlots[currentParentId]) {
+    let depth = 0;
+    while (currentParentId && allSlots[currentParentId] && depth < 10) {
       const parentSlot = allSlots[currentParentId];
+      console.log(`🔍 [EditorSidebar] Checking parent (depth ${depth}):`, {
+        parentId: currentParentId,
+        parentSlot,
+        hasEditorSidebar: !!parentSlot?.metadata?.editorSidebar
+      });
+
       if (parentSlot?.metadata?.editorSidebar) {
+        console.log('✅ [EditorSidebar] Found editorSidebar on parent:', parentSlot.metadata.editorSidebar);
         return {
           sidebarName: parentSlot.metadata.editorSidebar,
           parentSlotId: currentParentId
         };
       }
       currentParentId = parentSlot?.parentId;
+      depth++;
     }
 
+    console.log('❌ [EditorSidebar] No specialized sidebar found');
     return { sidebarName: null, parentSlotId: null };
   }, [slotConfig, slotId, allSlots]);
 
