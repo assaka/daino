@@ -361,34 +361,46 @@ const LayeredNavigation = createSlotComponent({
 
     // Debug: Log variableContext.filters structure
     console.log('[LayeredNavigation] variableContext.filters:', JSON.stringify(variableContext?.filters, null, 2));
+    console.log('[LayeredNavigation] variableContext.activeFilters:', JSON.stringify(variableContext?.activeFilters, null, 2));
 
-    const html = processVariables(template, variableContext);
+    let html;
+    try {
+      html = processVariables(template, variableContext);
+      console.log('[LayeredNavigation] processVariables completed successfully');
+    } catch (error) {
+      console.error('[LayeredNavigation] Error in processVariables:', error);
+      html = '<div>Error rendering filters</div>';
+    }
 
     // Sync DOM checkboxes with selectedFilters state when filters are cleared or changed externally
     useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
+      try {
+        if (!containerRef.current || context === 'editor') return;
 
-      const selectedFilters = categoryContext?.selectedFilters || {};
-      const allCheckboxes = containerRef.current.querySelectorAll('[data-action="toggle-filter"]');
+        const selectedFilters = categoryContext?.selectedFilters || {};
+        const allCheckboxes = containerRef.current.querySelectorAll('[data-action="toggle-filter"]');
 
-      allCheckboxes.forEach(cb => {
-        const cbCode = cb.getAttribute('data-attribute-code');
-        const cbValue = cb.getAttribute('data-filter-value');
+        allCheckboxes.forEach(cb => {
+          const cbCode = cb.getAttribute('data-attribute-code');
+          const cbValue = cb.getAttribute('data-filter-value');
 
-        if (cbCode && cbValue) {
-          // Check if this value is in the selectedFilters
-          const shouldBeChecked = selectedFilters[cbCode]?.includes(cbValue) || false;
-          if (cb.checked !== shouldBeChecked) {
-            cb.checked = shouldBeChecked;
+          if (cbCode && cbValue) {
+            // Check if this value is in the selectedFilters
+            const shouldBeChecked = selectedFilters[cbCode]?.includes(cbValue) || false;
+            if (cb.checked !== shouldBeChecked) {
+              cb.checked = shouldBeChecked;
+            }
+            // Also add/remove CSS class for styling (backup for :checked selector)
+            if (shouldBeChecked) {
+              cb.classList.add('filter-checked');
+            } else {
+              cb.classList.remove('filter-checked');
+            }
           }
-          // Also add/remove CSS class for styling (backup for :checked selector)
-          if (shouldBeChecked) {
-            cb.classList.add('filter-checked');
-          } else {
-            cb.classList.remove('filter-checked');
-          }
-        }
-      });
+        });
+      } catch (error) {
+        console.error('[LayeredNavigation] Error in checkbox sync useEffect:', error);
+      }
     }, [categoryContext?.selectedFilters, context]);
 
     // Attach event listeners in storefront
