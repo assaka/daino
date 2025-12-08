@@ -221,18 +221,15 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       } else {
         // Key not found - return default or formatted key
         const fallback = defaultValue || key;
-        const result = typeof fallback === 'string' ? fallback : String(fallback || '');
-        console.log('[t() key not found]', { key, defaultValue, fallback, result, typeofResult: typeof result });
-        return result;
+        return typeof fallback === 'string' ? fallback : String(fallback || '');
       }
     }
 
-    // CRITICAL: Always return a string - React error #300 if object is rendered
+    // Always return a string - React error #300 if object is rendered
     if (typeof value === 'string') {
       return value;
     }
     // Value is not a string (could be object, array, etc.) - use fallback
-    console.warn('[t() value is not string]', { key, value, typeofValue: typeof value, defaultValue });
     const fallback = defaultValue || key;
     return typeof fallback === 'string' ? fallback : String(fallback || '');
   }, [translations]);

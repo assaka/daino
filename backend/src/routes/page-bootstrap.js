@@ -71,14 +71,69 @@ router.get('/', cacheMiddleware({
         break;
 
       case 'category':
-        // Category page needs: filterable attributes, labels
+        // Category page needs: filterable attributes with translations, labels
         const [
-          { data: filterableAttributes },
+          { data: filterableAttributesRaw },
           { data: categoryLabels }
         ] = await Promise.all([
-          tenantDb.from('attributes').select('*').eq('store_id', store_id).eq('is_filterable', true).order('name', { ascending: true }),
+          tenantDb.from('attributes')
+            .select(`
+              *,
+              attribute_translations (
+                language_code,
+                label
+              ),
+              attribute_values (
+                id,
+                code,
+                sort_order,
+                attribute_value_translations (
+                  language_code,
+                  label
+                )
+              )
+            `)
+            .eq('store_id', store_id)
+            .eq('is_filterable', true)
+            .order('name', { ascending: true }),
           tenantDb.from('product_labels').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true })
         ]);
+
+        // Transform attribute translations from array to object keyed by language_code
+        const filterableAttributes = (filterableAttributesRaw || []).map(attr => {
+          // Convert attribute_translations array to object: { en: { label: '...' }, nl: { label: '...' } }
+          const translations = {};
+          if (attr.attribute_translations) {
+            attr.attribute_translations.forEach(t => {
+              translations[t.language_code] = { label: t.label };
+            });
+          }
+
+          // Convert attribute_values with their translations
+          const values = (attr.attribute_values || []).map(val => {
+            const valTranslations = {};
+            if (val.attribute_value_translations) {
+              val.attribute_value_translations.forEach(t => {
+                valTranslations[t.language_code] = { label: t.label };
+              });
+            }
+            return {
+              id: val.id,
+              code: val.code,
+              sort_order: val.sort_order,
+              translations: valTranslations
+            };
+          });
+
+          return {
+            ...attr,
+            translations,
+            values,
+            // Remove raw arrays
+            attribute_translations: undefined,
+            attribute_values: undefined
+          };
+        });
 
         pageData = {
           filterableAttributes: filterableAttributes || [],

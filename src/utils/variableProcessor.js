@@ -1005,15 +1005,12 @@ function formatValue(value, path, context, pageData) {
     return new Date(value).toLocaleDateString();
   }
 
-  // CRITICAL: Ensure we never return an object - React error #300
+  // Ensure we never return an object - React error #300
   // Objects (including arrays, React elements, etc.) are not valid as React children
   if (value && typeof value === 'object') {
-    console.warn('[variableProcessor] Object detected:', { path, value, typeofValue: typeof value, keys: Object.keys(value) });
     // Try to get a string representation
     if (value.toString && value.toString !== Object.prototype.toString) {
-      const str = value.toString();
-      console.log('[variableProcessor] Using toString():', str);
-      return str;
+      return value.toString();
     }
     // Last resort - return empty string for objects
     return '';
@@ -1021,7 +1018,6 @@ function formatValue(value, path, context, pageData) {
 
   const result = String(value);
   if (result === '[object Object]') {
-    console.error('[variableProcessor] String(value) returned [object Object]:', { path, value });
     return '';
   }
   return result;

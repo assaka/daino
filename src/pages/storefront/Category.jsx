@@ -499,45 +499,34 @@ export default function Category() {
         return;
       }
 
-      // Find the attribute from filterableAttributes and use translated label
+      // Find the attribute from filterableAttributes
+      // filterableAttributes now has translations: { en: { label: '...' }, nl: { label: '...' } }
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
-      // Ensure attributeLabel is always a string
-      const translatedAttrName = attr?.translations?.[currentLang]?.name ||
-                                attr?.translations?.en?.name;
-      const attributeLabel = (typeof translatedAttrName === 'string' ? translatedAttrName : null) ||
+
+      // Get translated attribute label, fallback to name, then code
+      const attributeLabel = attr?.translations?.[currentLang]?.label ||
+                            attr?.translations?.en?.label ||
                             attr?.name ||
                             attributeCode;
 
       // Add each selected value as a separate active filter
       if (Array.isArray(values)) {
         values.forEach(valueCode => {
-          // Find the AttributeValue to get translated label - ensure it's a string
+          // Find the AttributeValue to get translated label
+          // attr.values has: { code, sort_order, translations: { en: { label }, nl: { label } } }
           const attrValue = attr?.values?.find(av => av.code === valueCode);
 
-          // Safely get translated label - handle missing or malformed translation objects
-          let translatedValue = String(valueCode || '');
-          if (attrValue?.translations) {
-            const langTranslation = attrValue.translations[currentLang];
-            const enTranslation = attrValue.translations.en;
+          // Get translated value label, fallback to valueCode
+          const translatedValue = attrValue?.translations?.[currentLang]?.label ||
+                                 attrValue?.translations?.en?.label ||
+                                 valueCode;
 
-            if (langTranslation && typeof langTranslation.label === 'string') {
-              translatedValue = langTranslation.label;
-            } else if (enTranslation && typeof enTranslation.label === 'string') {
-              translatedValue = enTranslation.label;
-            }
-          }
-
-          const filterObj = {
+          activeFiltersArray.push({
             type: 'attribute',
             attributeCode: attributeCode,
             label: String(attributeLabel || attributeCode),
-            value: translatedValue
-          };
-          // Debug logging for React error #300
-          if (typeof filterObj.label !== 'string' || typeof filterObj.value !== 'string') {
-            console.error('[buildActiveFiltersArray] Non-string value detected:', filterObj);
-          }
-          activeFiltersArray.push(filterObj);
+            value: String(translatedValue || valueCode)
+          });
         });
       }
     });

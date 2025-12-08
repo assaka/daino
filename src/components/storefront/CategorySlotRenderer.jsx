@@ -331,18 +331,11 @@ export function CategorySlotRenderer({
         // Structure: { label, options: ["inbouw", "onderbouw"] }
         let valueCodes = [];
 
-        // Safely get translated attribute label - handle missing or malformed translation objects
-        let attributeLabel = attr.name || attr.code || attrCode;
-        if (attr.translations) {
-          const langTranslation = attr.translations[currentLanguage];
-          const enTranslation = attr.translations.en;
-
-          if (langTranslation && typeof langTranslation.name === 'string') {
-            attributeLabel = langTranslation.name;
-          } else if (enTranslation && typeof enTranslation.name === 'string') {
-            attributeLabel = enTranslation.name;
-          }
-        }
+        // Get translated attribute label from attribute_translations
+        // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
+        const attributeLabel = attr.translations?.[currentLanguage]?.label ||
+                              attr.translations?.en?.label ||
+                              attr.name || attr.code || attrCode;
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
@@ -413,33 +406,21 @@ export function CategorySlotRenderer({
             const isActive = selectedFilters[attrCode]?.includes(valueCode) || false;
 
             if (attrValue) {
-              // Safely get translated label - handle missing or malformed translation objects
-              let valueLabel = String(valueCode || '');
-              if (attrValue.translations) {
-                const langTranslation = attrValue.translations[currentLanguage];
-                const enTranslation = attrValue.translations.en;
+              // Get translated value label from attribute_value_translations
+              // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
+              const valueLabel = attrValue.translations?.[currentLanguage]?.label ||
+                                attrValue.translations?.en?.label ||
+                                valueCode;
 
-                if (langTranslation && typeof langTranslation.label === 'string') {
-                  valueLabel = langTranslation.label;
-                } else if (enTranslation && typeof enTranslation.label === 'string') {
-                  valueLabel = enTranslation.label;
-                }
-              }
-
-              const optionObj = {
+              return {
                 value: valueCode,
-                label: valueLabel,
+                label: String(valueLabel || valueCode),
                 count: productCount,
                 active: isActive,
                 attributeCode: attrCode,
                 sort_order: attrValue.sort_order || 0,
                 filter_type: filterType // Pass filter_type to each option for template access
               };
-              // Debug logging for React error #300
-              if (typeof optionObj.label !== 'string' || typeof optionObj.value !== 'string') {
-                console.error('[CategorySlotRenderer] Non-string in filter option:', optionObj);
-              }
-              return optionObj;
             }
 
             // Fallback if no AttributeValue found
