@@ -359,6 +359,9 @@ const LayeredNavigation = createSlotComponent({
       </div>
     `;
 
+    // Debug: Log variableContext.filters structure
+    console.log('[LayeredNavigation] variableContext.filters:', JSON.stringify(variableContext?.filters, null, 2));
+
     const html = processVariables(template, variableContext);
 
     // Sync DOM checkboxes with selectedFilters state when filters are cleared or changed externally
