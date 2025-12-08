@@ -1581,6 +1581,57 @@ export function UnifiedSlotRenderer({
     return true;
   });
 
+  /**
+   * transformResponsiveClass - Transform Tailwind responsive classes based on viewport mode
+   *
+   * In the editor, the preview container width doesn't match browser viewport,
+   * so Tailwind's responsive breakpoints (sm:, md:, lg:) don't work correctly.
+   * This function extracts the appropriate class based on the selected viewportMode.
+   *
+   * @param {string} classString - Tailwind class string like 'col-span-12 md:col-span-6 lg:col-span-4'
+   * @param {string} viewport - 'desktop' | 'tablet' | 'mobile'
+   * @returns {string} Transformed class for the viewport
+   */
+  const transformResponsiveClass = (classString, viewport) => {
+    if (!classString || context !== 'editor') return classString;
+
+    // Parse the class string to extract responsive variants
+    const classes = classString.split(' ').filter(Boolean);
+    const baseClasses = [];
+    const responsiveMap = { sm: [], md: [], lg: [], xl: [], '2xl': [] };
+
+    classes.forEach(cls => {
+      const match = cls.match(/^(sm|md|lg|xl|2xl):(.+)$/);
+      if (match) {
+        responsiveMap[match[1]].push(match[2]);
+      } else {
+        baseClasses.push(cls);
+      }
+    });
+
+    // Select classes based on viewport mode
+    // desktop: use lg/xl/2xl > md > sm > base
+    // tablet: use md > sm > base
+    // mobile: use sm > base
+    let selectedClasses = [...baseClasses];
+
+    if (viewport === 'desktop') {
+      // For desktop, apply the largest breakpoint available
+      if (responsiveMap['2xl'].length) selectedClasses = responsiveMap['2xl'];
+      else if (responsiveMap.xl.length) selectedClasses = responsiveMap.xl;
+      else if (responsiveMap.lg.length) selectedClasses = responsiveMap.lg;
+      else if (responsiveMap.md.length) selectedClasses = responsiveMap.md;
+      else if (responsiveMap.sm.length) selectedClasses = responsiveMap.sm;
+    } else if (viewport === 'tablet') {
+      // For tablet, apply md breakpoint
+      if (responsiveMap.md.length) selectedClasses = responsiveMap.md;
+      else if (responsiveMap.sm.length) selectedClasses = responsiveMap.sm;
+    }
+    // For mobile, just use base classes (already set)
+
+    return selectedClasses.join(' ');
+  };
+
   return (
     <>
       {finalSlots.map((slot) => {
@@ -1597,8 +1648,16 @@ export function UnifiedSlotRenderer({
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
         } else if (typeof slot.colSpan === 'string') {
           // Handle responsive colSpan strings like 'col-span-12 md:col-span-6'
-          colSpanClass = slot.colSpan;
-          gridColumn = null;
+          // Transform based on viewportMode in editor
+          colSpanClass = transformResponsiveClass(slot.colSpan, viewportMode);
+          // Extract col-span number for gridColumn
+          const colSpanMatch = colSpanClass.match(/col-span-(\d+)/);
+          if (colSpanMatch) {
+            const span = colSpanMatch[1];
+            gridColumn = `span ${span} / span ${span}`;
+          } else {
+            gridColumn = null;
+          }
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           const viewModeValue = slot.colSpan[viewMode];
 
@@ -1606,8 +1665,16 @@ export function UnifiedSlotRenderer({
             colSpanClass = `col-span-${viewModeValue}`;
             gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
           } else if (typeof viewModeValue === 'string') {
-            colSpanClass = viewModeValue;
-            gridColumn = null;
+            // Transform responsive classes based on viewportMode
+            colSpanClass = transformResponsiveClass(viewModeValue, viewportMode);
+            // Extract col-span number for gridColumn
+            const colSpanMatch = colSpanClass.match(/col-span-(\d+)/);
+            if (colSpanMatch) {
+              const span = colSpanMatch[1];
+              gridColumn = `span ${span} / span ${span}`;
+            } else {
+              gridColumn = null;
+            }
           }
         }
 
