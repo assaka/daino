@@ -15,14 +15,15 @@ import { getCurrentLanguage } from '@/utils/translationUtils';
 
 // Helper component to render editable slot elements in edit mode
 const EditableSlotElement = ({ slotKey, slot, onElementClick, children, className = "", style = {} }) => {
-  if (!slot) {
-    return children;
-  }
+  // Always render the wrapper in edit mode so clicking works
+  // Use slot styles if available, otherwise use empty styles
+  const slotStyles = slot?.styles || {};
 
   return (
     <div
       className={`slot-element ${className}`}
       data-slot-id={slotKey}
+      data-editable="true"
       style={{
         cursor: 'pointer',
         userSelect: 'none',
@@ -30,12 +31,14 @@ const EditableSlotElement = ({ slotKey, slot, onElementClick, children, classNam
         padding: '2px 4px',
         borderRadius: '2px',
         ...style,
-        ...slot.styles
+        ...slotStyles
       }}
       onClick={(e) => {
         e.stopPropagation();
         // Pass slotKey and element as expected by createElementClickHandler(slotId, element)
-        onElementClick(slotKey, e.currentTarget);
+        if (onElementClick) {
+          onElementClick(slotKey, e.currentTarget);
+        }
       }}
       onDragStart={(e) => {
         e.preventDefault();
