@@ -1,12 +1,13 @@
 /**
  * CheckoutSlotsEditor - Checkout page slot editor
- * - Uses UnifiedSlotsEditor
+ * - Uses preprocessSlotData for consistent rendering with storefront
  * - Supports checkout customization
  * - Maintainable structure
  */
 
 import { ShoppingBag, CreditCard } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -25,36 +26,44 @@ const createDefaultSlots = async () => {
 };
 
 // Generate checkout context based on view mode
-const generateCheckoutContext = (viewMode) => ({
-  cartItems: [
-    {
-      id: 1,
-      product: { name: 'Sample Product', image_url: '/sample-product.jpg' },
-      quantity: 2,
-      price: 29.99
-    }
-  ],
-  subtotal: 59.98,
-  tax: 4.80,
-  total: 64.78,
-  shipping: {
-    name: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: ''
-  },
-  payment: {
-    method: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: ''
-  },
-  isProcessing: viewMode === 'processing'
-});
+const generateCheckoutContext = (viewMode, selectedStore) => {
+  const storeSettings = selectedStore?.settings || {};
+
+  const rawData = {
+    cartItems: [
+      {
+        id: 1,
+        product: { name: 'Sample Product', image_url: '/sample-product.jpg' },
+        quantity: 2,
+        price: 29.99
+      }
+    ],
+    subtotal: 59.98,
+    tax: 4.80,
+    total: 64.78,
+    shipping: {
+      name: '',
+      address: '',
+      city: '',
+      state: '',
+      zip: ''
+    },
+    payment: {
+      method: '',
+      cardNumber: '',
+      expiry: '',
+      cvv: ''
+    },
+    isProcessing: viewMode === 'processing'
+  };
+
+  // Use preprocessSlotData for consistent rendering
+  return preprocessSlotData('checkout', rawData, selectedStore || {}, storeSettings, {
+    translations: {}
+  });
+};
 
 // Checkout Editor Configuration
-// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const checkoutEditorConfig = {
   pageType: 'checkout',
   pageName: 'Checkout',
@@ -64,7 +73,6 @@ const checkoutEditorConfig = {
     { key: 'default', label: 'Default', icon: ShoppingBag },
     { key: 'processing', label: 'Processing', icon: CreditCard }
   ],
-  slotComponents: {},
   generateContext: generateCheckoutContext,
   createDefaultSlots,
   viewModeAdjustments: {},

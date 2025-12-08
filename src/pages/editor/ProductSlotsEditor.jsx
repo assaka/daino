@@ -1,6 +1,6 @@
 /**
  * ProductSlotsEditor - Refactored to use UnifiedSlotsEditor
- * - Consistent with other slot editors
+ * - Uses preprocessSlotData for consistent rendering with storefront
  * - AI enhancement ready
  * - Maintainable structure
  */
@@ -8,7 +8,7 @@
 import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockProductContext } from '@/utils/mockProductData';
-// Unified components are now handled by UnifiedSlotRenderer automatically
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -39,11 +39,16 @@ const productEditorConfig = {
       icon: Package
     }
   ],
-  // slotComponents are now handled by UnifiedSlotRenderer's component registry
+  // Generate context using preprocessSlotData for consistency with storefront
   generateContext: (viewMode, selectedStore) => {
-    // Pass real store settings to mock context generator
-    const storeSettings = selectedStore?.settings || null;
-    return generateMockProductContext(storeSettings);
+    const storeSettings = selectedStore?.settings || {};
+    const mockContext = generateMockProductContext(storeSettings);
+
+    // Use preprocessSlotData for consistent rendering
+    return preprocessSlotData('product', mockContext, selectedStore || {}, storeSettings, {
+      translations: {},
+      productLabels: []
+    });
   },
   createDefaultSlots,
   cmsBlockPositions: ['product_above', 'product_below']

@@ -10,6 +10,7 @@ import { Menu, Search } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Store } from '@/api/entities';
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -64,82 +65,87 @@ export default function HeaderSlotsEditor() {
   }, [selectedStore]);
 
   // Generate header context with interactive state - memoized with storeData dependency
-  const generateHeaderContext = useCallback((viewMode) => {
-    const context = {
+  const generateHeaderContext = useCallback((viewMode, selectedStore) => {
+    const storeSettings = storeData?.settings || selectedStore?.settings || {};
+
+    const rawData = {
       isEditor: true,
       responsiveMode: viewMode,
-      store: storeData || {
+      store: storeData || selectedStore || {
         id: 1,
         name: 'Demo Store',
         slug: 'demo-store',
         logo_url: null
       },
       settings: {
-        hide_header_search: storeData?.settings?.hide_header_search || false,
-        hide_header_cart: storeData?.settings?.hide_header_cart || false,
-        show_permanent_search: storeData?.settings?.show_permanent_search || false,
-        show_language_selector: storeData?.settings?.show_language_selector === true,
-        allowed_countries: storeData?.settings?.allowed_countries || ['US', 'CA', 'UK'],
-        theme: storeData?.settings?.theme || {
+        hide_header_search: storeSettings?.hide_header_search || false,
+        hide_header_cart: storeSettings?.hide_header_cart || false,
+        show_permanent_search: storeSettings?.show_permanent_search || false,
+        show_language_selector: storeSettings?.show_language_selector === true,
+        allowed_countries: storeSettings?.allowed_countries || ['US', 'CA', 'UK'],
+        theme: storeSettings?.theme || {
           primary_button_color: '#2563EB',
           add_to_cart_button_color: '#10B981'
         }
       },
-    user: null,
-    userLoading: false,
-    categories: [
-    {
-      id: 1,
-      name: 'Electronics',
-      slug: 'electronics',
-      parent_id: null,
-      children: [
-        { id: 11, name: 'Computers', slug: 'computers', parent_id: 1, children: [] },
-        { id: 12, name: 'Phones & Tablets', slug: 'phones-tablets', parent_id: 1, children: [] },
-        { id: 13, name: 'Audio', slug: 'audio', parent_id: 1, children: [] }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Clothing',
-      slug: 'clothing',
-      parent_id: null,
-      children: [
-        { id: 21, name: 'Men', slug: 'men', parent_id: 2, children: [] },
-        { id: 22, name: 'Women', slug: 'women', parent_id: 2, children: [] },
-        { id: 23, name: 'Kids', slug: 'kids', parent_id: 2, children: [] }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Home & Garden',
-      slug: 'home-garden',
-      parent_id: null,
-      children: [
-        { id: 31, name: 'Furniture', slug: 'furniture', parent_id: 3, children: [] },
-        { id: 32, name: 'Decor', slug: 'decor', parent_id: 3, children: [] },
-        { id: 33, name: 'Garden', slug: 'garden', parent_id: 3, children: [] }
-      ]
-    }
-  ],
-  languages: [
-    { id: 1, code: 'en', name: 'English', flag_icon: '🇺🇸' },
-    { id: 2, code: 'es', name: 'Español', flag_icon: '🇪🇸' }
-    ],
-    currentLanguage: 'en',
-    selectedCountry: 'US',
-    mobileMenuOpen: mobileMenuOpen,
-    mobileSearchOpen: mobileSearchOpen,
-    setCurrentLanguage: () => {},
-    setSelectedCountry: () => {},
-    setMobileMenuOpen: setMobileMenuOpen,
-    setMobileSearchOpen: setMobileSearchOpen,
-    handleCustomerLogout: () => {},
-    navigate: () => {},
-    location: { pathname: '/' }
-  };
+      user: null,
+      userLoading: false,
+      categories: [
+        {
+          id: 1,
+          name: 'Electronics',
+          slug: 'electronics',
+          parent_id: null,
+          children: [
+            { id: 11, name: 'Computers', slug: 'computers', parent_id: 1, children: [] },
+            { id: 12, name: 'Phones & Tablets', slug: 'phones-tablets', parent_id: 1, children: [] },
+            { id: 13, name: 'Audio', slug: 'audio', parent_id: 1, children: [] }
+          ]
+        },
+        {
+          id: 2,
+          name: 'Clothing',
+          slug: 'clothing',
+          parent_id: null,
+          children: [
+            { id: 21, name: 'Men', slug: 'men', parent_id: 2, children: [] },
+            { id: 22, name: 'Women', slug: 'women', parent_id: 2, children: [] },
+            { id: 23, name: 'Kids', slug: 'kids', parent_id: 2, children: [] }
+          ]
+        },
+        {
+          id: 3,
+          name: 'Home & Garden',
+          slug: 'home-garden',
+          parent_id: null,
+          children: [
+            { id: 31, name: 'Furniture', slug: 'furniture', parent_id: 3, children: [] },
+            { id: 32, name: 'Decor', slug: 'decor', parent_id: 3, children: [] },
+            { id: 33, name: 'Garden', slug: 'garden', parent_id: 3, children: [] }
+          ]
+        }
+      ],
+      languages: [
+        { id: 1, code: 'en', name: 'English', flag_icon: '🇺🇸' },
+        { id: 2, code: 'es', name: 'Español', flag_icon: '🇪🇸' }
+      ],
+      currentLanguage: 'en',
+      selectedCountry: 'US',
+      mobileMenuOpen: mobileMenuOpen,
+      mobileSearchOpen: mobileSearchOpen,
+      setCurrentLanguage: () => {},
+      setSelectedCountry: () => {},
+      setMobileMenuOpen: setMobileMenuOpen,
+      setMobileSearchOpen: setMobileSearchOpen,
+      handleCustomerLogout: () => {},
+      navigate: () => {},
+      location: { pathname: '/' }
+    };
 
-    return context;
+    // Use preprocessSlotData for consistent rendering
+    return preprocessSlotData('header', rawData, storeData || selectedStore || {}, storeSettings, {
+      translations: {}
+    });
   }, [storeData, mobileMenuOpen, mobileSearchOpen]);
 
   // Header Editor Configuration - memoized with generateHeaderContext dependency

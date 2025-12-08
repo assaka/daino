@@ -1,12 +1,13 @@
 /**
  * AccountSlotsEditor - Customer account page slot editor
- * - Uses UnifiedSlotsEditor
+ * - Uses preprocessSlotData for consistent rendering with storefront
  * - Supports account customization
  * - Maintainable structure
  */
 
 import { User, UserCircle } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -25,21 +26,19 @@ const createDefaultSlots = async () => {
 };
 
 // Generate account context based on view mode
-const generateAccountContext = (viewMode) => {
-  // Intro view - no user logged in
-  if (viewMode === 'intro') {
-    return {
-      user: null,
-      isLoggedIn: false,
-      activeTab: null,
-      orders: [],
-      addresses: [],
-      wishlistItems: []
-    };
-  }
+const generateAccountContext = (viewMode, selectedStore) => {
+  const storeSettings = selectedStore?.settings || {};
 
-  // Logged in views
-  return {
+  // Intro view - no user logged in
+  const rawData = viewMode === 'intro' ? {
+    user: null,
+    isLoggedIn: false,
+    activeTab: null,
+    orders: [],
+    addresses: [],
+    wishlistItems: []
+  } : {
+    // Logged in views
     user: {
       id: 1,
       full_name: 'John Doe',
@@ -52,10 +51,14 @@ const generateAccountContext = (viewMode) => {
     addresses: [],
     wishlistItems: []
   };
+
+  // Use preprocessSlotData for consistent rendering
+  return preprocessSlotData('account', rawData, selectedStore || {}, storeSettings, {
+    translations: {}
+  });
 };
 
 // Account Editor Configuration
-// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const accountEditorConfig = {
   pageType: 'account',
   pageName: 'Customer Account',
@@ -66,7 +69,6 @@ const accountEditorConfig = {
     { key: 'overview', label: 'Overview', icon: User },
     { key: 'profile', label: 'Profile', icon: User }
   ],
-  slotComponents: {},
   generateContext: generateAccountContext,
   createDefaultSlots,
   viewModeAdjustments: {},

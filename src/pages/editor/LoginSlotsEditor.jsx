@@ -1,12 +1,13 @@
 /**
  * LoginSlotsEditor - Login/Auth page slot editor
- * - Uses UnifiedSlotsEditor
+ * - Uses preprocessSlotData for consistent rendering with storefront
  * - Supports login customization
  * - Maintainable structure
  */
 
 import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -25,14 +26,22 @@ const createDefaultSlots = async () => {
 };
 
 // Generate login context based on view mode
-const generateLoginContext = (viewMode) => ({
-  authMode: viewMode === 'register' ? 'register' : 'login',
-  showSocialLogin: true,
-  redirectUrl: null
-});
+const generateLoginContext = (viewMode, selectedStore) => {
+  const storeSettings = selectedStore?.settings || {};
+
+  const rawData = {
+    authMode: viewMode === 'register' ? 'register' : 'login',
+    showSocialLogin: true,
+    redirectUrl: null
+  };
+
+  // Use preprocessSlotData for consistent rendering
+  return preprocessSlotData('login', rawData, selectedStore || {}, storeSettings, {
+    translations: {}
+  });
+};
 
 // Login Editor Configuration
-// Config structure (views, cmsBlocks, slots) comes from database via UnifiedSlotsEditor
 const loginEditorConfig = {
   pageType: 'login',
   pageName: 'Login/Register',
@@ -42,7 +51,6 @@ const loginEditorConfig = {
     { key: 'login', label: 'Login', icon: LogIn },
     { key: 'register', label: 'Register', icon: UserPlus }
   ],
-  slotComponents: {},
   generateContext: generateLoginContext,
   createDefaultSlots,
   viewModeAdjustments: {},
