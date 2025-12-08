@@ -1174,9 +1174,10 @@ export const generateDemoData = (pageType, settings = {}) => {
         low_stock_label: 'Only {quantity} left!'
       },
       theme: {
-        add_to_cart_button_color: '#3B82F6',
-        primary_color: '#3B82F6',
-        secondary_color: '#10B981'
+        // Use same defaults as storefront (storeSettingsDefaults.js)
+        add_to_cart_button_color: '#28a745',
+        primary_color: '#007bff',
+        secondary_color: '#6c757d'
       },
       ...settings // Merge any passed-in settings to override defaults
     }

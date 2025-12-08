@@ -148,7 +148,8 @@ export const generateMockProductContext = (storeSettings = null) => {
         low_stock_label: 'Only {quantity} left!'
       },
       theme: {
-        add_to_cart_button_color: '#16a34a'
+        // Use same default as storefront (storeSettingsDefaults.js)
+        add_to_cart_button_color: '#28a745'
       },
       // Merge with real store settings (overrides defaults)
       ...(storeSettings || {})
