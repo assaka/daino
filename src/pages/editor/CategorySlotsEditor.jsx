@@ -13,10 +13,11 @@ import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useCategory, useCategories, useFilterableAttributes } from '@/hooks/useApiQueries';
-import ProductItemCard from '@/components/storefront/ProductItemCard';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-// Import component registry to render components consistently with storefront
-import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
+// Use same preprocessing as storefront for consistent rendering
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
+import { formatPrice } from '@/utils/priceUtils';
+// Import slot components to register them with ComponentRegistry (side effect imports)
 import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 
@@ -91,147 +92,20 @@ const getGridClasses = (storeSettings) => {
   return classes.length > 0 ? classes.join(' ') : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
 };
 
-// Custom slot renderer for category-specific components
+// Custom slot renderer - minimal overrides, let ComponentRegistry handle most components
+// This ensures editor renders exactly the same as storefront
 const categoryCustomSlotRenderer = (slot, context) => {
-  const storeSettings = context?.storeSettings || {};
-  const filterableAttributes = context?.filterableAttributes || [];
-  const sampleCategoryContext = context || generateMockCategoryContext(filterableAttributes, storeSettings);
+  // Only handle CMS blocks - everything else should go through ComponentRegistry
+  // to ensure consistent rendering with storefront
 
-  // Handle component slots (new pattern from category-config.js)
-  if (slot.type === 'component') {
-    const componentName = slot.component;
-
-    // CategoryBreadcrumbs component - use component registry for consistency with storefront
-    if (componentName === 'CategoryBreadcrumbs') {
-      if (ComponentRegistry.has('CategoryBreadcrumbs')) {
-        const registeredComponent = ComponentRegistry.get('CategoryBreadcrumbs');
-        return registeredComponent.render({
-          slot,
-          categoryContext: sampleCategoryContext,
-          variableContext: {},
-          context: 'editor',
-          className: slot.className,
-          styles: slot.styles,
-          allSlots: context?.layoutConfig?.slots
-        });
-      }
-      // Fallback to old component if registry not available
-      return undefined;
-    }
-
-    // BreadcrumbRenderer (legacy)
-    if (componentName === 'BreadcrumbRenderer') {
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <nav className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>Home</span>
-            <span>/</span>
-            <span>Category</span>
-            <span>/</span>
-            <span className="font-medium text-gray-900">Current Page</span>
-          </nav>
-        </div>
-      );
-    }
-
-    // ProductCountInfo component
-    if (componentName === 'ProductCountInfo') {
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <div className="text-sm text-blue-600 font-bold">
-            Hamid 1-{sampleCategoryContext?.products?.length || 12} of {sampleCategoryContext?.products?.length || 12} products
-          </div>
-        </div>
-      );
-    }
-
-    // ProductItemsGrid component - let ComponentRegistry handle it
-    // The registered ProductItemsGrid component in CategorySlotComponents.jsx
-    // will create individual slot containers for each product
-    if (componentName === 'ProductItemsGrid') {
-      return undefined; // Pass through to ComponentRegistry
-    }
-
-    // ActiveFilters component
-    if (componentName === 'ActiveFilters') {
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Active Filters:</span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-              Brand: Apple ×
-            </span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-              Price: $100-$500 ×
-            </span>
-          </div>
-        </div>
-      );
-    }
-
-    // LayeredNavigation component - now handled by ComponentRegistry
-    // Removed hardcoded renderer to allow UnifiedSlotRenderer to use the actual component
-
-    // SortSelector component
-    if (componentName === 'SortSelector') {
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-700 font-medium">Sort by:</label>
-            <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
-              <option>Position</option>
-              <option>Name (A-Z)</option>
-              <option>Name (Z-A)</option>
-              <option>Price (Low to High)</option>
-              <option>Price (High to Low)</option>
-              <option>Newest First</option>
-            </select>
-          </div>
-        </div>
-      );
-    }
-
-    // PaginationComponent - use component registry for consistent styling with storefront
-    if (componentName === 'PaginationComponent') {
-      if (ComponentRegistry.has('PaginationComponent')) {
-        const registeredComponent = ComponentRegistry.get('PaginationComponent');
-        return registeredComponent.render({
-          slot,
-          categoryContext: sampleCategoryContext,
-          variableContext: {
-            pagination: sampleCategoryContext.pagination,
-            settings: sampleCategoryContext.settings
-          },
-          context: 'editor',
-          className: slot.className,
-          styles: slot.styles
-        });
-      }
-      // Fallback if registry not available
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <div className="flex justify-center mt-8">
-            <nav className="flex items-center gap-1">
-              <button className="px-3 py-2 border rounded hover:bg-gray-50">Previous</button>
-              <button className="px-3 py-2 border rounded bg-blue-600 text-white">1</button>
-              <button className="px-3 py-2 border rounded hover:bg-gray-50">2</button>
-              <button className="px-3 py-2 border rounded hover:bg-gray-50">3</button>
-              <button className="px-3 py-2 border rounded hover:bg-gray-50">Next</button>
-            </nav>
-          </div>
-        </div>
-      );
-    }
-
-    // CmsBlockRenderer is handled by UnifiedSlotRenderer, but add fallback
-    if (componentName === 'CmsBlockRenderer') {
-      const position = slot.metadata?.cmsPosition || slot.id || 'default';
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <CmsBlockRenderer position={position} />
-        </div>
-      );
-    }
+  // Handle CMS block component slots
+  if (slot.type === 'component' && slot.component === 'CmsBlockRenderer') {
+    const position = slot.metadata?.cmsPosition || slot.id || 'default';
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <CmsBlockRenderer position={position} />
+      </div>
+    );
   }
 
   // Handle CMS block slots (legacy pattern)
@@ -244,220 +118,9 @@ const categoryCustomSlotRenderer = (slot, context) => {
     );
   }
 
-  // Remove text slot handler - let UnifiedSlotRenderer handle it with proper variable processing
-
-  if (slot.type === 'select') {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
-          <option>Sort option 1</option>
-          <option>Sort option 2</option>
-        </select>
-      </div>
-    );
-  }
-
-  if (slot.type === 'pagination') {
-    // Use PaginationComponent from registry for consistent styling
-    if (ComponentRegistry.has('PaginationComponent')) {
-      const registeredComponent = ComponentRegistry.get('PaginationComponent');
-      return registeredComponent.render({
-        slot,
-        categoryContext: sampleCategoryContext,
-        variableContext: {
-          pagination: sampleCategoryContext.pagination,
-          settings: sampleCategoryContext.settings
-        },
-        context: 'editor',
-        className: slot.className,
-        styles: slot.styles
-      });
-    }
-    // Fallback
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <div className="flex items-center justify-center space-x-2">
-          <button className="px-3 py-1 border rounded">Previous</button>
-          <span className="px-3 py-1">1 of 10</span>
-          <button className="px-3 py-1 border rounded">Next</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (slot.type === 'breadcrumbs') {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <nav className="flex items-center space-x-2 text-sm text-gray-600">
-          <span>Home</span>
-          <span>/</span>
-          <span>Category</span>
-          <span>/</span>
-          <span className="font-medium text-gray-900">Current Page</span>
-        </nav>
-      </div>
-    );
-  }
-
-  if (slot.type === 'active_filters') {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">Active Filters:</span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-            Brand: Apple ×
-          </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-            Price: $100-$500 ×
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  if (slot.type === 'layered_navigation') {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-900">Filter By</h3>
-          <div>
-            <h4 className="font-medium text-gray-700 mb-2">Price</h4>
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input type="checkbox" className="mr-2" />
-                <span className="text-sm">Under $25</span>
-              </label>
-              <label className="flex items-center">
-                <input type="checkbox" className="mr-2" />
-                <span className="text-sm">$25 - $50</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle products_container explicitly
-  if (slot.id === 'products_container') {
-    // Find the product_items child slot and render it explicitly
-    const productItemsSlot = Object.values(context?.layoutConfig?.slots || {}).find(s => s.id === 'product_items');
-
-    if (productItemsSlot) {
-
-      // Get microslot configurations from category config
-      const microslotConfigs = {
-        productAddToCart: context?.layoutConfig?.slots?.product_add_to_cart || {
-          className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
-          content: 'Add to Cart'
-        },
-        productImage: context?.layoutConfig?.slots?.product_image || {},
-        productName: context?.layoutConfig?.slots?.product_name || {},
-        productPrice: context?.layoutConfig?.slots?.product_price || {},
-        productComparePrice: context?.layoutConfig?.slots?.product_compare_price || {}
-      };
-
-      // Merge slot content with metadata and microslot configs
-      const contentWithConfig = {
-        ...productItemsSlot.content,
-        ...productItemsSlot.metadata,
-        ...microslotConfigs,
-        itemsToShow: productItemsSlot.metadata?.itemsToShow || 3,
-        gridConfig: productItemsSlot.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
-      };
-
-      return (
-        <div className="products-container-wrapper">
-          <CategoryProductItemCardSlot
-            categoryContext={sampleCategoryContext}
-            content={contentWithConfig}
-            config={{ viewMode: context?.viewMode }}
-          />
-        </div>
-      );
-    }
-    return null;
-  }
-
-  // Don't handle product_items - let ComponentRegistry ProductItemsGrid handle it
-  // This ensures storefront and editor use the same rendering logic
-  if (slot.id === 'product_items') {
-    return undefined; // Let ComponentRegistry handle it
-  }
-
-  // Handle individual product_item_card if needed (fallback for individual card rendering)
-  if (slot.id === 'product_item_card') {
-
-    // For individual card rendering, just render a single sample card
-    const sampleProduct = sampleCategoryContext?.products?.[0];
-    if (!sampleProduct) return null;
-
-    return (
-      <ProductItemCard
-        key={sampleProduct.id}
-        product={sampleProduct}
-        settings={{
-          currency_symbol: '123',
-          theme: { add_to_cart_button_color: '#3B82F6' }
-        }}
-        store={{ slug: 'demo-store', id: 1 }}
-        taxes={[]}
-        selectedCountry="US"
-        productLabels={sampleCategoryContext?.productLabels || []}
-        viewMode={context?.viewMode}
-        slotConfig={slot}
-        onAddToCartStateChange={() => {}}
-      />
-    );
-  }
-
-  const componentMap = {
-    // Headers
-    'category_title': CategoryHeaderSlot,
-    'category_header': CategoryHeaderSlot,
-    'category_description': CategoryHeaderSlot,
-
-    // Filters and navigation
-    'filters_container': CategoryFiltersSlot,
-    'layered_navigation': CategoryLayeredNavigationSlot,
-    'active_filters': CategoryActiveFiltersSlot,
-
-    // Products
-    'products_container': CategoryProductsSlot,
-    'products_grid': CategoryProductsSlot,
-    'product_items': CategoryProductItemsSlot,
-    'product_item_card': CategoryProductItemCardSlot,
-    'product_template': CategoryProductItemCardSlot,
-
-    // Sorting and controls
-    'sorting_controls': CategorySortingSlot,
-    'product_count_info': CategorySortingSlot,
-    'sort_selector': CategorySortingSlot,
-
-    // Pagination
-    'pagination_controls': CategoryPaginationSlot,
-    'pagination_container': CategoryPaginationSlot
-  };
-
-  const SlotComponent = componentMap[slot.id];
-
-  if (SlotComponent) {
-    return (
-      <SlotComponent
-        categoryData={sampleCategoryContext}
-        categoryContext={sampleCategoryContext}
-        content={slot.content}
-        className={slot.className}
-        styles={slot.styles}
-        config={{ viewMode: context?.viewMode }}
-        allSlots={context?.layoutConfig?.slots}
-        mode={context?.mode}
-        onElementClick={context?.onElementClick}
-      />
-    );
-  }
-
-  return null;
+  // Return undefined for all other slots - let UnifiedSlotRenderer and ComponentRegistry handle them
+  // This ensures the editor uses the exact same rendering logic as the storefront
+  return undefined;
 };
 
 // Note: Category editor config is now created inline in CategorySlotsEditor
@@ -600,47 +263,120 @@ const CategorySlotsEditor = ({
   };
 
   // Build real category context from API data, falling back to mock data
+  // Then preprocess using same logic as storefront for consistent rendering
   const categoryContext = useMemo(() => {
+    const store = storeContext?.store || selectedStore || { id: storeId, name: 'Store' };
+    const productLabels = storeContext?.productLabels || [];
+
     // If we have real data, use it
     if (realCategoryData?.category && realCategoryData?.products?.length > 0) {
       const products = realCategoryData.products;
       const filters = buildFilters(products, filterableAttributes);
+      const totalPages = Math.max(5, Math.ceil(products.length / 12)); // Show at least 5 pages for preview
 
-      return {
+      // Build raw data in same format as storefront Category.jsx
+      const rawData = {
         category: realCategoryData.category,
         products: products,
         allProducts: products,
         filters: filters,
         filterableAttributes: filterableAttributes,
-        pagination: {
-          start: 1,
-          end: Math.min(12, products.length),
-          total: products.length,
-          currentPage: 2,
-          totalPages: Math.max(5, Math.ceil(products.length / 12)), // Show at least 5 pages for preview
-          perPage: 12,
-          hasPrev: true,
-          hasNext: true
-        },
-        sortOption: 'default',
-        currentPage: 2,
-        totalPages: Math.max(5, Math.ceil(products.length / 12)),
-        subcategories: realCategoryData.subcategories || [],
         breadcrumbs: [
           { name: 'Home', url: '/' },
           { name: realCategoryData.category.name, url: `/${realCategoryData.category.slug}` }
         ],
         selectedFilters: {},
-        settings: storeSettings || {},
-        store: storeContext?.store || selectedStore || { id: storeId, name: 'Store' },
-        productLabels: storeContext?.productLabels || []
+        priceRange: {},
+        categories: categories || [],
+        currentPage: 2,
+        totalPages: totalPages,
+        itemsPerPage: 12,
+        filteredProductsCount: products.length,
+        // Editor handlers (no-op in editor mode)
+        handleFilterChange: () => {},
+        handleSortChange: () => {},
+        handleSearchChange: () => {},
+        handlePageChange: () => {},
+        clearFilters: () => {},
+        onProductClick: () => {},
+        navigate: () => {},
+        formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
+        getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+      };
+
+      // Use same preprocessing as storefront for consistent rendering
+      const preprocessed = preprocessSlotData('category', rawData, store, storeSettings || {}, {
+        translations: {},
+        productLabels: productLabels
+      });
+
+      // Add pagination info that preprocessSlotData expects
+      return {
+        ...preprocessed,
+        pagination: {
+          start: 1,
+          end: Math.min(12, products.length),
+          total: products.length,
+          currentPage: 2,
+          totalPages: totalPages,
+          perPage: 12,
+          hasPrev: true,
+          hasNext: true
+        },
+        subcategories: realCategoryData.subcategories || [],
       };
     }
 
-    // Fall back to mock data
+    // Fall back to mock data - also preprocess it
     console.log('[CategorySlotsEditor] Using mock data - no real category data available');
-    return generateMockCategoryContext(filterableAttributes, storeSettings);
-  }, [realCategoryData, filterableAttributes, storeSettings, storeContext, selectedStore, storeId]);
+    const mockContext = generateMockCategoryContext(filterableAttributes, storeSettings);
+
+    // Preprocess mock data too for consistency
+    const rawMockData = {
+      category: mockContext.category,
+      products: mockContext.products || [],
+      allProducts: mockContext.products || [],
+      filters: mockContext.filters || {},
+      filterableAttributes: filterableAttributes,
+      breadcrumbs: mockContext.breadcrumbs || [],
+      selectedFilters: {},
+      priceRange: {},
+      categories: categories || [],
+      currentPage: 2,
+      totalPages: 5,
+      itemsPerPage: 12,
+      filteredProductsCount: (mockContext.products || []).length,
+      handleFilterChange: () => {},
+      handleSortChange: () => {},
+      handleSearchChange: () => {},
+      handlePageChange: () => {},
+      clearFilters: () => {},
+      onProductClick: () => {},
+      navigate: () => {},
+      formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
+      getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+    };
+
+    const preprocessed = preprocessSlotData('category', rawMockData, store, storeSettings || {}, {
+      translations: {},
+      productLabels: productLabels
+    });
+
+    return {
+      ...preprocessed,
+      pagination: {
+        start: 1,
+        end: 12,
+        total: (mockContext.products || []).length,
+        currentPage: 2,
+        totalPages: 5,
+        perPage: 12,
+        hasPrev: true,
+        hasNext: true
+      },
+      subcategories: [],
+    };
+  }, [realCategoryData, filterableAttributes, storeSettings, storeContext, selectedStore, storeId, categories]);
 
   // Debug logging
   console.log('[CategorySlotsEditor] State:', {
