@@ -101,6 +101,9 @@ router.get('/', async (req, res) => {
           .order('sort_order', { ascending: true })
           .limit(valueLimit);
 
+        // Debug logging
+        console.log(`Attribute ${attr.code} (${attr.id}): found ${values?.length || 0} values, error: ${valuesError?.message || 'none'}`);
+
         if (valuesError || !values || values.length === 0) {
           return { ...attr, values: [] };
         }
