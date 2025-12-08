@@ -635,29 +635,36 @@ export function UnifiedSlotRenderer({
     ? formatSingleProduct(productData.product)
     : (context === 'editor' ? generateDemoData('product', {}).product : null);
 
+  // Use preprocessedData if available (from storefront or editor), otherwise build from categoryData
+  // This ensures both editor and storefront use the same data format
+  const categorySource = preprocessedData || categoryData;
+
   const variableContext = {
     product: formattedProduct,
-    products: formattedProducts, // Use formatted products for category templates
-    category: categoryData?.category || categoryData,
+    products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available
+    category: categorySource?.category || categoryData,
     cart: cartData,
     settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
-    translations: productData.translations || categoryData?.translations || null, // Translations from TranslationContext
-    productLabels: productData.productLabels || categoryData?.productLabels,
+    translations: productData.translations || categorySource?.translations || null, // Translations from TranslationContext
+    productLabels: productData.productLabels || categorySource?.productLabels,
     // Product-specific data
     customOptions: productData.customOptions || [],
     customOptionsLabel: productData.customOptionsLabel || 'Custom Options',
     // Category-specific data
-    filters: categoryData?.filters || {},
+    filters: categorySource?.filters || {},
     filterOptionStyles: filterOptionStyles,
     attributeLabelStyles: attributeLabelStyles,
     activeFilterStyles: activeFilterStyles,
-    filterableAttributes: categoryData?.filterableAttributes || [],
-    pagination: categoryData?.pagination || {},
-    // Demo active filters for editor
-    activeFilters: context === 'editor' ? [
-      { label: 'Brand', value: 'Nike', type: 'attribute', attributeCode: 'brand' },
-      { label: 'Color', value: 'Blue', type: 'attribute', attributeCode: 'color' }
-    ] : (categoryData?.activeFilters || []),
+    filterableAttributes: categorySource?.filterableAttributes || [],
+    pagination: categorySource?.pagination || {},
+    // Active filters - use from preprocessedData/categoryData
+    activeFilters: categorySource?.activeFilters || [],
+    // Pagination handlers from preprocessed data
+    currentPage: categorySource?.currentPage,
+    totalPages: categorySource?.totalPages,
+    handlePageChange: categorySource?.handlePageChange,
+    handleFilterChange: categorySource?.handleFilterChange,
+    clearFilters: categorySource?.clearFilters,
     // Login data for login page
     loginData: loginData
   };

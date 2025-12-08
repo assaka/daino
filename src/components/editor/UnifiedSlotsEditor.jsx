@@ -17,6 +17,8 @@ import { Eye } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
+import { formatPrice } from '@/utils/priceUtils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import AIWorkspaceContext from '@/contexts/AIWorkspaceContext';
 import {
@@ -467,6 +469,8 @@ const UnifiedSlotsEditor = ({
                     categoryData={pageType === 'category' ? pageContext : null}
                     cartData={pageType === 'cart' ? pageContext : null}
                     headerContext={pageType === 'header' ? pageContext : null}
+                    // Pass preprocessedData for category pages - same as storefront
+                    preprocessedData={pageType === 'category' && pageContext ? pageContext : null}
                     slotConfig={config}
                     mode={showPreview ? 'view' : mode}
                     showBorders={showPreview ? false : showSlotBorders}
