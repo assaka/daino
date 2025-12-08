@@ -75,12 +75,12 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       attrTranslations = trans || [];
     }
 
-    // Build translation map - transform 'label' to 'name' for frontend compatibility
+    // Build translation map - use 'label' field directly
     const attrTransMap = {};
     attrTranslations.forEach(t => {
       if (!attrTransMap[t.attribute_id]) attrTransMap[t.attribute_id] = {};
       attrTransMap[t.attribute_id][t.language_code] = {
-        name: t.label,
+        label: t.label,
         description: t.description
       };
     });
@@ -95,7 +95,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       const attrWithTrans = {
         ...attr,
         translations: trans || {},
-        label: reqLang?.name || enLang?.name || attr.code
+        label: reqLang?.label || enLang?.label || attr.code
       };
 
       // Load values for select/multiselect types
@@ -194,11 +194,11 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       .eq('attribute_id', attribute.id)
       .in('language_code', [lang, 'en']);
 
-    // Transform 'label' to 'name' for frontend compatibility
+    // Build translation map - use 'label' field directly
     const transMap = {};
     (attrTrans || []).forEach(t => {
       transMap[t.language_code] = {
-        name: t.label,
+        label: t.label,
         description: t.description
       };
     });
@@ -209,7 +209,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     const attributeData = {
       ...attribute,
       translations: transMap,
-      label: reqLang?.name || enLang?.name || attribute.code
+      label: reqLang?.label || enLang?.label || attribute.code
     };
 
     // Load values if select/multiselect
@@ -858,7 +858,7 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
 
     for (const attribute of attributes) {
       try {
-        const attributeName = attribute.translations?.[fromLang]?.name || attribute.name || `Attribute ${attribute.id}`;
+        const attributeName = attribute.translations?.[fromLang]?.label || attribute.code || `Attribute ${attribute.id}`;
 
         // Check if source translation exists
         if (!attribute.translations || !attribute.translations[fromLang]) {
@@ -899,7 +899,7 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
         console.log(`✅ Successfully translated attribute "${attributeName}"`);
         results.translated++;
       } catch (error) {
-        const attributeName = attribute.translations?.[fromLang]?.name || attribute.name || `Attribute ${attribute.id}`;
+        const attributeName = attribute.translations?.[fromLang]?.label || attribute.code || `Attribute ${attribute.id}`;
         console.error(`❌ Error translating attribute "${attributeName}":`, error);
         results.failed++;
         results.errors.push({

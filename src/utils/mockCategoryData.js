@@ -72,7 +72,7 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
   // Build filters object with proper structure for templates
   // Build attribute filters from filterableAttributes (same as storefront)
   const attributeFilters = filterableAttributesToUse.map(attr => {
-    const attrCode = attr.code || attr.name;
+    const attrCode = attr.code;
 
     // For mock data, create some sample options if not provided
     let options = attr.options || [];
@@ -90,7 +90,7 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
 
     return {
       code: attrCode,
-      label: attr.name || attr.label || attrCode,
+      label: attr.label || attrCode,
       options: options.map(opt => ({
         value: opt.value,
         label: opt.label || opt.value,

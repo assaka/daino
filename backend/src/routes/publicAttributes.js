@@ -81,7 +81,8 @@ router.get('/', async (req, res) => {
 
       return {
         ...attr,
-        name: requestedLang?.name || englishLang?.name || attr.name,
+        // Use translations.label field, fallback to attr.code (attr.name is deprecated)
+        label: requestedLang?.label || englishLang?.label || attr.code,
         description: requestedLang?.description || englishLang?.description || attr.description
       };
     });

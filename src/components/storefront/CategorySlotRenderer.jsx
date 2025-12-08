@@ -324,7 +324,7 @@ export function CategorySlotRenderer({
 
       // Format attribute filters
       const attributeFilters = filterableAttributes?.map(attr => {
-        const attrCode = attr.code || attr.name;
+        const attrCode = attr.code;
         const filterData = filtersData[attrCode];
         const filterType = attr.filter_type || 'multiselect';
 
@@ -335,7 +335,7 @@ export function CategorySlotRenderer({
         // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
         let attributeLabel = attr.translations?.[currentLanguage]?.label ||
                             attr.translations?.en?.label ||
-                            attr.name || attr.code || attrCode;
+                            attr.code || attrCode;
 
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;

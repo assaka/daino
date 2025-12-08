@@ -426,7 +426,7 @@ export default function Category() {
 
     // Process each filterable attribute from database (already filtered by is_filterable = true)
     filterableAttributes.forEach(attr => {
-      const attrCode = attr.code || attr.name || attr.attribute_name;
+      const attrCode = attr.code || attr.attribute_name;
 
       // Skip attributes that shouldn't be displayed as filters
       // (even if marked as filterable, they're used for other purposes)
@@ -458,7 +458,6 @@ export default function Category() {
       // Structure: translations: { en: { label: '...' }, nl: { label: '...' } }
       const attributeLabel = attr.translations?.[currentLang]?.label ||
                             attr.translations?.en?.label ||
-                            attr.name ||
                             attrCode;
 
       // Skip price attribute (handled separately above)
@@ -504,10 +503,9 @@ export default function Category() {
       // filterableAttributes now has translations: { en: { label: '...' }, nl: { label: '...' } }
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
 
-      // Get translated attribute label, fallback to name, then code
+      // Get translated attribute label, fallback to code
       const attributeLabel = attr?.translations?.[currentLang]?.label ||
                             attr?.translations?.en?.label ||
-                            attr?.name ||
                             attributeCode;
 
       // Add each selected value as a separate active filter

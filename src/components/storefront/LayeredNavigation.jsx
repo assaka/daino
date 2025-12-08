@@ -198,7 +198,7 @@ export default function LayeredNavigation({
                     // Handle normalized format (array of objects with code/label/value)
                     if (Array.isArray(productAttributes)) {
                         const matchingAttr = productAttributes.find(pAttr =>
-                            pAttr.code === attr.code || pAttr.code === attr.name
+                            pAttr.code === attr.code
                         );
 
                         if (matchingAttr) {
@@ -224,7 +224,7 @@ export default function LayeredNavigation({
                             // Handle normalized format (array of objects)
                             if (Array.isArray(productAttributes)) {
                                 const matchingAttr = productAttributes.find(pAttr =>
-                                    pAttr.code === attr.code || pAttr.code === attr.name
+                                    pAttr.code === attr.code
                                 );
                                 // Use rawValue (code) if available, otherwise fall back to value (translated label)
                                 // This matches the logic in Category.jsx buildFilters()
@@ -242,7 +242,6 @@ export default function LayeredNavigation({
                         // Get translated attribute label
                         const attributeLabel = attr.translations?.[currentLang]?.label ||
                                              attr.translations?.en?.label ||
-                                             attr.name ||
                                              attr.code;
 
                         options[attr.code] = {

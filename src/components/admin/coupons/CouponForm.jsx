@@ -188,7 +188,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
   const categoryOptions = categories.map(cat => ({ value: cat.id, label: getCategoryName(cat) || cat.name || `Category ${cat.id}` }));
   const productOptions = products.map(prod => ({ value: prod.id, label: `${getProductName(prod) || prod.sku || 'Unnamed Product'} (${prod.sku})` }));
   const attributeSetOptions = attributeSets.map(set => ({ value: set.id, label: set.name }));
-  const attributeOptions = attributes.map(attr => ({ value: attr.id, label: `${attr.name} (${attr.code})` }));
+  const attributeOptions = attributes.map(attr => ({ value: attr.id, label: `${attr.label || attr.code} (${attr.code})` }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
