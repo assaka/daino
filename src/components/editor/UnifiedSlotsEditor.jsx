@@ -129,7 +129,7 @@ const UnifiedSlotsEditor = ({
   const [viewMode, setViewMode] = useState(propViewMode || defaultViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [showSlotBorders, setShowSlotBorders] = useState(true);
+  const [showSlotBorders, setShowSlotBorders] = useState(false); // Disabled - borders cause visual differences with storefront
   const [localSaveStatus, setLocalSaveStatus] = useState('');
   const [currentViewport, setCurrentViewport] = useState('desktop');
   const [isResizing, setIsResizing] = useState(false);
@@ -431,8 +431,6 @@ const UnifiedSlotsEditor = ({
 
           {!showPreview && (
             <EditorToolbar
-              showSlotBorders={showSlotBorders}
-              onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
               onResetLayout={() => setShowResetModal(true)}
               onShowCode={() => setShowCodeModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}

@@ -1888,15 +1888,10 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders, currentViewport, onViewportChange }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, currentViewport, onViewportChange }) {
   return (
-    <div className="flex mx-6 mb-3 pt-2 justify-between">
-      <BorderToggleButton
-        showSlotBorders={showSlotBorders}
-        onToggle={onToggleBorders}
-      />
-
-      <div className="flex gap-2 ml-3 items-center">
+    <div className="flex mx-6 mb-3 pt-2 justify-end">
+      <div className="flex gap-2 items-center">
         {/* Viewport Mode Selector */}
         {currentViewport && onViewportChange && (
           <ViewportModeSelector
