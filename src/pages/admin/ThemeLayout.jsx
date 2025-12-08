@@ -1745,6 +1745,193 @@ export default function ThemeLayout() {
                                     })()}
                                 </div>
                             </div>
+
+                            <Separator />
+
+                            {/* Pagination Styling */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Pagination Styling</Label>
+                                    <p className="text-sm text-gray-500">Customize the appearance of pagination buttons on category pages</p>
+                                </div>
+
+                                {/* Button Colors */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Button Background</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.pagination?.buttonBgColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonBgColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.pagination?.buttonBgColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonBgColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Button Text</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.pagination?.buttonTextColor || '#374151'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonTextColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.pagination?.buttonTextColor || '#374151'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonTextColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#374151"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Hover Colors */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Hover Background</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.pagination?.buttonHoverBgColor || '#F3F4F6'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonHoverBgColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.pagination?.buttonHoverBgColor || '#F3F4F6'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonHoverBgColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#F3F4F6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Border Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.pagination?.buttonBorderColor || '#D1D5DB'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonBorderColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.pagination?.buttonBorderColor || '#D1D5DB'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, buttonBorderColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#D1D5DB"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Active Page Colors */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Active Page Background</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.pagination?.activeBgColor || '#3B82F6'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, activeBgColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.pagination?.activeBgColor || '#3B82F6'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, activeBgColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#3B82F6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Active Page Text</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.pagination?.activeTextColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, activeTextColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.pagination?.activeTextColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('pagination', { ...store.settings.pagination, activeTextColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Preview */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <Label className="text-sm font-medium mb-3 block">Preview</Label>
+                                    <div className="flex justify-center items-center gap-1">
+                                        <button
+                                            className="px-3 py-1.5 border rounded text-sm"
+                                            style={{
+                                                backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
+                                                color: store.settings.pagination?.buttonTextColor || '#374151',
+                                                borderColor: store.settings.pagination?.buttonBorderColor || '#D1D5DB'
+                                            }}
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            className="px-3 py-1.5 border rounded text-sm"
+                                            style={{
+                                                backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
+                                                color: store.settings.pagination?.buttonTextColor || '#374151',
+                                                borderColor: store.settings.pagination?.buttonBorderColor || '#D1D5DB'
+                                            }}
+                                        >
+                                            1
+                                        </button>
+                                        <button
+                                            className="px-3 py-1.5 border rounded text-sm"
+                                            style={{
+                                                backgroundColor: store.settings.pagination?.activeBgColor || '#3B82F6',
+                                                color: store.settings.pagination?.activeTextColor || '#FFFFFF',
+                                                borderColor: store.settings.pagination?.activeBgColor || '#3B82F6'
+                                            }}
+                                        >
+                                            2
+                                        </button>
+                                        <button
+                                            className="px-3 py-1.5 border rounded text-sm"
+                                            style={{
+                                                backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
+                                                color: store.settings.pagination?.buttonTextColor || '#374151',
+                                                borderColor: store.settings.pagination?.buttonBorderColor || '#D1D5DB'
+                                            }}
+                                        >
+                                            3
+                                        </button>
+                                        <button
+                                            className="px-3 py-1.5 border rounded text-sm"
+                                            style={{
+                                                backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
+                                                color: store.settings.pagination?.buttonTextColor || '#374151',
+                                                borderColor: store.settings.pagination?.buttonBorderColor || '#D1D5DB'
+                                            }}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 

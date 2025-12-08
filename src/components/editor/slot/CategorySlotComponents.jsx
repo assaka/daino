@@ -295,7 +295,7 @@ const SortSelector = createSlotComponent({
   }
 });
 
-// Pagination Component - Simple React-based implementation
+// Pagination Component - React-based with customizable styles from settings
 const PaginationComponent = createSlotComponent({
   name: 'PaginationComponent',
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
@@ -315,28 +315,71 @@ const PaginationComponent = createSlotComponent({
       }
     };
 
+    // Get pagination settings from store settings
+    const paginationSettings = categoryContext?.settings?.pagination || variableContext?.settings?.pagination || {};
+
+    // Extract customizable styles from settings with defaults
+    const buttonBgColor = paginationSettings.buttonBgColor || '#FFFFFF';
+    const buttonTextColor = paginationSettings.buttonTextColor || '#374151';
+    const buttonBorderColor = paginationSettings.buttonBorderColor || '#D1D5DB';
+    const buttonHoverBgColor = paginationSettings.buttonHoverBgColor || '#F3F4F6';
+    const activeBgColor = paginationSettings.activeBgColor || '#3B82F6';
+    const activeTextColor = paginationSettings.activeTextColor || '#FFFFFF';
+
     // Ensure className is a string and styles is an object
     const finalClassName = typeof className === 'string' ? className : (typeof slot?.className === 'string' ? slot?.className : '');
-    const finalStyles = (styles && typeof styles === 'object' && !Array.isArray(styles)) ? styles :
-                        (slot?.styles && typeof slot?.styles === 'object' && !Array.isArray(slot?.styles)) ? slot?.styles : {};
+
+    const buttonBaseStyle = {
+      backgroundColor: buttonBgColor,
+      color: buttonTextColor,
+      border: `1px solid ${buttonBorderColor}`,
+      borderRadius: '0.375rem',
+      padding: '0.5rem 0.75rem',
+      fontSize: '0.875rem',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+    };
+
+    const disabledButtonStyle = {
+      ...buttonBaseStyle,
+      opacity: '0.5',
+      cursor: 'not-allowed',
+    };
+
+    const activeButtonStyle = {
+      ...buttonBaseStyle,
+      backgroundColor: activeBgColor,
+      color: activeTextColor,
+      borderColor: activeBgColor,
+    };
+
+    const textStyle = {
+      color: buttonTextColor,
+      fontSize: '0.875rem',
+      padding: '0.5rem 0.75rem',
+    };
 
     return (
-      <div className={finalClassName} style={finalStyles}>
+      <div className={finalClassName}>
         {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <nav className="flex items-center gap-1">
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <button
-                className={`px-3 py-2 border rounded hover:bg-gray-50 ${!hasPrev ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={hasPrev ? buttonBaseStyle : disabledButtonStyle}
                 onClick={() => hasPrev && handlePageChange(currentPage - 1)}
                 disabled={!hasPrev || context === 'editor'}
+                onMouseEnter={(e) => hasPrev && (e.target.style.backgroundColor = buttonHoverBgColor)}
+                onMouseLeave={(e) => hasPrev && (e.target.style.backgroundColor = buttonBgColor)}
               >
                 Previous
               </button>
-              <span className="px-3 py-2">{currentPage} of {totalPages}</span>
+              <span style={textStyle}>{currentPage} of {totalPages}</span>
               <button
-                className={`px-3 py-2 border rounded hover:bg-gray-50 ${!hasNext ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={hasNext ? buttonBaseStyle : disabledButtonStyle}
                 onClick={() => hasNext && handlePageChange(currentPage + 1)}
                 disabled={!hasNext || context === 'editor'}
+                onMouseEnter={(e) => hasNext && (e.target.style.backgroundColor = buttonHoverBgColor)}
+                onMouseLeave={(e) => hasNext && (e.target.style.backgroundColor = buttonBgColor)}
               >
                 Next
               </button>
