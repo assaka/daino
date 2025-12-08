@@ -335,43 +335,59 @@ const PaginationComponent = createSlotComponent({
       {{/if}}
     `;
 
-    const html = processVariables(template, variableContext);
+    let html;
+    try {
+      html = processVariables(template, variableContext);
+      console.log('[PaginationComponent] processVariables completed, html length:', html?.length);
+    } catch (error) {
+      console.error('[PaginationComponent] Error in processVariables:', error);
+      html = '<div>Error rendering pagination</div>';
+    }
 
     // Attach event listeners in storefront
     useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
+      try {
+        if (!containerRef.current || context === 'editor') return;
 
-      const handleClick = (e) => {
-        const button = e.target.closest('[data-action="go-to-page"]');
-        if (!button || !categoryContext?.handlePageChange) return;
+        const handleClick = (e) => {
+          const button = e.target.closest('[data-action="go-to-page"]');
+          if (!button || !categoryContext?.handlePageChange) return;
 
-        const page = button.getAttribute('data-page');
-        if (page === 'prev' || page === 'next') {
-          // Handle prev/next
-          const currentPage = categoryContext.currentPage || 1;
-          const newPage = page === 'prev' ? currentPage - 1 : currentPage + 1;
-          categoryContext.handlePageChange(newPage);
-        } else {
-          // Handle specific page number
-          const pageNum = parseInt(page, 10);
-          if (!isNaN(pageNum)) {
-            categoryContext.handlePageChange(pageNum);
+          const page = button.getAttribute('data-page');
+          if (page === 'prev' || page === 'next') {
+            // Handle prev/next
+            const currentPage = categoryContext.currentPage || 1;
+            const newPage = page === 'prev' ? currentPage - 1 : currentPage + 1;
+            categoryContext.handlePageChange(newPage);
+          } else {
+            // Handle specific page number
+            const pageNum = parseInt(page, 10);
+            if (!isNaN(pageNum)) {
+              categoryContext.handlePageChange(pageNum);
+            }
           }
-        }
-      };
+        };
 
-      containerRef.current.addEventListener('click', handleClick);
-      return () => {
-        if (containerRef.current) {
-          containerRef.current.removeEventListener('click', handleClick);
-        }
-      };
+        containerRef.current.addEventListener('click', handleClick);
+        return () => {
+          if (containerRef.current) {
+            containerRef.current.removeEventListener('click', handleClick);
+          }
+        };
+      } catch (error) {
+        console.error('[PaginationComponent] Error in useEffect:', error);
+      }
     }, [categoryContext, context]);
 
-    return (
-      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}
-           dangerouslySetInnerHTML={{ __html: html }} />
-    );
+    try {
+      return (
+        <div ref={containerRef} className={className || slot?.className} style={styles || slot?.styles}
+             dangerouslySetInnerHTML={{ __html: html }} />
+      );
+    } catch (error) {
+      console.error('[PaginationComponent] Error in render return:', error);
+      return <div>Pagination error</div>;
+    }
   }
 });
 
