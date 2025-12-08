@@ -329,10 +329,8 @@ const UnifiedSlotsEditor = ({
     }
   );
 
-  // Use generic view mode adjustments if provided
-  if (viewModeAdjustments) {
-    useViewModeAdjustments(layoutConfig, setLayoutConfig, viewMode, viewModeAdjustments);
-  }
+  // Use generic view mode adjustments (always call hook, pass null if not provided)
+  useViewModeAdjustments(layoutConfig, setLayoutConfig, viewMode, viewModeAdjustments || null);
 
   // Clear selection handler
   const handleClearSelection = useCallback(() => {
@@ -467,8 +465,9 @@ const UnifiedSlotsEditor = ({
                     categoryData={pageType === 'category' ? pageContext : null}
                     cartData={pageType === 'cart' ? pageContext : null}
                     headerContext={pageType === 'header' ? pageContext : null}
-                    // Pass preprocessedData for category pages - same as storefront
-                    preprocessedData={pageType === 'category' && pageContext ? pageContext : null}
+                    loginData={pageType === 'login' ? pageContext : null}
+                    // Pass preprocessedData for all page types - same as storefront
+                    preprocessedData={pageContext || null}
                     slotConfig={config}
                     mode={showPreview ? 'view' : mode}
                     showBorders={showPreview ? false : showSlotBorders}
