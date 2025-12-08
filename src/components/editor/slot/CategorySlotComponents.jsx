@@ -299,9 +299,18 @@ const SortSelector = createSlotComponent({
 const PaginationComponent = createSlotComponent({
   name: 'PaginationComponent',
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+    // Debug logging to trace pagination data
+    console.log('[PaginationComponent] Received data:', {
+      context,
+      variableContextPagination: variableContext?.pagination,
+      categoryContextPagination: categoryContext?.pagination,
+      categoryContextTotalPages: categoryContext?.totalPages,
+      variableContextTotalPages: variableContext?.totalPages,
+    });
+
     // Don't render pagination if there's only 1 page or no pages
-    const totalPages = variableContext?.pagination?.totalPages || categoryContext?.totalPages || 0;
-    const currentPage = variableContext?.pagination?.currentPage || categoryContext?.currentPage || 1;
+    const totalPages = variableContext?.pagination?.totalPages || categoryContext?.pagination?.totalPages || categoryContext?.totalPages || 0;
+    const currentPage = variableContext?.pagination?.currentPage || categoryContext?.pagination?.currentPage || categoryContext?.currentPage || 1;
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < totalPages;
 
