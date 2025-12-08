@@ -72,6 +72,9 @@ import slotConfigurationService from '@/services/slotConfigurationService';
  * @param {Function} config.customSlotRenderer - Custom slot rendering logic
  * @param {Array} config.cmsBlockPositions - CMS block positions for the page
  */
+// Feature flag: Set to true to use new EditOverlay system instead of GridColumn wrapper
+const USE_EDIT_OVERLAY = true;
+
 const UnifiedSlotsEditor = ({
   config,
   mode = 'edit',
@@ -481,6 +484,7 @@ const UnifiedSlotsEditor = ({
                     selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
                     setPageConfig={setLayoutConfig}
                     saveConfiguration={saveConfiguration}
+                    useOverlay={USE_EDIT_OVERLAY}
                   />
                 ) : (
                   <div className="col-span-12 text-center py-12 text-gray-500">
