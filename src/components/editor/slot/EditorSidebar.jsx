@@ -1577,8 +1577,34 @@ const EditorSidebar = ({
     </div>
   );
 
-  // Check if slot has a specialized sidebar configured
-  const specializedSidebarName = slotConfig?.metadata?.editorSidebar;
+  // Check if slot or any parent has a specialized sidebar configured
+  // This allows child slots (like filter_option_styles) to use parent's sidebar (LayeredNavigationSidebar)
+  const findSpecializedSidebar = useCallback(() => {
+    // First check the current slot
+    if (slotConfig?.metadata?.editorSidebar) {
+      return {
+        sidebarName: slotConfig.metadata.editorSidebar,
+        parentSlotId: slotId
+      };
+    }
+
+    // Then traverse up the parent chain
+    let currentParentId = slotConfig?.parentId;
+    while (currentParentId && allSlots[currentParentId]) {
+      const parentSlot = allSlots[currentParentId];
+      if (parentSlot?.metadata?.editorSidebar) {
+        return {
+          sidebarName: parentSlot.metadata.editorSidebar,
+          parentSlotId: currentParentId
+        };
+      }
+      currentParentId = parentSlot?.parentId;
+    }
+
+    return { sidebarName: null, parentSlotId: null };
+  }, [slotConfig, slotId, allSlots]);
+
+  const { sidebarName: specializedSidebarName, parentSlotId: sidebarParentSlotId } = findSpecializedSidebar();
   const [SpecializedSidebar, setSpecializedSidebar] = useState(null);
 
   // Dynamically load the specialized sidebar component
@@ -1614,10 +1640,14 @@ const EditorSidebar = ({
     }
 
     // Render the loaded specialized sidebar
+    // Use parent slot config if the sidebar was found via parent traversal
+    const sidebarSlotId = sidebarParentSlotId || slotId;
+    const sidebarSlotConfig = sidebarParentSlotId ? allSlots[sidebarParentSlotId] : slotConfig;
+
     return (
       <SpecializedSidebar
-        slotId={slotId}
-        slotConfig={slotConfig}
+        slotId={sidebarSlotId}
+        slotConfig={sidebarSlotConfig}
         allSlots={allSlots}
         onClassChange={onClassChange}
         onTextChange={onTextChange}
