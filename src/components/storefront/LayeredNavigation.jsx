@@ -52,6 +52,9 @@ export default function LayeredNavigation({
     products,
     attributes,
     onFilterChange,
+    onClearFilters,
+    selectedFilters: externalSelectedFilters,
+    activeFilters: externalActiveFilters,
     showActiveFilters = true,
     slotConfig = {},
     settings = {},
@@ -60,7 +63,17 @@ export default function LayeredNavigation({
     onElementClick = () => {}
 }) {
     const { t } = useTranslation();
-    const [selectedFilters, setSelectedFilters] = useState({});
+    // Use external selectedFilters if provided (controlled mode), otherwise use internal state
+    const [internalSelectedFilters, setInternalSelectedFilters] = useState({});
+    const selectedFilters = externalSelectedFilters !== undefined ? externalSelectedFilters : internalSelectedFilters;
+    const setSelectedFilters = externalSelectedFilters !== undefined
+        ? (newFilters) => {
+            // In controlled mode, call onFilterChange directly
+            const filters = typeof newFilters === 'function' ? newFilters(selectedFilters) : newFilters;
+            onFilterChange(filters);
+          }
+        : setInternalSelectedFilters;
+
     const [priceRange, setPriceRange] = useState([0, 1000]);
     const [expandedAttributes, setExpandedAttributes] = useState({});
     const [isFilterVisible, setIsFilterVisible] = useState(false);

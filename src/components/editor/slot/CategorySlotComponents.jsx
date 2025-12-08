@@ -159,16 +159,31 @@ const LayeredNavigation = createSlotComponent({
     const products = categoryContext?.products || variableContext?.products || [];
     const filterableAttributes = categoryContext?.filterableAttributes || variableContext?.filterableAttributes || [];
     const settings = categoryContext?.settings || variableContext?.settings || {};
+    const selectedFilters = categoryContext?.selectedFilters || {};
+    const activeFiltersArray = categoryContext?.activeFilters || [];
 
     // In editor mode, we disable filter interactions but show the real UI
     const isEditMode = context === 'editor';
+
+    // Use actual handleFilterChange for storefront, no-op for editor
+    const handleFilterChange = isEditMode
+      ? () => {}
+      : (categoryContext?.handleFilterChange || (() => {}));
+
+    // Clear filters handler
+    const handleClearFilters = isEditMode
+      ? () => {}
+      : (categoryContext?.clearFilters || (() => {}));
 
     return (
       <div className={className || slot?.className} style={styles || slot?.styles}>
         <StorefrontLayeredNavigation
           products={products}
           attributes={filterableAttributes}
-          onFilterChange={() => {}} // No-op in editor
+          onFilterChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
+          selectedFilters={selectedFilters}
+          activeFilters={activeFiltersArray}
           showActiveFilters={true}
           slotConfig={slot || {}}
           settings={settings}
