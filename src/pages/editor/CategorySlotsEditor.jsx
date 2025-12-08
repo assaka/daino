@@ -191,8 +191,23 @@ const categoryCustomSlotRenderer = (slot, context) => {
       );
     }
 
-    // PaginationComponent
+    // PaginationComponent - use component registry for consistent styling with storefront
     if (componentName === 'PaginationComponent') {
+      if (ComponentRegistry.has('PaginationComponent')) {
+        const registeredComponent = ComponentRegistry.get('PaginationComponent');
+        return registeredComponent.render({
+          slot,
+          categoryContext: sampleCategoryContext,
+          variableContext: {
+            pagination: sampleCategoryContext.pagination,
+            settings: sampleCategoryContext.settings
+          },
+          context: 'editor',
+          className: slot.className,
+          styles: slot.styles
+        });
+      }
+      // Fallback if registry not available
       return (
         <div className={slot.className} style={slot.styles}>
           <div className="flex justify-center mt-8">
@@ -243,6 +258,22 @@ const categoryCustomSlotRenderer = (slot, context) => {
   }
 
   if (slot.type === 'pagination') {
+    // Use PaginationComponent from registry for consistent styling
+    if (ComponentRegistry.has('PaginationComponent')) {
+      const registeredComponent = ComponentRegistry.get('PaginationComponent');
+      return registeredComponent.render({
+        slot,
+        categoryContext: sampleCategoryContext,
+        variableContext: {
+          pagination: sampleCategoryContext.pagination,
+          settings: sampleCategoryContext.settings
+        },
+        context: 'editor',
+        className: slot.className,
+        styles: slot.styles
+      });
+    }
+    // Fallback
     return (
       <div className={slot.className} style={slot.styles}>
         <div className="flex items-center justify-center space-x-2">
@@ -583,17 +614,17 @@ const CategorySlotsEditor = ({
         filterableAttributes: filterableAttributes,
         pagination: {
           start: 1,
-          end: products.length,
+          end: Math.min(12, products.length),
           total: products.length,
-          currentPage: 1,
-          totalPages: 1,
+          currentPage: 2,
+          totalPages: Math.max(5, Math.ceil(products.length / 12)), // Show at least 5 pages for preview
           perPage: 12,
-          hasPrev: false,
-          hasNext: false
+          hasPrev: true,
+          hasNext: true
         },
         sortOption: 'default',
-        currentPage: 1,
-        totalPages: 1,
+        currentPage: 2,
+        totalPages: Math.max(5, Math.ceil(products.length / 12)),
         subcategories: realCategoryData.subcategories || [],
         breadcrumbs: [
           { name: 'Home', url: '/' },
