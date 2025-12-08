@@ -250,9 +250,14 @@ const PaginationComponent = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
 
+    // Debug logging
+    console.log('[PaginationComponent] variableContext.pagination:', variableContext?.pagination);
+    console.log('[PaginationComponent] categoryContext.totalPages:', categoryContext?.totalPages);
+
     // Don't render pagination if there's only 1 page or no pages
     const totalPages = variableContext?.pagination?.totalPages || 0;
     if (totalPages <= 1 && context !== 'editor') {
+      console.log('[PaginationComponent] Not rendering - totalPages:', totalPages);
       return null;
     }
 
