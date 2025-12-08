@@ -156,8 +156,8 @@ function preprocessCategoryData(rawData, baseContext, options) {
     ? formatProducts(allProducts, { store, settings, currentLanguage, translations, productLabels, getProductImageUrl })
     : formattedProducts;
 
-  // Format filters data
-  const formattedFilters = formatFiltersData(filters, filterableAttributes, currentLanguage);
+  // Format filters data - pass allProducts and selectedFilters for option formatting
+  const formattedFilters = formatFiltersData(filters, filterableAttributes, currentLanguage, formattedAllProducts, selectedFilters);
 
   // Format category with translation
   const formattedCategory = category ? {
@@ -273,8 +273,14 @@ function formatProducts(products, context) {
 /**
  * Format filters data for LayeredNavigation
  * Extracted from CategorySlotRenderer lines 291-461
+ *
+ * @param {Object} filters - Filters object from Category.jsx buildFilters()
+ * @param {Array} filterableAttributes - Filterable attributes from API
+ * @param {string} currentLanguage - Current language code
+ * @param {Array} allProducts - All products for counting (optional)
+ * @param {Object} selectedFilters - Currently selected filters (optional)
  */
-function formatFiltersData(filters, filterableAttributes, currentLanguage) {
+function formatFiltersData(filters, filterableAttributes, currentLanguage, allProducts = [], selectedFilters = {}) {
   const filtersData = filters || {};
 
   // Format price filter
@@ -284,6 +290,8 @@ function formatFiltersData(filters, filterableAttributes, currentLanguage) {
       priceFilter = {
         min: filtersData.price.min,
         max: filtersData.price.max,
+        currentMin: filtersData.price.min,
+        currentMax: filtersData.price.max,
         type: 'slider'
       };
     } else if (Array.isArray(filtersData.price)) {
@@ -307,30 +315,73 @@ function formatFiltersData(filters, filterableAttributes, currentLanguage) {
     }
   }
 
-  // Format attribute filters
+  // Format attribute filters with properly formatted options
   const attributeFilters = (filterableAttributes || []).map(attr => {
     const attrCode = attr.code || attr.name;
     const filterData = filtersData[attrCode];
     const filterType = attr.filter_type || 'multiselect';
 
-    // Get translated attribute label
-    const attributeLabel = attr.translations?.[currentLanguage]?.label ||
+    // Get translated attribute label - use pre-translated label from backend first
+    const attributeLabel = attr.label ||
+      attr.translations?.[currentLanguage]?.label ||
       attr.translations?.en?.label ||
       attr.name || attr.code || attrCode;
 
-    let options = [];
+    // Get value codes from filterData.options
+    let valueCodes = [];
     if (filterData && typeof filterData === 'object' && filterData.options) {
-      options = filterData.options;
+      valueCodes = filterData.options;
     }
+
+    // Get attribute values with translations from attr.values (from publicAttributes API)
+    const attributeValues = attr.values || [];
+
+    // Format options with value, label, count, active, attributeCode, filter_type
+    const formattedOptions = valueCodes
+      .map(valueCode => {
+        // Ensure valueCode is a string
+        const valueCodeStr = String(valueCode);
+
+        // Find the AttributeValue record for this code
+        const attrValue = attributeValues.find(av => av.code === valueCodeStr);
+
+        // Count products that have this attribute value
+        const productCount = allProducts.filter(p => {
+          const productAttributes = p.attributes || [];
+          if (!Array.isArray(productAttributes)) return false;
+
+          const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+          // Use rawValue (code) if available, otherwise fall back to value (translated label)
+          const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
+          return matchingAttr && productValue === valueCodeStr;
+        }).length;
+
+        // Check if this filter value is currently selected
+        const isActive = selectedFilters[attrCode]?.includes(valueCodeStr) || false;
+
+        // Get translated label - use pre-translated value from backend
+        const valueLabel = attrValue?.value || valueCodeStr;
+
+        return {
+          value: valueCodeStr,
+          label: valueLabel,
+          count: productCount,
+          active: isActive,
+          attributeCode: attrCode,
+          sort_order: attrValue?.sort_order || 999,
+          filter_type: filterType
+        };
+      })
+      .filter(opt => opt.count > 0) // Only include options with products
+      .sort((a, b) => a.sort_order - b.sort_order);
 
     return {
       code: attrCode,
       label: attributeLabel,
-      type: filterType,
-      options,
-      filterData,
+      filter_type: filterType,
+      options: formattedOptions,
     };
-  });
+  }).filter(attr => attr && attr.options && attr.options.length > 0);
 
   return {
     price: priceFilter,

@@ -427,13 +427,7 @@ export default function Category() {
 
     // Use filterableAttributes from database (where is_filterable = true)
     if (!filterableAttributes || filterableAttributes.length === 0) {
-      console.log('[Category] buildFilters: No filterableAttributes found');
       return filters;
-    }
-
-    console.log('[Category] buildFilters: filterableAttributes count:', filterableAttributes.length, 'products count:', products?.length);
-    if (products?.length > 0) {
-      console.log('[Category] buildFilters: First product attributes:', products[0]?.attributes);
     }
 
     // Process each filterable attribute from database (already filtered by is_filterable = true)
@@ -477,12 +471,8 @@ export default function Category() {
           label: attr.label || attrCode,
           options: Array.from(valueSet)
         };
-        console.log('[Category] buildFilters: Added filter', attrCode, 'with', valueSet.size, 'options');
-      } else {
-        console.log('[Category] buildFilters: No values found for attribute', attrCode);
       }
     });
-    console.log('[Category] buildFilters: Final filters object:', Object.keys(filters));
     return filters;
   };
 

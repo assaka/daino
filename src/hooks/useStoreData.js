@@ -81,14 +81,11 @@ export async function fetchAdditionalStoreData(storeId, language) {
   try {
     const results = await Promise.allSettled(dataPromises);
 
-    const filterableAttrs = results[3].status === 'fulfilled' ? results[3].value : [];
-    console.log('[useStoreData] Filterable attributes fetched:', filterableAttrs?.length, 'First attribute:', filterableAttrs?.[0]?.code);
-
     return {
       taxes: results[0].status === 'fulfilled' ? results[0].value : [],
       productLabels: results[1].status === 'fulfilled' ? results[1].value : [],
       attributes: results[2].status === 'fulfilled' ? results[2].value : [],
-      filterableAttributes: filterableAttrs,
+      filterableAttributes: results[3].status === 'fulfilled' ? results[3].value : [],
       attributeSets: results[4].status === 'fulfilled' ? results[4].value : [],
     };
   } catch (error) {
