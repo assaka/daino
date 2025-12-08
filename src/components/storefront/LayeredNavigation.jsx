@@ -297,8 +297,8 @@ export default function LayeredNavigation({
                             Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
                                 if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
                                     filterValues.forEach(value => {
-                                        // Ensure display value is a string (prevent React error #300)
-                                        const displayValue = typeof value === 'object' ? String(value) : value;
+                                        // Ensure value is a string to prevent React error #300
+                                        const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
                                         activeFilterElements.push(
                                             <span
                                                 key={`mobile-${filterKey}-${displayValue}`}
@@ -412,8 +412,8 @@ export default function LayeredNavigation({
                                 Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
                                     if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
                                         filterValues.forEach(value => {
-                                            // Ensure display value is a string (prevent React error #300)
-                                            const displayValue = typeof value === 'object' ? String(value) : value;
+                                            // Ensure value is a string to prevent React error #300
+                                            const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
                                             activeFilterElements.push(
                                                 <span
                                                     key={`${filterKey}-${displayValue}`}
@@ -583,9 +583,9 @@ export default function LayeredNavigation({
                                         return (
                                             <>
                                                 <div className={hasMoreValues && !isExpanded ? "max-h-48 overflow-hidden" : "max-h-48 overflow-y-auto"}>
-                                                    {visibleValues.map(value => {
-                                        // Ensure display value is a string (prevent React error #300)
-                                        const displayValue = typeof value === 'object' ? String(value) : value;
+                                                    {visibleValues.map(rawValue => {
+                                        // Ensure value is a string to prevent React error #300
+                                        const value = typeof rawValue === 'object' ? JSON.stringify(rawValue) : String(rawValue);
                                         // Count products that have this attribute value
                                         const productCount = products.filter(p => {
                                             const productAttributes = p.attributes;
@@ -598,7 +598,7 @@ export default function LayeredNavigation({
                                                 // Use rawValue (code) if available, otherwise fall back to value (translated label)
                                                 // This matches the logic in Category.jsx buildFilters()
                                                 const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
-                                                return matchingAttr && productValue === String(value);
+                                                return matchingAttr && productValue === String(rawValue);
                                             }
                                             return false;
                                         }).length;
@@ -610,7 +610,7 @@ export default function LayeredNavigation({
 
                                         return (
                                             <div
-                                                key={displayValue}
+                                                key={value}
                                                 className="flex items-center justify-between"
                                             >
                                                 <div className="flex items-center space-x-2">
@@ -626,7 +626,7 @@ export default function LayeredNavigation({
                                                                     type="radio"
                                                                     id={`attr-${code}-${value}`}
                                                                     name={`attr-${code}`}
-                                                                    checked={selectedFilters[code]?.includes(value) || false}
+                                                                    checked={selectedFilters[code]?.includes(rawValue) || false}
                                                                     onChange={() => {}}
                                                                     disabled={true}
                                                                     className="pointer-events-none h-4 w-4"
@@ -637,7 +637,7 @@ export default function LayeredNavigation({
                                                             ) : (
                                                                 <Checkbox
                                                                     id={`attr-${code}-${value}`}
-                                                                    checked={selectedFilters[code]?.includes(value) || false}
+                                                                    checked={selectedFilters[code]?.includes(rawValue) || false}
                                                                     onCheckedChange={() => {}}
                                                                     disabled={true}
                                                                     className="pointer-events-none"
@@ -653,8 +653,8 @@ export default function LayeredNavigation({
                                                                 type="radio"
                                                                 id={`attr-${code}-${value}`}
                                                                 name={`attr-${code}`}
-                                                                checked={selectedFilters[code]?.includes(value) || false}
-                                                                onChange={(e) => handleAttributeChange(code, value, e.target.checked, filterType)}
+                                                                checked={selectedFilters[code]?.includes(rawValue) || false}
+                                                                onChange={(e) => handleAttributeChange(code, rawValue, e.target.checked, filterType)}
                                                                 className="h-4 w-4 cursor-pointer"
                                                                 style={{
                                                                     accentColor: checkboxColor
@@ -663,8 +663,8 @@ export default function LayeredNavigation({
                                                         ) : (
                                                             <Checkbox
                                                                 id={`attr-${code}-${value}`}
-                                                                checked={selectedFilters[code]?.includes(value) || false}
-                                                                onCheckedChange={(checked) => handleAttributeChange(code, value, checked, filterType)}
+                                                                checked={selectedFilters[code]?.includes(rawValue) || false}
+                                                                onCheckedChange={(checked) => handleAttributeChange(code, rawValue, checked, filterType)}
                                                                 disabled={false}
                                                                 className=""
                                                                 style={{
@@ -686,7 +686,7 @@ export default function LayeredNavigation({
                                                             e.target.style.color = optionTextColor;
                                                         }}
                                                     >
-                                                        {displayValue}
+                                                        {value}
                                                     </Label>
                                                 </div>
                                                 <span
