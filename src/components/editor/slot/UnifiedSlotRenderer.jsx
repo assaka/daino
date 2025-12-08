@@ -1419,10 +1419,79 @@ export function UnifiedSlotRenderer({
       </div>
     );
 
-    // In editor, add editing functionality as overlay without changing layout
+    // In editor, add editing functionality
     if (context === 'editor') {
 
-      // For normal elements, wrap with editor functionality
+      // NEW: Use EditOverlay if useOverlay flag is set
+      // This provides the same DOM structure as storefront with overlay-based editing
+      if (useOverlay) {
+        // Handle select callback for EditOverlay
+        const handleOverlaySelect = (slotId, slotData) => {
+          if (onElementClick) {
+            // Create a synthetic event-like object for compatibility
+            const syntheticEvent = {
+              target: document.querySelector(`[data-slot-id="${slotId}"]`),
+              stopPropagation: () => {},
+              preventDefault: () => {},
+            };
+            onElementClick(syntheticEvent);
+          }
+        };
+
+        // Handle resize callback for EditOverlay
+        const handleOverlayResize = (slotId, dimension, delta) => {
+          if (!setPageConfig || !saveConfiguration) return;
+
+          setPageConfig(prevConfig => {
+            const updatedSlots = { ...prevConfig?.slots };
+            if (!updatedSlots[slotId]) return prevConfig;
+
+            const currentStyles = updatedSlots[slotId].styles || {};
+            const currentValue = parseInt(currentStyles[dimension === 'width' ? 'width' : 'height']) || 100;
+            const newValue = Math.max(20, currentValue + delta);
+
+            updatedSlots[slotId] = {
+              ...updatedSlots[slotId],
+              styles: {
+                ...currentStyles,
+                [dimension === 'width' ? 'width' : 'height']: `${newValue}px`
+              }
+            };
+
+            const updatedConfig = { ...prevConfig, slots: updatedSlots };
+            setTimeout(() => saveConfiguration(updatedConfig), 500);
+            return updatedConfig;
+          });
+        };
+
+        // Handle drop callback for EditOverlay
+        const handleOverlayDrop = (draggedSlotId, targetSlotId, dropZone, targetSlot) => {
+          if (onSlotDrop) {
+            onSlotDrop(draggedSlotId, targetSlotId, dropZone);
+          }
+        };
+
+        return (
+          <EditOverlay
+            key={`${slot.id}-${viewportMode}`}
+            slotId={slot.id}
+            slot={slot}
+            mode={mode}
+            isSelected={selectedElementId === slot.id}
+            showBorders={showBorders}
+            onSelect={handleOverlaySelect}
+            onDrop={handleOverlayDrop}
+            onResize={handleOverlayResize}
+            onDelete={onSlotDelete ? (slotId) => onSlotDelete(slotId, slot) : null}
+            currentDragInfo={currentDragInfo}
+            setCurrentDragInfo={setCurrentDragInfo}
+          >
+            {layoutWrapper}
+          </EditOverlay>
+        );
+      }
+
+      // DEFAULT: Use traditional GridColumn wrapper
       let colSpanValue = 12;
       let useTailwindClass = false;
 
