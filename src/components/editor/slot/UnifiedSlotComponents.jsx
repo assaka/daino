@@ -41,109 +41,109 @@ import './BreadcrumbsSlotComponent.jsx';
 /**
  * QuantitySelector - Unified quantity selector component
  */
-// const QuantitySelector = createSlotComponent({
-//   name: 'QuantitySelector',
-//   render: ({ slot, productContext, className, styles, context, variableContext }) => {
-//     // CRITICAL: Check hide_quantity_selector setting FIRST (before any other logic)
-//     // Check both productContext and variableContext for settings
-//     // Default to false (show quantity selector) when setting is undefined or not set
-//     const settings = productContext?.settings || variableContext?.settings || {};
-//     const hideQuantitySelector = settings.hide_quantity_selector ?? false;
-//     if (hideQuantitySelector === true) {
-//       return null;
-//     }
-//
-//     const containerRef = React.useRef(null);
-//     const content = slot?.content || '';
-//
-//     // Process variables in content
-//     const processedContent = processVariables(content, variableContext);
-//
-//     React.useEffect(() => {
-//       if (!containerRef.current || context === 'editor') return;
-//
-//       const decreaseBtn = containerRef.current.querySelector('[data-action="decrease"]');
-//       const increaseBtn = containerRef.current.querySelector('[data-action="increase"]');
-//       const quantityInput = containerRef.current.querySelector('[data-quantity-input]');
-//
-//       if (!decreaseBtn || !increaseBtn || !quantityInput) return;
-//
-//       const { quantity, setQuantity } = productContext;
-//
-//       // Set initial value
-//       if (quantityInput && quantity) {
-//         quantityInput.value = quantity;
-//       }
-//
-//       const handleDecrease = (e) => {
-//         e.preventDefault();
-//         if (setQuantity && quantity > 1) {
-//           setQuantity(Math.max(1, quantity - 1));
-//         }
-//       };
-//
-//       const handleIncrease = (e) => {
-//         e.preventDefault();
-//         if (setQuantity) {
-//           setQuantity(quantity + 1);
-//         }
-//       };
-//
-//       const handleInputChange = (e) => {
-//         const val = parseInt(e.target.value, 10);
-//         if (!isNaN(val) && val >= 1 && setQuantity) {
-//           setQuantity(val);
-//         }
-//       };
-//
-//       decreaseBtn.addEventListener('click', handleDecrease);
-//       increaseBtn.addEventListener('click', handleIncrease);
-//       quantityInput.addEventListener('change', handleInputChange);
-//
-//       return () => {
-//         decreaseBtn.removeEventListener('click', handleDecrease);
-//         increaseBtn.removeEventListener('click', handleIncrease);
-//         quantityInput.removeEventListener('change', handleInputChange);
-//       };
-//     }, [productContext, context]);
-//
-//     // Update input value when quantity changes
-//     React.useEffect(() => {
-//       if (!containerRef.current || context === 'editor') return;
-//       const quantityInput = containerRef.current.querySelector('[data-quantity-input]');
-//       if (quantityInput && productContext?.quantity) {
-//         quantityInput.value = productContext.quantity;
-//       }
-//     }, [productContext?.quantity, context]);
-//
-//     if (context === 'editor') {
-//       // Editor version - visual preview only
-//       return (
-//         <div
-//           ref={containerRef}
-//           className={className}
-//           style={styles}
-//           dangerouslySetInnerHTML={{ __html: processedContent }}
-//         />
-//       );
-//     }
-//
-//     // Storefront version - full functionality
-//     return (
-//       <div
-//         ref={containerRef}
-//         className={className}
-//         style={styles}
-//         dangerouslySetInnerHTML={{ __html: processedContent }}
-//       />
-//     );
-//   },
-//
-//   metadata: {
-//     displayName: 'Quantity Selector',
-//     category: 'Product'
-//   }
-// });
+const QuantitySelector = createSlotComponent({
+  name: 'QuantitySelector',
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
+    // CRITICAL: Check hide_quantity_selector setting FIRST (before any other logic)
+    // Check both productContext and variableContext for settings
+    // Default to false (show quantity selector) when setting is undefined or not set
+    const settings = productContext?.settings || variableContext?.settings || {};
+    const hideQuantitySelector = settings.hide_quantity_selector ?? false;
+    if (hideQuantitySelector === true) {
+      return null;
+    }
+
+    const containerRef = React.useRef(null);
+    const content = slot?.content || '';
+
+    // Process variables in content
+    const processedContent = processVariables(content, variableContext);
+
+    React.useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const decreaseBtn = containerRef.current.querySelector('[data-action="decrease"]');
+      const increaseBtn = containerRef.current.querySelector('[data-action="increase"]');
+      const quantityInput = containerRef.current.querySelector('[data-quantity-input]');
+
+      if (!decreaseBtn || !increaseBtn || !quantityInput) return;
+
+      const { quantity, setQuantity } = productContext;
+
+      // Set initial value
+      if (quantityInput && quantity) {
+        quantityInput.value = quantity;
+      }
+
+      const handleDecrease = (e) => {
+        e.preventDefault();
+        if (setQuantity && quantity > 1) {
+          setQuantity(Math.max(1, quantity - 1));
+        }
+      };
+
+      const handleIncrease = (e) => {
+        e.preventDefault();
+        if (setQuantity) {
+          setQuantity(quantity + 1);
+        }
+      };
+
+      const handleInputChange = (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1 && setQuantity) {
+          setQuantity(val);
+        }
+      };
+
+      decreaseBtn.addEventListener('click', handleDecrease);
+      increaseBtn.addEventListener('click', handleIncrease);
+      quantityInput.addEventListener('change', handleInputChange);
+
+      return () => {
+        decreaseBtn.removeEventListener('click', handleDecrease);
+        increaseBtn.removeEventListener('click', handleIncrease);
+        quantityInput.removeEventListener('change', handleInputChange);
+      };
+    }, [productContext, context]);
+
+    // Update input value when quantity changes
+    React.useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+      const quantityInput = containerRef.current.querySelector('[data-quantity-input]');
+      if (quantityInput && productContext?.quantity) {
+        quantityInput.value = productContext.quantity;
+      }
+    }, [productContext?.quantity, context]);
+
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div
+          ref={containerRef}
+          className={className}
+          style={styles}
+          dangerouslySetInnerHTML={{ __html: processedContent }}
+        />
+      );
+    }
+
+    // Storefront version - full functionality
+    return (
+      <div
+        ref={containerRef}
+        className={className}
+        style={styles}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
+      />
+    );
+  },
+
+  metadata: {
+    displayName: 'Quantity Selector',
+    category: 'Product'
+  }
+});
 //
 // /**
 //  * AddToCartButton - Unified add to cart button component
@@ -912,7 +912,7 @@ const TotalPriceDisplay = createSlotComponent({
 });
 
 // Register all components
-// registerSlotComponent('QuantitySelector', QuantitySelector);
+registerSlotComponent('QuantitySelector', QuantitySelector);
 // registerSlotComponent('AddToCartButton', AddToCartButton);
 
 /**
@@ -1526,56 +1526,56 @@ const StockStatus = createSlotComponent({
 /**
  * BreadcrumbRenderer - Unified breadcrumb component for all page types
  */
-const BreadcrumbRenderer = createSlotComponent({
-  name: 'BreadcrumbRenderer',
-
-  render: ({ slot, productContext, categoryContext, className, styles, context }) => {
-    if (context === 'editor') {
-      // Editor version - visual preview only
-      return (
-        <div className={className} style={styles}>
-          <nav className="flex items-center text-sm text-gray-600">
-            <Home className="w-4 h-4 mr-2" />
-            <span>Home &gt; Category &gt; Product</span>
-          </nav>
-        </div>
-      );
-    }
-
-    // Storefront version - full functionality
-    // Determine context and page type
-    let pageType, pageData, storeCode, categories, settings;
-
-    if (productContext) {
-      pageType = 'product';
-      pageData = productContext.product;
-      storeCode = productContext.store?.slug || productContext.store?.code;
-      categories = productContext.categories;
-      settings = productContext.settings;
-    } else if (categoryContext) {
-      pageType = 'category';
-      pageData = categoryContext.category;
-      storeCode = categoryContext.store?.slug || categoryContext.store?.code;
-      categories = categoryContext.categories;
-      settings = categoryContext.settings;
-    } else {
-      return null;
-    }
-
-    return (
-      <div className={className} style={styles}>
-        <BreadcrumbRendererComponent
-          pageType={pageType}
-          pageData={pageData}
-          storeCode={storeCode}
-          categories={categories}
-          settings={settings}
-          className="text-sm text-gray-600"
-        />
-      </div>
-    );
-  }
-});
+// const BreadcrumbRenderer = createSlotComponent({
+//   name: 'BreadcrumbRenderer',
+//
+//   render: ({ slot, productContext, categoryContext, className, styles, context }) => {
+//     if (context === 'editor') {
+//       // Editor version - visual preview only
+//       return (
+//         <div className={className} style={styles}>
+//           <nav className="flex items-center text-sm text-gray-600">
+//             <Home className="w-4 h-4 mr-2" />
+//             <span>Home &gt; Category &gt; Product</span>
+//           </nav>
+//         </div>
+//       );
+//     }
+//
+//     // Storefront version - full functionality
+//     // Determine context and page type
+//     let pageType, pageData, storeCode, categories, settings;
+//
+//     if (productContext) {
+//       pageType = 'product';
+//       pageData = productContext.product;
+//       storeCode = productContext.store?.slug || productContext.store?.code;
+//       categories = productContext.categories;
+//       settings = productContext.settings;
+//     } else if (categoryContext) {
+//       pageType = 'category';
+//       pageData = categoryContext.category;
+//       storeCode = categoryContext.store?.slug || categoryContext.store?.code;
+//       categories = categoryContext.categories;
+//       settings = categoryContext.settings;
+//     } else {
+//       return null;
+//     }
+//
+//     return (
+//       <div className={className} style={styles}>
+//         <BreadcrumbRendererComponent
+//           pageType={pageType}
+//           pageData={pageData}
+//           storeCode={storeCode}
+//           categories={categories}
+//           settings={settings}
+//           className="text-sm text-gray-600"
+//         />
+//       </div>
+//     );
+//   }
+// });
 
 /**
  * ProductImage - Main product image component
@@ -1820,13 +1820,14 @@ const CmsBlockRenderer = createSlotComponent({
 });
 
 registerSlotComponent('CmsBlockRenderer', CmsBlockRenderer);
-registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
+// registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('StockStatus', StockStatus);
 registerSlotComponent('ProductImage', ProductImage);
 registerSlotComponent('ProductThumbnails', ProductThumbnails);
 registerSlotComponent('ProductGallery', ProductGallery);
 
 export {
+  QuantitySelector,
   ProductBreadcrumbs,
   ProductGallery,
   // ProductInfo removed - not used in product-config.js
