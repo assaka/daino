@@ -1029,15 +1029,6 @@ export function UnifiedSlotRenderer({
       let buttonClassName = processedClassName;
       let buttonStyles = processedStyles;
 
-      // CRITICAL: For Add to Cart button, admin theme settings should ALWAYS take precedence
-      // User explicitly requested: "if we update button from admin then this should be preference"
-      if (isAddToCartButton && variableContext?.settings?.theme?.add_to_cart_button_color) {
-        buttonStyles = {
-          ...buttonStyles,
-          backgroundColor: variableContext.settings.theme.add_to_cart_button_color
-        };
-      }
-
       if (isOutOfStock && slot.metadata?.outOfStockContent) {
         buttonContent = processVariables(slot.metadata.outOfStockContent, variableContext);
       }
