@@ -189,6 +189,7 @@ const NavigationManager = () => {
       const response = await apiClient.get('admin/navigation');
 
       // Flatten the tree into a flat array for editing, preserving parent info
+      // This flattens hierarchically: parent first, then its children, then next parent
       const flattenTree = (items, parent_key = null, result = []) => {
         items.forEach(item => {
           const { children, ...itemWithoutChildren } = item;
@@ -202,6 +203,50 @@ const NavigationManager = () => {
           }
         });
         return result;
+      };
+
+      // Sort items hierarchically: top-level by position, children grouped under parent
+      const sortHierarchically = (items) => {
+        // Separate top-level and children
+        const topLevel = items.filter(item => !item.parent_key);
+        const children = items.filter(item => item.parent_key);
+
+        // Sort top-level by order_position
+        topLevel.sort((a, b) => a.order_position - b.order_position);
+
+        // Group children by parent
+        const childrenByParent = {};
+        children.forEach(child => {
+          if (!childrenByParent[child.parent_key]) {
+            childrenByParent[child.parent_key] = [];
+          }
+          childrenByParent[child.parent_key].push(child);
+        });
+
+        // Sort each group of children
+        Object.values(childrenByParent).forEach(group => {
+          group.sort((a, b) => a.order_position - b.order_position);
+        });
+
+        // Build final sorted array: parent, then its children, then next parent
+        const sorted = [];
+        topLevel.forEach(parent => {
+          sorted.push(parent);
+          if (childrenByParent[parent.key]) {
+            sorted.push(...childrenByParent[parent.key]);
+          }
+        });
+
+        // Add any orphaned children at the end (children without valid parent)
+        children.forEach(child => {
+          if (!topLevel.find(p => p.key === child.parent_key)) {
+            if (!sorted.includes(child)) {
+              sorted.push(child);
+            }
+          }
+        });
+
+        return sorted;
       };
 
       // Handle both hierarchical (from backend) and flat array responses
@@ -221,7 +266,7 @@ const NavigationManager = () => {
         throw new Error('Invalid response format');
       }
 
-      const sortedItems = items.sort((a, b) => a.order_position - b.order_position);
+      const sortedItems = sortHierarchically(items);
       setNavItems(sortedItems);
       setOriginalItems(JSON.parse(JSON.stringify(sortedItems)));
     } catch (error) {
