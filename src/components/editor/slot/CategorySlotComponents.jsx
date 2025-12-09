@@ -698,7 +698,17 @@ const ProductItemsGrid = createSlotComponent({
               });
             }
 
-            const finalStyles = savedSlotConfig ? { ...processedStyles, ...processedSavedStyles } : processedStyles;
+            let finalStyles = savedSlotConfig ? { ...processedStyles, ...processedSavedStyles } : processedStyles;
+
+            // CRITICAL: For Add to Cart button, admin theme settings should ALWAYS take precedence
+            // User explicitly requested: "if we update button from admin then this should be preference"
+            if (slotId === 'product_card_add_to_cart' && variableContext?.settings?.theme?.add_to_cart_button_color) {
+              finalStyles = {
+                ...finalStyles,
+                backgroundColor: variableContext.settings.theme.add_to_cart_button_color
+              };
+            }
+
             const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
             const isEditableButton = slotConfig.type === 'button';
             const isTextSlot = slotConfig.type === 'text';
