@@ -1526,8 +1526,11 @@ export function UnifiedSlotRenderer({
       let colSpanValue = 12;
       let useTailwindClass = false;
 
+      console.log('[UnifiedSlotRenderer] GridColumn for slot:', slot.id, 'colSpan:', slot.colSpan, 'type:', typeof slot.colSpan);
+
       if (typeof slot.colSpan === 'number') {
         colSpanValue = slot.colSpan;
+        console.log('[UnifiedSlotRenderer] Using number colSpan:', colSpanValue);
       } else if (typeof slot.colSpan === 'string') {
         // Direct string colSpan like 'col-span-12 md:col-span-6'
         useTailwindClass = true;
