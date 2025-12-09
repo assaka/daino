@@ -329,7 +329,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
         isHovered || isDragging || parentHovered
           ? 'opacity-100'
-          : 'opacity-0 hover:opacity-90'
+          : 'opacity-40 hover:opacity-100'
       }`}
       draggable={false}
       onPointerDown={handleMouseDown}
@@ -984,14 +984,15 @@ export function GridColumn({
 
       {children}
 
-      {showHorizontalHandle && (isHovered || isResizingSlot) && (
+      {/* Grid column resize handle - always show in edit mode, becomes more visible on hover */}
+      {showHorizontalHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
           direction="horizontal"
-          parentHovered={isHovered}
+          parentHovered={isHovered || isResizingSlot}
           onResizeStart={() => {
             setIsResizingSlot(true);
             onResizeStart?.();
@@ -1003,14 +1004,15 @@ export function GridColumn({
           onHoverChange={setIsOverResizeHandle}
         />
       )}
-      {showVerticalHandle && (isHovered || isResizingSlot) && (
+      {/* Vertical resize handle - always show in edit mode, becomes more visible on hover */}
+      {showVerticalHandle && (
         <GridResizeHandle
           onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
           currentValue={height || 80}
           maxValue={1000}
           minValue={40}
           direction="vertical"
-          parentHovered={isHovered}
+          parentHovered={isHovered || isResizingSlot}
           onResizeStart={() => {
             setIsResizingSlot(true);
             onResizeStart?.();
