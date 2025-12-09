@@ -997,12 +997,8 @@ export default function ThemeLayout() {
                             { pageType: 'cart', slotId: 'view_cart_button' }
                         ]
                     },
-                    {
-                        color: store.settings.theme.checkout_button_color,
-                        slots: [
-                            { pageType: 'cart', slotId: 'checkout_button' }
-                        ]
-                    },
+                    // checkout_button is embedded in order_summary and uses template variable
+                    // {{settings.theme.checkout_button_color}} - no need to PATCH
                     {
                         color: store.settings.theme.place_order_button_color,
                         slots: [

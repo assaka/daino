@@ -278,7 +278,7 @@ const cartConfig = {
       </div>
     </div>
   </div>
-  <button data-action="checkout" class="w-full py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium">
+  <button data-action="checkout" class="w-full py-3 text-white rounded-md hover:brightness-90 transition-colors font-medium" style="background-color: {{settings.theme.checkout_button_color}}">
     {{t "checkout.proceed_to_checkout"}}
   </button>
 </div>`,
