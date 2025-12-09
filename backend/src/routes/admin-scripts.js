@@ -57,11 +57,11 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
     } = req.body;
 
     const stats = {
-      documents: { total: 0, success: 0, failed: 0 },
-      examples: { total: 0, success: 0, failed: 0 },
-      entities: { total: 0, success: 0, failed: 0 },
-      training: { total: 0, success: 0, failed: 0 },
-      markdown: { total: 0, success: 0, failed: 0 }
+      documents: { total: 0, success: 0, failed: 0, errors: [] },
+      examples: { total: 0, success: 0, failed: 0, errors: [] },
+      entities: { total: 0, success: 0, failed: 0, errors: [] },
+      training: { total: 0, success: 0, failed: 0, errors: [] },
+      markdown: { total: 0, success: 0, failed: 0, errors: [] }
     };
 
     console.log('🚀 Starting embedding backfill...');
@@ -87,6 +87,7 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
             console.log(`  [${stats.documents.success}/${docs.length}] Embedded: ${doc.title}`);
           } catch (err) {
             stats.documents.failed++;
+            stats.documents.errors.push({ id: doc.id, title: doc.title, error: err.message });
             console.error(`  FAILED: ${doc.title} - ${err.message}`);
           }
         }
@@ -113,6 +114,7 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
             console.log(`  [${stats.examples.success}/${exampleList.length}] Embedded: ${example.name}`);
           } catch (err) {
             stats.examples.failed++;
+            stats.examples.errors.push({ id: example.id, name: example.name, error: err.message });
             console.error(`  FAILED: ${example.name} - ${err.message}`);
           }
         }
@@ -139,6 +141,7 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
             console.log(`  [${stats.entities.success}/${entityList.length}] Embedded: ${entity.entity_name}`);
           } catch (err) {
             stats.entities.failed++;
+            stats.entities.errors.push({ id: entity.id, name: entity.entity_name, error: err.message });
             console.error(`  FAILED: ${entity.entity_name} - ${err.message}`);
           }
         }
@@ -166,6 +169,7 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
             console.log(`  [${stats.training.success}/${candidates.length}] Embedded: ${preview}`);
           } catch (err) {
             stats.training.failed++;
+            stats.training.errors.push({ id: candidate.id, error: err.message });
             console.error(`  FAILED: ${candidate.id} - ${err.message}`);
           }
         }
@@ -266,11 +270,20 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
     console.log(`Total: ${totalSuccess} succeeded, ${totalFailed} failed`);
     console.log(`Duration: ${(duration / 1000).toFixed(2)}s`);
 
+    // Limit errors to first 5 per category for response size
+    const limitedStats = {
+      documents: { ...stats.documents, errors: stats.documents.errors.slice(0, 5) },
+      examples: { ...stats.examples, errors: stats.examples.errors.slice(0, 5) },
+      entities: { ...stats.entities, errors: stats.entities.errors.slice(0, 5) },
+      training: { ...stats.training, errors: stats.training.errors.slice(0, 5) },
+      markdown: { ...stats.markdown, errors: stats.markdown.errors.slice(0, 5) }
+    };
+
     res.json({
       success: true,
       message: `Backfill complete: ${totalSuccess} succeeded, ${totalFailed} failed`,
       duration: `${(duration / 1000).toFixed(2)}s`,
-      stats
+      stats: limitedStats
     });
 
   } catch (error) {
