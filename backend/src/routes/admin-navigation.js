@@ -184,6 +184,10 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
 /**
  * POST /api/admin/navigation/reorder
  * Update navigation order and visibility
+ *
+ * Order scheme:
+ * - Top-level items: 10, 20, 30, 40... (increment by 10)
+ * - Child items: 1, 2, 3, 4... (increment by 1 within parent)
  */
 router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
@@ -206,23 +210,61 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Update each navigation item
-    for (const item of items) {
+    // Normalize all items first
+    const normalizedItems = items.map(item => ({
+      key: item.key,
+      label: item.label,
+      icon: item.icon,
+      route: item.route,
+      parent_key: item.parent_key ?? item.parentKey ?? null,
+      order_position: item.order_position ?? item.orderPosition ?? item.order ?? 0,
+      is_visible: item.is_visible ?? item.isVisible ?? true
+    }));
+
+    // Separate top-level items and children
+    const topLevelItems = normalizedItems.filter(item => !item.parent_key);
+    const childItems = normalizedItems.filter(item => item.parent_key);
+
+    // Sort top-level items by their current order_position
+    topLevelItems.sort((a, b) => a.order_position - b.order_position);
+
+    // Recalculate top-level order positions: 10, 20, 30...
+    topLevelItems.forEach((item, index) => {
+      item.order_position = (index + 1) * 10;
+    });
+
+    // Group children by parent and recalculate their positions: 1, 2, 3...
+    const childrenByParent = {};
+    childItems.forEach(item => {
+      if (!childrenByParent[item.parent_key]) {
+        childrenByParent[item.parent_key] = [];
+      }
+      childrenByParent[item.parent_key].push(item);
+    });
+
+    // Sort each group by current order and reassign: 1, 2, 3...
+    Object.keys(childrenByParent).forEach(parentKey => {
+      const children = childrenByParent[parentKey];
+      children.sort((a, b) => a.order_position - b.order_position);
+      children.forEach((child, index) => {
+        child.order_position = index + 1;
+      });
+    });
+
+    // Combine all items back together
+    const allItems = [...topLevelItems, ...childItems];
+
+    // Update each navigation item in the database
+    for (const item of allItems) {
       if (!item.key) {
         continue;
       }
-
-      // Normalize item properties (handle both camelCase and snake_case)
-      const orderPosition = item.order_position ?? item.orderPosition ?? item.order ?? 0;
-      const isVisible = item.is_visible ?? item.isVisible ?? true;
-      const parentKey = item.parent_key ?? item.parentKey ?? null;
 
       // Check if this is a plugin item (key starts with 'plugin-')
       const isPluginItem = item.key.startsWith('plugin-');
 
       if (isPluginItem) {
         // For plugin items, INSERT or UPDATE in admin_navigation_registry
-        // Extract plugin ID from key (format: plugin-{pluginId})
         const pluginId = item.key.replace('plugin-', '');
 
         await tenantDb
@@ -232,9 +274,9 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
             label: item.label || 'Plugin Item',
             icon: item.icon || 'Package',
             route: item.route || '/admin',
-            parent_key: parentKey,
-            order_position: orderPosition,
-            is_visible: isVisible,
+            parent_key: item.parent_key,
+            order_position: item.order_position,
+            is_visible: item.is_visible,
             is_core: false,
             plugin_id: pluginId,
             category: 'plugins',
@@ -247,9 +289,9 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
         await tenantDb
           .from('admin_navigation_registry')
           .update({
-            order_position: orderPosition,
-            is_visible: isVisible,
-            parent_key: parentKey,
+            order_position: item.order_position,
+            is_visible: item.is_visible,
+            parent_key: item.parent_key,
             updated_at: new Date().toISOString()
           })
           .eq('key', item.key);
