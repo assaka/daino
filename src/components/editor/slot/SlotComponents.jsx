@@ -99,24 +99,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     e.stopPropagation();
     e.nativeEvent?.stopImmediatePropagation?.();
 
-    console.log('🎯 [GRID RESIZE DEBUG] Mouse down on blue handle', {
-      timestamp: performance.now(),
-      direction,
-      currentValue,
-      clientX: e.clientX,
-      clientY: e.clientY,
-      pointerId: e.pointerId,
-      target: e.target,
-      currentTarget: e.currentTarget
-    });
-
-    // CRITICAL: Capture pointer events to this element
-    // This ensures we receive all pointer events even if cursor moves off handle
-    if (e.currentTarget.setPointerCapture) {
-      e.currentTarget.setPointerCapture(e.pointerId);
-      console.log('🔒 [GRID RESIZE DEBUG] Pointer captured', { pointerId: e.pointerId });
-    }
-
     // CRITICAL: Immediately notify parent that handle is active
     // This prevents GridColumn dragStart from firing
     if (onHoverChange) {
@@ -140,28 +122,24 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
-      console.log('🖱️ [GRID RESIZE DEBUG] MouseMove fired!', {
-        isDragging: isDraggingRef.current,
-        clientX: e.clientX,
-        clientY: e.clientY
-      });
-
-      if (!isDraggingRef.current) {
-        console.log('⚠️ [GRID RESIZE DEBUG] MouseMove - not dragging, returning');
-        return;
-      }
+      if (!isDraggingRef.current) return;
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
 
-      console.log('📏 [GRID RESIZE DEBUG] MouseMove - calculating delta', { deltaX, deltaY });
+      // Update mouse offset for visual handle movement
+      if (isHorizontal) {
+        setMouseOffset(deltaX);
+      } else {
+        setMouseOffset(deltaY);
+      }
 
       // Calculate and apply resize in real-time for visual feedback
       let newValue;
 
       if (direction === 'horizontal') {
-        const sensitivity = 20;
+        const sensitivity = 40; // pixels per column
         const colSpanDelta = Math.round(deltaX / sensitivity);
 
         // Parse the current value (could be number or string)
@@ -178,26 +156,20 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           newValue = newNumericValue;
         }
 
-        // Apply resize immediately for visual feedback (no save yet)
+        // Apply resize immediately for visual feedback
         if (newValue !== lastValueRef.current) {
           lastValueRef.current = newValue;
-          console.log('📊 [GRID RESIZE DEBUG] Live resize update', { newValue, colSpanDelta });
           onResizeRef.current(newValue);
         }
-
-        setMouseOffset(0);
       } else {
         const heightDelta = Math.round(deltaY / 2);
         newValue = Math.max(20, startValue + heightDelta);
 
-        // Apply resize immediately for visual feedback (no save yet)
+        // Apply resize immediately for visual feedback
         if (newValue !== lastValueRef.current) {
           lastValueRef.current = newValue;
-          console.log('📏 [GRID RESIZE DEBUG] Live height update', { newValue, heightDelta });
           onResizeRef.current(newValue);
         }
-
-        setMouseOffset(heightDelta);
       }
     };
 
@@ -206,18 +178,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
 
-      console.log('🏁 [GRID RESIZE DEBUG] Mouse up - calculating final value', {
-        deltaX,
-        deltaY,
-        startValue,
-        direction
-      });
-
       // Calculate final value on release
       let finalValue;
 
       if (direction === 'horizontal') {
-        const sensitivity = 20;
+        const sensitivity = 40; // pixels per column
         const colSpanDelta = Math.round(deltaX / sensitivity);
 
         // Parse the current value (could be number or string)
@@ -233,53 +198,25 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         } else {
           finalValue = newNumericValue;
         }
-
-        console.log('✅ [GRID RESIZE DEBUG] Final colSpan', {
-          colSpanDelta,
-          oldValue: startValue,
-          newValue: finalValue
-        });
       } else {
         const heightDelta = Math.round(deltaY / 2);
         finalValue = Math.max(20, startValue + heightDelta);
-
-        console.log('✅ [GRID RESIZE DEBUG] Final height', {
-          heightDelta,
-          oldValue: startValue,
-          newValue: finalValue
-        });
       }
 
       // Only save if value actually changed
       if (finalValue !== startValue) {
-        console.log('💾 [GRID RESIZE DEBUG] Saving resize', { finalValue });
         onResizeRef.current(finalValue);
-      } else {
-        console.log('⏭️ [GRID RESIZE DEBUG] No change, skipping save');
       }
 
-      // Release pointer capture
-      if (handleElementRef.current && e.pointerId !== undefined) {
-        try {
-          handleElementRef.current.releasePointerCapture(e.pointerId);
-          console.log('🔓 [GRID RESIZE DEBUG] Pointer released', { pointerId: e.pointerId });
-        } catch (err) {
-          console.log('⚠️ [GRID RESIZE DEBUG] Could not release pointer', err);
-        }
-      }
-
-      // Cleanup - remove from capturing element
+      // Cleanup
       setIsDragging(false);
       isDraggingRef.current = false;
       setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
 
-      if (handleElementRef.current) {
-        handleElementRef.current.removeEventListener('pointermove', handleMouseMove);
-        handleElementRef.current.removeEventListener('pointerup', handleMouseUp);
-        handleElementRef.current.removeEventListener('pointercancel', handleMouseUp);
-      }
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
 
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
@@ -287,32 +224,24 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       if (onResizeEndRef.current) {
         onResizeEndRef.current();
       }
-
-      console.log('✅ [GRID RESIZE DEBUG] Resize complete');
     };
 
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // CRITICAL: Attach listeners to the capturing element, not document!
-    // When setPointerCapture is used, events go to the capturing element, not document
-    const handleElement = e.currentTarget;
-    handleElement.addEventListener('pointermove', handleMouseMove);
-    handleElement.addEventListener('pointerup', handleMouseUp);
-    handleElement.addEventListener('pointercancel', handleMouseUp);
-
-    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached to handle element (not document)');
+    // Attach listeners to document for reliable tracking
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   useEffect(() => {
     return () => {
-      // Cleanup on unmount - try to remove from handle element if it exists
-      if (handleElementRef.current && mouseMoveHandlerRef.current) {
-        handleElementRef.current.removeEventListener('pointermove', mouseMoveHandlerRef.current);
+      // Cleanup on unmount - remove document listeners if they exist
+      if (mouseMoveHandlerRef.current) {
+        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
       }
-      if (handleElementRef.current && mouseUpHandlerRef.current) {
-        handleElementRef.current.removeEventListener('pointerup', mouseUpHandlerRef.current);
-        handleElementRef.current.removeEventListener('pointercancel', mouseUpHandlerRef.current);
+      if (mouseUpHandlerRef.current) {
+        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
       }
     };
   }, []);
@@ -334,18 +263,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       draggable={false}
       onPointerDown={handleMouseDown}
       onMouseEnter={() => {
-        console.log('🔵 [GRID RESIZE DEBUG] Handle hover enter', { direction });
         setIsHovered(true);
         onHoverChange?.(true);
       }}
       onMouseLeave={() => {
-        console.log('🔵 [GRID RESIZE DEBUG] Handle hover leave', { direction });
         setIsHovered(false);
         onHoverChange?.(false);
       }}
       onDragStart={(e) => {
         // Prevent any drag operations on the handle itself
-        console.log('🚫 [GRID RESIZE DEBUG] Preventing dragstart on handle');
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
