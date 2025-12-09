@@ -81,6 +81,19 @@ export function EditOverlay({
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
 
+  // Clear drag-over state when global drag ends (handles drop outside valid targets)
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false);
+      setDropZone(null);
+    };
+
+    document.addEventListener('dragend', handleGlobalDragEnd);
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd);
+    };
+  }, []);
+
   // Handle click to select
   const handleClick = useCallback((e) => {
     e.stopPropagation();
