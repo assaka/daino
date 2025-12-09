@@ -94,14 +94,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     onResizeRef.current = onResize;
     onResizeStartRef.current = onResizeStart;
     onResizeEndRef.current = onResizeEnd;
-    console.log('[RESIZE] Refs updated:', {
-      hasOnResize: !!onResize,
-      hasOnResizeStart: !!onResizeStart,
-      hasOnResizeEnd: !!onResizeEnd,
-      direction,
-      isHorizontal
-    });
-  }, [onResize, onResizeStart, onResizeEnd, direction, isHorizontal]);
+  }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
     // CRITICAL: Prevent parent GridColumn drag from starting
@@ -122,13 +115,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
 
-    // Parse the initial value to get numeric colSpan
-    const parsed = parseResponsiveColSpan(currentValue);
-    const numericValue = parsed.responsive || parsed.base;
-    startValueRef.current = numericValue;
-    lastValueRef.current = numericValue;
+    // Store the original value (can be number or string)
+    startValueRef.current = currentValue;
+    lastValueRef.current = currentValue;
 
-    console.log('[RESIZE] Start:', { currentValue, numericValue, direction });
+    console.log('[RESIZE] Start:', { currentValue, direction, isHorizontal });
 
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
@@ -143,69 +134,94 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
+      const startValue = startValueRef.current;
 
-      // Update mouse offset for visual handle movement
-      if (isHorizontal) {
-        setMouseOffset(deltaX);
-      } else {
-        setMouseOffset(deltaY);
-      }
-
-      // Calculate new value
-      let newNumericValue;
+      // Calculate and apply resize in real-time for visual feedback
+      let newValue;
 
       if (direction === 'horizontal') {
-        const sensitivity = 50; // pixels per column
+        const sensitivity = 20; // pixels per column change
         const colSpanDelta = Math.round(deltaX / sensitivity);
-        newNumericValue = Math.max(minValue, Math.min(maxValue, startValueRef.current + colSpanDelta));
+
+        // Parse the current value (could be number or string)
+        const parsed = parseResponsiveColSpan(startValue);
+        const currentNumericValue = parsed.responsive || parsed.base;
+        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
+
+        // Build the new colSpan value
+        if (parsed.responsive) {
+          newValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
+        } else if (typeof startValue === 'string') {
+          newValue = buildResponsiveColSpan(newNumericValue, null);
+        } else {
+          newValue = newNumericValue;
+        }
 
         // Apply resize immediately for visual feedback
-        if (newNumericValue !== lastValueRef.current) {
-          lastValueRef.current = newNumericValue;
-          console.log('[RESIZE] Move:', { deltaX, colSpanDelta, newNumericValue, hasCallback: !!onResizeRef.current });
-          if (onResizeRef.current) {
-            onResizeRef.current(newNumericValue);
-          } else {
-            console.error('[RESIZE] ERROR: onResizeRef.current is null/undefined!');
-          }
+        if (newValue !== lastValueRef.current) {
+          lastValueRef.current = newValue;
+          console.log('[RESIZE] Move:', { deltaX, colSpanDelta, newValue });
+          onResizeRef.current(newValue);
         }
+
+        setMouseOffset(0);
       } else {
         const heightDelta = Math.round(deltaY / 2);
-        newNumericValue = Math.max(minValue, startValueRef.current + heightDelta);
+        newValue = Math.max(minValue, startValue + heightDelta);
 
-        if (newNumericValue !== lastValueRef.current) {
-          lastValueRef.current = newNumericValue;
-          onResizeRef.current(newNumericValue);
+        if (newValue !== lastValueRef.current) {
+          lastValueRef.current = newValue;
+          onResizeRef.current(newValue);
         }
+
+        setMouseOffset(heightDelta);
       }
     };
 
     const handleMouseUp = (e) => {
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
+      const startValue = startValueRef.current;
 
-      // Calculate final value
+      // Calculate final value on release
       let finalValue;
 
       if (direction === 'horizontal') {
-        const sensitivity = 50;
+        const sensitivity = 20;
         const colSpanDelta = Math.round(deltaX / sensitivity);
-        finalValue = Math.max(minValue, Math.min(maxValue, startValueRef.current + colSpanDelta));
+
+        // Parse the current value (could be number or string)
+        const parsed = parseResponsiveColSpan(startValue);
+        const currentNumericValue = parsed.responsive || parsed.base;
+        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
+
+        // Build the new colSpan value
+        if (parsed.responsive) {
+          finalValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
+        } else if (typeof startValue === 'string') {
+          finalValue = buildResponsiveColSpan(newNumericValue, null);
+        } else {
+          finalValue = newNumericValue;
+        }
       } else {
         const heightDelta = Math.round(deltaY / 2);
-        finalValue = Math.max(minValue, startValueRef.current + heightDelta);
+        finalValue = Math.max(minValue, startValue + heightDelta);
       }
 
-      console.log('[RESIZE] End:', { startValue: startValueRef.current, finalValue });
+      console.log('[RESIZE] End:', { startValue, finalValue });
 
-      // Only save if value changed
-      if (finalValue !== startValueRef.current) {
+      // Only save if value actually changed
+      if (finalValue !== startValue) {
         onResizeRef.current(finalValue);
       }
 
       // Release pointer capture
-      if (e.target.hasPointerCapture?.(e.pointerId)) {
-        e.target.releasePointerCapture(e.pointerId);
+      if (handleElementRef.current && e.pointerId !== undefined) {
+        try {
+          handleElementRef.current.releasePointerCapture(e.pointerId);
+        } catch (err) {
+          // Ignore if pointer capture was already released
+        }
       }
 
       // Cleanup
@@ -220,8 +236,12 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         onHoverChange(false);
       }
 
-      document.removeEventListener('pointermove', handleMouseMove);
-      document.removeEventListener('pointerup', handleMouseUp);
+      // Remove listeners from handle element
+      if (handleElementRef.current) {
+        handleElementRef.current.removeEventListener('pointermove', handleMouseMove);
+        handleElementRef.current.removeEventListener('pointerup', handleMouseUp);
+        handleElementRef.current.removeEventListener('pointercancel', handleMouseUp);
+      }
 
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
@@ -234,21 +254,26 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // Attach listeners to document for reliable tracking - use pointer events for consistency
-    document.addEventListener('pointermove', handleMouseMove);
-    document.addEventListener('pointerup', handleMouseUp);
+    // CRITICAL: Attach listeners to the capturing element, not document!
+    // When setPointerCapture is used, events go to the capturing element
+    const handleElement = e.currentTarget;
+    handleElement.addEventListener('pointermove', handleMouseMove);
+    handleElement.addEventListener('pointerup', handleMouseUp);
+    handleElement.addEventListener('pointercancel', handleMouseUp);
 
-    console.log('[RESIZE] Event listeners attached to document');
   };
 
   useEffect(() => {
     return () => {
-      // Cleanup on unmount - remove document listeners if they exist
-      if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('pointermove', mouseMoveHandlerRef.current);
-      }
-      if (mouseUpHandlerRef.current) {
-        document.removeEventListener('pointerup', mouseUpHandlerRef.current);
+      // Cleanup on unmount - remove listeners from handle element if they exist
+      if (handleElementRef.current) {
+        if (mouseMoveHandlerRef.current) {
+          handleElementRef.current.removeEventListener('pointermove', mouseMoveHandlerRef.current);
+        }
+        if (mouseUpHandlerRef.current) {
+          handleElementRef.current.removeEventListener('pointerup', mouseUpHandlerRef.current);
+          handleElementRef.current.removeEventListener('pointercancel', mouseUpHandlerRef.current);
+        }
       }
     };
   }, []);
@@ -920,10 +945,7 @@ export function GridColumn({
       {/* Grid column resize handle - always show in edit mode, becomes more visible on hover */}
       {showHorizontalHandle && (
         <GridResizeHandle
-          onResize={(newColSpan) => {
-            console.log('[GRIDCOLUMN] onResize called:', { slotId, newColSpan, hasOnGridResize: !!onGridResize });
-            onGridResize(slotId, newColSpan);
-          }}
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
@@ -1092,8 +1114,6 @@ export function HierarchicalSlotRenderer({
     let colSpanClass = 'col-span-12'; // default Tailwind class
     let useTailwindClass = false;
 
-    console.log('[renderSlots] Processing slot:', slot.id, 'colSpan value:', slot.colSpan, 'type:', typeof slot.colSpan);
-
     if (typeof slot.colSpan === 'number') {
       // Old format: direct number
       colSpan = slot.colSpan;
@@ -1128,8 +1148,6 @@ export function HierarchicalSlotRenderer({
 
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
-
-    console.log('[renderSlots] Final colSpan for', slot.id, ':', colSpan, 'class:', colSpanClass);
 
     return (
       <GridColumn
