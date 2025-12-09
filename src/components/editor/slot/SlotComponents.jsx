@@ -87,6 +87,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     return `col-span-${baseValue} ${breakpoint}:col-span-${responsiveValue}`;
   };
 
+  // IMPORTANT: Define isHorizontal BEFORE handleMouseDown so it's available in the closure
+  const isHorizontal = direction === 'horizontal';
+
   useEffect(() => {
     onResizeRef.current = onResize;
     onResizeStartRef.current = onResizeStart;
@@ -94,9 +97,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     console.log('[RESIZE] Refs updated:', {
       hasOnResize: !!onResize,
       hasOnResizeStart: !!onResizeStart,
-      hasOnResizeEnd: !!onResizeEnd
+      hasOnResizeEnd: !!onResizeEnd,
+      direction,
+      isHorizontal
     });
-  }, [onResize, onResizeStart, onResizeEnd]);
+  }, [onResize, onResizeStart, onResizeEnd, direction, isHorizontal]);
 
   const handleMouseDown = (e) => {
     // CRITICAL: Prevent parent GridColumn drag from starting
@@ -239,7 +244,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     };
   }, []);
 
-  const isHorizontal = direction === 'horizontal';
+  // isHorizontal is now defined at the top of the component (before handleMouseDown)
   const cursorClass = isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize';
   // Position classes without transform (we'll apply transform inline to combine with mouseOffset)
   const positionClass = isHorizontal
