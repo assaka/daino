@@ -201,7 +201,7 @@ export function HeaderSlotRenderer({
                 <ShoppingBag className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
               )}
               <span className="text-base md:text-xl font-bold text-gray-800 truncate" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
-                {store?.name || 'Daino'}
+                {store?.name || 'DainoStore'}
               </span>
             </Link>
           </div>
