@@ -606,74 +606,52 @@ class AkeneoClient {
     try {
       await this.authenticate();
       await this.getCategories({ limit: 1 });
-      
-      // Test product endpoint with different approaches
+
+      // Test product endpoint based on configured version
+      const primaryEndpoint = this.getProductsEndpoint();
+      const fallbackEndpoint = this.version >= 6 ? '/api/rest/v1/products' : '/api/rest/v1/products-uuid';
+
       try {
-        console.log('🔍 Testing product endpoints...');
-        
-        // Test 1: Simple products-uuid request without parameters
+        console.log(`🔍 Testing product endpoints (Akeneo v${this.version})...`);
+
+        // Test 1: Try version-appropriate endpoint first
         try {
-          console.log('Test 1: Basic products-uuid');
-          await this.makeRequest('GET', '/api/rest/v1/products-uuid');
-          console.log('✅ Basic products-uuid works');
-          return { success: true, message: 'Connection successful (categories and products-uuid)' };
+          console.log(`Test 1: Primary endpoint (${primaryEndpoint})`);
+          await this.makeRequest('GET', primaryEndpoint, null, { limit: 1 });
+          console.log(`✅ Primary endpoint works`);
+          return { success: true, message: `Connection successful (Akeneo v${this.version})` };
         } catch (e1) {
           console.log(`Test 1 failed: ${e1.message}`);
-          console.log('Trying simplified products-uuid request...');
-          
-          // Try even simpler request with manual headers
-          try {
-            const response = await this.axiosInstance.get('/api/rest/v1/products-uuid', {
-              headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-                'Accept': 'application/json'
-              }
-            });
-            console.log('✅ Simplified products-uuid with application/json works');
-            return { success: true, message: 'Connection successful (simplified products-uuid)' };
-          } catch (e1b) {
-            console.log(`Simplified products-uuid also failed: ${e1b.message}`);
-          }
         }
-        
-        // Test 2: Products-uuid with minimal params
+
+        // Test 2: Try fallback endpoint
         try {
-          console.log('Test 2: Products-uuid with limit only');
-          await this.makeRequest('GET', '/api/rest/v1/products-uuid', null, { limit: 1 });
-          console.log('✅ Products-uuid with limit works');
-          return { success: true, message: 'Connection successful (categories and products-uuid with limit)' };
+          console.log(`Test 2: Fallback endpoint (${fallbackEndpoint})`);
+          await this.makeRequest('GET', fallbackEndpoint, null, { limit: 1 });
+          console.log(`✅ Fallback endpoint works - consider updating your Akeneo version setting`);
+          return { success: true, message: `Connection successful. Note: Fallback endpoint worked - you may need to adjust your Akeneo version setting.` };
         } catch (e2) {
           console.log(`Test 2 failed: ${e2.message}`);
         }
-        
-        // Test 3: Old products endpoint
+
+        // Test 3: Check user permissions by trying to get product model
         try {
-          console.log('Test 3: Old products endpoint');
-          await this.makeRequest('GET', '/api/rest/v1/products', null, { limit: 1 });
-          console.log('✅ Old products endpoint works');
-          return { success: true, message: 'Connection successful (categories and old products)' };
-        } catch (e3) {
-          console.log(`Test 3 failed: ${e3.message}`);
-        }
-        
-        // Test 4: Check user permissions by trying to get product model
-        try {
-          console.log('Test 4: Product models endpoint');
+          console.log('Test 3: Product models endpoint');
           await this.makeRequest('GET', '/api/rest/v1/product-models', null, { limit: 1 });
           console.log('✅ Product models endpoint works');
           return { success: true, message: 'Connection successful (categories and product-models)' };
-        } catch (e4) {
-          console.log(`Test 4 failed: ${e4.message}`);
+        } catch (e3) {
+          console.log(`Test 3 failed: ${e3.message}`);
         }
-        
-        // Test 5: Check other endpoints to understand permission scope
+
+        // Test 4: Check other endpoints to understand permission scope
         const permissionTests = [
           { name: 'families', endpoint: '/api/rest/v1/families' },
           { name: 'attributes', endpoint: '/api/rest/v1/attributes' },
           { name: 'channels', endpoint: '/api/rest/v1/channels' },
           { name: 'locales', endpoint: '/api/rest/v1/locales' }
         ];
-        
+
         const workingEndpoints = [];
         for (const test of permissionTests) {
           try {
