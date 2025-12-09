@@ -1296,6 +1296,10 @@ app.use('/api/stores/:store_id/domains', domainsRoutes);
 app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Settings -> Domain
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
+
+// Admin scripts (cron-protected endpoints for running maintenance tasks)
+const adminScriptsRoutes = require('./routes/admin-scripts');
+app.use('/api/admin', adminScriptsRoutes);
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
