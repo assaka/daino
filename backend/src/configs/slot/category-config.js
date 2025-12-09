@@ -328,7 +328,7 @@ const categoryConfig = {
       id: 'product_card_add_to_cart',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors',
+      className: 'w-full mt-3 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors hover:brightness-90',
       parentClassName: '',
       styles: {
         backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
