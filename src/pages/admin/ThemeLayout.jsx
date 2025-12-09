@@ -979,6 +979,55 @@ export default function ThemeLayout() {
                 console.error('Cache clearing failed:', e);
             }
 
+            // CRITICAL: Sync button colors to slot configurations
+            // This ensures Editor and Storefront use the admin-set theme colors
+            try {
+                const buttonColorMappings = [
+                    {
+                        color: store.settings.theme.add_to_cart_button_color,
+                        slots: [
+                            { pageType: 'category', slotId: 'product_card_add_to_cart' },
+                            { pageType: 'product', slotId: 'add_to_cart_button' }
+                        ]
+                    },
+                    {
+                        color: store.settings.theme.view_cart_button_color,
+                        slots: [
+                            { pageType: 'cart', slotId: 'view_cart_button' }
+                        ]
+                    },
+                    {
+                        color: store.settings.theme.checkout_button_color,
+                        slots: [
+                            { pageType: 'cart', slotId: 'checkout_button' }
+                        ]
+                    },
+                    {
+                        color: store.settings.theme.place_order_button_color,
+                        slots: [
+                            { pageType: 'checkout', slotId: 'place_order_button' }
+                        ]
+                    }
+                ];
+
+                for (const mapping of buttonColorMappings) {
+                    if (mapping.color) {
+                        for (const { pageType, slotId } of mapping.slots) {
+                            try {
+                                await api.patch(`/slot-configurations/${store.id}/${pageType}/slot/${slotId}`, {
+                                    styles: { backgroundColor: mapping.color }
+                                });
+                            } catch (slotErr) {
+                                // Slot config might not exist yet, that's okay
+                                console.debug(`Could not update ${pageType}/${slotId}:`, slotErr.message);
+                            }
+                        }
+                    }
+                }
+            } catch (syncErr) {
+                console.warn('Could not sync button colors to slot configs:', syncErr);
+            }
+
             setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
 
             // Reload store data to reflect saved changes

@@ -655,4 +655,148 @@ router.delete('/slot-configurations/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// PATCH a specific slot within a configuration (for admin theme sync)
+// Used by ThemeLayout to sync button colors to slot configurations
+router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType, slotId } = req.params;
+    const { styles, className, content } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'storeId is required' });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Find the published (active) configuration for this page type
+    const { data: existing, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (findError) {
+      throw findError;
+    }
+
+    // Check if this is the right page type
+    if (existing && existing.configuration?.metadata?.pageType !== pageType) {
+      return res.status(404).json({
+        success: false,
+        error: `No active configuration found for page type: ${pageType}`
+      });
+    }
+
+    if (!existing) {
+      // No published configuration exists yet - create one with defaults
+      const defaultConfig = await loadPageConfig(pageType);
+      if (!defaultConfig) {
+        return res.status(404).json({
+          success: false,
+          error: `No default config found for page type: ${pageType}`
+        });
+      }
+
+      // Create new configuration with the slot update
+      const newSlots = { ...defaultConfig.slots };
+      if (newSlots[slotId]) {
+        if (styles) {
+          newSlots[slotId].styles = { ...newSlots[slotId].styles, ...styles };
+        }
+        if (className !== undefined) {
+          newSlots[slotId].className = className;
+        }
+        if (content !== undefined) {
+          newSlots[slotId].content = content;
+        }
+      }
+
+      const newConfiguration = {
+        ...defaultConfig,
+        slots: newSlots,
+        metadata: {
+          ...defaultConfig.metadata,
+          pageType,
+          updatedAt: new Date().toISOString()
+        }
+      };
+
+      const { data: created, error: createError } = await tenantDb
+        .from('slot_configurations')
+        .insert({
+          user_id: req.user.id,
+          store_id: storeId,
+          configuration: newConfiguration,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        throw createError;
+      }
+
+      return res.json({ success: true, data: created, created: true });
+    }
+
+    // Update existing configuration
+    const currentConfig = existing.configuration || {};
+    const currentSlots = currentConfig.slots || {};
+
+    // Update the specific slot
+    if (!currentSlots[slotId]) {
+      // Slot doesn't exist in saved config - load from default and add
+      const defaultConfig = await loadPageConfig(pageType);
+      if (defaultConfig?.slots?.[slotId]) {
+        currentSlots[slotId] = { ...defaultConfig.slots[slotId] };
+      } else {
+        currentSlots[slotId] = { id: slotId };
+      }
+    }
+
+    // Apply updates
+    if (styles) {
+      currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
+    }
+    if (className !== undefined) {
+      currentSlots[slotId].className = className;
+    }
+    if (content !== undefined) {
+      currentSlots[slotId].content = content;
+    }
+
+    const updatedConfiguration = {
+      ...currentConfig,
+      slots: currentSlots,
+      metadata: {
+        ...currentConfig.metadata,
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    const { data: updated, error: updateError } = await tenantDb
+      .from('slot_configurations')
+      .update({
+        configuration: updatedConfiguration,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error patching slot configuration:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
