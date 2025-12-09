@@ -1530,7 +1530,8 @@ export function UnifiedSlotRenderer({
         useTailwindClass = true;
         colSpanValue = 12;
       } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
-        const viewModeValue = slot.colSpan[viewMode];
+        // Try viewMode key first, then 'default', then first available value
+        const viewModeValue = slot.colSpan[viewMode] ?? slot.colSpan['default'] ?? Object.values(slot.colSpan)[0];
         if (typeof viewModeValue === 'number') {
           colSpanValue = viewModeValue;
         } else if (typeof viewModeValue === 'string') {
@@ -1671,13 +1672,14 @@ export function UnifiedSlotRenderer({
             gridColumn = null;
           }
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
-          const viewModeValue = slot.colSpan[viewMode];
+          // Try viewMode key first, then 'default', then first available value
+          const viewModeValue = slot.colSpan[viewMode] ?? slot.colSpan['default'] ?? Object.values(slot.colSpan)[0];
 
           if (typeof viewModeValue === 'number') {
             colSpanClass = `col-span-${viewModeValue}`;
             gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
           } else if (typeof viewModeValue === 'string') {
-            // Transform responsive classes based on viewportMode
+            // Transform responsive classes based on viewportMode (only in editor)
             colSpanClass = transformResponsiveClass(viewModeValue, viewportMode);
             // Extract col-span number for gridColumn
             const colSpanMatch = colSpanClass.match(/col-span-(\d+)/);
