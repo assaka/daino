@@ -770,7 +770,16 @@ export function GridColumn({
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
     zIndex: 2,
     // Add container-specific styles when it's a container type
-    ...(['container', 'grid', 'flex'].includes(slot?.type) ? {
+    // Container types need CSS grid for children to use grid-column
+    ...(['container', 'grid'].includes(slot?.type) ? {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(12, 1fr)',
+      gap: '0.5rem',
+      minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
+    } : {}),
+    // Flex containers should use flexbox
+    ...(slot?.type === 'flex' ? {
+      display: 'flex',
       minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
     } : {}),
     // Only apply layout-related styles to grid wrapper using whitelist approach
@@ -945,10 +954,7 @@ export function GridColumn({
       {/* Grid column resize handle - always show in edit mode, becomes more visible on hover */}
       {showHorizontalHandle && (
         <GridResizeHandle
-          onResize={(newColSpan) => {
-            console.log('[GridColumn] Calling onGridResize:', { slotId, newColSpan });
-            onGridResize(slotId, newColSpan);
-          }}
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
