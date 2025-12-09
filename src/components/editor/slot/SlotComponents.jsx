@@ -107,7 +107,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     // CRITICAL: Prevent parent GridColumn drag from starting
     e.preventDefault();
     e.stopPropagation();
-    e.nativeEvent?.stopImmediatePropagation?.();
+
+    // Capture pointer to ensure we receive all pointer events even if mouse leaves the element
+    e.target.setPointerCapture(e.pointerId);
 
     // CRITICAL: Immediately notify parent that handle is active
     if (onHoverChange) {
@@ -199,6 +201,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       // Only save if value changed
       if (finalValue !== startValueRef.current) {
         onResizeRef.current(finalValue);
+      }
+
+      // Release pointer capture
+      if (e.target.hasPointerCapture?.(e.pointerId)) {
+        e.target.releasePointerCapture(e.pointerId);
       }
 
       // Cleanup
