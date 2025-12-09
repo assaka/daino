@@ -691,7 +691,7 @@ function LayoutInner({ children, currentPageName }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.first_name || user?.full_name || user?.name || user?.email} ({user?.role})
+                    {user?.first_name || user?.full_name || user?.name || user?.email}
                   </p>
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                 </div>

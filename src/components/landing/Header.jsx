@@ -71,12 +71,12 @@ export default function Header() {
                                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                                     >
                                         <UserIcon className="w-4 h-4" />
-                                        <span>{user.first_name || user.name || user.email} ({user.role})</span>
+                                        <span>{user.first_name || user.name || user.email}</span>
                                         <ChevronDown className="w-4 h-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-56">
-                                    <DropdownMenuLabel>{user.first_name || user.name || user.email} ({user.role})</DropdownMenuLabel>
+                                    <DropdownMenuLabel>{user.first_name || user.name || user.email}</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => {
                                         if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {

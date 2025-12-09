@@ -363,7 +363,7 @@ export function HeaderSlotRenderer({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuLabel>
-                    {user.first_name || user.name || user.email} ({user.role})
+                    {user.first_name || user.name || user.email}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {

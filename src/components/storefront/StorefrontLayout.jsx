@@ -533,7 +533,7 @@ export default function StorefrontLayout({ children }) {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="w-48">
                                                     <DropdownMenuLabel>
-                                                        {user.first_name || user.name || user.email} ({user.role})
+                                                        {user.first_name || user.name || user.email}
                                                     </DropdownMenuLabel>
                                                     <DropdownMenuSeparator />
                                                     {user.role === 'customer' ? (
@@ -607,13 +607,13 @@ export default function StorefrontLayout({ children }) {
                                                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                                                         >
                                                             <UserIcon className="w-4 h-4" />
-                                                            <span>{user.first_name || user.name || user.email} ({user.role})</span>
+                                                            <span>{user.first_name || user.name || user.email}</span>
                                                             <ChevronDown className="w-4 h-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="w-56">
                                                         <DropdownMenuLabel>
-                                                            {user.first_name || user.name || user.email} ({user.role})
+                                                            {user.first_name || user.name || user.email}
                                                         </DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
                                                         {user.role === 'customer' ? (
