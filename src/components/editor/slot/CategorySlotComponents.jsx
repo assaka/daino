@@ -538,21 +538,20 @@ const ProductCountInfo = createSlotComponent({
         variableContext?.products?.length ||
         categoryContext?.products?.length || 0;
 
-      if (totalProducts > 0) {
+      if (totalProducts > 0 || context === 'editor') {
+        // In editor mode with no data, use sample count
+        const displayTotal = totalProducts > 0 ? totalProducts : 24;
         const startIndex = ((currentPage - 1) * itemsPerPage) + 1;
-        const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
-        const productWord = totalProducts === 1 ? 'product' : 'products';
+        const endIndex = Math.min(currentPage * itemsPerPage, displayTotal);
+        const productWord = displayTotal === 1 ? 'product' : 'products';
 
-        if (startIndex === 1 && endIndex === totalProducts) {
+        if (startIndex === 1 && endIndex === displayTotal) {
           // Showing all products on one page: "8 products" or "1 product"
-          countText = `${totalProducts} ${productWord}`;
+          countText = `${displayTotal} ${productWord}`;
         } else {
           // Paginated: "12-24 of 24 products"
-          countText = `${startIndex}-${endIndex} of ${totalProducts} ${productWord}`;
+          countText = `${startIndex}-${endIndex} of ${displayTotal} ${productWord}`;
         }
-      } else if (context === 'editor') {
-        // Show sample text in editor mode
-        countText = '24 products';
       } else {
         countText = 'No products found';
       }
