@@ -277,6 +277,50 @@ const NavigationManager = () => {
     }
   };
 
+  // Helper function to recalculate all order positions correctly
+  // Top-level items: 10, 20, 30...
+  // Children: 1, 2, 3... within each parent
+  const recalculateOrderPositions = (items) => {
+    const newItems = [...items];
+
+    // Get top-level items in current order
+    const topLevel = newItems.filter(item => !item.parent_key);
+
+    // Assign top-level positions: 10, 20, 30...
+    topLevel.forEach((item, idx) => {
+      const itemIndex = newItems.findIndex(i => i.key === item.key);
+      if (itemIndex !== -1) {
+        newItems[itemIndex].order_position = (idx + 1) * 10;
+      }
+    });
+
+    // Group children by parent and assign positions: 1, 2, 3...
+    const childrenByParent = {};
+    newItems.forEach(item => {
+      if (item.parent_key) {
+        if (!childrenByParent[item.parent_key]) {
+          childrenByParent[item.parent_key] = [];
+        }
+        childrenByParent[item.parent_key].push(item);
+      }
+    });
+
+    // Sort and assign positions for each parent's children
+    Object.keys(childrenByParent).forEach(parentKey => {
+      const children = childrenByParent[parentKey];
+      // Sort by current order_position to maintain relative order
+      children.sort((a, b) => a.order_position - b.order_position);
+      children.forEach((child, idx) => {
+        const itemIndex = newItems.findIndex(i => i.key === child.key);
+        if (itemIndex !== -1) {
+          newItems[itemIndex].order_position = idx + 1;
+        }
+      });
+    });
+
+    return newItems;
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
@@ -296,7 +340,7 @@ const NavigationManager = () => {
       // vs dropping BETWEEN items (to reorder at same level)
       const dropOnItem = event.collisions?.[0]?.data?.droppableContainer?.id === over.id;
 
-      const newItems = [...items];
+      let newItems = [...items];
       const draggedIndex = newItems.findIndex(item => item.key === active.id);
       const targetIndex = newItems.findIndex(item => item.key === over.id);
 
@@ -306,27 +350,13 @@ const NavigationManager = () => {
           ...draggedItem,
           parent_key: targetItem.key
         };
-
-        // Recalculate order positions for children of new parent
-        const siblings = newItems.filter(item =>
-          item.parent_key === targetItem.key && item.key !== draggedItem.key
-        );
-        const newOrder = siblings.length + 1;
-        newItems[draggedIndex].order_position = newOrder * 10;
-
       } else {
         // Dropping BETWEEN items - reorder at same level
-        const movedItems = arrayMove(newItems, draggedIndex, targetIndex);
-
-        // Update order positions
-        movedItems.forEach((item, idx) => {
-          item.order_position = (idx + 1) * 10;
-        });
-
-        return movedItems;
+        newItems = arrayMove(newItems, draggedIndex, targetIndex);
       }
 
-      return newItems;
+      // Recalculate all positions correctly
+      return recalculateOrderPositions(newItems);
     });
 
     setHasChanges(true);
@@ -352,12 +382,8 @@ const NavigationManager = () => {
     newItems[index] = newItems[index - 1];
     newItems[index - 1] = temp;
 
-    // Update order positions
-    newItems.forEach((item, idx) => {
-      item.order_position = idx + 1;
-    });
-
-    setNavItems(newItems);
+    // Recalculate all positions correctly
+    setNavItems(recalculateOrderPositions(newItems));
     setHasChanges(true);
   };
 
@@ -369,12 +395,8 @@ const NavigationManager = () => {
     newItems[index] = newItems[index + 1];
     newItems[index + 1] = temp;
 
-    // Update order positions
-    newItems.forEach((item, idx) => {
-      item.order_position = idx + 1;
-    });
-
-    setNavItems(newItems);
+    // Recalculate all positions correctly
+    setNavItems(recalculateOrderPositions(newItems));
     setHasChanges(true);
   };
 
@@ -406,43 +428,12 @@ const NavigationManager = () => {
     // Set new parent
     item.parent_key = newParentKey;
 
-    // Calculate new order_position based on hierarchical numbering:
-    // - Top-level items (parent_key = null): 1, 10, 20, 30, 40, 50... (+10 increment)
-    // - Child items: parent_position + 1, parent_position + 2, parent_position + 3... (+1 increment)
+    // Temporarily set a high position so it appears at the end of its new group
+    // The recalculate function will assign the correct position
+    item.order_position = 9999;
 
-    if (newParentKey === null) {
-      // Moving to top level
-      const topLevelItems = newItems.filter(i =>
-        i.parent_key === null && i.key !== item.key
-      );
-
-      if (topLevelItems.length > 0) {
-        const maxTopLevelOrder = Math.max(...topLevelItems.map(i => i.order_position || 0));
-        item.order_position = maxTopLevelOrder + 10;
-      } else {
-        item.order_position = 1;
-      }
-    } else {
-      // Moving to be a child of a parent
-      const parent = newItems.find(i => i.key === newParentKey);
-      const siblings = newItems.filter(i =>
-        i.parent_key === newParentKey && i.key !== item.key
-      );
-
-      if (siblings.length > 0) {
-        // Add after the last sibling (increment by 1)
-        const maxSiblingOrder = Math.max(...siblings.map(s => s.order_position || 0));
-        item.order_position = maxSiblingOrder + 1;
-      } else if (parent) {
-        // First child: parent_position + 1
-        item.order_position = (parent.order_position || 0) + 1;
-      } else {
-        // Fallback
-        item.order_position = 1;
-      }
-    }
-
-    setNavItems(newItems);
+    // Recalculate all positions correctly
+    setNavItems(recalculateOrderPositions(newItems));
     setHasChanges(true);
   };
 
