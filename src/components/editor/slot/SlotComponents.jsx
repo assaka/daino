@@ -945,7 +945,10 @@ export function GridColumn({
       {/* Grid column resize handle - always show in edit mode, becomes more visible on hover */}
       {showHorizontalHandle && (
         <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          onResize={(newColSpan) => {
+            console.log('[GridColumn] Calling onGridResize:', { slotId, newColSpan });
+            onGridResize(slotId, newColSpan);
+          }}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
