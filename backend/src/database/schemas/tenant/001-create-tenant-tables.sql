@@ -1578,10 +1578,10 @@ CREATE TABLE IF NOT EXISTS cookie_consent_settings (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   translations JSONB DEFAULT '{}'::jsonb,
-  accept_button_bg_color VARCHAR(255) DEFAULT '#2563eb'::character varying,
+  accept_button_bg_color VARCHAR(255) DEFAULT '#22c55e'::character varying,
   accept_button_text_color VARCHAR(255) DEFAULT '#ffffff'::character varying,
-  reject_button_bg_color VARCHAR(255) DEFAULT '#ffffff'::character varying,
-  reject_button_text_color VARCHAR(255) DEFAULT '#374151'::character varying,
+  reject_button_bg_color VARCHAR(255) DEFAULT '#f87171'::character varying,
+  reject_button_text_color VARCHAR(255) DEFAULT '#ffffff'::character varying,
   save_preferences_button_bg_color VARCHAR(255) DEFAULT '#16a34a'::character varying,
   save_preferences_button_text_color VARCHAR(255) DEFAULT '#ffffff'::character varying
 );
