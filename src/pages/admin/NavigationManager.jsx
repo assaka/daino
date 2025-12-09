@@ -280,36 +280,44 @@ const NavigationManager = () => {
   // Helper function to recalculate all order positions correctly
   // Top-level items: 10, 20, 30...
   // Children: 1, 2, 3... within each parent
+  // IMPORTANT: Uses array order (not order_position) to determine new positions
   const recalculateOrderPositions = (items) => {
-    const newItems = [...items];
+    const newItems = items.map(item => ({ ...item }));
 
-    // Get top-level items in current order
-    const topLevel = newItems.filter(item => !item.parent_key);
+    // Get top-level items in ARRAY order (the order they appear in the list)
+    const topLevelKeys = [];
+    newItems.forEach(item => {
+      if (!item.parent_key && !topLevelKeys.includes(item.key)) {
+        topLevelKeys.push(item.key);
+      }
+    });
 
-    // Assign top-level positions: 10, 20, 30...
-    topLevel.forEach((item, idx) => {
-      const itemIndex = newItems.findIndex(i => i.key === item.key);
+    // Assign top-level positions: 10, 20, 30... based on array order
+    topLevelKeys.forEach((key, idx) => {
+      const itemIndex = newItems.findIndex(i => i.key === key);
       if (itemIndex !== -1) {
         newItems[itemIndex].order_position = (idx + 1) * 10;
       }
     });
 
-    // Group children by parent and assign positions: 1, 2, 3...
+    // Group children by parent, preserving ARRAY order within each group
     const childrenByParent = {};
     newItems.forEach(item => {
       if (item.parent_key) {
         if (!childrenByParent[item.parent_key]) {
           childrenByParent[item.parent_key] = [];
         }
-        childrenByParent[item.parent_key].push(item);
+        // Only add if not already in the list (preserve first occurrence order)
+        if (!childrenByParent[item.parent_key].find(c => c.key === item.key)) {
+          childrenByParent[item.parent_key].push(item);
+        }
       }
     });
 
-    // Sort and assign positions for each parent's children
+    // Assign positions for each parent's children: 1, 2, 3... based on array order
     Object.keys(childrenByParent).forEach(parentKey => {
       const children = childrenByParent[parentKey];
-      // Sort by current order_position to maintain relative order
-      children.sort((a, b) => a.order_position - b.order_position);
+      // DON'T sort - use the array order as-is
       children.forEach((child, idx) => {
         const itemIndex = newItems.findIndex(i => i.key === child.key);
         if (itemIndex !== -1) {
