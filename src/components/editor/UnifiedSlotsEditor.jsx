@@ -75,7 +75,9 @@ import slotConfigurationService from '@/services/slotConfigurationService';
  * @param {Array} config.cmsBlockPositions - CMS block positions for the page
  */
 // Feature flag: Set to true to use new EditOverlay system instead of GridColumn wrapper
-const USE_EDIT_OVERLAY = true;
+// Use traditional GridColumn wrapper with blue resize handles
+// EditOverlay was experimental but had issues with resize handles visibility
+const USE_EDIT_OVERLAY = false;
 
 const UnifiedSlotsEditor = ({
   config,
