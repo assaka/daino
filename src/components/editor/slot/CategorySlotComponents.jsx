@@ -757,6 +757,8 @@ const ProductItemsGrid = createSlotComponent({
 
             productSlots[slotId] = {
               ...slotConfig,
+              // CRITICAL: Use colSpan from savedSlotConfig (allSlots) if available - this ensures resize updates are applied
+              colSpan: savedSlotConfig?.colSpan ?? slotConfig.colSpan,
               content: processedContent,
               className: finalClassName,
               styles: dynamicStyles,
