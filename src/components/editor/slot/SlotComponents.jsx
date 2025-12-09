@@ -765,8 +765,6 @@ export function GridColumn({
     setDropZone(null);
   }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
 
-  console.log('[GridColumn] Rendering:', { slotId, colSpan, useTailwindClass, slotType: slot?.type });
-
   const gridStyles = {
     ...(useTailwindClass ? {} : { gridColumn: `span ${colSpan}` }),
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
@@ -781,12 +779,13 @@ export function GridColumn({
       Object.entries(slot?.styles || {}).filter(([key]) => {
         // Whitelist of layout-only styles that are safe for grid wrapper
         // Explicitly exclude color/appearance styles so they go to the actual element
+        // NOTE: 'display' is excluded because setting display on a grid item breaks grid-column
         const layoutStyles = [
           'width', 'minWidth', 'maxWidth',
           'height', 'minHeight', 'maxHeight',
           'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
           'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-          'display', 'position', 'top', 'right', 'bottom', 'left',
+          'position', 'top', 'right', 'bottom', 'left',
           'zIndex', 'overflow', 'overflowX', 'overflowY',
           'flexBasis', 'flexGrow', 'flexShrink'
         ];
