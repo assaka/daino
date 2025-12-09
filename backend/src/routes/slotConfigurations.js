@@ -1541,4 +1541,96 @@ router.post('/destroy/:storeId/:pageType?', authMiddleware, async (req, res) => 
   }
 });
 
+// PATCH a specific slot within a published configuration (for admin theme sync)
+// Used by ThemeLayout to sync button colors to slot configurations
+// Route: PATCH /api/slot-configurations/:storeId/:pageType/slot/:slotId
+// Note: This router is mounted at /api AND /api/slot-configurations in server.js
+// Using the /api mount, so full path needs /slot-configurations prefix
+router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType, slotId } = req.params;
+    const { styles, className, content } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'storeId is required' });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Find the published (active) configuration for this page type
+    const { data: configs, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_published', true);
+
+    if (findError) {
+      throw findError;
+    }
+
+    // Find config matching the page type
+    const existing = configs?.find(c => c.configuration?.metadata?.pageType === pageType);
+
+    if (!existing) {
+      // No published configuration exists - that's okay, the default config will be used
+      // which already has the template variable {{settings.theme.add_to_cart_button_color}}
+      return res.json({
+        success: true,
+        message: 'No published configuration found - default config will use theme settings',
+        skipped: true
+      });
+    }
+
+    // Update existing configuration
+    const currentConfig = existing.configuration || {};
+    const currentSlots = currentConfig.slots || {};
+
+    // Update the specific slot
+    if (!currentSlots[slotId]) {
+      // Slot doesn't exist in saved config - create it
+      currentSlots[slotId] = { id: slotId, styles: {} };
+    }
+
+    // Apply updates
+    if (styles) {
+      currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
+    }
+    if (className !== undefined) {
+      currentSlots[slotId].className = className;
+    }
+    if (content !== undefined) {
+      currentSlots[slotId].content = content;
+    }
+
+    const updatedConfiguration = {
+      ...currentConfig,
+      slots: currentSlots,
+      metadata: {
+        ...currentConfig.metadata,
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    const { data: updated, error: updateError } = await tenantDb
+      .from('slot_configurations')
+      .update({
+        configuration: updatedConfiguration,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error patching slot configuration:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
