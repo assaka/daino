@@ -1558,75 +1558,83 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Find the published (active) configuration for this page type
+    // Find ALL configurations for this page type (both published AND draft)
     const { data: configs, error: findError } = await tenantDb
       .from('slot_configurations')
       .select('*')
-      .eq('store_id', storeId)
-      .eq('status', 'published');
+      .eq('store_id', storeId);
 
     if (findError) {
       throw findError;
     }
 
-    // Find config matching the page type
-    const existing = configs?.find(c => c.configuration?.metadata?.pageType === pageType);
+    // Find configs matching the page type (both published and draft)
+    const matchingConfigs = configs?.filter(c => c.configuration?.metadata?.pageType === pageType) || [];
 
-    if (!existing) {
-      // No published configuration exists - that's okay, the default config will be used
+    if (matchingConfigs.length === 0) {
+      // No configuration exists - that's okay, the default config will be used
       // which already has the template variable {{settings.theme.add_to_cart_button_color}}
       return res.json({
         success: true,
-        message: 'No published configuration found - default config will use theme settings',
+        message: 'No configuration found - default config will use theme settings',
         skipped: true
       });
     }
 
-    // Update existing configuration
-    const currentConfig = existing.configuration || {};
-    const currentSlots = currentConfig.slots || {};
+    // Update ALL matching configurations (both published and draft)
+    const updatedConfigs = [];
+    for (const existing of matchingConfigs) {
+      const currentConfig = existing.configuration || {};
+      const currentSlots = currentConfig.slots || {};
 
-    // Update the specific slot
-    if (!currentSlots[slotId]) {
-      // Slot doesn't exist in saved config - create it
-      currentSlots[slotId] = { id: slotId, styles: {} };
-    }
-
-    // Apply updates
-    if (styles) {
-      currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
-    }
-    if (className !== undefined) {
-      currentSlots[slotId].className = className;
-    }
-    if (content !== undefined) {
-      currentSlots[slotId].content = content;
-    }
-
-    const updatedConfiguration = {
-      ...currentConfig,
-      slots: currentSlots,
-      metadata: {
-        ...currentConfig.metadata,
-        updatedAt: new Date().toISOString()
+      // Update the specific slot
+      if (!currentSlots[slotId]) {
+        // Slot doesn't exist in saved config - create it
+        currentSlots[slotId] = { id: slotId, styles: {} };
       }
-    };
 
-    const { data: updated, error: updateError } = await tenantDb
-      .from('slot_configurations')
-      .update({
-        configuration: updatedConfiguration,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existing.id)
-      .select()
-      .single();
+      // Apply updates
+      if (styles) {
+        currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
+      }
+      if (className !== undefined) {
+        currentSlots[slotId].className = className;
+      }
+      if (content !== undefined) {
+        currentSlots[slotId].content = content;
+      }
 
-    if (updateError) {
-      throw updateError;
+      const updatedConfiguration = {
+        ...currentConfig,
+        slots: currentSlots,
+        metadata: {
+          ...currentConfig.metadata,
+          updatedAt: new Date().toISOString()
+        }
+      };
+
+      const { data: updated, error: updateError } = await tenantDb
+        .from('slot_configurations')
+        .update({
+          configuration: updatedConfiguration,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error(`Error updating config ${existing.id}:`, updateError);
+      } else {
+        updatedConfigs.push({ id: existing.id, status: existing.status });
+      }
     }
 
-    res.json({ success: true, data: updated });
+    res.json({
+      success: true,
+      message: `Updated ${updatedConfigs.length} configurations (published and draft)`,
+      updated: updatedConfigs
+    });
   } catch (error) {
     console.error('Error patching slot configuration:', error);
     res.status(500).json({ success: false, error: error.message });
