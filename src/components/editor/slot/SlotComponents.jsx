@@ -1092,6 +1092,8 @@ export function HierarchicalSlotRenderer({
     let colSpanClass = 'col-span-12'; // default Tailwind class
     let useTailwindClass = false;
 
+    console.log('[renderSlots] Processing slot:', slot.id, 'colSpan value:', slot.colSpan, 'type:', typeof slot.colSpan);
+
     if (typeof slot.colSpan === 'number') {
       // Old format: direct number
       colSpan = slot.colSpan;
@@ -1127,6 +1129,7 @@ export function HierarchicalSlotRenderer({
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
+    console.log('[renderSlots] Final colSpan for', slot.id, ':', colSpan, 'class:', colSpanClass);
 
     return (
       <GridColumn
