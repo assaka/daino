@@ -541,7 +541,8 @@ const ProductCountInfo = createSlotComponent({
       if (totalProducts > 0) {
         const startIndex = ((currentPage - 1) * itemsPerPage) + 1;
         const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
-        countText = `Showing ${startIndex}-${endIndex} of ${totalProducts} products`;
+        const productWord = totalProducts === 1 ? 'product' : 'products';
+        countText = `Showing ${startIndex}-${endIndex} of ${totalProducts} ${productWord}`;
       } else if (context === 'editor') {
         // Show sample text in editor mode
         countText = 'Showing 1-12 of 24 products';

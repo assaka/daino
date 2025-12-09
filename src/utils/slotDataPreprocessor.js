@@ -165,12 +165,13 @@ function preprocessCategoryData(rawData, baseContext, options) {
     name: getCategoryName(category, currentLanguage) || category.name,
   } : null;
 
-  // Calculate pagination count text: "Showing X-Y of Z products"
+  // Calculate pagination count text: "Showing X-Y of Z products" (singular/plural)
   const totalProducts = filteredProductsCount || formattedProducts.length;
   const startIndex = totalProducts > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0;
   const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
+  const productWord = totalProducts === 1 ? 'product' : 'products';
   const countText = totalProducts > 0
-    ? `Showing ${startIndex}-${endIndex} of ${totalProducts} products`
+    ? `Showing ${startIndex}-${endIndex} of ${totalProducts} ${productWord}`
     : 'No products found';
 
   return {
