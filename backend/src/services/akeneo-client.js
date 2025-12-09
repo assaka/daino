@@ -357,6 +357,8 @@ class AkeneoClient {
       console.log(`🔍 Fetching ALL products with pagination (Akeneo v${this.version})...`);
       console.log(`📌 Primary endpoint: ${primaryEndpoint}`);
 
+      let primaryError = null;
+
       // Method 1: Try version-appropriate endpoint first
       try {
         console.log(`📦 Method 1: Primary endpoint (${primaryEndpoint}) with pagination`);
@@ -383,7 +385,8 @@ class AkeneoClient {
         return allProducts;
 
       } catch (error1) {
-        console.log(`❌ Method 1 failed: ${error1.message}`);
+        primaryError = error1.message;
+        console.log(`❌ Method 1 (${primaryEndpoint}) failed: ${primaryError}`);
         allProducts.length = 0; // Clear any partial data
       }
 
@@ -413,9 +416,9 @@ class AkeneoClient {
         return allProducts;
 
       } catch (error2) {
-        console.log(`❌ Method 2 failed: ${error2.message}`);
+        console.log(`❌ Method 2 (${fallbackEndpoint}) failed: ${error2.message}`);
         allProducts.length = 0; // Clear any partial data
-        throw new Error(`All product fetch methods failed. Primary: ${primaryEndpoint}, Fallback: ${fallbackEndpoint}. Last error: ${error2.message}`);
+        throw new Error(`All product fetch methods failed. Primary (${primaryEndpoint}): ${primaryError}. Fallback (${fallbackEndpoint}): ${error2.message}`);
       }
 
     } catch (error) {
