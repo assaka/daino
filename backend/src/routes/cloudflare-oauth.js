@@ -246,30 +246,25 @@ router.post('/update-zone', authMiddleware, async (req, res) => {
     }
 
     const IntegrationConfig = require('../models/IntegrationConfig');
-    
-    // Update zone ID in integration config
-    const integrationConfig = await IntegrationConfig.findOne({
-      where: {
-        store_id: store_id,
-        integration_type: 'cloudflare',
-        is_active: true
-      }
-    });
 
-    if (!integrationConfig) {
+    // Get existing config
+    const existingConfig = await IntegrationConfig.findByStoreAndType(store_id, 'cloudflare');
+
+    if (!existingConfig) {
       return res.status(404).json({
         success: false,
         message: 'No Cloudflare integration found for this store'
       });
     }
 
-    integrationConfig.config_data = {
-      ...integrationConfig.config_data,
+    // Update zone ID in integration config
+    const updatedConfigData = {
+      ...existingConfig.config_data,
       zone_id: zone_id,
       updated_at: new Date().toISOString()
     };
-    
-    await integrationConfig.save();
+
+    await IntegrationConfig.createOrUpdate(store_id, 'cloudflare', updatedConfigData);
 
     res.json({
       success: true,

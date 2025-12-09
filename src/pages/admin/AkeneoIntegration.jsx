@@ -207,7 +207,8 @@ const AkeneoIntegration = () => {
   const [selectedFamiliesToImport, setSelectedFamiliesToImport] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingFamilies, setLoadingFamilies] = useState(false);
-  
+  const [validationErrors, setValidationErrors] = useState({});
+
   // Progress tracking for import operations
   const [importProgress, setImportProgress] = useState({
     categories: { current: 0, total: 0, isActive: false },
@@ -1116,6 +1117,14 @@ const AkeneoIntegration = () => {
     setConfigSaved(false); // Reset saved status when config changes
     setConnectionStatus(null); // Reset connection status when config changes
     localStorage.removeItem('akeneo_connection_status'); // Clear saved connection status
+    // Clear validation error for this field when user types
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   const testConnection = async () => {
@@ -1187,14 +1196,58 @@ const AkeneoIntegration = () => {
     }
   };
 
-  const saveConfiguration = async () => {
-    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
-      toast.error('Please fill in all configuration fields');
-      return;
+  const validateConfiguration = () => {
+    const errors = {};
+
+    // Required field validation
+    if (!config.baseUrl?.trim()) {
+      errors.baseUrl = 'Base URL is required';
+    } else {
+      // URL format validation
+      try {
+        const url = new URL(config.baseUrl.trim());
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          errors.baseUrl = 'URL must start with http:// or https://';
+        }
+      } catch {
+        errors.baseUrl = 'Please enter a valid URL (e.g., https://your-akeneo.com)';
+      }
     }
 
-    if (config.clientSecret === '••••••••' || config.password === '••••••••') {
-      toast.error('Please enter your actual Client Secret and Password to save the configuration');
+    if (!config.clientId?.trim()) {
+      errors.clientId = 'Client ID is required';
+    } else if (config.clientId.trim().length < 5) {
+      errors.clientId = 'Client ID seems too short';
+    }
+
+    if (!config.clientSecret?.trim()) {
+      errors.clientSecret = 'Client Secret is required';
+    } else if (config.clientSecret === '••••••••') {
+      errors.clientSecret = 'Please enter your actual Client Secret';
+    }
+
+    if (!config.username?.trim()) {
+      errors.username = 'Username is required';
+    }
+
+    if (!config.password?.trim()) {
+      errors.password = 'Password is required';
+    } else if (config.password === '••••••••') {
+      errors.password = 'Please enter your actual Password';
+    }
+
+    return errors;
+  };
+
+  const saveConfiguration = async () => {
+    // Run validation
+    const errors = validateConfiguration();
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // Show first error as toast
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       return;
     }
 
@@ -1962,57 +2015,77 @@ const AkeneoIntegration = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="baseUrl">Base URL</Label>
+                  <Label htmlFor="baseUrl" className={validationErrors.baseUrl ? 'text-red-500' : ''}>Base URL</Label>
                   <Input
                     id="baseUrl"
                     placeholder="https://your-akeneo.com"
                     value={config.baseUrl}
                     onChange={(e) => handleConfigChange('baseUrl', e.target.value)}
+                    className={validationErrors.baseUrl ? 'border-red-500 focus:ring-red-500' : ''}
                   />
+                  {validationErrors.baseUrl && (
+                    <p className="text-sm text-red-500">{validationErrors.baseUrl}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientId">Client ID</Label>
+                  <Label htmlFor="clientId" className={validationErrors.clientId ? 'text-red-500' : ''}>Client ID</Label>
                   <Input
                     id="clientId"
                     placeholder="Your client ID"
                     value={config.clientId}
                     onChange={(e) => handleConfigChange('clientId', e.target.value)}
+                    className={validationErrors.clientId ? 'border-red-500 focus:ring-red-500' : ''}
                   />
+                  {validationErrors.clientId && (
+                    <p className="text-sm text-red-500">{validationErrors.clientId}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clientSecret">Client Secret</Label>
+                  <Label htmlFor="clientSecret" className={validationErrors.clientSecret ? 'text-red-500' : ''}>Client Secret</Label>
                   <Input
                     id="clientSecret"
                     type="password"
                     placeholder="Your client secret"
                     value={config.clientSecret}
                     onChange={(e) => handleConfigChange('clientSecret', e.target.value)}
+                    className={validationErrors.clientSecret ? 'border-red-500 focus:ring-red-500' : ''}
                   />
+                  {validationErrors.clientSecret && (
+                    <p className="text-sm text-red-500">{validationErrors.clientSecret}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username" className={validationErrors.username ? 'text-red-500' : ''}>Username</Label>
                   <Input
                     id="username"
                     placeholder="API username"
                     value={config.username}
                     onChange={(e) => handleConfigChange('username', e.target.value)}
+                    className={validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}
                   />
+                  {validationErrors.username && (
+                    <p className="text-sm text-red-500">{validationErrors.username}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className={validationErrors.password ? 'text-red-500' : ''}>Password</Label>
                   <Input
                     id="password"
                     type="password"
                     placeholder="API password"
                     value={config.password}
                     onChange={(e) => handleConfigChange('password', e.target.value)}
+                    className={validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}
                   />
+                  {validationErrors.password && (
+                    <p className="text-sm text-red-500">{validationErrors.password}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="locale">Locale</Label>

@@ -255,31 +255,8 @@ class CloudflareOAuthService {
         last_refresh: null
       };
 
-      // Find or create Cloudflare integration config
-      let integrationConfig = await IntegrationConfig.findOne({
-        where: {
-          store_id: storeId,
-          integration_type: 'cloudflare'
-        }
-      });
-
-      if (integrationConfig) {
-        // Update existing config
-        integrationConfig.config_data = {
-          ...integrationConfig.config_data,
-          ...configData
-        };
-        integrationConfig.is_active = true;
-        await integrationConfig.save();
-      } else {
-        // Create new config
-        integrationConfig = await IntegrationConfig.create({
-          store_id: storeId,
-          integration_type: 'cloudflare',
-          config_data: configData,
-          is_active: true
-        });
-      }
+      // Create or update Cloudflare integration config
+      const integrationConfig = await IntegrationConfig.createOrUpdate(storeId, 'cloudflare', configData);
 
       return {
         success: true,
@@ -300,16 +277,10 @@ class CloudflareOAuthService {
   async getStoredCredentials(storeId) {
     try {
       const IntegrationConfig = require('../models/IntegrationConfig');
-      
-      const integrationConfig = await IntegrationConfig.findOne({
-        where: {
-          store_id: storeId,
-          integration_type: 'cloudflare',
-          is_active: true
-        }
-      });
 
-      if (!integrationConfig || !integrationConfig.config_data.oauth_enabled) {
+      const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'cloudflare');
+
+      if (!integrationConfig || !integrationConfig.config_data?.oauth_enabled) {
         return null;
       }
 

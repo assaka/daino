@@ -324,16 +324,8 @@ class DatabaseProvisioningService {
   static async reprovisionStore(storeId) {
     console.log(`🔄 Re-provisioning store ${storeId}...`);
 
-    const { Op } = require('sequelize');
-    const config = await IntegrationConfig.findOne({
-      where: {
-        store_id: storeId,
-        integration_type: {
-          [Op.in]: ['supabase-database', 'postgresql', 'mysql']
-        },
-        is_active: true
-      }
-    });
+    const dbTypes = ['supabase-database', 'postgresql', 'mysql'];
+    const config = await IntegrationConfig.findByStoreAndTypes(storeId, dbTypes);
 
     if (!config) {
       throw new Error('No database configuration found for store');

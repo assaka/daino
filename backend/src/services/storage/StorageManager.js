@@ -201,22 +201,16 @@ class StorageManager {
    * Get information about the configured provider
    */
   static async getProviderInfo(storeId) {
-    const storageConfig = await IntegrationConfig.findOne({
-      where: {
-        store_id: storeId,
-        integration_type: {
-          [Op.in]: [
-            'supabase-storage',
-            'google-cloud-storage',
-            'aws-s3',
-            'cloudflare-r2',
-            'local-storage',
-            'supabase'
-          ]
-        },
-        is_active: true
-      }
-    });
+    const storageTypes = [
+      'supabase-storage',
+      'google-cloud-storage',
+      'aws-s3',
+      'cloudflare-r2',
+      'local-storage',
+      'supabase'
+    ];
+
+    const storageConfig = await IntegrationConfig.findByStoreAndTypes(storeId, storageTypes);
 
     if (!storageConfig) {
       return null;

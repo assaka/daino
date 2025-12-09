@@ -482,12 +482,7 @@ router.get('/akeneo/categories', authMiddleware, storeResolver(), async (req, re
     console.log('📂 Getting categories from Akeneo for store:', storeId);
     
     // Get Akeneo configuration
-    const integrationConfig = await IntegrationConfig.findOne({
-      where: { 
-        store_id: storeId, 
-        integration_type: 'akeneo' 
-      }
-    });
+    const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
 
     if (!integrationConfig) {
       return res.status(404).json({
