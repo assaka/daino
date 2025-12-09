@@ -232,7 +232,7 @@ export function EditOverlay({
       return 'ring-2 ring-blue-500 ring-offset-1';
     }
     if (isDragOver) {
-      return 'ring-2 ring-green-400 ring-offset-1';
+      return 'ring-2 ring-green-500 ring-offset-1';
     }
     if (isHovered) {
       return 'ring-1 ring-blue-300';
@@ -240,16 +240,16 @@ export function EditOverlay({
     return 'ring-1 ring-gray-200 ring-dashed';
   };
 
-  // Drop zone indicator styles
+  // Drop zone indicator styles - GREEN for drag & drop
   const getDropZoneIndicator = () => {
     if (!isDragOver || !dropZone) return null;
 
     const indicatorStyles = {
-      before: 'top-0 left-0 right-0 h-1 bg-blue-500',
-      after: 'bottom-0 left-0 right-0 h-1 bg-blue-500',
-      left: 'top-0 bottom-0 left-0 w-1 bg-blue-500',
-      right: 'top-0 bottom-0 right-0 w-1 bg-blue-500',
-      inside: 'inset-2 border-2 border-dashed border-blue-500 bg-blue-50/30',
+      before: 'top-0 left-0 right-0 h-1 bg-green-500',
+      after: 'bottom-0 left-0 right-0 h-1 bg-green-500',
+      left: 'top-0 bottom-0 left-0 w-1 bg-green-500',
+      right: 'top-0 bottom-0 right-0 w-1 bg-green-500',
+      inside: 'inset-2 border-2 border-dashed border-green-500 bg-green-50/30',
     };
 
     return (
@@ -314,8 +314,8 @@ export function EditOverlay({
         </div>
       )}
 
-      {/* Resize handles */}
-      {onResize && (isHovered || isSelected) && (
+      {/* Resize handles - show for all slot types when onResize is provided */}
+      {onResize && (isHovered || isSelected) && !isContainerType && (
         <>
           {/* Horizontal resize handle (right edge) */}
           <ResizeHandle
@@ -324,6 +324,17 @@ export function EditOverlay({
           />
 
           {/* Vertical resize handle (bottom edge) */}
+          <ResizeHandle
+            direction="vertical"
+            onResize={(delta) => onResize(slotId, 'height', delta)}
+          />
+        </>
+      )}
+
+      {/* For container types, only show resize if explicitly enabled */}
+      {onResize && (isHovered || isSelected) && isContainerType && (
+        <>
+          {/* Vertical resize handle only for containers (height adjustment) */}
           <ResizeHandle
             direction="vertical"
             onResize={(delta) => onResize(slotId, 'height', delta)}

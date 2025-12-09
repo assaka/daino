@@ -10,12 +10,14 @@ const Checkbox = React.forwardRef(({ className, style, checked, ...props }, ref)
 
   // For Radix UI Checkbox (custom div-based component), we need to apply
   // the color as both border and background, since accent-color CSS property
-  // only works on native form controls
+  // only works on native form controls.
+  // We apply borderColor, borderWidth, and borderStyle to ensure the border shows correctly.
   const customColorStyles = accentColor ? {
     ...style,
-    // Keep accentColor for consistency, plus add border/background for Radix
+    // Apply border color with explicit border properties to override Tailwind
     borderColor: accentColor,
-    '--checkbox-accent': accentColor,
+    borderWidth: '1px',
+    borderStyle: 'solid',
   } : style;
 
   return (
@@ -23,9 +25,9 @@ const Checkbox = React.forwardRef(({ className, style, checked, ...props }, ref)
       ref={ref}
       checked={checked}
       className={cn(
-        "peer h-4 w-4 shrink-0 rounded-sm border shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "peer h-4 w-4 shrink-0 rounded-sm shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
         // Only use default primary colors if no custom accentColor is provided
-        !accentColor && "border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+        !accentColor && "border border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
         // When accentColor is provided, use white text on checked state
         accentColor && "data-[state=checked]:text-white",
         className
