@@ -213,8 +213,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         onHoverChange(false);
       }
 
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointermove', handleMouseMove);
+      document.removeEventListener('pointerup', handleMouseUp);
 
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
@@ -227,19 +227,21 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // Attach listeners to document for reliable tracking
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Attach listeners to document for reliable tracking - use pointer events for consistency
+    document.addEventListener('pointermove', handleMouseMove);
+    document.addEventListener('pointerup', handleMouseUp);
+
+    console.log('[RESIZE] Event listeners attached to document');
   };
 
   useEffect(() => {
     return () => {
       // Cleanup on unmount - remove document listeners if they exist
       if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+        document.removeEventListener('pointermove', mouseMoveHandlerRef.current);
       }
       if (mouseUpHandlerRef.current) {
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        document.removeEventListener('pointerup', mouseUpHandlerRef.current);
       }
     };
   }, []);
@@ -256,7 +258,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
         isHovered || isDragging || parentHovered
           ? 'opacity-100'
-          : 'opacity-40 hover:opacity-100'
+          : 'opacity-0 hover:opacity-100'
       }`}
       draggable={false}
       onPointerDown={handleMouseDown}
