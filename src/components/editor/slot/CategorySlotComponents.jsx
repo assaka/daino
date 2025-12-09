@@ -315,16 +315,18 @@ const PaginationComponent = createSlotComponent({
       }
     };
 
-    // Get pagination settings from store settings
-    const paginationSettings = categoryContext?.settings?.pagination || variableContext?.settings?.pagination || {};
+    // Get pagination settings - slot styles take precedence over store settings
+    // Slot styles are synced from Admin Theme&Layout when saved
+    const slotStyles = slot?.styles || styles || {};
+    const storeSettings = categoryContext?.settings?.pagination || variableContext?.settings?.pagination || {};
 
-    // Extract customizable styles from settings with defaults
-    const buttonBgColor = paginationSettings.buttonBgColor || '#FFFFFF';
-    const buttonTextColor = paginationSettings.buttonTextColor || '#374151';
-    const buttonBorderColor = paginationSettings.buttonBorderColor || '#D1D5DB';
-    const buttonHoverBgColor = paginationSettings.buttonHoverBgColor || '#F3F4F6';
-    const activeBgColor = paginationSettings.activeBgColor || '#3B82F6';
-    const activeTextColor = paginationSettings.activeTextColor || '#FFFFFF';
+    // Extract customizable styles: slot styles first (synced from admin), then store settings, then defaults
+    const buttonBgColor = slotStyles.buttonBgColor || storeSettings.buttonBgColor || '#FFFFFF';
+    const buttonTextColor = slotStyles.buttonTextColor || storeSettings.buttonTextColor || '#374151';
+    const buttonBorderColor = slotStyles.buttonBorderColor || storeSettings.buttonBorderColor || '#D1D5DB';
+    const buttonHoverBgColor = slotStyles.buttonHoverBgColor || storeSettings.buttonHoverBgColor || '#F3F4F6';
+    const activeBgColor = slotStyles.activeBgColor || storeSettings.activeBgColor || '#3B82F6';
+    const activeTextColor = slotStyles.activeTextColor || storeSettings.activeTextColor || '#FFFFFF';
 
     // Ensure className is a string and styles is an object
     const finalClassName = typeof className === 'string' ? className : (typeof slot?.className === 'string' ? slot?.className : '');

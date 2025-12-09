@@ -979,9 +979,10 @@ export default function ThemeLayout() {
                 console.error('Cache clearing failed:', e);
             }
 
-            // CRITICAL: Sync button colors to slot configurations
+            // CRITICAL: Sync theme settings to slot configurations
             // This ensures Editor and Storefront use the admin-set theme colors
             try {
+                // 1. Button Color Mappings
                 const buttonColorMappings = [
                     {
                         color: store.settings.theme.add_to_cart_button_color,
@@ -1007,6 +1008,21 @@ export default function ThemeLayout() {
                         slots: [
                             { pageType: 'checkout', slotId: 'place_order_button' }
                         ]
+                    },
+                    // Primary button color - used in empty cart continue shopping
+                    {
+                        color: store.settings.theme.primary_button_color,
+                        slots: [
+                            { pageType: 'cart', slotId: 'empty_cart_button' },
+                            { pageType: 'success', slotId: 'continue_shopping_button' }
+                        ]
+                    },
+                    // Secondary button color
+                    {
+                        color: store.settings.theme.secondary_button_color,
+                        slots: [
+                            { pageType: 'success', slotId: 'view_order_button' }
+                        ]
                     }
                 ];
 
@@ -1024,8 +1040,58 @@ export default function ThemeLayout() {
                         }
                     }
                 }
+
+                // 2. Product Tabs Styling - sync to product page product_tabs slot
+                const productTabsSettings = store.settings.theme;
+                if (productTabsSettings) {
+                    try {
+                        await api.patch(`/slot-configurations/${store.id}/product/slot/product_tabs`, {
+                            styles: {
+                                // Tab title styling
+                                titleSize: productTabsSettings.product_tabs_title_size || '1rem',
+                                fontWeight: productTabsSettings.product_tabs_font_weight || '500',
+                                borderRadius: productTabsSettings.product_tabs_border_radius || '0.5rem',
+                                textDecoration: productTabsSettings.product_tabs_text_decoration || 'none',
+                                // Tab colors
+                                titleColor: productTabsSettings.product_tabs_title_color || '#111827',
+                                activeBgColor: productTabsSettings.product_tabs_active_bg || '#ffffff',
+                                inactiveColor: productTabsSettings.product_tabs_inactive_color || '#6B7280',
+                                inactiveBgColor: productTabsSettings.product_tabs_inactive_bg || '#ffffff',
+                                hoverColor: productTabsSettings.product_tabs_hover_color || '#111827',
+                                hoverBgColor: productTabsSettings.product_tabs_hover_bg || '#F3F4F6',
+                                borderColor: productTabsSettings.product_tabs_border_color || '#e0e0e0',
+                                contentBgColor: productTabsSettings.product_tabs_content_bg || '#ffffff',
+                                // Attribute label color
+                                attributeLabelColor: productTabsSettings.product_tabs_attribute_label_color || '#374151'
+                            }
+                        });
+                    } catch (tabsErr) {
+                        console.debug('Could not update product_tabs:', tabsErr.message);
+                    }
+                }
+
+                // 3. Pagination Styling - sync to category page pagination_container slot
+                const paginationSettings = store.settings.pagination;
+                if (paginationSettings) {
+                    try {
+                        await api.patch(`/slot-configurations/${store.id}/category/slot/pagination_container`, {
+                            styles: {
+                                // Button styling
+                                buttonBgColor: paginationSettings.buttonBgColor || '#FFFFFF',
+                                buttonTextColor: paginationSettings.buttonTextColor || '#374151',
+                                buttonHoverBgColor: paginationSettings.buttonHoverBgColor || '#F3F4F6',
+                                buttonBorderColor: paginationSettings.buttonBorderColor || '#D1D5DB',
+                                // Active state styling
+                                activeBgColor: paginationSettings.activeBgColor || '#3B82F6',
+                                activeTextColor: paginationSettings.activeTextColor || '#FFFFFF'
+                            }
+                        });
+                    } catch (paginationErr) {
+                        console.debug('Could not update pagination_container:', paginationErr.message);
+                    }
+                }
             } catch (syncErr) {
-                console.warn('Could not sync button colors to slot configs:', syncErr);
+                console.warn('Could not sync theme settings to slot configs:', syncErr);
             }
 
             setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });

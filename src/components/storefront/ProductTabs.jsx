@@ -98,8 +98,9 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       return;
     }
 
-    // Get attribute label color from theme settings
-    const attributeLabelColor = settings?.theme?.product_tabs_attribute_label_color || '#16A34A';
+    // Get attribute label color from slot config styles (synced from admin) or theme settings
+    const slotStylesAttr = slotConfig?.styles || {};
+    const attributeLabelColor = slotStylesAttr.attributeLabelColor || settings?.theme?.product_tabs_attribute_label_color || '#16A34A';
 
     const attributesHTML = `
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -358,7 +359,28 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
   // Use settings from props (passed from productContext)
   // Merge with defaults to ensure all theme settings have values
-  const themeSettings = getThemeDefaults(settings?.theme || {});
+  // Slot config styles take precedence (synced from Admin Theme&Layout)
+  const baseThemeSettings = getThemeDefaults(settings?.theme || {});
+  const slotStyles = slotConfig?.styles || {};
+
+  // Merge slot styles into theme settings - slot styles override base settings
+  const themeSettings = {
+    ...baseThemeSettings,
+    // Map slot config styles to theme setting names
+    ...(slotStyles.titleSize && { product_tabs_title_size: slotStyles.titleSize }),
+    ...(slotStyles.fontWeight && { product_tabs_font_weight: slotStyles.fontWeight }),
+    ...(slotStyles.borderRadius && { product_tabs_border_radius: slotStyles.borderRadius }),
+    ...(slotStyles.textDecoration && { product_tabs_text_decoration: slotStyles.textDecoration }),
+    ...(slotStyles.titleColor && { product_tabs_title_color: slotStyles.titleColor }),
+    ...(slotStyles.activeBgColor && { product_tabs_active_bg: slotStyles.activeBgColor }),
+    ...(slotStyles.inactiveColor && { product_tabs_inactive_color: slotStyles.inactiveColor }),
+    ...(slotStyles.inactiveBgColor && { product_tabs_inactive_bg: slotStyles.inactiveBgColor }),
+    ...(slotStyles.hoverColor && { product_tabs_hover_color: slotStyles.hoverColor }),
+    ...(slotStyles.hoverBgColor && { product_tabs_hover_bg: slotStyles.hoverBgColor }),
+    ...(slotStyles.borderColor && { product_tabs_border_color: slotStyles.borderColor }),
+    ...(slotStyles.contentBgColor && { product_tabs_content_bg: slotStyles.contentBgColor }),
+    ...(slotStyles.attributeLabelColor && { product_tabs_attribute_label_color: slotStyles.attributeLabelColor }),
+  };
 
   const variableContext = {
     tabs: tabsData,
