@@ -65,6 +65,7 @@ class AkeneoSyncService {
       username: this.config.username,
       clientId: this.config.clientId,
       clientSecretLength: this.config.clientSecret?.length,
+      version: this.config.version || '7 (default)',
       imageProcessingEnabled: imageConfig.processingEnabled
     });
   }

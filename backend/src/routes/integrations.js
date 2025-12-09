@@ -1146,7 +1146,7 @@ router.post('/akeneo/save-config',
       });
     }
 
-    const { baseUrl, clientId, clientSecret, username, password } = req.body;
+    const { baseUrl, clientId, clientSecret, username, password, version = '7', locale = 'en_US' } = req.body;
     const storeId = req.storeId;
 
     // Test the connection first
@@ -1155,15 +1155,16 @@ router.post('/akeneo/save-config',
       clientId,
       clientSecret,
       username,
-      password
+      password,
+      version
     });
 
     const testResult = await integration.testConnection();
-    
+
     if (!testResult.success) {
       // Provide more specific error messages for authentication failures
       let errorMessage = testResult.message;
-      
+
       if (testResult.message.includes('401') || testResult.message.includes('Unauthorized')) {
         errorMessage = 'Akeneo authentication failed. Please check your credentials (Client ID, Client Secret, Username, and Password).';
       } else if (testResult.message.includes('403') || testResult.message.includes('Forbidden')) {
@@ -1173,7 +1174,7 @@ router.post('/akeneo/save-config',
       } else if (testResult.message.includes('ENOTFOUND') || testResult.message.includes('ECONNREFUSED')) {
         errorMessage = 'Cannot connect to Akeneo server. Please check your Base URL and network connection.';
       }
-      
+
       return res.status(400).json({
         success: false,
         message: 'Akeneo connection test failed - configuration not saved',
@@ -1188,7 +1189,9 @@ router.post('/akeneo/save-config',
       clientId,
       clientSecret,
       username,
-      password
+      password,
+      version,
+      locale
     };
 
     await IntegrationConfig.createOrUpdate(storeId, 'akeneo', configData);
