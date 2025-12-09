@@ -693,6 +693,8 @@ const ProductItemsGrid = createSlotComponent({
     const productCardTemplate = allSlots?.product_card_template;
     const productCardChildSlots = {};
 
+    console.log('[ProductItemsGrid] allSlots.product_card_name?.colSpan:', allSlots?.product_card_name?.colSpan);
+
     if (allSlots) {
       const collectDescendants = (parentId) => {
         Object.values(allSlots).forEach(s => {
