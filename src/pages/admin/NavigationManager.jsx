@@ -471,12 +471,16 @@ const NavigationManager = () => {
         }))
       });
 
-      alert('Navigation order saved successfully!');
       setOriginalItems(JSON.parse(JSON.stringify(navItems)));
       setHasChanges(false);
 
-      // Reload to confirm
+      // Reload to confirm and get recalculated positions from backend
       await loadNavigationItems();
+
+      // Dispatch event to notify sidebar to refresh navigation
+      window.dispatchEvent(new CustomEvent('navigation-updated'));
+
+      alert('Navigation order saved successfully! Sidebar will update automatically.');
     } catch (error) {
       console.error('Error saving navigation order:', error);
       alert('Failed to save changes: ' + (error.response?.data?.error || error.message));
@@ -494,8 +498,35 @@ const NavigationManager = () => {
     return <PageLoader size="lg" />;
   }
 
+  // Build preview hierarchy for sidebar display
+  const buildPreviewHierarchy = () => {
+    const topLevel = navItems.filter(item => !item.parent_key && item.is_visible);
+    const children = navItems.filter(item => item.parent_key && item.is_visible);
+
+    // Sort top-level by order_position
+    topLevel.sort((a, b) => a.order_position - b.order_position);
+
+    // Group children by parent
+    const childrenByParent = {};
+    children.forEach(child => {
+      if (!childrenByParent[child.parent_key]) {
+        childrenByParent[child.parent_key] = [];
+      }
+      childrenByParent[child.parent_key].push(child);
+    });
+
+    // Sort children within each parent
+    Object.values(childrenByParent).forEach(group => {
+      group.sort((a, b) => a.order_position - b.order_position);
+    });
+
+    return { topLevel, childrenByParent };
+  };
+
+  const { topLevel: previewTopLevel, childrenByParent: previewChildren } = buildPreviewHierarchy();
+
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Navigation Manager</h1>
         <p className="text-gray-600">Manage the order and visibility of admin sidebar items</p>
@@ -523,77 +554,157 @@ const NavigationManager = () => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Navigation Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={navItems.map(item => item.key)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-2">
-                {navItems.map((item, index) => {
-                  // Check if this is a child item
-                  const isChild = !!item.parent_key;
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Editor Panel */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Navigation Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={navItems.map(item => item.key)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {navItems.map((item, index) => {
+                      // Check if this is a child item
+                      const isChild = !!item.parent_key;
 
-                  // Check if parent is collapsed
-                  const parentCollapsed = item.parent_key && collapsedItems.has(item.parent_key);
+                      // Check if parent is collapsed
+                      const parentCollapsed = item.parent_key && collapsedItems.has(item.parent_key);
 
-                  // Check if this item has children
-                  const hasChildren = navItems.some(child => child.parent_key === item.key);
+                      // Check if this item has children
+                      const hasChildren = navItems.some(child => child.parent_key === item.key);
 
-                  // Check if this item is collapsed
-                  const isCollapsed = collapsedItems.has(item.key);
+                      // Check if this item is collapsed
+                      const isCollapsed = collapsedItems.has(item.key);
 
-                  // Don't render child items if their parent is collapsed
-                  if (parentCollapsed) {
-                    return null;
+                      // Don't render child items if their parent is collapsed
+                      if (parentCollapsed) {
+                        return null;
+                      }
+
+                      return (
+                        <SortableItem
+                          key={item.key}
+                          item={item}
+                          index={index}
+                          isChild={isChild}
+                          hasChildren={hasChildren}
+                          isCollapsed={isCollapsed}
+                          canMoveUp={index > 0}
+                          canMoveDown={index < navItems.length - 1}
+                          onMoveUp={() => moveUp(index)}
+                          onMoveDown={() => moveDown(index)}
+                          onToggleVisibility={() => toggleVisibility(index)}
+                          onUpdateOrder={(value) => updateOrderPosition(index, value)}
+                          onUpdateParent={(value) => updateParent(index, value)}
+                          onToggleCollapse={() => toggleCollapse(item.key)}
+                          availableParents={getAvailableParents(item.key)}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </CardContent>
+          </Card>
+
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-medium text-gray-900 mb-2">Tips:</h3>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Drag items by the grip handle to reorder them</li>
+              <li>• Use the up/down arrows for precise positioning</li>
+              <li>• Use the parent dropdown to change an item's hierarchy level</li>
+              <li>• Click chevron icons to expand/collapse parent items with children</li>
+              <li>• Click the eye icon to show/hide items from the sidebar</li>
+              <li>• Enter a specific number to jump to that position</li>
+              <li>• Core items are built-in, Plugin items are added by plugins</li>
+              <li>• Changes are not saved until you click "Save Changes"</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Sidebar Preview Panel */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Sidebar Preview
+              </CardTitle>
+              <p className="text-sm text-gray-500">Live preview of how navigation will appear</p>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-gray-900 rounded-lg p-4 text-white max-h-[600px] overflow-y-auto">
+                {/* Dashboard - always first */}
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white mb-4">
+                  <span className="text-sm font-medium">Dashboard</span>
+                </div>
+
+                {/* Navigation Groups */}
+                {previewTopLevel.map((category) => {
+                  const categoryChildren = previewChildren[category.key] || [];
+
+                  // Skip if this is a standalone item with a route (not a category)
+                  if (category.route && categoryChildren.length === 0) {
+                    return (
+                      <div key={category.key} className="mb-1">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300">
+                          <span className="text-sm">{category.label}</span>
+                          <span className="text-xs text-gray-500 ml-auto">({category.order_position})</span>
+                        </div>
+                      </div>
+                    );
                   }
 
+                  // This is a category with children
+                  if (categoryChildren.length === 0) return null;
+
                   return (
-                    <SortableItem
-                      key={item.key}
-                      item={item}
-                      index={index}
-                      isChild={isChild}
-                      hasChildren={hasChildren}
-                      isCollapsed={isCollapsed}
-                      canMoveUp={index > 0}
-                      canMoveDown={index < navItems.length - 1}
-                      onMoveUp={() => moveUp(index)}
-                      onMoveDown={() => moveDown(index)}
-                      onToggleVisibility={() => toggleVisibility(index)}
-                      onUpdateOrder={(value) => updateOrderPosition(index, value)}
-                      onUpdateParent={(value) => updateParent(index, value)}
-                      onToggleCollapse={() => toggleCollapse(item.key)}
-                      availableParents={getAvailableParents(item.key)}
-                    />
+                    <div key={category.key} className="mb-4">
+                      <div className="flex items-center justify-between px-3 py-1">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                          {category.label}
+                        </span>
+                        <span className="text-xs text-gray-600">({category.order_position})</span>
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {categoryChildren.map((item) => (
+                          <div
+                            key={item.key}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300"
+                          >
+                            <span className="text-sm">{item.label}</span>
+                            <span className="text-xs text-gray-500 ml-auto">({item.order_position})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   );
                 })}
-              </div>
-            </SortableContext>
-          </DndContext>
-        </CardContent>
-      </Card>
 
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-medium text-gray-900 mb-2">Tips:</h3>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Drag items by the grip handle to reorder them</li>
-          <li>• Use the up/down arrows for precise positioning</li>
-          <li>• Use the parent dropdown to change an item's hierarchy level</li>
-          <li>• Click chevron icons to expand/collapse parent items with children</li>
-          <li>• Click the eye icon to show/hide items from the sidebar</li>
-          <li>• Enter a specific number to jump to that position</li>
-          <li>• Core items are built-in, Plugin items are added by plugins</li>
-          <li>• Changes are not saved until you click "Save Changes"</li>
-        </ul>
+                {/* Hidden items indicator */}
+                {navItems.filter(item => !item.is_visible).length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex items-center gap-2 px-3 py-2 text-gray-500">
+                      <EyeOff className="w-4 h-4" />
+                      <span className="text-xs">
+                        {navItems.filter(item => !item.is_visible).length} hidden items
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

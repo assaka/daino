@@ -171,7 +171,8 @@ const AkeneoIntegration = () => {
     clientSecret: '',
     username: '',
     password: '',
-    locale: 'en_US'
+    locale: 'en_US',
+    version: '7' // Default to latest version
   });
   const [lastImportDates, setLastImportDates] = useState({});
 
@@ -2101,6 +2102,27 @@ const AkeneoIntegration = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="version">Akeneo Version</Label>
+                  <Select value={config.version || '7'} onValueChange={(value) => handleConfigChange('version', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select version" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">Akeneo 7.x (Latest)</SelectItem>
+                      <SelectItem value="6">Akeneo 6.x</SelectItem>
+                      <SelectItem value="5">Akeneo 5.x</SelectItem>
+                      <SelectItem value="4">Akeneo 4.x</SelectItem>
+                      <SelectItem value="3">Akeneo 3.x</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select your Akeneo PIM version. Versions 6+ use UUID-based product endpoints.
+                  </p>
                 </div>
               </div>
 

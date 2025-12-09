@@ -1,17 +1,19 @@
 const axios = require('axios');
 
 class AkeneoClient {
-  constructor(baseUrl, clientId, clientSecret, username, password) {
+  constructor(baseUrl, clientId, clientSecret, username, password, version = '7') {
     this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.username = username;
     this.password = password;
-    
+    this.version = parseInt(version) || 7; // Default to version 7
+
     // Debug logging to verify credentials are passed correctly
     console.log('🔧 AkeneoClient initialized with:');
     console.log('  Base URL:', this.baseUrl);
     console.log('  Username:', this.username);
+    console.log('  Version:', this.version);
     console.log('  Client ID present:', !!this.clientId);
     console.log('  Client Secret present:', !!this.clientSecret);
     console.log('  Password present:', !!this.password);
@@ -260,24 +262,36 @@ class AkeneoClient {
   }
 
   /**
-   * Get products from Akeneo v7 (UUID-based endpoint)
+   * Get the correct products endpoint based on Akeneo version
+   * Versions 6+ use /products-uuid, older versions use /products
+   */
+  getProductsEndpoint() {
+    return this.version >= 6 ? '/api/rest/v1/products-uuid' : '/api/rest/v1/products';
+  }
+
+  /**
+   * Get products from Akeneo (version-aware)
    */
   async getProducts(params = {}) {
-    return this.makeRequest('GET', '/api/rest/v1/products-uuid', null, params);
+    return this.makeRequest('GET', this.getProductsEndpoint(), null, params);
   }
 
   /**
-   * Get specific product by UUID
+   * Get specific product by UUID (v6+) or identifier (v5-)
    */
-  async getProduct(uuid) {
-    return this.makeRequest('GET', `/api/rest/v1/products-uuid/${uuid}`);
+  async getProduct(identifier) {
+    return this.makeRequest('GET', `${this.getProductsEndpoint()}/${identifier}`);
   }
 
   /**
-   * Search products with advanced criteria
+   * Search products with advanced criteria (v6+ only, falls back to filtered GET for v5-)
    */
   async searchProducts(searchCriteria, params = {}) {
-    return this.makeRequest('POST', '/api/rest/v1/products-uuid/search', searchCriteria, params);
+    if (this.version >= 6) {
+      return this.makeRequest('POST', '/api/rest/v1/products-uuid/search', searchCriteria, params);
+    }
+    // For older versions, use GET with search parameter
+    return this.makeRequest('GET', '/api/rest/v1/products', null, { ...params, search: JSON.stringify(searchCriteria) });
   }
 
   /**
@@ -332,25 +346,28 @@ class AkeneoClient {
   }
 
   /**
-   * Get all products with pagination handling
+   * Get all products with pagination handling (version-aware)
    */
   async getAllProducts() {
     const allProducts = [];
-    
+    const primaryEndpoint = this.getProductsEndpoint();
+    const fallbackEndpoint = this.version >= 6 ? '/api/rest/v1/products' : '/api/rest/v1/products-uuid';
+
     try {
-      console.log('🔍 Fetching ALL products with pagination...');
-      
-      // Method 1: Try standard products endpoint with full pagination
+      console.log(`🔍 Fetching ALL products with pagination (Akeneo v${this.version})...`);
+      console.log(`📌 Primary endpoint: ${primaryEndpoint}`);
+
+      // Method 1: Try version-appropriate endpoint first
       try {
-        console.log('📦 Method 1: Standard products endpoint with pagination');
+        console.log(`📦 Method 1: Primary endpoint (${primaryEndpoint}) with pagination`);
         let nextUrl = null;
         let pageCount = 0;
 
         do {
           pageCount++;
           const params = nextUrl ? {} : { limit: 100 };
-          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
-          
+          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : primaryEndpoint;
+
           console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
           const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
 
@@ -361,60 +378,26 @@ class AkeneoClient {
 
           nextUrl = response._links && response._links.next ? response._links.next.href : null;
         } while (nextUrl);
-        
+
         console.log(`✅ Method 1 successful: ${allProducts.length} total products`);
         return allProducts;
-        
+
       } catch (error1) {
         console.log(`❌ Method 1 failed: ${error1.message}`);
         allProducts.length = 0; // Clear any partial data
       }
-      
-      // Method 2: Try search endpoint with pagination
-      try {
-        console.log('📦 Method 2: Search endpoint with pagination');
-        let page = 1;
-        let hasMorePages = true;
 
-        while (hasMorePages) {
-          console.log(`📄 Fetching page ${page} via search`);
-          const searchCriteria = {};
-          const response = await this.searchProducts(searchCriteria, { 
-            limit: 100,
-            page: page
-          });
-          
-          if (response._embedded && response._embedded.items) {
-            allProducts.push(...response._embedded.items);
-            console.log(`✅ Page ${page}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
-            
-            // Check if there are more pages
-            hasMorePages = response._embedded.items.length === 100;
-            page++;
-          } else {
-            hasMorePages = false;
-          }
-        }
-        
-        console.log(`✅ Method 2 successful: ${allProducts.length} total products`);
-        return allProducts;
-        
-      } catch (error2) {
-        console.log(`❌ Method 2 failed: ${error2.message}`);
-        allProducts.length = 0; // Clear any partial data
-      }
-      
-      // Method 3: Try UUID-based endpoint with pagination
+      // Method 2: Try fallback endpoint
       try {
-        console.log('📦 Method 3: UUID-based endpoint with pagination');
+        console.log(`📦 Method 2: Fallback endpoint (${fallbackEndpoint}) with pagination`);
         let nextUrl = null;
         let pageCount = 0;
 
         do {
           pageCount++;
           const params = nextUrl ? {} : { limit: 100 };
-          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
-          
+          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : fallbackEndpoint;
+
           console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
           const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
 
@@ -425,9 +408,15 @@ class AkeneoClient {
 
           nextUrl = response._links && response._links.next ? response._links.next.href : null;
         } while (nextUrl);
-        
-        console.log(`✅ Method 3 successful: ${allProducts.length} total products`);
+
+        console.log(`✅ Method 2 successful: ${allProducts.length} total products`);
         return allProducts;
+
+      } catch (error2) {
+        console.log(`❌ Method 2 failed: ${error2.message}`);
+        allProducts.length = 0; // Clear any partial data
+        throw new Error(`All product fetch methods failed. Primary: ${primaryEndpoint}, Fallback: ${fallbackEndpoint}. Last error: ${error2.message}`);
+      }
         
       } catch (error3) {
         console.log(`❌ Method 3 failed: ${error3.message}`);
