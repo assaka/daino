@@ -27,86 +27,137 @@
 -- SEED DATA
 -- ============================================
 
--- admin_navigation_registry (84 rows)
+-- admin_navigation_registry
+-- Order scheme: Top-level = 10, 20, 30... | Children = 1, 2, 3...
 INSERT INTO admin_navigation_registry (id, key, label, icon, route, parent_key, order_position, is_core, is_visible, plugin_id, category, required_permission, description, badge_config, created_at, updated_at, type)
 VALUES
-  -- Parent category for advanced items (must be inserted first for FK)
-  ('a1b2c3d4-e5f6-7890-abcd-000000000001', 'advanced', 'Advanced', 'Settings', NULL, NULL, 700, true, false, NULL, NULL, NULL, 'Advanced settings and tools', NULL, NOW(), NOW(), 'standard'),
-  ('c7a5b648-8c9f-4d74-a347-b21d89cc25a6', 'test-dummy-page', 'Test Page', 'TestTube', '/admin/dummy-test', NULL, 999, false, true, NULL, NULL, NULL, 'Test page for navigation system debugging', NULL, '2025-10-21T15:09:17.618Z', '2025-10-21T15:09:17.618Z', 'standard'),
-  ('0e599da5-acb3-42b9-95f3-40bec8114ecf', 'categories', 'Categories', 'Tag', '/admin/categories', 'catalog', 40, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.294Z', '2025-11-04T16:06:58.262Z', 'standard'),
-  ('5bfea719-f62a-40e4-ba87-9259fb295e99', 'sales-settings', 'Settings', 'SettingsIcon', '/admin/sales-settings', 'sales', 120, true, true, NULL, 'main', NULL, NULL, NULL, '2025-11-04T14:32:28.871Z', '2025-11-04T16:06:58.459Z', 'standard'),
-  ('572c97b0-a00e-4a65-8a5d-e87036325e68', 'seo_hreflang', 'Hreflang', 'Globe', '/admin/seo-tools/hreflang', 'seo', 410, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.088Z', '2025-11-04T16:06:59.268Z', 'standard'),
-  ('c498373d-a513-4f78-b732-3c1933d181c9', 'seo_robots', 'Robots.txt', 'Bot', '/admin/seo-tools/robots', 'seo', 420, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.118Z', '2025-11-04T16:06:59.296Z', 'standard'),
-  ('c724b28d-e3bc-48ae-8707-87d585a7fe74', 'seo_social', 'Social Media', 'Share2', '/admin/seo-tools/social', 'seo', 430, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.150Z', '2025-11-04T16:06:59.321Z', 'standard'),
-  ('793535ce-1c1f-4c35-9cb0-24f05a52f047', 'xml_sitemap', 'XML Sitemap', 'FileCode', '/admin/xml-sitemap', 'seo', 440, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.209Z', '2025-11-04T16:06:59.346Z', 'standard'),
-  ('7ecc37c8-13fe-45a2-bded-0172da9184de', 'html_sitemap', 'HTML Sitemap', 'FileText', '/admin/html-sitemap', 'seo', 450, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.238Z', '2025-11-04T16:06:59.373Z', 'standard'),
-  ('86af5d49-7fb1-405e-a371-f627274772b5', 'seo_report', 'SEO Report', 'FileText', '/admin/seo-tools/report', 'seo', 460, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.180Z', '2025-11-04T16:06:59.398Z', 'standard'),
-  ('ada124ce-e1a5-4d93-b071-0514350deda0', 'uptime-report', 'Uptime Report', 'Activity', '/admin/uptime-report', 'store', 580, true, true, NULL, 'store', NULL, 'Track daily charges and uptime for running stores', NULL, '2025-10-30T22:57:00.288Z', '2025-11-04T16:06:59.717Z', 'standard'),
-  ('0a4ffc9f-283c-4aa0-874f-038a461bdbd0', 'plugins', 'Plugins', 'Puzzle', '/admin/plugins', 'advanced', 100, true, false, NULL, 'advanced', NULL, NULL, NULL, '2025-10-18T17:13:41.802Z', '2025-10-21T10:20:48.456Z', 'standard'),
-  ('3305ab6e-5d31-4731-9af8-163daa2db9f6', 'billing', 'Billing', 'Wallet', '/admin/billing', 'advanced', 1, true, false, NULL, 'advanced', NULL, NULL, NULL, '2025-10-18T17:28:08.750Z', '2025-10-18T17:28:08.750Z', 'standard'),
-  ('e92d88e9-5c06-4111-86ca-8eae762c8ba1', 'team', 'Team', 'Users', '/admin/team', 'advanced', 1, true, false, NULL, 'advanced', NULL, NULL, NULL, '2025-10-18T17:28:08.779Z', '2025-10-18T17:28:08.779Z', 'standard'),
-  ('086a73b9-5323-4893-859f-612234ec807d', 'onboarding', 'Onboarding', 'BookOpen', '/admin/onboarding', 'advanced', 1, true, false, NULL, 'advanced', NULL, NULL, NULL, '2025-10-18T17:28:08.809Z', '2025-10-18T17:28:08.809Z', 'standard'),
-  ('237cfcb8-0464-44ab-916a-d2425f7bad73', 'theme_layout', 'Theme & Layout', 'Palette', '/admin/theme-layout', 'layout', 480, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-18T17:28:08.486Z', '2025-11-04T16:06:59.454Z', 'standard'),
-  ('250c4f0b-bcaf-45c6-b865-0967326f623d', 'emails', 'Emails', 'Mail', '/admin/emails', 'content', 500, true, true, NULL, 'content', NULL, NULL, NULL, '2025-10-31T20:20:51.264Z', '2025-11-04T16:06:59.508Z', 'standard'),
-  ('ef7e14a8-7cde-4635-ad0a-9186b32a7361', 'heatmaps', 'Heatmaps', 'Activity', '/admin/heatmaps', 'marketing', 260, true, true, NULL, 'marketing', NULL, NULL, NULL, '2025-10-18T17:28:07.875Z', '2025-11-04T16:06:58.865Z', 'premium'),
-  ('e413cc8c-ad78-48cc-af65-69985ac20507', 'plugin-902c67ba-dc39-4e6e-b218-cf606ccae19e', 'Plugin Item', 'Package', '/admin', NULL, 80, false, true, '902c67ba-dc39-4e6e-b218-cf606ccae19e', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:28.281Z', '2025-10-21T12:26:45.423Z', 'standard'),
-  ('237f8e13-3063-4d7e-801a-efcb68c2d561', 'plugin-a233bd52-f7a9-4b1e-ba45-dc8cc734bc53', 'Plugin Item', 'Package', '/admin', NULL, 85, false, true, 'a233bd52-f7a9-4b1e-ba45-dc8cc734bc53', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:28.315Z', '2025-10-21T12:26:45.646Z', 'standard'),
-  ('6889bdcd-9849-4c7b-b26a-da08e4a9da25', 'ab_testing', 'A/B Testing', 'FlaskConical', '/admin/ab-testing', 'marketing', 270, true, true, NULL, 'marketing', NULL, NULL, NULL, '2025-10-18T17:28:07.905Z', '2025-11-04T16:06:58.890Z', 'standard'),
-  ('621a4cd9-84e9-420b-82f8-b3b837b45059', 'analytics', 'Analytics', 'BarChart3', '/admin/analytics', 'marketing', 290, true, true, NULL, 'marketing', NULL, NULL, NULL, '2025-10-18T17:13:41.770Z', '2025-11-04T16:06:58.939Z', 'standard'),
-  ('6d782a02-a782-44dd-9721-552701e55571', 'customers', 'Customers', 'Users', '/admin/customers', 'sales', 140, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:13:41.733Z', '2025-11-04T16:06:58.509Z', 'standard'),
-  ('458e07de-a8b2-401a-91bb-bcb4bab85456', 'seo', 'SEO', 'Search', NULL, NULL, 360, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.771Z', '2025-11-04T16:06:59.124Z', 'standard'),
-  ('3d9cae05-b1bf-4f6d-8534-8a00a4673da8', 'plugin-aff4ce90-b77b-4fd8-aa10-827a0917d3e7', 'Plugin Item', 'Package', '/admin', NULL, 101, false, true, 'aff4ce90-b77b-4fd8-aa10-827a0917d3e7', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:28.252Z', '2025-10-21T09:09:09.267Z', 'standard'),
-  ('c37be799-dc3a-419d-a1cd-689776333602', 'dashboard', 'Dashboard', 'LayoutDashboard', '/admin/dashboard', NULL, 10, true, true, NULL, 'main', NULL, NULL, NULL, '2025-10-18T17:13:41.616Z', '2025-11-04T16:06:58.206Z', 'standard'),
-  ('8ed2a4ed-f089-4d31-907c-4890a0fe3f93', 'marketing', 'Marketing', 'Megaphone', NULL, NULL, 240, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.735Z', '2025-11-04T16:06:58.806Z', 'standard'),
-  ('dd08ce7f-b4ae-40dc-ae0a-e0e8667a9a2e', 'seo_templates', 'SEO Templates', 'FileText', '/admin/seo-tools/templates', 'seo', 380, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:07.997Z', '2025-11-04T16:06:59.174Z', 'standard'),
-  ('0a442ac7-a056-4da4-9f40-902c5a41bd00', 'stock_settings', 'Stock Settings', 'Package', '/admin/stock-settings', 'catalog', 100, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.482Z', '2025-11-04T16:06:58.410Z', 'standard'),
-  ('e8f92e5e-0e96-4b4d-bf43-25fea085035a', 'blacklist', 'Blacklist', 'Shield', '/admin/blacklist', 'customers', 145, true, true, NULL, 'main', NULL, NULL, NULL, '2025-11-04T16:02:11.093Z', '2025-11-04T16:06:58.534Z', 'standard'),
-  ('63e01829-d4b6-4e8e-a7f2-9578d4c7f394', 'content', 'Content', 'FileText', NULL, NULL, 200, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.702Z', '2025-11-04T16:06:58.698Z', 'standard'),
-  ('9deae6d2-8b79-4961-9aa7-af5c420b530a', 'cms_pages', 'CMS Pages', 'FileText', '/admin/cms-pages', 'content', 210, true, true, NULL, 'content', NULL, NULL, NULL, '2025-10-18T17:28:07.747Z', '2025-11-04T16:06:58.724Z', 'standard'),
-  ('bd22f10c-8b2e-4948-b306-431f2a97e7fd', 'customer_activity', 'Customer Activity', 'Users', '/admin/customer-activity', 'marketing', 280, true, true, NULL, 'marketing', NULL, NULL, NULL, '2025-10-18T17:28:07.935Z', '2025-11-04T16:06:58.914Z', 'standard'),
-  ('f00b2a6d-21c6-44bb-bead-2d773a097c42', 'shipping_methods', 'Shipping Methods', 'Truck', '/admin/shipping-methods', 'sales', 160, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:28:07.601Z', '2025-11-04T16:06:58.591Z', 'standard'),
-  ('245a141f-f41b-4e1c-9030-639681b0ac7d', 'import_export', 'Import & Export', 'Upload', NULL, NULL, 300, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.808Z', '2025-11-04T16:06:58.964Z', 'standard'),
-  ('f2237ccf-8449-42f3-ad6e-8ef6773e0010', 'payment_methods', 'Payment Methods', 'CreditCard', '/admin/payment-methods', 'sales', 170, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:28:07.631Z', '2025-11-04T16:06:58.616Z', 'standard'),
-  ('4a706191-0c65-48c4-8efa-f355454fab8e', 'akeneo_integration', 'Akeneo', 'Database', '/admin/akeneo-integration', 'import_export', 350, true, true, NULL, 'import_export', NULL, NULL, NULL, '2025-10-18T17:28:08.300Z', '2025-11-04T16:06:59.097Z', 'beta'),
-  ('c4c35189-2da3-4062-a490-cab76a4cd967', 'seo_redirects', 'Redirects', 'RefreshCw', '/admin/seo-tools/redirects', 'seo', 390, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.028Z', '2025-11-04T16:06:59.205Z', 'standard'),
-  ('067d4c9b-7823-4f64-be28-8c75450d231e', 'seo_settings', 'Global', 'Search', '/admin/seo-tools/settings', 'seo', 370, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:07.966Z', '2025-11-04T16:06:59.149Z', 'standard'),
-  ('6d54e5c6-d6d8-4ea0-aa72-8eacc29f0f72', 'seo_canonical', 'Canonical URLs', 'Link', '/admin/seo-tools/canonical', 'seo', 400, true, true, NULL, 'seo', NULL, NULL, NULL, '2025-10-18T17:28:08.058Z', '2025-11-04T16:06:59.241Z', 'standard'),
-  ('c8478891-a228-42c7-bf48-df2543ac9536', 'layout', 'Layout', 'Megaphone', NULL, NULL, 470, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:40:00.424Z', '2025-11-04T16:06:59.427Z', 'standard'),
-  ('0668a4f5-529c-4e15-b230-e3ae93f3aeb7', 'custom_option_rules', 'Custom Options', 'Settings', '/admin/custom-option-rules', 'catalog', 70, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.393Z', '2025-11-04T16:06:58.336Z', 'standard'),
-  ('571400bd-6f57-48e4-b756-4c9e3401cdd3', 'ai_context_window', 'AI Context', 'Bot', '/admin/ai-context-window', 'advanced', 103, true, false, NULL, 'advanced', NULL, NULL, NULL, '2025-10-18T17:28:08.839Z', '2025-10-18T17:28:08.839Z', 'standard'),
-  ('54c16031-0df4-4bac-85b5-857ba0972e69', 'plugin-196ba25c-da64-4e2a-ab53-3978462ae84c', 'Plugin Item', 'Package', '/admin', NULL, 106, false, true, '196ba25c-da64-4e2a-ab53-3978462ae84c', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:28.222Z', '2025-10-21T09:09:09.240Z', 'standard'),
-  ('5025c86d-8955-4c4d-a67a-78212e0e7182', 'product_tabs', 'Product Tabs', 'FileText', '/admin/product-tabs', 'catalog', 80, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.422Z', '2025-11-04T16:06:58.360Z', 'standard'),
-  ('6c05b36b-b525-4d55-81fe-b8857ed21572', 'sales', 'Sales', 'Receipt', NULL, NULL, 110, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.665Z', '2025-11-04T16:06:58.434Z', 'standard'),
-  ('e07959cb-4083-428a-a68f-185f845f9e2d', 'catalog', 'Catalog', 'Package', NULL, NULL, 30, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.608Z', '2025-11-04T16:06:58.235Z', 'standard'),
-  ('ba916985-a696-4fbd-998c-df7cffa7ed28', 'coupons', 'Coupons', 'Ticket', '/admin/coupons', 'sales', 180, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:28:07.660Z', '2025-11-04T16:06:58.645Z', 'standard'),
-  ('3d5d200b-a385-4f40-8ab0-6c234295cddc', 'file_library', 'File Library', 'Upload', '/admin/file-library', 'content', 230, true, true, NULL, 'content', NULL, NULL, NULL, '2025-10-18T17:28:07.776Z', '2025-11-04T16:06:58.775Z', 'standard'),
-  ('be829aa4-6a01-4db3-a73d-c7d105f838f1', 'products', 'Products', 'Package', '/admin/products', 'catalog', 50, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:13:41.667Z', '2025-11-04T16:06:58.286Z', 'standard'),
-  ('29f2a22b-fa56-466b-80fe-5f970db59f39', 'attributes', 'Attributes', 'Box', '/admin/attributes', 'catalog', 60, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.363Z', '2025-11-04T16:06:58.311Z', 'standard'),
-  ('2036d4dc-cbb7-4587-95bf-5dbfea2741dc', 'product_labels', 'Product Labels', 'Tag', '/admin/product-labels', 'catalog', 90, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.453Z', '2025-11-04T16:06:58.385Z', 'standard'),
-  ('34efb882-144a-4177-90a4-0da9312baef7', 'orders', 'Orders', 'Receipt', '/admin/orders', 'sales', 130, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:13:41.699Z', '2025-11-04T16:06:58.484Z', 'standard'),
-  ('9c18f251-f391-47aa-84ba-8c155f07e808', 'tax', 'Tax', 'DollarSign', '/admin/tax', 'sales', 150, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:28:07.572Z', '2025-11-04T16:06:58.562Z', 'standard'),
-  ('9e88d83f-3820-47ac-9138-7c7bc381ee41', 'delivery_settings', 'Delivery Settings', 'Calendar', '/admin/delivery-settings', 'sales', 190, true, true, NULL, 'sales', NULL, NULL, NULL, '2025-10-18T17:28:07.689Z', '2025-11-04T16:06:58.673Z', 'standard'),
-  ('19abe7de-a1d1-42ff-9da2-30ffb19c1e6b', 'cms_blocks', 'CMS Blocks', 'Square', '/admin/cms-blocks', 'content', 220, true, true, NULL, 'content', NULL, NULL, NULL, '2025-10-18T17:28:07.718Z', '2025-11-04T16:06:58.750Z', 'standard'),
-  ('8971f94f-c30c-4029-8432-2696176ca16a', 'cookie_consent', 'Cookie Consent', 'Shield', '/admin/cookie-consent', 'marketing', 250, true, true, NULL, 'content', NULL, NULL, NULL, '2025-10-18T17:28:07.814Z', '2025-11-04T16:06:58.839Z', 'standard'),
-  ('2e6e8b58-03e9-4ad2-9ecc-8051c343a269', 'custom_domains', 'Custom Domains', 'Globe', '/admin/custom-domains', 'store', 590, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-24T23:54:34.647Z', '2025-11-04T16:06:59.742Z', 'standard'),
-  ('90e36469-b9e5-4a2b-8d7d-5fde01f066e9', 'translations', 'Translations', 'Globe', '/admin/translations', 'layout', 490, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-18T17:28:08.875Z', '2025-11-04T16:06:59.480Z', 'new'),
-  ('740efd0a-7b46-40de-8397-89f1bec7735b', 'plugin-f9ef4770-4685-4d05-abd5-6b2c884057c3', 'Akeneo PIM', 'Database', '/admin/akeneo', 'products', 510, false, true, 'f9ef4770-4685-4d05-abd5-6b2c884057c3', 'plugins', NULL, NULL, NULL, '2025-11-04T16:06:59.534Z', '2025-11-04T16:06:59.534Z', 'standard'),
-  ('ffb70e1a-6d90-46bd-a890-7837404ff1ab', 'store', 'Store', 'Store', NULL, NULL, 520, true, true, NULL, NULL, NULL, NULL, NULL, '2025-10-18T20:16:55.841Z', '2025-11-04T16:06:59.562Z', 'standard'),
-  ('e4de6184-0894-409c-b819-58bd3a0539d5', 'settings', 'General Settings', 'Settings', '/admin/settings', 'store', 530, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-18T17:13:41.837Z', '2025-11-04T16:06:59.593Z', 'standard'),
-  ('18727c04-a31b-4dc4-9b06-9d81a71beeee', 'database_integrations', 'Database', 'Database', '/admin/database-integrations', 'store', 540, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-18T17:28:08.544Z', '2025-11-04T16:06:59.618Z', 'standard'),
-  ('93b2fb65-e369-4631-976a-35a764de7459', 'store_email', 'Email', 'Mail', '/admin/settings/email', 'store', 550, true, true, NULL, 'store', NULL, NULL, NULL, '2025-11-03T06:28:25.962Z', '2025-11-04T16:06:59.643Z', 'standard'),
-  ('31085f55-2a25-40ed-83ba-be0c80998b81', 'media_storage', 'Media Storage', 'Image', '/admin/media-storage', 'store', 560, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-18T17:28:08.514Z', '2025-11-04T16:06:59.667Z', 'standard'),
-  ('d15c2f9e-ce66-42a2-85fa-280f8f170f62', 'cache', 'Cache', 'Database', '/admin/cache', 'store', 600, true, true, NULL, 'store', NULL, NULL, NULL, '2025-10-26T14:52:40.961Z', '2025-11-04T16:06:59.767Z', 'standard'),
-  ('e9574017-db4f-4ab1-b97e-21f19b43b99b', 'scheduled_jobs', 'Scheduled Jobs', 'Calendar', '/admin/scheduled-jobs', 'advanced', 620, true, true, NULL, 'advanced', NULL, NULL, NULL, '2025-10-18T17:28:08.721Z', '2025-11-04T16:06:59.818Z', 'standard'),
-  ('24dde7e9-518b-449b-919c-3e0c06c51d61', 'plugin-c80b7d37-b985-4ead-be17-b265938753ab', 'Plugin Item', 'Package', '/admin', 'sales', 640, false, true, 'c80b7d37-b985-4ead-be17-b265938753ab', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:30.135Z', '2025-11-04T16:06:59.874Z', 'standard'),
-  ('e129c820-497f-4ea0-836c-27b39b3f8b44', 'plugin-4eb11832-5429-4146-af06-de86d319a0e5', 'Email Capture', 'Mail', '/admin/plugins/my-cart-alert/emails', 'store', 650, false, true, '4eb11832-5429-4146-af06-de86d319a0e5', 'plugins', NULL, NULL, NULL, '2025-11-04T16:06:59.899Z', '2025-11-04T16:06:59.899Z', 'standard'),
-  ('4082e51c-8c44-4abb-ac1b-50184ebcd207', 'plugin-ef537565-3db0-466e-8b56-1694499f6a03', 'Newsletter Plugin', 'envelope', '/admin/plugins/newsletter-plugin', NULL, 660, false, true, 'ef537565-3db0-466e-8b56-1694499f6a03', 'plugins', NULL, NULL, NULL, '2025-11-04T16:06:59.926Z', '2025-11-04T16:06:59.926Z', 'standard'),
-  ('1d2e3124-24f7-4b3c-ba15-19fc462ca2db', 'plugin-6da7eaa9-737a-4af7-ab4b-119c95deb5e7', 'Plugin Item', 'Package', '/admin', NULL, 106, false, true, '6da7eaa9-737a-4af7-ab4b-119c95deb5e7', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:30.079Z', '2025-10-21T09:09:09.156Z', 'standard'),
-  ('f9f41d2c-5a44-4402-bc5d-42a704c956c4', 'plugin-b4fa6681-7371-463e-81b0-bc95dc72c88c', 'Plugin Item', 'Package', '/admin', NULL, 106, false, true, 'b4fa6681-7371-463e-81b0-bc95dc72c88c', 'plugins', NULL, NULL, NULL, '2025-10-21T07:29:30.108Z', '2025-10-21T09:09:09.025Z', 'standard'),
-  ('0162fe04-d1b3-4871-a92a-be7d54afd002', 'shopify_integration', 'Shopify', 'ShoppingBag', '/admin/shopify-integration', 'import_export', 330, true, true, NULL, 'import_export', NULL, NULL, NULL, '2025-10-18T17:28:08.428Z', '2025-11-12T23:07:54.677Z', NULL),
-  ('571cf04b-2b04-428a-ad55-9192a56f7976', 'marketplace_hub', 'Marketplace Hub', 'ShoppingCart', '/admin/marketplace-hub', 'import_export', 310, true, true, NULL, 'import_export', NULL, 'Unified marketplace management: Amazon, eBay, and more with AI optimization', '{"text":"New","color":"blue","variant":"default"}'::jsonb, '2025-11-12T23:07:54.677Z', '2025-11-13T06:13:20.486Z', 'new'),
-  ('5415ee5a-1276-4883-ac01-33d3dfcb1c2b', 'import_export_jobs', 'Jobs & Analytics', 'BarChart3', '/admin/import-export-jobs', 'import_export', 350, true, true, NULL, 'import_export', NULL, 'Monitor import/export jobs and view performance analytics', NULL, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', NULL),
-  ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 910, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', NULL)
+  -- =============================================
+  -- TOP-LEVEL NAVIGATION (order_position: 10, 20, 30...)
+  -- =============================================
+  ('c37be799-dc3a-419d-a1cd-689776333602', 'dashboard', 'Dashboard', 'LayoutDashboard', '/admin/dashboard', NULL, 10, true, true, NULL, 'main', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('e07959cb-4083-428a-a68f-185f845f9e2d', 'catalog', 'Catalog', 'Package', NULL, NULL, 20, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('6c05b36b-b525-4d55-81fe-b8857ed21572', 'sales', 'Sales', 'Receipt', NULL, NULL, 30, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('63e01829-d4b6-4e8e-a7f2-9578d4c7f394', 'content', 'Content', 'FileText', NULL, NULL, 40, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('8ed2a4ed-f089-4d31-907c-4890a0fe3f93', 'marketing', 'Marketing', 'Megaphone', NULL, NULL, 50, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('245a141f-f41b-4e1c-9030-639681b0ac7d', 'import_export', 'Import & Export', 'Upload', NULL, NULL, 60, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('458e07de-a8b2-401a-91bb-bcb4bab85456', 'seo', 'SEO', 'Search', NULL, NULL, 70, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c8478891-a228-42c7-bf48-df2543ac9536', 'layout', 'Layout', 'Megaphone', NULL, NULL, 80, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('ffb70e1a-6d90-46bd-a890-7837404ff1ab', 'store', 'Store', 'Store', NULL, NULL, 90, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000001', 'advanced', 'Advanced', 'Settings', NULL, NULL, 100, true, false, NULL, NULL, NULL, 'Advanced settings and tools', NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- CATALOG CHILDREN (parent: catalog, order: 1, 2, 3...)
+  -- =============================================
+  ('be829aa4-6a01-4db3-a73d-c7d105f838f1', 'products', 'Products', 'Package', '/admin/products', 'catalog', 1, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('0e599da5-acb3-42b9-95f3-40bec8114ecf', 'categories', 'Categories', 'Tag', '/admin/categories', 'catalog', 2, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('29f2a22b-fa56-466b-80fe-5f970db59f39', 'attributes', 'Attributes', 'Box', '/admin/attributes', 'catalog', 3, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('0668a4f5-529c-4e15-b230-e3ae93f3aeb7', 'custom_option_rules', 'Custom Options', 'Settings', '/admin/custom-option-rules', 'catalog', 4, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('5025c86d-8955-4c4d-a67a-78212e0e7182', 'product_tabs', 'Product Tabs', 'FileText', '/admin/product-tabs', 'catalog', 5, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('2036d4dc-cbb7-4587-95bf-5dbfea2741dc', 'product_labels', 'Product Labels', 'Tag', '/admin/product-labels', 'catalog', 6, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('0a442ac7-a056-4da4-9f40-902c5a41bd00', 'stock_settings', 'Stock Settings', 'Package', '/admin/stock-settings', 'catalog', 7, true, true, NULL, 'catalog', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- SALES CHILDREN (parent: sales, order: 1, 2, 3...)
+  -- =============================================
+  ('5bfea719-f62a-40e4-ba87-9259fb295e99', 'sales-settings', 'Settings', 'SettingsIcon', '/admin/sales-settings', 'sales', 1, true, true, NULL, 'main', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('34efb882-144a-4177-90a4-0da9312baef7', 'orders', 'Orders', 'Receipt', '/admin/orders', 'sales', 2, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('6d782a02-a782-44dd-9721-552701e55571', 'customers', 'Customers', 'Users', '/admin/customers', 'sales', 3, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('9c18f251-f391-47aa-84ba-8c155f07e808', 'tax', 'Tax', 'DollarSign', '/admin/tax', 'sales', 4, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('f00b2a6d-21c6-44bb-bead-2d773a097c42', 'shipping_methods', 'Shipping Methods', 'Truck', '/admin/shipping-methods', 'sales', 5, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('f2237ccf-8449-42f3-ad6e-8ef6773e0010', 'payment_methods', 'Payment Methods', 'CreditCard', '/admin/payment-methods', 'sales', 6, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('ba916985-a696-4fbd-998c-df7cffa7ed28', 'coupons', 'Coupons', 'Ticket', '/admin/coupons', 'sales', 7, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('9e88d83f-3820-47ac-9138-7c7bc381ee41', 'delivery_settings', 'Delivery Settings', 'Calendar', '/admin/delivery-settings', 'sales', 8, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- CUSTOMERS CHILDREN (parent: customers, order: 1, 2, 3...)
+  -- =============================================
+  ('e8f92e5e-0e96-4b4d-bf43-25fea085035a', 'blacklist', 'Blacklist', 'Shield', '/admin/blacklist', 'customers', 1, true, true, NULL, 'main', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- CONTENT CHILDREN (parent: content, order: 1, 2, 3...)
+  -- =============================================
+  ('9deae6d2-8b79-4961-9aa7-af5c420b530a', 'cms_pages', 'CMS Pages', 'FileText', '/admin/cms-pages', 'content', 1, true, true, NULL, 'content', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('19abe7de-a1d1-42ff-9da2-30ffb19c1e6b', 'cms_blocks', 'CMS Blocks', 'Square', '/admin/cms-blocks', 'content', 2, true, true, NULL, 'content', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('3d5d200b-a385-4f40-8ab0-6c234295cddc', 'file_library', 'File Library', 'Upload', '/admin/file-library', 'content', 3, true, true, NULL, 'content', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('250c4f0b-bcaf-45c6-b865-0967326f623d', 'emails', 'Emails', 'Mail', '/admin/emails', 'content', 4, true, true, NULL, 'content', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- MARKETING CHILDREN (parent: marketing, order: 1, 2, 3...)
+  -- =============================================
+  ('8971f94f-c30c-4029-8432-2696176ca16a', 'cookie_consent', 'Cookie Consent', 'Shield', '/admin/cookie-consent', 'marketing', 1, true, true, NULL, 'content', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('ef7e14a8-7cde-4635-ad0a-9186b32a7361', 'heatmaps', 'Heatmaps', 'Activity', '/admin/heatmaps', 'marketing', 2, true, true, NULL, 'marketing', NULL, NULL, NULL, NOW(), NOW(), 'premium'),
+  ('6889bdcd-9849-4c7b-b26a-da08e4a9da25', 'ab_testing', 'A/B Testing', 'FlaskConical', '/admin/ab-testing', 'marketing', 3, true, true, NULL, 'marketing', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('bd22f10c-8b2e-4948-b306-431f2a97e7fd', 'customer_activity', 'Customer Activity', 'Users', '/admin/customer-activity', 'marketing', 4, true, true, NULL, 'marketing', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('621a4cd9-84e9-420b-82f8-b3b837b45059', 'analytics', 'Analytics', 'BarChart3', '/admin/analytics', 'marketing', 5, true, true, NULL, 'marketing', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- IMPORT & EXPORT CHILDREN (parent: import_export, order: 1, 2, 3...)
+  -- =============================================
+  ('571cf04b-2b04-428a-ad55-9192a56f7976', 'marketplace_hub', 'Marketplace Hub', 'ShoppingCart', '/admin/marketplace-hub', 'import_export', 1, true, true, NULL, 'import_export', NULL, 'Unified marketplace management: Amazon, eBay, and more with AI optimization', '{"text":"New","color":"blue","variant":"default"}'::jsonb, NOW(), NOW(), 'new'),
+  ('0162fe04-d1b3-4871-a92a-be7d54afd002', 'shopify_integration', 'Shopify', 'ShoppingBag', '/admin/shopify-integration', 'import_export', 2, true, true, NULL, 'import_export', NULL, NULL, NULL, NOW(), NOW(), NULL),
+  ('4a706191-0c65-48c4-8efa-f355454fab8e', 'akeneo_integration', 'Akeneo', 'Database', '/admin/akeneo-integration', 'import_export', 3, true, true, NULL, 'import_export', NULL, NULL, NULL, NOW(), NOW(), 'beta'),
+  ('5415ee5a-1276-4883-ac01-33d3dfcb1c2b', 'import_export_jobs', 'Jobs & Analytics', 'BarChart3', '/admin/import-export-jobs', 'import_export', 4, true, true, NULL, 'import_export', NULL, 'Monitor import/export jobs and view performance analytics', NULL, NOW(), NOW(), NULL),
+
+  -- =============================================
+  -- SEO CHILDREN (parent: seo, order: 1, 2, 3...)
+  -- =============================================
+  ('067d4c9b-7823-4f64-be28-8c75450d231e', 'seo_settings', 'Global', 'Search', '/admin/seo-tools/settings', 'seo', 1, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('dd08ce7f-b4ae-40dc-ae0a-e0e8667a9a2e', 'seo_templates', 'SEO Templates', 'FileText', '/admin/seo-tools/templates', 'seo', 2, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c4c35189-2da3-4062-a490-cab76a4cd967', 'seo_redirects', 'Redirects', 'RefreshCw', '/admin/seo-tools/redirects', 'seo', 3, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('6d54e5c6-d6d8-4ea0-aa72-8eacc29f0f72', 'seo_canonical', 'Canonical URLs', 'Link', '/admin/seo-tools/canonical', 'seo', 4, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('572c97b0-a00e-4a65-8a5d-e87036325e68', 'seo_hreflang', 'Hreflang', 'Globe', '/admin/seo-tools/hreflang', 'seo', 5, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c498373d-a513-4f78-b732-3c1933d181c9', 'seo_robots', 'Robots.txt', 'Bot', '/admin/seo-tools/robots', 'seo', 6, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c724b28d-e3bc-48ae-8707-87d585a7fe74', 'seo_social', 'Social Media', 'Share2', '/admin/seo-tools/social', 'seo', 7, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('793535ce-1c1f-4c35-9cb0-24f05a52f047', 'xml_sitemap', 'XML Sitemap', 'FileCode', '/admin/xml-sitemap', 'seo', 8, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('7ecc37c8-13fe-45a2-bded-0172da9184de', 'html_sitemap', 'HTML Sitemap', 'FileText', '/admin/html-sitemap', 'seo', 9, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('86af5d49-7fb1-405e-a371-f627274772b5', 'seo_report', 'SEO Report', 'FileText', '/admin/seo-tools/report', 'seo', 10, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- LAYOUT CHILDREN (parent: layout, order: 1, 2, 3...)
+  -- =============================================
+  ('237cfcb8-0464-44ab-916a-d2425f7bad73', 'theme_layout', 'Theme & Layout', 'Palette', '/admin/theme-layout', 'layout', 1, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('90e36469-b9e5-4a2b-8d7d-5fde01f066e9', 'translations', 'Translations', 'Globe', '/admin/translations', 'layout', 2, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'new'),
+
+  -- =============================================
+  -- STORE CHILDREN (parent: store, order: 1, 2, 3...)
+  -- =============================================
+  ('e4de6184-0894-409c-b819-58bd3a0539d5', 'settings', 'General Settings', 'Settings', '/admin/settings', 'store', 1, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('18727c04-a31b-4dc4-9b06-9d81a71beeee', 'database_integrations', 'Database', 'Database', '/admin/database-integrations', 'store', 2, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('93b2fb65-e369-4631-976a-35a764de7459', 'store_email', 'Email', 'Mail', '/admin/settings/email', 'store', 3, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('31085f55-2a25-40ed-83ba-be0c80998b81', 'media_storage', 'Media Storage', 'Image', '/admin/media-storage', 'store', 4, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('ada124ce-e1a5-4d93-b071-0514350deda0', 'uptime-report', 'Uptime Report', 'Activity', '/admin/uptime-report', 'store', 5, true, true, NULL, 'store', NULL, 'Track daily charges and uptime for running stores', NULL, NOW(), NOW(), 'standard'),
+  ('2e6e8b58-03e9-4ad2-9ecc-8051c343a269', 'custom_domains', 'Custom Domains', 'Globe', '/admin/custom-domains', 'store', 6, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('d15c2f9e-ce66-42a2-85fa-280f8f170f62', 'cache', 'Cache', 'Database', '/admin/cache', 'store', 7, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 8, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, NOW(), NOW(), NULL),
+
+  -- =============================================
+  -- ADVANCED CHILDREN (parent: advanced, order: 1, 2, 3...)
+  -- =============================================
+  ('3305ab6e-5d31-4731-9af8-163daa2db9f6', 'billing', 'Billing', 'Wallet', '/admin/billing', 'advanced', 1, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('e92d88e9-5c06-4111-86ca-8eae762c8ba1', 'team', 'Team', 'Users', '/admin/team', 'advanced', 2, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('086a73b9-5323-4893-859f-612234ec807d', 'onboarding', 'Onboarding', 'BookOpen', '/admin/onboarding', 'advanced', 3, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('0a4ffc9f-283c-4aa0-874f-038a461bdbd0', 'plugins', 'Plugins', 'Puzzle', '/admin/plugins', 'advanced', 4, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('571400bd-6f57-48e4-b756-4c9e3401cdd3', 'ai_context_window', 'AI Context', 'Bot', '/admin/ai-context-window', 'advanced', 5, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('e9574017-db4f-4ab1-b97e-21f19b43b99b', 'scheduled_jobs', 'Scheduled Jobs', 'Calendar', '/admin/scheduled-jobs', 'advanced', 6, true, true, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- PLUGIN ITEMS (kept with high order numbers to appear at end)
+  -- =============================================
+  ('e413cc8c-ad78-48cc-af65-69985ac20507', 'plugin-902c67ba-dc39-4e6e-b218-cf606ccae19e', 'Plugin Item', 'Package', '/admin', NULL, 110, false, true, '902c67ba-dc39-4e6e-b218-cf606ccae19e', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('237f8e13-3063-4d7e-801a-efcb68c2d561', 'plugin-a233bd52-f7a9-4b1e-ba45-dc8cc734bc53', 'Plugin Item', 'Package', '/admin', NULL, 111, false, true, 'a233bd52-f7a9-4b1e-ba45-dc8cc734bc53', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('3d9cae05-b1bf-4f6d-8534-8a00a4673da8', 'plugin-aff4ce90-b77b-4fd8-aa10-827a0917d3e7', 'Plugin Item', 'Package', '/admin', NULL, 112, false, true, 'aff4ce90-b77b-4fd8-aa10-827a0917d3e7', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('54c16031-0df4-4bac-85b5-857ba0972e69', 'plugin-196ba25c-da64-4e2a-ab53-3978462ae84c', 'Plugin Item', 'Package', '/admin', NULL, 113, false, true, '196ba25c-da64-4e2a-ab53-3978462ae84c', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('1d2e3124-24f7-4b3c-ba15-19fc462ca2db', 'plugin-6da7eaa9-737a-4af7-ab4b-119c95deb5e7', 'Plugin Item', 'Package', '/admin', NULL, 114, false, true, '6da7eaa9-737a-4af7-ab4b-119c95deb5e7', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('f9f41d2c-5a44-4402-bc5d-42a704c956c4', 'plugin-b4fa6681-7371-463e-81b0-bc95dc72c88c', 'Plugin Item', 'Package', '/admin', NULL, 115, false, true, 'b4fa6681-7371-463e-81b0-bc95dc72c88c', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('740efd0a-7b46-40de-8397-89f1bec7735b', 'plugin-f9ef4770-4685-4d05-abd5-6b2c884057c3', 'Akeneo PIM', 'Database', '/admin/akeneo', 'products', 116, false, true, 'f9ef4770-4685-4d05-abd5-6b2c884057c3', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('24dde7e9-518b-449b-919c-3e0c06c51d61', 'plugin-c80b7d37-b985-4ead-be17-b265938753ab', 'Plugin Item', 'Package', '/admin', 'sales', 117, false, true, 'c80b7d37-b985-4ead-be17-b265938753ab', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('e129c820-497f-4ea0-836c-27b39b3f8b44', 'plugin-4eb11832-5429-4146-af06-de86d319a0e5', 'Email Capture', 'Mail', '/admin/plugins/my-cart-alert/emails', 'store', 118, false, true, '4eb11832-5429-4146-af06-de86d319a0e5', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('4082e51c-8c44-4abb-ac1b-50184ebcd207', 'plugin-ef537565-3db0-466e-8b56-1694499f6a03', 'Newsletter Plugin', 'envelope', '/admin/plugins/newsletter-plugin', NULL, 119, false, true, 'ef537565-3db0-466e-8b56-1694499f6a03', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+
+  -- =============================================
+  -- TEST/DEBUG ITEMS
+  -- =============================================
+  ('c7a5b648-8c9f-4d74-a347-b21d89cc25a6', 'test-dummy-page', 'Test Page', 'TestTube', '/admin/dummy-test', NULL, 999, false, true, NULL, NULL, NULL, 'Test page for navigation system debugging', NULL, NOW(), NOW(), 'standard')
 ON CONFLICT DO NOTHING;
 
 -- attribute_sets: Create 'Default' attribute set (store_id updated by provisioning service)
