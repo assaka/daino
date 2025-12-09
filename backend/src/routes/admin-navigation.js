@@ -210,30 +210,36 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Normalize all items first
-    const normalizedItems = items.map(item => ({
+    // Normalize all items first, preserving array index for stable sorting
+    const normalizedItems = items.map((item, arrayIndex) => ({
       key: item.key,
       label: item.label,
       icon: item.icon,
       route: item.route,
       parent_key: item.parent_key ?? item.parentKey ?? null,
       order_position: item.order_position ?? item.orderPosition ?? item.order ?? 0,
-      is_visible: item.is_visible ?? item.isVisible ?? true
+      is_visible: item.is_visible ?? item.isVisible ?? true,
+      _arrayIndex: arrayIndex // Preserve original array order for stable sorting
     }));
 
     // Separate top-level items and children
     const topLevelItems = normalizedItems.filter(item => !item.parent_key);
     const childItems = normalizedItems.filter(item => item.parent_key);
 
-    // Sort top-level items by their current order_position
-    topLevelItems.sort((a, b) => a.order_position - b.order_position);
+    // Sort top-level items by order_position, then by array index for stability
+    topLevelItems.sort((a, b) => {
+      if (a.order_position !== b.order_position) {
+        return a.order_position - b.order_position;
+      }
+      return a._arrayIndex - b._arrayIndex;
+    });
 
     // Recalculate top-level order positions: 10, 20, 30...
     topLevelItems.forEach((item, index) => {
       item.order_position = (index + 1) * 10;
     });
 
-    // Group children by parent and recalculate their positions: 1, 2, 3...
+    // Group children by parent, preserving order within each group
     const childrenByParent = {};
     childItems.forEach(item => {
       if (!childrenByParent[item.parent_key]) {
@@ -242,10 +248,15 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
       childrenByParent[item.parent_key].push(item);
     });
 
-    // Sort each group by current order and reassign: 1, 2, 3...
+    // Sort each group by order_position (then array index), and reassign: 1, 2, 3...
     Object.keys(childrenByParent).forEach(parentKey => {
       const children = childrenByParent[parentKey];
-      children.sort((a, b) => a.order_position - b.order_position);
+      children.sort((a, b) => {
+        if (a.order_position !== b.order_position) {
+          return a.order_position - b.order_position;
+        }
+        return a._arrayIndex - b._arrayIndex;
+      });
       children.forEach((child, index) => {
         child.order_position = index + 1;
       });
