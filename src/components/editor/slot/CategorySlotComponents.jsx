@@ -684,16 +684,20 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
-    // Debug: Log all product card child slot colSpans
-    const childSlotColSpans = {};
-    if (allSlots) {
-      Object.entries(allSlots).forEach(([id, s]) => {
-        if (s.parentId === 'product_card_template') {
-          childSlotColSpans[id] = s.colSpan;
-        }
-      });
-    }
-    console.log('[ProductItemsGrid] RENDER - products:', products.length, 'childSlotColSpans:', JSON.stringify(childSlotColSpans));
+    // Debug: Log all product card descendant slot colSpans
+    const debugCollectDescendants = (parentId, result = {}) => {
+      if (allSlots) {
+        Object.entries(allSlots).forEach(([id, s]) => {
+          if (s.parentId === parentId) {
+            result[id] = s.colSpan;
+            debugCollectDescendants(id, result);
+          }
+        });
+      }
+      return result;
+    };
+    const allDescendantColSpans = debugCollectDescendants('product_card_template');
+    console.log('[ProductItemsGrid] RENDER - products:', products.length, 'allDescendantColSpans:', JSON.stringify(allDescendantColSpans));
 
     // No products at all - let parent handle
     if (products.length === 0) {
