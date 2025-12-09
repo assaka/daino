@@ -657,7 +657,7 @@ router.delete('/slot-configurations/:id', authMiddleware, async (req, res) => {
 
 // PATCH a specific slot within a configuration (for admin theme sync)
 // Used by ThemeLayout to sync button colors to slot configurations
-router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res) => {
+router.patch('/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res) => {
   try {
     const { storeId, pageType, slotId } = req.params;
     const { styles, className, content } = req.body;
