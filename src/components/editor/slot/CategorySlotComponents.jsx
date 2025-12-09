@@ -523,13 +523,35 @@ const getGridClasses = (storeSettings) => {
 // Product Count Info Component
 const ProductCountInfo = createSlotComponent({
   name: 'ProductCountInfo',
-  render: ({ slot, className, styles, categoryContext, variableContext }) => {
-    // Use pre-formatted countText from variableContext.pagination
-    // This already handles singular/plural and pagination vs simple count
-    const countText = variableContext?.pagination?.countText || '';
+  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+    // Use pre-formatted countText from variableContext.pagination or categoryContext
+    let countText = variableContext?.pagination?.countText || categoryContext?.pagination?.countText || '';
+
+    // Fallback: Calculate count text if not provided
+    if (!countText) {
+      const pagination = variableContext?.pagination || categoryContext?.pagination || {};
+      const currentPage = pagination.currentPage || variableContext?.currentPage || categoryContext?.currentPage || 1;
+      const itemsPerPage = pagination.itemsPerPage || variableContext?.itemsPerPage || categoryContext?.itemsPerPage || 12;
+      const totalProducts = pagination.totalProducts ||
+        variableContext?.filteredProductsCount ||
+        categoryContext?.filteredProductsCount ||
+        variableContext?.products?.length ||
+        categoryContext?.products?.length || 0;
+
+      if (totalProducts > 0) {
+        const startIndex = ((currentPage - 1) * itemsPerPage) + 1;
+        const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
+        countText = `Showing ${startIndex}-${endIndex} of ${totalProducts} products`;
+      } else if (context === 'editor') {
+        // Show sample text in editor mode
+        countText = 'Showing 1-12 of 24 products';
+      } else {
+        countText = 'No products found';
+      }
+    }
 
     return (
-      <div className={className || slot.className} style={styles || slot.styles}>
+      <div className={className || slot?.className} style={styles || slot?.styles}>
         <div className="text-sm text-gray-600">
           {countText}
         </div>

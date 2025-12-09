@@ -165,6 +165,14 @@ function preprocessCategoryData(rawData, baseContext, options) {
     name: getCategoryName(category, currentLanguage) || category.name,
   } : null;
 
+  // Calculate pagination count text: "Showing X-Y of Z products"
+  const totalProducts = filteredProductsCount || formattedProducts.length;
+  const startIndex = totalProducts > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0;
+  const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
+  const countText = totalProducts > 0
+    ? `Showing ${startIndex}-${endIndex} of ${totalProducts} products`
+    : 'No products found';
+
   return {
     ...baseContext,
     // Formatted data
@@ -177,7 +185,16 @@ function preprocessCategoryData(rawData, baseContext, options) {
     selectedFilters,
     priceRange,
     categories,
-    // Pagination
+    // Pagination - include countText for ProductCountInfo component
+    pagination: {
+      currentPage,
+      totalPages,
+      itemsPerPage,
+      totalProducts,
+      startIndex,
+      endIndex,
+      countText,
+    },
     currentPage,
     totalPages,
     itemsPerPage,
