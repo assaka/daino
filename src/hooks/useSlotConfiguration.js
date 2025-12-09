@@ -1508,6 +1508,7 @@ export function useSlotConfiguration({
 
   // Generic grid resize handler
   const handleGridResize = useCallback((slotId, newColSpan, slots) => {
+    console.log('[handleGridResize] Called:', { slotId, newColSpan, slotExists: !!slots[slotId], oldColSpan: slots[slotId]?.colSpan });
     const updatedSlots = { ...slots };
 
     // Map instance slot IDs (product_card_name_0) to template IDs (product_card_name)
@@ -1522,6 +1523,9 @@ export function useSlotConfiguration({
         ...updatedSlots[slotId],
         colSpan: newColSpan
       };
+      console.log('[handleGridResize] Updated slot colSpan:', updatedSlots[slotId].colSpan);
+    } else {
+      console.warn('[handleGridResize] Slot not found:', slotId);
     }
 
     // CRITICAL: Also update the template slot so changes persist
