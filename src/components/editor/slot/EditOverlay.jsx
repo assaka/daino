@@ -328,26 +328,15 @@ export function EditOverlay({
       )}
 
       {/* Resize handles - show for all slot types when onResize is provided */}
-      {onResize && (isHovered || isSelected) && !isContainerType && (
+      {onResize && (isHovered || isSelected) && (
         <>
-          {/* Horizontal resize handle (right edge) */}
+          {/* Horizontal resize handle (right edge) - for all types */}
           <ResizeHandle
             direction="horizontal"
             onResize={(delta) => onResize(slotId, 'width', delta)}
           />
 
-          {/* Vertical resize handle (bottom edge) */}
-          <ResizeHandle
-            direction="vertical"
-            onResize={(delta) => onResize(slotId, 'height', delta)}
-          />
-        </>
-      )}
-
-      {/* For container types, only show resize if explicitly enabled */}
-      {onResize && (isHovered || isSelected) && isContainerType && (
-        <>
-          {/* Vertical resize handle only for containers (height adjustment) */}
+          {/* Vertical resize handle (bottom edge) - for all types */}
           <ResizeHandle
             direction="vertical"
             onResize={(delta) => onResize(slotId, 'height', delta)}
