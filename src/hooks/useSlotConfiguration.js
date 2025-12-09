@@ -931,8 +931,16 @@ export function useSlotConfiguration({
       }
 
       if (!slot.type) {
-        console.error(`❌ Slot ${slotId} missing type`, slot);
-        return false;
+        // Allow slots with only style overrides (from PATCH updates)
+        // These will be merged with default template at render time
+        if (slot.styles && Object.keys(slot).length <= 3) {
+          // Slot has id + styles (+ maybe className/content) - this is a style override
+          console.warn(`⚠️ Slot ${slotId} missing type (style override only) - will use default template`, slot);
+          // Don't fail validation - this slot will get type from default config
+        } else {
+          console.error(`❌ Slot ${slotId} missing type`, slot);
+          return false;
+        }
       }
 
       // Ensure viewMode is always an array

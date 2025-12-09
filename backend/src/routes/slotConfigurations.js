@@ -1587,13 +1587,17 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
       const currentConfig = existing.configuration || {};
       const currentSlots = currentConfig.slots || {};
 
-      // Update the specific slot
+      // Update the specific slot - only update if slot already exists
+      // CRITICAL: Do NOT create new slots without full config from default template
+      // This prevents "missing type" validation errors
       if (!currentSlots[slotId]) {
-        // Slot doesn't exist in saved config - create it
-        currentSlots[slotId] = { id: slotId, styles: {} };
+        // Slot doesn't exist in saved config - skip this update
+        // The default template config will be used which has proper type definition
+        console.log(`Slot ${slotId} not in saved config, skipping (default template will be used)`);
+        continue;
       }
 
-      // Apply updates
+      // Apply updates to existing slot (preserves type and other properties)
       if (styles) {
         currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
       }
