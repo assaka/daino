@@ -197,7 +197,7 @@ export default function ABTesting() {
       archived: { label: 'Archived', className: 'bg-gray-100 text-gray-600' },
     };
     const variant = variants[status] || variants.draft;
-    return <Badge className={variant.className}>{variant.label}</Badge>;
+    return <Badge variant="outline" className={variant.className}>{variant.label}</Badge>;
   };
 
   const stats = {
