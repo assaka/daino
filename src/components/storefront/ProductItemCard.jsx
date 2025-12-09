@@ -385,7 +385,7 @@ const ProductItemCard = ({
               className={addToCartConfig.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
               size="sm"
               style={{
-                backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                backgroundColor: settings?.theme?.add_to_cart_button_color || '#28a745',
                 color: 'white',
                 opacity: isProductOutOfStock(product) && !isEditorMode ? 0.5 : 1,
                 cursor: isProductOutOfStock(product) && !isEditorMode ? 'not-allowed' : 'pointer',

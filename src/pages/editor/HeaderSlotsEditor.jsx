@@ -84,8 +84,8 @@ export default function HeaderSlotsEditor() {
         show_language_selector: storeSettings?.show_language_selector === true,
         allowed_countries: storeSettings?.allowed_countries || ['US', 'CA', 'UK'],
         theme: storeSettings?.theme || {
-          primary_button_color: '#2563EB',
-          add_to_cart_button_color: '#10B981'
+          primary_button_color: '#007bff',
+          add_to_cart_button_color: '#28a745'
         }
       },
       user: null,
