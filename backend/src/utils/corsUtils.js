@@ -134,7 +134,9 @@ function getCorsOptions() {
       'expires',
       'Expires',
       'headers',
-      'x-requested-with'
+      'x-requested-with',
+      'x-skip-transform',
+      'X-Skip-Transform'
     ],
     exposedHeaders: ['Access-Control-Allow-Origin'],
     optionsSuccessStatus: 200,

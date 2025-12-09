@@ -217,7 +217,7 @@ app.options('/api/*', async (req, res, next) => {
       if (lookupDomain) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers,x-skip-transform,X-Skip-Transform');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.setHeader('Access-Control-Max-Age', '86400');
         res.setHeader('Cache-Control', 'public, max-age=86400');
