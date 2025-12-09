@@ -684,6 +684,8 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
+    console.log('[ProductItemsGrid] RENDER - products:', products.length, 'allSlots.product_card_name?.colSpan:', allSlots?.product_card_name?.colSpan);
+
     // No products at all - let parent handle
     if (products.length === 0) {
       return null;
@@ -692,8 +694,6 @@ const ProductItemsGrid = createSlotComponent({
     // Find product card template and descendants - same for both contexts
     const productCardTemplate = allSlots?.product_card_template;
     const productCardChildSlots = {};
-
-    console.log('[ProductItemsGrid] allSlots.product_card_name?.colSpan:', allSlots?.product_card_name?.colSpan);
 
     if (allSlots) {
       const collectDescendants = (parentId) => {
