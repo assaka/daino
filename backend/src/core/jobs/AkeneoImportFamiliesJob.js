@@ -47,8 +47,11 @@ class AkeneoImportFamiliesJob extends BaseJobHandler {
       await this.updateProgress(10, 'Initializing Akeneo integration...');
 
       // Initialize Akeneo integration
-      const config = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
-      akeneoIntegration = new AkeneoIntegration(config.getDecryptedConfig());
+      const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+      if (!integrationConfig || !integrationConfig.config_data) {
+        throw new Error('Akeneo integration not configured for this store');
+      }
+      akeneoIntegration = new AkeneoIntegration(integrationConfig.config_data);
 
       // Test connection
       const connectionTest = await akeneoIntegration.testConnection();
