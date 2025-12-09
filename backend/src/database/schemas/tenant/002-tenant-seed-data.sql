@@ -63,15 +63,11 @@ VALUES
   ('34efb882-144a-4177-90a4-0da9312baef7', 'orders', 'Orders', 'Receipt', '/admin/orders', 'sales', 2, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('6d782a02-a782-44dd-9721-552701e55571', 'customers', 'Customers', 'Users', '/admin/customers', 'sales', 3, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('9c18f251-f391-47aa-84ba-8c155f07e808', 'tax', 'Tax', 'DollarSign', '/admin/tax', 'sales', 4, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('f00b2a6d-21c6-44bb-bead-2d773a097c42', 'shipping_methods', 'Shipping Methods', 'Truck', '/admin/shipping-methods', 'sales', 5, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('f2237ccf-8449-42f3-ad6e-8ef6773e0010', 'payment_methods', 'Payment Methods', 'CreditCard', '/admin/payment-methods', 'sales', 6, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('ba916985-a696-4fbd-998c-df7cffa7ed28', 'coupons', 'Coupons', 'Ticket', '/admin/coupons', 'sales', 7, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('9e88d83f-3820-47ac-9138-7c7bc381ee41', 'delivery_settings', 'Delivery Settings', 'Calendar', '/admin/delivery-settings', 'sales', 8, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-
-  -- =============================================
-  -- CUSTOMERS CHILDREN (parent: customers, order: 1, 2, 3...)
-  -- =============================================
-  ('e8f92e5e-0e96-4b4d-bf43-25fea085035a', 'blacklist', 'Blacklist', 'Shield', '/admin/blacklist', 'customers', 1, true, true, NULL, 'main', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('e8f92e5e-0e96-4b4d-bf43-25fea085035a', 'blacklist', 'Blacklist', 'Shield', '/admin/blacklist', 'sales', 5, true, true, NULL, 'main', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('f00b2a6d-21c6-44bb-bead-2d773a097c42', 'shipping_methods', 'Shipping Methods', 'Truck', '/admin/shipping-methods', 'sales', 6, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('f2237ccf-8449-42f3-ad6e-8ef6773e0010', 'payment_methods', 'Payment Methods', 'CreditCard', '/admin/payment-methods', 'sales', 7, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('ba916985-a696-4fbd-998c-df7cffa7ed28', 'coupons', 'Coupons', 'Ticket', '/admin/coupons', 'sales', 8, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('9e88d83f-3820-47ac-9138-7c7bc381ee41', 'delivery_settings', 'Delivery Settings', 'Calendar', '/admin/delivery-settings', 'sales', 9, true, true, NULL, 'sales', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
 
   -- =============================================
   -- CONTENT CHILDREN (parent: content, order: 1, 2, 3...)
@@ -128,36 +124,7 @@ VALUES
   ('ada124ce-e1a5-4d93-b071-0514350deda0', 'uptime-report', 'Uptime Report', 'Activity', '/admin/uptime-report', 'store', 5, true, true, NULL, 'store', NULL, 'Track daily charges and uptime for running stores', NULL, NOW(), NOW(), 'standard'),
   ('2e6e8b58-03e9-4ad2-9ecc-8051c343a269', 'custom_domains', 'Custom Domains', 'Globe', '/admin/custom-domains', 'store', 6, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('d15c2f9e-ce66-42a2-85fa-280f8f170f62', 'cache', 'Cache', 'Database', '/admin/cache', 'store', 7, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 8, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, NOW(), NOW(), NULL),
-
-  -- =============================================
-  -- ADVANCED CHILDREN (parent: advanced, order: 1, 2, 3...)
-  -- =============================================
-  ('3305ab6e-5d31-4731-9af8-163daa2db9f6', 'billing', 'Billing', 'Wallet', '/admin/billing', 'advanced', 1, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('e92d88e9-5c06-4111-86ca-8eae762c8ba1', 'team', 'Team', 'Users', '/admin/team', 'advanced', 2, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('086a73b9-5323-4893-859f-612234ec807d', 'onboarding', 'Onboarding', 'BookOpen', '/admin/onboarding', 'advanced', 3, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('0a4ffc9f-283c-4aa0-874f-038a461bdbd0', 'plugins', 'Plugins', 'Puzzle', '/admin/plugins', 'advanced', 4, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('571400bd-6f57-48e4-b756-4c9e3401cdd3', 'ai_context_window', 'AI Context', 'Bot', '/admin/ai-context-window', 'advanced', 5, true, false, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('e9574017-db4f-4ab1-b97e-21f19b43b99b', 'scheduled_jobs', 'Scheduled Jobs', 'Calendar', '/admin/scheduled-jobs', 'advanced', 6, true, true, NULL, 'advanced', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-
-  -- =============================================
-  -- PLUGIN ITEMS (kept with high order numbers to appear at end)
-  -- =============================================
-  ('e413cc8c-ad78-48cc-af65-69985ac20507', 'plugin-902c67ba-dc39-4e6e-b218-cf606ccae19e', 'Plugin Item', 'Package', '/admin', NULL, 110, false, true, '902c67ba-dc39-4e6e-b218-cf606ccae19e', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('237f8e13-3063-4d7e-801a-efcb68c2d561', 'plugin-a233bd52-f7a9-4b1e-ba45-dc8cc734bc53', 'Plugin Item', 'Package', '/admin', NULL, 111, false, true, 'a233bd52-f7a9-4b1e-ba45-dc8cc734bc53', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('3d9cae05-b1bf-4f6d-8534-8a00a4673da8', 'plugin-aff4ce90-b77b-4fd8-aa10-827a0917d3e7', 'Plugin Item', 'Package', '/admin', NULL, 112, false, true, 'aff4ce90-b77b-4fd8-aa10-827a0917d3e7', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('54c16031-0df4-4bac-85b5-857ba0972e69', 'plugin-196ba25c-da64-4e2a-ab53-3978462ae84c', 'Plugin Item', 'Package', '/admin', NULL, 113, false, true, '196ba25c-da64-4e2a-ab53-3978462ae84c', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('1d2e3124-24f7-4b3c-ba15-19fc462ca2db', 'plugin-6da7eaa9-737a-4af7-ab4b-119c95deb5e7', 'Plugin Item', 'Package', '/admin', NULL, 114, false, true, '6da7eaa9-737a-4af7-ab4b-119c95deb5e7', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('f9f41d2c-5a44-4402-bc5d-42a704c956c4', 'plugin-b4fa6681-7371-463e-81b0-bc95dc72c88c', 'Plugin Item', 'Package', '/admin', NULL, 115, false, true, 'b4fa6681-7371-463e-81b0-bc95dc72c88c', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('740efd0a-7b46-40de-8397-89f1bec7735b', 'plugin-f9ef4770-4685-4d05-abd5-6b2c884057c3', 'Akeneo PIM', 'Database', '/admin/akeneo', 'products', 116, false, true, 'f9ef4770-4685-4d05-abd5-6b2c884057c3', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('24dde7e9-518b-449b-919c-3e0c06c51d61', 'plugin-c80b7d37-b985-4ead-be17-b265938753ab', 'Plugin Item', 'Package', '/admin', 'sales', 117, false, true, 'c80b7d37-b985-4ead-be17-b265938753ab', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('e129c820-497f-4ea0-836c-27b39b3f8b44', 'plugin-4eb11832-5429-4146-af06-de86d319a0e5', 'Email Capture', 'Mail', '/admin/plugins/my-cart-alert/emails', 'store', 118, false, true, '4eb11832-5429-4146-af06-de86d319a0e5', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('4082e51c-8c44-4abb-ac1b-50184ebcd207', 'plugin-ef537565-3db0-466e-8b56-1694499f6a03', 'Newsletter Plugin', 'envelope', '/admin/plugins/newsletter-plugin', NULL, 119, false, true, 'ef537565-3db0-466e-8b56-1694499f6a03', 'plugins', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-
-  -- =============================================
-  -- TEST/DEBUG ITEMS
-  -- =============================================
-  ('c7a5b648-8c9f-4d74-a347-b21d89cc25a6', 'test-dummy-page', 'Test Page', 'TestTube', '/admin/dummy-test', NULL, 999, false, true, NULL, NULL, NULL, 'Test page for navigation system debugging', NULL, NOW(), NOW(), 'standard')
+  ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 8, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, NOW(), NOW(), NULL)
 ON CONFLICT DO NOTHING;
 
 -- attribute_sets: Create 'Default' attribute set (store_id updated by provisioning service)
