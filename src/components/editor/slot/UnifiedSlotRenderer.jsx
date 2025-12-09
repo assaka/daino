@@ -1432,7 +1432,10 @@ export function UnifiedSlotRenderer({
         key={slot.id}
         className={`${colSpanClass} ${processedParentClassName}`}
         style={{
-          ...(gridColumn ? { gridColumn } : {}),
+          // CRITICAL: Only apply gridColumn in editor mode
+          // In storefront, Tailwind responsive classes (col-span-12 md:col-span-6) handle grid layout
+          // Inline gridColumn style would override responsive breakpoints
+          ...(context === 'editor' && gridColumn ? { gridColumn } : {}),
           ...slot.containerStyles
         }}
       >
