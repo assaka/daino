@@ -1563,7 +1563,7 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
       .from('slot_configurations')
       .select('*')
       .eq('store_id', storeId)
-      .eq('is_published', true);
+      .eq('status', 'published');
 
     if (findError) {
       throw findError;
