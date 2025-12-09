@@ -684,7 +684,16 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
-    console.log('[ProductItemsGrid] RENDER - products:', products.length, 'allSlots.product_card_name?.colSpan:', allSlots?.product_card_name?.colSpan);
+    // Debug: Log all product card child slot colSpans
+    const childSlotColSpans = {};
+    if (allSlots) {
+      Object.entries(allSlots).forEach(([id, s]) => {
+        if (s.parentId === 'product_card_template') {
+          childSlotColSpans[id] = s.colSpan;
+        }
+      });
+    }
+    console.log('[ProductItemsGrid] RENDER - products:', products.length, 'childSlotColSpans:', JSON.stringify(childSlotColSpans));
 
     // No products at all - let parent handle
     if (products.length === 0) {

@@ -417,12 +417,7 @@ class AkeneoClient {
         allProducts.length = 0; // Clear any partial data
         throw new Error(`All product fetch methods failed. Primary: ${primaryEndpoint}, Fallback: ${fallbackEndpoint}. Last error: ${error2.message}`);
       }
-        
-      } catch (error3) {
-        console.log(`❌ Method 3 failed: ${error3.message}`);
-        throw new Error(`All product fetch methods failed. Last error: ${error3.message}`);
-      }
-      
+
     } catch (error) {
       console.error('❌ Error fetching all products:', error.message);
       throw error;

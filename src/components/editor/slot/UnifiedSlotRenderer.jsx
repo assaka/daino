@@ -1327,6 +1327,11 @@ export function UnifiedSlotRenderer({
           throw new Error(`Component ${componentName} must implement a unified 'render' method. Separate renderEditor/renderStorefront methods are no longer supported.`);
         }
 
+        // Debug: Log when ProductItemsGrid component is being rendered
+        if (componentName === 'ProductItemsGrid') {
+          console.log('[UnifiedSlotRenderer] Rendering ProductItemsGrid, slots.product_card_name?.colSpan:', slots?.product_card_name?.colSpan);
+        }
+
         return renderMethod({
           slot,
           productContext: productData,

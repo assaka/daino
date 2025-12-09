@@ -10,7 +10,8 @@ class AkeneoIntegration {
       config.clientId,
       config.clientSecret,
       config.username,
-      config.password
+      config.password,
+      config.version || '7' // Pass version for correct API endpoint selection
     );
     this.mapping = new AkeneoMapping();
     this.importStats = {
