@@ -336,22 +336,24 @@ const NavigationManager = () => {
         return items;
       }
 
-      // Check if user is trying to drop ON an item (to make it a child)
-      // vs dropping BETWEEN items (to reorder at same level)
-      const dropOnItem = event.collisions?.[0]?.data?.droppableContainer?.id === over.id;
-
       let newItems = [...items];
       const draggedIndex = newItems.findIndex(item => item.key === active.id);
       const targetIndex = newItems.findIndex(item => item.key === over.id);
 
-      if (dropOnItem && targetItem.key !== draggedItem.parent_key) {
-        // Dropping ON an item - make it a child of that item
-        newItems[draggedIndex] = {
-          ...draggedItem,
-          parent_key: targetItem.key
-        };
+      // Determine if dragged item and target are in the same group (same parent)
+      const sameParent = draggedItem.parent_key === targetItem.parent_key;
+
+      if (sameParent) {
+        // Moving within the same group - just reorder, keep parent_key
+        newItems = arrayMove(newItems, draggedIndex, targetIndex);
       } else {
-        // Dropping BETWEEN items - reorder at same level
+        // Moving to a different group - update parent_key to match target's parent
+        // This means the item will join the same group as the target
+        newItems[draggedIndex] = {
+          ...newItems[draggedIndex],
+          parent_key: targetItem.parent_key
+        };
+        // Move the item in the array
         newItems = arrayMove(newItems, draggedIndex, targetIndex);
       }
 
@@ -377,10 +379,17 @@ const NavigationManager = () => {
   const moveUp = (index) => {
     if (index === 0) return;
 
+    const currentItem = navItems[index];
+    const prevItem = navItems[index - 1];
+
+    // Only allow moving within the same parent group
+    if (currentItem.parent_key !== prevItem.parent_key) {
+      return;
+    }
+
     const newItems = [...navItems];
-    const temp = newItems[index];
-    newItems[index] = newItems[index - 1];
-    newItems[index - 1] = temp;
+    newItems[index] = prevItem;
+    newItems[index - 1] = currentItem;
 
     // Recalculate all positions correctly
     setNavItems(recalculateOrderPositions(newItems));
@@ -390,10 +399,17 @@ const NavigationManager = () => {
   const moveDown = (index) => {
     if (index === navItems.length - 1) return;
 
+    const currentItem = navItems[index];
+    const nextItem = navItems[index + 1];
+
+    // Only allow moving within the same parent group
+    if (currentItem.parent_key !== nextItem.parent_key) {
+      return;
+    }
+
     const newItems = [...navItems];
-    const temp = newItems[index];
-    newItems[index] = newItems[index + 1];
-    newItems[index + 1] = temp;
+    newItems[index] = nextItem;
+    newItems[index + 1] = currentItem;
 
     // Recalculate all positions correctly
     setNavItems(recalculateOrderPositions(newItems));
