@@ -165,14 +165,25 @@ function preprocessCategoryData(rawData, baseContext, options) {
     name: getCategoryName(category, currentLanguage) || category.name,
   } : null;
 
-  // Calculate pagination count text: "Showing X-Y of Z products" (singular/plural)
+  // Calculate pagination count text (singular/plural)
+  // - "1 product" when showing 1 of 1
+  // - "8 products" when showing all 8 of 8
+  // - "12-24 of 24 products" when paginated
   const totalProducts = filteredProductsCount || formattedProducts.length;
   const startIndex = totalProducts > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0;
   const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
   const productWord = totalProducts === 1 ? 'product' : 'products';
-  const countText = totalProducts > 0
-    ? `Showing ${startIndex}-${endIndex} of ${totalProducts} ${productWord}`
-    : 'No products found';
+
+  let countText;
+  if (totalProducts === 0) {
+    countText = 'No products found';
+  } else if (startIndex === 1 && endIndex === totalProducts) {
+    // Showing all products on one page
+    countText = `${totalProducts} ${productWord}`;
+  } else {
+    // Paginated - show range
+    countText = `${startIndex}-${endIndex} of ${totalProducts} ${productWord}`;
+  }
 
   return {
     ...baseContext,

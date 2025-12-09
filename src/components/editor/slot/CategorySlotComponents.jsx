@@ -542,10 +542,17 @@ const ProductCountInfo = createSlotComponent({
         const startIndex = ((currentPage - 1) * itemsPerPage) + 1;
         const endIndex = Math.min(currentPage * itemsPerPage, totalProducts);
         const productWord = totalProducts === 1 ? 'product' : 'products';
-        countText = `Showing ${startIndex}-${endIndex} of ${totalProducts} ${productWord}`;
+
+        if (startIndex === 1 && endIndex === totalProducts) {
+          // Showing all products on one page: "8 products" or "1 product"
+          countText = `${totalProducts} ${productWord}`;
+        } else {
+          // Paginated: "12-24 of 24 products"
+          countText = `${startIndex}-${endIndex} of ${totalProducts} ${productWord}`;
+        }
       } else if (context === 'editor') {
         // Show sample text in editor mode
-        countText = 'Showing 1-12 of 24 products';
+        countText = '24 products';
       } else {
         countText = 'No products found';
       }
