@@ -91,6 +91,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     onResizeRef.current = onResize;
     onResizeStartRef.current = onResizeStart;
     onResizeEndRef.current = onResizeEnd;
+    console.log('[RESIZE] Refs updated:', {
+      hasOnResize: !!onResize,
+      hasOnResizeStart: !!onResizeStart,
+      hasOnResizeEnd: !!onResizeEnd
+    });
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
@@ -100,7 +105,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     e.nativeEvent?.stopImmediatePropagation?.();
 
     // CRITICAL: Immediately notify parent that handle is active
-    // This prevents GridColumn dragStart from firing
     if (onHoverChange) {
       onHoverChange(true);
     }
@@ -110,8 +114,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     handleElementRef.current = e.currentTarget;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
-    startValueRef.current = currentValue;
-    lastValueRef.current = currentValue;
+
+    // Parse the initial value to get numeric colSpan
+    const parsed = parseResponsiveColSpan(currentValue);
+    const numericValue = parsed.responsive || parsed.base;
+    startValueRef.current = numericValue;
+    lastValueRef.current = numericValue;
+
+    console.log('[RESIZE] Start:', { currentValue, numericValue, direction });
 
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
@@ -126,7 +136,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
-      const startValue = startValueRef.current;
 
       // Update mouse offset for visual handle movement
       if (isHorizontal) {
@@ -135,40 +144,31 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         setMouseOffset(deltaY);
       }
 
-      // Calculate and apply resize in real-time for visual feedback
-      let newValue;
+      // Calculate new value
+      let newNumericValue;
 
       if (direction === 'horizontal') {
-        const sensitivity = 40; // pixels per column
+        const sensitivity = 50; // pixels per column
         const colSpanDelta = Math.round(deltaX / sensitivity);
-
-        // Parse the current value (could be number or string)
-        const parsed = parseResponsiveColSpan(startValue);
-        const currentNumericValue = parsed.responsive || parsed.base;
-        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
-
-        // Build the new colSpan value
-        if (parsed.responsive) {
-          newValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
-        } else if (typeof startValue === 'string') {
-          newValue = buildResponsiveColSpan(newNumericValue, null);
-        } else {
-          newValue = newNumericValue;
-        }
+        newNumericValue = Math.max(minValue, Math.min(maxValue, startValueRef.current + colSpanDelta));
 
         // Apply resize immediately for visual feedback
-        if (newValue !== lastValueRef.current) {
-          lastValueRef.current = newValue;
-          onResizeRef.current(newValue);
+        if (newNumericValue !== lastValueRef.current) {
+          lastValueRef.current = newNumericValue;
+          console.log('[RESIZE] Move:', { deltaX, colSpanDelta, newNumericValue, hasCallback: !!onResizeRef.current });
+          if (onResizeRef.current) {
+            onResizeRef.current(newNumericValue);
+          } else {
+            console.error('[RESIZE] ERROR: onResizeRef.current is null/undefined!');
+          }
         }
       } else {
         const heightDelta = Math.round(deltaY / 2);
-        newValue = Math.max(20, startValue + heightDelta);
+        newNumericValue = Math.max(minValue, startValueRef.current + heightDelta);
 
-        // Apply resize immediately for visual feedback
-        if (newValue !== lastValueRef.current) {
-          lastValueRef.current = newValue;
-          onResizeRef.current(newValue);
+        if (newNumericValue !== lastValueRef.current) {
+          lastValueRef.current = newNumericValue;
+          onResizeRef.current(newNumericValue);
         }
       }
     };
@@ -176,35 +176,23 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     const handleMouseUp = (e) => {
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
-      const startValue = startValueRef.current;
 
-      // Calculate final value on release
+      // Calculate final value
       let finalValue;
 
       if (direction === 'horizontal') {
-        const sensitivity = 40; // pixels per column
+        const sensitivity = 50;
         const colSpanDelta = Math.round(deltaX / sensitivity);
-
-        // Parse the current value (could be number or string)
-        const parsed = parseResponsiveColSpan(startValue);
-        const currentNumericValue = parsed.responsive || parsed.base;
-        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
-
-        // Build the new colSpan value
-        if (parsed.responsive) {
-          finalValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
-        } else if (typeof startValue === 'string') {
-          finalValue = buildResponsiveColSpan(newNumericValue, null);
-        } else {
-          finalValue = newNumericValue;
-        }
+        finalValue = Math.max(minValue, Math.min(maxValue, startValueRef.current + colSpanDelta));
       } else {
         const heightDelta = Math.round(deltaY / 2);
-        finalValue = Math.max(20, startValue + heightDelta);
+        finalValue = Math.max(minValue, startValueRef.current + heightDelta);
       }
 
-      // Only save if value actually changed
-      if (finalValue !== startValue) {
+      console.log('[RESIZE] End:', { startValue: startValueRef.current, finalValue });
+
+      // Only save if value changed
+      if (finalValue !== startValueRef.current) {
         onResizeRef.current(finalValue);
       }
 
@@ -214,6 +202,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
+
+      // Notify parent handle is no longer active
+      if (onHoverChange) {
+        onHoverChange(false);
+      }
 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -913,7 +906,10 @@ export function GridColumn({
       {/* Grid column resize handle - always show in edit mode, becomes more visible on hover */}
       {showHorizontalHandle && (
         <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          onResize={(newColSpan) => {
+            console.log('[GRIDCOLUMN] onResize called:', { slotId, newColSpan, hasOnGridResize: !!onGridResize });
+            onGridResize(slotId, newColSpan);
+          }}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
