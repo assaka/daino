@@ -237,6 +237,10 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         handleElementRef.current.removeEventListener('pointerup', handleMouseUp);
         handleElementRef.current.removeEventListener('pointercancel', handleMouseUp);
       }
+      // Remove document-level fallback listeners
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointerup', handleMouseUp);
 
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
@@ -249,12 +253,17 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // CRITICAL: Attach listeners to the capturing element, not document!
-    // When setPointerCapture is used, events go to the capturing element
+    // Attach listeners to the capturing element
     const handleElement = e.currentTarget;
     handleElement.addEventListener('pointermove', handleMouseMove);
     handleElement.addEventListener('pointerup', handleMouseUp);
     handleElement.addEventListener('pointercancel', handleMouseUp);
+
+    // CRITICAL: Also attach to document as fallback for when pointer capture fails
+    // This ensures resize works even if setPointerCapture doesn't capture all events
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('pointerup', handleMouseUp);
 
   };
 

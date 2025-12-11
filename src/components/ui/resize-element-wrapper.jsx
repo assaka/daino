@@ -491,6 +491,8 @@ const ResizeWrapper = ({
 
     // CRITICAL: Store handle element reference for cleanup in handleMouseUp
     const handleElement = e.currentTarget;
+    // Store pointerId for cleanup
+    const pointerId = e.pointerId;
 
     const handleMouseUp = (upEvent) => {
       // Cancel any pending RAF
@@ -513,11 +515,11 @@ const ResizeWrapper = ({
       }
 
       // Release pointer capture using the stored handleElement
-      if (upEvent.pointerId !== undefined && handleElement) {
+      if (pointerId !== undefined && handleElement) {
         try {
-          handleElement.releasePointerCapture(upEvent.pointerId);
+          handleElement.releasePointerCapture(pointerId);
         } catch (err) {
-          console.warn('Could not release pointer', err);
+          // Ignore - pointer capture may already be released
         }
       }
 
@@ -528,18 +530,28 @@ const ResizeWrapper = ({
         onResizeEnd();
       }
 
-      // CRITICAL: Remove event listeners from the stored handleElement
+      // CRITICAL: Remove event listeners from BOTH handle element AND document
       if (handleElement) {
         handleElement.removeEventListener('pointermove', handleMouseMove);
         handleElement.removeEventListener('pointerup', handleMouseUp);
         handleElement.removeEventListener('pointercancel', handleMouseUp);
       }
+      // Remove document-level fallback listeners
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointerup', handleMouseUp);
     };
 
-    // Attach event listeners to handle element
+    // Attach event listeners to handle element (for pointer capture)
     handleElement.addEventListener('pointermove', handleMouseMove);
     handleElement.addEventListener('pointerup', handleMouseUp);
     handleElement.addEventListener('pointercancel', handleMouseUp);
+
+    // CRITICAL: Also attach to document as fallback for when pointer capture fails
+    // This ensures resize works even if setPointerCapture doesn't capture all events
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('pointerup', handleMouseUp);
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled, children, className, size.widthUnit]);
 
   // Check if this is an image element

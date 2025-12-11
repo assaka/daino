@@ -376,11 +376,11 @@ const UnifiedSlotsEditor = ({
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${
+    <div className={`h-full flex flex-col bg-gray-50 ${
       isSidebarVisible ? 'pr-80' : ''
     }`}>
       {/* Main Editor Area */}
-      <div className="flex flex-col">
+      <div className="flex flex-col flex-1 min-h-0">
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-1 h-12">
           <div className="flex items-center justify-between">
@@ -419,7 +419,7 @@ const UnifiedSlotsEditor = ({
 
         {/* Page Layout - Hierarchical Structure */}
         <div
-          className={`bg-gray-50 ${pageType}-page overflow-y-auto max-h-[calc(100vh-80px)]`}
+          className={`bg-gray-50 ${pageType}-page overflow-y-auto flex-1`}
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row - Hidden */}

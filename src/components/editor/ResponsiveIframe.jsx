@@ -91,7 +91,7 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
     : `${className} mx-auto bg-gray-50 py-4 h-full`;
 
   return (
-    <div className={wrapperClass} style={{ minHeight: '100vh' }}>
+    <div className={wrapperClass} style={{ height: '100%' }}>
       <iframe
         ref={iframeRef}
         style={{
@@ -101,7 +101,7 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
           boxShadow: viewport === 'desktop' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           display: 'block',
           margin: viewport === 'desktop' ? '0' : '0 auto',
-          minHeight: viewport === 'desktop' ? '100vh' : '667px'
+          minHeight: viewport === 'desktop' ? '100%' : '667px'
         }}
         title="Responsive Preview"
       />
