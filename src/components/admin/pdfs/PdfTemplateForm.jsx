@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, RotateCcw, Copy, Check, Info } from 'lucide-react';
+import { FileText, RotateCcw, Copy, Check, Info, Languages } from 'lucide-react';
 import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedVariable, setCopiedVariable] = useState(null);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   const [formData, setFormData] = useState({
     html_template: '',
@@ -272,8 +273,47 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
               onCheckedChange={(checked) => handleInputChange('is_active', checked)}
             />
           </div>
+          <div className="pt-2 border-t">
+            <button
+              type="button"
+              onClick={() => setShowTranslations(!showTranslations)}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              <Languages className="w-4 h-4" />
+              {showTranslations ? 'Hide translations' : 'Manage translations'}
+            </button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Translations Section - Inline like CMS Pages */}
+      {showTranslations && (
+        <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Languages className="w-5 h-5 text-blue-600" />
+            <h3 className="text-base font-semibold text-blue-900">PDF Template Translations</h3>
+          </div>
+          <TranslationFields
+            translations={formData.translations}
+            onChange={(newTranslations) => {
+              setFormData(prev => ({
+                ...prev,
+                translations: newTranslations,
+                // Sync main field with English translation
+                html_template: newTranslations.en?.html_template || prev.html_template
+              }));
+            }}
+            fields={[
+              { name: 'html_template', label: 'HTML Template', type: 'textarea', rows: 15, required: true }
+            ]}
+            storeId={getSelectedStoreId()}
+            entityType="pdf_template"
+          />
+          <p className="text-sm text-gray-600 mt-3">
+            Translate PDF template content for different languages. Use the magic wand to auto-translate from English.
+          </p>
+        </div>
+      )}
 
       {/* PDF Settings */}
       <Card>
@@ -467,23 +507,6 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
               <li>Keep fonts system-standard (Arial, Helvetica, Times)</li>
             </ul>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Translations */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Translations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TranslationFields
-            entityType="pdf_template"
-            translations={formData.translations || {}}
-            fields={[
-              { key: 'html_template', label: 'HTML Template', type: 'textarea', rows: 15 }
-            ]}
-            onChange={handleTranslationsChange}
-          />
         </CardContent>
       </Card>
 

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Send, Copy, Check, Eye, RotateCcw } from 'lucide-react';
+import { Mail, Send, Copy, Check, Eye, RotateCcw, Languages } from 'lucide-react';
 import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { toast } from 'sonner';
@@ -271,7 +271,17 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
               placeholder="e.g., Welcome to {{store_name}}!"
               required
             />
-            <p className="text-xs text-gray-500">Use variables like {'{{'} customer_name {'}}'}  for dynamic content</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">Use variables like {'{{'} customer_name {'}}'}  for dynamic content</p>
+              <button
+                type="button"
+                onClick={() => setShowTranslations(!showTranslations)}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <Languages className="w-4 h-4" />
+                {showTranslations ? 'Hide translations' : 'Manage translations'}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
@@ -284,6 +294,39 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Translations Section - Inline like CMS Pages */}
+      {showTranslations && (
+        <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Languages className="w-5 h-5 text-blue-600" />
+            <h3 className="text-base font-semibold text-blue-900">Email Template Translations</h3>
+          </div>
+          <TranslationFields
+            translations={formData.translations}
+            onChange={(newTranslations) => {
+              setFormData(prev => ({
+                ...prev,
+                translations: newTranslations,
+                // Sync main fields with English translation
+                subject: newTranslations.en?.subject || prev.subject,
+                template_content: newTranslations.en?.template_content || prev.template_content,
+                html_content: newTranslations.en?.html_content || prev.html_content
+              }));
+            }}
+            fields={[
+              { name: 'subject', label: 'Subject', type: 'text', required: true },
+              { name: 'template_content', label: 'Template Content', type: 'textarea', rows: 6 },
+              { name: 'html_content', label: 'HTML Content', type: 'textarea', rows: 10 }
+            ]}
+            storeId={getSelectedStoreId()}
+            entityType="email_template"
+          />
+          <p className="text-sm text-gray-600 mt-3">
+            Translate email content to provide a localized experience for your customers. Use the magic wand to auto-translate from English.
+          </p>
+        </div>
+      )}
 
       {/* Content Type & Editor */}
       <Card>
@@ -423,30 +466,6 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
             </p>
           </div>
         </CardContent>
-      </Card>
-
-      {/* Translations */}
-      <Card>
-        <CardHeader className="cursor-pointer" onClick={() => setShowTranslations(!showTranslations)}>
-          <div className="flex items-center justify-between">
-            <CardTitle>Translations</CardTitle>
-            <Badge variant="outline">{Object.keys(formData.translations || {}).length} languages</Badge>
-          </div>
-        </CardHeader>
-        {showTranslations && (
-          <CardContent>
-            <TranslationFields
-              entityType="email_template"
-              translations={formData.translations || {}}
-              fields={[
-                { name: 'subject', label: 'Subject', type: 'text', required: true },
-                { name: 'template_content', label: 'Template Content', type: 'textarea', rows: 6 },
-                { name: 'html_content', label: 'HTML Content', type: 'textarea', rows: 10 }
-              ]}
-              onChange={handleTranslationsChange}
-            />
-          </CardContent>
-        )}
       </Card>
 
       {/* Form Actions */}
