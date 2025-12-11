@@ -117,10 +117,10 @@ class AkeneoMapping {
       description: this.extractProductValue(values, 'description', locale),
       short_description: this.extractProductValue(values, 'short_description', locale),
       price: this.extractNumericValue(values, 'price', locale),
-      sale_price: this.extractNumericValue(values, 'sale_price', locale) || 
-                  this.extractNumericValue(values, 'special_price', locale) ||
-                  this.extractNumericValue(values, 'discounted_price', locale),
-      compare_price: this.extractNumericValue(values, 'compare_price', locale) || 
+      // sale_price from Akeneo maps to compare_price (the "was" price)
+      compare_price: this.extractNumericValue(values, 'compare_price', locale) ||
+                     this.extractNumericValue(values, 'sale_price', locale) ||
+                     this.extractNumericValue(values, 'special_price', locale) ||
                      this.extractNumericValue(values, 'msrp', locale) ||
                      this.extractNumericValue(values, 'regular_price', locale),
       cost_price: this.extractNumericValue(values, 'cost_price', locale) || 
@@ -186,7 +186,7 @@ class AkeneoMapping {
           // Check if this is a valid Product model field or should go to attributes
           const productModelFields = [
             'id', 'name', 'slug', 'sku', 'barcode', 'description', 'short_description',
-            'price', 'sale_price', 'special_price', 'compare_price', 'cost_price', 'weight', 'dimensions', 'images',
+            'price', 'compare_price', 'cost_price', 'weight', 'dimensions', 'images',
             'status', 'visibility', 'manage_stock', 'stock_quantity', 'allow_backorders',
             'low_stock_threshold', 'infinite_stock', 'is_custom_option', 'is_coupon_eligible',
             'featured', 'tags', 'seo', 'store_id', 'attribute_set_id', 'category_ids',
@@ -2138,12 +2138,10 @@ class AkeneoMapping {
                              this.extractNumericValue(values, 'base_price', locale) ||
                              this.extractNumericValue(values, 'unit_price', locale);
     
-    commonAttributes.sale_price = this.extractNumericValue(values, 'sale_price', locale) ||
-                                  this.extractNumericValue(values, 'special_price', locale) ||
-                                  this.extractNumericValue(values, 'discounted_price', locale) ||
-                                  this.extractNumericValue(values, 'promo_price', locale);
-    
+    // sale_price from Akeneo maps to compare_price (no sale_price column on products table)
     commonAttributes.compare_price = this.extractNumericValue(values, 'compare_price', locale) ||
+                                     this.extractNumericValue(values, 'sale_price', locale) ||
+                                     this.extractNumericValue(values, 'special_price', locale) ||
                                      this.extractNumericValue(values, 'msrp', locale) ||
                                      this.extractNumericValue(values, 'regular_price', locale) ||
                                      this.extractNumericValue(values, 'list_price', locale);
