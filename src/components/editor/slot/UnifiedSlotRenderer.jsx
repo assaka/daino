@@ -1279,6 +1279,12 @@ export function UnifiedSlotRenderer({
                         type === 'flex' ? 'flex flex-wrap gap-2' : '';
       }
 
+      // CRITICAL: In editor mode, containers need grid layout for child colSpan/gridColumn to work
+      // Add grid classes if not already present (for container type, not flex)
+      if (context === 'editor' && type === 'container' && !containerClass.includes('grid')) {
+        containerClass = `grid grid-cols-12 gap-2 ${containerClass}`;
+      }
+
       return (
         <div className={containerClass} style={processedStyles}>
           <UnifiedSlotRenderer
