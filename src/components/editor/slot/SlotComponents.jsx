@@ -97,13 +97,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
-    console.log('🔵 [GRID RESIZE] handleMouseDown fired', {
-      type: e.type,
-      pointerId: e.pointerId,
-      direction,
-      target: e.target.className
-    });
-
     // CRITICAL: Prevent parent GridColumn drag from starting
     e.preventDefault();
     e.stopPropagation();
@@ -117,9 +110,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     if (e.pointerId !== undefined && handleElement.setPointerCapture) {
       try {
         handleElement.setPointerCapture(e.pointerId);
-        console.log('🔵 [GRID RESIZE] Pointer capture set on currentTarget');
       } catch (err) {
-        console.warn('🔵 [GRID RESIZE] Failed to capture pointer:', err);
+        // Ignore - pointer capture may fail in some contexts
       }
     }
 
@@ -132,7 +124,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     isDraggingRef.current = true;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
-    console.log('🔵 [GRID RESIZE] Start position:', { x: e.clientX, y: e.clientY });
 
     // Store the original value (can be number or string)
     startValueRef.current = currentValue;
@@ -147,14 +138,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
-      console.log('🔵 [GRID RESIZE] handleMouseMove fired', { clientX: e.clientX, clientY: e.clientY, isDragging: isDraggingRef.current });
-
       if (!isDraggingRef.current) return;
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
-      console.log('🔵 [GRID RESIZE] Delta:', { deltaX, deltaY, startValue });
 
       // Calculate and apply resize in real-time for visual feedback
       let newValue;
@@ -168,18 +156,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const currentNumericValue = parsed.responsive || parsed.base;
         const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
 
-        console.log('🔵 [GRID RESIZE] Calculation:', {
-          deltaX,
-          sensitivity,
-          colSpanDelta,
-          startValue,
-          parsed,
-          currentNumericValue,
-          newNumericValue,
-          minValue,
-          maxValue
-        });
-
         // Build the new colSpan value
         if (parsed.responsive) {
           newValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
@@ -190,22 +166,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         }
 
         // Apply resize immediately for visual feedback
-        console.log('🔵 [GRID RESIZE] Comparison:', {
-          newValue,
-          newValueType: typeof newValue,
-          lastValue: lastValueRef.current,
-          lastValueType: typeof lastValueRef.current,
-          areEqual: newValue === lastValueRef.current
-        });
         if (newValue !== lastValueRef.current) {
-          console.log('🔵 [GRID RESIZE] Applying new colSpan:', { oldValue: lastValueRef.current, newValue });
           lastValueRef.current = newValue;
           onResizeRef.current(newValue);
         }
 
-        // Update handle position to follow mouse during drag
-        setMouseOffset(deltaX);
-        console.log('🔵 [GRID RESIZE] Handle offset updated:', deltaX);
+        // For horizontal grid resize, don't apply mouse offset -
+        // the handle naturally moves with the element's edge as gridColumn changes
+        // Adding offset would cause double-movement (element edge + offset)
+        setMouseOffset(0);
       } else {
         const heightDelta = Math.round(deltaY / 2);
         newValue = Math.max(minValue, startValue + heightDelta);
@@ -355,10 +324,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       draggable={false}
       onMouseDown={handleMouseDown}
       onPointerDown={handleMouseDown}
-      onClick={(e) => {
-        console.log('🔵 [GRID RESIZE] onClick fired (fallback)');
-        e.stopPropagation();
-      }}
       onMouseEnter={() => {
         setIsHovered(true);
         onHoverChange?.(true);
@@ -495,11 +460,6 @@ export function GridColumn({
   selectedElementId = null, // Add selectedElementId prop
   productData = {} // Add productData prop for real admin settings
 }) {
-  // Debug: Log when GridColumn receives new colSpan
-  useEffect(() => {
-    console.log('🟣 [GridColumn] Received colSpan update:', { slotId, colSpan, colSpanClass, useTailwindClass });
-  }, [slotId, colSpan, colSpanClass, useTailwindClass]);
-
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropZone, setDropZone] = useState(null);
@@ -839,9 +799,6 @@ export function GridColumn({
 
     setDropZone(null);
   }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
-
-  // Debug: Log gridStyles
-  console.log('🟣 [GridColumn] gridStyles:', { slotId, gridColumn: useTailwindClass ? 'using class' : `span ${colSpan}`, colSpanClass });
 
   const gridStyles = {
     ...(useTailwindClass ? {} : { gridColumn: `span ${colSpan}` }),
