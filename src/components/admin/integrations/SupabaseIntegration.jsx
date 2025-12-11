@@ -763,19 +763,9 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             <div className="flex items-start space-x-3">
               <Cloud className="w-5 h-5 text-green-600 mt-0.5" />
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium text-green-900">
-                    Connected to Supabase Project
-                  </h4>
-                  <button
-                    onClick={handleDisconnectClick}
-                    className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                    title="Disconnect from Supabase and delete all API details"
-                  >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Disconnect
-                  </button>
-                </div>
+                <h4 className="text-sm font-medium text-green-900 mb-1">
+                  Connected to Supabase Project
+                </h4>
                 
                 {/* Project Selector Dropdown */}
                 {projects.length > 1 && !status.limitedScope && (

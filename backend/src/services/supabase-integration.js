@@ -193,6 +193,42 @@ class SupabaseIntegration {
   }
 
   /**
+   * Check if OAuth token is expiring soon (within 10 minutes)
+   * Used for proactive refresh before actual expiry
+   */
+  isTokenExpiringSoon(config) {
+    if (!config || !config.expires_at) return true;
+    const expiresAt = new Date(config.expires_at);
+    const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000);
+    return expiresAt <= tenMinutesFromNow;
+  }
+
+  /**
+   * Proactively refresh token if expired or expiring soon
+   * Returns refreshed token or original if still valid
+   */
+  async ensureValidToken(storeId) {
+    const token = await this.getSupabaseToken(storeId);
+    if (!token) return null;
+
+    if (this.isTokenExpiringSoon(token)) {
+      console.log('Token expired or expiring soon, proactively refreshing...');
+      try {
+        const refreshResult = await this.refreshToken(storeId);
+        if (refreshResult.success) {
+          console.log('Proactive token refresh successful');
+          // Return updated token
+          return await this.getSupabaseToken(storeId);
+        }
+      } catch (error) {
+        console.error('Proactive token refresh failed:', error.message);
+        // Return original token, let the caller handle the failure
+      }
+    }
+    return token;
+  }
+
+  /**
    * Generate OAuth authorization URL for Supabase
    */
   getAuthorizationUrl(storeId, state) {
@@ -1215,8 +1251,8 @@ class SupabaseIntegration {
       try {
         config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-        // Get token from config (getSupabaseToken returns legacy format)
-        token = await this.getSupabaseToken(storeId);
+        // Get token and proactively refresh if expired or expiring soon
+        token = await this.ensureValidToken(storeId);
 
         if (!token) {
 
