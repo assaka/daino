@@ -530,17 +530,24 @@ const ResizeWrapper = ({
         onResizeEnd();
       }
 
+      // CRITICAL: Get the correct document context (may be inside an iframe)
+      const ownerDoc = handleElement?.ownerDocument || document;
+
       // CRITICAL: Remove event listeners from BOTH handle element AND document
       if (handleElement) {
         handleElement.removeEventListener('pointermove', handleMouseMove);
         handleElement.removeEventListener('pointerup', handleMouseUp);
         handleElement.removeEventListener('pointercancel', handleMouseUp);
       }
-      // Remove document-level fallback listeners
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('pointerup', handleMouseUp);
+      // Remove document-level fallback listeners (use correct document context)
+      ownerDoc.removeEventListener('mousemove', handleMouseMove);
+      ownerDoc.removeEventListener('mouseup', handleMouseUp);
+      ownerDoc.removeEventListener('pointerup', handleMouseUp);
     };
+
+    // CRITICAL: Get the correct document context (may be inside an iframe)
+    // When inside an iframe, we need to use the iframe's document, not the parent
+    const ownerDoc = handleElement.ownerDocument || document;
 
     // Attach event listeners to handle element (for pointer capture)
     handleElement.addEventListener('pointermove', handleMouseMove);
@@ -549,9 +556,9 @@ const ResizeWrapper = ({
 
     // CRITICAL: Also attach to document as fallback for when pointer capture fails
     // This ensures resize works even if setPointerCapture doesn't capture all events
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('pointerup', handleMouseUp);
+    ownerDoc.addEventListener('mousemove', handleMouseMove);
+    ownerDoc.addEventListener('mouseup', handleMouseUp);
+    ownerDoc.addEventListener('pointerup', handleMouseUp);
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled, children, className, size.widthUnit]);
 
   // Check if this is an image element

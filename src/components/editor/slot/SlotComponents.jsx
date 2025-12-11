@@ -231,16 +231,19 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         onHoverChange(false);
       }
 
+      // CRITICAL: Get the correct document context (may be inside an iframe)
+      const ownerDoc = handleElementRef.current?.ownerDocument || document;
+
       // Remove listeners from handle element
       if (handleElementRef.current) {
         handleElementRef.current.removeEventListener('pointermove', handleMouseMove);
         handleElementRef.current.removeEventListener('pointerup', handleMouseUp);
         handleElementRef.current.removeEventListener('pointercancel', handleMouseUp);
       }
-      // Remove document-level fallback listeners
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('pointerup', handleMouseUp);
+      // Remove document-level fallback listeners (use correct document context)
+      ownerDoc.removeEventListener('mousemove', handleMouseMove);
+      ownerDoc.removeEventListener('mouseup', handleMouseUp);
+      ownerDoc.removeEventListener('pointerup', handleMouseUp);
 
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
@@ -255,20 +258,27 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
     // Attach listeners to the capturing element
     const handleElement = e.currentTarget;
+
+    // CRITICAL: Get the correct document context (may be inside an iframe)
+    const ownerDoc = handleElement.ownerDocument || document;
+
     handleElement.addEventListener('pointermove', handleMouseMove);
     handleElement.addEventListener('pointerup', handleMouseUp);
     handleElement.addEventListener('pointercancel', handleMouseUp);
 
     // CRITICAL: Also attach to document as fallback for when pointer capture fails
-    // This ensures resize works even if setPointerCapture doesn't capture all events
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('pointerup', handleMouseUp);
+    // Use ownerDocument to work correctly inside iframes
+    ownerDoc.addEventListener('mousemove', handleMouseMove);
+    ownerDoc.addEventListener('mouseup', handleMouseUp);
+    ownerDoc.addEventListener('pointerup', handleMouseUp);
 
   };
 
   useEffect(() => {
     return () => {
+      // CRITICAL: Get the correct document context (may be inside an iframe)
+      const ownerDoc = handleElementRef.current?.ownerDocument || document;
+
       // Cleanup on unmount - remove listeners from handle element if they exist
       if (handleElementRef.current) {
         if (mouseMoveHandlerRef.current) {
@@ -279,13 +289,13 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           handleElementRef.current.removeEventListener('pointercancel', mouseUpHandlerRef.current);
         }
       }
-      // Also cleanup document listeners
+      // Also cleanup document listeners (use correct document context for iframes)
       if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+        ownerDoc.removeEventListener('mousemove', mouseMoveHandlerRef.current);
       }
       if (mouseUpHandlerRef.current) {
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
-        document.removeEventListener('pointerup', mouseUpHandlerRef.current);
+        ownerDoc.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        ownerDoc.removeEventListener('pointerup', mouseUpHandlerRef.current);
       }
     };
   }, []);
