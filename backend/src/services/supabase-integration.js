@@ -919,72 +919,57 @@ class SupabaseIntegration {
   }
 
   /**
-   * Disconnect Supabase (revoke tokens)
+   * Disconnect Supabase (delete all credentials)
    */
   async disconnect(storeId) {
     try {
       console.log('Disconnecting Supabase for store:', storeId);
 
-      // Get current config data before deletion
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const { data: configData } = await tenantDb
+
+      // 1. Delete from integration_configs where integration_type='supabase-oauth'
+      console.log('Deleting supabase-oauth from integration_configs...');
+      const { error: integrationDeleteError } = await tenantDb
         .from('integration_configs')
-        .select('*')
+        .delete()
         .eq('store_id', storeId)
-        .eq('integration_type', this.integrationType)
-        .eq('is_active', true)
-        .maybeSingle();
-      const userEmail = configData?.config_data?.userEmail || null;
+        .eq('integration_type', this.integrationType);
 
-      // Delete token from tenant database
-      const token = await this.getSupabaseToken(storeId);
-      if (token) {
-        console.log('Deleting OAuth token from tenant database');
-        await this.deleteSupabaseToken(storeId);
+      if (integrationDeleteError) {
+        console.error('Error deleting from integration_configs:', integrationDeleteError);
       } else {
-        console.log('No OAuth token found to delete');
+        console.log('✓ Deleted supabase-oauth from integration_configs');
       }
 
-      // Delete all stored project keys for this store
-      const deletedKeysCount = await this.deleteAllProjectKeys(storeId);
-      if (deletedKeysCount > 0) {
-        console.log(`Deleted ${deletedKeysCount} stored project key(s) from database`);
-      } else {
-        console.log('No stored project keys found to delete');
+      // Also delete supabase-keys if present
+      const { error: keysDeleteError } = await tenantDb
+        .from('integration_configs')
+        .delete()
+        .eq('store_id', storeId)
+        .eq('integration_type', this.keysIntegrationType);
+
+      if (!keysDeleteError) {
+        console.log('✓ Deleted supabase-keys from integration_configs');
       }
 
-      // Update IntegrationConfig - preserve userEmail to detect orphaned authorizations
-      if (configData) {
-        console.log('Updating IntegrationConfig to disconnected state');
+      // 2. Delete from store_databases in master DB
+      console.log('Deleting from store_databases in master DB...');
+      const { masterDbClient } = require('../database/masterConnection');
+      const { error: storeDatabaseDeleteError } = await masterDbClient
+        .from('store_databases')
+        .delete()
+        .eq('store_id', storeId);
 
-        // Check if this was a revoked connection
-        const wasRevoked = configData.connection_status === 'failed';
-
-        await tenantDb
-          .from('integration_configs')
-          .update({
-            is_active: false,
-            connection_status: 'failed',
-            config_data: {
-              connected: false,
-              disconnectedAt: new Date(),
-              userEmail: userEmail, // Preserve email to track orphaned authorizations
-              revokedDetected: false, // Clear revoked flag
-              message: wasRevoked
-                ? 'Disconnected after authorization was revoked.'
-                : 'Disconnected by user. App may still be authorized in Supabase account.'
-            },
-            updated_at: new Date()
-          })
-          .eq('id', configData.id);
+      if (storeDatabaseDeleteError) {
+        console.error('Error deleting from store_databases:', storeDatabaseDeleteError);
       } else {
-        console.log('No IntegrationConfig found to update');
+        console.log('✓ Deleted from store_databases');
       }
 
-      console.log('✅ Supabase disconnection completed');
-      return { 
-        success: true, 
-        message: 'Supabase disconnected successfully',
+      console.log('✅ Supabase disconnection completed - all records deleted');
+      return {
+        success: true,
+        message: 'Supabase disconnected successfully. All credentials have been removed.',
         note: 'To fully revoke access, go to your Supabase account settings and remove the DainoStore app authorization.'
       };
     } catch (error) {
