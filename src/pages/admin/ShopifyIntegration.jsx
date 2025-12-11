@@ -249,39 +249,6 @@ const ShopifyIntegration = () => {
     }
   };
 
-  const testConnection = async () => {
-    if (!storeId) {
-      setMessage({ type: 'error', text: 'No store selected' });
-      return;
-    }
-
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch('/api/shopify/test-connection', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': storeId
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setFlashMessage({ type: 'success', text: data.message });
-        checkConnectionStatus();
-      } else {
-        setMessage({ type: 'error', text: data.message });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to test connection' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const disconnectShopify = async () => {
     if (!storeId) {
       setMessage({ type: 'error', text: 'No store selected' });
@@ -709,21 +676,6 @@ const ShopifyIntegration = () => {
                       </AlertDescription>
                     </Alert>
                   )}
-
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={testConnection}
-                      disabled={loading}
-                      variant="outline"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                      )}
-                      Test Connection
-                    </Button>
-                  </div>
                 </div>
               )}
             </CardContent>
