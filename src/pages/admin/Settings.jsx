@@ -541,10 +541,11 @@ export default function Settings() {
                   <StoreLogoUpload
                     value={store?.logo_url || ''}
                     onChange={(url) => setStore(prev => ({ ...prev, logo_url: url }))}
+                    storeId={store?.id}
                     maxFileSizeMB={5}
                     allowedTypes={['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg']}
                   />
-                  <p className="text-sm text-gray-500 mt-1">Upload your store logo (recommended size: 200x200px)</p>
+                  <p className="text-sm text-gray-500 mt-1">Upload your store logo (recommended size: 200x200px). Saves automatically.</p>
                 </div>
 
 

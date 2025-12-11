@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { Store } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Upload,
   X,
-  Image as ImageIcon,
   AlertTriangle,
   CheckCircle,
   Loader2
@@ -15,18 +15,26 @@ import {
 const StoreLogoUpload = ({
   value = '',
   onChange,
+  storeId,
   maxFileSizeMB = 5,
   allowedTypes = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'],
   disabled = false
 }) => {
   const { getSelectedStoreId } = useStoreSelection();
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const fileInputRef = useRef();
   const dragCounter = useRef(0);
+
+  const getToken = () => {
+    return localStorage.getItem('store_owner_auth_token') ||
+           localStorage.getItem('customer_auth_token') ||
+           localStorage.getItem('auth_token');
+  };
 
   const validateFile = (file) => {
     if (file.size > maxFileSizeMB * 1024 * 1024) {
@@ -40,9 +48,14 @@ const StoreLogoUpload = ({
   };
 
   const uploadFile = async (file) => {
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
+    const currentStoreId = storeId || getSelectedStoreId();
+    if (!currentStoreId) {
       throw new Error('Store not selected');
+    }
+
+    const token = getToken();
+    if (!token) {
+      throw new Error('Not authenticated');
     }
 
     const formData = new FormData();
@@ -53,14 +66,15 @@ const StoreLogoUpload = ({
     const response = await fetch('/api/storage/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`,
+        'x-store-id': currentStoreId
       },
       body: formData
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Upload failed');
+      throw new Error(errorData.error || errorData.message || 'Upload failed');
     }
 
     const result = await response.json();
@@ -69,6 +83,21 @@ const StoreLogoUpload = ({
     }
 
     return result;
+  };
+
+  const saveLogoUrl = async (logoUrl) => {
+    const currentStoreId = storeId || getSelectedStoreId();
+    if (!currentStoreId) {
+      throw new Error('Store not selected');
+    }
+
+    setSaving(true);
+    try {
+      await Store.updateSettings(currentStoreId, { logo_url: logoUrl });
+      return true;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleFileSelect = async (files) => {
@@ -85,12 +114,19 @@ const StoreLogoUpload = ({
 
       setUploadProgress(30);
       const result = await uploadFile(file);
-      setUploadProgress(100);
+      setUploadProgress(70);
 
       const logoUrl = result.data?.publicUrl || result.data?.url;
-      onChange(logoUrl);
-      setSuccess('Logo uploaded successfully');
 
+      // Update local state
+      onChange(logoUrl);
+
+      // Auto-save to database
+      setUploadProgress(90);
+      await saveLogoUrl(logoUrl);
+      setUploadProgress(100);
+
+      setSuccess('Logo uploaded and saved');
       setTimeout(() => setSuccess(null), 3000);
     } catch (error) {
       console.error('Upload error:', error);
@@ -142,10 +178,18 @@ const StoreLogoUpload = ({
     }
   };
 
-  const removeLogo = () => {
-    onChange('');
-    setSuccess('Logo removed');
-    setTimeout(() => setSuccess(null), 3000);
+  const removeLogo = async () => {
+    setError(null);
+    try {
+      onChange('');
+      await saveLogoUrl('');
+      setSuccess('Logo removed');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error) {
+      console.error('Remove error:', error);
+      setError(error.message);
+      setTimeout(() => setError(null), 5000);
+    }
   };
 
   return (
@@ -166,10 +210,12 @@ const StoreLogoUpload = ({
       )}
 
       {/* Upload Progress */}
-      {uploading && (
+      {(uploading || saving) && (
         <div className="mb-2">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium">Uploading...</span>
+            <span className="text-sm font-medium">
+              {saving ? 'Saving...' : 'Uploading...'}
+            </span>
             <span className="text-sm text-gray-500">{Math.round(uploadProgress)}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
@@ -196,7 +242,7 @@ const StoreLogoUpload = ({
               className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={removeLogo}
               title="Remove logo"
-              disabled={disabled}
+              disabled={disabled || saving}
             >
               <X className="w-3 h-3" />
             </Button>
@@ -217,7 +263,7 @@ const StoreLogoUpload = ({
           onDragLeave={!disabled ? handleDragLeave : undefined}
           onDragOver={!disabled ? handleDragOver : undefined}
           onDrop={!disabled ? handleDrop : undefined}
-          onClick={!disabled && !uploading ? () => fileInputRef.current?.click() : undefined}
+          onClick={!disabled && !uploading && !saving ? () => fileInputRef.current?.click() : undefined}
         >
           <input
             ref={fileInputRef}
@@ -225,13 +271,15 @@ const StoreLogoUpload = ({
             accept={allowedTypes.map(type => `.${type}`).join(',')}
             onChange={handleFileInputChange}
             className="hidden"
-            disabled={disabled || uploading}
+            disabled={disabled || uploading || saving}
           />
 
-          {uploading ? (
+          {uploading || saving ? (
             <div className="flex flex-col items-center py-2">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
-              <p className="text-sm text-blue-700">Uploading logo...</p>
+              <p className="text-sm text-blue-700">
+                {saving ? 'Saving logo...' : 'Uploading logo...'}
+              </p>
             </div>
           ) : (
             <div className="flex flex-col items-center py-2">
