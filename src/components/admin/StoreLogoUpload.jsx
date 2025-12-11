@@ -59,7 +59,7 @@ const StoreLogoUpload = ({
     }
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
     formData.append('folder', 'store-logos');
     formData.append('public', 'true');
 
