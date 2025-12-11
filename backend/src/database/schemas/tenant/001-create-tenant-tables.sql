@@ -30,16 +30,6 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE enum_akeneo_custom_mappings_mapping_type AS ENUM (
-    'attributes',
-    'images',
-    'files'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
     CREATE TYPE enum_akeneo_schedules_import_type AS ENUM (
     'attributes',
     'families',
@@ -1131,17 +1121,6 @@ CREATE TABLE IF NOT EXISTS ai_store_intelligence (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS akeneo_custom_mappings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  mapping_type VARCHAR(50) NOT NULL,
-  mappings JSON DEFAULT '[]'::json NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  created_by UUID,
-  updated_by UUID
-);
-
 CREATE TABLE IF NOT EXISTS import_statistics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
@@ -1157,23 +1136,6 @@ CREATE TABLE IF NOT EXISTS import_statistics (
   processing_time_seconds INTEGER,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS akeneo_mappings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  akeneo_code VARCHAR(255) NOT NULL,
-  akeneo_type VARCHAR(50) NOT NULL,
-  entity_type VARCHAR(50) NOT NULL,
-  entity_id UUID NOT NULL,
-  entity_slug VARCHAR(255),
-  store_id UUID NOT NULL,
-  is_active BOOLEAN DEFAULT true,
-  mapping_source VARCHAR(50) DEFAULT 'auto'::character varying,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  metadata JSONB DEFAULT '{}'::jsonb,
-  sort_order INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS akeneo_schedules (
@@ -1294,6 +1256,42 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   -- Constraints
   UNIQUE(store_id, integration_source, external_attribute_code) -- One mapping per external attribute per source
 );
+
+CREATE TABLE IF NOT EXISTS integration_category_mappings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Store
+  store_id UUID NOT NULL,
+
+  -- External Platform Side
+  integration_source VARCHAR(50) NOT NULL, -- 'shopify', 'akeneo', 'woocommerce', etc.
+  external_category_id VARCHAR(255), -- External platform's category ID (Shopify collection ID)
+  external_category_code VARCHAR(255), -- External platform's category code (Akeneo category code)
+  external_category_name VARCHAR(255), -- Human-readable name from external platform
+  external_parent_code VARCHAR(255), -- Parent category code for hierarchy matching
+
+  -- DainoStore Side (Internal)
+  internal_category_id UUID, -- NULL if unmapped
+
+  -- Mapping Configuration
+  mapping_type VARCHAR(20) DEFAULT 'manual' CHECK (mapping_type IN ('auto', 'manual', 'ai')),
+  confidence_score DECIMAL(3,2) DEFAULT 1.00, -- For auto-matched categories (0.00-1.00)
+  is_active BOOLEAN DEFAULT true,
+  sync_enabled BOOLEAN DEFAULT true, -- Whether to sync products in this category
+
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  last_synced_at TIMESTAMP, -- When products were last synced for this category
+
+  -- Constraints - allow one mapping per external category per source
+  UNIQUE(store_id, integration_source, external_category_id),
+  UNIQUE(store_id, integration_source, external_category_code)
+);
+
+-- Index for quick lookups
+CREATE INDEX IF NOT EXISTS idx_integration_category_mappings_lookup
+  ON integration_category_mappings(store_id, integration_source, internal_category_id);
 
 CREATE TABLE IF NOT EXISTS blacklist_countries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3219,8 +3217,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id
 
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id, created_at);
 
-CREATE UNIQUE INDEX IF NOT EXISTS akeneo_custom_mappings_store_id_mapping_type ON akeneo_custom_mappings USING btree (store_id, mapping_type);
-
 CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
@@ -3309,8 +3305,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_store_intelligence_store ON ai_store_in
 
 CREATE INDEX IF NOT EXISTS idx_ai_store_intelligence_branch ON ai_store_intelligence USING btree (detected_branch);
 
-CREATE INDEX IF NOT EXISTS idx_akeneo_custom_mappings_store_id ON akeneo_custom_mappings USING btree (store_id);
-
 CREATE INDEX IF NOT EXISTS idx_import_statistics_date ON import_statistics USING btree (import_date DESC);
 
 CREATE INDEX IF NOT EXISTS idx_import_statistics_store_id ON import_statistics USING btree (store_id);
@@ -3322,14 +3316,6 @@ CREATE INDEX IF NOT EXISTS idx_import_statistics_type ON import_statistics USING
 CREATE INDEX IF NOT EXISTS idx_import_statistics_source ON import_statistics USING btree (import_source);
 
 CREATE INDEX IF NOT EXISTS idx_import_statistics_unique ON import_statistics USING btree (store_id, import_type, import_source, import_date);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_entity ON akeneo_mappings USING btree (entity_type, entity_id);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_lookup ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, is_active);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_sort_order ON akeneo_mappings USING btree (sort_order);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_akeneo_mappings_unique ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, entity_type);
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_credit_cost ON akeneo_schedules USING btree (credit_cost);
 
@@ -4164,15 +4150,7 @@ ALTER TABLE ab_tests ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id
 
 ALTER TABLE ai_usage_logs ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
-
-ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
-
 ALTER TABLE import_statistics ADD CONSTRAINT import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-ALTER TABLE akeneo_mappings ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE akeneo_schedules ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
