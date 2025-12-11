@@ -1431,6 +1431,8 @@ class AkeneoIntegration {
         delete updateData.meta_description;
         delete updateData.meta_keywords;
         delete updateData.seo; // SEO object also contains translatable fields
+        // sale_price is not a valid column - use compare_price instead
+        delete updateData.sale_price;
         updateData.updated_at = new Date().toISOString();
 
         await tenantDb
@@ -1457,6 +1459,8 @@ class AkeneoIntegration {
         delete productData.meta_description;
         delete productData.meta_keywords;
         delete productData.seo; // SEO object also contains translatable fields
+        // sale_price is not a valid column - use compare_price instead
+        delete productData.sale_price;
 
         const { data: newProduct, error: createError } = await tenantDb
           .from('products')
