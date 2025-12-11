@@ -51,6 +51,7 @@ AkeneoCustomMapping.getMappings = async function(storeId, mappingType = null) {
     const attributes = (data || []).map(mapping => ({
       id: mapping.id,
       akeneoField: mapping.external_attribute_code,
+      akeneoAttribute: mapping.external_attribute_code, // Alias for frontend compatibility
       dainoField: mapping.internal_attribute_code,
       enabled: mapping.is_active
     }));
@@ -97,10 +98,16 @@ AkeneoCustomMapping.saveMappings = async function(storeId, mappingType, mappings
     // Insert new mappings
     const records = [];
     for (const mapping of (mappings || [])) {
-      const akeneoField = mapping.akeneoField;
+      // Support both field names from frontend
+      const akeneoField = mapping.akeneoField || mapping.akeneoAttribute;
       const dainoField = mapping.dainoField;
 
-      if (!akeneoField || !dainoField) continue;
+      if (!akeneoField || !dainoField) {
+        console.log('⚠️ Skipping mapping - missing akeneoField or dainoField:', mapping);
+        continue;
+      }
+
+      console.log(`📝 Saving mapping: ${akeneoField} → ${dainoField}`);
 
       // Try to find the actual attribute ID for the dainoField
       const { data: attr } = await tenantDb
