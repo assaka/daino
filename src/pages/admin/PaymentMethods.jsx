@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink, Eye, EyeOff } from "lucide-react";
 import apiClient from "@/api/client";
-import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, linkExistingStripeAccount, getStripeConnectOAuthUrl } from "@/api/functions";
+import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, getStripeConnectOAuthUrl } from "@/api/functions";
 import {
   Dialog,
   DialogContent,
@@ -59,9 +59,6 @@ export default function PaymentMethods() {
   const [connectingStripe, setConnectingStripe] = useState(false);
   const [disconnectingStripe, setDisconnectingStripe] = useState(false);
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
-  const [linkExistingDialogOpen, setLinkExistingDialogOpen] = useState(false);
-  const [existingAccountId, setExistingAccountId] = useState('');
-  const [linkingAccount, setLinkingAccount] = useState(false);
   const [connectingExistingAccount, setConnectingExistingAccount] = useState(false);
 
   // Conditions data
@@ -208,36 +205,6 @@ export default function PaymentMethods() {
       setFlashMessage({ type: 'error', message: 'Error disconnecting Stripe: ' + error.message });
     } finally {
       setDisconnectingStripe(false);
-    }
-  };
-
-  const handleLinkExistingAccount = async () => {
-    if (!selectedStore?.id || !existingAccountId.trim()) return;
-
-    const accountId = existingAccountId.trim();
-    if (!accountId.startsWith('acct_')) {
-      setFlashMessage({ type: 'error', message: 'Invalid account ID. Must start with "acct_"' });
-      return;
-    }
-
-    setLinkingAccount(true);
-    try {
-      const response = await linkExistingStripeAccount(selectedStore.id, accountId);
-      const data = response.data?.data || response.data;
-
-      if (data?.onboardingComplete) {
-        setFlashMessage({ type: 'success', message: 'Stripe account linked successfully!' });
-      } else {
-        setFlashMessage({ type: 'warning', message: 'Account linked but onboarding is incomplete. You may need to complete setup in Stripe.' });
-      }
-
-      setLinkExistingDialogOpen(false);
-      setExistingAccountId('');
-      loadStripeConnectStatus();
-    } catch (error) {
-      setFlashMessage({ type: 'error', message: 'Error linking account: ' + error.message });
-    } finally {
-      setLinkingAccount(false);
     }
   };
 
@@ -1467,67 +1434,6 @@ export default function PaymentMethods() {
           iconClassName="text-orange-600"
           iconBgClassName="bg-orange-100"
         />
-
-        <Dialog open={linkExistingDialogOpen} onOpenChange={setLinkExistingDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Link2 className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <DialogTitle>Link Existing Stripe Account</DialogTitle>
-                  <DialogDescription>
-                    Enter your Stripe account ID to link it directly.
-                  </DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-            <div className="py-4">
-              <Label htmlFor="accountId" className="text-sm font-medium">
-                Stripe Account ID
-              </Label>
-              <Input
-                id="accountId"
-                value={existingAccountId}
-                onChange={(e) => setExistingAccountId(e.target.value)}
-                placeholder="acct_xxxxxxxxxxxx"
-                className="mt-2"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Find your account ID in the URL when logged into Stripe (e.g., dashboard.stripe.com/<strong>acct_xxx</strong>/...) or under Settings → Account details
-              </p>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setLinkExistingDialogOpen(false);
-                  setExistingAccountId('');
-                }}
-                disabled={linkingAccount}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleLinkExistingAccount}
-                disabled={linkingAccount || !existingAccountId.trim()}
-              >
-                {linkingAccount ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Linking...
-                  </>
-                ) : (
-                  <>
-                    <Link2 className="w-4 h-4 mr-2" />
-                    Link Account
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
