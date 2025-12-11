@@ -439,7 +439,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
               entityType="email_template"
               translations={formData.translations || {}}
               fields={[
-                { name: 'subject', label: 'Subject', type: 'text' },
+                { name: 'subject', label: 'Subject', type: 'text', required: true },
                 { name: 'template_content', label: 'Template Content', type: 'textarea', rows: 6 },
                 { name: 'html_content', label: 'HTML Content', type: 'textarea', rows: 10 }
               ]}
