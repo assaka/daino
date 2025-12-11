@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
-import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X, Folder, FolderOpen, Package } from 'lucide-react';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X, Folder, FolderOpen, Package, Unlink } from 'lucide-react';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {
@@ -529,6 +529,14 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 Connected
               </span>
+              <button
+                onClick={handleDisconnectClick}
+                disabled={disconnecting}
+                className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
+                title="Disconnect Supabase"
+              >
+                <Unlink className="w-4 h-4" />
+              </button>
             </>
           ) : (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
