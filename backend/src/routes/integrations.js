@@ -1645,4 +1645,181 @@ router.post('/akeneo/debug-attributes', authMiddleware, storeResolver(), async (
   }
 });
 
+// ============================================
+// CATEGORY MAPPING ENDPOINTS
+// ============================================
+
+const CategoryMappingService = require('../services/CategoryMappingService');
+
+/**
+ * GET /integrations/category-mappings/:source
+ * Get all category mappings for a source (akeneo, shopify)
+ */
+router.get('/category-mappings/:source', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+    const mappings = await mappingService.getMappings();
+    const storeCategories = await mappingService.getStoreCategories();
+
+    res.json({
+      success: true,
+      mappings,
+      storeCategories,
+      stats: {
+        total: mappings.length,
+        mapped: mappings.filter(m => m.internal_category_id).length,
+        unmapped: mappings.filter(m => !m.internal_category_id).length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching category mappings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /integrations/category-mappings/:source/sync
+ * Sync external categories to the mappings table
+ */
+router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+    const { categories } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    if (!categories || !Array.isArray(categories)) {
+      return res.status(400).json({ success: false, message: 'Categories array required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+    const results = await mappingService.syncExternalCategories(categories);
+
+    res.json({
+      success: true,
+      message: `Synced ${results.created + results.updated} categories`,
+      results
+    });
+  } catch (error) {
+    console.error('Error syncing category mappings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /integrations/category-mappings/:source/auto-match
+ * Auto-match all unmapped categories
+ */
+router.post('/category-mappings/:source/auto-match', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+    const results = await mappingService.autoMatchAll();
+
+    res.json({
+      success: true,
+      message: `Auto-matched ${results.matched} categories`,
+      results
+    });
+  } catch (error) {
+    console.error('Error auto-matching categories:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /integrations/category-mappings/:source/:externalCode
+ * Update a single category mapping
+ */
+router.put('/category-mappings/:source/:externalCode', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source, externalCode } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+    const { internal_category_id } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+
+    if (internal_category_id) {
+      await mappingService.setMapping(externalCode, internal_category_id);
+    } else {
+      await mappingService.removeMapping(externalCode);
+    }
+
+    res.json({
+      success: true,
+      message: internal_category_id ? 'Category mapped successfully' : 'Category mapping removed'
+    });
+  } catch (error) {
+    console.error('Error updating category mapping:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /integrations/category-mappings/:source/bulk-update
+ * Bulk update multiple category mappings
+ */
+router.post('/category-mappings/:source/bulk-update', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+    const { mappings } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    if (!mappings || !Array.isArray(mappings)) {
+      return res.status(400).json({ success: false, message: 'Mappings array required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+    let updated = 0;
+    let errors = [];
+
+    for (const mapping of mappings) {
+      try {
+        if (mapping.internal_category_id) {
+          await mappingService.setMapping(mapping.external_category_code, mapping.internal_category_id);
+        } else {
+          await mappingService.removeMapping(mapping.external_category_code);
+        }
+        updated++;
+      } catch (err) {
+        errors.push({ code: mapping.external_category_code, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Updated ${updated} category mappings`,
+      updated,
+      errors
+    });
+  } catch (error) {
+    console.error('Error bulk updating category mappings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

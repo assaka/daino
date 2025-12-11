@@ -34,7 +34,6 @@ VALUES
   -- =============================================
   -- TOP-LEVEL NAVIGATION (order_position: 10, 20, 30...)
   -- =============================================
-  ('c37be799-dc3a-419d-a1cd-689776333602', 'dashboard', 'Dashboard', 'LayoutDashboard', '/admin/dashboard', NULL, 10, true, true, NULL, 'main', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('e07959cb-4083-428a-a68f-185f845f9e2d', 'catalog', 'Catalog', 'Package', NULL, NULL, 20, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('6c05b36b-b525-4d55-81fe-b8857ed21572', 'sales', 'Sales', 'Receipt', NULL, NULL, 30, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('63e01829-d4b6-4e8e-a7f2-9578d4c7f394', 'content', 'Content', 'FileText', NULL, NULL, 40, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),

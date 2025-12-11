@@ -99,18 +99,26 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
-    console.log('🔵 [GRID RESIZE] handleMouseDown fired', { pointerId: e.pointerId, direction });
+    console.log('🔵 [GRID RESIZE] handleMouseDown fired', {
+      type: e.type,
+      pointerId: e.pointerId,
+      direction,
+      target: e.target.className
+    });
 
     // CRITICAL: Prevent parent GridColumn drag from starting
     e.preventDefault();
     e.stopPropagation();
 
     // Capture pointer to ensure we receive all pointer events even if mouse leaves the element
-    try {
-      e.target.setPointerCapture(e.pointerId);
-      console.log('🔵 [GRID RESIZE] Pointer capture set');
-    } catch (err) {
-      console.warn('🔵 [GRID RESIZE] Failed to capture pointer:', err);
+    // Only try pointer capture if pointerId exists (pointer events, not mouse events)
+    if (e.pointerId !== undefined && e.target.setPointerCapture) {
+      try {
+        e.target.setPointerCapture(e.pointerId);
+        console.log('🔵 [GRID RESIZE] Pointer capture set');
+      } catch (err) {
+        console.warn('🔵 [GRID RESIZE] Failed to capture pointer:', err);
+      }
     }
 
     // CRITICAL: Immediately notify parent that handle is active
@@ -322,13 +330,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
   return (
     <div
-      className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
-        isHovered || isDragging || parentHovered
-          ? 'opacity-100'
-          : 'opacity-0 hover:opacity-100'
-      }`}
+      className={`absolute ${positionClass} ${cursorClass}`}
       draggable={false}
+      onMouseDown={handleMouseDown}
       onPointerDown={handleMouseDown}
+      onClick={(e) => {
+        console.log('🔵 [GRID RESIZE] onClick fired (fallback)');
+        e.stopPropagation();
+      }}
       onMouseEnter={() => {
         setIsHovered(true);
         onHoverChange?.(true);
