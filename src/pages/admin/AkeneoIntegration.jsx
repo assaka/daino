@@ -187,6 +187,7 @@ const AkeneoIntegration = () => {
   const [importing, setImporting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [configSaved, setConfigSaved] = useState(false);
+  const [mappingsSaved, setMappingsSaved] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
@@ -568,9 +569,12 @@ const AkeneoIntegration = () => {
   // Save custom mappings to database
   const saveCustomMappingsToDb = async (mappings) => {
     if (!selectedStore?.id) return;
-    
+
     try {
       await apiClient.post('/integrations/akeneo/custom-mappings', mappings);
+      // Show "Saved" indicator briefly
+      setMappingsSaved(true);
+      setTimeout(() => setMappingsSaved(false), 2000);
     } catch (error) {
       console.error('Failed to save custom mappings to database:', error);
       toast.error('Failed to save custom mappings');
@@ -3366,7 +3370,14 @@ const AkeneoIntegration = () => {
                   {/* Mapping Settings */}
                   <Separator />
                   <div className="space-y-4">
-                    <h4 className="font-medium">Custom Field Mapping</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">Custom Field Mapping</h4>
+                      {mappingsSaved && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 animate-pulse">
+                          Saved
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">Configure custom mappings between Akeneo and DainoStore fields</p>
                     
                     {/* Attribute Mapping */}
