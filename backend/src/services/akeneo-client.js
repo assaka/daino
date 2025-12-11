@@ -353,6 +353,7 @@ class AkeneoClient {
 
   /**
    * Get all products with pagination handling (version-aware)
+   * Uses search_after pagination to avoid 100-page limit
    */
   async getAllProducts() {
     const allProducts = [];
@@ -360,32 +361,45 @@ class AkeneoClient {
     const fallbackEndpoint = this.version >= 6 ? '/api/rest/v1/products' : '/api/rest/v1/products-uuid';
 
     try {
-      console.log(`🔍 Fetching ALL products with pagination (Akeneo v${this.version})...`);
+      console.log(`🔍 Fetching ALL products with search_after pagination (Akeneo v${this.version})...`);
       console.log(`📌 Primary endpoint: ${primaryEndpoint}`);
 
       let primaryError = null;
 
-      // Method 1: Try version-appropriate endpoint first
+      // Method 1: Try version-appropriate endpoint with search_after pagination
       try {
-        console.log(`📦 Method 1: Primary endpoint (${primaryEndpoint}) with pagination`);
-        let nextUrl = null;
-        let pageCount = 0;
+        console.log(`📦 Method 1: Primary endpoint (${primaryEndpoint}) with search_after pagination`);
+        let searchAfter = null;
+        let batchCount = 0;
 
         do {
-          pageCount++;
-          const params = nextUrl ? {} : { limit: 100 };
-          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : primaryEndpoint;
+          batchCount++;
+          // Use search_after pagination to avoid 100-page limit
+          const params = {
+            limit: 100,
+            pagination_type: 'search_after'
+          };
 
-          console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
-          const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+          if (searchAfter) {
+            params.search_after = searchAfter;
+          }
+
+          console.log(`📄 Fetching batch ${batchCount}${searchAfter ? ` (search_after: ${searchAfter})` : ' (first batch)'}`);
+          const response = await this.makeRequest('GET', primaryEndpoint, null, params);
 
           if (response._embedded && response._embedded.items) {
             allProducts.push(...response._embedded.items);
-            console.log(`✅ Page ${pageCount}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
+            console.log(`✅ Batch ${batchCount}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
           }
 
-          nextUrl = response._links && response._links.next ? response._links.next.href : null;
-        } while (nextUrl);
+          // Get search_after value from next link or items
+          searchAfter = null;
+          if (response._links && response._links.next && response._links.next.href) {
+            // Extract search_after from next URL
+            const nextUrl = new URL(response._links.next.href, this.baseUrl);
+            searchAfter = nextUrl.searchParams.get('search_after');
+          }
+        } while (searchAfter);
 
         console.log(`✅ Method 1 successful: ${allProducts.length} total products`);
         return allProducts;
@@ -396,27 +410,38 @@ class AkeneoClient {
         allProducts.length = 0; // Clear any partial data
       }
 
-      // Method 2: Try fallback endpoint
+      // Method 2: Try fallback endpoint with search_after pagination
       try {
-        console.log(`📦 Method 2: Fallback endpoint (${fallbackEndpoint}) with pagination`);
-        let nextUrl = null;
-        let pageCount = 0;
+        console.log(`📦 Method 2: Fallback endpoint (${fallbackEndpoint}) with search_after pagination`);
+        let searchAfter = null;
+        let batchCount = 0;
 
         do {
-          pageCount++;
-          const params = nextUrl ? {} : { limit: 100 };
-          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : fallbackEndpoint;
+          batchCount++;
+          const params = {
+            limit: 100,
+            pagination_type: 'search_after'
+          };
 
-          console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
-          const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+          if (searchAfter) {
+            params.search_after = searchAfter;
+          }
+
+          console.log(`📄 Fetching batch ${batchCount}${searchAfter ? ` (search_after: ${searchAfter})` : ' (first batch)'}`);
+          const response = await this.makeRequest('GET', fallbackEndpoint, null, params);
 
           if (response._embedded && response._embedded.items) {
             allProducts.push(...response._embedded.items);
-            console.log(`✅ Page ${pageCount}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
+            console.log(`✅ Batch ${batchCount}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
           }
 
-          nextUrl = response._links && response._links.next ? response._links.next.href : null;
-        } while (nextUrl);
+          // Get search_after value from next link
+          searchAfter = null;
+          if (response._links && response._links.next && response._links.next.href) {
+            const nextUrl = new URL(response._links.next.href, this.baseUrl);
+            searchAfter = nextUrl.searchParams.get('search_after');
+          }
+        } while (searchAfter);
 
         console.log(`✅ Method 2 successful: ${allProducts.length} total products`);
         return allProducts;
