@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import CategoryMappingPanel from '../../components/admin/CategoryMappingPanel';
 
 // Add global error handler to catch minified errors
 if (typeof window !== 'undefined' && !window.__akeneoErrorHandlerInstalled) {
@@ -3037,6 +3038,18 @@ const AkeneoIntegration = () => {
               {renderTabImportResults('categories')}
             </CardContent>
           </Card>
+
+          {/* Category Mapping Panel */}
+          <CategoryMappingPanel
+            integrationSource="akeneo"
+            externalCategories={availableCategories.map(cat => ({
+              id: cat.code,
+              code: cat.code,
+              name: cat.labels?.en_US || cat.labels?.en || cat.code,
+              parent_code: cat.parent
+            }))}
+            title="Akeneo Category Mapping"
+          />
         </TabsContent>
 
         <TabsContent value="products" className="space-y-6">

@@ -110,12 +110,16 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     e.preventDefault();
     e.stopPropagation();
 
+    // CRITICAL: Use currentTarget (the element with the listener), not target (could be child)
+    const handleElement = e.currentTarget;
+    handleElementRef.current = handleElement;
+
     // Capture pointer to ensure we receive all pointer events even if mouse leaves the element
     // Only try pointer capture if pointerId exists (pointer events, not mouse events)
-    if (e.pointerId !== undefined && e.target.setPointerCapture) {
+    if (e.pointerId !== undefined && handleElement.setPointerCapture) {
       try {
-        e.target.setPointerCapture(e.pointerId);
-        console.log('🔵 [GRID RESIZE] Pointer capture set');
+        handleElement.setPointerCapture(e.pointerId);
+        console.log('🔵 [GRID RESIZE] Pointer capture set on currentTarget');
       } catch (err) {
         console.warn('🔵 [GRID RESIZE] Failed to capture pointer:', err);
       }
@@ -128,7 +132,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
     setIsDragging(true);
     isDraggingRef.current = true;
-    handleElementRef.current = e.currentTarget;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
     console.log('🔵 [GRID RESIZE] Start position:', { x: e.clientX, y: e.clientY });
@@ -277,12 +280,10 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // Attach listeners to the capturing element
-    const handleElement = e.currentTarget;
-
     // CRITICAL: Get the correct document context (may be inside an iframe)
     const ownerDoc = handleElement.ownerDocument || document;
 
+    // Attach listeners to the capturing element (handleElement was set at start of function)
     handleElement.addEventListener('pointermove', handleMouseMove);
     handleElement.addEventListener('pointerup', handleMouseUp);
     handleElement.addEventListener('pointercancel', handleMouseUp);

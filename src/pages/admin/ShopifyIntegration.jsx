@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CategoryMappingPanel from '../../components/admin/CategoryMappingPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -879,6 +880,12 @@ const ShopifyIntegration = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Collection/Category Mapping Panel */}
+              <CategoryMappingPanel
+                integrationSource="shopify"
+                title="Shopify Collection Mapping"
+              />
             </>
           )}
         </TabsContent>
