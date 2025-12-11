@@ -1440,6 +1440,44 @@ class AkeneoIntegration {
           .update(updateData)
           .eq('id', existingProduct.id);
 
+        // Update or create product_translations
+        try {
+          const { data: existingTranslation } = await tenantDb
+            .from('product_translations')
+            .select('id')
+            .eq('product_id', existingProduct.id)
+            .eq('language_code', 'en')
+            .maybeSingle();
+
+          const translationData = {
+            name: transformedProduct.name || '',
+            description: transformedProduct.description || '',
+            short_description: transformedProduct.short_description || '',
+            meta_title: transformedProduct.meta_title || transformedProduct.seo?.meta_title || '',
+            meta_description: transformedProduct.meta_description || transformedProduct.seo?.meta_description || '',
+            updated_at: new Date().toISOString()
+          };
+
+          if (existingTranslation) {
+            await tenantDb
+              .from('product_translations')
+              .update(translationData)
+              .eq('product_id', existingProduct.id)
+              .eq('language_code', 'en');
+          } else {
+            await tenantDb
+              .from('product_translations')
+              .insert({
+                product_id: existingProduct.id,
+                language_code: 'en',
+                ...translationData,
+                created_at: new Date().toISOString()
+              });
+          }
+        } catch (translationError) {
+          console.warn(`⚠️ Failed to update translation for product ${existingProduct.id}:`, translationError.message);
+        }
+
         return { success: true, action: 'updated', productId: existingProduct.id };
       } else {
         // Create new product
@@ -1470,6 +1508,24 @@ class AkeneoIntegration {
 
         if (createError) {
           throw new Error(`Failed to create product: ${createError.message}`);
+        }
+
+        // Create product_translations for name, description, etc.
+        try {
+          await tenantDb
+            .from('product_translations')
+            .insert({
+              product_id: newProduct.id,
+              language_code: 'en',
+              name: transformedProduct.name || '',
+              description: transformedProduct.description || '',
+              short_description: transformedProduct.short_description || '',
+              meta_title: transformedProduct.meta_title || transformedProduct.seo?.meta_title || '',
+              meta_description: transformedProduct.meta_description || transformedProduct.seo?.meta_description || '',
+              created_at: new Date().toISOString()
+            });
+        } catch (translationError) {
+          console.warn(`⚠️ Failed to create translation for product ${newProduct.id}:`, translationError.message);
         }
 
         return { success: true, action: 'created', productId: newProduct.id };
