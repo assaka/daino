@@ -567,7 +567,7 @@ router.get('/connect-oauth-url', authMiddleware, authorize(['admin', 'store_owne
     })).toString('base64');
 
     // Build OAuth URL
-    const redirectUri = `${process.env.CORS_ORIGIN}/dashboard/payments/oauth-callback`;
+    const redirectUri = `${process.env.CORS_ORIGIN}/admin/payments/oauth-callback`;
     const oauthUrl = new URL('https://connect.stripe.com/oauth/authorize');
     oauthUrl.searchParams.set('response_type', 'code');
     oauthUrl.searchParams.set('client_id', stripeClientId);
