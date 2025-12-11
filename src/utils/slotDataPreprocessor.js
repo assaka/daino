@@ -159,10 +159,11 @@ function preprocessCategoryData(rawData, baseContext, options) {
   // Format filters data - pass allProducts and selectedFilters for option formatting
   const formattedFilters = formatFiltersData(filters, filterableAttributes, currentLanguage, formattedAllProducts, selectedFilters);
 
-  // Format category with translation
+  // Format category with translation and image
   const formattedCategory = category ? {
     ...category,
     name: getCategoryName(category, currentLanguage) || category.name,
+    image_url: category.image_url || category.image || '',
   } : null;
 
   // Calculate pagination count text (singular/plural)
@@ -697,6 +698,8 @@ export function processTemplateVariables(template, context) {
   // Replace category variables
   if (context.category) {
     processed = processed.replace(/\{\{category\.name\}\}/g, context.category.name || '');
+    processed = processed.replace(/\{\{category\.image_url\}\}/g, context.category.image_url || '');
+    processed = processed.replace(/\{\{category\.description\}\}/g, context.category.description || '');
   }
 
   // Replace cart variables

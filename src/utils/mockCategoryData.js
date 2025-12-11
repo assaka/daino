@@ -142,7 +142,8 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
       id: 1,
       name: 'Sample Category',
       description: 'This is a sample category for the editor preview',
-      slug: 'sample-category'
+      slug: 'sample-category',
+      image_url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop'
     },
     products: sampleProducts,
     allProducts: sampleProducts,

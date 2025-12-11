@@ -1733,6 +1733,11 @@ function getProductImageUrl(product, imageIndex = 0) {
 
   const image = product.images[imageIndex];
 
+  // Handle string URLs directly
+  if (typeof image === 'string') {
+    return image || 'https://placehold.co/600x600?text=No+Image';
+  }
+
   // Images are stored as objects with url property
   if (typeof image === 'object' && image !== null) {
     return image.url || 'https://placehold.co/600x600?text=No+Image';
