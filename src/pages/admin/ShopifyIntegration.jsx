@@ -1,671 +1,936 @@
 import React, { useState, useEffect } from 'react';
-import ShopifyIntegrationComponent from '@/components/admin/integrations/ShopifyIntegration';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import {
   ShoppingBag,
-  BookOpen,
   Settings,
+  Package,
   CheckCircle,
   XCircle,
-  Info,
-  AlertTriangle,
-  Code,
-  Link,
-  Package,
-  Download,
   RefreshCw,
+  Download,
+  Store,
+  Clock,
+  AlertCircle,
+  Loader2,
   Shield,
-  Zap,
-  HelpCircle
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Unlink,
+  Database
 } from 'lucide-react';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import SaveButton from '@/components/ui/save-button';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 const ShopifyIntegration = () => {
-  const [activeTab, setActiveTab] = useState('connection');
+  const { selectedStore } = useStoreSelection();
+  const storeId = selectedStore?.id;
+
+  const [activeTab, setActiveTab] = useState('configuration');
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [shopDomain, setShopDomain] = useState('');
+  const [importStats, setImportStats] = useState(null);
+  const [importProgress, setImportProgress] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
+  const [shopInfo, setShopInfo] = useState(null);
+  const [accessToken, setAccessToken] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [storageConfigured, setStorageConfigured] = useState(null);
+  const [storageProvider, setStorageProvider] = useState(null);
+  const [dryRun, setDryRun] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // Statistics state
+  const [stats, setStats] = useState({
+    collections: 0,
+    products: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
-    checkConnectionStatus();
-  }, []);
+    if (storeId && storeId !== 'undefined') {
+      checkConnectionStatus();
+      fetchImportStats();
+      checkStorageConfiguration();
+      loadStats();
+    }
+  }, [storeId]);
 
-  const checkConnectionStatus = async () => {
+  const loadStats = async () => {
+    if (!storeId) return;
+
+    setLoadingStats(true);
     try {
-      setLoading(true);
-      const response = await fetch('/api/shopify/status', {
+      const response = await fetch('/api/shopify/import/stats', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': localStorage.getItem('selectedStoreId')
+          'x-store-id': storeId
         }
       });
-      const data = await response.json();
-      setConnectionStatus(data);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.stats) {
+          setStats({
+            collections: data.stats.collections?.successful_imports || 0,
+            products: data.stats.products?.successful_imports || 0
+          });
+        }
+      }
     } catch (error) {
-      console.error('Error checking Shopify connection status:', error);
+      console.error('Failed to load stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const checkStorageConfiguration = async () => {
+    if (!storeId) return;
+
+    try {
+      const response = await fetch('/api/storage/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const configured = data.configured || data.hasProvider || false;
+        setStorageConfigured(configured);
+        const provider = data.provider || data.integrationType || 'External URLs';
+        setStorageProvider(provider);
+      } else {
+        setStorageConfigured(false);
+        setStorageProvider('External URLs');
+      }
+    } catch (error) {
+      setStorageConfigured(false);
+      setStorageProvider('External URLs');
+    }
+  };
+
+  const connectWithDirectAccess = async () => {
+    if (!shopDomain || !accessToken) {
+      setMessage({
+        type: 'error',
+        text: 'Please fill in both Shop Domain and Access Token'
+      });
+      return;
+    }
+
+    const formattedDomain = shopDomain.includes('.myshopify.com')
+      ? shopDomain
+      : `${shopDomain}.myshopify.com`;
+
+    setLoading(true);
+    setMessage(null);
+    setSaveSuccess(false);
+
+    try {
+      const token = localStorage.getItem('store_owner_auth_token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'x-store-id': storeId
+      };
+
+      const response = await fetch('/api/shopify/direct-access', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          shop_domain: formattedDomain,
+          access_token: accessToken
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFlashMessage({
+          type: 'success',
+          text: 'Successfully connected to Shopify!'
+        });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+
+        setAccessToken('');
+        setShopDomain('');
+
+        checkConnectionStatus();
+      } else {
+        setMessage({
+          type: 'error',
+          text: data.message || 'Failed to connect to Shopify'
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to connect to Shopify'
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const checkConnectionStatus = async () => {
+    if (!storeId) return;
+
+    try {
+      const response = await fetch('/api/shopify/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+      const data = await response.json();
+      setConnectionStatus(data);
+
+      if (data.connected) {
+        fetchShopInfo();
+      }
+    } catch (error) {
+      console.error('Error checking connection status:', error);
+    }
+  };
+
+  const fetchShopInfo = async () => {
+    if (!storeId) return;
+
+    try {
+      const response = await fetch('/api/shopify/shop-info', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShopInfo(data.shop_info);
+      }
+    } catch (error) {
+      console.error('Error fetching shop info:', error);
+    }
+  };
+
+  const fetchImportStats = async () => {
+    if (!storeId) return;
+
+    try {
+      const response = await fetch('/api/shopify/import/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setImportStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching import stats:', error);
+    }
+  };
+
+  const testConnection = async () => {
+    if (!storeId) {
+      setMessage({ type: 'error', text: 'No store selected' });
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/shopify/test-connection', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFlashMessage({ type: 'success', text: data.message });
+        checkConnectionStatus();
+      } else {
+        setMessage({ type: 'error', text: data.message });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to test connection' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const disconnectShopify = async () => {
+    if (!storeId) {
+      setMessage({ type: 'error', text: 'No store selected' });
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to disconnect from Shopify? This will remove your access token.')) {
+      return;
+    }
+
+    setDisconnecting(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/shopify/disconnect', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFlashMessage({ type: 'success', text: 'Successfully disconnected from Shopify' });
+        setConnectionStatus(null);
+        setShopInfo(null);
+        checkConnectionStatus();
+      } else {
+        setMessage({ type: 'error', text: data.message });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to disconnect' });
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  const importData = async (type, options = {}) => {
+    if (!storeId) {
+      setMessage({ type: 'error', text: 'No store selected' });
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+    setImportProgress({ type, progress: 0, message: 'Starting import...' });
+
+    try {
+      const endpoint = `/api/shopify/import/${type}-direct`;
+      const token = localStorage.getItem('store_owner_auth_token');
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'x-store-id': storeId
+        },
+        body: JSON.stringify({ ...options, dry_run: dryRun })
+      });
+
+      if (response.headers.get('content-type')?.includes('text/event-stream')) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.substring(6));
+
+              if (data.stage === 'error') {
+                setMessage({ type: 'error', text: data.message });
+                setImportProgress(null);
+              } else if (data.stage === 'complete') {
+                setFlashMessage({
+                  type: 'success',
+                  text: `Successfully imported ${type}! ${data.result?.stats?.imported || 0} items imported.`
+                });
+                setImportProgress(null);
+                fetchImportStats();
+                loadStats();
+              } else {
+                const progressPercent = data.current && data.total
+                  ? Math.round((data.current / data.total) * 100)
+                  : data.progress || 0;
+
+                setImportProgress({
+                  type,
+                  progress: progressPercent,
+                  message: data.message || `${data.stage}...`
+                });
+              }
+            }
+          }
+        }
+      } else {
+        const data = await response.json();
+        if (data.success) {
+          setFlashMessage({ type: 'success', text: `Successfully imported ${type}` });
+          fetchImportStats();
+          loadStats();
+        } else {
+          setMessage({ type: 'error', text: data.message || `Failed to import ${type}` });
+        }
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: `Error importing ${type}: ${error.message}`
+      });
+    } finally {
+      setLoading(false);
+      setImportProgress(null);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString();
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <ShoppingBag className="w-8 h-8 text-green-600" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Shopify Integration</h1>
-                  <p className="text-gray-600 mt-1">
-                    Connect your Shopify store to import products, collections, and sync inventory
-                  </p>
-                </div>
-              </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <ShoppingBag className="w-8 h-8 text-green-600" />
+          Shopify Integration
+        </h1>
+        <p className="text-gray-600 mt-1">
+          Connect your Shopify store to import products and collections into DainoStore.
+        </p>
+      </div>
+
+      {/* Statistics Display */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Current Import Statistics
+          </CardTitle>
+          <CardDescription>
+            Current count of imported data in your store
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{stats.collections}</div>
+              <div className="text-sm text-purple-600">Collections</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{stats.products}</div>
+              <div className="text-sm text-orange-600">Products</div>
             </div>
           </div>
+          {loadingStats && (
+            <div className="mt-4 text-center">
+              <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
+              <span className="text-sm text-gray-500 ml-2">Updating statistics...</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-          {/* Main Content */}
-          <Card className="material-elevation-1 border-0">
-            <CardContent className="p-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="connection" className="flex items-center space-x-2">
-              <Link className="w-4 h-4" />
-              <span>Connection</span>
-            </TabsTrigger>
-            <TabsTrigger value="documentation" className="flex items-center space-x-2">
-              <BookOpen className="w-4 h-4" />
-              <span>Documentation</span>
-            </TabsTrigger>
-            <TabsTrigger value="configuration" className="flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>Configuration</span>
-            </TabsTrigger>
-            <TabsTrigger value="help" className="flex items-center space-x-2">
-              <HelpCircle className="w-4 h-4" />
-              <span>Help & FAQ</span>
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="configuration" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Configuration
+          </TabsTrigger>
+          <TabsTrigger value="products" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Products
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Connection Tab */}
-          <TabsContent value="connection" className="space-y-6">
-            <ShopifyIntegrationComponent />
-          </TabsContent>
-
-          {/* Documentation Tab */}
-          <TabsContent value="documentation" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Getting Started with Shopify Integration</CardTitle>
-                <CardDescription>
-                  Complete guide to setting up and using the Shopify integration
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Overview Section */}
+        {/* Configuration Tab */}
+        <TabsContent value="configuration" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center">
-                    <Info className="w-5 h-5 mr-2 text-blue-500" />
-                    Overview
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    The Shopify integration allows you to connect your Shopify store with SuprShop, 
-                    enabling you to import products, collections, and maintain synchronized inventory 
-                    across both platforms.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <Package className="w-6 h-6 text-blue-600 mb-2" />
-                      <h4 className="font-medium">Product Import</h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Import all products with variants, images, and metadata
-                      </p>
-                    </div>
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <RefreshCw className="w-6 h-6 text-green-600 mb-2" />
-                      <h4 className="font-medium">Collection Sync</h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Sync collections as categories in your store
-                      </p>
-                    </div>
-                    <div className="p-4 bg-purple-50 rounded-lg">
-                      <Zap className="w-6 h-6 text-purple-600 mb-2" />
-                      <h4 className="font-medium">Real-time Updates</h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Keep your catalog synchronized automatically
-                      </p>
-                    </div>
-                  </div>
+                  <CardTitle>Shopify Configuration</CardTitle>
+                  <CardDescription>
+                    Configure your Shopify store connection settings. Save your configuration first, then test the connection before importing data.
+                  </CardDescription>
                 </div>
-
-                {/* Features Section */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Key Features</h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-                      <div>
-                        <strong>Direct Access Token:</strong> Secure connection using Shopify's Admin API access token
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-                      <div>
-                        <strong>Bulk Import:</strong> Import hundreds of products efficiently with pagination
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-                      <div>
-                        <strong>Smart Mapping:</strong> Automatic mapping of Shopify fields to SuprShop attributes
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-                      <div>
-                        <strong>Dry Run Mode:</strong> Preview imports before making changes
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-                      <div>
-                        <strong>Import Statistics:</strong> Track import success rates and errors
-                      </div>
-                    </li>
-                  </ul>
+                <div className="flex items-center space-x-2">
+                  {connectionStatus?.connected ? (
+                    <>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Connected
+                      </span>
+                      <button
+                        onClick={disconnectShopify}
+                        disabled={disconnecting}
+                        className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
+                        title="Disconnect Shopify"
+                      >
+                        <Unlink className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      Not Connected
+                    </span>
+                  )}
                 </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Flash Message */}
+              {message && (
+                <Alert className={message.type === 'error' ? 'border-red-200 bg-red-50' : message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{message.text}</AlertDescription>
+                </Alert>
+              )}
 
-                {/* Data Mapping Section */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Data Mapping</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-2">Shopify Field</th>
-                          <th className="text-left py-2">SuprShop Field</th>
-                          <th className="text-left py-2">Notes</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        <tr>
-                          <td className="py-2">Product Title</td>
-                          <td className="py-2">Product Name</td>
-                          <td className="py-2 text-gray-600">Direct mapping</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2">Handle</td>
-                          <td className="py-2">URL Key / SKU</td>
-                          <td className="py-2 text-gray-600">Used for unique identification</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2">Collections</td>
-                          <td className="py-2">Categories</td>
-                          <td className="py-2 text-gray-600">Collections become categories</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2">Variants</td>
-                          <td className="py-2">Product Attributes</td>
-                          <td className="py-2 text-gray-600">Consolidated into single product</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2">Images</td>
-                          <td className="py-2">Product Gallery</td>
-                          <td className="py-2 text-gray-600">All images imported</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2">Vendor</td>
-                          <td className="py-2">Vendor Attribute</td>
-                          <td className="py-2 text-gray-600">Custom attribute created</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2">Tags</td>
-                          <td className="py-2">Tags Attribute</td>
-                          <td className="py-2 text-gray-600">Stored as multi-value attribute</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Usage Instructions */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">How to Use</h3>
+              {!connectionStatus?.connected ? (
+                <div className="space-y-6">
+                  {/* Connection Form */}
                   <div className="space-y-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                        1
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="font-medium">Create Custom App in Shopify</h4>
-                        <p className="text-gray-600 text-sm mt-1">
-                          In your Shopify Admin, go to Settings → Apps and sales channels → Develop apps.
-                          Create a custom app and get your Admin API access token.
-                        </p>
-                      </div>
+                    <div>
+                      <Label htmlFor="shop-domain" className="flex items-center">
+                        Shopify Store Domain
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        id="shop-domain"
+                        type="text"
+                        placeholder="your-store.myshopify.com"
+                        value={shopDomain}
+                        onChange={(e) => setShopDomain(e.target.value)}
+                        disabled={loading}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Example: my-awesome-store.myshopify.com
+                      </p>
                     </div>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                        2
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="font-medium">Connect Your Store</h4>
-                        <p className="text-gray-600 text-sm mt-1">
-                          Enter your shop domain and access token in the Connection tab above. Click "Connect to Shopify".
-                        </p>
-                      </div>
+
+                    <div>
+                      <Label htmlFor="access-token" className="flex items-center">
+                        Admin API Access Token
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        id="access-token"
+                        type="password"
+                        placeholder="shpat_..."
+                        value={accessToken}
+                        onChange={(e) => setAccessToken(e.target.value)}
+                        disabled={loading}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Get this from your custom app in Shopify (starts with shpat_)
+                      </p>
                     </div>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                        3
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="font-medium">Import Collections</h4>
-                        <p className="text-gray-600 text-sm mt-1">
-                          Start by importing collections to create your category structure. Collections will be imported as categories.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                        4
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="font-medium">Import Products</h4>
-                        <p className="text-gray-600 text-sm mt-1">
-                          Import products with all their variants, images, and metadata. Use the dry run option to preview first.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                        5
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="font-medium">Monitor Progress</h4>
-                        <p className="text-gray-600 text-sm mt-1">
-                          Track import progress and review statistics to ensure all data was imported successfully.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* Configuration Tab */}
-          <TabsContent value="configuration" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create a Custom App in Shopify</CardTitle>
-                <CardDescription>
-                  Detailed step-by-step instructions for creating a custom app and getting your access token
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Prerequisites */}
-                <Alert className="border-blue-200 bg-blue-50">
-                  <Info className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <strong>What you'll need:</strong> Admin access to your Shopify store. No Partner account required!
-                    The process takes about 2-3 minutes.
-                  </AlertDescription>
-                </Alert>
-
-                {/* Step 1: Access Settings */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 1: Navigate to App Settings</h3>
-                  <ol className="space-y-3 text-sm">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">1.</span>
-                      <div>
-                        Log in to your <strong>Shopify Admin</strong> (your-store.myshopify.com/admin)
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">2.</span>
-                      <div>Click <strong>Settings</strong> (bottom left corner)</div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">3.</span>
-                      <div>Click <strong>Apps and sales channels</strong></div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">4.</span>
-                      <div>Click <strong>Develop apps</strong></div>
-                    </li>
-                  </ol>
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-sm text-yellow-800">
-                      <strong>First time?</strong> You may need to click "Allow custom app development" first.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Step 2: Create App */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 2: Create Your Custom App</h3>
-                  <ol className="space-y-3 text-sm">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">1.</span>
-                      <div>Click <strong>"Create an app"</strong></div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">2.</span>
-                      <div>
-                        App name: <code className="bg-gray-100 px-2 py-1 rounded">SuprShop Integration</code> (or any name you prefer)
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">3.</span>
-                      <div>App developer: Enter your email address</div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">4.</span>
-                      <div>Click <strong>"Create app"</strong></div>
-                    </li>
-                  </ol>
-                </div>
-
-                {/* Step 3: Configure Scopes */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 3: Configure Admin API Scopes</h3>
-                  <ol className="space-y-3 text-sm mb-3">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">1.</span>
-                      <div>Click <strong>"Configure Admin API scopes"</strong></div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">2.</span>
-                      <div>Search for and select these permissions:</div>
-                    </li>
-                  </ol>
-                  <div className="grid grid-cols-2 gap-3 ml-6">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <code className="text-sm">read_products</code>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <code className="text-sm">read_product_listings</code>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <code className="text-sm">read_inventory</code>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <code className="text-sm">read_content</code>
-                    </div>
-                  </div>
-                  <ol start="3" className="space-y-3 text-sm mt-3">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">3.</span>
-                      <div>Click <strong>"Save"</strong> at the top</div>
-                    </li>
-                  </ol>
-                </div>
-
-                {/* Step 4: Install App */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 4: Install the App</h3>
-                  <ol className="space-y-3 text-sm">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">1.</span>
-                      <div>Click the <strong>"API credentials"</strong> tab</div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">2.</span>
-                      <div>Click <strong>"Install app"</strong></div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">3.</span>
-                      <div>Review the permissions and click <strong>"Install"</strong></div>
-                    </li>
-                  </ol>
-                </div>
-
-                {/* Step 5: Get Access Token */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 5: Copy Your Access Token</h3>
-                  <ol className="space-y-3 text-sm">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">1.</span>
-                      <div>
-                        After installing, you'll see <strong>"Admin API access token"</strong>
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">2.</span>
-                      <div>Click <strong>"Reveal token once"</strong></div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">3.</span>
-                      <div>
-                        <strong>Copy the token immediately!</strong> It starts with <code className="bg-gray-100 px-1 rounded">shpat_</code>
-                      </div>
-                    </li>
-                  </ol>
-
-                  <Alert className="mt-4 border-red-200 bg-red-50">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                    <AlertDescription className="text-red-800">
-                      <strong>IMPORTANT:</strong> The access token is only shown ONCE! Copy it immediately and store it securely. If you lose it, you'll need to uninstall and reinstall the app.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-
-                {/* Step 6: Connect */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 6: Connect to SuprShop</h3>
-                  <ol className="space-y-3 text-sm">
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">1.</span>
-                      <div>Go back to the <strong>Connection</strong> tab in SuprShop</div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">2.</span>
-                      <div>
-                        Enter your shop domain (e.g., <code className="bg-gray-100 px-1 rounded">your-store.myshopify.com</code>)
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">3.</span>
-                      <div>Paste the access token you copied</div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">4.</span>
-                      <div>Click <strong>"Connect to Shopify"</strong></div>
-                    </li>
-                  </ol>
-
-                  <Alert className="mt-4 border-green-200 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                      <strong>That's it!</strong> You're now connected and can start importing products and collections.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-
-                {/* Security Note */}
-                <Alert className="border-blue-200 bg-blue-50">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <strong>Security:</strong> Your access token is encrypted and stored securely. It's never exposed in API responses or logs.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Help & FAQ Tab */}
-          <TabsContent value="help" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Frequently Asked Questions</CardTitle>
-                <CardDescription>
-                  Common questions and troubleshooting guide
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* FAQ Items */}
-                <div className="space-y-4">
-                  <div className="border-b pb-4">
-                    <h4 className="font-medium mb-2">Q: Do I need server access to configure Shopify integration?</h4>
-                    <p className="text-gray-600 text-sm">
-                      No! Each store owner can configure their own Shopify app credentials directly in the SuprShop 
-                      admin panel. You don't need access to server environment variables or configuration files. 
-                      Simply create a Shopify app in your Partner Dashboard and enter the credentials in the 
-                      Connection tab.
-                    </p>
-                  </div>
-
-                  <div className="border-b pb-4">
-                    <h4 className="font-medium mb-2">Q: Can I test the integration without affecting my live store?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Yes! We recommend using a Shopify development store first. You can create one for free 
-                      through your Shopify Partner account. Use the "Dry Run" option to preview imports before 
-                      making actual changes.
-                    </p>
-                  </div>
-
-                  <div className="border-b pb-4">
-                    <h4 className="font-medium mb-2">Q: How long does the import process take?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Import time depends on your catalog size. As a reference:
-                      <ul className="mt-2 ml-4 list-disc">
-                        <li>100 products: ~1-2 minutes</li>
-                        <li>1,000 products: ~5-10 minutes</li>
-                        <li>10,000 products: ~30-60 minutes</li>
-                      </ul>
-                      The integration uses pagination and rate limiting to ensure stable imports.
-                    </p>
-                  </div>
-
-                  <div className="border-b pb-4">
-                    <h4 className="font-medium mb-2">Q: What happens to existing products?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Products are matched by their handle (URL key). If a product with the same handle exists, 
-                      it will be updated. New products will be created. No products are deleted during import.
-                    </p>
-                  </div>
-
-                  <div className="border-b pb-4">
-                    <h4 className="font-medium mb-2">Q: Can I import only specific products?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Currently, the integration imports all products or collections. You can use the "Limited Import" 
-                      option to import a specific number of products for testing. Future updates will include 
-                      selective import based on collections or tags.
-                    </p>
-                  </div>
-
-                  <div className="border-b pb-4">
-                    <h4 className="font-medium mb-2">Q: Are product variants imported?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Yes, all variants are imported and consolidated into a single product with options. 
-                      Variant-specific data like SKU, price, and inventory are preserved as product attributes.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Troubleshooting */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Troubleshooting</h3>
-                  <div className="space-y-3">
-                    <Alert className="border-red-200">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <AlertDescription>
-                        <strong>Error: "Invalid shop domain"</strong><br />
-                        Make sure you enter the full Shopify domain including .myshopify.com
-                        (e.g., your-store.myshopify.com)
+                    <Alert className="border-green-200 bg-green-50">
+                      <Shield className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800 text-sm">
+                        Your credentials are encrypted and stored securely. They are never exposed in responses or logs.
                       </AlertDescription>
                     </Alert>
 
-                    <Alert className="border-red-200">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <AlertDescription>
-                        <strong>Error: "Invalid access token"</strong><br />
-                        Make sure you copied the access token correctly. It should start with "shpat_" and have no extra spaces.
-                      </AlertDescription>
-                    </Alert>
+                    <div className="flex justify-end pt-2">
+                      <SaveButton
+                        onClick={connectWithDirectAccess}
+                        loading={loading}
+                        success={saveSuccess}
+                        disabled={!shopDomain || !accessToken}
+                        defaultText="Connect to Shopify"
+                      />
+                    </div>
+                  </div>
 
-                    <Alert className="border-red-200">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <AlertDescription>
-                        <strong>Error: "Connection failed"</strong><br />
-                        Verify that your custom app is installed in Shopify and has the correct API scopes enabled.
-                      </AlertDescription>
-                    </Alert>
+                  {/* Instructions Card */}
+                  <div className="border border-blue-200 bg-blue-50/50 rounded-lg">
+                    <div className="p-4 cursor-pointer" onClick={() => setShowInstructions(!showInstructions)}>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-semibold flex items-center text-blue-900">
+                          <Info className="w-5 h-5 mr-2 text-blue-600" />
+                          How to Get Your Shopify Credentials
+                        </h3>
+                        {showInstructions ? (
+                          <ChevronUp className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-blue-600" />
+                        )}
+                      </div>
+                    </div>
+                    {showInstructions && (
+                      <div className="px-4 pb-4 space-y-4 text-sm">
+                        <div className="space-y-3">
+                          <div className="font-medium text-blue-900">Step 1: Get Your Shop Domain</div>
+                          <p className="text-gray-700">
+                            Your shop domain is the URL you use to access your Shopify admin. It looks like: <code className="bg-white px-2 py-1 rounded">your-store.myshopify.com</code>
+                          </p>
 
-                    <Alert className="border-red-200">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <AlertDescription>
-                        <strong>Import fails or times out</strong><br />
-                        For large catalogs, try importing in smaller batches using the "Limited Import" option. 
-                        Check your server logs for specific error messages.
-                      </AlertDescription>
-                    </Alert>
+                          <div className="font-medium text-blue-900 mt-4">Step 2: Create a Custom App in Shopify</div>
+                          <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                            <li>
+                              Log into your Shopify Admin and go to{' '}
+                              <strong>Settings → Apps and sales channels</strong>
+                            </li>
+                            <li>
+                              Click <strong>"Develop apps"</strong> (you may need to enable custom app development first)
+                            </li>
+                            <li>
+                              Click <strong>"Create an app"</strong> and name it (e.g., "SuprShop Integration")
+                            </li>
+                            <li>
+                              Click <strong>"Configure Admin API scopes"</strong>
+                            </li>
+                            <li>
+                              Select these permissions:
+                              <ul className="list-disc list-inside ml-4 mt-1">
+                                <li>read_products</li>
+                                <li>read_product_listings</li>
+                                <li>read_inventory</li>
+                                <li>read_content (for collections)</li>
+                              </ul>
+                            </li>
+                            <li>Click <strong>"Save"</strong></li>
+                            <li>
+                              Click <strong>"Install app"</strong> to install it on your store
+                            </li>
+                            <li>
+                              You'll see an <strong>Admin API access token</strong> - copy this!
+                              <br />
+                              <span className="text-xs text-gray-600">
+                                (It starts with <code className="bg-white px-1 rounded">shpat_</code>)
+                              </span>
+                            </li>
+                          </ol>
+
+                          <Alert className="border-yellow-200 bg-yellow-50 mt-4">
+                            <AlertCircle className="h-4 w-4 text-yellow-600" />
+                            <AlertDescription className="text-yellow-800 text-xs">
+                              <strong>Important:</strong> The access token is only shown once! Copy it immediately and store it securely.
+                            </AlertDescription>
+                          </Alert>
+
+                          <div className="mt-4 pt-4 border-t border-blue-200">
+                            <a
+                              href="https://help.shopify.com/en/manual/apps/custom-apps"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium"
+                            >
+                              Read Shopify's Official Guide
+                              <ExternalLink className="w-4 h-4 ml-1" />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Connected Store Info */}
+                  {shopInfo && (
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Store className="w-4 h-4 text-gray-500" />
+                        <span className="font-medium">{shopInfo.shop_name}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                        <div>Domain: {shopInfo.shop_domain}</div>
+                        <div>Plan: {shopInfo.plan_name}</div>
+                        <div>Currency: {shopInfo.shop_currency}</div>
+                        <div>Country: {shopInfo.shop_country}</div>
+                      </div>
+                      {shopInfo.connected_at && (
+                        <div className="text-xs text-gray-500 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Connected: {formatDate(shopInfo.connected_at)}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                {/* Support Section */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Need More Help?</h3>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-gray-700 mb-3">
-                      If you're experiencing issues not covered here, you can:
-                    </p>
-                    <ul className="space-y-2">
-                      <li className="flex items-center">
-                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                        Check the server logs for detailed error messages
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                        Review the API documentation at <a href="https://shopify.dev/api" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">shopify.dev/api</a>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                        Test with a smaller product catalog first
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                        Verify all environment variables are correctly set
-                      </li>
-                    </ul>
+                  {/* Media Storage Info */}
+                  {storageProvider && (
+                    <Alert className={storageConfigured ? "border-blue-200 bg-blue-50" : "border-yellow-200 bg-yellow-50"}>
+                      <Info className={`h-4 w-4 ${storageConfigured ? 'text-blue-600' : 'text-yellow-600'}`} />
+                      <AlertDescription className={storageConfigured ? "text-blue-800" : "text-yellow-800"}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <strong>Media will be stored on {storageProvider.charAt(0).toUpperCase() + storageProvider.slice(1)}</strong>
+                            {!storageConfigured && (
+                              <p className="text-sm mt-1">
+                                Images will use external Shopify URLs. Configure a storage provider for better performance.
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.href = '/admin/media-storage'}
+                            className="ml-4 whitespace-nowrap"
+                          >
+                            <Settings className="w-4 h-4 mr-2" />
+                            View Storage
+                          </Button>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={testConnection}
+                      disabled={loading}
+                      variant="outline"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      Test Connection
+                    </Button>
                   </div>
                 </div>
-
-                {/* API Limits */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">API Rate Limits</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-700 mb-3">
-                      The integration respects Shopify's API rate limits:
-                    </p>
-                    <ul className="space-y-1 text-sm">
-                      <li>• <strong>REST API:</strong> 2 requests per second (bucket size: 40)</li>
-                      <li>• <strong>Automatic retry:</strong> Failed requests are retried with exponential backoff</li>
-                      <li>• <strong>Pagination:</strong> Large datasets are fetched in chunks of 250 items</li>
-                      <li>• <strong>Rate limit handling:</strong> Integration automatically slows down when limits are approached</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              )}
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        {/* Products Tab */}
+        <TabsContent value="products" className="space-y-6">
+          {!connectionStatus?.connected ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Not Connected</h3>
+                <p className="text-gray-600 mb-4">
+                  Please connect to your Shopify store first before importing products.
+                </p>
+                <Button onClick={() => setActiveTab('configuration')}>
+                  Go to Configuration
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Import Data</CardTitle>
+                  <CardDescription>
+                    Import collections and products from your Shopify store into DainoStore
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Dry Run Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label htmlFor="dry-run" className="font-medium">Dry Run Mode</Label>
+                      <p className="text-sm text-gray-600">
+                        Preview what will be imported without making any changes
+                      </p>
+                    </div>
+                    <Switch
+                      id="dry-run"
+                      checked={dryRun}
+                      onCheckedChange={setDryRun}
+                    />
+                  </div>
+
+                  {/* Import Progress */}
+                  {importProgress && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>{importProgress.message}</span>
+                        <span>{importProgress.progress}%</span>
+                      </div>
+                      <Progress value={importProgress.progress} />
+                    </div>
+                  )}
+
+                  {/* Import Buttons */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Button
+                      onClick={() => importData('collections')}
+                      disabled={loading}
+                      className="h-auto py-4 flex-col"
+                      variant="outline"
+                    >
+                      <Package className="w-6 h-6 mb-2" />
+                      <span>Import Collections</span>
+                      {importStats?.collections && (
+                        <span className="text-xs text-gray-500 mt-1">
+                          Last: {importStats.collections.successful_imports || 0} imported
+                        </span>
+                      )}
+                    </Button>
+
+                    <Button
+                      onClick={() => importData('products')}
+                      disabled={loading}
+                      className="h-auto py-4 flex-col"
+                      variant="outline"
+                    >
+                      <ShoppingBag className="w-6 h-6 mb-2" />
+                      <span>Import Products</span>
+                      {importStats?.products && (
+                        <span className="text-xs text-gray-500 mt-1">
+                          Last: {importStats.products.successful_imports || 0} imported
+                        </span>
+                      )}
+                    </Button>
+
+                    <Button
+                      onClick={() => importData('full')}
+                      disabled={loading}
+                      className="h-auto py-4 flex-col"
+                    >
+                      <Download className="w-6 h-6 mb-2" />
+                      <span>Full Import</span>
+                      <span className="text-xs text-gray-300 mt-1">
+                        Collections + Products
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Advanced Options */}
+                  <div className="border-t pt-6">
+                    <h4 className="font-medium mb-4">Advanced Options</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <h5 className="text-sm font-medium mb-2">Limited Import</h5>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Import a limited number of products for testing.
+                        </p>
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => importData('products', { limit: 50 })}
+                            disabled={loading}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Import First 50 Products
+                          </Button>
+                          <Button
+                            onClick={() => importData('products', { limit: 100 })}
+                            disabled={loading}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Import First 100 Products
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Import Statistics */}
+              {importStats && (importStats.collections || importStats.products) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Import Statistics</CardTitle>
+                    <CardDescription>
+                      Summary of your last import operations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {importStats.collections && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="font-medium mb-2 flex items-center">
+                            <Package className="w-4 h-4 mr-2" />
+                            Collections
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total Processed:</span>
+                              <span>{importStats.collections.total_processed || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Successfully Imported:</span>
+                              <span className="text-green-600">
+                                {importStats.collections.successful_imports || 0}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Failed:</span>
+                              <span className="text-red-600">
+                                {importStats.collections.failed_imports || 0}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {importStats.products && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="font-medium mb-2 flex items-center">
+                            <ShoppingBag className="w-4 h-4 mr-2" />
+                            Products
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total Processed:</span>
+                              <span>{importStats.products.total_processed || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Successfully Imported:</span>
+                              <span className="text-green-600">
+                                {importStats.products.successful_imports || 0}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Failed:</span>
+                              <span className="text-red-600">
+                                {importStats.products.failed_imports || 0}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
