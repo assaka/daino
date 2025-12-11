@@ -661,6 +661,11 @@ export default function PaymentMethods() {
                                 <Unlink className="w-3 h-3" />
                               </Button>
                             </div>
+                            {(stripeStatus?.email || stripeStatus?.business_name) && (
+                              <p className="text-xs text-gray-500 text-center">
+                                {stripeStatus?.business_name || stripeStatus?.email}
+                              </p>
+                            )}
                             {!hasStripeMethod && (
                               <Button
                                 size="sm"

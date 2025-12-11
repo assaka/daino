@@ -338,6 +338,8 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
     const connectStatus = {
       connected: true,
       account_id: account.id,
+      email: account.email,
+      business_name: account.business_profile?.name || account.settings?.dashboard?.display_name,
       charges_enabled: account.charges_enabled,
       payouts_enabled: account.payouts_enabled,
       requirements: {
