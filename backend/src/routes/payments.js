@@ -2356,8 +2356,8 @@ router.post('/webhook', async (req, res) => {
           let finalUserBalance = null;
           try {
             const masterConnection = require('../database/masterConnection');
-            const { masterDb } = masterConnection;
-            const { data: users, error } = await masterDb
+            const { masterDbClient } = masterConnection;
+            const { data: users, error } = await masterDbClient
               .from('users')
               .select('id, email, credits')
               .eq('id', paymentIntent.metadata.user_id)

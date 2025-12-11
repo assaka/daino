@@ -422,23 +422,54 @@ class CreditService {
    * Mark a purchase transaction as completed and add credits to user
    */
   async completePurchaseTransaction(transactionId, stripeChargeId = null) {
+    console.log(`💳 [CreditService] completePurchaseTransaction called:`, { transactionId, stripeChargeId });
+
     const transaction = await CreditTransaction.findByPk(transactionId);
 
     if (!transaction) {
+      console.error(`❌ [CreditService] Transaction not found: ${transactionId}`);
       throw new Error('Transaction not found');
     }
 
+    console.log(`📋 [CreditService] Transaction found:`, {
+      id: transaction.id,
+      user_id: transaction.user_id,
+      credits_amount: transaction.credits_amount,
+      status: transaction.status
+    });
+
     // Get user's current balance before update (master DB)
-    const { data: userBefore } = await masterDbClient
+    const { data: userBefore, error: userError } = await masterDbClient
       .from('users')
       .select('id, credits')
       .eq('id', transaction.user_id)
       .single();
 
-    const creditsToAdd = parseFloat(transaction.credits_amount);
-    const newBalance = parseFloat(userBefore?.credits || 0) + creditsToAdd;
+    if (userError) {
+      console.error(`❌ [CreditService] Error fetching user ${transaction.user_id}:`, userError);
+      throw new Error(`Failed to find user: ${userError.message}`);
+    }
 
-    const { error: updateError } = await masterDbClient
+    if (!userBefore) {
+      console.error(`❌ [CreditService] User not found: ${transaction.user_id}`);
+      throw new Error(`User not found: ${transaction.user_id}`);
+    }
+
+    console.log(`👤 [CreditService] User found:`, {
+      id: userBefore.id,
+      currentCredits: userBefore.credits
+    });
+
+    const creditsToAdd = parseFloat(transaction.credits_amount);
+    const newBalance = parseFloat(userBefore.credits || 0) + creditsToAdd;
+
+    console.log(`💰 [CreditService] Updating credits:`, {
+      currentBalance: userBefore.credits,
+      creditsToAdd,
+      newBalance
+    });
+
+    const { data: updatedUser, error: updateError } = await masterDbClient
       .from('users')
       .update({
         credits: newBalance,
@@ -449,8 +480,14 @@ class CreditService {
       .single();
 
     if (updateError) {
+      console.error(`❌ [CreditService] Failed to update user credits:`, updateError);
       throw new Error(`Failed to update user credits: ${updateError.message}`);
     }
+
+    console.log(`✅ [CreditService] Credits updated successfully:`, {
+      userId: updatedUser?.id,
+      newCredits: updatedUser?.credits
+    });
 
     return await CreditTransaction.markCompleted(transactionId, stripeChargeId);
   }
