@@ -1333,6 +1333,7 @@ class AkeneoIntegration {
 
   /**
    * Build mapping from Akeneo family codes to DainoStore AttributeSet IDs
+   * Maps original Akeneo family codes to attribute_sets that have "akeneo_" prefix
    */
   async buildFamilyMapping(storeId) {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
@@ -1349,8 +1350,15 @@ class AkeneoIntegration {
 
     const mapping = {};
     (attributeSets || []).forEach(attributeSet => {
-      // Map by name since families are stored by name in AttributeSet
-      mapping[attributeSet.name] = attributeSet.id;
+      // Check if attribute set has "akeneo_" prefix
+      if (attributeSet.name.startsWith('akeneo_')) {
+        // Map by original Akeneo code (without prefix) for product import lookup
+        const originalCode = attributeSet.name.replace('akeneo_', '');
+        mapping[originalCode] = attributeSet.id;
+      } else {
+        // Also map non-prefixed names for backward compatibility
+        mapping[attributeSet.name] = attributeSet.id;
+      }
     });
 
     return mapping;

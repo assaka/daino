@@ -228,7 +228,7 @@ class ShopifyImportService {
    */
   async importProducts(options = {}) {
     const { dryRun = false, progressCallback = null, limit = null } = options;
-    
+
     try {
       if (!this.client) {
         const initResult = await this.initialize();
@@ -274,12 +274,15 @@ class ShopifyImportService {
       const shopifyAttributeSet = await this.ensureProductAttributes();
       this.shopifyAttributeSetId = shopifyAttributeSet.id;
 
+      // Track all attribute IDs used during import
+      this.allShopifyAttributeIds = new Set(shopifyAttributeSet.attribute_ids || []);
+
       // Process products
       for (const product of productsToImport) {
         try {
           await this.importProduct(product);
           this.importStats.products.imported++;
-          
+
           if (progressCallback) {
             progressCallback({
               stage: 'importing_products',
@@ -299,6 +302,9 @@ class ShopifyImportService {
           });
         }
       }
+
+      // After importing all products, update the Shopify attribute set with ALL attribute IDs
+      await this.updateShopifyAttributeSetWithAllAttributes();
 
       // Save import statistics
       await ImportStatistic.saveImportResults(this.storeId, 'products', {
@@ -460,7 +466,14 @@ class ShopifyImportService {
 
       // Extract and process attributes using AttributeMappingService
       const rawAttributes = this.extractProductAttributes(product);
-      const { attributes: processedAttributes } = await this.attributeMapper.processProductAttributes(rawAttributes);
+      const { attributes: processedAttributes, createdAttributes } = await this.attributeMapper.processProductAttributes(rawAttributes);
+
+      // Track attribute IDs for the Shopify attribute set
+      if (this.allShopifyAttributeIds && createdAttributes) {
+        for (const attr of createdAttributes) {
+          this.allShopifyAttributeIds.add(attr.id);
+        }
+      }
 
       // Prepare product data (NOTE: name and description go in product_translations, not products table)
       // Build product data incrementally to handle missing schema columns gracefully
@@ -1005,6 +1018,37 @@ class ShopifyImportService {
     console.log(`✅ Assigned ${attributeIds.length} attributes to Shopify attribute set`);
 
     return attributeSet;
+  }
+
+  /**
+   * Update the Shopify attribute set with all attributes used during import
+   * This ensures ALL attributes (including dynamically created ones) are assigned to the Shopify attribute set
+   */
+  async updateShopifyAttributeSetWithAllAttributes() {
+    if (!this.allShopifyAttributeIds || this.allShopifyAttributeIds.size === 0) {
+      console.log('⚠️ No additional attributes to assign to Shopify attribute set');
+      return;
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    // Get all attributes for this store that match the tracked IDs
+    const attributeIdsArray = Array.from(this.allShopifyAttributeIds);
+
+    // Update the Shopify attribute set with all attribute IDs
+    const { error } = await tenantDb
+      .from('attribute_sets')
+      .update({
+        attribute_ids: attributeIdsArray,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', this.shopifyAttributeSetId);
+
+    if (error) {
+      console.error('Failed to update Shopify attribute set with all attributes:', error);
+    } else {
+      console.log(`✅ Updated Shopify attribute set with ${attributeIdsArray.length} total attributes`);
+    }
   }
 
   /**

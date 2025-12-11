@@ -1775,7 +1775,7 @@ class AkeneoMapping {
   transformFamily(akeneoFamily, storeId) {
     const dainoAttributeSet = {
       store_id: storeId,
-      name: akeneoFamily.code, // Use code as name, can be enhanced with labels
+      name: `akeneo_${akeneoFamily.code}`, // Prefix with "akeneo_" to identify source
       description: null,
       attribute_ids: [], // Will be populated after attributes are imported
       // Keep original Akeneo data for reference
