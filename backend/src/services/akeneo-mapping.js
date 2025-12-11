@@ -117,10 +117,8 @@ class AkeneoMapping {
       description: this.extractProductValue(values, 'description', locale),
       short_description: this.extractProductValue(values, 'short_description', locale),
       price: this.extractNumericValue(values, 'price', locale),
-      // sale_price from Akeneo maps to compare_price (the "was" price)
+      // compare_price - do NOT auto-extract sale_price here, let custom mappings handle it
       compare_price: this.extractNumericValue(values, 'compare_price', locale) ||
-                     this.extractNumericValue(values, 'sale_price', locale) ||
-                     this.extractNumericValue(values, 'special_price', locale) ||
                      this.extractNumericValue(values, 'msrp', locale) ||
                      this.extractNumericValue(values, 'regular_price', locale),
       cost_price: this.extractNumericValue(values, 'cost_price', locale) || 
@@ -2138,10 +2136,8 @@ class AkeneoMapping {
                              this.extractNumericValue(values, 'base_price', locale) ||
                              this.extractNumericValue(values, 'unit_price', locale);
     
-    // sale_price from Akeneo maps to compare_price (no sale_price column on products table)
+    // compare_price - do NOT auto-extract sale_price here, let custom mappings handle it
     commonAttributes.compare_price = this.extractNumericValue(values, 'compare_price', locale) ||
-                                     this.extractNumericValue(values, 'sale_price', locale) ||
-                                     this.extractNumericValue(values, 'special_price', locale) ||
                                      this.extractNumericValue(values, 'msrp', locale) ||
                                      this.extractNumericValue(values, 'regular_price', locale) ||
                                      this.extractNumericValue(values, 'list_price', locale);
