@@ -1349,7 +1349,7 @@ class AkeneoMapping {
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
         const { data: dbAttributes, error } = await tenantDb
           .from('attributes')
-          .select('code, type, options')
+          .select('code, type')
           .eq('store_id', storeId);
 
         if (error) throw error;
@@ -1358,8 +1358,7 @@ class AkeneoMapping {
         if (dbAttributes && dbAttributes.length > 0) {
           dbAttributes.forEach(attr => {
             databaseAttributeTypes[attr.code] = {
-              type: attr.type,
-              options: attr.options || []
+              type: attr.type
             };
           });
         }
@@ -1367,16 +1366,20 @@ class AkeneoMapping {
         console.warn('Could not fetch attribute definitions from database:', error.message);
       }
     }
-    
+
     // Get Akeneo attribute types if client is available
     let akeneoAttributeTypes = {};
     if (akeneoClient) {
       try {
         // Fetch Akeneo attributes to get their types
-        const akeneoAttributes = await akeneoClient.getAttributes({ limit: 100 });
-        akeneoAttributes.forEach(attr => {
-          akeneoAttributeTypes[attr.code] = attr.type;
-        });
+        const akeneoResponse = await akeneoClient.getAttributes({ limit: 100 });
+        // Akeneo returns paginated response with _embedded.items
+        const akeneoAttributes = akeneoResponse?._embedded?.items || akeneoResponse || [];
+        if (Array.isArray(akeneoAttributes)) {
+          akeneoAttributes.forEach(attr => {
+            akeneoAttributeTypes[attr.code] = attr.type;
+          });
+        }
       } catch (error) {
         console.warn('Could not fetch Akeneo attribute types:', error.message);
       }
@@ -1497,83 +1500,44 @@ class AkeneoMapping {
 
   /**
    * Format attribute using database definition
+   * Note: Options are stored in attribute_values table, not in attributes table
+   * This method formats values as {label, value} objects for select/multiselect types
    */
   formatAttributeWithDefinition(rawValue, attrDef) {
     if (attrDef.type === 'select') {
       // For single select, format as {label, value}
       if (typeof rawValue === 'string') {
-        // Find the matching option to get both label and value (case-insensitive)
-        const matchingOption = attrDef.options.find(opt => 
-          (opt.value && opt.value.toLowerCase() === rawValue.toLowerCase()) ||
-          (opt.label && opt.label.toLowerCase() === rawValue.toLowerCase()) ||
-          (opt.code && opt.code.toLowerCase() === rawValue.toLowerCase())
-        );
-        
-        if (matchingOption) {
-          return {
-            label: matchingOption.label || rawValue,
-            value: matchingOption.value || rawValue
-          };
-        } else {
-          // No matching option found, use raw value for both
-          return {
-            label: rawValue,
-            value: rawValue
-          };
-        }
+        return {
+          label: rawValue,
+          value: rawValue
+        };
       } else {
         return rawValue; // Keep as-is if not string
       }
-      
+
     } else if (attrDef.type === 'multiselect') {
       // For multiselect, format as array of {label, value} objects
       if (Array.isArray(rawValue)) {
         return rawValue.map(val => {
           if (typeof val === 'string') {
-            const matchingOption = attrDef.options.find(opt => 
-              (opt.value && opt.value.toLowerCase() === val.toLowerCase()) ||
-              (opt.label && opt.label.toLowerCase() === val.toLowerCase()) ||
-              (opt.code && opt.code.toLowerCase() === val.toLowerCase())
-            );
-            
-            if (matchingOption) {
-              return {
-                label: matchingOption.label || val,
-                value: matchingOption.value || val
-              };
-            } else {
-              return {
-                label: val,
-                value: val
-              };
-            }
+            return {
+              label: val,
+              value: val
+            };
           }
           return val; // Keep as-is if not string
         });
       } else if (typeof rawValue === 'string') {
-        // Single value for multiselect - convert to array (case-insensitive matching)
-        const matchingOption = attrDef.options.find(opt => 
-          (opt.value && opt.value.toLowerCase() === rawValue.toLowerCase()) ||
-          (opt.label && opt.label.toLowerCase() === rawValue.toLowerCase()) ||
-          (opt.code && opt.code.toLowerCase() === rawValue.toLowerCase())
-        );
-        
-        if (matchingOption) {
-          return [{
-            label: matchingOption.label || rawValue,
-            value: matchingOption.value || rawValue
-          }];
-        } else {
-          return [{
-            label: rawValue,
-            value: rawValue
-          }];
-        }
+        // Single value for multiselect - convert to array
+        return [{
+          label: rawValue,
+          value: rawValue
+        }];
       } else {
         return rawValue; // Keep as-is if not string/array
       }
     }
-    
+
     return rawValue;
   }
 
