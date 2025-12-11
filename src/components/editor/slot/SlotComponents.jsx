@@ -190,6 +190,13 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         }
 
         // Apply resize immediately for visual feedback
+        console.log('🔵 [GRID RESIZE] Comparison:', {
+          newValue,
+          newValueType: typeof newValue,
+          lastValue: lastValueRef.current,
+          lastValueType: typeof lastValueRef.current,
+          areEqual: newValue === lastValueRef.current
+        });
         if (newValue !== lastValueRef.current) {
           console.log('🔵 [GRID RESIZE] Applying new colSpan:', { oldValue: lastValueRef.current, newValue });
           lastValueRef.current = newValue;
