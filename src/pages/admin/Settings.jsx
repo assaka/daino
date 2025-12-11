@@ -23,6 +23,7 @@ import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
 import { queryClient } from '@/config/queryClient';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { PageLoader } from '@/components/ui/page-loader';
+import StoreLogoUpload from '@/components/admin/StoreLogoUpload';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -536,15 +537,14 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="logo_url">Logo URL</Label>
-                  <Input 
-                    id="logo_url" 
-                    name="logo_url" 
-                    value={store?.logo_url || ''} 
-                    onChange={(e) => setStore(prev => ({ ...prev, logo_url: e.target.value }))}
-                    placeholder="https://example.com/logo.png"
+                  <Label htmlFor="logo_url">Store Logo</Label>
+                  <StoreLogoUpload
+                    value={store?.logo_url || ''}
+                    onChange={(url) => setStore(prev => ({ ...prev, logo_url: url }))}
+                    maxFileSizeMB={5}
+                    allowedTypes={['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg']}
                   />
-                  <p className="text-sm text-gray-500 mt-1">Enter the URL of your store logo</p>
+                  <p className="text-sm text-gray-500 mt-1">Upload your store logo (recommended size: 200x200px)</p>
                 </div>
 
 
