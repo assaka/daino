@@ -181,15 +181,6 @@ const CategorySlotsEditor = ({
     { enabled: !!selectedCategorySlug && !!storeId }
   );
 
-  // Debug: Log category fetch status
-  console.log('[CategorySlotsEditor] 📂 Category Fetch:', {
-    slug: selectedCategorySlug,
-    storeId,
-    enabled: !!selectedCategorySlug && !!storeId,
-    loading: categoryLoading,
-    error: categoryError?.message,
-    hasData: !!realCategoryData
-  });
 
   // Listen for settings updates from admin panel
   useEffect(() => {
@@ -411,36 +402,6 @@ const CategorySlotsEditor = ({
     };
   }, [realCategoryData, filterableAttributes, storeSettings, storeContext, selectedStore, storeId, categories]);
 
-  // Debug logging
-  console.log('[CategorySlotsEditor] State:', {
-    storeId,
-    selectedCategorySlug,
-    categoryLoading,
-    hasRealData: !!realCategoryData?.category,
-    realCategoryDataRaw: realCategoryData,
-    productCount: realCategoryData?.products?.length || 0,
-    categoriesCount: categories?.length || 0,
-    categoriesList: categories?.map(c => ({ id: c.id, slug: c.slug, name: c.name })),
-    filterableAttributesCount: filterableAttributes?.length || 0,
-    filtersBuilt: Object.keys(categoryContext?.filters || {}),
-    usingMock: !realCategoryData?.category,
-    queryEnabled: !!selectedCategorySlug && !!storeId
-  });
-
-  // Debug: Log product images
-  if (realCategoryData?.category) {
-    console.log('[CategorySlotsEditor] 🖼️ Product Images Debug:', {
-      totalProducts: realCategoryData.products.length,
-      productsWithImages: realCategoryData.products.filter(p => p.images?.length > 0).length,
-      firstProductImages: realCategoryData.products[0]?.images,
-      sampleProduct: {
-        id: realCategoryData.products[0]?.id,
-        name: realCategoryData.products[0]?.name,
-        imagesCount: realCategoryData.products[0]?.images?.length || 0,
-        imageUrls: realCategoryData.products[0]?.images?.map(img => typeof img === 'string' ? img : img?.url)
-      }
-    });
-  }
 
   // Create editor config with real data
   const categoryEditorConfig = useMemo(() => ({

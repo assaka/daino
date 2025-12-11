@@ -96,13 +96,6 @@ export default function ProductSlotsEditor({
           const fullData = await fullResponse.json();
           const productData = fullData.data || fullData;
 
-          console.log('[ProductSlotsEditor] 📦 Full product API response:', {
-            hasProduct: !!productData.product,
-            productName: productData.product?.name,
-            imagesFromAPI: productData.product?.images,
-            imagesCount: productData.product?.images?.length || 0
-          });
-
           setRealProduct(productData.product);
           setProductTabs(productData.productTabs || []);
           setCustomOptions(productData.customOptions || []);
@@ -121,18 +114,6 @@ export default function ProductSlotsEditor({
 
     fetchSelectedProduct();
   }, [selectedStore?.id, selectedProductSlug]);
-
-  // Debug: Log product data and images
-  console.log('[ProductSlotsEditor] 🖼️ Product Debug:', {
-    storeId: selectedStore?.id,
-    hasRealProduct: !!realProduct,
-    productName: realProduct?.name,
-    productId: realProduct?.id,
-    imagesCount: realProduct?.images?.length || 0,
-    images: realProduct?.images,
-    imageUrls: realProduct?.images?.map(img => typeof img === 'string' ? img : img?.url),
-    loading
-  });
 
   // Generate context - MUST match storefront ProductDetail.jsx productData structure exactly
   const generateProductContext = useCallback((viewMode, store) => {
