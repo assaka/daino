@@ -534,7 +534,9 @@ class EmailService {
 
   /**
    * Send team invitation email
-   * @param {string} storeId - Store ID
+   * Uses the MASTER Brevo account (dainostore) instead of store-specific config
+   * This is a platform-level email, not tied to individual store email settings
+   * @param {string} storeId - Store ID (for logging purposes)
    * @param {Object} invitation - Invitation data
    * @param {Object} store - Store data
    * @param {Object} inviter - Inviter user data
@@ -544,13 +546,16 @@ class EmailService {
     try {
       console.log(`📧 [EMAIL SERVICE] Sending team invitation email to: ${invitation.invited_email}`);
 
-      // Check if Brevo is configured
-      const isConfigured = await brevoService.isConfigured(storeId);
-      if (!isConfigured) {
-        console.warn(`⚠️ [EMAIL SERVICE] Brevo not configured for store ${storeId}, skipping invitation email`);
+      // Use master email service for team invitations (platform-level emails)
+      const masterEmailService = require('./master-email-service');
+
+      // Check if master Brevo is configured
+      if (!masterEmailService.isConfigured) {
+        console.warn(`⚠️ [EMAIL SERVICE] Master Brevo not configured, skipping invitation email`);
+        console.warn(`⚠️ [EMAIL SERVICE] Set MASTER_BREVO_API_KEY or BREVO_API_KEY environment variable`);
         return {
           success: false,
-          message: 'Email service not configured for this store'
+          message: 'Master email service not configured. Set MASTER_BREVO_API_KEY environment variable.'
         };
       }
 
@@ -580,15 +585,16 @@ class EmailService {
         expiresDate
       });
 
-      const result = await this.sendViaBrevo(storeId, invitation.invited_email, subject, htmlContent);
+      // Send via master email service (uses MASTER_BREVO_API_KEY)
+      const result = await masterEmailService.sendEmail(invitation.invited_email, subject, htmlContent);
 
-      console.log(`✅ [EMAIL SERVICE] Team invitation email sent to ${invitation.invited_email}`);
+      if (result.success) {
+        console.log(`✅ [EMAIL SERVICE] Team invitation email sent to ${invitation.invited_email} via master Brevo`);
+      } else {
+        console.warn(`⚠️ [EMAIL SERVICE] Team invitation email failed: ${result.message}`);
+      }
 
-      return {
-        success: true,
-        message: 'Invitation email sent successfully',
-        messageId: result.messageId
-      };
+      return result;
     } catch (error) {
       console.error('❌ [EMAIL SERVICE] Failed to send team invitation email:', error.message);
       return {
