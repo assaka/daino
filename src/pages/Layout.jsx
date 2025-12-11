@@ -610,11 +610,11 @@ function LayoutInner({ children, currentPageName }) {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <StoreIcon className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-900">Daino</span>
+                <span className="text-xl font-bold text-gray-900">DainoStore</span>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>{user?.first_name || user?.name || user?.email} ({user?.role})</DropdownMenuLabel>
+                <DropdownMenuLabel>{user?.first_name || user?.name || user?.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={async () => {
                     try {
