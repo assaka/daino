@@ -367,11 +367,12 @@ class AkeneoClient {
     if (options.updatedSinceHours && options.updatedSinceHours > 0) {
       const sinceDate = new Date();
       sinceDate.setHours(sinceDate.getHours() - options.updatedSinceHours);
-      const isoDate = sinceDate.toISOString();
+      // Akeneo expects date format "Y-m-d H:i:s" (e.g., "2024-12-11 10:30:00")
+      const akeneoDate = sinceDate.toISOString().replace('T', ' ').substring(0, 19);
       searchFilter = JSON.stringify({
-        updated: [{ operator: '>', value: isoDate }]
+        updated: [{ operator: '>', value: akeneoDate }]
       });
-      console.log(`🔍 Filtering products updated since: ${isoDate} (last ${options.updatedSinceHours} hours)`);
+      console.log(`🔍 Filtering products updated since: ${akeneoDate} (last ${options.updatedSinceHours} hours)`);
     }
 
     try {
