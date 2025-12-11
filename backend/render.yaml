@@ -45,6 +45,8 @@ services:
         sync: false
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
+      - key: STRIPE_CLIENT_ID
+        sync: false
     autoDeploy: true
 
   # Dedicated Background Job Worker Service
