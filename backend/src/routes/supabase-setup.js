@@ -241,7 +241,10 @@ router.get('/instructions', authMiddleware, async (req, res) => {
 });
 
 /**
- * Disconnect Supabase
+ * Disconnect Supabase (manual credentials)
+ *
+ * NOTE: This only removes OAuth/integration tokens from integration_configs.
+ * It does NOT delete store_databases - preserving tenant DB access for reconnection.
  */
 router.post('/disconnect', authMiddleware, async (req, res) => {
   try {
@@ -281,15 +284,29 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
       });
     }
 
-    // Remove stored credentials from store_databases
-    await masterDbClient
-      .from('store_databases')
-      .delete()
-      .eq('store_id', store_id);
+    // Remove integration tokens from tenant DB (not store_databases)
+    // We keep store_databases intact to preserve admin panel access
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+      await tenantDb
+        .from('integration_configs')
+        .delete()
+        .eq('store_id', store_id)
+        .eq('integration_type', 'supabase-oauth');
+
+      console.log('✓ Removed supabase-oauth from integration_configs');
+    } catch (tenantError) {
+      console.warn('Could not access tenant DB to clean integration_configs:', tenantError.message);
+    }
+
+    // NOTE: We intentionally DO NOT delete from store_databases in master DB.
+    // Deleting it would lock the user out of the admin panel.
+    console.log('ℹ️ Keeping store_databases record intact for admin access');
 
     res.json({
       success: true,
-      message: 'Disconnected from Supabase successfully'
+      message: 'Supabase credentials disconnected. You can reconnect anytime.'
     });
   } catch (error) {
     console.error('Failed to disconnect from Supabase:', error);

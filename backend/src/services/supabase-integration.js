@@ -955,15 +955,19 @@ class SupabaseIntegration {
   }
 
   /**
-   * Disconnect Supabase (delete all credentials)
+   * Disconnect Supabase OAuth integration
+   *
+   * IMPORTANT: This only removes OAuth tokens from integration_configs.
+   * It does NOT delete store_databases - the tenant DB connection must remain
+   * intact so the admin can still access the panel and reconnect.
    */
   async disconnect(storeId) {
     try {
-      console.log('Disconnecting Supabase for store:', storeId);
+      console.log('Disconnecting Supabase OAuth for store:', storeId);
 
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      // 1. Delete from integration_configs where integration_type='supabase-oauth'
+      // 1. Delete OAuth tokens from integration_configs where integration_type='supabase-oauth'
       console.log('Deleting supabase-oauth from integration_configs...');
       const { error: integrationDeleteError } = await tenantDb
         .from('integration_configs')
@@ -988,24 +992,16 @@ class SupabaseIntegration {
         console.log('✓ Deleted supabase-keys from integration_configs');
       }
 
-      // 2. Delete from store_databases in master DB
-      console.log('Deleting from store_databases in master DB...');
-      const { masterDbClient } = require('../database/masterConnection');
-      const { error: storeDatabaseDeleteError } = await masterDbClient
-        .from('store_databases')
-        .delete()
-        .eq('store_id', storeId);
+      // NOTE: We intentionally DO NOT delete from store_databases in master DB.
+      // The store_databases record contains the tenant DB connection credentials.
+      // Deleting it would lock the user out of the admin panel, preventing reconnection.
+      // The store_databases record should only be deleted when the store itself is deleted.
+      console.log('ℹ️ Keeping store_databases record intact for admin access');
 
-      if (storeDatabaseDeleteError) {
-        console.error('Error deleting from store_databases:', storeDatabaseDeleteError);
-      } else {
-        console.log('✓ Deleted from store_databases');
-      }
-
-      console.log('✅ Supabase disconnection completed - all records deleted');
+      console.log('✅ Supabase OAuth disconnection completed');
       return {
         success: true,
-        message: 'Supabase disconnected successfully. All credentials have been removed.',
+        message: 'Supabase OAuth disconnected. You can reconnect anytime from the integrations page.',
         note: 'To fully revoke access, go to your Supabase account settings and remove the DainoStore app authorization.'
       };
     } catch (error) {
