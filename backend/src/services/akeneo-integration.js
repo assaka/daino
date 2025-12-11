@@ -1419,6 +1419,14 @@ class AkeneoIntegration {
         delete updateData.akeneo_groups;
         delete updateData.akeneo_code;
         delete updateData.akeneo_family_variant;
+        // Translatable fields go in product_translations table
+        delete updateData.name;
+        delete updateData.description;
+        delete updateData.short_description;
+        delete updateData.meta_title;
+        delete updateData.meta_description;
+        delete updateData.meta_keywords;
+        delete updateData.seo; // SEO object also contains translatable fields
         updateData.updated_at = new Date().toISOString();
 
         await tenantDb
@@ -1437,6 +1445,14 @@ class AkeneoIntegration {
         delete productData.akeneo_groups;
         delete productData.akeneo_code;
         delete productData.akeneo_family_variant;
+        // Translatable fields go in product_translations table
+        delete productData.name;
+        delete productData.description;
+        delete productData.short_description;
+        delete productData.meta_title;
+        delete productData.meta_description;
+        delete productData.meta_keywords;
+        delete productData.seo; // SEO object also contains translatable fields
 
         const { data: newProduct, error: createError } = await tenantDb
           .from('products')
