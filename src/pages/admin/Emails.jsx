@@ -344,7 +344,7 @@ export default function Emails() {
                     <div className="text-sm text-gray-600">
                       <div className="font-medium mb-1">Subject:</div>
                       <div className="bg-gray-50 p-2 rounded text-xs">
-                        {template.subject}
+                        {template.translations?.en?.subject || 'No subject'}
                       </div>
                     </div>
 
