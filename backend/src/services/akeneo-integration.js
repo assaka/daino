@@ -1433,7 +1433,20 @@ class AkeneoIntegration {
         delete updateData.seo; // SEO object also contains translatable fields
         // sale_price is not a valid column - use compare_price instead
         delete updateData.sale_price;
+        // attributes go in product_attribute_values table, not on products
+        delete updateData.attributes;
         updateData.updated_at = new Date().toISOString();
+
+        // Clean metadata from images array (causes Supabase errors)
+        if (updateData.images && Array.isArray(updateData.images)) {
+          updateData.images = updateData.images.map(img => {
+            if (img && typeof img === 'object' && 'metadata' in img) {
+              const { metadata, ...cleanImg } = img;
+              return cleanImg;
+            }
+            return img;
+          });
+        }
 
         await tenantDb
           .from('products')
@@ -1499,6 +1512,19 @@ class AkeneoIntegration {
         delete productData.seo; // SEO object also contains translatable fields
         // sale_price is not a valid column - use compare_price instead
         delete productData.sale_price;
+        // attributes go in product_attribute_values table, not on products
+        delete productData.attributes;
+
+        // Clean metadata from images array (causes Supabase errors)
+        if (productData.images && Array.isArray(productData.images)) {
+          productData.images = productData.images.map(img => {
+            if (img && typeof img === 'object' && 'metadata' in img) {
+              const { metadata, ...cleanImg } = img;
+              return cleanImg;
+            }
+            return img;
+          });
+        }
 
         const { data: newProduct, error: createError } = await tenantDb
           .from('products')
