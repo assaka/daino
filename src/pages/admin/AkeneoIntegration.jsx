@@ -1992,7 +1992,7 @@ const AkeneoIntegration = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            {configSaved && connectionStatus?.success ? (
+            {configSaved ? (
               <>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                   Connected
@@ -2200,64 +2200,22 @@ const AkeneoIntegration = () => {
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button 
-                    onClick={loadConfigStatus} 
-                    disabled={loading}
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    {loading ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    {loading ? 'Loading...' : 'Reload Settings'}
-                  </Button>
-
-                  <SaveButton
-                    onClick={saveConfiguration}
-                    loading={saving}
-                    success={saveSuccess}
-                    disabled={false}
-                    defaultText="Save Configuration"
-                    className="flex items-center gap-2"
-                  />
-
-                  <Button 
-                    onClick={testConnection} 
-                    disabled={testing}
-                    className="flex items-center gap-2"
-                  >
-                    {testing ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4" />
-                    )}
-                    {testing ? 'Testing...' : 'Test Connection'}
-                  </Button>
-
-                  <Button 
-                    disabled={true}
-                    className="flex items-center gap-2"
-                    variant="outline"
-                  >
-                    <Clock className="h-4 w-4" />
-                    Version History
-                  </Button>
-                </div>
-
+              <div className="flex items-center justify-end">
+                <SaveButton
+                  onClick={saveConfiguration}
+                  loading={saving}
+                  success={saveSuccess}
+                  disabled={false}
+                  defaultText="Save Configuration"
+                  className="flex items-center gap-2"
+                />
               </div>
 
-              {renderConnectionStatus()}
-              
               {configSaved && (
-                <Alert className="border-blue-200 bg-blue-50 mt-4">
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    Configuration has been saved successfully. You can now test the connection or proceed with imports.
+                <Alert className="border-green-200 bg-green-50 mt-4">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Configuration has been saved successfully. You can now proceed with imports.
                   </AlertDescription>
                 </Alert>
               )}
