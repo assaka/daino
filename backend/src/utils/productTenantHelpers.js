@@ -341,8 +341,8 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
     // Build insert records
     const insertRecords = [];
 
-    for (const [attrCode, value] of Object.entries(attributes)) {
-      if (value === null || value === undefined || value === '') continue;
+    for (const [attrCode, rawValue] of Object.entries(attributes)) {
+      if (rawValue === null || rawValue === undefined || rawValue === '') continue;
 
       const attrInfo = attrCodeToId.get(attrCode);
       if (!attrInfo) continue; // Skip unknown attributes
@@ -352,26 +352,45 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
         attribute_id: attrInfo.id
       };
 
+      // Extract actual value from {label, value} objects (common from Akeneo pim_catalog_select)
+      let value = rawValue;
+      let label = null;
+      if (typeof rawValue === 'object' && rawValue !== null && !Array.isArray(rawValue)) {
+        if (rawValue.value !== undefined) {
+          value = rawValue.value;
+          label = rawValue.label || value;
+        }
+      }
+
       // Handle different attribute types
       if (attrInfo.type === 'select' || attrInfo.type === 'multiselect') {
         // For select types, value is the code of the attribute_value
-        const valueKey = `${attrInfo.id}:${value}`;
+        const lookupValue = typeof value === 'string' ? value : String(value);
+        const valueKey = `${attrInfo.id}:${lookupValue}`;
         const valueId = attrValueCodeToId.get(valueKey);
         if (valueId) {
           record.value_id = valueId;
         } else {
-          // Store as text if value_id not found
-          record.text_value = String(value);
+          // Store as text if value_id not found - use label if available for display
+          record.text_value = label || lookupValue;
         }
       } else if (attrInfo.type === 'number') {
-        record.number_value = parseFloat(value) || 0;
+        const numValue = typeof value === 'object' ? (value.amount || value.value || 0) : value;
+        record.number_value = parseFloat(numValue) || 0;
       } else if (attrInfo.type === 'boolean') {
         record.boolean_value = Boolean(value);
       } else if (attrInfo.type === 'date') {
         record.date_value = value;
       } else {
         // text, file, image, etc.
-        record.text_value = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        // For objects with label/value, store the label (human readable)
+        if (typeof rawValue === 'object' && rawValue !== null && rawValue.label) {
+          record.text_value = rawValue.label;
+        } else if (typeof value === 'object') {
+          record.text_value = JSON.stringify(value);
+        } else {
+          record.text_value = String(value);
+        }
       }
 
       insertRecords.push(record);

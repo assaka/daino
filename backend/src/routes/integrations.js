@@ -581,15 +581,27 @@ router.post('/akeneo/import-products',
     
     // Load custom mappings from database if not provided in request
     let customMappings = requestCustomMappings || {};
-    
+
+    // Check if custom mappings actually have content (not just empty arrays)
+    const hasActualMappings = requestCustomMappings && (
+      (requestCustomMappings.attributes && requestCustomMappings.attributes.length > 0) ||
+      (requestCustomMappings.images && requestCustomMappings.images.length > 0) ||
+      (requestCustomMappings.files && requestCustomMappings.files.length > 0)
+    );
+
     // If no custom mappings provided in request, load from database
-    if (!requestCustomMappings || Object.keys(requestCustomMappings).length === 0) {
+    if (!hasActualMappings) {
       try {
         console.log('🔍 Loading custom mappings from database...');
         const dbMappings = await AkeneoCustomMapping.getMappings(storeId);
-        if (dbMappings && Object.keys(dbMappings).length > 0) {
+        const hasDbMappings = dbMappings && (
+          (dbMappings.attributes && dbMappings.attributes.length > 0) ||
+          (dbMappings.images && dbMappings.images.length > 0) ||
+          (dbMappings.files && dbMappings.files.length > 0)
+        );
+        if (hasDbMappings) {
           customMappings = dbMappings;
-          console.log('✅ Loaded custom mappings from database:', customMappings);
+          console.log('✅ Loaded custom mappings from database:', JSON.stringify(customMappings, null, 2));
         } else {
           console.log('ℹ️ No custom mappings found in database');
         }
@@ -597,6 +609,8 @@ router.post('/akeneo/import-products',
         console.warn('⚠️ Failed to load custom mappings from database:', mappingError.message);
         // Continue with import using empty mappings
       }
+    } else {
+      console.log('✅ Using custom mappings from request:', JSON.stringify(customMappings, null, 2));
     }
     
     console.log(`📦 Starting product import with dryRun: ${dryRun}, locale: ${locale}`);

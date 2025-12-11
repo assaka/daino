@@ -545,50 +545,22 @@ const AkeneoIntegration = () => {
       
       if (response.success) {
         const mappings = response.mappings;
-        
-        // If no mappings in database, use defaults
-        const shouldUseDefaults = !mappings.attributes?.length && !mappings.images?.length && !mappings.files?.length;
-        
-        if (shouldUseDefaults) {
-          const defaultMappings = {
-            attributes: [
-              { akeneoAttribute: 'name', dainoField: 'name', enabled: true },
-              { akeneoAttribute: 'description', dainoField: 'description', enabled: true },
-              { akeneoAttribute: 'price', dainoField: 'price', enabled: true },
-              { akeneoAttribute: 'sku', dainoField: 'sku', enabled: true }
-            ],
-            images: [
-              { akeneoAttribute: 'image', dainoField: 'main_image', enabled: true, priority: 1 },
-              { akeneoAttribute: 'gallery', dainoField: 'image_gallery', enabled: true, priority: 2 }
-            ],
-            files: []
-          };
-          setCustomMappings(defaultMappings);
-          // Save defaults to database
-          await saveCustomMappingsToDb(defaultMappings);
-        } else {
-          setCustomMappings(mappings);
-        }
+        // Use mappings from database (no hardcoded defaults)
+        setCustomMappings({
+          attributes: mappings.attributes || [],
+          images: [], // Images are auto-mapped via pim_catalog_image type
+          files: []   // Files are auto-mapped via pim_catalog_file type
+        });
         setMappingsLoaded(true);
       }
     } catch (error) {
       console.error('Failed to load custom mappings:', error);
-      
-      // Fall back to defaults on error
-      const fallbackMappings = {
-        attributes: [
-          { akeneoAttribute: 'name', dainoField: 'name', enabled: true },
-          { akeneoAttribute: 'description', dainoField: 'description', enabled: true },
-          { akeneoAttribute: 'price', dainoField: 'price', enabled: true },
-          { akeneoAttribute: 'sku', dainoField: 'sku', enabled: true }
-        ],
-        images: [
-          { akeneoAttribute: 'image', dainoField: 'main_image', enabled: true, priority: 1 },
-          { akeneoAttribute: 'gallery', dainoField: 'image_gallery', enabled: true, priority: 2 }
-        ],
+      // Fall back to empty mappings on error
+      setCustomMappings({
+        attributes: [],
+        images: [],
         files: []
-      };
-      setCustomMappings(fallbackMappings);
+      });
       setMappingsLoaded(true);
     }
   };
@@ -3412,16 +3384,11 @@ const AkeneoIntegration = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const confirmed = window.confirm('Reset to default attribute mappings?');
+                              const confirmed = window.confirm('Clear all attribute mappings?');
                               if (confirmed) {
                                 setCustomMappings(prev => ({
                                   ...prev,
-                                  attributes: [
-                                    { akeneoAttribute: 'name', dainoField: 'name', enabled: true },
-                                    { akeneoAttribute: 'description', dainoField: 'description', enabled: true },
-                                    { akeneoAttribute: 'price', dainoField: 'price', enabled: true },
-                                    { akeneoAttribute: 'sku', dainoField: 'sku', enabled: true }
-                                  ]
+                                  attributes: []
                                 }));
                               }
                             }}
