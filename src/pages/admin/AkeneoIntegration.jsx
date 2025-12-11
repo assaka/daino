@@ -334,6 +334,7 @@ const AkeneoIntegration = () => {
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [storageConnected, setStorageConnected] = useState(true);
   const [storageError, setStorageError] = useState(null);
+  const [storageProviderName, setStorageProviderName] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
     import_type: 'attributes',
     schedule_type: 'once',
@@ -1036,13 +1037,16 @@ const AkeneoIntegration = () => {
     try {
       const storeId = selectedStore?.id;
       if (!storeId) return;
-      
+
       const response = await apiClient.get('/storage/providers');
-      
+
       if (response.success && response.data) {
         const currentProvider = response.data.current;
         const isAvailable = response.data.providers[currentProvider?.provider]?.available;
-        
+
+        // Save the provider name
+        setStorageProviderName(currentProvider?.name || currentProvider?.provider || 'Unknown');
+
         if (isAvailable) {
           setStorageConnected(true);
           setStorageError(null);
@@ -1821,6 +1825,20 @@ const AkeneoIntegration = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }) + ', ' + date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
   const renderConnectionStatus = () => {
     if (!connectionStatus) return null;
 
@@ -2095,131 +2113,188 @@ const AkeneoIntegration = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="baseUrl" className={validationErrors.baseUrl ? 'text-red-500' : ''}>Base URL</Label>
-                  <Input
-                    id="baseUrl"
-                    placeholder="https://your-akeneo.com"
-                    value={config.baseUrl}
-                    onChange={(e) => handleConfigChange('baseUrl', e.target.value)}
-                    className={validationErrors.baseUrl ? 'border-red-500 focus:ring-red-500' : ''}
-                  />
-                  {validationErrors.baseUrl && (
-                    <p className="text-sm text-red-500">{validationErrors.baseUrl}</p>
+              {configSaved ? (
+                /* Connected View - Show configuration details */
+                <>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <BarChart3 className="w-4 h-4 text-gray-500" />
+                      <span className="font-medium">{config.username}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                      <div>Base URL: {config.baseUrl}</div>
+                      <div>Version: Akeneo {config.version || '7'}.x</div>
+                      <div>Locale: {config.locale || 'en_US'}</div>
+                      <div>Client ID: {config.clientId}</div>
+                    </div>
+                    {config.lastSync && (
+                      <div className="text-xs text-gray-500 flex items-center">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Connected: {formatDate(config.lastSync)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Storage Info */}
+                  {storageProviderName && (
+                    <Alert className={storageConnected ? "border-blue-200 bg-blue-50" : "border-yellow-200 bg-yellow-50"}>
+                      <Info className={`h-4 w-4 ${storageConnected ? 'text-blue-600' : 'text-yellow-600'}`} />
+                      <AlertDescription className={storageConnected ? "text-blue-800" : "text-yellow-800"}>
+                        <strong>Media will be stored on {storageProviderName}</strong>
+                        {!storageConnected && (
+                          <p className="text-sm mt-1">
+                            Storage is not properly configured. Configure a storage provider for media imports.
+                          </p>
+                        )}
+                      </AlertDescription>
+                    </Alert>
                   )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clientId" className={validationErrors.clientId ? 'text-red-500' : ''}>Client ID</Label>
-                  <Input
-                    id="clientId"
-                    placeholder="Your client ID"
-                    value={config.clientId}
-                    onChange={(e) => handleConfigChange('clientId', e.target.value)}
-                    className={validationErrors.clientId ? 'border-red-500 focus:ring-red-500' : ''}
-                  />
-                  {validationErrors.clientId && (
-                    <p className="text-sm text-red-500">{validationErrors.clientId}</p>
-                  )}
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clientSecret" className={validationErrors.clientSecret ? 'text-red-500' : ''}>Client Secret</Label>
-                  <Input
-                    id="clientSecret"
-                    type="password"
-                    placeholder="Your client secret"
-                    value={config.clientSecret}
-                    onChange={(e) => handleConfigChange('clientSecret', e.target.value)}
-                    className={validationErrors.clientSecret ? 'border-red-500 focus:ring-red-500' : ''}
-                  />
-                  {validationErrors.clientSecret && (
-                    <p className="text-sm text-red-500">{validationErrors.clientSecret}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username" className={validationErrors.username ? 'text-red-500' : ''}>Username</Label>
-                  <Input
-                    id="username"
-                    placeholder="API username"
-                    value={config.username}
-                    onChange={(e) => handleConfigChange('username', e.target.value)}
-                    className={validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}
-                  />
-                  {validationErrors.username && (
-                    <p className="text-sm text-red-500">{validationErrors.username}</p>
-                  )}
-                </div>
-              </div>
+                  {/* Disconnect Button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleDisconnectClick}
+                      disabled={disconnecting}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {disconnecting ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Unlink className="w-4 h-4 mr-2" />
+                      )}
+                      Disconnect
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Configuration Form - Show when not connected */
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="baseUrl" className={validationErrors.baseUrl ? 'text-red-500' : ''}>Base URL</Label>
+                      <Input
+                        id="baseUrl"
+                        placeholder="https://your-akeneo.com"
+                        value={config.baseUrl}
+                        onChange={(e) => handleConfigChange('baseUrl', e.target.value)}
+                        className={validationErrors.baseUrl ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.baseUrl && (
+                        <p className="text-sm text-red-500">{validationErrors.baseUrl}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientId" className={validationErrors.clientId ? 'text-red-500' : ''}>Client ID</Label>
+                      <Input
+                        id="clientId"
+                        placeholder="Your client ID"
+                        value={config.clientId}
+                        onChange={(e) => handleConfigChange('clientId', e.target.value)}
+                        className={validationErrors.clientId ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.clientId && (
+                        <p className="text-sm text-red-500">{validationErrors.clientId}</p>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password" className={validationErrors.password ? 'text-red-500' : ''}>Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="API password"
-                    value={config.password}
-                    onChange={(e) => handleConfigChange('password', e.target.value)}
-                    className={validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}
-                  />
-                  {validationErrors.password && (
-                    <p className="text-sm text-red-500">{validationErrors.password}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="locale">Locale</Label>
-                  <Select value={config.locale} onValueChange={(value) => handleConfigChange('locale', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select locale" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locales.map((locale) => (
-                        <SelectItem key={locale.code} value={locale.code}>
-                          {locale.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="clientSecret" className={validationErrors.clientSecret ? 'text-red-500' : ''}>Client Secret</Label>
+                      <Input
+                        id="clientSecret"
+                        type="password"
+                        placeholder="Your client secret"
+                        value={config.clientSecret}
+                        onChange={(e) => handleConfigChange('clientSecret', e.target.value)}
+                        className={validationErrors.clientSecret ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.clientSecret && (
+                        <p className="text-sm text-red-500">{validationErrors.clientSecret}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="username" className={validationErrors.username ? 'text-red-500' : ''}>Username</Label>
+                      <Input
+                        id="username"
+                        placeholder="API username"
+                        value={config.username}
+                        onChange={(e) => handleConfigChange('username', e.target.value)}
+                        className={validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.username && (
+                        <p className="text-sm text-red-500">{validationErrors.username}</p>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="version">Akeneo Version</Label>
-                  <Select value={config.version || '7'} onValueChange={(value) => handleConfigChange('version', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select version" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">Akeneo 7.x (Latest)</SelectItem>
-                      <SelectItem value="6">Akeneo 6.x</SelectItem>
-                      <SelectItem value="5">Akeneo 5.x</SelectItem>
-                      <SelectItem value="4">Akeneo 4.x</SelectItem>
-                      <SelectItem value="3">Akeneo 3.x</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Select your Akeneo PIM version. Versions 6+ use UUID-based product endpoints.
-                  </p>
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className={validationErrors.password ? 'text-red-500' : ''}>Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="API password"
+                        value={config.password}
+                        onChange={(e) => handleConfigChange('password', e.target.value)}
+                        className={validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.password && (
+                        <p className="text-sm text-red-500">{validationErrors.password}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="locale">Locale</Label>
+                      <Select value={config.locale} onValueChange={(value) => handleConfigChange('locale', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select locale" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locales.map((locale) => (
+                            <SelectItem key={locale.code} value={locale.code}>
+                              {locale.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <Separator />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="version">Akeneo Version</Label>
+                      <Select value={config.version || '7'} onValueChange={(value) => handleConfigChange('version', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select version" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">Akeneo 7.x (Latest)</SelectItem>
+                          <SelectItem value="6">Akeneo 6.x</SelectItem>
+                          <SelectItem value="5">Akeneo 5.x</SelectItem>
+                          <SelectItem value="4">Akeneo 4.x</SelectItem>
+                          <SelectItem value="3">Akeneo 3.x</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Select your Akeneo PIM version. Versions 6+ use UUID-based product endpoints.
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-end">
-                <SaveButton
-                  onClick={saveConfiguration}
-                  loading={saving}
-                  success={saveSuccess}
-                  disabled={false}
-                  defaultText="Save Configuration"
-                  className="flex items-center gap-2"
-                />
-              </div>
+                  <Separator />
 
+                  <div className="flex items-center justify-end">
+                    <SaveButton
+                      onClick={saveConfiguration}
+                      loading={saving}
+                      success={saveSuccess}
+                      disabled={false}
+                      defaultText="Save Configuration"
+                      className="flex items-center gap-2"
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
