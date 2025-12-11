@@ -1356,7 +1356,7 @@ class AkeneoIntegration {
         const originalCode = attributeSet.name.replace('akeneo_', '');
         mapping[originalCode] = attributeSet.id;
       } else {
-        // Also map non-prefixed names for backward compatibility
+        // Also map user-created attribute sets (without prefix) by their exact name
         mapping[attributeSet.name] = attributeSet.id;
       }
     });
@@ -1609,6 +1609,7 @@ class AkeneoIntegration {
                     akeneo_identifier: akeneoProduct.identifier,
                     error: result.error
                   });
+                  console.error(`❌ Failed to import standalone product ${akeneoProduct.identifier}: ${result.error}`);
                 }
               } else {
                 this.importStats.products.imported++;
@@ -1685,6 +1686,7 @@ class AkeneoIntegration {
                     akeneo_identifier: akeneoProduct.identifier,
                     error: result.error
                   });
+                  console.error(`❌ Failed to import variant product ${akeneoProduct.identifier}: ${result.error}`);
                 }
               } else {
                 this.importStats.products.imported++;
@@ -1816,6 +1818,7 @@ class AkeneoIntegration {
       const response = {
         success: true,
         stats: this.importStats.products,
+        errors: this.importStats.errors,
         dryRun: dryRun,
         details: {
           processedCount: processed,
@@ -1825,6 +1828,14 @@ class AkeneoIntegration {
           completedSuccessfully: true
         }
       };
+
+      // Log errors summary if any
+      if (this.importStats.errors.length > 0) {
+        console.log(`\n❌ ${this.importStats.errors.length} errors occurred during import:`);
+        this.importStats.errors.forEach((err, idx) => {
+          console.log(`   ${idx + 1}. [${err.type}] ${err.akeneo_identifier || err.akeneo_code}: ${err.error || (err.errors ? err.errors.join(', ') : 'Unknown error')}`);
+        });
+      }
 
       // Save import statistics to database (only if not a dry run)
       if (!dryRun) {
