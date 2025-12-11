@@ -732,8 +732,9 @@ export default function PaymentMethods() {
                                       <Info className="w-4 h-4 text-gray-400" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs">
-                                    <p>You will be redirected to Stripe to log in with your existing account and authorize the connection.</p>
+                                  <TooltipContent side="top" className="max-w-xs text-left">
+                                    <p className="font-medium mb-1">Connect your existing Stripe account</p>
+                                    <p>You will be redirected to Stripe where you need to enter your Stripe email and password to log in. After logging in, authorize the connection to link your account.</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
