@@ -320,7 +320,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
   return (
     <div
-      className={`absolute ${positionClass} ${cursorClass}`}
+      className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
+        isHovered || isDragging || parentHovered
+          ? 'opacity-100'
+          : 'opacity-0 hover:opacity-100'
+      }`}
       draggable={false}
       onMouseDown={handleMouseDown}
       onPointerDown={handleMouseDown}
