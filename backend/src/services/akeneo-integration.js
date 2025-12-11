@@ -1493,19 +1493,21 @@ class AkeneoIntegration {
             name: extractString(transformedProduct.name),
             description: extractString(transformedProduct.description),
             short_description: extractString(transformedProduct.short_description),
-            meta_title: extractString(transformedProduct.meta_title || transformedProduct.seo?.meta_title),
-            meta_description: extractString(transformedProduct.meta_description || transformedProduct.seo?.meta_description),
             updated_at: new Date().toISOString()
           };
 
+          console.log(`📝 Syncing translation for product ${existingProduct.id}: name="${translationData.name?.substring(0, 50)}..."`);
+
           if (existingTranslation) {
-            await tenantDb
+            const { error: updateErr } = await tenantDb
               .from('product_translations')
               .update(translationData)
               .eq('product_id', existingProduct.id)
               .eq('language_code', 'en');
+            if (updateErr) throw updateErr;
+            console.log(`✅ Updated translation for product ${existingProduct.id}`);
           } else {
-            await tenantDb
+            const { error: insertErr } = await tenantDb
               .from('product_translations')
               .insert({
                 product_id: existingProduct.id,
@@ -1513,9 +1515,11 @@ class AkeneoIntegration {
                 ...translationData,
                 created_at: new Date().toISOString()
               });
+            if (insertErr) throw insertErr;
+            console.log(`✅ Created translation for product ${existingProduct.id}`);
           }
         } catch (translationError) {
-          console.warn(`⚠️ Failed to update translation for product ${existingProduct.id}:`, translationError.message);
+          console.error(`❌ Failed to update translation for product ${existingProduct.id}:`, translationError.message);
         }
 
         // Sync attributes to product_attribute_values table using AttributeMappingService
@@ -1601,20 +1605,23 @@ class AkeneoIntegration {
             return String(val);
           };
 
-          await tenantDb
+          const nameStr = extractString(transformedProduct.name);
+          console.log(`📝 Creating translation for new product ${newProduct.id}: name="${nameStr?.substring(0, 50)}..."`);
+
+          const { error: insertErr } = await tenantDb
             .from('product_translations')
             .insert({
               product_id: newProduct.id,
               language_code: 'en',
-              name: extractString(transformedProduct.name),
+              name: nameStr,
               description: extractString(transformedProduct.description),
               short_description: extractString(transformedProduct.short_description),
-              meta_title: extractString(transformedProduct.meta_title || transformedProduct.seo?.meta_title),
-              meta_description: extractString(transformedProduct.meta_description || transformedProduct.seo?.meta_description),
               created_at: new Date().toISOString()
             });
+          if (insertErr) throw insertErr;
+          console.log(`✅ Created translation for product ${newProduct.id}`);
         } catch (translationError) {
-          console.warn(`⚠️ Failed to create translation for product ${newProduct.id}:`, translationError.message);
+          console.error(`❌ Failed to create translation for product ${newProduct.id}:`, translationError.message);
         }
 
         // Sync attributes to product_attribute_values table using AttributeMappingService
