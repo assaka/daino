@@ -911,7 +911,7 @@ class AkeneoIntegration {
                 is_searchable: attribute.is_searchable,
                 is_usable_in_conditions: attribute.is_usable_in_conditions,
                 filter_type: attribute.filter_type,
-                options: attribute.options,
+                // Note: options are stored in attribute_values table, not here
                 file_settings: attribute.file_settings,
                 sort_order: attribute.sort_order,
                 updated_at: new Date().toISOString()
@@ -965,12 +965,13 @@ class AkeneoIntegration {
               const shouldBeFilterable = defaultFilterableAttributes.includes(attribute.code.toLowerCase()) &&
                                         !excludedPriceAttributes.includes(attribute.code.toLowerCase());
 
-              // Remove temporary fields
+              // Remove temporary fields and fields that belong in other tables
               const attributeData = { ...attribute };
               delete attributeData.akeneo_code;
               delete attributeData.akeneo_type;
               delete attributeData.akeneo_group;
-              delete attributeData.name; // Remove name - it goes in translations table
+              delete attributeData.name; // Remove name - it goes in attribute_translations table
+              delete attributeData.options; // Remove options - they go in attribute_values table
 
               // Override filterable setting for new attributes
               if (shouldBeFilterable) {
