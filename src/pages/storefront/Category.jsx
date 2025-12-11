@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
+import { Pencil } from "lucide-react";
 import { createCategoryUrl, createProductUrl } from "@/utils/urlUtils";
 import { buildCategoryBreadcrumbs } from "@/utils/breadcrumbUtils";
 import { useNotFound } from "@/utils/notFoundUtils";

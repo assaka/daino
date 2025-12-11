@@ -10,6 +10,7 @@ import { useSearchParams } from "react-router-dom";
 import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
 import { generateMockProductContext } from '@/utils/mockProductData';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
@@ -40,7 +41,13 @@ export default function ProductSlotsEditor({
   const [searchParams] = useSearchParams();
   const initialProductSlug = searchParams.get('product');
 
-  const { selectedStore } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const storeId = getSelectedStoreId();
+
+  // Fetch header and categories for combined header + page editing
+  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
+
   const [realProduct, setRealProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
   const [selectedProductSlug, setSelectedProductSlug] = useState(initialProductSlug);
@@ -228,8 +235,24 @@ export default function ProductSlotsEditor({
     availableProducts: allProducts,
     selectedProductSlug,
     onProductChange: setSelectedProductSlug,
-    isLoadingProductData: loading
-  }), [generateProductContext, allProducts, selectedProductSlug, loading]);
+    isLoadingProductData: loading,
+    // Header integration - show header + page content together
+    includeHeader: true,
+    headerSlots: headerConfig?.slots || null,
+    headerContext: {
+      store: selectedStore,
+      settings: selectedStore?.settings || {},
+      categories: categories,
+      languages: [],
+      currentLanguage: 'en',
+      mobileMenuOpen: false,
+      mobileSearchOpen: false,
+      setMobileMenuOpen: () => {},
+      setMobileSearchOpen: () => {},
+      navigate: () => {},
+      location: { pathname: '/' }
+    }
+  }), [generateProductContext, allProducts, selectedProductSlug, loading, headerConfig, selectedStore, categories]);
 
   // Show loading state while fetching product
   if (loading) {

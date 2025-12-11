@@ -52,6 +52,7 @@ import {
 } from '@/components/editor/slot/SlotComponents';
 import { ResponsiveIframe } from '@/components/editor/ResponsiveIframe';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
+import { HeaderSlotRenderer } from '@/components/storefront/HeaderSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import '@/components/editor/slot/CheckoutSlotComponents'; // Register checkout components
@@ -106,7 +107,12 @@ const UnifiedSlotsEditor = ({
     selectedProductSlug,
     onProductChange,
     isLoadingCategoryData,
-    isLoadingProductData
+    isLoadingProductData,
+    // Header integration
+    includeHeader,
+    headerSlots,
+    headerContext,
+    onHeaderSlotChange
   } = config;
 
   // Store context for database operations
@@ -503,6 +509,20 @@ const UnifiedSlotsEditor = ({
             viewport={currentViewport}
             className="bg-white"
           >
+            {/* Header Section - When includeHeader is enabled */}
+            {includeHeader && headerSlots && (
+              <div className="editor-header-section border-b-2 border-dashed border-blue-300 mb-4">
+                <div className="bg-blue-50 px-2 py-1 text-xs text-blue-600 font-medium">
+                  Header Layout
+                </div>
+                <HeaderSlotRenderer
+                  slots={headerSlots}
+                  viewMode={currentViewport === 'mobile' ? 'mobile' : 'desktop'}
+                  headerContext={headerContext || {}}
+                />
+              </div>
+            )}
+
             <div className="px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}
               <div id="flash-messages-area"></div>
@@ -512,6 +532,13 @@ const UnifiedSlotsEditor = ({
                 position.includes('above') && (
                   <CmsBlockRenderer key={position} position={position} />
                 )
+              )}
+
+              {/* Page Content Label */}
+              {includeHeader && (
+                <div className="bg-green-50 px-2 py-1 text-xs text-green-600 font-medium mb-2 -mx-4 sm:-mx-6 lg:-mx-8">
+                  Page Content ({pageName})
+                </div>
               )}
 
               {/* Main Grid Layout */}

@@ -13,7 +13,7 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useCategory, useCategories, useFilterableAttributes } from '@/hooks/useApiQueries';
+import { useCategory, useCategories, useFilterableAttributes, useSlotConfiguration } from '@/hooks/useApiQueries';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Use same preprocessing as storefront for consistent rendering
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
@@ -146,6 +146,9 @@ const CategorySlotsEditor = ({
   // Fetch categories and filterable attributes directly since StoreProvider is skipped for editor pages
   const { data: fetchedCategories = [] } = useCategories(storeId, { enabled: !!storeId });
   const { data: fetchedFilterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
+
+  // Fetch header slot configuration for combined header + page editing
+  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
 
   const categories = storeContext?.categories?.length > 0 ? storeContext.categories : fetchedCategories;
   const filterableAttributes = storeContext?.filterableAttributes?.length > 0
@@ -438,12 +441,28 @@ const CategorySlotsEditor = ({
     },
     customSlotRenderer: categoryCustomSlotRenderer,
     cmsBlockPositions: ['category_above_products', 'category_below_products'],
-    // Extra: pass available categories for category selector
+    // Category selector
     availableCategories: categories,
     selectedCategorySlug,
     onCategoryChange: setSelectedCategorySlug,
-    isLoadingCategoryData: categoryLoading
-  }), [categoryContext, categories, selectedCategorySlug, categoryLoading]);
+    isLoadingCategoryData: categoryLoading,
+    // Header integration - show header + page content together
+    includeHeader: true,
+    headerSlots: headerConfig?.slots || null,
+    headerContext: {
+      store: storeContext?.store || selectedStore,
+      settings: storeSettings || {},
+      categories: categories,
+      languages: [],
+      currentLanguage: 'en',
+      mobileMenuOpen: false,
+      mobileSearchOpen: false,
+      setMobileMenuOpen: () => {},
+      setMobileSearchOpen: () => {},
+      navigate: () => {},
+      location: { pathname: '/' }
+    }
+  }), [categoryContext, categories, selectedCategorySlug, categoryLoading, headerConfig, storeContext, selectedStore, storeSettings]);
 
   // Create enhanced config with store settings and filterable attributes
   const enhancedConfig = {
