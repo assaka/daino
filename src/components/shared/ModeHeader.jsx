@@ -103,7 +103,95 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
             {extraButtons}
           </div>
         )}
-        <div className="w-10" />
+        <div className="flex items-center space-x-2">
+          {/* Show StoreSelector on mobile/tablet */}
+          {!hideStoreSelector && <StoreSelector className="hidden sm:flex" />}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <UserIcon className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.first_name || user?.name || user?.email}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {/* Show StoreSelector in dropdown for smallest screens */}
+              {!hideStoreSelector && (
+                <>
+                  <div className="px-2 py-2 sm:hidden">
+                    <StoreSelector />
+                  </div>
+                  <DropdownMenuSeparator className="sm:hidden" />
+                </>
+              )}
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  if (!selectedStore?.id) return;
+
+                  const fullStoreData = await Store.findById(selectedStore.id);
+                  const storeData = fullStoreData?.data?.store || fullStoreData?.store || fullStoreData;
+                  const fullStore = Array.isArray(storeData) ? storeData[0] : storeData;
+
+                  const storeSlug = fullStore?.slug || selectedStore?.slug;
+
+                  if (storeSlug) {
+                    if (fullStore?.published) {
+                      const baseUrl = getStoreBaseUrl(fullStore);
+                      const storeUrl = getExternalStoreUrl(storeSlug, '', baseUrl);
+                      const separator = storeUrl.includes('?') ? '&' : '?';
+                      window.open(`${storeUrl}${separator}version=published`, '_blank');
+                    } else {
+                      window.open(`/public/${storeSlug}?version=published`, '_blank');
+                    }
+                  } else {
+                    console.warn('Store slug not found for store:', selectedStore);
+                  }
+                } catch (error) {
+                  console.error('Error loading store data for View Storefront:', error);
+                }
+              }}>
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                <span>View Storefront</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(createPageUrl("Billing"))}>
+                <Wallet className="mr-2 h-4 w-4" />
+                <span>Billing</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/admin/team")}>
+                <Users className="mr-2 h-4 w-4" />
+                <span>Team</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <button
+                  data-testid="logout-mobile"
+                  className="w-full flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    try {
+                      await handleLogout();
+                    } catch (error) {
+                      console.error('❌ Mobile logout error:', error);
+                      window.location.href = '/admin/auth';
+                    }
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Desktop Header with Store Selector */}
