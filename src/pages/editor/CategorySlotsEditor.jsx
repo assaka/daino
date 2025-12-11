@@ -268,8 +268,8 @@ const CategorySlotsEditor = ({
     const store = storeContext?.store || selectedStore || { id: storeId, name: 'Store' };
     const productLabels = storeContext?.productLabels || [];
 
-    // If we have real data, use it
-    if (realCategoryData?.category && realCategoryData?.products?.length > 0) {
+    // If we have real category data, use it (even with 0 products)
+    if (realCategoryData?.category) {
       const products = realCategoryData.products;
       const filters = buildFilters(products, filterableAttributes);
       const totalPages = Math.max(5, Math.ceil(products.length / 12)); // Show at least 5 pages for preview
@@ -398,11 +398,11 @@ const CategorySlotsEditor = ({
     categoriesCount: categories?.length || 0,
     filterableAttributesCount: filterableAttributes?.length || 0,
     filtersBuilt: Object.keys(categoryContext?.filters || {}),
-    usingMock: !realCategoryData?.category || realCategoryData?.products?.length === 0
+    usingMock: !realCategoryData?.category
   });
 
   // Debug: Log product images
-  if (realCategoryData?.products?.length > 0) {
+  if (realCategoryData?.category) {
     console.log('[CategorySlotsEditor] 🖼️ Product Images Debug:', {
       totalProducts: realCategoryData.products.length,
       productsWithImages: realCategoryData.products.filter(p => p.images?.length > 0).length,
