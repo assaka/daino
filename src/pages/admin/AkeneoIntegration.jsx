@@ -2125,14 +2125,8 @@ const AkeneoIntegration = () => {
                       <div>Base URL: {config.baseUrl}</div>
                       <div>Version: Akeneo {config.version || '7'}.x</div>
                       <div>Locale: {config.locale || 'en_US'}</div>
-                      <div>Client ID: {config.clientId}</div>
+                      <div>Connected: {config.lastSync ? formatDate(config.lastSync) : 'Just now'}</div>
                     </div>
-                    {config.lastSync && (
-                      <div className="text-xs text-gray-500 flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Connected: {formatDate(config.lastSync)}
-                      </div>
-                    )}
                   </div>
 
                   {/* Storage Info */}
