@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink, Eye, EyeOff } from "lucide-react";
 import apiClient from "@/api/client";
-import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, linkExistingStripeAccount } from "@/api/functions";
+import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, linkExistingStripeAccount, getStripeConnectOAuthUrl } from "@/api/functions";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,7 @@ export default function PaymentMethods() {
   const [linkExistingDialogOpen, setLinkExistingDialogOpen] = useState(false);
   const [existingAccountId, setExistingAccountId] = useState('');
   const [linkingAccount, setLinkingAccount] = useState(false);
+  const [connectingExistingAccount, setConnectingExistingAccount] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -127,6 +128,14 @@ export default function PaymentMethods() {
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (params.get('stripe_refresh') === 'true') {
       setFlashMessage({ type: 'info', message: 'Please complete Stripe onboarding.' });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('stripe_oauth_success') === 'true') {
+      setFlashMessage({ type: 'success', message: 'Existing Stripe account connected successfully!' });
+      loadStripeConnectStatus();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('stripe_error')) {
+      const errorMsg = decodeURIComponent(params.get('stripe_error'));
+      setFlashMessage({ type: 'error', message: `Failed to connect Stripe: ${errorMsg}` });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -229,6 +238,32 @@ export default function PaymentMethods() {
       setFlashMessage({ type: 'error', message: 'Error linking account: ' + error.message });
     } finally {
       setLinkingAccount(false);
+    }
+  };
+
+  const handleConnectExistingStripeAccount = async () => {
+    if (!selectedStore?.id) return;
+
+    setConnectingExistingAccount(true);
+    try {
+      const response = await getStripeConnectOAuthUrl(selectedStore.id);
+      const oauthUrl = response.data?.data?.oauth_url || response.data?.oauth_url;
+
+      if (oauthUrl) {
+        // Redirect to Stripe OAuth page
+        window.location.href = oauthUrl;
+      } else {
+        setFlashMessage({ type: 'error', message: 'Unable to generate OAuth URL. Please try again.' });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      if (errorMessage.includes('STRIPE_CLIENT_ID')) {
+        setFlashMessage({ type: 'error', message: 'Stripe OAuth is not configured. Please contact support.' });
+      } else {
+        setFlashMessage({ type: 'error', message: 'Error connecting to Stripe: ' + errorMessage });
+      }
+    } finally {
+      setConnectingExistingAccount(false);
     }
   };
 
@@ -703,26 +738,31 @@ export default function PaymentMethods() {
                         ) : (
                           <div className="space-y-2">
                             <Button
-                              onClick={handleConnectStripe}
-                              disabled={connectingStripe}
+                              onClick={handleConnectExistingStripeAccount}
+                              disabled={connectingExistingAccount || connectingStripe}
                               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full"
                             >
-                              {connectingStripe ? (
+                              {connectingExistingAccount ? (
                                 <>
                                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                                   Connecting...
                                 </>
                               ) : (
-                                <><CreditCard className="w-4 h-4 mr-2" /> Connect New</>
+                                <><Link2 className="w-4 h-4 mr-2" /> Connect Existing</>
                               )}
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setLinkExistingDialogOpen(true)}
+                              onClick={handleConnectStripe}
+                              disabled={connectingStripe || connectingExistingAccount}
                               className="w-full text-xs"
                             >
-                              <Link2 className="w-3 h-3 mr-1" /> Link Existing
+                              {connectingStripe ? (
+                                <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Creating...</>
+                              ) : (
+                                <><CreditCard className="w-3 h-3 mr-1" /> Create New Account</>
+                              )}
                             </Button>
                           </div>
                         )}

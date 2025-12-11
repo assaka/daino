@@ -510,6 +510,212 @@ router.post('/link-existing-account', authMiddleware, authorize(['admin', 'store
   }
 });
 
+// @route   GET /api/payments/connect-oauth-url
+// @desc    Generate Stripe Connect OAuth URL to connect existing Standard accounts
+// @access  Private
+router.get('/connect-oauth-url', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe not configured'
+      });
+    }
+
+    // STRIPE_CLIENT_ID is required for OAuth
+    const stripeClientId = process.env.STRIPE_CLIENT_ID;
+    if (!stripeClientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe OAuth not configured. Please set STRIPE_CLIENT_ID environment variable.'
+      });
+    }
+
+    // Get store to verify it exists
+    const store = await getMasterStore(store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if account already exists
+    const existingConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    if (existingConfig?.config_data?.accountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'A Stripe account is already connected to this store. Disconnect it first to connect a different account.'
+      });
+    }
+
+    // Generate state token for security (includes store_id)
+    const state = Buffer.from(JSON.stringify({
+      store_id: store_id,
+      timestamp: Date.now(),
+      nonce: uuidv4()
+    })).toString('base64');
+
+    // Build OAuth URL
+    const redirectUri = `${process.env.CORS_ORIGIN}/dashboard/payments/oauth-callback`;
+    const oauthUrl = new URL('https://connect.stripe.com/oauth/authorize');
+    oauthUrl.searchParams.set('response_type', 'code');
+    oauthUrl.searchParams.set('client_id', stripeClientId);
+    oauthUrl.searchParams.set('scope', 'read_write');
+    oauthUrl.searchParams.set('redirect_uri', redirectUri);
+    oauthUrl.searchParams.set('state', state);
+    // stripe_user[business_type] can be pre-filled if needed
+    // oauthUrl.searchParams.set('stripe_user[business_type]', 'company');
+
+    console.log(`Generated Stripe OAuth URL for store ${store_id}`);
+
+    res.json({
+      success: true,
+      data: {
+        oauth_url: oauthUrl.toString(),
+        state: state
+      }
+    });
+  } catch (error) {
+    console.error('Generate Stripe OAuth URL error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate OAuth URL',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/payments/connect-oauth-callback
+// @desc    Handle Stripe Connect OAuth callback - exchange code for account
+// @access  Private
+router.post('/connect-oauth-callback', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { code, state } = req.body;
+
+    if (!code || !state) {
+      return res.status(400).json({
+        success: false,
+        message: 'code and state are required'
+      });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe not configured'
+      });
+    }
+
+    // Decode and validate state
+    let stateData;
+    try {
+      stateData = JSON.parse(Buffer.from(state, 'base64').toString('utf8'));
+    } catch (e) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid state parameter'
+      });
+    }
+
+    const { store_id, timestamp } = stateData;
+
+    // Check state is not too old (15 minutes)
+    if (Date.now() - timestamp > 15 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'OAuth session expired. Please try again.'
+      });
+    }
+
+    // Verify store exists and user has access
+    const store = await getMasterStore(store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if account already exists (prevent duplicate connections)
+    const existingConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    if (existingConfig?.config_data?.accountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'A Stripe account is already connected to this store'
+      });
+    }
+
+    // Exchange authorization code for account credentials
+    let tokenResponse;
+    try {
+      tokenResponse = await stripe.oauth.token({
+        grant_type: 'authorization_code',
+        code: code
+      });
+    } catch (stripeError) {
+      console.error('Stripe OAuth token exchange error:', stripeError);
+      return res.status(400).json({
+        success: false,
+        message: `Failed to connect Stripe account: ${stripeError.message}`
+      });
+    }
+
+    const connectedAccountId = tokenResponse.stripe_user_id;
+
+    // Retrieve account details to check status
+    const account = await stripe.accounts.retrieve(connectedAccountId);
+    const onboardingComplete = account.details_submitted && account.charges_enabled;
+
+    // Save account to integration_configs
+    await IntegrationConfig.createOrUpdate(store_id, STRIPE_INTEGRATION_TYPE, {
+      accountId: connectedAccountId,
+      accountType: 'standard', // OAuth connects Standard accounts
+      onboardingComplete: onboardingComplete,
+      onboardingCompletedAt: onboardingComplete ? new Date().toISOString() : null,
+      connectedViaOAuth: true,
+      accessToken: tokenResponse.access_token, // Store for API calls on behalf of account
+      refreshToken: tokenResponse.refresh_token,
+      tokenType: tokenResponse.token_type,
+      livemode: tokenResponse.livemode,
+      createdAt: new Date().toISOString()
+    });
+
+    console.log(`Connected existing Stripe account ${connectedAccountId} to store ${store_id} via OAuth`);
+
+    res.json({
+      success: true,
+      data: {
+        account_id: connectedAccountId,
+        account_type: account.type,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted,
+        onboardingComplete: onboardingComplete,
+        business_profile: account.business_profile
+      }
+    });
+  } catch (error) {
+    console.error('Stripe OAuth callback error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to complete OAuth connection',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/payments/connect-account
 // @desc    Create Stripe Connect account
 // @access  Private

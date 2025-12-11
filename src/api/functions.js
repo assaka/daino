@@ -147,6 +147,29 @@ export const linkExistingStripeAccount = async (storeId, accountId) => {
   }
 };
 
+export const getStripeConnectOAuthUrl = async (storeId) => {
+  try {
+    const response = await apiClient.get(`payments/connect-oauth-url?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error getting Stripe OAuth URL:', error);
+    throw error;
+  }
+};
+
+export const completeStripeOAuthCallback = async (code, state) => {
+  try {
+    const response = await apiClient.post('payments/connect-oauth-callback', {
+      code,
+      state
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error completing Stripe OAuth callback:', error);
+    throw error;
+  }
+};
+
 export const checkStripeConnectStatus = async (storeId) => {
   try {
     const response = await apiClient.get(`payments/connect-status${storeId ? `?store_id=${storeId}` : ''}`);

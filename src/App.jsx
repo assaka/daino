@@ -404,6 +404,7 @@ function App() {
           <Route path="/admin/tax" element={<PageWrapper Component={Pages.Tax} pageName="TAX" />} />
           <Route path="/admin/shipping-methods" element={<PageWrapper Component={Pages.ShippingMethods} pageName="SHIPPING_METHODS" />} />
           <Route path="/admin/payment-methods" element={<PageWrapper Component={Pages.PaymentMethods} pageName="PAYMENT_METHODS" />} />
+          <Route path="/dashboard/payments/oauth-callback" element={<PageWrapper Component={Pages.StripeOAuthCallback} pageName="STRIPE_OAUTH_CALLBACK" />} />
           <Route path="/admin/coupons" element={<PageWrapper Component={Pages.Coupons} pageName="COUPONS" />} />
           <Route path="/admin/delivery-settings" element={<PageWrapper Component={Pages.DeliverySettings} pageName="DELIVERY_SETTINGS" />} />
           <Route path="/admin/cms-blocks" element={<PageWrapper Component={Pages.CmsBlocks} pageName="CMS_BLOCKS" />} />

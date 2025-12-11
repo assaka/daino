@@ -15,6 +15,7 @@ export { default as Coupons } from './admin/Coupons';
 export { default as Tax } from './admin/Tax';
 export { default as ShippingMethods } from './admin/ShippingMethods';
 export { default as PaymentMethods } from './admin/PaymentMethods';
+export { default as StripeOAuthCallback } from './admin/StripeOAuthCallback';
 export { default as DeliverySettings } from './admin/DeliverySettings';
 export { default as StockSettings } from './admin/StockSettings';
 export { default as Cache } from './admin/Cache';
