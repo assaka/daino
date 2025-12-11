@@ -214,6 +214,7 @@ const AIContextWindowPage = () => {
             <ResizablePanel
               defaultSize={86}
               minSize={40}
+              maxSize={60}
             >
               <div className="h-full flex flex-col">
                 {selectedSlotEditor ? (
