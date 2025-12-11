@@ -279,6 +279,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           handleElementRef.current.removeEventListener('pointercancel', mouseUpHandlerRef.current);
         }
       }
+      // Also cleanup document listeners
+      if (mouseMoveHandlerRef.current) {
+        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+      }
+      if (mouseUpHandlerRef.current) {
+        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        document.removeEventListener('pointerup', mouseUpHandlerRef.current);
+      }
     };
   }, []);
 
