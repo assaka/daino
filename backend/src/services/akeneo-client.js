@@ -168,23 +168,28 @@ class AkeneoClient {
   async makeRequest(method, endpoint, data = null, params = null) {
     await this.ensureValidToken();
 
-    try {
-      const config = {
-        method,
-        url: endpoint,
-        params,
-        headers: {}
-      };
-
-      if (data) {
-        config.data = data;
+    // Define config outside try block so it's accessible in catch
+    const requestConfig = {
+      method,
+      url: endpoint,
+      params,
+      headers: {
+        'Accept': 'application/json'
       }
+    };
 
-      // Use application/json for all endpoints (hal+json not supported by this Akeneo instance)
-      config.headers['Accept'] = 'application/json';
+    if (data) {
+      requestConfig.data = data;
+    }
 
-      console.log(`🌐 Making ${method} request to ${endpoint}`, { params, hasData: !!data, acceptHeader: config.headers['Accept'] || 'default' });
-      const response = await this.axiosInstance.request(config);
+    try {
+      console.log(`🌐 Making ${method} request to ${endpoint}`, {
+        params,
+        hasData: !!data,
+        acceptHeader: requestConfig.headers['Accept'],
+        akeneoVersion: this.version
+      });
+      const response = await this.axiosInstance.request(requestConfig);
       return response.data;
     } catch (error) {
       const errorDetails = {
@@ -193,26 +198,27 @@ class AkeneoClient {
         data: error.response?.data,
         url: endpoint,
         method,
-        params
+        params,
+        akeneoVersion: this.version
       };
-      
+
       console.error(`❌ Failed to ${method} ${endpoint}:`, errorDetails);
-      
+
       // More specific error message for 422
       if (error.response?.status === 422) {
         console.error('🔴 422 Validation Error Details:');
         console.error('Full response data:', JSON.stringify(error.response.data, null, 2));
         console.error('Request endpoint:', endpoint);
         console.error('Request params:', params);
-        console.error('Request headers:', config.headers);
-        
+        console.error('Request headers:', requestConfig.headers);
+
         const validationErrors = error.response?.data?.errors || [];
-        const errorMessage = validationErrors.length > 0 
+        const errorMessage = validationErrors.length > 0
           ? `Validation errors: ${validationErrors.map(e => e.message || e).join(', ')}`
           : `Invalid request parameters for ${endpoint}`;
         throw new Error(`422 Unprocessable Entity: ${errorMessage}`);
       }
-      
+
       throw new Error(`API request failed: ${error.response?.data?.message || error.message}`);
     }
   }
