@@ -1491,13 +1491,27 @@ class AkeneoIntegration {
           console.warn(`⚠️ Failed to update translation for product ${existingProduct.id}:`, translationError.message);
         }
 
-        // Sync attributes to product_attribute_values table
+        // Sync attributes to product_attribute_values table using AttributeMappingService
         if (transformedProduct.attributes && typeof transformedProduct.attributes === 'object') {
           try {
+            const AttributeMappingService = require('./AttributeMappingService');
+            const mappingService = new AttributeMappingService(storeId, 'akeneo');
+            const { attributes: processedAttributes } = await mappingService.processProductAttributes(transformedProduct.attributes);
+
             const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
-            await syncProductAttributeValues(tenantDb, storeId, existingProduct.id, transformedProduct.attributes);
+            await syncProductAttributeValues(tenantDb, storeId, existingProduct.id, processedAttributes);
           } catch (attrError) {
             console.warn(`⚠️ Failed to sync attributes for product ${existingProduct.id}:`, attrError.message);
+          }
+        }
+
+        // Sync images to product_files table
+        if (transformedProduct.images && Array.isArray(transformedProduct.images) && transformedProduct.images.length > 0) {
+          try {
+            const { syncProductImages } = require('../utils/productTenantHelpers');
+            await syncProductImages(tenantDb, storeId, existingProduct.id, transformedProduct.images);
+          } catch (imgError) {
+            console.warn(`⚠️ Failed to sync images for product ${existingProduct.id}:`, imgError.message);
           }
         }
 
@@ -1564,13 +1578,27 @@ class AkeneoIntegration {
           console.warn(`⚠️ Failed to create translation for product ${newProduct.id}:`, translationError.message);
         }
 
-        // Sync attributes to product_attribute_values table
+        // Sync attributes to product_attribute_values table using AttributeMappingService
         if (transformedProduct.attributes && typeof transformedProduct.attributes === 'object') {
           try {
+            const AttributeMappingService = require('./AttributeMappingService');
+            const mappingService = new AttributeMappingService(storeId, 'akeneo');
+            const { attributes: processedAttributes } = await mappingService.processProductAttributes(transformedProduct.attributes);
+
             const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
-            await syncProductAttributeValues(tenantDb, storeId, newProduct.id, transformedProduct.attributes);
+            await syncProductAttributeValues(tenantDb, storeId, newProduct.id, processedAttributes);
           } catch (attrError) {
             console.warn(`⚠️ Failed to sync attributes for product ${newProduct.id}:`, attrError.message);
+          }
+        }
+
+        // Sync images to product_files table
+        if (transformedProduct.images && Array.isArray(transformedProduct.images) && transformedProduct.images.length > 0) {
+          try {
+            const { syncProductImages } = require('../utils/productTenantHelpers');
+            await syncProductImages(tenantDb, storeId, newProduct.id, transformedProduct.images);
+          } catch (imgError) {
+            console.warn(`⚠️ Failed to sync images for product ${newProduct.id}:`, imgError.message);
           }
         }
 
