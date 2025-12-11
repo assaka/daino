@@ -44,8 +44,6 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
 
 // GridResizeHandle Component
 export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
-  // Debug: Log when component renders
-  console.log('🔵 [GRID RESIZE] Component rendered', { direction, currentValue, parentHovered });
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag

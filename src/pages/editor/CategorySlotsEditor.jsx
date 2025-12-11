@@ -401,6 +401,21 @@ const CategorySlotsEditor = ({
     usingMock: !realCategoryData?.category || realCategoryData?.products?.length === 0
   });
 
+  // Debug: Log product images
+  if (realCategoryData?.products?.length > 0) {
+    console.log('[CategorySlotsEditor] 🖼️ Product Images Debug:', {
+      totalProducts: realCategoryData.products.length,
+      productsWithImages: realCategoryData.products.filter(p => p.images?.length > 0).length,
+      firstProductImages: realCategoryData.products[0]?.images,
+      sampleProduct: {
+        id: realCategoryData.products[0]?.id,
+        name: realCategoryData.products[0]?.name,
+        imagesCount: realCategoryData.products[0]?.images?.length || 0,
+        imageUrls: realCategoryData.products[0]?.images?.map(img => typeof img === 'string' ? img : img?.url)
+      }
+    });
+  }
+
   // Create editor config with real data
   const categoryEditorConfig = useMemo(() => ({
     pageType: 'category',
