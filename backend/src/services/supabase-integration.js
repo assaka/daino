@@ -1423,49 +1423,66 @@ class SupabaseIntegration {
         } catch (validationError) {
           console.log('Token validation failed during status check:', validationError.response?.status);
 
-          // If 401, mark as revoked and auto-disconnect
+          // If 401, try to refresh the token first before assuming revoked
           if (validationError.response?.status === 401) {
-            console.log('Detected revoked authorization during status check - auto-disconnecting');
+            console.log('Token expired or invalid, attempting refresh...');
 
-            // Store the project URL before deleting token
-            const lastProjectUrl = token.project_url;
+            try {
+              // Try to refresh the token
+              const refreshResult = await this.refreshToken(storeId);
 
-            // Deactivate the integration
-            await this.deleteSupabaseToken(storeId);
+              if (refreshResult.success) {
+                console.log('Token refresh successful during status check');
+                // Update token variable with new access token for continued use
+                token.access_token = refreshResult.access_token;
+                // Token refreshed successfully, continue with normal flow
+              }
+            } catch (refreshError) {
+              console.log('Token refresh failed:', refreshError.message);
 
-            // Update config to mark as disconnected with revocation history
-            const tenantDb3 = await ConnectionManager.getStoreConnection(storeId);
-            await tenantDb3
-              .from('integration_configs')
-              .update({
-                is_active: false,
-                connection_status: 'failed',
-                config_data: {
-                  connected: false,
-                  autoDisconnected: true,
-                  autoDisconnectedAt: new Date(),
-                  revokedAt: new Date(),
-                  revokedDetected: true,
-                  disconnectedReason: 'Authorization was revoked in Supabase',
-                  lastKnownProjectUrl: lastProjectUrl,
-                  userEmail: config?.config_data?.userEmail,
-                  message: 'Authorization was revoked and connection was automatically removed.'
-                },
-                updated_at: new Date()
-              })
-              .eq('store_id', storeId)
-              .eq('integration_type', this.integrationType);
+              // Refresh failed - now we can assume authorization was truly revoked
+              console.log('Detected revoked authorization during status check - auto-disconnecting');
 
-            return {
-              connected: false,
-              message: 'Authorization was revoked. Connection has been automatically removed.',
-              oauthConfigured: true,
-              authorizationRevoked: true,
-              autoDisconnected: true,
-              hasToken: false,
-              userEmail: config?.config_data?.userEmail,
-              lastKnownProjectUrl: lastProjectUrl
-            };
+              // Store the project URL before deleting token
+              const lastProjectUrl = token.project_url;
+
+              // Deactivate the integration
+              await this.deleteSupabaseToken(storeId);
+
+              // Update config to mark as disconnected with revocation history
+              const tenantDb3 = await ConnectionManager.getStoreConnection(storeId);
+              await tenantDb3
+                .from('integration_configs')
+                .update({
+                  is_active: false,
+                  connection_status: 'failed',
+                  config_data: {
+                    connected: false,
+                    autoDisconnected: true,
+                    autoDisconnectedAt: new Date(),
+                    revokedAt: new Date(),
+                    revokedDetected: true,
+                    disconnectedReason: 'Authorization was revoked in Supabase',
+                    lastKnownProjectUrl: lastProjectUrl,
+                    userEmail: config?.config_data?.userEmail,
+                    message: 'Authorization was revoked and connection was automatically removed.'
+                  },
+                  updated_at: new Date()
+                })
+                .eq('store_id', storeId)
+                .eq('integration_type', this.integrationType);
+
+              return {
+                connected: false,
+                message: 'Authorization was revoked. Connection has been automatically removed.',
+                oauthConfigured: true,
+                authorizationRevoked: true,
+                autoDisconnected: true,
+                hasToken: false,
+                userEmail: config?.config_data?.userEmail,
+                lastKnownProjectUrl: lastProjectUrl
+              };
+            }
           }
         }
       }
