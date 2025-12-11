@@ -181,11 +181,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         // Apply resize immediately for visual feedback
         if (newValue !== lastValueRef.current) {
+          console.log('🔵 [GRID RESIZE] Applying new colSpan:', { oldValue: lastValueRef.current, newValue });
           lastValueRef.current = newValue;
           onResizeRef.current(newValue);
         }
 
-        setMouseOffset(0);
+        // Update handle position to follow mouse during drag
+        setMouseOffset(deltaX);
+        console.log('🔵 [GRID RESIZE] Handle offset updated:', deltaX);
       } else {
         const heightDelta = Math.round(deltaY / 2);
         newValue = Math.max(minValue, startValue + heightDelta);

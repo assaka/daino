@@ -301,7 +301,12 @@ const CategorySlotsEditor = ({
         onProductClick: () => {},
         navigate: () => {},
         formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
-        getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+        getProductImageUrl: (product) => {
+          const img = product?.images?.[0];
+          if (!img) return '/placeholder-product.jpg';
+          if (typeof img === 'string') return img;
+          return img.url || '/placeholder-product.jpg';
+        },
       };
 
       // Use same preprocessing as storefront for consistent rendering
@@ -354,7 +359,12 @@ const CategorySlotsEditor = ({
       onProductClick: () => {},
       navigate: () => {},
       formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
-      getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+      getProductImageUrl: (product) => {
+        const img = product?.images?.[0];
+        if (!img) return '/placeholder-product.jpg';
+        if (typeof img === 'string') return img;
+        return img.url || '/placeholder-product.jpg';
+      },
     };
 
     const preprocessed = preprocessSlotData('category', rawMockData, store, storeSettings || {}, {

@@ -15,9 +15,9 @@ export const generateMockProductContext = (storeSettings = null) => {
       track_stock: true,
       status: 'active',
       images: [
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop',
-        'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&h=600&fit=crop',
-        'https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=600&h=600&fit=crop'
+        { url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop', alt: 'Premium Wireless Headphones' },
+        { url: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&h=600&fit=crop', alt: 'Premium Wireless Headphones side view' },
+        { url: 'https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=600&h=600&fit=crop', alt: 'Premium Wireless Headphones detail' }
       ],
       attributes: {
         brand: 'AudioTech',

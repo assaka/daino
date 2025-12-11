@@ -26,7 +26,7 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
       description: `Description for sample product ${i + 1}`,
       price: 99.99 + (i * 50),
       compare_price: i % 2 ? 99.99 + (i * 50) + 20 : null,
-      images: [productImages[i]],
+      images: [{ url: productImages[i], alt: `Sample Product ${i + 1}` }],
       stock_status: 'in_stock',
       rating: 4.0 + (i % 10) * 0.1,
       slug: `sample-product-${i + 1}`,
@@ -212,7 +212,12 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
     handlePageChange: () => {},
     clearFilters: () => {},
     formatDisplayPrice: (price) => `¥${price}`, // Mock data - uses fixed symbol for editor preview
-    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
+    getProductImageUrl: (product) => {
+      const img = product?.images?.[0];
+      if (!img) return '/placeholder-product.jpg';
+      if (typeof img === 'string') return img;
+      return img.url || '/placeholder-product.jpg';
+    },
     navigate: () => {},
     onProductClick: () => {}
   };
