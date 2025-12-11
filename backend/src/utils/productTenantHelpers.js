@@ -159,13 +159,14 @@ async function loadProductAttributes(tenantDb, productId) {
  *
  * @param {string} storeId - Store UUID
  * @param {Object} productData - Product data
+ * @param {string} locale - Locale code (e.g., 'en_US') for translations
  * @returns {Promise<Object>} Created product
  */
-async function createProduct(storeId, productData) {
+async function createProduct(storeId, productData, locale = 'en_US') {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Extract images to sync separately
-  const { images, ...productFields } = productData;
+  // Extract translation fields and images to sync separately
+  const { name, description, short_description, images, ...productFields } = productData;
 
   const { data: product, error } = await tenantDb
     .from('products')
@@ -179,6 +180,11 @@ async function createProduct(storeId, productData) {
     .single();
 
   if (error) throw error;
+
+  // Sync translations to product_translations table
+  if (name || description || short_description) {
+    await syncProductTranslations(tenantDb, product.id, { name, description, short_description }, locale);
+  }
 
   // Sync attributes to product_attribute_values table for storefront filtering
   if (productData.attributes && typeof productData.attributes === 'object') {
@@ -199,9 +205,10 @@ async function createProduct(storeId, productData) {
  * @param {string} storeId - Store UUID
  * @param {string} productId - Product UUID
  * @param {Object} productData - Product data to update
+ * @param {string} locale - Locale code (e.g., 'en_US') for translations
  * @returns {Promise<Object>} Updated product
  */
-async function updateProduct(storeId, productId, productData) {
+async function updateProduct(storeId, productId, productData, locale = 'en_US') {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Exclude translation fields (name, description, short_description) - these go in product_translations table
@@ -220,6 +227,11 @@ async function updateProduct(storeId, productId, productData) {
     .eq('id', productId);
 
   if (error) throw error;
+
+  // Sync translations to product_translations table
+  if (name !== undefined || description !== undefined || short_description !== undefined) {
+    await syncProductTranslations(tenantDb, productId, { name, description, short_description }, locale);
+  }
 
   // Sync attributes to product_attribute_values table for storefront filtering
   if (attributes && typeof attributes === 'object') {
@@ -293,6 +305,95 @@ async function syncProductImages(tenantDb, storeId, productId, images) {
   } catch (err) {
     console.error('Error in syncProductImages:', err);
     // Don't throw - let the product update succeed even if image sync fails
+  }
+}
+
+/**
+ * Sync product translations to product_translations table
+ * Upserts translation for the given locale
+ *
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {string} productId - Product UUID
+ * @param {Object} translations - { name, description, short_description }
+ * @param {string} locale - Locale code (e.g., 'en_US')
+ */
+async function syncProductTranslations(tenantDb, productId, translations, locale = 'en_US') {
+  try {
+    // Convert Akeneo locale format (en_US) to simple language code (en)
+    const languageCode = locale.split('_')[0];
+
+    // Extract string values, handling object values like {label, value}
+    const extractStringValue = (val) => {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'string') return val;
+      if (typeof val === 'object') {
+        // Handle {label, value} format from select attributes
+        if (val.label !== undefined) return val.label;
+        if (val.value !== undefined) return String(val.value);
+        return JSON.stringify(val);
+      }
+      return String(val);
+    };
+
+    const name = extractStringValue(translations.name);
+    const description = extractStringValue(translations.description);
+    const short_description = extractStringValue(translations.short_description);
+
+    // Skip if no translation values
+    if (!name && !description && !short_description) {
+      return;
+    }
+
+    console.log(`📝 Syncing translations for product ${productId} (${languageCode}): name="${name?.substring(0, 50)}..."`);
+
+    // Check if translation exists for this product/language
+    const { data: existing } = await tenantDb
+      .from('product_translations')
+      .select('id')
+      .eq('product_id', productId)
+      .eq('language_code', languageCode)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing translation
+      const { error: updateError } = await tenantDb
+        .from('product_translations')
+        .update({
+          name: name || existing.name,
+          description: description !== undefined ? description : existing.description,
+          short_description: short_description !== undefined ? short_description : existing.short_description,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id);
+
+      if (updateError) {
+        console.error('Error updating product translation:', updateError);
+        throw updateError;
+      }
+      console.log(`✅ Updated translation for product ${productId} (${languageCode})`);
+    } else {
+      // Insert new translation
+      const { error: insertError } = await tenantDb
+        .from('product_translations')
+        .insert({
+          product_id: productId,
+          language_code: languageCode,
+          name: name || '',
+          description: description || null,
+          short_description: short_description || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error('Error inserting product translation:', insertError);
+        throw insertError;
+      }
+      console.log(`✅ Created translation for product ${productId} (${languageCode})`);
+    }
+  } catch (err) {
+    console.error('Error in syncProductTranslations:', err);
+    // Don't throw - let the product update succeed even if translation sync fails
   }
 }
 
@@ -465,5 +566,6 @@ module.exports = {
   deleteProduct,
   getAllProducts,
   syncProductAttributeValues,
-  syncProductImages
+  syncProductImages,
+  syncProductTranslations
 };

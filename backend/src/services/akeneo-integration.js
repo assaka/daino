@@ -1477,12 +1477,24 @@ class AkeneoIntegration {
             .eq('language_code', 'en')
             .maybeSingle();
 
+          // Helper to extract string from potential {label, value} objects
+          const extractString = (val) => {
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'string') return val;
+            if (typeof val === 'object') {
+              if (val.label !== undefined) return val.label;
+              if (val.value !== undefined) return String(val.value);
+              return JSON.stringify(val);
+            }
+            return String(val);
+          };
+
           const translationData = {
-            name: transformedProduct.name || '',
-            description: transformedProduct.description || '',
-            short_description: transformedProduct.short_description || '',
-            meta_title: transformedProduct.meta_title || transformedProduct.seo?.meta_title || '',
-            meta_description: transformedProduct.meta_description || transformedProduct.seo?.meta_description || '',
+            name: extractString(transformedProduct.name),
+            description: extractString(transformedProduct.description),
+            short_description: extractString(transformedProduct.short_description),
+            meta_title: extractString(transformedProduct.meta_title || transformedProduct.seo?.meta_title),
+            meta_description: extractString(transformedProduct.meta_description || transformedProduct.seo?.meta_description),
             updated_at: new Date().toISOString()
           };
 
@@ -1577,16 +1589,28 @@ class AkeneoIntegration {
 
         // Create product_translations for name, description, etc.
         try {
+          // Helper to extract string from potential {label, value} objects
+          const extractString = (val) => {
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'string') return val;
+            if (typeof val === 'object') {
+              if (val.label !== undefined) return val.label;
+              if (val.value !== undefined) return String(val.value);
+              return JSON.stringify(val);
+            }
+            return String(val);
+          };
+
           await tenantDb
             .from('product_translations')
             .insert({
               product_id: newProduct.id,
               language_code: 'en',
-              name: transformedProduct.name || '',
-              description: transformedProduct.description || '',
-              short_description: transformedProduct.short_description || '',
-              meta_title: transformedProduct.meta_title || transformedProduct.seo?.meta_title || '',
-              meta_description: transformedProduct.meta_description || transformedProduct.seo?.meta_description || '',
+              name: extractString(transformedProduct.name),
+              description: extractString(transformedProduct.description),
+              short_description: extractString(transformedProduct.short_description),
+              meta_title: extractString(transformedProduct.meta_title || transformedProduct.seo?.meta_title),
+              meta_description: extractString(transformedProduct.meta_description || transformedProduct.seo?.meta_description),
               created_at: new Date().toISOString()
             });
         } catch (translationError) {
