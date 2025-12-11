@@ -664,7 +664,7 @@ const AkeneoIntegration = () => {
     }
   };
 
-  // Load families for filtering - try local database first, then Akeneo
+  // Load families for filtering - always fetch from Akeneo when connected
   const loadFamiliesForFilter = async () => {
     try {
       const storeId = selectedStore?.id;
@@ -675,24 +675,41 @@ const AkeneoIntegration = () => {
 
       setLoadingFamilies(true);
 
-      // First try to load families from local database (imported AttributeSets)
+      // Always try to load families from Akeneo first when connected
+      // This ensures we get the actual Akeneo families for product filtering
+      if (configSaved || connectionStatus?.success) {
+        try {
+          const response = await apiClient.get('/integrations/akeneo/families');
+
+          if (response.success && response.families?.length > 0) {
+            const familyData = response.families.map(family => ({
+              ...family,
+              source: 'akeneo'
+            }));
+            setFamilies(familyData);
+            console.log(`✅ Loaded ${familyData.length} families from Akeneo`);
+            return;
+          }
+        } catch (akeneoError) {
+          console.error('Failed to load families from Akeneo:', akeneoError);
+        }
+      }
+
+      // Fallback to local database (imported AttributeSets) only if Akeneo fails
       try {
         const localResponse = await apiClient.get(`/attribute-sets?store_id=${storeId}`);
 
-        // Handle both wrapped and raw array response formats
         let attributeSets = [];
-        
+
         if (localResponse.success && localResponse.data?.attribute_sets?.length > 0) {
-          // Wrapped response format (authenticated)
           attributeSets = localResponse.data.attribute_sets;
         } else if (Array.isArray(localResponse) && localResponse.length > 0) {
-          // Raw array response format (public/unauthenticated)
           attributeSets = localResponse;
         }
-        
+
         if (attributeSets.length > 0) {
           const localFamilies = attributeSets
-            .filter(attributeSet => attributeSet && attributeSet.name) // Filter out null/undefined entries
+            .filter(attributeSet => attributeSet && attributeSet.name)
             .map(attributeSet => ({
               code: attributeSet.name,
               labels: { en_US: attributeSet.name },
@@ -700,27 +717,13 @@ const AkeneoIntegration = () => {
               source: 'local'
             }));
           setFamilies(localFamilies);
-          return; // Use local families if available
+          console.log(`✅ Loaded ${localFamilies.length} families from local database (fallback)`);
         }
       } catch (localError) {
         console.error('Failed to load families from local database:', localError);
       }
-
-      // Fallback to loading families directly from Akeneo if connection is successful
-      if (connectionStatus?.success) {
-        const response = await apiClient.get('/integrations/akeneo/families');
-
-        if (response.success) {
-          const familyData = response.families?.map(family => ({
-            ...family,
-            source: 'akeneo'
-          })) || [];
-          setFamilies(familyData);
-        }
-      }
     } catch (error) {
       console.error('Failed to load families:', error);
-      // Silently fail - families are optional for filtering
     } finally {
       setLoadingFamilies(false);
     }
@@ -910,17 +913,18 @@ const AkeneoIntegration = () => {
     loadData();
   }, []);
 
-  // Load families on component mount (from local database)
+  // Load families when config is saved or connection is successful
   useEffect(() => {
-    loadFamiliesForFilter();
-  }, []);
+    if (configSaved || connectionStatus?.success) {
+      loadFamiliesForFilter();
+    }
+  }, [configSaved, connectionStatus?.success]);
 
   // Load additional data when connection becomes successful
   useEffect(() => {
     if (connectionStatus?.success) {
       loadSchedules();
       loadChannels();
-      loadFamiliesForFilter(); // Reload to get Akeneo families if available
       loadAvailableCategories();
       loadCustomMappings(); // Load custom mappings when connection is successful
     }
