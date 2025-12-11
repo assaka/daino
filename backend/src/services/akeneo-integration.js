@@ -363,44 +363,34 @@ class AkeneoIntegration {
       console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
       
       // Get all products from Akeneo using the robust client method
-      console.log('📡 Fetching all products from Akeneo...');
-      let akeneoProducts = await this.client.getAllProducts();
-      
-      console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
+      // Pass updatedSince filter to API for efficient server-side filtering
+      console.log('📡 Fetching products from Akeneo...');
+      const productFetchOptions = {};
+      if (filters.updatedSince && filters.updatedSince > 0) {
+        productFetchOptions.updatedSinceHours = filters.updatedSince;
+        console.log(`🔍 Will filter products updated in last ${filters.updatedSince} hours`);
+      }
+      let akeneoProducts = await this.client.getAllProducts(productFetchOptions);
+
+      console.log(`📦 Found ${akeneoProducts.length} products from Akeneo`);
       console.log(`🎯 Product filters:`, filters);
       console.log(`⚙️ Product settings:`, enhancedSettings);
       console.log(`🗺️ Custom mappings:`, customMappings);
-      
-      // Apply product filters
+
+      // Apply product filters (family filter still done in-memory)
       if (filters.families && filters.families.length > 0) {
         console.log(`🔍 Filtering by families: ${filters.families.join(', ')}`);
-        akeneoProducts = akeneoProducts.filter(product => 
+        akeneoProducts = akeneoProducts.filter(product =>
           filters.families.includes(product.family)
         );
         console.log(`📊 After family filtering: ${akeneoProducts.length} products`);
       }
-      
+
       if (filters.completeness && filters.completeness > 0) {
         console.log(`🔍 Filtering by completeness: ${filters.completeness}%`);
         // Note: This would require additional API calls to check completeness
         // For now, we'll log this requirement for future implementation
         console.log(`⚠️ Completeness filtering requires additional implementation`);
-      }
-      
-      if (filters.updatedSince) {
-        console.log(`🔍 Filtering by updated interval: ${filters.updatedSince} hours`);
-        // Calculate the date threshold
-        const hoursAgo = new Date();
-        hoursAgo.setHours(hoursAgo.getHours() - filters.updatedSince);
-        
-        akeneoProducts = akeneoProducts.filter(product => {
-          if (product.updated) {
-            const updatedDate = new Date(product.updated);
-            return updatedDate >= hoursAgo;
-          }
-          return true; // Include products without update timestamp
-        });
-        console.log(`📊 After time filtering: ${akeneoProducts.length} products`);
       }
       
       this.importStats.products.total = akeneoProducts.length;
@@ -1500,9 +1490,15 @@ class AkeneoIntegration {
       console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
 
       // Fetch all products and product models
-      console.log('📡 Fetching all products from Akeneo...');
-      let akeneoProducts = await this.client.getAllProducts();
-      console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
+      // Pass updatedSince filter to API for efficient server-side filtering
+      console.log('📡 Fetching products from Akeneo...');
+      const productFetchOptions = {};
+      if (filters.updatedSince && filters.updatedSince > 0) {
+        productFetchOptions.updatedSinceHours = filters.updatedSince;
+        console.log(`🔍 Will filter products updated in last ${filters.updatedSince} hours`);
+      }
+      let akeneoProducts = await this.client.getAllProducts(productFetchOptions);
+      console.log(`📦 Found ${akeneoProducts.length} products from Akeneo`);
 
       let akeneoProductModels = [];
       if (enhancedSettings.importProductModels) {

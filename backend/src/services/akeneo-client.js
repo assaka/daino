@@ -354,14 +354,28 @@ class AkeneoClient {
   /**
    * Get all products with pagination handling (version-aware)
    * Uses search_after pagination to avoid 100-page limit
+   * @param {Object} options - Optional filters
+   * @param {number} options.updatedSinceHours - Only fetch products updated within this many hours
    */
-  async getAllProducts() {
+  async getAllProducts(options = {}) {
     const allProducts = [];
     const primaryEndpoint = this.getProductsEndpoint();
     const fallbackEndpoint = this.version >= 6 ? '/api/rest/v1/products' : '/api/rest/v1/products-uuid';
 
+    // Build search filter for updated date if specified
+    let searchFilter = null;
+    if (options.updatedSinceHours && options.updatedSinceHours > 0) {
+      const sinceDate = new Date();
+      sinceDate.setHours(sinceDate.getHours() - options.updatedSinceHours);
+      const isoDate = sinceDate.toISOString();
+      searchFilter = JSON.stringify({
+        updated: [{ operator: '>', value: isoDate }]
+      });
+      console.log(`🔍 Filtering products updated since: ${isoDate} (last ${options.updatedSinceHours} hours)`);
+    }
+
     try {
-      console.log(`🔍 Fetching ALL products with search_after pagination (Akeneo v${this.version})...`);
+      console.log(`🔍 Fetching products with search_after pagination (Akeneo v${this.version})...`);
       console.log(`📌 Primary endpoint: ${primaryEndpoint}`);
 
       let primaryError = null;
@@ -379,6 +393,11 @@ class AkeneoClient {
             limit: 100,
             pagination_type: 'search_after'
           };
+
+          // Add search filter for updated date
+          if (searchFilter) {
+            params.search = searchFilter;
+          }
 
           if (searchAfter) {
             params.search_after = searchAfter;
@@ -422,6 +441,11 @@ class AkeneoClient {
             limit: 100,
             pagination_type: 'search_after'
           };
+
+          // Add search filter for updated date
+          if (searchFilter) {
+            params.search = searchFilter;
+          }
 
           if (searchAfter) {
             params.search_after = searchAfter;
