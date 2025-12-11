@@ -1508,6 +1508,7 @@ export function useSlotConfiguration({
 
   // Generic grid resize handler
   const handleGridResize = useCallback((slotId, newColSpan, slots) => {
+    console.log('[handleGridResize] Called with slotId:', slotId, 'newColSpan:', newColSpan);
     const updatedSlots = { ...slots };
 
     // Map instance slot IDs (product_card_name_0) to template IDs (product_card_name)

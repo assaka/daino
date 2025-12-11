@@ -38,6 +38,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import apiClient from '@/api/client';
 import { PageLoader } from '@/components/ui/page-loader';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 // Sortable Item Component
 const SortableItem = ({ item, index, isChild, onMoveUp, onMoveDown, onToggleVisibility, onUpdateOrder, onUpdateParent, onToggleCollapse, isCollapsed, hasChildren, canMoveUp, canMoveDown, availableParents }) => {
@@ -171,6 +172,7 @@ const NavigationManager = () => {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [collapsedItems, setCollapsedItems] = useState(new Set());
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -271,7 +273,7 @@ const NavigationManager = () => {
       setOriginalItems(JSON.parse(JSON.stringify(sortedItems)));
     } catch (error) {
       console.error('Error loading navigation:', error);
-      alert('Failed to load navigation items: ' + (error.message || 'Unknown error'));
+      setFlashMessage({ type: 'error', message: 'Failed to load navigation items: ' + (error.message || 'Unknown error') });
     } finally {
       setLoading(false);
     }
@@ -495,10 +497,10 @@ const NavigationManager = () => {
       // Dispatch event to notify sidebar to refresh navigation
       window.dispatchEvent(new CustomEvent('navigation-updated'));
 
-      alert('Navigation order saved successfully! Sidebar will update automatically.');
+      setFlashMessage({ type: 'success', message: 'Navigation order saved! Sidebar will update automatically.' });
     } catch (error) {
       console.error('Error saving navigation order:', error);
-      alert('Failed to save changes: ' + (error.response?.data?.error || error.message));
+      setFlashMessage({ type: 'error', message: 'Failed to save changes: ' + (error.response?.data?.error || error.message) });
     } finally {
       setSaving(false);
     }
@@ -542,6 +544,7 @@ const NavigationManager = () => {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Navigation Manager</h1>
         <p className="text-gray-600">Manage the order and visibility of admin sidebar items</p>
