@@ -664,66 +664,31 @@ const AkeneoIntegration = () => {
     }
   };
 
-  // Load families for filtering - always fetch from Akeneo when connected
+  // Load families for filtering - ONLY fetch from Akeneo PIM
   const loadFamiliesForFilter = async () => {
+    if (!configSaved && !connectionStatus?.success) {
+      return;
+    }
+
     try {
-      const storeId = selectedStore?.id;
-
-      if (!storeId) {
-        return;
-      }
-
       setLoadingFamilies(true);
 
-      // Always try to load families from Akeneo first when connected
-      // This ensures we get the actual Akeneo families for product filtering
-      if (configSaved || connectionStatus?.success) {
-        try {
-          const response = await apiClient.get('/integrations/akeneo/families');
+      const response = await apiClient.get('/integrations/akeneo/families');
 
-          if (response.success && response.families?.length > 0) {
-            const familyData = response.families.map(family => ({
-              ...family,
-              source: 'akeneo'
-            }));
-            setFamilies(familyData);
-            console.log(`✅ Loaded ${familyData.length} families from Akeneo`);
-            return;
-          }
-        } catch (akeneoError) {
-          console.error('Failed to load families from Akeneo:', akeneoError);
-        }
-      }
-
-      // Fallback to local database (imported AttributeSets) only if Akeneo fails
-      try {
-        const localResponse = await apiClient.get(`/attribute-sets?store_id=${storeId}`);
-
-        let attributeSets = [];
-
-        if (localResponse.success && localResponse.data?.attribute_sets?.length > 0) {
-          attributeSets = localResponse.data.attribute_sets;
-        } else if (Array.isArray(localResponse) && localResponse.length > 0) {
-          attributeSets = localResponse;
-        }
-
-        if (attributeSets.length > 0) {
-          const localFamilies = attributeSets
-            .filter(attributeSet => attributeSet && attributeSet.name)
-            .map(attributeSet => ({
-              code: attributeSet.name,
-              labels: { en_US: attributeSet.name },
-              attributes: attributeSet.attribute_ids || [],
-              source: 'local'
-            }));
-          setFamilies(localFamilies);
-          console.log(`✅ Loaded ${localFamilies.length} families from local database (fallback)`);
-        }
-      } catch (localError) {
-        console.error('Failed to load families from local database:', localError);
+      if (response.success && response.families?.length > 0) {
+        const familyData = response.families.map(family => ({
+          ...family,
+          source: 'akeneo'
+        }));
+        setFamilies(familyData);
+        console.log(`✅ Loaded ${familyData.length} families from Akeneo`);
+      } else {
+        setFamilies([]);
+        console.log('⚠️ No families found in Akeneo');
       }
     } catch (error) {
-      console.error('Failed to load families:', error);
+      console.error('Failed to load families from Akeneo:', error);
+      setFamilies([]);
     } finally {
       setLoadingFamilies(false);
     }
