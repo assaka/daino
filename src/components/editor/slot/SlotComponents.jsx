@@ -170,6 +170,18 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const currentNumericValue = parsed.responsive || parsed.base;
         const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
 
+        console.log('🔵 [GRID RESIZE] Calculation:', {
+          deltaX,
+          sensitivity,
+          colSpanDelta,
+          startValue,
+          parsed,
+          currentNumericValue,
+          newNumericValue,
+          minValue,
+          maxValue
+        });
+
         // Build the new colSpan value
         if (parsed.responsive) {
           newValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
