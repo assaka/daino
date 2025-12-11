@@ -840,6 +840,9 @@ export function GridColumn({
     setDropZone(null);
   }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
 
+  // Debug: Log gridStyles
+  console.log('🟣 [GridColumn] gridStyles:', { slotId, gridColumn: useTailwindClass ? 'using class' : `span ${colSpan}`, colSpanClass });
+
   const gridStyles = {
     ...(useTailwindClass ? {} : { gridColumn: `span ${colSpan}` }),
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,

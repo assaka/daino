@@ -97,7 +97,16 @@ const UnifiedSlotsEditor = ({
     createDefaultSlots,
     viewModeAdjustments,
     customSlotRenderer,
-    cmsBlockPositions = []
+    cmsBlockPositions = [],
+    // Category/Product selectors
+    availableCategories,
+    selectedCategorySlug,
+    onCategoryChange,
+    availableProducts,
+    selectedProductSlug,
+    onProductChange,
+    isLoadingCategoryData,
+    isLoadingProductData
   } = config;
 
   // Store context for database operations
@@ -416,6 +425,57 @@ const UnifiedSlotsEditor = ({
             </div>
           </div>
         </div>
+
+        {/* Data Selector Bar - Category/Product Selection */}
+        {(availableCategories?.length > 0 || availableProducts?.length > 0) && (
+          <div className="bg-blue-50 border-b border-blue-200 px-6 py-2">
+            <div className="flex items-center gap-4">
+              {/* Category Selector */}
+              {availableCategories?.length > 0 && onCategoryChange && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-blue-800">Category:</label>
+                  <select
+                    value={selectedCategorySlug || ''}
+                    onChange={(e) => onCategoryChange(e.target.value)}
+                    className="text-sm border border-blue-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isLoadingCategoryData}
+                  >
+                    {availableCategories.map((cat) => (
+                      <option key={cat.id} value={cat.slug}>
+                        {cat.name || cat.slug}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingCategoryData && (
+                    <span className="text-xs text-blue-600">Loading...</span>
+                  )}
+                </div>
+              )}
+
+              {/* Product Selector */}
+              {availableProducts?.length > 0 && onProductChange && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-blue-800">Product:</label>
+                  <select
+                    value={selectedProductSlug || ''}
+                    onChange={(e) => onProductChange(e.target.value)}
+                    className="text-sm border border-blue-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isLoadingProductData}
+                  >
+                    {availableProducts.map((prod) => (
+                      <option key={prod.id} value={prod.slug}>
+                        {prod.name || prod.slug}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingProductData && (
+                    <span className="text-xs text-blue-600">Loading...</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Page Layout - Hierarchical Structure */}
         <div
