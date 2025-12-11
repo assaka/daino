@@ -3504,11 +3504,16 @@ const AkeneoIntegration = () => {
                     {/* Image Mapping */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Label>Image Mapping</Label>
-                          <Badge variant="secondary" className="text-xs">
-                            {customMappings?.images?.filter(m => m.enabled).length || 0} active
-                          </Badge>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Label>Image Mapping</Label>
+                            <Badge variant="secondary" className="text-xs">
+                              {customMappings?.images?.filter(m => m.enabled).length || 0} active
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Attributes with type <code className="bg-muted px-1 rounded">pim_catalog_image</code> are automatically mapped to product images
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -3642,11 +3647,16 @@ const AkeneoIntegration = () => {
                     {/* Files Mapping */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Label>Files Mapping</Label>
-                          <Badge variant="secondary" className="text-xs">
-                            {customMappings?.files?.filter(m => m.enabled).length || 0} active
-                          </Badge>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Label>Files Mapping</Label>
+                            <Badge variant="secondary" className="text-xs">
+                              {customMappings?.files?.filter(m => m.enabled).length || 0} active
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Attributes with type <code className="bg-muted px-1 rounded">pim_catalog_file</code> are automatically mapped to product files
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button

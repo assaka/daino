@@ -362,7 +362,22 @@ class AkeneoIntegration {
       console.log('🏷️ Building family mapping...');
       const familyMapping = await this.buildFamilyMapping(storeId);
       console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
-      
+
+      // Fetch attribute types for automatic image/file mapping
+      console.log('📸 Fetching attribute types for automatic image/file mapping...');
+      const akeneoAttributeTypes = {};
+      try {
+        const allAttributes = await this.client.getAllAttributes();
+        allAttributes.forEach(attr => {
+          akeneoAttributeTypes[attr.code] = attr.type;
+        });
+        const imageTypeCount = Object.values(akeneoAttributeTypes).filter(t => t === 'pim_catalog_image').length;
+        const fileTypeCount = Object.values(akeneoAttributeTypes).filter(t => t === 'pim_catalog_file').length;
+        console.log(`✅ Loaded ${Object.keys(akeneoAttributeTypes).length} attribute types (${imageTypeCount} image, ${fileTypeCount} file)`);
+      } catch (attrError) {
+        console.warn('⚠️ Could not fetch attribute types for auto-mapping:', attrError.message);
+      }
+
       // Get all products from Akeneo using the robust client method
       // Pass updatedSince filter to API for efficient server-side filtering
       console.log('📡 Fetching products from Akeneo...');
@@ -423,8 +438,8 @@ class AkeneoIntegration {
             }
             
             // Transform product to DainoStore format (now async)
-            const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
-            
+            const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
+
             // Apply product settings
             if (enhancedSettings.status === 'disabled') {
               dainoProduct.status = 'inactive';
@@ -1652,6 +1667,21 @@ class AkeneoIntegration {
       const familyMapping = await this.buildFamilyMapping(storeId);
       console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
 
+      // Fetch attribute types for automatic image/file mapping
+      console.log('📸 Fetching attribute types for automatic image/file mapping...');
+      const akeneoAttributeTypes = {};
+      try {
+        const allAttributes = await this.client.getAllAttributes();
+        allAttributes.forEach(attr => {
+          akeneoAttributeTypes[attr.code] = attr.type;
+        });
+        const imageTypeCount = Object.values(akeneoAttributeTypes).filter(t => t === 'pim_catalog_image').length;
+        const fileTypeCount = Object.values(akeneoAttributeTypes).filter(t => t === 'pim_catalog_file').length;
+        console.log(`✅ Loaded ${Object.keys(akeneoAttributeTypes).length} attribute types (${imageTypeCount} image, ${fileTypeCount} file)`);
+      } catch (attrError) {
+        console.warn('⚠️ Could not fetch attribute types for auto-mapping:', attrError.message);
+      }
+
       // Fetch all products and product models
       // Pass updatedSince filter to API for efficient server-side filtering
       console.log('📡 Fetching products from Akeneo...');
@@ -1721,7 +1751,7 @@ class AkeneoIntegration {
             processed++;
             try {
               // Transform product to DainoStore format
-              const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+              const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
 
               // Apply settings
               if (enhancedSettings.status === 'disabled') {
@@ -1794,7 +1824,7 @@ class AkeneoIntegration {
             processed++;
             try {
               // Transform variant as a simple product (for now, we'll link to parent later)
-              const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+              const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
 
               // Ensure it's marked as simple
               dainoProduct.type = 'simple';
@@ -1871,7 +1901,7 @@ class AkeneoIntegration {
             processed++;
             try {
               // Transform product model to configurable product
-              const configurableProduct = await this.mapping.transformProductModel(akeneoProductModel, storeId, locale, null, customMappings, enhancedSettings, this.client);
+              const configurableProduct = await this.mapping.transformProductModel(akeneoProductModel, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
 
               // Apply settings
               if (enhancedSettings.status === 'disabled') {

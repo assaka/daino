@@ -88,7 +88,7 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product to DainoStore product format
    */
-  async transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null) {
+  async transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null, akeneoAttributeTypes = null) {
     const values = akeneoProduct.values || {};
     
     // Extract product name
@@ -127,7 +127,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProduct.identifier, customMappings),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProduct.identifier, customMappings, akeneoAttributeTypes),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: this.extractBooleanValue(values, 'manage_stock', locale) ?? true,
@@ -317,7 +317,7 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product model to DainoStore configurable product format
    */
-  async transformProductModel(akeneoProductModel, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null) {
+  async transformProductModel(akeneoProductModel, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null, akeneoAttributeTypes = null) {
     const values = akeneoProductModel.values || {};
 
     // Extract product name
@@ -355,7 +355,7 @@ class AkeneoMapping {
                   this.extractNumericValue(values, 'cost', locale),
       weight: this.extractNumericValue(values, 'weight', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProductModel.code, customMappings),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProductModel.code, customMappings, akeneoAttributeTypes),
       status: 'active', // Product models are typically active
       visibility: 'visible',
       manage_stock: false, // Configurable products don't manage stock directly
@@ -754,8 +754,9 @@ class AkeneoMapping {
 
   /**
    * Extract images from product attributes (enhanced)
+   * Automatically extracts all Akeneo pim_catalog_image type attributes
    */
-  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null, productIdentifier = null, customMappings = null) {
+  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null, productIdentifier = null, customMappings = null, akeneoAttributeTypes = null) {
     // If we have processed images from Cloudflare, use those
     if (processedImages && processedImages.length > 0) {
       return processedImages.map((img, index) => ({
@@ -807,6 +808,34 @@ class AkeneoMapping {
         'image_5', 'image_6', 'image_7', 'image_8', 'image_9'
       ];
       console.log(`📸 No custom mappings provided, using default image attribute list`);
+    }
+
+    // AUTOMATIC: Add all attributes that have type pim_catalog_image or pim_catalog_file
+    if (akeneoAttributeTypes && typeof akeneoAttributeTypes === 'object') {
+      const autoImageAttrs = [];
+      const autoFileAttrs = [];
+
+      for (const [attrCode, attrType] of Object.entries(akeneoAttributeTypes)) {
+        if (attrType === 'pim_catalog_image') {
+          if (!imageAttributes.includes(attrCode)) {
+            imageAttributes.push(attrCode);
+            autoImageAttrs.push(attrCode);
+          }
+        } else if (attrType === 'pim_catalog_file') {
+          // Also treat file type attributes as potential images/files
+          if (!imageAttributes.includes(attrCode)) {
+            imageAttributes.push(attrCode);
+            autoFileAttrs.push(attrCode);
+          }
+        }
+      }
+
+      if (autoImageAttrs.length > 0) {
+        console.log(`📷 AUTO-MAPPED ${autoImageAttrs.length} pim_catalog_image attributes: ${autoImageAttrs.join(', ')}`);
+      }
+      if (autoFileAttrs.length > 0) {
+        console.log(`📄 AUTO-MAPPED ${autoFileAttrs.length} pim_catalog_file attributes: ${autoFileAttrs.join(', ')}`);
+      }
     }
     
     console.log(`\n🖼️ ===== EXTRACTING IMAGES FROM AKENEO PRODUCT =====`);
