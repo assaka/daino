@@ -1491,6 +1491,16 @@ class AkeneoIntegration {
           console.warn(`⚠️ Failed to update translation for product ${existingProduct.id}:`, translationError.message);
         }
 
+        // Sync attributes to product_attribute_values table
+        if (transformedProduct.attributes && typeof transformedProduct.attributes === 'object') {
+          try {
+            const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
+            await syncProductAttributeValues(tenantDb, storeId, existingProduct.id, transformedProduct.attributes);
+          } catch (attrError) {
+            console.warn(`⚠️ Failed to sync attributes for product ${existingProduct.id}:`, attrError.message);
+          }
+        }
+
         return { success: true, action: 'updated', productId: existingProduct.id };
       } else {
         // Create new product
@@ -1552,6 +1562,16 @@ class AkeneoIntegration {
             });
         } catch (translationError) {
           console.warn(`⚠️ Failed to create translation for product ${newProduct.id}:`, translationError.message);
+        }
+
+        // Sync attributes to product_attribute_values table
+        if (transformedProduct.attributes && typeof transformedProduct.attributes === 'object') {
+          try {
+            const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
+            await syncProductAttributeValues(tenantDb, storeId, newProduct.id, transformedProduct.attributes);
+          } catch (attrError) {
+            console.warn(`⚠️ Failed to sync attributes for product ${newProduct.id}:`, attrError.message);
+          }
         }
 
         return { success: true, action: 'created', productId: newProduct.id };
