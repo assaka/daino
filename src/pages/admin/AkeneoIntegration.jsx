@@ -3395,17 +3395,15 @@ const AkeneoIntegration = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const confirmed = window.confirm('Clear all attribute mappings?');
-                              if (confirmed) {
-                                setCustomMappings(prev => ({
-                                  ...prev,
-                                  attributes: []
-                                }));
-                              }
+                              setCustomMappings(prev => ({
+                                ...prev,
+                                attributes: []
+                              }));
+                              setFlashMessage({ type: 'success', message: 'Attribute mappings cleared' });
                             }}
                             className="text-xs"
                           >
-                            Reset
+                            Clear
                           </Button>
                           <Button
                             type="button"
