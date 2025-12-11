@@ -1327,11 +1327,6 @@ export function UnifiedSlotRenderer({
           throw new Error(`Component ${componentName} must implement a unified 'render' method. Separate renderEditor/renderStorefront methods are no longer supported.`);
         }
 
-        // Debug: Log when ProductItemsGrid component is being rendered
-        if (componentName === 'ProductItemsGrid') {
-          console.log('[UnifiedSlotRenderer] Rendering ProductItemsGrid, slots.product_card_name?.colSpan:', slots?.product_card_name?.colSpan);
-        }
-
         return renderMethod({
           slot,
           productContext: productData,
@@ -1531,11 +1526,8 @@ export function UnifiedSlotRenderer({
       let colSpanValue = 12;
       let useTailwindClass = false;
 
-      console.log('[UnifiedSlotRenderer] GridColumn for slot:', slot.id, 'colSpan:', slot.colSpan, 'type:', typeof slot.colSpan);
-
       if (typeof slot.colSpan === 'number') {
         colSpanValue = slot.colSpan;
-        console.log('[UnifiedSlotRenderer] Using number colSpan:', colSpanValue);
       } else if (typeof slot.colSpan === 'string') {
         // Direct string colSpan like 'col-span-12 md:col-span-6'
         useTailwindClass = true;

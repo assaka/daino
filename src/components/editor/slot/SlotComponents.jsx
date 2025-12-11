@@ -119,8 +119,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     startValueRef.current = currentValue;
     lastValueRef.current = currentValue;
 
-    console.log('[RESIZE] Start:', { currentValue, direction, isHorizontal });
-
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
     document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
@@ -160,7 +158,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         // Apply resize immediately for visual feedback
         if (newValue !== lastValueRef.current) {
           lastValueRef.current = newValue;
-          console.log('[RESIZE] Move:', { deltaX, colSpanDelta, newValue });
           onResizeRef.current(newValue);
         }
 
@@ -195,8 +192,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const currentNumericValue = parsed.responsive || parsed.base;
         const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
 
-        console.log('[RESIZE] Calculation:', { deltaX, sensitivity, colSpanDelta, parsed, currentNumericValue, newNumericValue });
-
         // Build the new colSpan value
         if (parsed.responsive) {
           finalValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
@@ -209,8 +204,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const heightDelta = Math.round(deltaY / 2);
         finalValue = Math.max(minValue, startValue + heightDelta);
       }
-
-      console.log('[RESIZE] End:', { startValue, finalValue });
 
       // Only save if value actually changed
       if (finalValue !== startValue) {
@@ -949,7 +942,6 @@ export function GridColumn({
       {showHorizontalHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => {
-            console.log('[GridColumn] Calling onGridResize:', { slotId, newColSpan });
             onGridResize(slotId, newColSpan);
           }}
           currentValue={colSpan}

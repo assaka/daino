@@ -32,8 +32,12 @@ const verifyCronSecret = (req, res, next) => {
  *   - training: boolean
  *   - markdown: boolean (note: may not work in Render if files aren't deployed)
  */
+// Store for tracking background jobs
+const backgroundJobs = new Map();
+
 router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
   const startTime = Date.now();
+  const jobId = `backfill-${Date.now()}`;
 
   // Check for OpenAI key
   if (!process.env.OPENAI_API_KEY) {
@@ -43,18 +47,34 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
     });
   }
 
+  // Parse options from request body
+  const {
+    documents = true,
+    examples = true,
+    entities = true,
+    training = true,
+    markdown = false, // Default to false since files may not exist in Render
+    async: runAsync = false // Run in background and return immediately
+  } = req.body;
+
+  // If async mode, start the job in background and return immediately
+  if (runAsync) {
+    backgroundJobs.set(jobId, { status: 'running', startTime, stats: null });
+
+    // Run in background
+    runBackfillJob(jobId, { documents, examples, entities, training, markdown });
+
+    return res.json({
+      success: true,
+      message: 'Backfill job started in background',
+      jobId,
+      checkStatusUrl: `/api/admin/backfill-embeddings/job/${jobId}`
+    });
+  }
+
   try {
     const embeddingService = require('../services/embeddingService');
     const { masterDbClient } = require('../database/masterConnection');
-
-    // Parse options from request body
-    const {
-      documents = true,
-      examples = true,
-      entities = true,
-      training = true,
-      markdown = false // Default to false since files may not exist in Render
-    } = req.body;
 
     const stats = {
       documents: { total: 0, success: 0, failed: 0, errors: [] },
@@ -347,5 +367,177 @@ router.get('/backfill-embeddings/status', verifyCronSecret, async (req, res) => 
     });
   }
 });
+
+/**
+ * GET /api/admin/backfill-embeddings/job/:jobId
+ *
+ * Check status of a background backfill job
+ */
+router.get('/backfill-embeddings/job/:jobId', verifyCronSecret, async (req, res) => {
+  const { jobId } = req.params;
+  const job = backgroundJobs.get(jobId);
+
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      error: 'Job not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    jobId,
+    ...job
+  });
+});
+
+/**
+ * Background job runner for async mode
+ */
+async function runBackfillJob(jobId, options) {
+  const startTime = Date.now();
+  const embeddingService = require('../services/embeddingService');
+  const { masterDbClient } = require('../database/masterConnection');
+
+  const stats = {
+    documents: { total: 0, success: 0, failed: 0, errors: [] },
+    examples: { total: 0, success: 0, failed: 0, errors: [] },
+    entities: { total: 0, success: 0, failed: 0, errors: [] },
+    training: { total: 0, success: 0, failed: 0, errors: [] },
+    markdown: { total: 0, success: 0, failed: 0, errors: [] }
+  };
+
+  try {
+    console.log(`🚀 [${jobId}] Starting background embedding backfill...`);
+
+    // Backfill ai_context_documents
+    if (options.documents) {
+      console.log(`[${jobId}] Backfilling ai_context_documents...`);
+      const { data: docs, error } = await masterDbClient
+        .from('ai_context_documents')
+        .select('id, title')
+        .is('embedding', null)
+        .eq('is_active', true);
+
+      if (!error && docs) {
+        stats.documents.total = docs.length;
+        for (const doc of docs) {
+          try {
+            await embeddingService.embedContextDocument(doc.id);
+            stats.documents.success++;
+          } catch (err) {
+            stats.documents.failed++;
+            stats.documents.errors.push({ id: doc.id, error: err.message });
+          }
+        }
+      }
+    }
+
+    // Backfill ai_plugin_examples
+    if (options.examples) {
+      console.log(`[${jobId}] Backfilling ai_plugin_examples...`);
+      const { data: exampleList, error } = await masterDbClient
+        .from('ai_plugin_examples')
+        .select('id, name')
+        .is('embedding', null)
+        .eq('is_active', true);
+
+      if (!error && exampleList) {
+        stats.examples.total = exampleList.length;
+        for (const example of exampleList) {
+          try {
+            await embeddingService.embedPluginExample(example.id);
+            stats.examples.success++;
+          } catch (err) {
+            stats.examples.failed++;
+            stats.examples.errors.push({ id: example.id, error: err.message });
+          }
+        }
+      }
+    }
+
+    // Backfill ai_entity_definitions
+    if (options.entities) {
+      console.log(`[${jobId}] Backfilling ai_entity_definitions...`);
+      const { data: entityList, error } = await masterDbClient
+        .from('ai_entity_definitions')
+        .select('id, entity_name')
+        .is('embedding', null)
+        .eq('is_active', true);
+
+      if (!error && entityList) {
+        stats.entities.total = entityList.length;
+        for (const entity of entityList) {
+          try {
+            await embeddingService.embedEntityDefinition(entity.id);
+            stats.entities.success++;
+          } catch (err) {
+            stats.entities.failed++;
+            stats.entities.errors.push({ id: entity.id, error: err.message });
+          }
+        }
+      }
+    }
+
+    // Backfill ai_training_candidates
+    if (options.training) {
+      console.log(`[${jobId}] Backfilling ai_training_candidates...`);
+      const { data: candidates, error } = await masterDbClient
+        .from('ai_training_candidates')
+        .select('id, user_prompt')
+        .is('embedding', null)
+        .in('training_status', ['approved', 'promoted']);
+
+      if (!error && candidates) {
+        stats.training.total = candidates.length;
+        for (const candidate of candidates) {
+          try {
+            await embeddingService.embedTrainingCandidate(candidate.id);
+            stats.training.success++;
+          } catch (err) {
+            stats.training.failed++;
+            stats.training.errors.push({ id: candidate.id, error: err.message });
+          }
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    const totalSuccess = stats.documents.success + stats.examples.success +
+      stats.entities.success + stats.training.success;
+    const totalFailed = stats.documents.failed + stats.examples.failed +
+      stats.entities.failed + stats.training.failed;
+
+    console.log(`✅ [${jobId}] Backfill complete: ${totalSuccess} succeeded, ${totalFailed} failed in ${(duration / 1000).toFixed(2)}s`);
+
+    // Limit errors in stored stats
+    const limitedStats = {
+      documents: { ...stats.documents, errors: stats.documents.errors.slice(0, 5) },
+      examples: { ...stats.examples, errors: stats.examples.errors.slice(0, 5) },
+      entities: { ...stats.entities, errors: stats.entities.errors.slice(0, 5) },
+      training: { ...stats.training, errors: stats.training.errors.slice(0, 5) },
+      markdown: stats.markdown
+    };
+
+    backgroundJobs.set(jobId, {
+      status: 'completed',
+      startTime,
+      duration: `${(duration / 1000).toFixed(2)}s`,
+      message: `${totalSuccess} succeeded, ${totalFailed} failed`,
+      stats: limitedStats
+    });
+
+  } catch (error) {
+    console.error(`❌ [${jobId}] Backfill error:`, error);
+    backgroundJobs.set(jobId, {
+      status: 'failed',
+      startTime,
+      error: error.message
+    });
+  }
+
+  // Clean up old jobs after 1 hour
+  setTimeout(() => backgroundJobs.delete(jobId), 60 * 60 * 1000);
+}
 
 module.exports = router;
