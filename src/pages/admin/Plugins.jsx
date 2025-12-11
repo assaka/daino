@@ -236,9 +236,10 @@ export default function Plugins() {
     try {
       await apiClient.request('POST', `plugins/${plugin.slug}/install`);
       await loadData();
+      setFlashMessage({ type: 'success', message: `Plugin "${plugin.name}" installed successfully!` });
     } catch (error) {
       console.error("Error installing plugin:", error);
-      alert("Error installing plugin: " + error.message);
+      setFlashMessage({ type: 'error', message: "Error installing plugin: " + error.message });
     }
   };
 
@@ -265,7 +266,7 @@ export default function Plugins() {
 
     } catch (error) {
       console.error('Error downloading plugin:', error);
-      alert('Error downloading plugin: ' + error.message);
+      setFlashMessage({ type: 'error', message: 'Error downloading plugin: ' + error.message });
     }
   };
 
@@ -284,12 +285,12 @@ export default function Plugins() {
       // Call import endpoint
       const result = await apiClient.post('plugins/import', packageData);
 
-      alert(`Plugin imported successfully: ${result.plugin.name}`);
+      setFlashMessage({ type: 'success', message: `Plugin imported successfully: ${result.plugin.name}` });
       setShowImportDialog(false);
       await loadData();
     } catch (error) {
       console.error('Error importing plugin:', error);
-      alert('Error importing plugin: ' + error.message);
+      setFlashMessage({ type: 'error', message: 'Error importing plugin: ' + error.message });
     } finally {
       setImporting(false);
     }
@@ -314,7 +315,7 @@ export default function Plugins() {
     }
 
     // If already public, cannot make private
-    alert("Public plugins cannot be made private again as other users may have installed them.");
+    setFlashMessage({ type: 'warning', message: "Public plugins cannot be made private again as other users may have installed them." });
   };
 
   const confirmPublish = async () => {
@@ -328,9 +329,10 @@ export default function Plugins() {
       setShowPublishWarning(false);
       setPluginToPublish(null);
       await loadData();
+      setFlashMessage({ type: 'success', message: 'Plugin published to marketplace successfully!' });
     } catch (error) {
       console.error("Error publishing plugin:", error);
-      alert("Error publishing plugin: " + error.message);
+      setFlashMessage({ type: 'error', message: "Error publishing plugin: " + error.message });
     } finally {
       setPublishing(false);
     }
@@ -351,14 +353,14 @@ export default function Plugins() {
         reason: deprecationReason
       });
 
-      alert(`Plugin "${pluginToDeprecate.name}" has been deprecated. Existing users can still use it.`);
+      setFlashMessage({ type: 'success', message: `Plugin "${pluginToDeprecate.name}" has been deprecated. Existing users can still use it.` });
       setShowDeprecateDialog(false);
       setPluginToDeprecate(null);
       setDeprecationReason("");
       await loadData();
     } catch (error) {
       console.error("Error deprecating plugin:", error);
-      alert("Error deprecating plugin: " + error.message);
+      setFlashMessage({ type: 'error', message: "Error deprecating plugin: " + error.message });
     } finally {
       setDeprecating(false);
     }
@@ -403,7 +405,7 @@ export default function Plugins() {
       await loadData();
     } catch (error) {
       console.error("Error toggling plugin for store:", error);
-      alert("Error updating plugin status: " + error.message);
+      setFlashMessage({ type: 'error', message: "Error updating plugin status: " + error.message });
     }
   };
 
@@ -411,16 +413,16 @@ export default function Plugins() {
     setUninstalling(true);
     try {
       const result = await apiClient.request('POST', `plugins/${pluginSlug}/uninstall`, options);
-      
+
       // Show success message with cleanup summary
-      alert(`Plugin uninstalled successfully!\n\nBackup created: ${result.data.backupPath ? 'Yes' : 'No'}\nCleanup performed: ${JSON.stringify(result.data.cleanupSummary.actions, null, 2)}`);
-      
+      setFlashMessage({ type: 'success', message: `Plugin uninstalled successfully! Backup created: ${result.data.backupPath ? 'Yes' : 'No'}` });
+
       setShowUninstallDialog(false);
       setPluginToUninstall(null);
       await loadData();
     } catch (error) {
       console.error("Error uninstalling plugin:", error);
-      alert("Error uninstalling plugin: " + error.message);
+      setFlashMessage({ type: 'error', message: "Error uninstalling plugin: " + error.message });
     } finally {
       setUninstalling(false);
     }
@@ -428,7 +430,7 @@ export default function Plugins() {
 
   const handleInstallFromGitHub = async () => {
     if (!githubUrl.trim()) {
-      alert("Please enter a GitHub URL");
+      setFlashMessage({ type: 'error', message: "Please enter a GitHub URL" });
       return;
     }
 
@@ -437,15 +439,15 @@ export default function Plugins() {
       const result = await apiClient.request('POST', 'plugins/install-github', {
         githubUrl: githubUrl.trim()
       });
-      
-      alert(`Plugin installed successfully: ${result.message}`);
-      
+
+      setFlashMessage({ type: 'success', message: `Plugin installed successfully: ${result.message}` });
+
       setShowGitHubInstall(false);
       setGithubUrl("");
       await loadData();
     } catch (error) {
       console.error("Error installing from GitHub:", error);
-      alert("Error installing plugin: " + error.message);
+      setFlashMessage({ type: 'error', message: "Error installing plugin: " + error.message });
     } finally {
       setInstalling(false);
     }
@@ -454,10 +456,11 @@ export default function Plugins() {
   const handleCreatePlugin = async (pluginData) => {
     try {
       // TODO: Implement modern plugin creation API
-      alert("Plugin creation will be available in the next version");
+      setFlashMessage({ type: 'warning', message: "Plugin creation will be available in the next version" });
       setShowPluginForm(false);
     } catch (error) {
       console.error("Error creating plugin:", error);
+      setFlashMessage({ type: 'error', message: "Error creating plugin: " + error.message });
     }
   };
 
