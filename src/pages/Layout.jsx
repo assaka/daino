@@ -92,7 +92,6 @@ import { PriceUtilsProvider } from "@/utils/PriceUtilsProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
-import { AIWorkspaceProvider } from "@/contexts/AIWorkspaceGlobalContext";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -847,12 +846,7 @@ function LayoutInner({ children, currentPageName }) {
   );
 }
 
-// Wrap LayoutInner with AIWorkspaceProvider
 export default function Layout(props) {
-  return (
-    <AIWorkspaceProvider>
-      <LayoutInner {...props} />
-    </AIWorkspaceProvider>
-  );
+  return <LayoutInner {...props} />;
 }
 

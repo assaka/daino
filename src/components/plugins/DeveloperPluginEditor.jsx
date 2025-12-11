@@ -37,7 +37,6 @@ import {
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/ai-workspace/CodeEditor.jsx';
-import { useAIWorkspace, AI_WORKSPACE_MODES } from '@/contexts/AIWorkspaceGlobalContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 import EventSelector from '@/components/plugins/EventSelector';
@@ -55,7 +54,6 @@ const DeveloperPluginEditor = ({
   fileTreeTargetSize = 20, // Absolute % of total viewport
   editorTargetSize = 50 // Absolute % of total viewport
 }) => {
-  const { openAI } = useAIWorkspace();
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
