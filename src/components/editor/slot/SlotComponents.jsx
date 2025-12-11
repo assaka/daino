@@ -495,6 +495,11 @@ export function GridColumn({
   selectedElementId = null, // Add selectedElementId prop
   productData = {} // Add productData prop for real admin settings
 }) {
+  // Debug: Log when GridColumn receives new colSpan
+  useEffect(() => {
+    console.log('🟣 [GridColumn] Received colSpan update:', { slotId, colSpan, colSpanClass, useTailwindClass });
+  }, [slotId, colSpan, colSpanClass, useTailwindClass]);
+
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropZone, setDropZone] = useState(null);
