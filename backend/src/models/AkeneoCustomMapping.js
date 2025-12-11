@@ -1,8 +1,8 @@
 /**
  * AkeneoCustomMapping - Pure service class (NO SEQUELIZE)
  *
- * This class provides methods to interact with akeneo_custom_mappings table
- * using ConnectionManager for proper tenant database isolation.
+ * This class provides methods to store Akeneo custom mappings
+ * using the integration_configs table with integration_type='akeneo-mappings'.
  *
  * All methods are static and use direct Supabase queries through ConnectionManager.
  */
@@ -16,38 +16,44 @@ AkeneoCustomMapping.getMappings = async function(storeId, mappingType = null) {
   try {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    let query = tenantDb
-      .from('akeneo_custom_mappings')
+    // Get the akeneo-mappings config
+    const { data, error } = await tenantDb
+      .from('integration_configs')
       .select('*')
-      .eq('store_id', storeId);
-
-    if (mappingType) {
-      query = query.eq('mapping_type', mappingType);
-    }
-
-    const { data, error } = await query;
+      .eq('store_id', storeId)
+      .eq('integration_type', 'akeneo-mappings')
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching akeneo custom mappings:', error);
       return mappingType ? [] : { attributes: [], images: [], files: [] };
     }
 
+    if (!data || !data.config_data) {
+      return mappingType ? [] : { attributes: [], images: [], files: [] };
+    }
+
+    // Parse config_data if it's a string
+    let configData = data.config_data;
+    if (typeof configData === 'string') {
+      try {
+        configData = JSON.parse(configData);
+      } catch (e) {
+        console.warn('Failed to parse config_data:', e.message);
+        return mappingType ? [] : { attributes: [], images: [], files: [] };
+      }
+    }
+
     if (mappingType) {
-      return data?.[0]?.mappings || [];
+      return configData[mappingType] || [];
     }
 
     // Return object with all mapping types
-    const result = {
-      attributes: [],
-      images: [],
-      files: []
+    return {
+      attributes: configData.attributes || [],
+      images: configData.images || [],
+      files: configData.files || []
     };
-
-    (data || []).forEach(m => {
-      result[m.mapping_type] = m.mappings || [];
-    });
-
-    return result;
   } catch (error) {
     console.error('AkeneoCustomMapping.getMappings error:', error);
     return mappingType ? [] : { attributes: [], images: [], files: [] };
@@ -61,21 +67,40 @@ AkeneoCustomMapping.saveMappings = async function(storeId, mappingType, mappings
   try {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Check if mapping exists
+    // Get existing config
     const { data: existing } = await tenantDb
-      .from('akeneo_custom_mappings')
+      .from('integration_configs')
       .select('*')
       .eq('store_id', storeId)
-      .eq('mapping_type', mappingType)
+      .eq('integration_type', 'akeneo-mappings')
       .maybeSingle();
+
+    // Parse existing config_data
+    let existingData = { attributes: [], images: [], files: [] };
+    if (existing && existing.config_data) {
+      if (typeof existing.config_data === 'string') {
+        try {
+          existingData = JSON.parse(existing.config_data);
+        } catch (e) {
+          console.warn('Failed to parse existing config_data:', e.message);
+        }
+      } else {
+        existingData = existing.config_data;
+      }
+    }
+
+    // Update the specific mapping type
+    const updatedData = {
+      ...existingData,
+      [mappingType]: mappings || []
+    };
 
     if (existing) {
       // Update existing
       const { data: updated, error: updateError } = await tenantDb
-        .from('akeneo_custom_mappings')
+        .from('integration_configs')
         .update({
-          mappings: mappings || [],
-          updated_by: userId,
+          config_data: updatedData,
           updated_at: new Date().toISOString()
         })
         .eq('id', existing.id)
@@ -91,14 +116,13 @@ AkeneoCustomMapping.saveMappings = async function(storeId, mappingType, mappings
     } else {
       // Create new
       const { data: created, error: createError } = await tenantDb
-        .from('akeneo_custom_mappings')
+        .from('integration_configs')
         .insert({
           id: uuidv4(),
           store_id: storeId,
-          mapping_type: mappingType,
-          mappings: mappings || [],
-          created_by: userId,
-          updated_by: userId,
+          integration_type: 'akeneo-mappings',
+          config_data: updatedData,
+          is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -119,21 +143,65 @@ AkeneoCustomMapping.saveMappings = async function(storeId, mappingType, mappings
 };
 
 AkeneoCustomMapping.saveAllMappings = async function(storeId, allMappings, userId = null) {
-  const promises = [];
+  const ConnectionManager = require('../services/database/ConnectionManager');
+  const { v4: uuidv4 } = require('uuid');
 
-  if (allMappings.attributes) {
-    promises.push(this.saveMappings(storeId, 'attributes', allMappings.attributes, userId));
-  }
-  if (allMappings.images) {
-    promises.push(this.saveMappings(storeId, 'images', allMappings.images, userId));
-  }
-  if (allMappings.files) {
-    promises.push(this.saveMappings(storeId, 'files', allMappings.files, userId));
-  }
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  await Promise.all(promises);
+    const configData = {
+      attributes: allMappings.attributes || [],
+      images: allMappings.images || [],
+      files: allMappings.files || []
+    };
 
-  return this.getMappings(storeId);
+    // Get existing config
+    const { data: existing } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('integration_type', 'akeneo-mappings')
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing
+      const { error: updateError } = await tenantDb
+        .from('integration_configs')
+        .update({
+          config_data: configData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id);
+
+      if (updateError) {
+        console.error('Error updating akeneo custom mappings:', updateError);
+        throw updateError;
+      }
+    } else {
+      // Create new
+      const { error: createError } = await tenantDb
+        .from('integration_configs')
+        .insert({
+          id: uuidv4(),
+          store_id: storeId,
+          integration_type: 'akeneo-mappings',
+          config_data: configData,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (createError) {
+        console.error('Error creating akeneo custom mappings:', createError);
+        throw createError;
+      }
+    }
+
+    return this.getMappings(storeId);
+  } catch (error) {
+    console.error('AkeneoCustomMapping.saveAllMappings error:', error);
+    throw error;
+  }
 };
 
 AkeneoCustomMapping.destroy = async function({ where }) {
@@ -142,20 +210,44 @@ AkeneoCustomMapping.destroy = async function({ where }) {
   try {
     const tenantDb = await ConnectionManager.getStoreConnection(where.store_id);
 
-    let query = tenantDb
-      .from('akeneo_custom_mappings')
-      .delete()
-      .eq('store_id', where.store_id);
-
     if (where.mapping_type) {
-      query = query.eq('mapping_type', where.mapping_type);
-    }
+      // Only delete specific mapping type - update the config_data
+      const { data: existing } = await tenantDb
+        .from('integration_configs')
+        .select('*')
+        .eq('store_id', where.store_id)
+        .eq('integration_type', 'akeneo-mappings')
+        .maybeSingle();
 
-    const { error } = await query;
+      if (existing) {
+        let configData = existing.config_data;
+        if (typeof configData === 'string') {
+          configData = JSON.parse(configData);
+        }
 
-    if (error) {
-      console.error('Error deleting akeneo custom mapping:', error);
-      throw error;
+        // Clear the specific mapping type
+        configData[where.mapping_type] = [];
+
+        await tenantDb
+          .from('integration_configs')
+          .update({
+            config_data: configData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+      }
+    } else {
+      // Delete entire config
+      const { error } = await tenantDb
+        .from('integration_configs')
+        .delete()
+        .eq('store_id', where.store_id)
+        .eq('integration_type', 'akeneo-mappings');
+
+      if (error) {
+        console.error('Error deleting akeneo custom mapping:', error);
+        throw error;
+      }
     }
 
     return true;
