@@ -291,7 +291,12 @@ const ResizeWrapper = ({
   }, []);
 
   const handleMouseDown = useCallback((e) => {
-    if (disabled) return;
+    console.log('🔴 [RESIZE] handleMouseDown fired', { disabled, pointerId: e.pointerId, target: e.target });
+
+    if (disabled) {
+      console.log('🔴 [RESIZE] Resize is DISABLED, returning');
+      return;
+    }
 
     // CRITICAL: Prevent parent drag events from firing
     e.preventDefault();
@@ -302,10 +307,20 @@ const ResizeWrapper = ({
 
     // CRITICAL: Capture pointer events to this element
     if (e.currentTarget.setPointerCapture) {
-      e.currentTarget.setPointerCapture(e.pointerId);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        console.log('🔴 [RESIZE] Pointer capture set successfully');
+      } catch (err) {
+        console.warn('🔴 [RESIZE] Failed to set pointer capture:', err);
+      }
     }
 
-    const rect = wrapperRef.current.getBoundingClientRect();
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) {
+      console.error('🔴 [RESIZE] wrapperRef.current is null!');
+      return;
+    }
+    console.log('🔴 [RESIZE] Initial rect:', { width: rect.width, height: rect.height });
 
     // Find the grid slot container for resize bounds
     let slotContainer = wrapperRef.current.closest('[data-grid-slot-id]');
@@ -382,13 +397,17 @@ const ResizeWrapper = ({
     const hasWFit = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
     const handleMouseMove = (moveEvent) => {
+      console.log('🟡 [RESIZE] handleMouseMove fired', { clientX: moveEvent.clientX, clientY: moveEvent.clientY });
+
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
       // Only apply sizing if there's significant movement (prevents jumping on click)
       if (Math.abs(deltaX) < 3 && Math.abs(deltaY) < 3) {
+        console.log('🟡 [RESIZE] Movement too small, skipping', { deltaX, deltaY });
         return;
       }
+      console.log('🟡 [RESIZE] Processing movement', { deltaX, deltaY });
 
       // Cancel any pending animation frame to avoid queueing
       if (animationFrameId) {
@@ -460,11 +479,14 @@ const ResizeWrapper = ({
           ...(fontSize !== undefined && { fontSize })
         };
 
+        console.log('🟢 [RESIZE] Setting new size:', newSize);
+
         // Store latest size in ref for immediate access during mouseup
         latestSizeRef.current = newSize;
 
         // Apply update to visual immediately
         setSize(newSize);
+        console.log('🟢 [RESIZE] setSize called');
 
         // Debounce save callback - only call after 1 second of no changes
         if (saveTimeoutRef.current) {
