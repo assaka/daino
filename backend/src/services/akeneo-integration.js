@@ -1757,6 +1757,7 @@ class AkeneoIntegration {
                     akeneo_code: akeneoProductModel.code,
                     error: result.error
                   });
+                  console.error(`❌ Failed to import product model ${akeneoProductModel.code}: ${result.error}`);
                 }
               } else {
                 this.importStats.products.imported++;
