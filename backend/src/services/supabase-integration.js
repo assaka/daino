@@ -1297,6 +1297,65 @@ class SupabaseIntegration {
                   .eq('store_id', storeId)
                   .eq('integration_type', this.integrationType);
 
+                // IMPORTANT: Also insert into store_databases in master DB
+                // This is required for ConnectionManager to find the store's database
+                if (tokenData.project_url && tokenData.service_role_key) {
+                  console.log('📦 Inserting into store_databases in master...');
+                  try {
+                    const { masterDbClient } = require('../database/masterConnection');
+                    const { v4: uuidv4 } = require('uuid');
+                    const { encryptDatabaseCredentials } = require('../utils/encryption');
+
+                    // Extract host from project URL
+                    let host = null;
+                    try {
+                      host = new URL(tokenData.project_url).hostname;
+                    } catch (e) {
+                      console.warn('Could not parse projectUrl:', e.message);
+                    }
+
+                    // Encrypt credentials for store_databases
+                    const credentials = {
+                      projectUrl: tokenData.project_url,
+                      serviceRoleKey: tokenData.service_role_key,
+                      accessToken: tokenData.access_token,
+                      refreshToken: tokenData.refresh_token
+                    };
+                    const encryptedCredentials = encryptDatabaseCredentials(credentials);
+
+                    // Upsert into store_databases
+                    const { data: storeDbRecord, error: storeDbError } = await masterDbClient
+                      .from('store_databases')
+                      .upsert({
+                        id: uuidv4(),
+                        store_id: storeId,
+                        database_type: 'supabase',
+                        connection_string_encrypted: encryptedCredentials,
+                        host: host,
+                        port: null,
+                        database_name: 'postgres',
+                        is_active: true,
+                        connection_status: 'connected',
+                        last_connection_test: new Date().toISOString(),
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                      }, {
+                        onConflict: 'store_id',
+                        ignoreDuplicates: false
+                      })
+                      .select()
+                      .single();
+
+                    if (storeDbError) {
+                      console.error('❌ Failed to insert into store_databases:', storeDbError.message);
+                    } else {
+                      console.log('✅ Inserted into store_databases in master:', storeDbRecord?.id);
+                    }
+                  } catch (storeDbInsertError) {
+                    console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
+                  }
+                }
+
                 // Clean up Redis
                 await redisClient.del(redisKey);
 
@@ -1346,6 +1405,61 @@ class SupabaseIntegration {
                 .update({ token_expires_at: tokenData.expires_at, updated_at: new Date() })
                 .eq('store_id', storeId)
                 .eq('integration_type', this.integrationType);
+
+              // IMPORTANT: Also insert into store_databases in master DB (memory fallback path)
+              if (tokenData.project_url && tokenData.service_role_key) {
+                console.log('📦 Inserting into store_databases in master (memory fallback)...');
+                try {
+                  const { masterDbClient } = require('../database/masterConnection');
+                  const { v4: uuidv4 } = require('uuid');
+                  const { encryptDatabaseCredentials } = require('../utils/encryption');
+
+                  let host = null;
+                  try {
+                    host = new URL(tokenData.project_url).hostname;
+                  } catch (e) {
+                    console.warn('Could not parse projectUrl:', e.message);
+                  }
+
+                  const credentials = {
+                    projectUrl: tokenData.project_url,
+                    serviceRoleKey: tokenData.service_role_key,
+                    accessToken: tokenData.access_token,
+                    refreshToken: tokenData.refresh_token
+                  };
+                  const encryptedCredentials = encryptDatabaseCredentials(credentials);
+
+                  const { data: storeDbRecord, error: storeDbError } = await masterDbClient
+                    .from('store_databases')
+                    .upsert({
+                      id: uuidv4(),
+                      store_id: storeId,
+                      database_type: 'supabase',
+                      connection_string_encrypted: encryptedCredentials,
+                      host: host,
+                      port: null,
+                      database_name: 'postgres',
+                      is_active: true,
+                      connection_status: 'connected',
+                      last_connection_test: new Date().toISOString(),
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    }, {
+                      onConflict: 'store_id',
+                      ignoreDuplicates: false
+                    })
+                    .select()
+                    .single();
+
+                  if (storeDbError) {
+                    console.error('❌ Failed to insert into store_databases:', storeDbError.message);
+                  } else {
+                    console.log('✅ Inserted into store_databases in master:', storeDbRecord?.id);
+                  }
+                } catch (storeDbInsertError) {
+                  console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
+                }
+              }
 
               // Clean up memory
               global.pendingOAuthTokens.delete(storeId);
@@ -2080,6 +2194,59 @@ class SupabaseIntegration {
       const savedConfig = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
       if (savedConfig) {
         await IntegrationConfig.updateConnectionStatus(savedConfig.id, storeId, 'success');
+      }
+
+      // IMPORTANT: Also insert into store_databases in master DB
+      if (credentials.project_url && credentials.service_role_key) {
+        console.log('📦 Inserting into store_databases in master (manual credentials)...');
+        try {
+          const { masterDbClient } = require('../database/masterConnection');
+          const { v4: uuidv4 } = require('uuid');
+          const { encryptDatabaseCredentials } = require('../utils/encryption');
+
+          let host = null;
+          try {
+            host = new URL(credentials.project_url).hostname;
+          } catch (e) {
+            console.warn('Could not parse projectUrl:', e.message);
+          }
+
+          const credentialsToStore = {
+            projectUrl: credentials.project_url,
+            serviceRoleKey: credentials.service_role_key
+          };
+          const encryptedCredentials = encryptDatabaseCredentials(credentialsToStore);
+
+          const { data: storeDbRecord, error: storeDbError } = await masterDbClient
+            .from('store_databases')
+            .upsert({
+              id: uuidv4(),
+              store_id: storeId,
+              database_type: 'supabase',
+              connection_string_encrypted: encryptedCredentials,
+              host: host,
+              port: null,
+              database_name: 'postgres',
+              is_active: true,
+              connection_status: 'connected',
+              last_connection_test: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'store_id',
+              ignoreDuplicates: false
+            })
+            .select()
+            .single();
+
+          if (storeDbError) {
+            console.error('❌ Failed to insert into store_databases:', storeDbError.message);
+          } else {
+            console.log('✅ Inserted into store_databases in master:', storeDbRecord?.id);
+          }
+        } catch (storeDbInsertError) {
+          console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
+        }
       }
 
       return { success: true };
