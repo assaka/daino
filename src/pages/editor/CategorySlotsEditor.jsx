@@ -162,11 +162,21 @@ const CategorySlotsEditor = ({
   }, [categories, selectedCategorySlug]);
 
   // Fetch real category data with products
-  const { data: realCategoryData, isLoading: categoryLoading } = useCategory(
+  const { data: realCategoryData, isLoading: categoryLoading, error: categoryError } = useCategory(
     selectedCategorySlug,
     storeId,
     { enabled: !!selectedCategorySlug && !!storeId }
   );
+
+  // Debug: Log category fetch status
+  console.log('[CategorySlotsEditor] 📂 Category Fetch:', {
+    slug: selectedCategorySlug,
+    storeId,
+    enabled: !!selectedCategorySlug && !!storeId,
+    loading: categoryLoading,
+    error: categoryError?.message,
+    hasData: !!realCategoryData
+  });
 
   // Listen for settings updates from admin panel
   useEffect(() => {
@@ -394,11 +404,14 @@ const CategorySlotsEditor = ({
     selectedCategorySlug,
     categoryLoading,
     hasRealData: !!realCategoryData?.category,
+    realCategoryDataRaw: realCategoryData,
     productCount: realCategoryData?.products?.length || 0,
     categoriesCount: categories?.length || 0,
+    categoriesList: categories?.map(c => ({ id: c.id, slug: c.slug, name: c.name })),
     filterableAttributesCount: filterableAttributes?.length || 0,
     filtersBuilt: Object.keys(categoryContext?.filters || {}),
-    usingMock: !realCategoryData?.category
+    usingMock: !realCategoryData?.category,
+    queryEnabled: !!selectedCategorySlug && !!storeId
   });
 
   // Debug: Log product images

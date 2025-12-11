@@ -280,55 +280,114 @@ class CategoryMappingService {
   /**
    * Sync external categories to the mappings table
    * This creates mapping records for all external categories (without auto-matching)
+   * Optimized with batch operations to avoid N+1 queries
    */
   async syncExternalCategories(externalCategories) {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
     const results = { created: 0, updated: 0, errors: [] };
+    const now = new Date().toISOString();
 
-    for (const extCat of externalCategories) {
-      try {
-        // Check if mapping exists
-        const { data: existing } = await tenantDb
-          .from('integration_category_mappings')
-          .select('id, internal_category_id')
-          .eq('store_id', this.storeId)
-          .eq('integration_source', this.integrationSource)
-          .or(`external_category_id.eq.${extCat.id},external_category_code.eq.${extCat.code}`)
-          .maybeSingle();
+    if (!externalCategories || externalCategories.length === 0) {
+      return results;
+    }
+
+    try {
+      // 1. Fetch ALL existing mappings in ONE query
+      const externalCodes = externalCategories.map(c => c.code).filter(Boolean);
+      const externalIds = externalCategories.map(c => c.id).filter(Boolean);
+
+      const { data: existingMappings } = await tenantDb
+        .from('integration_category_mappings')
+        .select('id, external_category_id, external_category_code, internal_category_id')
+        .eq('store_id', this.storeId)
+        .eq('integration_source', this.integrationSource);
+
+      // Build lookup maps for existing mappings
+      const existingByCode = new Map();
+      const existingById = new Map();
+      for (const m of (existingMappings || [])) {
+        if (m.external_category_code) existingByCode.set(m.external_category_code, m);
+        if (m.external_category_id) existingById.set(m.external_category_id, m);
+      }
+
+      // 2. Separate into updates and inserts
+      const toUpdate = [];
+      const toInsert = [];
+
+      for (const extCat of externalCategories) {
+        const existing = existingByCode.get(extCat.code) || existingById.get(extCat.id);
 
         if (existing) {
-          // Update name only, keep existing mapping
-          await tenantDb
+          toUpdate.push({
+            id: existing.id,
+            external_category_name: extCat.name,
+            external_parent_code: extCat.parent_code,
+            updated_at: now
+          });
+        } else {
+          toInsert.push({
+            store_id: this.storeId,
+            integration_source: this.integrationSource,
+            external_category_id: extCat.id,
+            external_category_code: extCat.code,
+            external_category_name: extCat.name,
+            external_parent_code: extCat.parent_code,
+            internal_category_id: null,
+            mapping_type: 'manual',
+            created_at: now,
+            updated_at: now
+          });
+        }
+      }
+
+      // 3. Batch insert new mappings (max 100 at a time for Supabase)
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
+        const batch = toInsert.slice(i, i + BATCH_SIZE);
+        const { error } = await tenantDb
+          .from('integration_category_mappings')
+          .insert(batch);
+
+        if (error) {
+          console.error('Batch insert error:', error.message);
+          results.errors.push({ batch: `insert ${i}-${i + batch.length}`, error: error.message });
+        } else {
+          results.created += batch.length;
+        }
+      }
+
+      // 4. Batch update existing mappings
+      // Supabase doesn't support batch updates directly, so we use Promise.all with chunks
+      const updateChunks = [];
+      for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
+        updateChunks.push(toUpdate.slice(i, i + BATCH_SIZE));
+      }
+
+      for (const chunk of updateChunks) {
+        const updatePromises = chunk.map(record =>
+          tenantDb
             .from('integration_category_mappings')
             .update({
-              external_category_name: extCat.name,
-              external_parent_code: extCat.parent_code,
-              updated_at: new Date().toISOString()
+              external_category_name: record.external_category_name,
+              external_parent_code: record.external_parent_code,
+              updated_at: record.updated_at
             })
-            .eq('id', existing.id);
-          results.updated++;
-        } else {
-          // Create new mapping (unmapped by default)
-          await tenantDb
-            .from('integration_category_mappings')
-            .insert({
-              store_id: this.storeId,
-              integration_source: this.integrationSource,
-              external_category_id: extCat.id,
-              external_category_code: extCat.code,
-              external_category_name: extCat.name,
-              external_parent_code: extCat.parent_code,
-              internal_category_id: null,
-              mapping_type: 'manual',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
-          results.created++;
+            .eq('id', record.id)
+        );
+
+        const updateResults = await Promise.all(updatePromises);
+        for (const result of updateResults) {
+          if (result.error) {
+            results.errors.push({ error: result.error.message });
+          } else {
+            results.updated++;
+          }
         }
-      } catch (err) {
-        console.error(`Error syncing category ${extCat.code}:`, err.message);
-        results.errors.push({ code: extCat.code, error: err.message });
       }
+
+    } catch (err) {
+      console.error('Error in batch sync:', err.message);
+      results.errors.push({ error: err.message });
     }
 
     console.log(`📁 Synced ${this.integrationSource} categories: ${results.created} created, ${results.updated} updated`);
