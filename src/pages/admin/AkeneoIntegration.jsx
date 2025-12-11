@@ -67,6 +67,7 @@ import SaveButton from '@/components/ui/save-button';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import apiClient from '@/api/client';
 import { MultiSelect } from '@/components/ui/multi-select';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 // Error Boundary to catch component crashes
 class AkeneoErrorBoundary extends React.Component {
@@ -188,6 +189,7 @@ const AkeneoIntegration = () => {
   const [configSaved, setConfigSaved] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
   // Separate import results for each tab
   const [importResults, setImportResults] = useState({
     categories: null,
@@ -1275,17 +1277,17 @@ const AkeneoIntegration = () => {
       const message = responseData.message || 'Configuration operation completed';
 
       if (success) {
-        toast.success('Configuration saved successfully!');
         setConfigSaved(true);
         setSaveSuccess(true);
+        setFlashMessage({ type: 'success', message: 'Configuration saved and connection verified successfully!' });
         setTimeout(() => setSaveSuccess(false), 2000);
         loadConfigStatus(); // Reload config status
       } else {
-        toast.error(`Failed to save configuration: ${message}`);
+        setFlashMessage({ type: 'error', message: `Failed to save configuration: ${message}` });
       }
     } catch (error) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      toast.error(`Save failed: ${message}`);
+      setFlashMessage({ type: 'error', message: `Connection failed: ${message}` });
     } finally {
       setSaving(false);
     }
@@ -1980,38 +1982,20 @@ const AkeneoIntegration = () => {
     return (
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <FlashMessage
+          message={flashMessage}
+          onClose={() => setFlashMessage(null)}
+        />
+
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <BarChart3 className="w-8 h-8 text-blue-600" />
-              Akeneo PIM Integration
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Import categories and products from your Akeneo PIM system into DainoStore.
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            {configSaved ? (
-              <>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Connected
-                </span>
-                <button
-                  onClick={handleDisconnectClick}
-                  disabled={disconnecting}
-                  className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
-                  title="Disconnect Akeneo"
-                >
-                  <Unlink className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                Not Connected
-              </span>
-            )}
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-blue-600" />
+            Akeneo PIM Integration
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Import categories and products from your Akeneo PIM system into DainoStore.
+          </p>
         </div>
 
       {/* Statistics Display */}
@@ -2080,10 +2064,35 @@ const AkeneoIntegration = () => {
         <TabsContent value="configuration" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Akeneo Configuration</CardTitle>
-              <CardDescription>
-                Configure your Akeneo PIM connection settings. Save your configuration first, then test the connection before importing data.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Akeneo Configuration</CardTitle>
+                  <CardDescription>
+                    Configure your Akeneo PIM connection settings. Save your configuration first, then test the connection before importing data.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {configSaved ? (
+                    <>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Connected
+                      </span>
+                      <button
+                        onClick={handleDisconnectClick}
+                        disabled={disconnecting}
+                        className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
+                        title="Disconnect Akeneo"
+                      >
+                        <Unlink className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      Not Connected
+                    </span>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2211,14 +2220,6 @@ const AkeneoIntegration = () => {
                 />
               </div>
 
-              {configSaved && (
-                <Alert className="border-green-200 bg-green-50 mt-4">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    Configuration has been saved successfully. You can now proceed with imports.
-                  </AlertDescription>
-                </Alert>
-              )}
             </CardContent>
           </Card>
 
