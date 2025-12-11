@@ -617,9 +617,9 @@ router.post('/import/full',
 router.get('/import/stats', storeAuth, async (req, res) => {
   try {
     const ImportStatistic = require('../models/ImportStatistic');
-    const stats = await ImportStatistic.getLatestStats(req.storeId);
+    const stats = await ImportStatistic.getLatestStats(req.storeId, 'shopify');
 
-    // Filter for Shopify-specific stats
+    // Return Shopify-specific stats
     const shopifyStats = {
       collections: stats.collections,
       products: stats.products

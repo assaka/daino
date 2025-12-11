@@ -5,18 +5,25 @@
 
 const ImportStatistic = {};
 
-ImportStatistic.getLatestStats = async function(storeId) {
+ImportStatistic.getLatestStats = async function(storeId, importSource = null) {
   const ConnectionManager = require('../services/database/ConnectionManager');
 
   try {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const { data, error } = await tenantDb
+    let query = tenantDb
       .from('import_statistics')
       .select('*')
-      .eq('store_id', storeId)
+      .eq('store_id', storeId);
+
+    // Filter by import source if specified
+    if (importSource) {
+      query = query.eq('import_source', importSource);
+    }
+
+    const { data, error } = await query
       .order('import_date', { ascending: false })
-      .limit(10);
+      .limit(20);
 
     if (error) {
       console.error('Error fetching import statistics:', error);

@@ -823,9 +823,9 @@ router.get('/akeneo/stats', authMiddleware, storeResolver(), async (req, res) =>
     const storeId = req.storeId;
     
     const ImportStatistic = require('../models/ImportStatistic');
-    
-    // Get latest import statistics for each import type
-    const latestStats = await ImportStatistic.getLatestStats(storeId);
+
+    // Get latest import statistics for each import type (filtered by akeneo source)
+    const latestStats = await ImportStatistic.getLatestStats(storeId, 'akeneo');
     
     // Ensure latestStats has all required properties
     if (!latestStats || typeof latestStats !== 'object') {

@@ -278,7 +278,8 @@ class AkeneoIntegration {
             failedImports: jobStats.categories.failed,
             skippedImports: jobStats.categories.skipped,
             errorDetails: jobStats.errors.length > 0 ? JSON.stringify(jobStats.errors) : null,
-            importMethod: 'manual'
+            importMethod: 'manual',
+            importSource: 'akeneo'
           });
           console.log('✅ Category import statistics saved to database');
         } catch (statsError) {
@@ -727,7 +728,8 @@ class AkeneoIntegration {
             failedImports: this.importStats.products.failed,
             skippedImports: this.importStats.products.skipped,
             errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
-            importMethod: 'manual'
+            importMethod: 'manual',
+            importSource: 'akeneo'
           });
           console.log('✅ Product import statistics saved to database');
         } catch (statsError) {
@@ -1055,7 +1057,8 @@ class AkeneoIntegration {
             failedImports: this.importStats.attributes.failed,
             skippedImports: this.importStats.attributes.skipped,
             errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
-            importMethod: 'manual'
+            importMethod: 'manual',
+            importSource: 'akeneo'
           });
           console.log('✅ Attribute import statistics saved to database');
         } catch (statsError) {
@@ -1217,7 +1220,8 @@ class AkeneoIntegration {
             failedImports: this.importStats.families.failed,
             skippedImports: this.importStats.families.skipped,
             errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
-            importMethod: 'manual'
+            importMethod: 'manual',
+            importSource: 'akeneo'
           });
           console.log('✅ Family import statistics saved to database');
         } catch (statsError) {
@@ -1865,7 +1869,8 @@ class AkeneoIntegration {
             failedImports: this.importStats.products.failed,
             skippedImports: this.importStats.products.skipped,
             errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
-            importMethod: 'manual'
+            importMethod: 'manual',
+            importSource: 'akeneo'
           });
           console.log('✅ Product import statistics saved to database');
         } catch (statsError) {
