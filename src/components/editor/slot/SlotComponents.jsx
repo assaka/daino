@@ -44,6 +44,8 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
 
 // GridResizeHandle Component
 export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
+  // Debug: Log when component renders
+  console.log('🔵 [GRID RESIZE] Component rendered', { direction, currentValue, parentHovered });
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
@@ -97,12 +99,19 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
+    console.log('🔵 [GRID RESIZE] handleMouseDown fired', { pointerId: e.pointerId, direction });
+
     // CRITICAL: Prevent parent GridColumn drag from starting
     e.preventDefault();
     e.stopPropagation();
 
     // Capture pointer to ensure we receive all pointer events even if mouse leaves the element
-    e.target.setPointerCapture(e.pointerId);
+    try {
+      e.target.setPointerCapture(e.pointerId);
+      console.log('🔵 [GRID RESIZE] Pointer capture set');
+    } catch (err) {
+      console.warn('🔵 [GRID RESIZE] Failed to capture pointer:', err);
+    }
 
     // CRITICAL: Immediately notify parent that handle is active
     if (onHoverChange) {
@@ -114,6 +123,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     handleElementRef.current = e.currentTarget;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
+    console.log('🔵 [GRID RESIZE] Start position:', { x: e.clientX, y: e.clientY });
 
     // Store the original value (can be number or string)
     startValueRef.current = currentValue;
@@ -128,11 +138,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
+      console.log('🔵 [GRID RESIZE] handleMouseMove fired', { clientX: e.clientX, clientY: e.clientY, isDragging: isDraggingRef.current });
+
       if (!isDraggingRef.current) return;
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
+      console.log('🔵 [GRID RESIZE] Delta:', { deltaX, deltaY, startValue });
 
       // Calculate and apply resize in real-time for visual feedback
       let newValue;
