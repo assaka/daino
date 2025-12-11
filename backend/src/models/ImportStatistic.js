@@ -12,7 +12,7 @@ ImportStatistic.getLatestStats = async function(storeId) {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const { data, error } = await tenantDb
-      .from('akeneo_import_statistics')
+      .from('import_statistics')
       .select('*')
       .eq('store_id', storeId)
       .order('import_date', { ascending: false })
@@ -46,7 +46,7 @@ ImportStatistic.create = async function(storeId, statData) {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const { data, error } = await tenantDb
-      .from('akeneo_import_statistics')
+      .from('import_statistics')
       .insert({
         id: uuidv4(),
         store_id: storeId,
@@ -73,7 +73,7 @@ ImportStatistic.saveImportResults = async function(storeId, importType, results)
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const { data, error } = await tenantDb
-      .from('akeneo_import_statistics')
+      .from('import_statistics')
       .insert({
         id: uuidv4(),
         store_id: storeId,

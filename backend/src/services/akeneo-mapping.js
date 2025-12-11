@@ -210,11 +210,21 @@ class AkeneoMapping {
 
     // Extract common e-commerce attributes with enhanced fallbacks
     const commonAttributes = this.extractCommonAttributes(values, locale);
-    
-    // Merge common attributes without overwriting existing values
+
+    // Only these fields are valid columns on the products table
+    const validProductFields = ['price', 'compare_price', 'cost_price'];
+
+    // Only set valid product fields - attribute values (brand, color, size, etc.)
+    // should be handled via attributes table and product_attribute_values
     Object.keys(commonAttributes).forEach(key => {
-      if (dainoProduct[key] === null || dainoProduct[key] === undefined) {
-        dainoProduct[key] = commonAttributes[key];
+      if (commonAttributes[key] !== null && commonAttributes[key] !== undefined) {
+        if (validProductFields.includes(key)) {
+          if (dainoProduct[key] === null || dainoProduct[key] === undefined) {
+            dainoProduct[key] = commonAttributes[key];
+          }
+        }
+        // Note: brand, material, color, size, warranty, care_instructions are NOT stored here
+        // They should be imported via attributes and linked via product_attribute_values
       }
     });
 
