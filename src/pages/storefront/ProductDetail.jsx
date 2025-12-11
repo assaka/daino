@@ -19,7 +19,7 @@ import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, get
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import { getStockLabel as getStockLabelUtil, getStockLabelStyle, isProductOutOfStock } from "@/utils/stockUtils";
 import {
-  ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
+  ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -843,6 +843,18 @@ export default function ProductDetail() {
         </div>
       ) : null
       }
+
+      {/* Floating Edit Button - Only for store owners */}
+      {typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token') && slug && (
+        <Link
+          to={`/editor/product?product=${slug}`}
+          className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg z-50 flex items-center gap-2 transition-all hover:scale-105"
+          title="Edit this page layout"
+        >
+          <Pencil className="w-5 h-5" />
+          <span className="hidden sm:inline font-medium">Edit</span>
+        </Link>
+      )}
 
     </div>
   );

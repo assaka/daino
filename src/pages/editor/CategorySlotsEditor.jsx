@@ -148,7 +148,16 @@ const CategorySlotsEditor = ({
   const { data: fetchedFilterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
 
   // Fetch header slot configuration for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  const { data: headerConfig, isLoading: headerLoading } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+
+  // Debug: Log header config
+  console.log('[CategorySlotsEditor] Header Config:', {
+    storeId,
+    headerLoading,
+    headerConfig,
+    headerSlots: headerConfig?.slots,
+    hasSlots: !!headerConfig?.slots
+  });
 
   const categories = storeContext?.categories?.length > 0 ? storeContext.categories : fetchedCategories;
   const filterableAttributes = storeContext?.filterableAttributes?.length > 0
