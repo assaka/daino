@@ -104,7 +104,7 @@ router.post('/neon/callback', authMiddleware, authorize(['admin', 'store_owner']
     // Parse connection details
     const credentials = neonService.parseConnectionString(connectionUri);
 
-    // Store in database (encrypted)
+    // Store in database (encrypted) - always set is_primary=true for main connection
     const { data: storeDatabase, error } = await masterDbClient
       .from('store_databases')
       .upsert({
@@ -112,6 +112,7 @@ router.post('/neon/callback', authMiddleware, authorize(['admin', 'store_owner']
         database_type: 'postgresql',
         connection_string_encrypted: encryptDatabaseCredentials(credentials),
         is_active: true,
+        is_primary: true, // Primary connection - cannot be deleted
         connection_status: 'connected',
         last_connection_test: new Date().toISOString(),
         provider: 'neon',
@@ -249,7 +250,7 @@ router.post('/planetscale/callback', authMiddleware, authorize(['admin', 'store_
       database.name
     );
 
-    // Store in database (encrypted)
+    // Store in database (encrypted) - always set is_primary=true for main connection
     const { data: storeDatabase, error } = await masterDbClient
       .from('store_databases')
       .upsert({
@@ -257,6 +258,7 @@ router.post('/planetscale/callback', authMiddleware, authorize(['admin', 'store_
         database_type: 'mysql',
         connection_string_encrypted: encryptDatabaseCredentials(credentials),
         is_active: true,
+        is_primary: true, // Primary connection - cannot be deleted
         connection_status: 'connected',
         last_connection_test: new Date().toISOString(),
         provider: 'planetscale',

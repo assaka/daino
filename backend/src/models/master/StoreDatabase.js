@@ -272,6 +272,7 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
     }
 
     // Upsert record via Supabase client (handles reconnection case)
+    // Always set is_primary=true - primary connections cannot be deleted
     const { data, error } = await masterDbClient
       .from('store_databases')
       .upsert({
@@ -283,6 +284,7 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
         port: null,
         database_name: 'postgres',
         is_active: true,
+        is_primary: true, // Primary connection - cannot be deleted
         connection_status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

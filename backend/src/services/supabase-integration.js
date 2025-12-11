@@ -1319,7 +1319,7 @@ class SupabaseIntegration {
                     };
                     const encryptedCredentials = encryptDatabaseCredentials(credentials);
 
-                    // Upsert into store_databases
+                    // Upsert into store_databases (always set is_primary=true for main connection)
                     const { data: storeDbRecord, error: storeDbError } = await masterDbClient
                       .from('store_databases')
                       .upsert({
@@ -1331,6 +1331,7 @@ class SupabaseIntegration {
                         port: null,
                         database_name: 'postgres',
                         is_active: true,
+                        is_primary: true, // Primary connection - cannot be deleted
                         connection_status: 'connected',
                         last_connection_test: new Date().toISOString(),
                         created_at: new Date().toISOString(),
@@ -1345,7 +1346,7 @@ class SupabaseIntegration {
                     if (storeDbError) {
                       console.error('❌ Failed to insert into store_databases:', storeDbError.message);
                     } else {
-                      console.log('✅ Inserted into store_databases in master:', storeDbRecord?.id);
+                      console.log('✅ Inserted into store_databases in master (is_primary=true):', storeDbRecord?.id);
                     }
                   } catch (storeDbInsertError) {
                     console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
@@ -1425,6 +1426,7 @@ class SupabaseIntegration {
                   };
                   const encryptedCredentials = encryptDatabaseCredentials(credentials);
 
+                  // Upsert into store_databases (always set is_primary=true for main connection)
                   const { data: storeDbRecord, error: storeDbError } = await masterDbClient
                     .from('store_databases')
                     .upsert({
@@ -1436,6 +1438,7 @@ class SupabaseIntegration {
                       port: null,
                       database_name: 'postgres',
                       is_active: true,
+                      is_primary: true, // Primary connection - cannot be deleted
                       connection_status: 'connected',
                       last_connection_test: new Date().toISOString(),
                       created_at: new Date().toISOString(),
@@ -1450,7 +1453,7 @@ class SupabaseIntegration {
                   if (storeDbError) {
                     console.error('❌ Failed to insert into store_databases:', storeDbError.message);
                   } else {
-                    console.log('✅ Inserted into store_databases in master:', storeDbRecord?.id);
+                    console.log('✅ Inserted into store_databases in master (is_primary=true):', storeDbRecord?.id);
                   }
                 } catch (storeDbInsertError) {
                   console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
@@ -2213,6 +2216,7 @@ class SupabaseIntegration {
           };
           const encryptedCredentials = encryptDatabaseCredentials(credentialsToStore);
 
+          // Upsert into store_databases (always set is_primary=true for main connection)
           const { data: storeDbRecord, error: storeDbError } = await masterDbClient
             .from('store_databases')
             .upsert({
@@ -2224,6 +2228,7 @@ class SupabaseIntegration {
               port: null,
               database_name: 'postgres',
               is_active: true,
+              is_primary: true, // Primary connection - cannot be deleted
               connection_status: 'connected',
               last_connection_test: new Date().toISOString(),
               created_at: new Date().toISOString(),
@@ -2238,7 +2243,7 @@ class SupabaseIntegration {
           if (storeDbError) {
             console.error('❌ Failed to insert into store_databases:', storeDbError.message);
           } else {
-            console.log('✅ Inserted into store_databases in master:', storeDbRecord?.id);
+            console.log('✅ Inserted into store_databases in master (is_primary=true):', storeDbRecord?.id);
           }
         } catch (storeDbInsertError) {
           console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
