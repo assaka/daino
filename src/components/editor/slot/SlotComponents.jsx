@@ -535,11 +535,6 @@ export function GridColumn({
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
 
-  // DEBUG: Log showHorizontalHandle for product card slots
-  if (slotId?.startsWith('product_card_')) {
-    console.log('[GridColumn]', slotId, '- showHorizontalHandle:', showHorizontalHandle, 'onGridResize:', !!onGridResize, 'mode:', mode, 'colSpan:', colSpan, 'colSpan>=1:', colSpan >= 1);
-  }
-
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
 
@@ -548,11 +543,6 @@ export function GridColumn({
     const isResizeHandle = target.closest('.cursor-col-resize, .cursor-row-resize');
 
     if (isResizeHandle || isOverResizeHandle || isResizingSlot) {
-      console.log('🚫 [GRID RESIZE DEBUG] Preventing container drag - resize handle detected', {
-        isResizeHandle: !!isResizeHandle,
-        isOverResizeHandle,
-        isResizingSlot
-      });
       e.preventDefault();
       e.stopPropagation();
       return false;
@@ -985,10 +975,7 @@ export function GridColumn({
       {/* Grid column resize handle - always show in edit mode, becomes more visible on hover */}
       {showHorizontalHandle && (
         <GridResizeHandle
-          onResize={(newColSpan) => {
-            console.log('[GridColumn] Resize callback called:', slotId, newColSpan);
-            onGridResize(slotId, newColSpan);
-          }}
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
