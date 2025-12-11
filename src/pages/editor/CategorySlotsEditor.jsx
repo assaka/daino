@@ -132,6 +132,10 @@ const CategorySlotsEditor = ({
   onSave,
   viewMode = 'grid'
 }) => {
+  // Get initial category from URL params (e.g., ?category=electronics)
+  const [searchParams] = useSearchParams();
+  const initialCategorySlug = searchParams.get('category');
+
   // Get store context for settings and filterableAttributes
   // Handle null case when StoreProvider is not available in editor context
   const storeContext = useStore();
@@ -149,18 +153,26 @@ const CategorySlotsEditor = ({
     : fetchedFilterableAttributes;
 
   // State for selected category (for previewing different categories)
-  const [selectedCategorySlug, setSelectedCategorySlug] = useState(null);
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState(initialCategorySlug);
 
-  // Auto-select first category when categories load
+  // Set initial category from URL or auto-select first category when categories load
   useEffect(() => {
     if (categories.length > 0 && !selectedCategorySlug) {
-      // Find first category with products, or just use first category
+      // Use URL param if provided, otherwise use first category
+      if (initialCategorySlug) {
+        const matchingCategory = categories.find(c => c.slug === initialCategorySlug);
+        if (matchingCategory) {
+          setSelectedCategorySlug(initialCategorySlug);
+          return;
+        }
+      }
+      // Fallback to first category
       const firstCategory = categories[0];
       if (firstCategory?.slug) {
         setSelectedCategorySlug(firstCategory.slug);
       }
     }
-  }, [categories, selectedCategorySlug]);
+  }, [categories, selectedCategorySlug, initialCategorySlug]);
 
   // Fetch real category data with products
   const { data: realCategoryData, isLoading: categoryLoading, error: categoryError } = useCategory(

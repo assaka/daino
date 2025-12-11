@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from "react-router-dom";
 import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -35,78 +36,91 @@ export default function ProductSlotsEditor({
   onSave,
   viewMode = 'default'
 }) {
+  // Get initial product from URL params (e.g., ?product=my-product-slug)
+  const [searchParams] = useSearchParams();
+  const initialProductSlug = searchParams.get('product');
+
   const { selectedStore } = useStoreSelection();
   const [realProduct, setRealProduct] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [selectedProductSlug, setSelectedProductSlug] = useState(initialProductSlug);
   const [productTabs, setProductTabs] = useState([]);
   const [customOptions, setCustomOptions] = useState([]);
   const [productLabels, setProductLabels] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch a real product from the store
+  // Fetch all products for the selector
   useEffect(() => {
-    const fetchRealProduct = async () => {
-      if (!selectedStore?.id) {
+    const fetchAllProducts = async () => {
+      if (!selectedStore?.id) return;
+
+      try {
+        const response = await fetch(
+          `/api/public/products?store_id=${selectedStore.id}&status=active&limit=50`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const products = data.data || data.products || [];
+          setAllProducts(products);
+
+          // If no product selected yet, select the first one or the one from URL
+          if (!selectedProductSlug && products.length > 0) {
+            const slugToUse = initialProductSlug || products[0]?.slug;
+            setSelectedProductSlug(slugToUse);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching products list:', error);
+      }
+    };
+
+    fetchAllProducts();
+  }, [selectedStore?.id, initialProductSlug]);
+
+  // Fetch the selected product's full details
+  useEffect(() => {
+    const fetchSelectedProduct = async () => {
+      if (!selectedStore?.id || !selectedProductSlug) {
         setLoading(false);
         return;
       }
 
+      setLoading(true);
       try {
-        // Fetch products from store - get first active product
-        const response = await fetch(
-          `/api/public/products?store_id=${selectedStore.id}&status=active&limit=1`
+        // Fetch full product details
+        const fullResponse = await fetch(
+          `/api/public/products/by-slug/${encodeURIComponent(selectedProductSlug)}/full?store_id=${selectedStore.id}`
         );
 
-        if (!response.ok) {
-          console.warn('Failed to fetch products, using mock data');
-          setLoading(false);
-          return;
-        }
+        if (fullResponse.ok) {
+          const fullData = await fullResponse.json();
+          const productData = fullData.data || fullData;
 
-        const data = await response.json();
-        const products = data.data || data.products || [];
+          console.log('[ProductSlotsEditor] 📦 Full product API response:', {
+            hasProduct: !!productData.product,
+            productName: productData.product?.name,
+            imagesFromAPI: productData.product?.images,
+            imagesCount: productData.product?.images?.length || 0
+          });
 
-        if (products.length > 0) {
-          const product = products[0];
-
-          // Fetch full product details including tabs, options, labels
-          try {
-            const fullResponse = await fetch(
-              `/api/public/products/by-slug/${encodeURIComponent(product.slug)}/full?store_id=${selectedStore.id}`
-            );
-
-            if (fullResponse.ok) {
-              const fullData = await fullResponse.json();
-              const productData = fullData.data || fullData;
-
-              console.log('[ProductSlotsEditor] 📦 Full product API response:', {
-                hasProduct: !!productData.product,
-                productName: productData.product?.name,
-                imagesFromAPI: productData.product?.images,
-                imagesCount: productData.product?.images?.length || 0
-              });
-
-              setRealProduct(productData.product || product);
-              setProductTabs(productData.productTabs || []);
-              setCustomOptions(productData.customOptions || []);
-              setProductLabels(productData.productLabels || []);
-            } else {
-              // Use basic product if full fetch fails
-              setRealProduct(product);
-            }
-          } catch (fullError) {
-            console.warn('Failed to fetch full product details:', fullError);
-            setRealProduct(product);
-          }
+          setRealProduct(productData.product);
+          setProductTabs(productData.productTabs || []);
+          setCustomOptions(productData.customOptions || []);
+          setProductLabels(productData.productLabels || []);
+        } else {
+          console.warn('Failed to fetch product details');
+          setRealProduct(null);
         }
       } catch (error) {
-        console.error('Error fetching product for editor:', error);
+        console.error('Error fetching product:', error);
+        setRealProduct(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRealProduct();
-  }, [selectedStore?.id]);
+    fetchSelectedProduct();
+  }, [selectedStore?.id, selectedProductSlug]);
 
   // Debug: Log product data and images
   console.log('[ProductSlotsEditor] 🖼️ Product Debug:', {
@@ -228,8 +242,13 @@ export default function ProductSlotsEditor({
     ],
     generateContext: generateProductContext,
     createDefaultSlots,
-    cmsBlockPositions: ['product_above', 'product_below']
-  }), [generateProductContext]);
+    cmsBlockPositions: ['product_above', 'product_below'],
+    // Product selector for navbar
+    availableProducts: allProducts,
+    selectedProductSlug,
+    onProductChange: setSelectedProductSlug,
+    isLoadingProductData: loading
+  }), [generateProductContext, allProducts, selectedProductSlug, loading]);
 
   // Show loading state while fetching product
   if (loading) {
