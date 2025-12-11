@@ -1211,6 +1211,54 @@ router.post('/akeneo/save-config',
   }
 });
 
+/**
+ * Disconnect Akeneo integration
+ * POST /api/integrations/akeneo/disconnect
+ */
+router.post('/akeneo/disconnect',
+  authMiddleware,
+  storeResolver(),
+  async (req, res) => {
+  try {
+    const storeId = req.storeId;
+
+    // Check if integration exists
+    const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+
+    if (!integrationConfig) {
+      return res.json({
+        success: true,
+        message: 'Akeneo integration was not configured'
+      });
+    }
+
+    // Delete the integration config
+    await IntegrationConfig.deleteByStoreAndType(storeId, 'akeneo');
+
+    // Also delete custom mappings if they exist
+    try {
+      await AkeneoCustomMapping.destroy({ where: { store_id: storeId } });
+    } catch (mappingError) {
+      console.warn('Failed to delete custom mappings:', mappingError.message);
+      // Continue even if mapping deletion fails
+    }
+
+    console.log(`🔌 Akeneo integration disconnected for store: ${storeId}`);
+
+    res.json({
+      success: true,
+      message: 'Akeneo integration disconnected successfully'
+    });
+  } catch (error) {
+    console.error('Error disconnecting Akeneo integration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to disconnect Akeneo integration',
+      error: error.message
+    });
+  }
+});
+
 // ======================
 // Akeneo Custom Mappings
 // ======================

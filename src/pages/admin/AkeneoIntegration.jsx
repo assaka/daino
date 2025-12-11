@@ -57,7 +57,9 @@ import {
   ChevronDown,
   Power,
   BarChart3,
-  Activity
+  Activity,
+  Unlink,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '@/hooks/useStoreSlug';
@@ -184,6 +186,8 @@ const AkeneoIntegration = () => {
   const [importing, setImporting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [configSaved, setConfigSaved] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   // Separate import results for each tab
   const [importResults, setImportResults] = useState({
     categories: null,
@@ -1287,6 +1291,53 @@ const AkeneoIntegration = () => {
     }
   };
 
+  // Disconnect handlers
+  const handleDisconnectClick = () => {
+    setShowDisconnectModal(true);
+  };
+
+  const handleDisconnectCancel = () => {
+    setShowDisconnectModal(false);
+  };
+
+  const handleDisconnectConfirm = async () => {
+    try {
+      setDisconnecting(true);
+      const response = await apiClient.post('/integrations/akeneo/disconnect');
+
+      if (response.success) {
+        toast.success('Akeneo disconnected successfully');
+        setShowDisconnectModal(false);
+        // Reset all related state
+        setConfig({
+          baseUrl: '',
+          clientId: '',
+          clientSecret: '',
+          username: '',
+          password: ''
+        });
+        setConfigSaved(false);
+        setConnectionStatus(null);
+        setStats({});
+        setFamilies([]);
+        setAttributes([]);
+        setAvailableCategories([]);
+        setSelectedRootCategories([]);
+        setSelectedFamilies([]);
+        setSelectedFamiliesToImport([]);
+        // Reload config status
+        loadConfigStatus();
+      } else {
+        throw new Error(response.message || 'Failed to disconnect');
+      }
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      toast.error(error.message || 'Failed to disconnect');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
   const importCategories = async () => {
     try {
       // Debug authentication state
@@ -1939,6 +1990,27 @@ const AkeneoIntegration = () => {
             <p className="text-gray-600 mt-1">
               Import categories and products from your Akeneo PIM system into DainoStore.
             </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            {configSaved && connectionStatus?.success ? (
+              <>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Connected
+                </span>
+                <button
+                  onClick={handleDisconnectClick}
+                  disabled={disconnecting}
+                  className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
+                  title="Disconnect Akeneo"
+                >
+                  <Unlink className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Not Connected
+              </span>
+            )}
           </div>
         </div>
 
@@ -3702,9 +3774,82 @@ const AkeneoIntegration = () => {
         </TabsContent>
 
         </Tabs>
+
+        {/* Disconnect Confirmation Modal */}
+        {showDisconnectModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-red-100 rounded-full">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Disconnect Akeneo</h3>
+                </div>
+                <button
+                  onClick={handleDisconnectCancel}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  disabled={disconnecting}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <p className="text-gray-700 mb-4">
+                  Are you sure you want to disconnect your Akeneo integration? This will:
+                </p>
+                <ul className="space-y-2 text-sm text-gray-600 mb-6">
+                  <li className="flex items-start">
+                    <span className="text-red-500 mr-2">•</span>
+                    Remove all saved Akeneo credentials
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-red-500 mr-2">•</span>
+                    Delete custom attribute mappings
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-red-500 mr-2">•</span>
+                    Require reconfiguration to import data again
+                  </li>
+                </ul>
+                <p className="text-sm text-gray-500">
+                  Note: Previously imported categories and products will not be deleted.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={handleDisconnectCancel}
+                  disabled={disconnecting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDisconnectConfirm}
+                  disabled={disconnecting}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {disconnecting ? (
+                    <>
+                      <RefreshCw className="animate-spin h-4 w-4 mr-2" />
+                      Disconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <Unlink className="w-4 h-4 mr-2" />
+                      Disconnect
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
-    
+
   } catch (error) {
     console.error('🚨 AkeneoIntegration component crashed:', error);
     console.error('🚨 Error details:', {
