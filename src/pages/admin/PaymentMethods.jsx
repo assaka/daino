@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink, Eye, EyeOff, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import apiClient from "@/api/client";
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, getStripeConnectOAuthUrl } from "@/api/functions";
 import {
@@ -661,9 +662,9 @@ export default function PaymentMethods() {
                                 <Unlink className="w-3 h-3" />
                               </Button>
                             </div>
-                            {(stripeStatus?.email || stripeStatus?.business_name) && (
+                            {stripeStatus?.email && (
                               <p className="text-xs text-gray-500 text-center">
-                                {stripeStatus?.business_name || stripeStatus?.email}
+                                {stripeStatus.email}
                               </p>
                             )}
                             {!hasStripeMethod && (
@@ -709,20 +710,42 @@ export default function PaymentMethods() {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <Button
-                              onClick={handleConnectExistingStripeAccount}
-                              disabled={connectingExistingAccount || connectingStripe}
-                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full"
-                            >
-                              {connectingExistingAccount ? (
-                                <>
-                                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                  Connecting...
-                                </>
-                              ) : (
-                                <><Link2 className="w-4 h-4 mr-2" /> Connect Existing</>
-                              )}
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                onClick={handleConnectExistingStripeAccount}
+                                disabled={connectingExistingAccount || connectingStripe}
+                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 flex-1"
+                              >
+                                {connectingExistingAccount ? (
+                                  <>
+                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                    Connecting...
+                                  </>
+                                ) : (
+                                  <><Link2 className="w-4 h-4 mr-2" /> Connect Existing</>
+                                )}
+                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="px-2 h-9">
+                                      <Info className="w-4 h-4 text-gray-400" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p>You will be redirected to Stripe to log in with your existing account and authorize the connection.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <div className="relative py-2">
+                              <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-gray-200" />
+                              </div>
+                              <div className="relative flex justify-center text-xs">
+                                <span className="bg-white px-2 text-gray-400">or</span>
+                              </div>
+                            </div>
                             <Button
                               variant="outline"
                               size="sm"
