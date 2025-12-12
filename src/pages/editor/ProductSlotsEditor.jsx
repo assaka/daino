@@ -15,6 +15,7 @@ import { generateMockProductContext } from '@/utils/mockProductData';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -224,6 +225,17 @@ export default function ProductSlotsEditor({
     };
   }, [realProduct, productTabs, customOptions, productLabels, selectedStore]);
 
+  // Header save callback - saves header config changes to database
+  const handleHeaderSave = useCallback(async (headerConfigToSave) => {
+    if (!storeId) return;
+    try {
+      await slotConfigurationService.saveConfiguration(storeId, headerConfigToSave, 'header');
+      console.log('[ProductSlotsEditor] Header config saved');
+    } catch (error) {
+      console.error('[ProductSlotsEditor] Failed to save header config:', error);
+    }
+  }, [storeId]);
+
   // Product Editor Configuration - memoized with generateProductContext dependency
   const productEditorConfig = useMemo(() => ({
     pageType: 'product',
@@ -255,8 +267,9 @@ export default function ProductSlotsEditor({
       viewport: 'desktop',
       pathname: '/product'
     }),
-    onEditHeader: () => selectPage(PAGE_TYPES.HEADER)
-  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig, selectPage]);
+    onEditHeader: () => selectPage(PAGE_TYPES.HEADER),
+    onHeaderSave: handleHeaderSave
+  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig, selectPage, handleHeaderSave]);
 
   // Show loading state while fetching product
   if (loading) {

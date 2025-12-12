@@ -5,7 +5,7 @@
  * - Maintainable structure
  */
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { formatPrice } from '@/utils/priceUtils';
@@ -15,6 +15,7 @@ import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -120,6 +121,17 @@ const CartSlotsEditor = ({
   // Fetch header configuration for combined header + page editing
   const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
 
+  // Header save callback - saves header config changes to database
+  const handleHeaderSave = useCallback(async (headerConfigToSave) => {
+    if (!storeId) return;
+    try {
+      await slotConfigurationService.saveConfiguration(storeId, headerConfigToSave, 'header');
+      console.log('[CartSlotsEditor] Header config saved');
+    } catch (error) {
+      console.error('[CartSlotsEditor] Failed to save header config:', error);
+    }
+  }, [storeId]);
+
   // Build config with header integration
   const enhancedConfig = useMemo(() => ({
     ...cartEditorConfig,
@@ -132,8 +144,9 @@ const CartSlotsEditor = ({
       viewport: 'desktop',
       pathname: '/cart'
     }),
-    onEditHeader: () => selectPage(PAGE_TYPES.HEADER)
-  }), [headerConfig, selectedStore, categories, selectPage]);
+    onEditHeader: () => selectPage(PAGE_TYPES.HEADER),
+    onHeaderSave: handleHeaderSave
+  }), [headerConfig, selectedStore, categories, selectPage, handleHeaderSave]);
 
   return (
     <EditorStoreProvider>

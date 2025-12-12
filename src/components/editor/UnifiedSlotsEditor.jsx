@@ -113,9 +113,10 @@ const UnifiedSlotsEditor = ({
     isLoadingProductData,
     // Header integration
     includeHeader,
-    headerSlots,
+    headerSlots: initialHeaderSlots,
     headerContext: configHeaderContext,
-    onEditHeader
+    onEditHeader,
+    onHeaderSave
   } = config;
 
   // Store context for database operations
@@ -165,6 +166,30 @@ const UnifiedSlotsEditor = ({
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [headerHovered, setHeaderHovered] = useState(false);
+
+  // Header editing state - track which section is being edited
+  const [activeEditSection, setActiveEditSection] = useState('page'); // 'header' | 'page'
+  const [headerLayoutConfig, setHeaderLayoutConfig] = useState({
+    page_name: 'Header',
+    slot_type: 'header_layout',
+    slots: initialHeaderSlots || {},
+    metadata: {
+      created: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      version: '1.0',
+      pageType: 'header'
+    }
+  });
+
+  // Update header config when initial slots change
+  useEffect(() => {
+    if (initialHeaderSlots && Object.keys(initialHeaderSlots).length > 0) {
+      setHeaderLayoutConfig(prev => ({
+        ...prev,
+        slots: initialHeaderSlots
+      }));
+    }
+  }, [initialHeaderSlots]);
 
   // Page context state
   const [pageContext, setPageContext] = useState(null);
@@ -364,6 +389,88 @@ const UnifiedSlotsEditor = ({
     setIsSidebarVisible(false);
   }, []);
 
+  // Header-specific handlers for inline editing
+  const handleHeaderElementClick = useCallback((e) => {
+    if (isResizing) return;
+    if (Date.now() - lastResizeEndTime.current < 200) return;
+
+    e.stopPropagation();
+    const target = e.currentTarget;
+    setSelectedElement(target);
+    setIsSidebarVisible(true);
+    setActiveEditSection('header');
+  }, [isResizing]);
+
+  const handleHeaderClassChange = useCallback((slotId, className, styles, metadata) => {
+    setHeaderLayoutConfig(prevConfig => {
+      const slot = prevConfig.slots?.[slotId];
+      if (!slot) return prevConfig;
+
+      const updatedSlots = {
+        ...prevConfig.slots,
+        [slotId]: {
+          ...slot,
+          className: className ?? slot.className,
+          styles: styles ?? slot.styles,
+          metadata: metadata ? { ...slot.metadata, ...metadata } : slot.metadata
+        }
+      };
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      // Auto-save header config
+      if (onHeaderSave) {
+        onHeaderSave(updatedConfig);
+      }
+
+      return updatedConfig;
+    });
+  }, [onHeaderSave]);
+
+  const handleHeaderTextChange = useCallback((slotId, newText) => {
+    setHeaderLayoutConfig(prevConfig => {
+      const slot = prevConfig.slots?.[slotId];
+      if (!slot) return prevConfig;
+
+      const updatedSlots = {
+        ...prevConfig.slots,
+        [slotId]: {
+          ...slot,
+          content: newText
+        }
+      };
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      // Auto-save header config
+      if (onHeaderSave) {
+        onHeaderSave(updatedConfig);
+      }
+
+      return updatedConfig;
+    });
+  }, [onHeaderSave]);
+
+  // Handle page element click - sets active section to page
+  const handlePageElementClick = useCallback((e) => {
+    handleElementClick(e);
+    setActiveEditSection('page');
+  }, [handleElementClick]);
+
   // Render view mode tabs
   const renderViewModeTabs = () => {
     if (!viewModes || viewModes.length <= 1) return null;
@@ -472,14 +579,28 @@ const UnifiedSlotsEditor = ({
             }}
           >
             {/* Header Section - rendered inside iframe for viewport responsiveness */}
-            {includeHeader && headerSlots && Object.keys(headerSlots).length > 0 && (
+            {includeHeader && headerLayoutConfig?.slots && Object.keys(headerLayoutConfig.slots).length > 0 && (
               <div
-                className="relative group"
-                onMouseEnter={() => !showPreview && setHeaderHovered(true)}
-                onMouseLeave={() => setHeaderHovered(false)}
+                className={`relative ${activeEditSection === 'header' ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                onClick={() => !showPreview && setActiveEditSection('header')}
               >
-                <HeaderSlotRenderer
-                  slots={headerSlots}
+                {/* Section indicator */}
+                {!showPreview && mode === 'edit' && (
+                  <div className={`absolute -top-6 left-2 px-2 py-0.5 text-xs font-medium rounded-t z-10 ${
+                    activeEditSection === 'header'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    Header
+                  </div>
+                )}
+                {/* Use UnifiedSlotRenderer for header - makes it editable like page content */}
+                <UnifiedSlotRenderer
+                  slots={headerLayoutConfig.slots}
+                  parentId={null}
+                  viewMode={getHeaderViewMode(currentViewport)}
+                  viewportMode={currentViewport}
+                  context="editor"
                   headerContext={configHeaderContext || buildEditorHeaderContext({
                     store: selectedStore,
                     settings: selectedStore?.settings || {},
@@ -487,24 +608,49 @@ const UnifiedSlotsEditor = ({
                     viewport: currentViewport,
                     pathname: `/${pageType}`
                   })}
-                  viewMode={getHeaderViewMode(currentViewport)}
+                  preprocessedData={configHeaderContext || buildEditorHeaderContext({
+                    store: selectedStore,
+                    settings: selectedStore?.settings || {},
+                    categories: storeContextValue?.categories || [],
+                    viewport: currentViewport,
+                    pathname: `/${pageType}`
+                  })}
+                  slotConfig={{ pageType: 'header' }}
+                  mode={showPreview ? 'view' : mode}
+                  showBorders={showPreview ? false : showSlotBorders}
+                  currentDragInfo={currentDragInfo}
+                  setCurrentDragInfo={setCurrentDragInfo}
+                  onElementClick={showPreview ? null : handleHeaderElementClick}
+                  onGridResize={null}
+                  onSlotHeightResize={null}
+                  onSlotDrop={null}
+                  onSlotDelete={null}
+                  onResizeStart={null}
+                  onResizeEnd={null}
+                  selectedElementId={showPreview ? null : (activeEditSection === 'header' && selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                  setPageConfig={setHeaderLayoutConfig}
+                  saveConfiguration={onHeaderSave}
+                  useOverlay={USE_EDIT_OVERLAY}
                 />
-                {/* Edit Header Overlay */}
-                {!showPreview && headerHovered && onEditHeader && (
-                  <div
-                    className="absolute inset-0 bg-blue-500/10 border-2 border-blue-500 border-dashed cursor-pointer flex items-center justify-center transition-all"
-                    onClick={onEditHeader}
-                  >
-                    <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors">
-                      <Pencil className="w-4 h-4" />
-                      <span className="font-medium">Edit Header</span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
-            <div className="px-4 sm:px-6 lg:px-8 pb-12">
+            {/* Page Content Section */}
+            <div
+              className={`px-4 sm:px-6 lg:px-8 pb-12 relative ${activeEditSection === 'page' ? 'ring-2 ring-green-500 ring-opacity-50' : ''}`}
+              onClick={() => !showPreview && setActiveEditSection('page')}
+            >
+              {/* Section indicator */}
+              {!showPreview && mode === 'edit' && (
+                <div className={`absolute -top-6 left-2 px-2 py-0.5 text-xs font-medium rounded-t z-10 ${
+                  activeEditSection === 'page'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {pageName} Content
+                </div>
+              )}
+
               {/* Flash Messages Area */}
               <div id="flash-messages-area"></div>
 
@@ -536,7 +682,7 @@ const UnifiedSlotsEditor = ({
                     showBorders={showPreview ? false : showSlotBorders}
                     currentDragInfo={currentDragInfo}
                     setCurrentDragInfo={setCurrentDragInfo}
-                    onElementClick={showPreview ? null : handleElementClick}
+                    onElementClick={showPreview ? null : handlePageElementClick}
                     onGridResize={showPreview ? null : handleGridResize}
                     onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
                     onSlotDrop={showPreview ? null : handleSlotDrop}
@@ -546,7 +692,7 @@ const UnifiedSlotsEditor = ({
                       lastResizeEndTime.current = Date.now();
                       setTimeout(() => setIsResizing(false), 100);
                     }}
-                    selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                    selectedElementId={showPreview ? null : (activeEditSection === 'page' && selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
                     setPageConfig={setLayoutConfig}
                     saveConfiguration={saveConfiguration}
                     useOverlay={USE_EDIT_OVERLAY}
@@ -578,17 +724,20 @@ const UnifiedSlotsEditor = ({
             const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
             if (!slotId) return null;
 
-            // Get from layoutConfig (which includes both saved and default slots)
-            const config = layoutConfig?.slots?.[slotId];
-            return config;
+            // Get from correct config based on active section
+            if (activeEditSection === 'header') {
+              return headerLayoutConfig?.slots?.[slotId];
+            }
+            return layoutConfig?.slots?.[slotId];
           })()}
-          allSlots={layoutConfig?.slots || {}}
+          allSlots={activeEditSection === 'header' ? (headerLayoutConfig?.slots || {}) : (layoutConfig?.slots || {})}
           storeId={getSelectedStoreId()}
           onClearSelection={handleClearSelection}
-          onClassChange={handleClassChange}
-          onInlineClassChange={handleClassChange}
-          onTextChange={handleTextChange}
+          onClassChange={activeEditSection === 'header' ? handleHeaderClassChange : handleClassChange}
+          onInlineClassChange={activeEditSection === 'header' ? handleHeaderClassChange : handleClassChange}
+          onTextChange={activeEditSection === 'header' ? handleHeaderTextChange : handleTextChange}
           isVisible={isSidebarVisible}
+          sectionLabel={activeEditSection === 'header' ? 'Header' : pageName}
         />
       )}
 

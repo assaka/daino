@@ -6,7 +6,7 @@
  * - Uses real category/product data from database
  */
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
@@ -17,6 +17,7 @@ import { useCategory, useCategories, useFilterableAttributes, useSlotConfigurati
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
+import slotConfigurationService from '@/services/slotConfigurationService';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Use same preprocessing as storefront for consistent rendering
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
@@ -453,6 +454,17 @@ const CategorySlotsEditor = ({
     isLoadingCategoryData: categoryLoading
   }), [categoryContext, categories, selectedCategorySlug, categoryLoading, storeContext, selectedStore, storeSettings]);
 
+  // Header save callback - saves header config changes to database
+  const handleHeaderSave = useCallback(async (headerConfig) => {
+    if (!storeId) return;
+    try {
+      await slotConfigurationService.saveConfiguration(storeId, headerConfig, 'header');
+      console.log('[CategorySlotsEditor] Header config saved');
+    } catch (error) {
+      console.error('[CategorySlotsEditor] Failed to save header config:', error);
+    }
+  }, [storeId]);
+
   // Create enhanced config with store settings, filterable attributes, and header
   const enhancedConfig = {
     ...categoryEditorConfig,
@@ -468,7 +480,8 @@ const CategorySlotsEditor = ({
       viewport: 'desktop', // Will be overridden by UnifiedSlotsEditor based on currentViewport
       pathname: '/category'
     }),
-    onEditHeader: () => selectPage(PAGE_TYPES.HEADER)
+    onEditHeader: () => selectPage(PAGE_TYPES.HEADER),
+    onHeaderSave: handleHeaderSave
   };
 
   return (
