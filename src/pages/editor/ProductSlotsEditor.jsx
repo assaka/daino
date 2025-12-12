@@ -14,6 +14,7 @@ import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
 import { generateMockProductContext } from '@/utils/mockProductData';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
+import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -46,6 +47,9 @@ export default function ProductSlotsEditor({
 
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
+
+  // Get selectPage from AIWorkspace to enable "Edit Header" functionality
+  const { selectPage } = useAIWorkspace();
 
   // Fetch categories for editor
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
@@ -250,8 +254,9 @@ export default function ProductSlotsEditor({
       categories,
       viewport: 'desktop',
       pathname: '/product'
-    })
-  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig]);
+    }),
+    onEditHeader: () => selectPage(PAGE_TYPES.HEADER)
+  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig, selectPage]);
 
   // Show loading state while fetching product
   if (loading) {

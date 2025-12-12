@@ -14,6 +14,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
+import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -110,6 +111,9 @@ const CartSlotsEditor = ({
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
 
+  // Get selectPage from AIWorkspace to enable "Edit Header" functionality
+  const { selectPage } = useAIWorkspace();
+
   // Fetch categories for header context
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
 
@@ -127,8 +131,9 @@ const CartSlotsEditor = ({
       categories,
       viewport: 'desktop',
       pathname: '/cart'
-    })
-  }), [headerConfig, selectedStore, categories]);
+    }),
+    onEditHeader: () => selectPage(PAGE_TYPES.HEADER)
+  }), [headerConfig, selectedStore, categories, selectPage]);
 
   return (
     <EditorStoreProvider>

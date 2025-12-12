@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
@@ -114,7 +114,8 @@ const UnifiedSlotsEditor = ({
     // Header integration
     includeHeader,
     headerSlots,
-    headerContext: configHeaderContext
+    headerContext: configHeaderContext,
+    onEditHeader
   } = config;
 
   // Store context for database operations
@@ -163,6 +164,7 @@ const UnifiedSlotsEditor = ({
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [headerHovered, setHeaderHovered] = useState(false);
 
   // Page context state
   const [pageContext, setPageContext] = useState(null);
@@ -471,17 +473,35 @@ const UnifiedSlotsEditor = ({
           >
             {/* Header Section - rendered inside iframe for viewport responsiveness */}
             {includeHeader && headerSlots && Object.keys(headerSlots).length > 0 && (
-              <HeaderSlotRenderer
-                slots={headerSlots}
-                headerContext={configHeaderContext || buildEditorHeaderContext({
-                  store: selectedStore,
-                  settings: selectedStore?.settings || {},
-                  categories: storeContextValue?.categories || [],
-                  viewport: currentViewport,
-                  pathname: `/${pageType}`
-                })}
-                viewMode={getHeaderViewMode(currentViewport)}
-              />
+              <div
+                className="relative group"
+                onMouseEnter={() => !showPreview && setHeaderHovered(true)}
+                onMouseLeave={() => setHeaderHovered(false)}
+              >
+                <HeaderSlotRenderer
+                  slots={headerSlots}
+                  headerContext={configHeaderContext || buildEditorHeaderContext({
+                    store: selectedStore,
+                    settings: selectedStore?.settings || {},
+                    categories: storeContextValue?.categories || [],
+                    viewport: currentViewport,
+                    pathname: `/${pageType}`
+                  })}
+                  viewMode={getHeaderViewMode(currentViewport)}
+                />
+                {/* Edit Header Overlay */}
+                {!showPreview && headerHovered && onEditHeader && (
+                  <div
+                    className="absolute inset-0 bg-blue-500/10 border-2 border-blue-500 border-dashed cursor-pointer flex items-center justify-center transition-all"
+                    onClick={onEditHeader}
+                  >
+                    <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                      <span className="font-medium">Edit Header</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="px-4 sm:px-6 lg:px-8 pb-12">

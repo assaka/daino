@@ -16,6 +16,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useCategory, useCategories, useFilterableAttributes, useSlotConfiguration } from '@/hooks/useApiQueries';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
+import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Use same preprocessing as storefront for consistent rendering
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
@@ -145,6 +146,9 @@ const CategorySlotsEditor = ({
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeSettings = storeContext?.settings || selectedStore?.settings || null;
   const storeId = getSelectedStoreId();
+
+  // Get selectPage from AIWorkspace to enable "Edit Header" functionality
+  const { selectPage } = useAIWorkspace();
 
   // Fetch categories and filterable attributes directly since StoreProvider is skipped for editor pages
   const { data: fetchedCategories = [] } = useCategories(storeId, { enabled: !!storeId });
@@ -463,7 +467,8 @@ const CategorySlotsEditor = ({
       categories,
       viewport: 'desktop', // Will be overridden by UnifiedSlotsEditor based on currentViewport
       pathname: '/category'
-    })
+    }),
+    onEditHeader: () => selectPage(PAGE_TYPES.HEADER)
   };
 
   return (
