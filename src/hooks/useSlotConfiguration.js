@@ -660,10 +660,15 @@ export const useViewModeAdjustments = (pageConfig, setPageConfig, viewMode, adju
 
 export const filterSlotsByViewMode = (childSlots, viewMode) => {
   return childSlots.filter(slot => {
-    const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
+    // No viewMode specified - always show
     if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
-      return true; // Show if no viewMode specified
+      return true;
     }
+    // 'default' in viewMode means show in all view modes
+    if (slot.viewMode.includes('default')) {
+      return true;
+    }
+    // Check if specific viewMode matches
     return slot.viewMode.includes(viewMode);
   });
 };

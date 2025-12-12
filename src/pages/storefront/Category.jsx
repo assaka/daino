@@ -650,14 +650,15 @@ export default function Category() {
 
       {/* Floating Edit Button - Only for store owners */}
       {isStoreOwner && (
-        <Link
-          to={`/editor/category?category=${categorySlug}`}
+        <a
+          href={`/editor/category?category=${categorySlug}`}
+          target="_top"
           className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg z-50 flex items-center gap-2 transition-all hover:scale-105"
           title="Edit this page layout"
         >
           <Pencil className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">Edit</span>
-        </Link>
+        </a>
       )}
     </div>
   );
