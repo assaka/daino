@@ -336,7 +336,7 @@ async function getProductsOptimized(storeId, where = {}, lang = 'en', options = 
 }
 
 /**
- * Fetch and format product images from product_files table
+ * Fetch and format product images from product_files or product_images table
  *
  * @param {string|Array} productIds - Single product ID or array of product IDs
  * @param {Object} tenantDb - Tenant database connection
@@ -353,32 +353,57 @@ async function fetchProductImages(productIds, tenantDb) {
   if (idsArray.length === 0) return {};
 
   try {
-    const { data: files, error } = await tenantDb
+    // First try product_files table
+    const { data: files, error: filesError } = await tenantDb
       .from('product_files')
       .select('*')
       .in('product_id', idsArray)
       .eq('file_type', 'image')
       .order('position', { ascending: true });
 
-    if (error) {
-      console.error('❌ Error fetching product images:', error);
-      return {};
+    // Group images by product_id from product_files
+    const imagesByProduct = {};
+    if (!filesError && files && files.length > 0) {
+      files.forEach(file => {
+        if (!imagesByProduct[file.product_id]) {
+          imagesByProduct[file.product_id] = [];
+        }
+
+        imagesByProduct[file.product_id].push({
+          url: file.file_url,
+          alt: file.alt_text || '',
+          isPrimary: file.is_primary || file.position === 0,
+          position: file.position || 0
+        });
+      });
     }
 
-    // Group images by product_id
-    const imagesByProduct = {};
-    (files || []).forEach(file => {
-      if (!imagesByProduct[file.product_id]) {
-        imagesByProduct[file.product_id] = [];
-      }
+    // Check which product IDs still need images (fallback to product_images table)
+    const idsWithoutImages = idsArray.filter(id => !imagesByProduct[id] || imagesByProduct[id].length === 0);
 
-      imagesByProduct[file.product_id].push({
-        url: file.file_url,
-        alt: file.alt_text || '',
-        isPrimary: file.is_primary || file.position === 0,
-        position: file.position || 0
-      });
-    });
+    if (idsWithoutImages.length > 0) {
+      // Try product_images table as fallback
+      const { data: images, error: imagesError } = await tenantDb
+        .from('product_images')
+        .select('*')
+        .in('product_id', idsWithoutImages)
+        .order('position', { ascending: true });
+
+      if (!imagesError && images && images.length > 0) {
+        images.forEach(img => {
+          if (!imagesByProduct[img.product_id]) {
+            imagesByProduct[img.product_id] = [];
+          }
+
+          imagesByProduct[img.product_id].push({
+            url: img.image_url || img.url || img.file_url,
+            alt: img.alt_text || img.alt || '',
+            isPrimary: img.is_primary || img.position === 0,
+            position: img.position || 0
+          });
+        });
+      }
+    }
 
     return imagesByProduct;
   } catch (error) {
