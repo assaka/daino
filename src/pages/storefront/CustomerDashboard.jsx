@@ -632,7 +632,8 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+              className="text-white hover:opacity-90"
               disabled={saving}
             >
               {saving ? t('common.saving', settings) : (editingAddress ? t('address.update', settings) : t('address.add', settings))}
@@ -754,7 +755,7 @@ const GuestWelcome = ({ onLogin, store, settings }) => (
           {t('account.browsing_as_guest', settings)}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={onLogin} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={onLogin} style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }} className="text-white hover:opacity-90">
             {t('account.sign_in', settings)}
           </Button>
           <Link to={createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH')}>
@@ -1388,7 +1389,8 @@ export default function CustomerDashboard() {
                         resetAddressForm();
                         setShowAddressForm(true);
                       }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+                      className="text-white hover:opacity-90"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       {t('address.add', settings)}
@@ -1469,7 +1471,8 @@ export default function CustomerDashboard() {
                               resetAddressForm();
                               setShowAddressForm(true);
                             }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+                            className="text-white hover:opacity-90"
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             {t('address.add', settings)}

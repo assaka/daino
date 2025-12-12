@@ -2083,12 +2083,31 @@ router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
 
     // Merge preset theme settings into store settings
     const currentSettings = currentStore.settings || {};
+    const themeSettings = preset.theme_settings || {};
+
+    // Extract pagination settings from theme_settings if present
+    const paginationSettings = {
+      buttonBgColor: themeSettings.pagination_button_bg_color,
+      buttonTextColor: themeSettings.pagination_button_text_color,
+      buttonHoverBgColor: themeSettings.pagination_button_hover_bg_color,
+      buttonBorderColor: themeSettings.pagination_button_border_color,
+      activeBgColor: themeSettings.pagination_active_bg_color,
+      activeTextColor: themeSettings.pagination_active_text_color
+    };
+
     const updatedSettings = {
       ...currentSettings,
       theme: {
         ...(currentSettings.theme || {}),
-        ...preset.theme_settings  // Apply all preset colors
-      }
+        ...themeSettings  // Apply all preset colors
+      },
+      // Apply pagination settings if present in preset
+      ...(themeSettings.pagination_active_bg_color && {
+        pagination: {
+          ...(currentSettings.pagination || {}),
+          ...paginationSettings
+        }
+      })
     };
 
     // Update in tenant DB

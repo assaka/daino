@@ -28,6 +28,7 @@ import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import cartService from '@/services/cartService';
 import { t } from '@/utils/translationHelper';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import storefrontApiClient from '@/api/storefront-client';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -736,7 +737,8 @@ export default function OrderSuccess() {
                         navigate('/login?redirect=/account/orders');
                       }
                     }}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+                    className="w-full text-white hover:opacity-90"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
                     {t('common.login', settings) || 'Login to Your Account'}
@@ -809,7 +811,8 @@ export default function OrderSuccess() {
                       {!showCreateAccount ? (
                         <Button
                           onClick={() => setShowCreateAccount(true)}
-                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+                          className="w-full text-white hover:opacity-90"
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
                           {t('success.create_account', settings)}
@@ -856,7 +859,8 @@ export default function OrderSuccess() {
                             <Button
                               onClick={handleCreateAccount}
                               disabled={creatingAccount}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                              style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+                              className="flex-1 text-white hover:opacity-90"
                             >
                               {creatingAccount ? (
                                 <>

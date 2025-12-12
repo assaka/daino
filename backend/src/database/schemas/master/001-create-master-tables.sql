@@ -480,7 +480,13 @@ VALUES
     "checkout_section_title_size": "1.25rem",
     "checkout_section_bg_color": "#FFFFFF",
     "checkout_section_border_color": "#E5E7EB",
-    "checkout_section_text_color": "#374151"
+    "checkout_section_text_color": "#374151",
+    "pagination_button_bg_color": "#FFFFFF",
+    "pagination_button_text_color": "#374151",
+    "pagination_button_hover_bg_color": "#F3F4F6",
+    "pagination_button_border_color": "#D1D5DB",
+    "pagination_active_bg_color": "#007bff",
+    "pagination_active_text_color": "#FFFFFF"
   }'::jsonb, true, 1),
   ('dark', 'Dark Mode', 'Dark theme with muted colors', '{
     "primary_button_color": "#6366F1",
@@ -519,7 +525,13 @@ VALUES
     "checkout_section_title_size": "1.25rem",
     "checkout_section_bg_color": "#1F2937",
     "checkout_section_border_color": "#374151",
-    "checkout_section_text_color": "#D1D5DB"
+    "checkout_section_text_color": "#D1D5DB",
+    "pagination_button_bg_color": "#1F2937",
+    "pagination_button_text_color": "#D1D5DB",
+    "pagination_button_hover_bg_color": "#374151",
+    "pagination_button_border_color": "#4B5563",
+    "pagination_active_bg_color": "#6366F1",
+    "pagination_active_text_color": "#FFFFFF"
   }'::jsonb, false, 2),
   ('professional', 'Professional', 'Clean professional look', '{
     "primary_button_color": "#1E40AF",
@@ -558,7 +570,13 @@ VALUES
     "checkout_section_title_size": "1.25rem",
     "checkout_section_bg_color": "#FFFFFF",
     "checkout_section_border_color": "#E2E8F0",
-    "checkout_section_text_color": "#334155"
+    "checkout_section_text_color": "#334155",
+    "pagination_button_bg_color": "#FFFFFF",
+    "pagination_button_text_color": "#334155",
+    "pagination_button_hover_bg_color": "#F1F5F9",
+    "pagination_button_border_color": "#E2E8F0",
+    "pagination_active_bg_color": "#1E40AF",
+    "pagination_active_text_color": "#FFFFFF"
   }'::jsonb, false, 3),
   ('bold', 'Bold Red', 'Vibrant red theme for high-energy brands', '{
     "primary_button_color": "#DC2626",
@@ -597,7 +615,13 @@ VALUES
     "checkout_section_title_size": "1.25rem",
     "checkout_section_bg_color": "#FFFFFF",
     "checkout_section_border_color": "#FECACA",
-    "checkout_section_text_color": "#374151"
+    "checkout_section_text_color": "#374151",
+    "pagination_button_bg_color": "#FFFFFF",
+    "pagination_button_text_color": "#374151",
+    "pagination_button_hover_bg_color": "#FEE2E2",
+    "pagination_button_border_color": "#FECACA",
+    "pagination_active_bg_color": "#DC2626",
+    "pagination_active_text_color": "#FFFFFF"
   }'::jsonb, false, 4)
 ON CONFLICT (preset_name) DO NOTHING;
 
