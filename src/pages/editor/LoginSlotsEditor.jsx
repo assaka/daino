@@ -10,7 +10,8 @@ import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
+import { useCategories } from '@/hooks/useApiQueries';
+import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
@@ -78,8 +79,10 @@ const LoginSlotsEditor = ({
   // Fetch categories for header context
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
 
-  // Fetch header configuration for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  // Fetch header DRAFT configuration for combined header + page editing
+  // Use useDraftConfiguration to always load draft (not published) in editor
+  const { draftConfig: headerDraftConfig } = useDraftConfiguration(storeId, 'header');
+  const headerConfig = headerDraftConfig?.configuration || null;
 
   // Header save callback - saves header config changes to database
   const handleHeaderSave = useCallback(async (headerConfigToSave) => {

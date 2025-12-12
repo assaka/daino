@@ -10,7 +10,8 @@ import { useSearchParams } from "react-router-dom";
 import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
+import { useCategories } from '@/hooks/useApiQueries';
+import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import { generateMockProductContext } from '@/utils/mockProductData';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
@@ -55,8 +56,10 @@ export default function ProductSlotsEditor({
   // Fetch categories for editor
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
 
-  // Fetch header configuration for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  // Fetch header DRAFT configuration for combined header + page editing
+  // Use useDraftConfiguration to always load draft (not published) in editor
+  const { draftConfig: headerDraftConfig } = useDraftConfiguration(storeId, 'header');
+  const headerConfig = headerDraftConfig?.configuration || null;
 
   const [realProduct, setRealProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);

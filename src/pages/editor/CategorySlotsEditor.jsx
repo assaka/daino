@@ -13,7 +13,8 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useCategory, useCategories, useFilterableAttributes, useSlotConfiguration } from '@/hooks/useApiQueries';
+import { useCategory, useCategories, useFilterableAttributes } from '@/hooks/useApiQueries';
+import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
@@ -155,8 +156,10 @@ const CategorySlotsEditor = ({
   const { data: fetchedCategories = [] } = useCategories(storeId, { enabled: !!storeId });
   const { data: fetchedFilterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
 
-  // Fetch header configuration for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  // Fetch header DRAFT configuration for combined header + page editing
+  // Use useDraftConfiguration to always load draft (not published) in editor
+  const { draftConfig: headerDraftConfig, isLoading: headerLoading } = useDraftConfiguration(storeId, 'header');
+  const headerConfig = headerDraftConfig?.configuration || null;
 
   const categories = storeContext?.categories?.length > 0 ? storeContext.categories : fetchedCategories;
   const filterableAttributes = storeContext?.filterableAttributes?.length > 0
