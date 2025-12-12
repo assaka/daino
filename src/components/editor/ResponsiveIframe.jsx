@@ -105,7 +105,7 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
         }}
         title="Responsive Preview"
       />
-      {iframeDocument && createPortal(
+      {iframeDocument && iframeDocument.getElementById('root') && createPortal(
         children,
         iframeDocument.getElementById('root')
       )}

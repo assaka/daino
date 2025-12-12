@@ -459,7 +459,7 @@ const UnifiedSlotsEditor = ({
             className="bg-white"
           >
             {/* Header Section - When includeHeader is enabled */}
-            {includeHeader && headerSlots && (
+            {includeHeader && headerSlots && typeof headerSlots === 'object' && Object.keys(headerSlots).length > 0 && (
               <div className="editor-header-section border-b-2 border-dashed border-blue-300 mb-4">
                 <div className="bg-blue-50 px-2 py-1 text-xs text-blue-600 font-medium">
                   Header Layout
