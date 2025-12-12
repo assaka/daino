@@ -324,8 +324,8 @@ const categoryConfig = {
       }
     },
 
-    product_card_add_to_cart: {
-      id: 'product_card_add_to_cart',
+    add_to_cart_button: {
+      id: 'add_to_cart_button',
       type: 'button',
       content: 'Add to Cart',
       className: 'w-full mt-3 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors hover:brightness-90',

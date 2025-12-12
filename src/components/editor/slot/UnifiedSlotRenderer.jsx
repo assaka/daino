@@ -1022,7 +1022,7 @@ export function UnifiedSlotRenderer({
     if (type === 'button') {
 
       // Handle out-of-stock state for add_to_cart_button
-      const isAddToCartButton = id === 'add_to_cart_button' || id === 'product_add_to_cart' || id === 'product_card_add_to_cart';
+      const isAddToCartButton = id === 'add_to_cart_button';
       const isOutOfStock = isAddToCartButton && (productData?.in_stock === false || productData?.canAddToCart === false);
 
       // Use out-of-stock content/className if available and product is out of stock
@@ -1050,7 +1050,7 @@ export function UnifiedSlotRenderer({
           e.stopPropagation();
 
           // Handle different button actions based on slot id
-          if (id === 'product_card_add_to_cart' || id === 'add_to_cart_button' || id === 'product_add_to_cart') {
+          if (id === 'add_to_cart_button') {
             // Add to cart logic
             const product = productData?.product || productData;
             const store = categoryData?.store || productData?.store;

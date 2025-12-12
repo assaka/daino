@@ -61,7 +61,7 @@ const ProductItemCard = ({
     product_card_name = {},
     product_card_price = {},
     product_card_compare_price = {},
-    product_card_add_to_cart = {}
+    add_to_cart_button = {}
   } = slotConfig;
 
   // Get translated product name - use currentLanguage from context instead of getCurrentLanguage()
@@ -73,7 +73,7 @@ const ProductItemCard = ({
   const nameConfig = { ...productNameSlot, ...product_card_name };
   const priceConfig = { ...productPrice, ...product_card_price };
   const comparePriceConfig = { ...productComparePrice, ...product_card_compare_price };
-  const addToCartConfig = { ...productAddToCart, ...product_card_add_to_cart };
+  const addToCartConfig = { ...productAddToCart, ...add_to_cart_button };
 
   // Product label logic - unified across all components
   const renderProductLabels = () => {
@@ -380,7 +380,7 @@ const ProductItemCard = ({
 
             {/* Add to Cart Button */}
             <Button
-              onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_add_to_cart') : handleAddToCart}
+              onClick={isEditorMode ? (e) => handleSlotClick(e, 'add_to_cart_button') : handleAddToCart}
               disabled={(addingToCart || isProductOutOfStock(product)) && !isEditorMode}
               className={addToCartConfig.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
               size="sm"
@@ -391,7 +391,7 @@ const ProductItemCard = ({
                 cursor: isProductOutOfStock(product) && !isEditorMode ? 'not-allowed' : 'pointer',
                 ...addToCartConfig.styles
               }}
-              data-slot-id={isEditorMode ? 'product_card_add_to_cart' : undefined}
+              data-slot-id={isEditorMode ? 'add_to_cart_button' : undefined}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
               {isProductOutOfStock(product) && !isEditorMode

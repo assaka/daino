@@ -83,7 +83,8 @@ const WorkspaceHeader = () => {
     chatMinimized,
     toggleChatMinimized,
     registerPublishStatusRefresh,
-    triggerConfigurationRefresh
+    triggerConfigurationRefresh,
+    editorSidebarVisible
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -336,7 +337,7 @@ const WorkspaceHeader = () => {
       </div>
 
       {/* Right section: Editor + Plugins buttons */}
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 transition-all duration-300 ${editorSidebarVisible ? 'mr-80' : ''}`}>
         {/* Editor Dropdown */}
         {editorMode && !showPluginEditor && !showAiStudio ? (
           // In editor mode - show Exit Editor button + page selector

@@ -107,6 +107,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Preview refresh trigger (increments to signal storefront preview to reload)
   const [previewRefreshTrigger, setPreviewRefreshTrigger] = useState(0);
 
+  // Editor sidebar visibility (shared between UnifiedSlotsEditor and WorkspaceHeader)
+  const [editorSidebarVisible, setEditorSidebarVisible] = useState(false);
+
   // Selected item slug (for category/product pages opened via Edit button)
   const [selectedItemSlug, setSelectedItemSlug] = useState(null);
 
@@ -409,6 +412,10 @@ export const AIWorkspaceProvider = ({ children }) => {
     useStableEditor,
     setUseStableEditor,
 
+    // Editor sidebar visibility
+    editorSidebarVisible,
+    setEditorSidebarVisible,
+
     // Plugin Editing
     pluginToEdit,
     showPluginEditor,
@@ -467,6 +474,7 @@ export const AIWorkspaceProvider = ({ children }) => {
     isProcessingAi,
     slotHandlers,
     useStableEditor,
+    editorSidebarVisible,
     pluginToEdit,
     showPluginEditor,
     selectPage,

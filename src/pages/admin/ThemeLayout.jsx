@@ -987,7 +987,7 @@ export default function ThemeLayout() {
                     {
                         color: store.settings.theme.add_to_cart_button_color,
                         slots: [
-                            { pageType: 'category', slotId: 'product_card_add_to_cart' },
+                            { pageType: 'category', slotId: 'add_to_cart_button' },
                             { pageType: 'product', slotId: 'add_to_cart_button' }
                         ]
                     },

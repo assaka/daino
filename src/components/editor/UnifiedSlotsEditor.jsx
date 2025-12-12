@@ -126,6 +126,7 @@ const UnifiedSlotsEditor = ({
   // This triggers a reload when user reverts to a previous version
   const aiWorkspaceContext = useContext(AIWorkspaceContext);
   const configurationRefreshTrigger = aiWorkspaceContext?.configurationRefreshTrigger || 0;
+  const setEditorSidebarVisible = aiWorkspaceContext?.setEditorSidebarVisible;
 
   // Get store and translation context for bridging into iframe
   // These are used by EditorContextBridge to provide context inside the portal
@@ -190,6 +191,13 @@ const UnifiedSlotsEditor = ({
       }));
     }
   }, [initialHeaderSlots]);
+
+  // Sync sidebar visibility to AIWorkspaceContext for WorkspaceHeader to react
+  useEffect(() => {
+    if (setEditorSidebarVisible) {
+      setEditorSidebarVisible(isSidebarVisible && !!selectedElement);
+    }
+  }, [isSidebarVisible, selectedElement, setEditorSidebarVisible]);
 
   // Page context state
   const [pageContext, setPageContext] = useState(null);
