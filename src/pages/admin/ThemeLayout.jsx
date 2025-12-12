@@ -369,15 +369,7 @@ export default function ThemeLayout() {
                 checkout_3step_step1_name: fullStore?.settings?.checkout_3step_step1_name || 'Information',
                 checkout_3step_step2_name: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
                 checkout_3step_step3_name: fullStore?.settings?.checkout_3step_step3_name || 'Payment',
-                checkout_step_indicator_active_color: fullStore?.settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color,
-                checkout_step_indicator_inactive_color: fullStore?.settings?.checkout_step_indicator_inactive_color || getThemeDefaults().checkout_step_indicator_inactive_color,
-                checkout_step_indicator_completed_color: fullStore?.settings?.checkout_step_indicator_completed_color || getThemeDefaults().checkout_step_indicator_completed_color,
-                checkout_step_indicator_style: fullStore?.settings?.checkout_step_indicator_style || getThemeDefaults().checkout_step_indicator_style,
-                checkout_section_title_color: fullStore?.settings?.checkout_section_title_color || getThemeDefaults().checkout_section_title_color,
-                checkout_section_title_size: fullStore?.settings?.checkout_section_title_size || getThemeDefaults().checkout_section_title_size,
-                checkout_section_bg_color: fullStore?.settings?.checkout_section_bg_color || getThemeDefaults().checkout_section_bg_color,
-                checkout_section_border_color: fullStore?.settings?.checkout_section_border_color || getThemeDefaults().checkout_section_border_color,
-                checkout_section_text_color: fullStore?.settings?.checkout_section_text_color || getThemeDefaults().checkout_section_text_color,
+                // Note: checkout styling colors are now stored in settings.theme and accessed via handleThemeChange
                 // Checkout Layout Configuration
                 checkout_1step_columns: fullStore?.settings?.checkout_1step_columns ?? 3,
                 checkout_2step_columns: fullStore?.settings?.checkout_2step_columns ?? 2,
@@ -2526,8 +2518,8 @@ export default function ThemeLayout() {
                                 <div>
                                     <Label htmlFor="checkout_step_indicator_style">Indicator Style</Label>
                                     <Select
-                                        value={store.settings?.checkout_step_indicator_style || 'circles'}
-                                        onValueChange={(value) => handleSettingsChange('checkout_step_indicator_style', value)}
+                                        value={store.settings?.theme?.checkout_step_indicator_style || 'circles'}
+                                        onValueChange={(value) => handleThemeChange('checkout_step_indicator_style', value)}
                                     >
                                         <SelectTrigger className="mt-1 w-48">
                                             <SelectValue />
@@ -2547,14 +2539,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_step_indicator_active_color"
                                                 type="color"
-                                                value={store.settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color}
+                                                onChange={(e) => handleThemeChange('checkout_step_indicator_active_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color}
+                                                onChange={(e) => handleThemeChange('checkout_step_indicator_active_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -2566,14 +2558,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_step_indicator_inactive_color"
                                                 type="color"
-                                                value={store.settings?.checkout_step_indicator_inactive_color || '#D1D5DB'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_inactive_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_step_indicator_inactive_color || getThemeDefaults().checkout_step_indicator_inactive_color}
+                                                onChange={(e) => handleThemeChange('checkout_step_indicator_inactive_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_step_indicator_inactive_color || '#D1D5DB'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_inactive_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_step_indicator_inactive_color || getThemeDefaults().checkout_step_indicator_inactive_color}
+                                                onChange={(e) => handleThemeChange('checkout_step_indicator_inactive_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -2585,14 +2577,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_step_indicator_completed_color"
                                                 type="color"
-                                                value={store.settings?.checkout_step_indicator_completed_color || '#10B981'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_completed_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_step_indicator_completed_color || getThemeDefaults().checkout_step_indicator_completed_color}
+                                                onChange={(e) => handleThemeChange('checkout_step_indicator_completed_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_step_indicator_completed_color || '#10B981'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_completed_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_step_indicator_completed_color || getThemeDefaults().checkout_step_indicator_completed_color}
+                                                onChange={(e) => handleThemeChange('checkout_step_indicator_completed_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -2614,14 +2606,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_section_title_color"
                                                 type="color"
-                                                value={store.settings?.checkout_section_title_color || '#111827'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_title_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_title_color || getThemeDefaults().checkout_section_title_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_title_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_section_title_color || '#111827'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_title_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_title_color || getThemeDefaults().checkout_section_title_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_title_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -2630,8 +2622,8 @@ export default function ThemeLayout() {
                                     <div>
                                         <Label htmlFor="checkout_section_title_size">Section Title Size</Label>
                                         <Select
-                                            value={store.settings?.checkout_section_title_size || '1.25rem'}
-                                            onValueChange={(value) => handleSettingsChange('checkout_section_title_size', value)}
+                                            value={store.settings?.theme?.checkout_section_title_size || getThemeDefaults().checkout_section_title_size}
+                                            onValueChange={(value) => handleThemeChange('checkout_section_title_size', value)}
                                         >
                                             <SelectTrigger className="mt-1">
                                                 <SelectValue />
@@ -2653,14 +2645,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_section_bg_color"
                                                 type="color"
-                                                value={store.settings?.checkout_section_bg_color || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_bg_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_bg_color || getThemeDefaults().checkout_section_bg_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_bg_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_section_bg_color || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_bg_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_bg_color || getThemeDefaults().checkout_section_bg_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_bg_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -2672,14 +2664,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_section_border_color"
                                                 type="color"
-                                                value={store.settings?.checkout_section_border_color || '#E5E7EB'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_border_color || getThemeDefaults().checkout_section_border_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_border_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_section_border_color || '#E5E7EB'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_border_color || getThemeDefaults().checkout_section_border_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_border_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -2691,14 +2683,14 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_section_text_color"
                                                 type="color"
-                                                value={store.settings?.checkout_section_text_color || '#374151'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_text_color || getThemeDefaults().checkout_section_text_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_text_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_section_text_color || '#374151'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
+                                                value={store.settings?.theme?.checkout_section_text_color || getThemeDefaults().checkout_section_text_color}
+                                                onChange={(e) => handleThemeChange('checkout_section_text_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
