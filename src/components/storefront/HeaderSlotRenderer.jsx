@@ -15,6 +15,7 @@ import { CountrySelect } from '@/components/ui/country-select';
 import CmsBlockRenderer from './CmsBlockRenderer';
 // Slot configurations come from database - renderConditions handled via slot metadata
 import TranslationContext from '@/contexts/TranslationContext';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 /**
  * HeaderSlotRenderer - Renders header slots with full customization
@@ -326,13 +327,13 @@ export function HeaderSlotRenderer({
         );
 
       case 'UserAccountMenu':
+        const themeDefaults = getThemeDefaults();
+        const primaryButtonColor = settings?.theme?.primary_button_color || themeDefaults.primary_button_color;
         const buttonStyles = {
-          backgroundColor: styles?.backgroundColor || '#2563EB',
+          backgroundColor: styles?.backgroundColor || primaryButtonColor,
           color: styles?.color || '#ffffff',
           borderRadius: styles?.borderRadius || '0.5rem',
         };
-
-        const hoverBg = styles?.hoverBackgroundColor || '#1D4ED8';
         const iconVariant = metadata?.iconVariant || 'outline';
 
         // Choose icon based on variant
@@ -359,10 +360,8 @@ export function HeaderSlotRenderer({
                 <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
-                    className="px-4 py-2 flex items-center space-x-1"
+                    className="px-4 py-2 flex items-center space-x-1 btn-themed"
                     style={buttonStyles}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
                   >
                     {getUserIcon('w-4 h-4')}
                     <span>{user.first_name || user.name || user.email}</span>
@@ -396,10 +395,8 @@ export function HeaderSlotRenderer({
                   navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
                 }}
                 disabled={userLoading}
-                className="px-4 py-2 flex items-center space-x-2"
+                className="px-4 py-2 flex items-center space-x-2 btn-themed"
                 style={buttonStyles}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
                 {getUserIcon('w-5 h-5 mr-2')}
                 <span>{t('common.sign_in', 'Sign In')}</span>
