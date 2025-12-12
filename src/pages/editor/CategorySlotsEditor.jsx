@@ -148,9 +148,6 @@ const CategorySlotsEditor = ({
   const { data: fetchedCategories = [] } = useCategories(storeId, { enabled: !!storeId });
   const { data: fetchedFilterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
 
-  // Fetch header slot configuration for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
-
   const categories = storeContext?.categories?.length > 0 ? storeContext.categories : fetchedCategories;
   const filterableAttributes = storeContext?.filterableAttributes?.length > 0
     ? storeContext.filterableAttributes
@@ -184,16 +181,6 @@ const CategorySlotsEditor = ({
     storeId,
     { enabled: !!selectedCategorySlug && !!storeId }
   );
-
-  // Debug logging for category data loading
-  console.log('[CategorySlotsEditor] Data loading state:', {
-    storeId,
-    selectedCategorySlug,
-    categoryLoading,
-    hasRealData: !!realCategoryData?.category,
-    categoryError: categoryError?.message
-  });
-
 
   // Listen for settings updates from admin panel - no page reload, just clear cache
   useEffect(() => {
@@ -360,7 +347,6 @@ const CategorySlotsEditor = ({
     }
 
     // Fall back to mock data - also preprocess it
-    console.log('[CategorySlotsEditor] Using mock data - no real category data available');
     const mockContext = generateMockCategoryContext(filterableAttributes, storeSettings);
 
     // Preprocess mock data too for consistency
@@ -455,24 +441,8 @@ const CategorySlotsEditor = ({
     availableCategories: categories,
     selectedCategorySlug,
     onCategoryChange: setSelectedCategorySlug,
-    isLoadingCategoryData: categoryLoading,
-    // Header integration - show header + page content together
-    includeHeader: true,
-    headerSlots: headerConfig?.slots || null,
-    headerContext: {
-      store: storeContext?.store || selectedStore,
-      settings: storeSettings || {},
-      categories: categories,
-      languages: [],
-      currentLanguage: 'en',
-      mobileMenuOpen: false,
-      mobileSearchOpen: false,
-      setMobileMenuOpen: () => {},
-      setMobileSearchOpen: () => {},
-      navigate: () => {},
-      location: { pathname: '/' }
-    }
-  }), [categoryContext, categories, selectedCategorySlug, categoryLoading, headerConfig, storeContext, selectedStore, storeSettings]);
+    isLoadingCategoryData: categoryLoading
+  }), [categoryContext, categories, selectedCategorySlug, categoryLoading, storeContext, selectedStore, storeSettings]);
 
   // Create enhanced config with store settings and filterable attributes
   const enhancedConfig = {

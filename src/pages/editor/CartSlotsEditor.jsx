@@ -5,11 +5,8 @@
  * - Maintainable structure
  */
 
-import { useMemo } from 'react';
 import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
 import { formatPrice } from '@/utils/priceUtils';
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
 
@@ -105,37 +102,9 @@ const CartSlotsEditor = ({
   onSave,
   viewMode = 'emptyCart'
 }) => {
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
-  const storeId = getSelectedStoreId();
-
-  // Fetch header and categories for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
-  const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
-
-  // Build config with header
-  const configWithHeader = useMemo(() => ({
-    ...cartEditorConfig,
-    // Header integration - show header + page content together
-    includeHeader: true,
-    headerSlots: headerConfig?.slots || null,
-    headerContext: {
-      store: selectedStore,
-      settings: selectedStore?.settings || {},
-      categories: categories,
-      languages: [],
-      currentLanguage: 'en',
-      mobileMenuOpen: false,
-      mobileSearchOpen: false,
-      setMobileMenuOpen: () => {},
-      setMobileSearchOpen: () => {},
-      navigate: () => {},
-      location: { pathname: '/cart' }
-    }
-  }), [headerConfig, selectedStore, categories]);
-
   return (
     <UnifiedSlotsEditor
-      config={configWithHeader}
+      config={cartEditorConfig}
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}

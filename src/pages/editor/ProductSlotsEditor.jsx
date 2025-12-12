@@ -45,8 +45,7 @@ export default function ProductSlotsEditor({
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
 
-  // Fetch header and categories for combined header + page editing
-  const { data: headerConfig, isLoading: headerLoading } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  // Fetch categories for editor
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
 
   const [realProduct, setRealProduct] = useState(null);
@@ -56,16 +55,6 @@ export default function ProductSlotsEditor({
   const [customOptions, setCustomOptions] = useState([]);
   const [productLabels, setProductLabels] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Debug logging (after state declarations)
-  console.log('[ProductSlotsEditor] State:', {
-    storeId,
-    selectedStore: !!selectedStore,
-    headerLoading,
-    headerSlots: headerConfig?.slots ? Object.keys(headerConfig.slots).length : 0,
-    selectedProductSlug,
-    initialProductSlug
-  });
 
   // Fetch all products for the selector
   useEffect(() => {
@@ -246,24 +235,8 @@ export default function ProductSlotsEditor({
     availableProducts: allProducts,
     selectedProductSlug,
     onProductChange: setSelectedProductSlug,
-    isLoadingProductData: loading,
-    // Header integration - show header + page content together
-    includeHeader: true,
-    headerSlots: headerConfig?.slots || null,
-    headerContext: {
-      store: selectedStore,
-      settings: selectedStore?.settings || {},
-      categories: categories,
-      languages: [],
-      currentLanguage: 'en',
-      mobileMenuOpen: false,
-      mobileSearchOpen: false,
-      setMobileMenuOpen: () => {},
-      setMobileSearchOpen: () => {},
-      navigate: () => {},
-      location: { pathname: '/' }
-    }
-  }), [generateProductContext, allProducts, selectedProductSlug, loading, headerConfig, selectedStore, categories]);
+    isLoadingProductData: loading
+  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories]);
 
   // Show loading state while fetching product
   if (loading) {
