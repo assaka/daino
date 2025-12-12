@@ -278,6 +278,9 @@ function getProductGridDefaults(gridSettings = {}) {
  * Get checkout page default settings
  */
 function getCheckoutDefaults(settings) {
+  // Theme colors are stored in settings.theme, so read from there
+  const theme = settings?.theme || {};
+
   return {
     checkout_steps_count: settings?.checkout_steps_count ?? 3,
 
@@ -290,16 +293,16 @@ function getCheckoutDefaults(settings) {
     checkout_3step_step2_name: settings?.checkout_3step_step2_name || 'Shipping',
     checkout_3step_step3_name: settings?.checkout_3step_step3_name || 'Payment',
 
-    // Checkout styling
-    checkout_step_indicator_active_color: settings?.checkout_step_indicator_active_color || '#007bff',
-    checkout_step_indicator_inactive_color: settings?.checkout_step_indicator_inactive_color || '#D1D5DB',
-    checkout_step_indicator_completed_color: settings?.checkout_step_indicator_completed_color || '#10B981',
-    checkout_step_indicator_style: settings?.checkout_step_indicator_style || 'circles',
-    checkout_section_title_color: settings?.checkout_section_title_color || '#111827',
-    checkout_section_title_size: settings?.checkout_section_title_size || '1.25rem',
-    checkout_section_bg_color: settings?.checkout_section_bg_color || '#FFFFFF',
-    checkout_section_border_color: settings?.checkout_section_border_color || '#E5E7EB',
-    checkout_section_text_color: settings?.checkout_section_text_color || '#374151',
+    // Checkout styling - read from theme object where these colors are stored
+    checkout_step_indicator_active_color: theme.checkout_step_indicator_active_color || HARDCODED_THEME_DEFAULTS.checkout_step_indicator_active_color,
+    checkout_step_indicator_inactive_color: theme.checkout_step_indicator_inactive_color || HARDCODED_THEME_DEFAULTS.checkout_step_indicator_inactive_color,
+    checkout_step_indicator_completed_color: theme.checkout_step_indicator_completed_color || HARDCODED_THEME_DEFAULTS.checkout_step_indicator_completed_color,
+    checkout_step_indicator_style: theme.checkout_step_indicator_style || HARDCODED_THEME_DEFAULTS.checkout_step_indicator_style,
+    checkout_section_title_color: theme.checkout_section_title_color || HARDCODED_THEME_DEFAULTS.checkout_section_title_color,
+    checkout_section_title_size: theme.checkout_section_title_size || HARDCODED_THEME_DEFAULTS.checkout_section_title_size,
+    checkout_section_bg_color: theme.checkout_section_bg_color || HARDCODED_THEME_DEFAULTS.checkout_section_bg_color,
+    checkout_section_border_color: theme.checkout_section_border_color || HARDCODED_THEME_DEFAULTS.checkout_section_border_color,
+    checkout_section_text_color: theme.checkout_section_text_color || HARDCODED_THEME_DEFAULTS.checkout_section_text_color,
 
     // Checkout Layout Configuration
     checkout_1step_columns: settings?.checkout_1step_columns ?? 3,

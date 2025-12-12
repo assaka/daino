@@ -1652,7 +1652,8 @@ export default function Checkout() {
                           variant="outline"
                           size="sm"
                           onClick={() => setShowLoginModal(true)}
-                          className="text-blue-600 hover:text-blue-700 border-blue-600"
+                          style={{ color: stepActiveColor, borderColor: stepActiveColor }}
+                          className="hover:opacity-80"
                       >
                         {t('common.login', 'Login')}
                       </Button>
@@ -1746,7 +1747,7 @@ export default function Checkout() {
                         }}
                         className="text-blue-600"
                       />
-                      <label htmlFor="new-shipping-address" className="cursor-pointer text-blue-600 font-medium">
+                      <label htmlFor="new-shipping-address" className="cursor-pointer font-medium" style={{ color: stepActiveColor }}>
                         {t('checkout.add_new_shipping_address', 'Add New Shipping Address')}
                       </label>
                     </div>
@@ -1985,7 +1986,7 @@ export default function Checkout() {
                               onChange={(e) => setSelectedBillingAddress(e.target.value)}
                               className="text-blue-600"
                             />
-                            <label htmlFor="new-billing-address" className="cursor-pointer text-blue-600 font-medium">
+                            <label htmlFor="new-billing-address" className="cursor-pointer font-medium" style={{ color: stepActiveColor }}>
                               {t('checkout.add_new_billing_address', 'Add New Billing Address')}
                             </label>
                           </div>
@@ -2659,7 +2660,8 @@ export default function Checkout() {
                 onClick={() => setCurrentStep(0)}
                 variant="outline"
                 size="sm"
-                className="ml-auto h-10 px-4 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-blue-300"
+                style={{ color: stepActiveColor, borderColor: stepActiveColor }}
+                className="ml-auto h-10 px-4 hover:opacity-80"
             >
               {t('checkout.edit_info', 'Edit Info')}
             </Button>
@@ -2778,7 +2780,8 @@ export default function Checkout() {
               <button
                 type="button"
                 onClick={openForgotPasswordModal}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm hover:opacity-80"
+                style={{ color: stepActiveColor }}
               >
                 {t('account.forgot_password', 'Forgot password?')}
               </button>
@@ -2811,7 +2814,8 @@ export default function Checkout() {
                   setShowLoginModal(false);
                   navigate(createPublicUrl(store?.slug, 'CUSTOMER_REGISTER'));
                 }}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="font-medium hover:opacity-80"
+                style={{ color: stepActiveColor }}
               >
                 {t('account.register', 'Register')}
               </button>
