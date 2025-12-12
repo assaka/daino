@@ -219,7 +219,7 @@ const cartConfig = {
   <h3 class="text-lg font-semibold text-gray-900">{{t "common.apply_coupon"}}</h3>
   <div data-coupon-input-section class="flex gap-2">
     <input data-coupon-input type="text" placeholder="{{t 'common.enter_coupon_code'}}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-    <button data-action="apply-coupon" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{{t "common.apply"}}</button>
+    <button data-action="apply-coupon" class="px-4 py-2 text-white rounded-md hover:brightness-110 transition-all" style="background-color: {{settings.theme.primary_button_color}}">{{t "common.apply"}}</button>
   </div>
   <div data-applied-coupon-section class="hidden">
     <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
@@ -278,7 +278,7 @@ const cartConfig = {
       </div>
     </div>
   </div>
-  <button data-action="checkout" class="w-full py-3 text-white rounded-md hover:brightness-90 transition-colors font-medium" style="background-color: {{settings.theme.checkout_button_color}}">
+  <button data-action="checkout" class="w-full py-3 text-white rounded-md hover:brightness-110 transition-all font-medium" style="background-color: {{settings.theme.checkout_button_color}}">
     {{t "checkout.proceed_to_checkout"}}
   </button>
 </div>`,

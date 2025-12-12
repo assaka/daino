@@ -11,6 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 /**
@@ -149,43 +150,51 @@ const RecentOrdersSlot = createSlotComponent({
 /**
  * ProfileFormSlot - Profile edit form
  */
+const ProfileFormSlotComponent = ({ slot, variableContext }) => {
+  const { settings } = useStore();
+  const user = variableContext?.user || { full_name: 'John Doe', email: 'john@example.com' };
+  const [firstName, lastName] = user.full_name.split(' ');
+  const primaryColor = settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color;
+
+  return (
+    <div className={slot.className} style={slot.styles}>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
+        <form className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input type="text" defaultValue={firstName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input type="text" defaultValue={lastName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" defaultValue={user.email} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <input type="tel" className="w-full border border-gray-300 rounded-md px-3 py-2" />
+          </div>
+          <button
+            type="submit"
+            className="btn-themed text-white px-6 py-2 rounded-md"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Save Changes
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const ProfileFormSlot = createSlotComponent({
   name: 'ProfileFormSlot',
-  render: ({ slot, context, variableContext }) => {
-    const user = variableContext?.user || { full_name: 'John Doe', email: 'john@example.com' };
-    const [firstName, lastName] = user.full_name.split(' ');
-
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
-          <form className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input type="text" defaultValue={firstName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input type="text" defaultValue={lastName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" defaultValue={user.email} className="w-full border border-gray-300 rounded-md px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input type="tel" className="w-full border border-gray-300 rounded-md px-3 py-2" />
-            </div>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
-              Save Changes
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  render: (props) => <ProfileFormSlotComponent {...props} />
 });
 
 /**
@@ -380,7 +389,8 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full btn-themed text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
           >
             {loading ? t('common.signing_in', 'Signing in...') : t('common.sign_in', 'Sign In')}
           </button>
@@ -403,7 +413,8 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                 </div>
                 <button
                   onClick={() => setShowForgotPasswordModal(false)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md"
+                  className="w-full btn-themed text-white font-medium py-2.5 rounded-md"
+                  style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
                 >
                   {t('common.close', 'Close')}
                 </button>
@@ -441,7 +452,8 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                   <button
                     type="submit"
                     disabled={forgotPasswordLoading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400"
+                    className="flex-1 btn-themed text-white font-medium py-2.5 rounded-md disabled:bg-gray-400"
+                    style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
                   >
                     {forgotPasswordLoading ? t('common.sending', 'Sending...') : t('account.send_reset_link', 'Send Reset Link')}
                   </button>
@@ -705,7 +717,8 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="w-full btn-themed text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+          style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
         >
           {loading ? t('common.creating', 'Creating...') : t('common.create_account', 'Create My Account')}
         </button>
@@ -787,32 +800,38 @@ const AccountBenefitsSlot = createSlotComponent({
 /**
  * AccountCTASlot - Call-to-action for intro view (not logged in)
  */
-const AccountCTASlot = createSlotComponent({
-  name: 'AccountCTASlot',
-  render: ({ slot, context }) => {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <h3 className="text-2xl font-semibold mb-4">Ready to Get Started?</h3>
-          <p className="text-gray-600 mb-6">Create an account or sign in to access all features</p>
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={() => window.location.href = '/customer/login'}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => window.location.href = '/customer/login'}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-medium"
-            >
-              Create Account
-            </button>
-          </div>
+const AccountCTASlotComponent = ({ slot }) => {
+  const { settings } = useStore();
+  const primaryColor = settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color;
+
+  return (
+    <div className={slot.className} style={slot.styles}>
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <h3 className="text-2xl font-semibold mb-4">Ready to Get Started?</h3>
+        <p className="text-gray-600 mb-6">Create an account or sign in to access all features</p>
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => window.location.href = '/customer/login'}
+            className="btn-themed text-white px-8 py-3 rounded-lg font-medium"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => window.location.href = '/customer/login'}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-medium"
+          >
+            Create Account
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+};
+
+const AccountCTASlot = createSlotComponent({
+  name: 'AccountCTASlot',
+  render: (props) => <AccountCTASlotComponent {...props} />
 });
 
 // Register all components
