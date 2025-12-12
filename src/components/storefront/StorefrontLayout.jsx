@@ -384,6 +384,7 @@ export default function StorefrontLayout({ children }) {
         --theme-checkout-button: ${settings?.theme?.checkout_button_color || defaults.checkout_button_color};
         --theme-place-order-button: ${settings?.theme?.place_order_button_color || defaults.place_order_button_color};
         --theme-font-family: '${selectedFontFamily}', sans-serif;
+        --theme-nav-hover-color: ${settings?.theme?.primary_button_color || defaults.primary_button_color};
       }
       body {
           font-family: var(--theme-font-family);
@@ -406,6 +407,20 @@ export default function StorefrontLayout({ children }) {
       }
       .btn-place-order {
           background-color: var(--theme-place-order-button);
+      }
+      /* Hover effects for themed buttons */
+      .btn-primary:hover, .btn-secondary:hover, .btn-add-to-cart:hover,
+      .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover {
+          filter: brightness(0.85);
+          transition: filter 0.2s ease;
+      }
+      .btn-primary, .btn-secondary, .btn-add-to-cart,
+      .btn-view-cart, .btn-checkout, .btn-place-order {
+          transition: filter 0.2s ease;
+      }
+      /* Override blue hover colors with theme color */
+      .nav-link-themed:hover, .hover\\:text-blue-600:hover {
+          color: var(--theme-nav-hover-color) !important;
       }
     `;
 
