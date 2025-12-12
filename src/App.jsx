@@ -459,13 +459,9 @@ function App() {
           {/* Dynamic Plugin Admin Pages - 100% database-driven from plugin_admin_pages */}
           <Route path="/admin/plugins/:pluginSlug/:pageKey" element={<PageWrapper Component={DynamicPluginAdminPage} pageName="Plugin Admin Page" />} />
           
-          {/* Editor routes */}
-          <Route path="/editor" element={<Navigate to="/editor/ai-context-window" replace />} />
-          <Route path="/editor/ai-context" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
-          <Route path="/editor/header" element={<PageWrapper Component={Pages.HeaderSlotsEditor} pageName="HeaderSlotsEditor" />} />
-          <Route path="/editor/product" element={<PageWrapper Component={Pages.ProductSlotsEditor} pageName="ProductSlotsEditor" />} />
-          <Route path="/editor/category" element={<PageWrapper Component={Pages.CategorySlotsEditor} pageName="CategorySlotsEditor" />} />
-          <Route path="/editor/cart" element={<PageWrapper Component={Pages.CartSlotsEditor} pageName="CartSlotsEditor" />} />
+          {/* Editor routes - redirect to AI Workspace */}
+          <Route path="/editor" element={<Navigate to="/ai-workspace" replace />} />
+          <Route path="/editor/*" element={<Navigate to="/ai-workspace" replace />} />
 
           {/* AI Workspace - Unified Editor + AI */}
           <Route path="/ai-workspace" element={<PageWrapper Component={Pages.AIWorkspace} pageName="AIWorkspace" />} />
