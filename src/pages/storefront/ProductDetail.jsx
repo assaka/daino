@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, Fragment } from "react";
-import { useParams, useSearchParams, Link, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage, getTranslatedField } from "@/utils/translationUtils";
@@ -19,7 +19,7 @@ import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, get
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import { getStockLabel as getStockLabelUtil, getStockLabelStyle, isProductOutOfStock } from "@/utils/stockUtils";
 import {
-  ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye, Pencil, X
+  ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,21 +81,11 @@ const generateProductName = (product, basePrefix = '') => {
 
 export default function ProductDetail() {
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
 
-  // Edit mode - check URL param
-  const isEditMode = searchParams.get('edit') === 'true';
+  // Check if user is store owner (for Edit button)
   const isStoreOwner = typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token');
-
-  const toggleEditMode = () => {
-    if (isEditMode) {
-      searchParams.delete('edit');
-    } else {
-      searchParams.set('edit', 'true');
-    }
-    setSearchParams(searchParams);
-  };
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
@@ -802,7 +792,7 @@ export default function ProductDetail() {
             slots={productLayoutConfig?.slots || {}}
             parentId={null}
             viewMode="default"
-            context={isEditMode ? "editor" : "storefront"}
+            context="storefront"
             productData={{
               product: product ? (() => {
                 // Calculate the final name to use
@@ -856,37 +846,16 @@ export default function ProductDetail() {
       ) : null
       }
 
-      {/* Edit Mode Toolbar */}
-      {isEditMode && isStoreOwner && (
-        <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white px-4 py-2 z-50 flex items-center justify-between shadow-lg">
-          <div className="flex items-center gap-3">
-            <Pencil className="w-5 h-5" />
-            <span className="font-medium">Edit Mode - Product Page</span>
-            <span className="text-blue-200 text-sm">Click on elements to edit</span>
-          </div>
-          <button
-            onClick={toggleEditMode}
-            className="flex items-center gap-2 bg-white text-blue-600 px-4 py-1.5 rounded-md font-medium hover:bg-blue-50 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Exit Edit Mode
-          </button>
-        </div>
-      )}
-
-      {/* Add top padding when in edit mode to account for toolbar */}
-      {isEditMode && <div className="h-12" />}
-
-      {/* Floating Edit Button - Only for store owners (hidden in edit mode) */}
-      {isStoreOwner && !isEditMode && slug && (
-        <button
-          onClick={toggleEditMode}
+      {/* Floating Edit Button - Only for store owners */}
+      {isStoreOwner && slug && (
+        <Link
+          to={`/editor/product?product=${slug}`}
           className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg z-50 flex items-center gap-2 transition-all hover:scale-105"
           title="Edit this page layout"
         >
           <Pencil className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">Edit</span>
-        </button>
+        </Link>
       )}
 
     </div>
