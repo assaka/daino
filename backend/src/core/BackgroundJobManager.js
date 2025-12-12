@@ -127,6 +127,7 @@ class BackgroundJobManager extends EventEmitter {
       ['system:daily_credit_deduction', './jobs/DailyCreditDeductionJob'],
       ['system:dynamic_cron', './jobs/DynamicCronJob'],
       ['system:finalize_pending_orders', './jobs/FinalizePendingOrdersJob'],
+      ['system:token_refresh', './jobs/TokenRefreshJob'],
 
       // Translation jobs
       ['translation:ui-labels:bulk', './jobs/UILabelsBulkTranslationJob'],

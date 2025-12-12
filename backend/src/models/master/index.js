@@ -10,6 +10,7 @@ const MasterStore = require('./MasterStore');
 const StoreDatabase = require('./StoreDatabase');
 const StoreHostname = require('./StoreHostname');
 const CreditTransaction = require('./CreditTransaction');
+const IntegrationToken = require('./IntegrationToken');
 
 // Define associations
 function setupMasterAssociations() {
@@ -62,6 +63,16 @@ function setupMasterAssociations() {
     foreignKey: 'processed_by',
     as: 'processor'
   });
+
+  // Store → IntegrationTokens (one-to-many)
+  MasterStore.hasMany(IntegrationToken, {
+    foreignKey: 'store_id',
+    as: 'integrationTokens'
+  });
+  IntegrationToken.belongsTo(MasterStore, {
+    foreignKey: 'store_id',
+    as: 'store'
+  });
 }
 
 // Setup associations
@@ -74,5 +85,6 @@ module.exports = {
   StoreDatabase,
   StoreHostname,
   CreditTransaction,
+  IntegrationToken,
   setupMasterAssociations
 };

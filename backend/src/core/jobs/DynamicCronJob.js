@@ -129,6 +129,9 @@ class DynamicCronJob extends BaseJobHandler {
       case 'system_job':
         return await this.executeSystemJob(cronJob);
 
+      case 'token_refresh':
+        return await this.executeTokenRefresh(cronJob);
+
       default:
         throw new Error(`Unsupported job type: ${job_type}`);
     }
@@ -434,6 +437,43 @@ class DynamicCronJob extends BaseJobHandler {
     return {
       system_action: action,
       backgroundJobId: systemJob.id,
+      scheduled: true
+    };
+  }
+
+  /**
+   * Execute token refresh job type
+   * Refreshes OAuth tokens for all stores before they expire
+   */
+  async executeTokenRefresh(cronJob) {
+    const { configuration } = cronJob;
+    const { bufferMinutes = 60, batchSize = 10 } = configuration;
+
+    console.log(`🔄 Executing OAuth token refresh job`);
+
+    const jobManager = getJobManager();
+
+    const tokenRefreshJob = await jobManager.scheduleJob({
+      type: 'system:token_refresh',
+      payload: {
+        bufferMinutes,
+        batchSize
+      },
+      priority: 'high',
+      delay: 0,
+      maxRetries: 2,
+      storeId: null,  // System-level job
+      userId: null,
+      metadata: {
+        source: 'unified_cron_scheduler',
+        cron_job_id: cronJob.id
+      }
+    });
+
+    return {
+      backgroundJobId: tokenRefreshJob.id,
+      bufferMinutes,
+      batchSize,
       scheduled: true
     };
   }

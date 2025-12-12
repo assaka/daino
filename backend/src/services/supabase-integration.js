@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const ConnectionManager = require('./database/ConnectionManager');
 const IntegrationConfig = require('../models/IntegrationConfig');
+const IntegrationToken = require('../models/master/IntegrationToken');
 
 /**
  * Supabase Integration Service
@@ -114,6 +115,16 @@ class SupabaseIntegration {
           .update({ token_expires_at: tokenExpiresAt, updated_at: new Date() })
           .eq('store_id', storeId)
           .eq('integration_type', this.integrationType);
+
+        // Sync token expiry to master DB for efficient cron-based refresh
+        try {
+          await IntegrationToken.upsertToken(storeId, this.integrationType, {
+            token_expires_at: tokenExpiresAt
+          });
+        } catch (syncError) {
+          console.warn('[updateSupabaseToken] Failed to sync token expiry to master DB:', syncError.message);
+          // Don't fail the main operation if master sync fails
+        }
       }
 
       return true;
@@ -129,6 +140,15 @@ class SupabaseIntegration {
   async deleteSupabaseToken(storeId) {
     try {
       await IntegrationConfig.deactivate(storeId, this.integrationType);
+
+      // Remove token tracking from master DB
+      try {
+        await IntegrationToken.deleteToken(storeId, this.integrationType);
+      } catch (syncError) {
+        console.warn('[deleteSupabaseToken] Failed to remove token from master DB:', syncError.message);
+        // Don't fail the main operation if master sync fails
+      }
+
       return true;
     } catch (error) {
       console.error('[deleteSupabaseToken] Error:', error);
@@ -625,19 +645,27 @@ class SupabaseIntegration {
       });
 
       const { access_token, refresh_token, expires_in } = response.data;
+      const expires_at = new Date(Date.now() + expires_in * 1000);
 
-      // Update token in tenant database
+      // Update token in tenant database (also syncs to master DB)
       await this.updateSupabaseToken(storeId, {
         access_token,
         refresh_token: refresh_token || token.refresh_token,
-        expires_at: new Date(Date.now() + expires_in * 1000)
+        expires_at
       });
 
-      return { success: true, access_token };
+      return { success: true, access_token, expires_at, expires_in };
     } catch (error) {
       console.error('Error refreshing token:', error.response?.data || error.message);
       throw new Error('Failed to refresh Supabase token: ' + (error.response?.data?.error || error.message));
     }
+  }
+
+  /**
+   * Alias for refreshAccessToken - provides consistent naming
+   */
+  async refreshToken(storeId) {
+    return this.refreshAccessToken(storeId);
   }
 
   /**
@@ -1293,6 +1321,15 @@ class SupabaseIntegration {
                   .eq('store_id', storeId)
                   .eq('integration_type', this.integrationType);
 
+                // Sync token expiry to master DB for cron-based refresh
+                try {
+                  await IntegrationToken.upsertToken(storeId, this.integrationType, {
+                    token_expires_at: tokenData.expires_at
+                  });
+                } catch (syncError) {
+                  console.warn('[getConnectionStatus] Failed to sync token expiry to master DB:', syncError.message);
+                }
+
                 // IMPORTANT: Also insert into store_databases in master DB
                 // This is required for ConnectionManager to find the store's database
                 if (tokenData.project_url && tokenData.service_role_key) {
@@ -1402,6 +1439,15 @@ class SupabaseIntegration {
                 .update({ token_expires_at: tokenData.expires_at, updated_at: new Date() })
                 .eq('store_id', storeId)
                 .eq('integration_type', this.integrationType);
+
+              // Sync token expiry to master DB for cron-based refresh
+              try {
+                await IntegrationToken.upsertToken(storeId, this.integrationType, {
+                  token_expires_at: tokenData.expires_at
+                });
+              } catch (syncError) {
+                console.warn('[getConnectionStatus] Failed to sync token expiry to master DB:', syncError.message);
+              }
 
               // IMPORTANT: Also insert into store_databases in master DB (memory fallback path)
               if (tokenData.project_url && tokenData.service_role_key) {
