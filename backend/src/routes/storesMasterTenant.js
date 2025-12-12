@@ -306,7 +306,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       storeName,
       storeSlug,
       useOAuth,
-      autoProvision
+      autoProvision,
+      themePreset  // Theme preset name to apply during provisioning
     } = req.body;
 
     console.log('🔍 Request body keys:', Object.keys(req.body));
@@ -796,7 +797,9 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         // OAuth credentials for API-based provisioning
         oauthAccessToken: oauthAccessToken || null,
         projectId: projectId || null,
-        autoProvision: autoProvision || false
+        autoProvision: autoProvision || false,
+        // Theme preset to apply to store settings
+        themePreset: themePreset || 'default'
       }
     );
 
@@ -835,6 +838,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         status: 'active',
         is_active: true,
         slug: slug,
+        theme_preset: themePreset || 'default',  // Save selected theme preset
         updated_at: new Date().toISOString()
       })
       .eq('id', storeId);

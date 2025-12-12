@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -358,6 +358,13 @@ export default function Stores() {
                          store.status}
                       </Badge>
                     )}
+                    {/* Theme Preset Badge */}
+                    {store.theme_preset && store.status === 'active' && (
+                      <Badge className="bg-violet-100 text-violet-800 border-violet-200" variant="outline">
+                        <Palette className="w-3 h-3 mr-1" />
+                        {store.theme_preset.charAt(0).toUpperCase() + store.theme_preset.slice(1)}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -395,6 +402,18 @@ export default function Stores() {
                       <Settings className="w-4 h-4 mr-1" />
                       Manage
                     </Button>
+                    {store.status === 'active' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          window.location.href = `/admin/theme?store=${store.id}`;
+                        }}
+                        title="Customize store theme"
+                      >
+                        <Palette className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <Button

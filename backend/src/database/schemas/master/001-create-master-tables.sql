@@ -51,9 +51,18 @@ CREATE TABLE IF NOT EXISTS stores (
     'inactive'          -- Permanently disabled
   )),
   is_active BOOLEAN DEFAULT false,
+  theme_preset VARCHAR(50) DEFAULT 'default',  -- Reference to selected theme preset (full settings in tenant DB)
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Add theme_preset column if not exists (for existing databases)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'stores' AND column_name = 'theme_preset') THEN
+    ALTER TABLE stores ADD COLUMN theme_preset VARCHAR(50) DEFAULT 'default';
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_stores_user_id ON stores(user_id);
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores(slug);

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/utils/api';
 import { User } from '@/api/entities';
+import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 
 const STEPS = [
   { id: 1, title: 'Create Store', description: 'Name your store', icon: Store, required: true },
@@ -35,6 +36,7 @@ export default function StoreOnboarding() {
   const [storeId, setStoreId] = useState(null);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
+  const [selectedThemePreset, setSelectedThemePreset] = useState(null);
   const [dbData, setDbData] = useState({ connectionString: '', serviceRoleKey: '' });
   const [oauthCompleted, setOauthCompleted] = useState(false);
   const [needsServiceKey, setNeedsServiceKey] = useState(false);
@@ -137,8 +139,11 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      console.log('Creating store with name:', storeData.name);
-      const response = await apiClient.post('/stores', { name: storeData.name });
+      console.log('Creating store with name:', storeData.name, 'theme:', selectedThemePreset);
+      // Theme preset is passed to connect-database later, not stored in master DB
+      const response = await apiClient.post('/stores', {
+        name: storeData.name
+      });
       console.log('Store creation response:', response);
 
       // Handle response from POST /api/stores
@@ -310,7 +315,8 @@ export default function StoreOnboarding() {
         storeSlug: storeData.slug,
         useOAuth: true,
         autoProvision: true,
-        serviceRoleKey: dbData.serviceRoleKey
+        serviceRoleKey: dbData.serviceRoleKey,
+        themePreset: selectedThemePreset  // Pass selected theme to tenant provisioning
       });
 
       if (provisionResponse.success) {
@@ -515,6 +521,19 @@ export default function StoreOnboarding() {
                     ? slugStatus.message
                     : `https://www.dainostore.com/public/${storeData.slug || 'your-store'}`}
                 </p>
+              </div>
+
+              {/* Theme Preset Selection */}
+              <div>
+                <Label className="mb-3 block">Choose Your Store Theme</Label>
+                <p className="text-sm text-gray-500 mb-3">
+                  Select a color theme for your store. You can customize it later.
+                </p>
+                <ThemePresetSelector
+                  value={selectedThemePreset}
+                  onChange={setSelectedThemePreset}
+                  variant="cards"
+                />
               </div>
 
               <Button type="submit" className="w-full" disabled={loading || !storeData.name || slugStatus.available === false || slugStatus.checking}>

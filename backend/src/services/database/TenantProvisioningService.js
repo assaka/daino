@@ -488,20 +488,34 @@ VALUES (
    * Fetch theme defaults from master database
    * @private
    */
-  async getThemeDefaults() {
+  /**
+   * Get theme defaults from master DB
+   * @param {string} presetName - Theme preset name (optional, defaults to system default)
+   * @returns {Promise<Object>} Theme settings object
+   */
+  async getThemeDefaults(presetName = null) {
     try {
-      const { data: defaults, error } = await masterDbClient
+      let query = masterDbClient
         .from('theme_defaults')
-        .select('theme_settings')
-        .eq('is_system_default', true)
-        .eq('is_active', true)
-        .maybeSingle();
+        .select('theme_settings, preset_name')
+        .eq('is_active', true);
+
+      if (presetName) {
+        // Fetch specific preset by name
+        query = query.eq('preset_name', presetName);
+      } else {
+        // Fetch system default
+        query = query.eq('is_system_default', true);
+      }
+
+      const { data: defaults, error } = await query.maybeSingle();
 
       if (error || !defaults) {
-        console.warn('⚠️ Could not fetch theme defaults from master DB, using empty defaults');
+        console.warn(`⚠️ Could not fetch theme preset '${presetName || 'default'}' from master DB, using empty defaults`);
         return {};
       }
 
+      console.log(`✅ Fetched theme preset '${defaults.preset_name}' from master DB`);
       return defaults.theme_settings || {};
     } catch (error) {
       console.error('Error fetching theme defaults:', error.message);
@@ -515,8 +529,8 @@ VALUES (
    */
   async createStoreRecord(tenantDb, storeId, options, result) {
     try {
-      // Fetch theme defaults from master DB
-      const themeDefaults = await this.getThemeDefaults();
+      // Fetch theme defaults from master DB (use preset if specified)
+      const themeDefaults = await this.getThemeDefaults(options.themePreset);
 
       // Build initial settings with theme defaults
       const initialSettings = {
@@ -526,6 +540,8 @@ VALUES (
           ...(options.settings?.theme || {})
         }
       };
+
+      console.log(`📦 Creating store with theme preset: ${options.themePreset || 'default'}`);
 
       const storeData = {
         id: storeId,
@@ -633,8 +649,8 @@ VALUES (
     try {
       const axios = require('axios');
 
-      // Fetch theme defaults from master DB
-      const themeDefaults = await this.getThemeDefaults();
+      // Fetch theme defaults from master DB (use preset if specified)
+      const themeDefaults = await this.getThemeDefaults(options.themePreset);
 
       // Build initial settings with theme defaults
       const initialSettings = {
@@ -644,6 +660,8 @@ VALUES (
           ...(options.settings?.theme || {})
         }
       };
+
+      console.log(`📦 Creating store via API with theme preset: ${options.themePreset || 'default'}`);
 
       const insertSQL = `
 INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, created_at, updated_at)
