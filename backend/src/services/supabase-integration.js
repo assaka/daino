@@ -1683,11 +1683,12 @@ class SupabaseIntegration {
                 connected: true,
                 projectUrl: dbCredentials.projectUrl,
                 connectionStatus: storeDb.connection_status || 'success',
-                oauthConfigured: false,
+                oauthConfigured: this.oauthConfigured,
+                hasOAuthToken: false,  // No OAuth token, only service role key
                 hasServiceRoleKey: true,
                 storageReady: true,
                 source: 'store_databases',
-                message: 'Connected via store database credentials'
+                message: 'Connected via service role key. Connect with OAuth for automatic token refresh.'
               };
             }
           }
