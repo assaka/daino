@@ -541,27 +541,36 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
   </div>
 </div>
 {{email_footer}}'), ('07958749-5770-4838-87e1-b860ee355fb7', '{{STORE_ID}}', 'email_header', 'html', '["store_name", "store_logo_url"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                <div style="background-color: white; width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 10px;">
-                  <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 100px; max-height: 100px; object-fit: contain;">
-                </div>
-                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">{{store_name}}</h1>
+              <!-- Colorful Top Border -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 8px 8px 0 0; overflow: hidden;">
+                <tr>
+                  <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+                  <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
+                  <td style="height: 4px; width: 16.66%; background-color: #eab308;"></td>
+                  <td style="height: 4px; width: 16.66%; background-color: #22c55e;"></td>
+                  <td style="height: 4px; width: 16.66%; background-color: #3b82f6;"></td>
+                  <td style="height: 4px; width: 16.66%; background-color: #8b5cf6;"></td>
+                </tr>
+              </table>
+              <!-- Header with white background -->
+              <div style="background-color: #ffffff; padding: 32px 30px 24px; text-align: center;">
+                <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 160px; max-height: 80px; object-fit: contain; margin-bottom: 8px;">
               </div>
             </div>'), ('f67ae526-c1ab-45ab-bbd5-5b7b353644d9', '{{STORE_ID}}', 'email_footer', 'html', '["store_name", "store_url", "contact_email", "store_address", "store_city", "store_state", "store_postal_code", "current_year", "unsubscribe_url"]', 'true', '101', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Footer Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #f9fafb; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
-                  Questions? Contact us at <a href="mailto:{{contact_email}}" style="color: #4f46e5; text-decoration: none;">{{contact_email}}</a>
+              <div style="background-color: #ffffff; padding: 24px 30px 32px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+                <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
+                  Questions? Contact us at <a href="mailto:{{contact_email}}" style="color: #6b7280; text-decoration: none;">{{contact_email}}</a>
                 </p>
-                <p style="color: #9ca3af; font-size: 12px; margin: 10px 0;">
+                <p style="color: #9ca3af; font-size: 11px; margin: 10px 0;">
                   {{store_address}}<br>
                   {{store_city}}, {{store_state}} {{store_postal_code}}
                 </p>
-                <div style="margin: 20px 0;">
-                  <a href="{{store_url}}" style="color: #4f46e5; text-decoration: none; margin: 0 10px; font-size: 14px;">Visit Store</a>
+                <div style="margin: 16px 0;">
+                  <a href="{{store_url}}" style="color: #6b7280; text-decoration: none; margin: 0 10px; font-size: 13px;">Visit Store</a>
                   <span style="color: #e5e7eb;">|</span>
-                  <a href="{{unsubscribe_url}}" style="color: #6b7280; text-decoration: none; margin: 0 10px; font-size: 12px;">Unsubscribe</a>
+                  <a href="{{unsubscribe_url}}" style="color: #9ca3af; text-decoration: none; margin: 0 10px; font-size: 11px;">Unsubscribe</a>
                 </div>
-                <p style="color: #9ca3af; font-size: 11px; margin: 15px 0 0 0;">
+                <p style="color: #d1d5db; font-size: 11px; margin: 12px 0 0 0;">
                   © {{current_year}} {{store_name}}. All rights reserved.
                 </p>
               </div>
