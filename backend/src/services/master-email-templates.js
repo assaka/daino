@@ -40,13 +40,13 @@ const masterEmailHeader = (options = {}) => {
     <!-- Email Header - Clean white background -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 32px 40px 24px; text-align: center;">
+        <td style="padding: 20px 20px 16px; text-align: center;">
           ${logoUrl ? `
-          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 160px; height: auto; margin-bottom: 8px;" />
+          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto;" />
           ` : `
-          <table role="presentation" style="margin: 0 auto 8px auto;">
+          <table role="presentation" style="margin: 0 auto;">
             <tr>
-              <td style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+              <td style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
                 ${PLATFORM_NAME}
               </td>
             </tr>
@@ -59,14 +59,14 @@ const masterEmailHeader = (options = {}) => {
     ${title || subtitle ? `
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 0 40px 24px; text-align: left;">
+        <td style="padding: 0 20px 16px; text-align: left;">
           ${title ? `
-          <h1 style="margin: 0 0 8px 0; color: #111827; font-size: 24px; font-weight: 600; line-height: 1.3;">
+          <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
             ${title}
           </h1>
           ` : ''}
           ${subtitle ? `
-          <p style="margin: 0; color: #6b7280; font-size: 15px; font-weight: 400;">
+          <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: 400;">
             ${subtitle}
           </p>
           ` : ''}
@@ -668,13 +668,13 @@ const teamInvitationEmail = (data) => {
     <!-- Team Invitation Header -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 32px 40px 24px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+        <td style="padding: 20px 20px 16px; text-align: center; border-bottom: 1px solid #e5e7eb;">
           <!-- Logo -->
-          <img src="${PLATFORM_LOGO_URL}" alt="${PLATFORM_NAME}" style="max-width: 160px; height: auto; margin-bottom: 20px;" />
+          <img src="${PLATFORM_LOGO_URL}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto; margin-bottom: 12px;" />
 
           <!-- Title -->
-          <h1 style="margin: 0 0 8px 0; color: #111827; font-size: 24px; font-weight: 600;">You're Invited!</h1>
-          <p style="margin: 0; color: #6b7280; font-size: 15px;">Join the team and start collaborating</p>
+          <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 20px; font-weight: 600;">You're Invited!</h1>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">Join the team and start collaborating</p>
         </td>
       </tr>
     </table>
@@ -682,7 +682,7 @@ const teamInvitationEmail = (data) => {
     <!-- Email Body -->
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
       <tr>
-        <td style="padding: 32px 40px;">
+        <td style="padding: 20px;">
 
           <!-- Store Info Card -->
           <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0f9ff; border: 1px solid #e0e7ff; border-radius: 12px; margin-bottom: 24px;">

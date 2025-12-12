@@ -553,11 +553,11 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
                 </tr>
               </table>
               <!-- Header with white background -->
-              <div style="background-color: #ffffff; padding: 32px 30px 24px; text-align: center;">
-                <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 160px; max-height: 80px; object-fit: contain; margin-bottom: 8px;">
+              <div style="background-color: #ffffff; padding: 20px 20px 16px; text-align: center;">
+                <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 120px; max-height: 60px; object-fit: contain;">
               </div>
             </div>'), ('f67ae526-c1ab-45ab-bbd5-5b7b353644d9', '{{STORE_ID}}', 'email_footer', 'html', '["store_name", "store_url", "contact_email", "store_address", "store_city", "store_state", "store_postal_code", "current_year", "unsubscribe_url"]', 'true', '101', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Footer Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #ffffff; padding: 24px 30px 32px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+              <div style="background-color: #ffffff; padding: 16px 20px 20px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
                 <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
                   Questions? Contact us at <a href="mailto:{{contact_email}}" style="color: #6b7280; text-decoration: none;">{{contact_email}}</a>
                 </p>
