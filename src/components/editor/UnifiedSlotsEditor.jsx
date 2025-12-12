@@ -645,8 +645,8 @@ const UnifiedSlotsEditor = ({
   }
 
   return (
-    <div className={`h-full flex flex-col bg-gray-50 ${
-      isSidebarVisible ? 'pr-80' : ''
+    <div className={`h-full flex flex-col bg-gray-50 transition-all duration-300 ${
+      isSidebarVisible && selectedElement ? 'pr-80' : ''
     }`}>
       {/* Main Editor Area */}
       <div className="flex flex-col flex-1 min-h-0">
