@@ -1275,143 +1275,23 @@ class SupabaseIntegration {
       try {
         config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-        // Get token and proactively refresh if expired or expiring soon
-        token = await this.ensureValidToken(storeId);
+        // IMPORTANT: ALWAYS check Redis for pending OAuth tokens FIRST
+        // This handles reconnection cases where old tokens exist but new ones are in Redis
+        let foundPendingTokens = false;
+        try {
+          const { getRedisClient } = require('../config/redis');
+          const redisClient = getRedisClient();
 
-        if (!token) {
+          if (redisClient) {
+            const redisKey = `oauth:pending:${storeId}`;
+            const tokenDataStr = await redisClient.get(redisKey);
 
-          // Check Redis for pending OAuth tokens (from recent OAuth callback)
-          try {
-            const { getRedisClient } = require('../config/redis');
-            const redisClient = getRedisClient();
+            if (tokenDataStr) {
+              console.log('🔄 Found pending OAuth tokens in Redis (reconnection detected)');
+              const tokenData = JSON.parse(tokenDataStr);
+              foundPendingTokens = true;
 
-            if (redisClient) {
-              const redisKey = `oauth:pending:${storeId}`;
-              const tokenDataStr = await redisClient.get(redisKey);
-
-              if (tokenDataStr) {
-                const tokenData = JSON.parse(tokenDataStr);
-
-                // Save to integration_configs
-                const configData = {
-                  accessToken: tokenData.access_token,
-                  refreshToken: tokenData.refresh_token,
-                  expiresAt: tokenData.expires_at,
-                  projectUrl: tokenData.project_url,
-                  serviceRoleKey: tokenData.service_role_key,
-                  databaseUrl: tokenData.database_url,
-                  storageUrl: tokenData.storage_url,
-                  authUrl: tokenData.auth_url,
-                  connected: true
-                };
-
-                await IntegrationConfig.createOrUpdateWithKey(
-                  storeId,
-                  this.integrationType,
-                  configData,
-                  'default',
-                  { displayName: 'Supabase' }
-                );
-
-                // Update token expiration
-                const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-                await tenantDb
-                  .from('integration_configs')
-                  .update({ token_expires_at: tokenData.expires_at, updated_at: new Date() })
-                  .eq('store_id', storeId)
-                  .eq('integration_type', this.integrationType);
-
-                // Sync token expiry to master DB for cron-based refresh
-                try {
-                  await IntegrationToken.upsertToken(storeId, this.integrationType, {
-                    token_expires_at: tokenData.expires_at
-                  });
-                } catch (syncError) {
-                  console.warn('[getConnectionStatus] Failed to sync token expiry to master DB:', syncError.message);
-                }
-
-                // IMPORTANT: Also insert into store_databases in master DB
-                // This is required for ConnectionManager to find the store's database
-                if (tokenData.project_url && tokenData.service_role_key) {
-                  console.log('📦 Inserting into store_databases in master...');
-                  try {
-                    const { masterDbClient } = require('../database/masterConnection');
-                    const { v4: uuidv4 } = require('uuid');
-                    const { encryptDatabaseCredentials } = require('../utils/encryption');
-
-                    // Extract host from project URL
-                    let host = null;
-                    try {
-                      host = new URL(tokenData.project_url).hostname;
-                    } catch (e) {
-                      console.warn('Could not parse projectUrl:', e.message);
-                    }
-
-                    // Encrypt credentials for store_databases
-                    const credentials = {
-                      projectUrl: tokenData.project_url,
-                      serviceRoleKey: tokenData.service_role_key,
-                      accessToken: tokenData.access_token,
-                      refreshToken: tokenData.refresh_token
-                    };
-                    const encryptedCredentials = encryptDatabaseCredentials(credentials);
-
-                    // Upsert into store_databases (always set is_primary=true for main connection)
-                    const { data: storeDbRecord, error: storeDbError } = await masterDbClient
-                      .from('store_databases')
-                      .upsert({
-                        id: uuidv4(),
-                        store_id: storeId,
-                        database_type: 'supabase',
-                        connection_string_encrypted: encryptedCredentials,
-                        host: host,
-                        port: null,
-                        database_name: 'postgres',
-                        is_active: true,
-                        is_primary: true, // Primary connection - cannot be deleted
-                        connection_status: 'connected',
-                        last_connection_test: new Date().toISOString(),
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                      }, {
-                        onConflict: 'store_id',
-                        ignoreDuplicates: false
-                      })
-                      .select()
-                      .single();
-
-                    if (storeDbError) {
-                      console.error('❌ Failed to insert into store_databases:', storeDbError.message);
-                    } else {
-                      console.log('✅ Inserted into store_databases in master (is_primary=true):', storeDbRecord?.id);
-                    }
-                  } catch (storeDbInsertError) {
-                    console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
-                  }
-                }
-
-                // Clean up Redis
-                await redisClient.del(redisKey);
-
-                // Set token from saved data
-                token = {
-                  access_token: tokenData.access_token,
-                  refresh_token: tokenData.refresh_token,
-                  service_role_key: tokenData.service_role_key,
-                  project_url: tokenData.project_url,
-                  expires_at: tokenData.expires_at
-                };
-
-                // Update config reference
-                config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
-              }
-            }
-
-            // Check memory fallback if still no token
-            if (!token && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
-              const tokenData = global.pendingOAuthTokens.get(storeId);
-
-              // Save to integration_configs
+              // Save to integration_configs (overwrites any existing old tokens)
               const configData = {
                 accessToken: tokenData.access_token,
                 refreshToken: tokenData.refresh_token,
@@ -1433,8 +1313,8 @@ class SupabaseIntegration {
               );
 
               // Update token expiration
-              const tenantDb2 = await ConnectionManager.getStoreConnection(storeId);
-              await tenantDb2
+              const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+              await tenantDb
                 .from('integration_configs')
                 .update({ token_expires_at: tokenData.expires_at, updated_at: new Date() })
                 .eq('store_id', storeId)
@@ -1442,21 +1322,25 @@ class SupabaseIntegration {
 
               // Sync token expiry to master DB for cron-based refresh
               try {
+                console.log('📝 Syncing token expiry to integration_tokens in master DB...');
                 await IntegrationToken.upsertToken(storeId, this.integrationType, {
                   token_expires_at: tokenData.expires_at
                 });
+                console.log('✅ Token synced to integration_tokens in master DB');
               } catch (syncError) {
                 console.warn('[getConnectionStatus] Failed to sync token expiry to master DB:', syncError.message);
               }
 
-              // IMPORTANT: Also insert into store_databases in master DB (memory fallback path)
+              // IMPORTANT: Also insert into store_databases in master DB
+              // This is required for ConnectionManager to find the store's database
               if (tokenData.project_url && tokenData.service_role_key) {
-                console.log('📦 Inserting into store_databases in master (memory fallback)...');
+                console.log('📦 Inserting into store_databases in master...');
                 try {
                   const { masterDbClient } = require('../database/masterConnection');
                   const { v4: uuidv4 } = require('uuid');
                   const { encryptDatabaseCredentials } = require('../utils/encryption');
 
+                  // Extract host from project URL
                   let host = null;
                   try {
                     host = new URL(tokenData.project_url).hostname;
@@ -1464,6 +1348,7 @@ class SupabaseIntegration {
                     console.warn('Could not parse projectUrl:', e.message);
                   }
 
+                  // Encrypt credentials for store_databases
                   const credentials = {
                     projectUrl: tokenData.project_url,
                     serviceRoleKey: tokenData.service_role_key,
@@ -1506,8 +1391,9 @@ class SupabaseIntegration {
                 }
               }
 
-              // Clean up memory
-              global.pendingOAuthTokens.delete(storeId);
+              // Clean up Redis
+              await redisClient.del(redisKey);
+              console.log('🧹 Cleaned up pending tokens from Redis');
 
               // Set token from saved data
               token = {
@@ -1521,9 +1407,134 @@ class SupabaseIntegration {
               // Update config reference
               config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
             }
-          } catch (migrationError) {
-            console.error('[getConnectionStatus] Error during token migration:', migrationError);
           }
+
+          // Check memory fallback for pending tokens
+          if (!foundPendingTokens && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+            console.log('🔄 Found pending OAuth tokens in memory (reconnection detected)');
+            const tokenData = global.pendingOAuthTokens.get(storeId);
+            foundPendingTokens = true;
+
+            // Save to integration_configs
+            const configData = {
+              accessToken: tokenData.access_token,
+              refreshToken: tokenData.refresh_token,
+              expiresAt: tokenData.expires_at,
+              projectUrl: tokenData.project_url,
+              serviceRoleKey: tokenData.service_role_key,
+              databaseUrl: tokenData.database_url,
+              storageUrl: tokenData.storage_url,
+              authUrl: tokenData.auth_url,
+              connected: true
+            };
+
+            await IntegrationConfig.createOrUpdateWithKey(
+              storeId,
+              this.integrationType,
+              configData,
+              'default',
+              { displayName: 'Supabase' }
+            );
+
+            // Update token expiration
+            const tenantDb2 = await ConnectionManager.getStoreConnection(storeId);
+            await tenantDb2
+              .from('integration_configs')
+              .update({ token_expires_at: tokenData.expires_at, updated_at: new Date() })
+              .eq('store_id', storeId)
+              .eq('integration_type', this.integrationType);
+
+            // Sync token expiry to master DB for cron-based refresh
+            try {
+              console.log('📝 Syncing token expiry to integration_tokens in master DB (memory fallback)...');
+              await IntegrationToken.upsertToken(storeId, this.integrationType, {
+                token_expires_at: tokenData.expires_at
+              });
+              console.log('✅ Token synced to integration_tokens in master DB');
+            } catch (syncError) {
+              console.warn('[getConnectionStatus] Failed to sync token expiry to master DB:', syncError.message);
+            }
+
+            // IMPORTANT: Also insert into store_databases in master DB (memory fallback path)
+            if (tokenData.project_url && tokenData.service_role_key) {
+              console.log('📦 Inserting into store_databases in master (memory fallback)...');
+              try {
+                const { masterDbClient } = require('../database/masterConnection');
+                const { v4: uuidv4 } = require('uuid');
+                const { encryptDatabaseCredentials } = require('../utils/encryption');
+
+                let host = null;
+                try {
+                  host = new URL(tokenData.project_url).hostname;
+                } catch (e) {
+                  console.warn('Could not parse projectUrl:', e.message);
+                }
+
+                const credentials = {
+                  projectUrl: tokenData.project_url,
+                  serviceRoleKey: tokenData.service_role_key,
+                  accessToken: tokenData.access_token,
+                  refreshToken: tokenData.refresh_token
+                };
+                const encryptedCredentials = encryptDatabaseCredentials(credentials);
+
+                // Upsert into store_databases (always set is_primary=true for main connection)
+                const { data: storeDbRecord, error: storeDbError } = await masterDbClient
+                  .from('store_databases')
+                  .upsert({
+                    id: uuidv4(),
+                    store_id: storeId,
+                    database_type: 'supabase',
+                    connection_string_encrypted: encryptedCredentials,
+                    host: host,
+                    port: null,
+                    database_name: 'postgres',
+                    is_active: true,
+                    is_primary: true, // Primary connection - cannot be deleted
+                    connection_status: 'connected',
+                    last_connection_test: new Date().toISOString(),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }, {
+                    onConflict: 'store_id',
+                    ignoreDuplicates: false
+                  })
+                  .select()
+                  .single();
+
+                if (storeDbError) {
+                  console.error('❌ Failed to insert into store_databases:', storeDbError.message);
+                } else {
+                  console.log('✅ Inserted into store_databases in master (is_primary=true):', storeDbRecord?.id);
+                }
+              } catch (storeDbInsertError) {
+                console.error('❌ Error inserting into store_databases:', storeDbInsertError.message);
+              }
+            }
+
+            // Clean up memory
+            global.pendingOAuthTokens.delete(storeId);
+            console.log('🧹 Cleaned up pending tokens from memory');
+
+            // Set token from saved data
+            token = {
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token,
+              service_role_key: tokenData.service_role_key,
+              project_url: tokenData.project_url,
+              expires_at: tokenData.expires_at
+            };
+
+            // Update config reference
+            config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+          }
+        } catch (pendingTokenError) {
+          console.error('[getConnectionStatus] Error checking for pending tokens:', pendingTokenError);
+        }
+
+        // If no pending tokens were found, get existing token and refresh if needed
+        if (!token) {
+          token = await this.ensureValidToken(storeId);
         }
       } catch (dbError) {
         // DB might not be accessible yet, continue without config
