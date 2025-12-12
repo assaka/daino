@@ -34,7 +34,10 @@ export default function Category() {
   const location = useLocation();
 
   // Check if user is store owner (for Edit button)
-  const isStoreOwner = typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token');
+  // Also show in AI Workspace (workspace=true param) since user is definitely authorized there
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isInWorkspace = urlParams?.get('workspace') === 'true';
+  const isStoreOwner = isInWorkspace || (typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token'));
 
   // Extract category path from URL
   // Platform domain: /public/storeCode/category/path/to/category (slice from index 4)

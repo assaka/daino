@@ -85,7 +85,10 @@ export default function ProductDetail() {
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
 
   // Check if user is store owner (for Edit button)
-  const isStoreOwner = typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token');
+  // Also show in AI Workspace (workspace=true param) since user is definitely authorized there
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isInWorkspace = urlParams?.get('workspace') === 'true';
+  const isStoreOwner = isInWorkspace || (typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token'));
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
