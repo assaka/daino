@@ -302,7 +302,6 @@ const ProductItemCard = ({
             className={nameConfig.className || "font-semibold text-lg truncate mt-1"}
             style={nameConfig.styles || {}}
             data-slot-id={isEditorMode ? 'product_card_name' : undefined}
-            onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_name') : undefined}
           >
             <Link to={createProductUrl(store.slug, product.slug)} onClick={isEditorMode ? (e) => e.preventDefault() : undefined}>{translatedProductName}</Link>
           </h3>
