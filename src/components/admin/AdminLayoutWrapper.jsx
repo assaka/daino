@@ -57,7 +57,12 @@ export function AdminLayoutWrapper({ children }) {
       setChecking(false);
     } catch (error) {
       console.error('Store check error:', error);
-      // On error, allow access (fail open)
+      // If session has been terminated, redirect to auth
+      if (error.message?.includes('Session has been terminated')) {
+        navigate('/admin/auth', { replace: true });
+        return;
+      }
+      // On other errors, allow access (fail open)
       setChecking(false);
     }
   };
