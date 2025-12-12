@@ -453,9 +453,21 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     // Apply product translations
     const productData = await applyProductTranslations(store_id, product, lang);
 
-    // Fetch images from product_files table
-    const imagesByProduct = await fetchProductImages(product.id, tenantDb);
-    productData.images = imagesByProduct[product.id] || [];
+    // Use product's own images if available, otherwise fetch from product_files/product_images tables
+    if (productData.images && Array.isArray(productData.images) && productData.images.length > 0) {
+      // Product already has images stored in its images column - use them
+      // Normalize format to ensure url property exists
+      productData.images = productData.images.map(img => ({
+        url: img.url || img.image_url || img.src || '',
+        alt: img.alt || img.alt_text || '',
+        isPrimary: img.isPrimary || img.is_primary || false,
+        position: img.position || img.sort_order || 0
+      }));
+    } else {
+      // Fallback: fetch images from product_files or product_images tables
+      const imagesByProduct = await fetchProductImages(product.id, tenantDb);
+      productData.images = imagesByProduct[product.id] || [];
+    }
 
     // Load product attributes - skip if fails to not break product page
     productData.attributes = [];

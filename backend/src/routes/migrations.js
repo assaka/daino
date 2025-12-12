@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * POST /api/migrations/make-creator-id-nullable
