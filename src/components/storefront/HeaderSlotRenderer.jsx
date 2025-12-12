@@ -27,6 +27,12 @@ export function HeaderSlotRenderer({
   headerContext = {}
 }) {
   const { t } = useTranslation();
+
+  // Early return if no slots provided
+  if (!slots || typeof slots !== 'object' || Object.keys(slots).length === 0) {
+    return null;
+  }
+
   const {
     store,
     settings = {},

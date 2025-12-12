@@ -9,12 +9,14 @@ export class SlotManager {
   }
   
   static getRootSlots(slots) {
+    if (!slots || typeof slots !== 'object') return [];
     return Object.values(slots)
       .filter(slot => slot.parentId === null)
       .sort((a, b) => (a.position?.row || 0) - (b.position?.row || 0));
   }
-  
+
   static getChildSlots(slots, parentId) {
+    if (!slots || typeof slots !== 'object') return [];
     const allSlots = Object.values(slots);
     const childSlots = allSlots.filter(slot => slot.parentId === parentId);
 
