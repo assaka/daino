@@ -52,6 +52,10 @@ import {
 } from '@/components/editor/slot/SlotComponents';
 import { ResponsiveIframe } from '@/components/editor/ResponsiveIframe';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
+import { HeaderSlotRenderer } from '@/components/storefront/HeaderSlotRenderer';
+import { useStore } from '@/components/storefront/StoreProvider';
+import TranslationContext from '@/contexts/TranslationContext';
+import { buildEditorHeaderContext, getHeaderViewMode } from '@/components/editor/editorHeaderUtils';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import '@/components/editor/slot/CheckoutSlotComponents'; // Register checkout components
@@ -106,7 +110,11 @@ const UnifiedSlotsEditor = ({
     selectedProductSlug,
     onProductChange,
     isLoadingCategoryData,
-    isLoadingProductData
+    isLoadingProductData,
+    // Header integration
+    includeHeader,
+    headerSlots,
+    headerContext: configHeaderContext
   } = config;
 
   // Store context for database operations
@@ -116,6 +124,11 @@ const UnifiedSlotsEditor = ({
   // This triggers a reload when user reverts to a previous version
   const aiWorkspaceContext = useContext(AIWorkspaceContext);
   const configurationRefreshTrigger = aiWorkspaceContext?.configurationRefreshTrigger || 0;
+
+  // Get store and translation context for bridging into iframe
+  // These are used by EditorContextBridge to provide context inside the portal
+  const storeContextValue = useStore();
+  const translationContextValue = useContext(TranslationContext);
 
   const [currentDragInfo, setCurrentDragInfo] = useState(null);
 
@@ -451,7 +464,26 @@ const UnifiedSlotsEditor = ({
           <ResponsiveIframe
             viewport={currentViewport}
             className="bg-white"
+            contextBridge={{
+              storeValue: storeContextValue,
+              translationValue: translationContextValue
+            }}
           >
+            {/* Header Section - rendered inside iframe for viewport responsiveness */}
+            {includeHeader && headerSlots && Object.keys(headerSlots).length > 0 && (
+              <HeaderSlotRenderer
+                slots={headerSlots}
+                headerContext={configHeaderContext || buildEditorHeaderContext({
+                  store: selectedStore,
+                  settings: selectedStore?.settings || {},
+                  categories: storeContextValue?.categories || [],
+                  viewport: currentViewport,
+                  pathname: `/${pageType}`
+                })}
+                viewMode={getHeaderViewMode(currentViewport)}
+              />
+            )}
+
             <div className="px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}
               <div id="flash-messages-area"></div>

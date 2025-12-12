@@ -5,9 +5,14 @@
  * - Maintainable structure
  */
 
+import { useMemo } from 'react';
 import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
+import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
+import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -62,13 +67,38 @@ const LoginSlotsEditor = ({
   onSave,
   viewMode = 'login'
 }) => {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const storeId = getSelectedStoreId();
+
+  // Fetch categories for header context
+  const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
+
+  // Fetch header configuration for combined header + page editing
+  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+
+  // Build config with header integration
+  const enhancedConfig = useMemo(() => ({
+    ...loginEditorConfig,
+    includeHeader: true,
+    headerSlots: headerConfig?.slots || null,
+    headerContext: buildEditorHeaderContext({
+      store: selectedStore,
+      settings: selectedStore?.settings || {},
+      categories,
+      viewport: 'desktop',
+      pathname: '/login'
+    })
+  }), [headerConfig, selectedStore, categories]);
+
   return (
-    <UnifiedSlotsEditor
-      config={loginEditorConfig}
-      mode={mode}
-      onSave={onSave}
-      viewMode={viewMode}
-    />
+    <EditorStoreProvider>
+      <UnifiedSlotsEditor
+        config={enhancedConfig}
+        mode={mode}
+        onSave={onSave}
+        viewMode={viewMode}
+      />
+    </EditorStoreProvider>
   );
 };
 

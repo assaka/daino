@@ -26,7 +26,8 @@ import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
 import { clearCache, deleteCacheKey } from '@/utils/cacheUtils';
 import {PageLoader} from "@/components/ui/page-loader.jsx";
 
-const StoreContext = createContext(null);
+// Export StoreContext so it can be re-provided inside iframe portals (for editor context bridging)
+export const StoreContext = createContext(null);
 export const useStore = () => useContext(StoreContext);
 
 // Re-export cachedApiCall for backward compatibility

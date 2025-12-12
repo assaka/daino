@@ -1,11 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { EditorContextBridge } from './EditorContextBridge';
 
 /**
  * ResponsiveIframe - Renders content in an iframe with viewport constraints
  * This enables true responsive behavior without transforming classes
+ *
+ * @param {string} viewport - Viewport size ('mobile', 'tablet', 'desktop')
+ * @param {React.ReactNode} children - Content to render in iframe
+ * @param {string} className - Additional CSS classes
+ * @param {Object} contextBridge - Optional context bridging config
+ * @param {Object} contextBridge.storeValue - Store context value to bridge
+ * @param {Object} contextBridge.translationValue - Translation context value to bridge
  */
-export function ResponsiveIframe({ viewport = 'desktop', children, className = '' }) {
+export function ResponsiveIframe({ viewport = 'desktop', children, className = '', contextBridge }) {
   const iframeRef = useRef(null);
   const [iframeDocument, setIframeDocument] = useState(null);
   const isInitialized = useRef(false);
@@ -106,7 +114,14 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
         title="Responsive Preview"
       />
       {iframeDocument && iframeDocument.getElementById('root') && createPortal(
-        children,
+        contextBridge ? (
+          <EditorContextBridge
+            storeContextValue={contextBridge.storeValue}
+            translationContextValue={contextBridge.translationValue}
+          >
+            {children}
+          </EditorContextBridge>
+        ) : children,
         iframeDocument.getElementById('root')
       )}
     </div>

@@ -12,6 +12,8 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration, useCategories } from '@/hooks/useApiQueries';
 import { generateMockProductContext } from '@/utils/mockProductData';
+import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
+import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -47,6 +49,9 @@ export default function ProductSlotsEditor({
 
   // Fetch categories for editor
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
+
+  // Fetch header configuration for combined header + page editing
+  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
 
   const [realProduct, setRealProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
@@ -235,8 +240,18 @@ export default function ProductSlotsEditor({
     availableProducts: allProducts,
     selectedProductSlug,
     onProductChange: setSelectedProductSlug,
-    isLoadingProductData: loading
-  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories]);
+    isLoadingProductData: loading,
+    // Header integration
+    includeHeader: true,
+    headerSlots: headerConfig?.slots || null,
+    headerContext: buildEditorHeaderContext({
+      store: selectedStore,
+      settings: selectedStore?.settings || {},
+      categories,
+      viewport: 'desktop',
+      pathname: '/product'
+    })
+  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig]);
 
   // Show loading state while fetching product
   if (loading) {
@@ -249,11 +264,13 @@ export default function ProductSlotsEditor({
   }
 
   return (
-    <UnifiedSlotsEditor
-      config={productEditorConfig}
-      mode={mode}
-      onSave={onSave}
-      viewMode={viewMode}
-    />
+    <EditorStoreProvider>
+      <UnifiedSlotsEditor
+        config={productEditorConfig}
+        mode={mode}
+        onSave={onSave}
+        viewMode={viewMode}
+      />
+    </EditorStoreProvider>
   );
 }

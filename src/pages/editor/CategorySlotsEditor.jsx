@@ -14,6 +14,8 @@ import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useCategory, useCategories, useFilterableAttributes, useSlotConfiguration } from '@/hooks/useApiQueries';
+import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
+import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Use same preprocessing as storefront for consistent rendering
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
@@ -147,6 +149,9 @@ const CategorySlotsEditor = ({
   // Fetch categories and filterable attributes directly since StoreProvider is skipped for editor pages
   const { data: fetchedCategories = [] } = useCategories(storeId, { enabled: !!storeId });
   const { data: fetchedFilterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
+
+  // Fetch header configuration for combined header + page editing
+  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
 
   const categories = storeContext?.categories?.length > 0 ? storeContext.categories : fetchedCategories;
   const filterableAttributes = storeContext?.filterableAttributes?.length > 0
@@ -444,20 +449,32 @@ const CategorySlotsEditor = ({
     isLoadingCategoryData: categoryLoading
   }), [categoryContext, categories, selectedCategorySlug, categoryLoading, storeContext, selectedStore, storeSettings]);
 
-  // Create enhanced config with store settings and filterable attributes
+  // Create enhanced config with store settings, filterable attributes, and header
   const enhancedConfig = {
     ...categoryEditorConfig,
     storeSettings,
-    filterableAttributes
+    filterableAttributes,
+    // Header integration
+    includeHeader: true,
+    headerSlots: headerConfig?.slots || null,
+    headerContext: buildEditorHeaderContext({
+      store: selectedStore,
+      settings: storeSettings,
+      categories,
+      viewport: 'desktop', // Will be overridden by UnifiedSlotsEditor based on currentViewport
+      pathname: '/category'
+    })
   };
 
   return (
-    <UnifiedSlotsEditor
-      config={enhancedConfig}
-      mode={mode}
-      onSave={onSave}
-      viewMode={viewMode}
-    />
+    <EditorStoreProvider>
+      <UnifiedSlotsEditor
+        config={enhancedConfig}
+        mode={mode}
+        onSave={onSave}
+        viewMode={viewMode}
+      />
+    </EditorStoreProvider>
   );
 };
 
