@@ -411,7 +411,7 @@ export default function StorefrontLayout({ children }) {
       /* Hover effects for themed buttons */
       .btn-primary:hover, .btn-secondary:hover, .btn-add-to-cart:hover,
       .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover {
-          filter: brightness(0.85);
+          filter: brightness(1.15);
           transition: filter 0.2s ease;
       }
       .btn-primary, .btn-secondary, .btn-add-to-cart,
