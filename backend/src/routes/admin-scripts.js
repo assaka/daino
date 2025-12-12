@@ -540,4 +540,103 @@ async function runBackfillJob(jobId, options) {
   setTimeout(() => backgroundJobs.delete(jobId), 60 * 60 * 1000);
 }
 
+/**
+ * POST /api/admin/refresh-tokens
+ *
+ * Refreshes OAuth tokens for all stores before they expire.
+ * Designed to be called by Render Cron hourly.
+ * Requires X-Cron-Secret header.
+ *
+ * Query params:
+ *   - bufferMinutes: number (default 60) - Refresh tokens expiring within this many minutes
+ *   - batchSize: number (default 10) - Number of tokens to process at a time
+ */
+router.post('/refresh-tokens', verifyCronSecret, async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const IntegrationToken = require('../models/master/IntegrationToken');
+    const { bufferMinutes = 60, batchSize = 10 } = req.query;
+
+    console.log(`🔄 Starting token refresh job (buffer: ${bufferMinutes}min, batch: ${batchSize})`);
+
+    // Find tokens expiring soon
+    const expiringTokens = await IntegrationToken.findExpiringTokens(parseInt(bufferMinutes));
+
+    if (expiringTokens.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No tokens need refresh',
+        stats: { total: 0, refreshed: 0, failed: 0 },
+        duration: `${Date.now() - startTime}ms`
+      });
+    }
+
+    console.log(`Found ${expiringTokens.length} tokens to refresh`);
+
+    const stats = { total: expiringTokens.length, refreshed: 0, failed: 0, errors: [] };
+
+    // Process tokens
+    for (const tokenRecord of expiringTokens) {
+      const { store_id, integration_type, config_key } = tokenRecord;
+
+      try {
+        // Get the appropriate service
+        let service = null;
+        if (integration_type === 'supabase-oauth' || integration_type === 'supabase') {
+          service = require('../services/supabase-integration');
+        } else if (integration_type === 'cloudflare') {
+          service = require('../services/cloudflare-oauth-service');
+        }
+
+        if (!service) {
+          console.warn(`No refresh service for ${integration_type}`);
+          continue;
+        }
+
+        // Refresh the token
+        const result = await service.refreshAccessToken(store_id);
+
+        if (result.success) {
+          const newExpiresAt = result.expires_at || new Date(Date.now() + (result.expires_in || 3600) * 1000);
+          await IntegrationToken.recordRefreshSuccess(store_id, integration_type, newExpiresAt, config_key);
+          stats.refreshed++;
+          console.log(`✅ Refreshed ${integration_type} token for store ${store_id}`);
+        } else {
+          throw new Error(result.error || 'Refresh failed');
+        }
+
+      } catch (error) {
+        stats.failed++;
+        stats.errors.push({ store_id, integration_type, error: error.message });
+        await IntegrationToken.recordRefreshFailure(store_id, integration_type, error.message, config_key);
+        console.error(`❌ Failed to refresh ${integration_type} for store ${store_id}:`, error.message);
+
+        // Check for revoked tokens
+        if (error.message?.includes('invalid_grant') || error.message?.includes('revoked')) {
+          await IntegrationToken.markAsRevoked(store_id, integration_type, config_key);
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`🔄 Token refresh completed: ${stats.refreshed}/${stats.total} refreshed, ${stats.failed} failed (${duration}ms)`);
+
+    res.json({
+      success: true,
+      message: `Refreshed ${stats.refreshed}/${stats.total} tokens`,
+      stats,
+      duration: `${duration}ms`
+    });
+
+  } catch (error) {
+    console.error('❌ Token refresh job failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      duration: `${Date.now() - startTime}ms`
+    });
+  }
+});
+
 module.exports = router;
