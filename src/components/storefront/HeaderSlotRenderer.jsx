@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
@@ -14,7 +14,7 @@ import CategoryNav from './CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
 import CmsBlockRenderer from './CmsBlockRenderer';
 // Slot configurations come from database - renderConditions handled via slot metadata
-import { useTranslation } from '@/contexts/TranslationContext';
+import TranslationContext from '@/contexts/TranslationContext';
 
 /**
  * HeaderSlotRenderer - Renders header slots with full customization
@@ -26,7 +26,9 @@ export function HeaderSlotRenderer({
   viewMode = 'desktop',
   headerContext = {}
 }) {
-  const { t } = useTranslation();
+  // Use useContext directly to avoid throwing when TranslationProvider is not available
+  const translationContext = useContext(TranslationContext);
+  const t = translationContext?.t || ((key, fallback) => fallback || key);
 
   // Early return if no slots provided
   if (!slots || typeof slots !== 'object' || Object.keys(slots).length === 0) {
