@@ -725,6 +725,40 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             </div>
           </div>
         </div>
+      ) : status?.tokenExpired ? (
+        /* Token expired - show reconnect option */
+        <div className="space-y-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Cloud className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-amber-900 mb-1">
+                  Connection Expired
+                </h4>
+                <p className="text-sm text-amber-700 mb-3">
+                  Your Supabase OAuth token has expired. Please reconnect to restore access.
+                </p>
+                <button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
+                >
+                  {connecting ? (
+                    <>
+                      <div className="animate-spin -ml-1 mr-3 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Reconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Reconnect to Supabase
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : status?.connected ? (
         <div className="space-y-6">
           {/* Scope Warning */}
