@@ -27,7 +27,7 @@ const StoreHostname = masterSequelize.define('StoreHostname', {
     type: DataTypes.STRING(255),
     allowNull: false,
     unique: true,
-    comment: 'Full hostname: myshop.daino.com or custom.domain.com',
+    comment: 'Full hostname: myshop.dainostore.com or custom.dainostore.com',
     validate: {
       isValidHostname(value) {
         // Basic hostname validation
@@ -188,7 +188,7 @@ StoreHostname.createMapping = async function(storeId, hostname, slug, options = 
  */
 StoreHostname.extractSlug = function(hostname) {
   // Extract subdomain from hostname
-  // myshop.daino.com → myshop
+  // myshop.dainostore.com → myshop
   // www.custom.com → custom
   const parts = hostname.split('.');
   if (parts.length >= 2) {

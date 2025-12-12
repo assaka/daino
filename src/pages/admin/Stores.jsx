@@ -11,12 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
 import brevoAPI from '@/api/brevo';
+import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 
 export default function Stores() {
   const navigate = useNavigate();
@@ -34,6 +35,11 @@ export default function Stores() {
   const [showValidationError, setShowValidationError] = useState(false);
   const [validationErrors, setValidationErrors] = useState({ email: false, payment: false });
   const [validatingStore, setValidatingStore] = useState(null);
+  // Theme preset modal state
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [storeForTheme, setStoreForTheme] = useState(null);
+  const [selectedPreset, setSelectedPreset] = useState(null);
+  const [applyingTheme, setApplyingTheme] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -197,6 +203,37 @@ export default function Stores() {
       alert('Failed to delete store. Please try again.');
       setShowDeleteConfirm(false);
       setStoreToDelete(null);
+    }
+  };
+
+  // Apply theme preset to store
+  const handleApplyThemePreset = async () => {
+    if (!storeForTheme || !selectedPreset) return;
+
+    setApplyingTheme(true);
+    try {
+      const response = await apiClient.post(`/stores/${storeForTheme.id}/apply-theme-preset`, {
+        presetName: selectedPreset
+      });
+
+      if (response.success) {
+        // Update local state to reflect new theme
+        setStores(prev => prev.map(s =>
+          s.id === storeForTheme.id
+            ? { ...s, theme_preset: selectedPreset }
+            : s
+        ));
+        setShowThemeModal(false);
+        setStoreForTheme(null);
+        setSelectedPreset(null);
+      } else {
+        alert(response.error || 'Failed to apply theme preset');
+      }
+    } catch (error) {
+      console.error('Error applying theme preset:', error);
+      alert('Failed to apply theme preset. Please try again.');
+    } finally {
+      setApplyingTheme(false);
     }
   };
 
@@ -407,9 +444,11 @@ export default function Stores() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          window.location.href = `/admin/theme-layout?store=${store.id}`;
+                          setStoreForTheme(store);
+                          setSelectedPreset(store.theme_preset || 'default');
+                          setShowThemeModal(true);
                         }}
-                        title="Customize store theme"
+                        title="Change theme preset"
                       >
                         <Palette className="w-4 h-4" />
                       </Button>
@@ -632,6 +671,83 @@ export default function Stores() {
                   Configure Payments
                 </Button>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Theme Preset Modal */}
+      <Dialog open={showThemeModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowThemeModal(false);
+          setStoreForTheme(null);
+          setSelectedPreset(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Palette className="w-5 h-5 text-violet-600" />
+              Change Theme Preset
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <p className="text-sm text-violet-900 font-medium mb-1">
+                Store: {storeForTheme?.name}
+              </p>
+              <p className="text-sm text-violet-700">
+                Select a theme preset to apply all colors at once. This will overwrite current theme colors.
+              </p>
+            </div>
+
+            <ThemePresetSelector
+              value={selectedPreset}
+              onChange={setSelectedPreset}
+              variant="cards"
+            />
+
+            <div className="flex justify-between items-center pt-4 border-t">
+              <Button
+                variant="link"
+                className="text-sm text-gray-500 p-0"
+                onClick={() => {
+                  setShowThemeModal(false);
+                  window.location.href = `/admin/theme-layout?store=${storeForTheme?.id}`;
+                }}
+              >
+                Advanced Theme Settings →
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowThemeModal(false);
+                    setStoreForTheme(null);
+                    setSelectedPreset(null);
+                  }}
+                  disabled={applyingTheme}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-violet-600 hover:bg-violet-700"
+                  onClick={handleApplyThemePreset}
+                  disabled={applyingTheme || !selectedPreset}
+                >
+                  {applyingTheme ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    <>
+                      <Palette className="w-4 h-4 mr-2" />
+                      Apply Theme
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

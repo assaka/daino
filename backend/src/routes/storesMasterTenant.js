@@ -2019,6 +2019,130 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
 });
 
 /**
+ * POST /api/stores/:id/apply-theme-preset
+ * Apply a theme preset to the store (fetches colors from master and saves to tenant)
+ */
+router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const { presetName } = req.body;
+
+    if (!presetName) {
+      return res.status(400).json({
+        success: false,
+        error: 'presetName is required'
+      });
+    }
+
+    console.log(`🎨 Applying theme preset "${presetName}" to store ${storeId}`);
+
+    // Get store from master DB
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (storeError || !store || store.status !== 'active' || !store.is_active) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store is not operational'
+      });
+    }
+
+    // Fetch theme preset from master theme_defaults table
+    const { data: preset, error: presetError } = await masterDbClient
+      .from('theme_defaults')
+      .select('theme_settings, preset_name, display_name')
+      .eq('preset_name', presetName)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (presetError || !preset) {
+      return res.status(404).json({
+        success: false,
+        error: `Theme preset "${presetName}" not found`
+      });
+    }
+
+    console.log(`📦 Found preset "${preset.display_name}" with ${Object.keys(preset.theme_settings || {}).length} theme settings`);
+
+    // Get tenant DB connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Get current store data from tenant DB
+    const { data: currentStore, error: fetchError } = await tenantDb
+      .from('stores')
+      .select('settings')
+      .eq('id', storeId)
+      .single();
+
+    if (fetchError) {
+      throw new Error(fetchError.message);
+    }
+
+    // Merge preset theme settings into store settings
+    const currentSettings = currentStore.settings || {};
+    const updatedSettings = {
+      ...currentSettings,
+      theme: {
+        ...(currentSettings.theme || {}),
+        ...preset.theme_settings  // Apply all preset colors
+      }
+    };
+
+    // Update in tenant DB
+    const { data: updatedStore, error: updateError } = await tenantDb
+      .from('stores')
+      .update({ settings: updatedSettings })
+      .eq('id', storeId)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    // Update theme_preset reference in master stores table
+    await masterDbClient
+      .from('stores')
+      .update({
+        theme_preset: presetName,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
+
+    console.log(`✅ Theme preset "${presetName}" applied successfully to store ${storeId}`);
+
+    // Clear Redis bootstrap cache
+    try {
+      const { deletePattern } = require('../utils/cacheManager');
+      const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
+      console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for store:`, store.slug);
+    } catch (cacheError) {
+      console.warn('⚠️ Failed to clear bootstrap cache:', cacheError.message);
+    }
+
+    res.json({
+      success: true,
+      message: `Theme preset "${preset.display_name}" applied successfully`,
+      data: {
+        store_id: storeId,
+        preset_name: presetName,
+        theme_settings: preset.theme_settings
+      }
+    });
+  } catch (error) {
+    console.error('Apply theme preset error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to apply theme preset',
+      message: error.message
+    });
+  }
+});
+
+/**
  * DELETE /api/stores/:id
  * Delete store (soft delete - suspend)
  */

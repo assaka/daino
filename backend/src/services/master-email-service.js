@@ -18,7 +18,7 @@ const {
 class MasterEmailService {
   constructor() {
     this.apiKey = process.env.MASTER_BREVO_API_KEY || process.env.BREVO_API_KEY;
-    this.senderEmail = process.env.MASTER_SENDER_EMAIL || process.env.BREVO_SENDER_EMAIL || 'noreply@daino.com';
+    this.senderEmail = process.env.MASTER_SENDER_EMAIL || process.env.BREVO_SENDER_EMAIL || 'noreply@dainostore.com';
     this.senderName = process.env.MASTER_SENDER_NAME || PLATFORM_NAME;
     this.isConfigured = !!this.apiKey;
 

@@ -2,7 +2,7 @@
  * Tenant Resolver Middleware
  *
  * Resolves tenant (store) from hostname and attaches tenant DB connection to request
- * Maps: myshop.daino.com → storeId → tenantDb connection
+ * Maps: myshop.dainostore.com → storeId → tenantDb connection
  *
  * Usage:
  *   app.use(tenantResolver); // Apply globally

@@ -743,7 +743,7 @@ async function performUILabelsBulkTranslation(userId, userEmail, storeId, fromLa
           const emailData = {
             sender: {
               name: 'DainoStore Platform',
-              email: process.env.BREVO_SENDER_EMAIL || 'noreply@daino.com'
+              email: process.env.BREVO_SENDER_EMAIL || 'noreply@dainostore.com'
             },
             to: [
               {

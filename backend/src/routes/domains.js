@@ -69,7 +69,7 @@ router.get('/storefront-url', async (req, res) => {
     
     // Final fallback to slug-based URL
     if (!storefrontUrl) {
-      storefrontUrl = `https://${store.slug}.daino.com`;
+      storefrontUrl = `https://${store.slug}.dainostore.com`;
       source = 'slug_fallback';
     }
 

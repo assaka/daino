@@ -361,7 +361,7 @@ class DomainConfiguration {
       support_info: {
         message: "Need help? Check our detailed guides for your registrar",
         guides_url: "/docs/domain-setup",
-        contact_support: "support@daino.com"
+        contact_support: "support@dainostore.com"
       }
     };
   }

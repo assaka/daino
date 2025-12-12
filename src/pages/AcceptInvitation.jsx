@@ -251,7 +251,7 @@ export default function AcceptInvitation() {
             <Button onClick={() => navigate('/')} variant="outline">
               Go to Homepage
             </Button>
-            <p className="text-xs text-gray-400 mt-6">Powered by Daino</p>
+            <p className="text-xs text-gray-400 mt-6">Powered by DainoStore</p>
           </CardContent>
         </Card>
       </div>
