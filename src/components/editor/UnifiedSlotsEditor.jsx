@@ -471,6 +471,138 @@ const UnifiedSlotsEditor = ({
     setActiveEditSection('page');
   }, [handleElementClick]);
 
+  // Header-specific handlers for resize/drag/drop (mirrors page handlers but for header config)
+  const handleHeaderGridResize = useCallback((slotId, newColSpan, newRowSpan) => {
+    setHeaderLayoutConfig(prevConfig => {
+      const slot = prevConfig.slots?.[slotId];
+      if (!slot) return prevConfig;
+
+      const updatedSlots = {
+        ...prevConfig.slots,
+        [slotId]: {
+          ...slot,
+          colSpan: newColSpan ?? slot.colSpan,
+          rowSpan: newRowSpan ?? slot.rowSpan
+        }
+      };
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      if (onHeaderSave) {
+        onHeaderSave(updatedConfig);
+      }
+
+      return updatedConfig;
+    });
+  }, [onHeaderSave]);
+
+  const handleHeaderSlotHeightResize = useCallback((slotId, newHeight) => {
+    setHeaderLayoutConfig(prevConfig => {
+      const slot = prevConfig.slots?.[slotId];
+      if (!slot) return prevConfig;
+
+      const updatedSlots = {
+        ...prevConfig.slots,
+        [slotId]: {
+          ...slot,
+          styles: {
+            ...slot.styles,
+            minHeight: newHeight
+          }
+        }
+      };
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      if (onHeaderSave) {
+        onHeaderSave(updatedConfig);
+      }
+
+      return updatedConfig;
+    });
+  }, [onHeaderSave]);
+
+  const handleHeaderSlotDrop = useCallback((draggedSlotId, targetSlotId, position) => {
+    setHeaderLayoutConfig(prevConfig => {
+      const slots = { ...prevConfig.slots };
+      const draggedSlot = slots[draggedSlotId];
+      const targetSlot = slots[targetSlotId];
+
+      if (!draggedSlot || !targetSlot) return prevConfig;
+
+      // Update parent based on drop position
+      if (position === 'inside') {
+        slots[draggedSlotId] = { ...draggedSlot, parentId: targetSlotId };
+      } else {
+        slots[draggedSlotId] = { ...draggedSlot, parentId: targetSlot.parentId };
+      }
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      if (onHeaderSave) {
+        onHeaderSave(updatedConfig);
+      }
+
+      return updatedConfig;
+    });
+  }, [onHeaderSave]);
+
+  const handleHeaderSlotDelete = useCallback((slotId) => {
+    setHeaderLayoutConfig(prevConfig => {
+      const slots = { ...prevConfig.slots };
+      delete slots[slotId];
+
+      // Also delete any children
+      Object.keys(slots).forEach(id => {
+        if (slots[id].parentId === slotId) {
+          delete slots[id];
+        }
+      });
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      if (onHeaderSave) {
+        onHeaderSave(updatedConfig);
+      }
+
+      // Clear selection if deleted slot was selected
+      if (selectedElement?.getAttribute('data-slot-id') === slotId) {
+        setSelectedElement(null);
+        setIsSidebarVisible(false);
+      }
+
+      return updatedConfig;
+    });
+  }, [onHeaderSave, selectedElement]);
+
   // Render view mode tabs
   const renderViewModeTabs = () => {
     if (!viewModes || viewModes.length <= 1) return null;
@@ -621,12 +753,15 @@ const UnifiedSlotsEditor = ({
                   currentDragInfo={currentDragInfo}
                   setCurrentDragInfo={setCurrentDragInfo}
                   onElementClick={showPreview ? null : handleHeaderElementClick}
-                  onGridResize={null}
-                  onSlotHeightResize={null}
-                  onSlotDrop={null}
-                  onSlotDelete={null}
-                  onResizeStart={null}
-                  onResizeEnd={null}
+                  onGridResize={showPreview ? null : handleHeaderGridResize}
+                  onSlotHeightResize={showPreview ? null : handleHeaderSlotHeightResize}
+                  onSlotDrop={showPreview ? null : handleHeaderSlotDrop}
+                  onSlotDelete={showPreview ? null : handleHeaderSlotDelete}
+                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                  onResizeEnd={showPreview ? null : () => {
+                    lastResizeEndTime.current = Date.now();
+                    setTimeout(() => setIsResizing(false), 100);
+                  }}
                   selectedElementId={showPreview ? null : (activeEditSection === 'header' && selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
                   setPageConfig={setHeaderLayoutConfig}
                   saveConfiguration={onHeaderSave}
