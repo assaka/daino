@@ -705,6 +705,7 @@ const UnifiedSlotsEditor = ({
               onAddSlot={() => setShowAddSlotModal(true)}
               currentViewport={currentViewport}
               onViewportChange={setCurrentViewport}
+              isSidebarVisible={isSidebarVisible && selectedElement}
             />
           )}
 

@@ -1877,9 +1877,9 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, currentViewport, onViewportChange }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, currentViewport, onViewportChange, isSidebarVisible }) {
   return (
-    <div className="flex mx-6 mb-3 pt-2 justify-end">
+    <div className={`flex mx-6 mb-3 pt-2 justify-end transition-all duration-300 ${isSidebarVisible ? 'mr-80' : ''}`}>
       <div className="flex gap-2 items-center">
         {/* Viewport Mode Selector */}
         {currentViewport && onViewportChange && (
