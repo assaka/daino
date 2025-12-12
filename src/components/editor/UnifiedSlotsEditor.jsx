@@ -390,13 +390,18 @@ const UnifiedSlotsEditor = ({
   }, []);
 
   // Header-specific handlers for inline editing
-  const handleHeaderElementClick = useCallback((e) => {
+  // UnifiedSlotRenderer calls onElementClick(slotId, element) - not with an event
+  const handleHeaderElementClick = useCallback((slotId, element) => {
     if (isResizing) return;
     if (Date.now() - lastResizeEndTime.current < 200) return;
 
-    e.stopPropagation();
-    const target = e.currentTarget;
-    setSelectedElement(target);
+    // Find element with data-slot-id attribute
+    let slotElement = element;
+    if (slotElement && !slotElement.hasAttribute?.('data-slot-id')) {
+      slotElement = slotElement.closest?.('[data-slot-id]') || slotElement;
+    }
+
+    setSelectedElement(slotElement);
     setIsSidebarVisible(true);
     setActiveEditSection('header');
   }, [isResizing]);
@@ -466,8 +471,9 @@ const UnifiedSlotsEditor = ({
   }, [onHeaderSave]);
 
   // Handle page element click - sets active section to page
-  const handlePageElementClick = useCallback((e) => {
-    handleElementClick(e);
+  // UnifiedSlotRenderer calls onElementClick(slotId, element)
+  const handlePageElementClick = useCallback((slotId, element) => {
+    handleElementClick(slotId, element);
     setActiveEditSection('page');
   }, [handleElementClick]);
 
