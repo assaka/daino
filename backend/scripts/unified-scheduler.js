@@ -20,7 +20,7 @@ console.log('='.repeat(60));
 require('dotenv').config();
 
 const { masterDbClient } = require('../src/database/masterConnection');
-const ConnectionManager = require('../src/database/connectionManager');
+const ConnectionManager = require('../src/services/database/ConnectionManager');
 
 // Track execution stats
 const stats = {
@@ -362,21 +362,83 @@ function calculateNextRun(cronExpression, timezone = 'UTC') {
 }
 
 /**
+ * Run system jobs that always execute (not dependent on cron_jobs table)
+ */
+async function runSystemJobs() {
+  const systemResults = {
+    token_refresh: null,
+    daily_credit: null
+  };
+
+  // 1. Token Refresh - ALWAYS runs (hourly)
+  console.log('\n[SYSTEM] Running token refresh...');
+  try {
+    const TokenRefreshJob = require('../src/core/jobs/TokenRefreshJob');
+    const job = new TokenRefreshJob({
+      id: `system-token-${Date.now()}`,
+      type: 'system:token_refresh',
+      payload: { bufferMinutes: 60, batchSize: 10 }
+    });
+    const result = await job.execute();
+    systemResults.token_refresh = { success: true, ...result };
+    console.log(`  Token refresh: ${result.refreshed || 0} refreshed, ${result.failed || 0} failed`);
+    stats.jobs_executed++;
+  } catch (error) {
+    systemResults.token_refresh = { success: false, error: error.message };
+    console.error(`  Token refresh FAILED: ${error.message}`);
+    stats.jobs_failed++;
+    stats.errors.push({ job: 'System: Token Refresh', store: 'system', error: error.message });
+  }
+
+  // 2. Daily Credit Deduction - Only at midnight UTC (hour 0)
+  const currentHour = new Date().getUTCHours();
+  if (currentHour === 0) {
+    console.log('\n[SYSTEM] Running daily credit deduction (midnight UTC)...');
+    try {
+      const DailyCreditDeductionJob = require('../src/core/jobs/DailyCreditDeductionJob');
+      const job = new DailyCreditDeductionJob({
+        id: `system-credit-${Date.now()}`,
+        type: 'system:daily_credit_deduction',
+        payload: {}
+      });
+      const result = await job.execute();
+      systemResults.daily_credit = { success: true, ...result };
+      console.log(`  Credit deduction: ${result.stores?.successful || 0} stores, ${result.custom_domains?.successful || 0} domains`);
+      stats.jobs_executed++;
+    } catch (error) {
+      systemResults.daily_credit = { success: false, error: error.message };
+      console.error(`  Credit deduction FAILED: ${error.message}`);
+      stats.jobs_failed++;
+      stats.errors.push({ job: 'System: Daily Credit Deduction', store: 'system', error: error.message });
+    }
+  } else {
+    console.log(`\n[SYSTEM] Skipping daily credit deduction (current hour: ${currentHour}, runs at 0)`);
+  }
+
+  return systemResults;
+}
+
+/**
  * Main execution
  */
 async function main() {
   try {
-    // 1. Get all due jobs across all tenants
-    console.log('\n[1/3] Fetching due cron jobs...');
+    // 1. Run system jobs first (token refresh, credit deduction)
+    console.log('\n[1/4] Running system jobs...');
+    await runSystemJobs();
+    stats.jobs_found += 1; // Token refresh always runs
+
+    // 2. Get all due jobs across all tenants
+    console.log('\n[2/4] Fetching due cron jobs from database...');
     const dueJobs = await getDueCronJobs();
-    stats.jobs_found = dueJobs.length;
+    stats.jobs_found += dueJobs.length;
 
     if (dueJobs.length === 0) {
-      console.log('No jobs due for execution.');
+      console.log('No tenant cron jobs due for execution.');
     } else {
-      console.log(`\n[2/3] Executing ${dueJobs.length} jobs...`);
+      console.log(`\n[3/4] Executing ${dueJobs.length} tenant jobs...`);
 
-      // 2. Execute each job
+      // 3. Execute each job
       for (const job of dueJobs) {
         try {
           const result = await executeCronJob(job);
@@ -396,8 +458,8 @@ async function main() {
       }
     }
 
-    // 3. Print summary
-    console.log('\n[3/3] Execution Summary');
+    // 4. Print summary
+    console.log('\n[4/4] Execution Summary');
     console.log('='.repeat(60));
     console.log(`Jobs found:    ${stats.jobs_found}`);
     console.log(`Jobs executed: ${stats.jobs_executed}`);

@@ -7,7 +7,7 @@
  * The model provides backward-compatible API while storing data in cron_jobs.
  */
 
-const ConnectionManager = require('../database/connectionManager');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { v4: uuidv4 } = require('uuid');
 
 /**

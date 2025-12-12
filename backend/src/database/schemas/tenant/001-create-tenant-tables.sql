@@ -29,41 +29,9 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
-DO $$ BEGIN
-    CREATE TYPE enum_akeneo_schedules_import_type AS ENUM (
-    'attributes',
-    'families',
-    'categories',
-    'products',
-    'all'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE enum_akeneo_schedules_schedule_type AS ENUM (
-    'once',
-    'hourly',
-    'daily',
-    'weekly',
-    'monthly'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE enum_akeneo_schedules_status AS ENUM (
-    'scheduled',
-    'running',
-    'completed',
-    'failed',
-    'paused'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- REMOVED: enum_akeneo_schedules_import_type (migrated to cron_jobs.configuration)
+-- REMOVED: enum_akeneo_schedules_schedule_type (migrated to cron_jobs.metadata)
+-- REMOVED: enum_akeneo_schedules_status (use cron_jobs.is_active/is_paused instead)
 
 DO $$ BEGIN
     CREATE TYPE enum_ast_diffs_change_type AS ENUM (
@@ -1138,25 +1106,7 @@ CREATE TABLE IF NOT EXISTS import_statistics (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS akeneo_schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  import_type enum_akeneo_schedules_import_type NOT NULL,
-  schedule_type enum_akeneo_schedules_schedule_type DEFAULT 'once'::enum_akeneo_schedules_schedule_type NOT NULL,
-  schedule_time VARCHAR(50),
-  schedule_date TIMESTAMP WITH TIME ZONE,
-  is_active BOOLEAN DEFAULT true NOT NULL,
-  last_run TIMESTAMP WITH TIME ZONE,
-  next_run TIMESTAMP WITH TIME ZONE,
-  filters JSONB DEFAULT '{}'::jsonb NOT NULL,
-  options JSONB DEFAULT '{}'::jsonb NOT NULL,
-  status enum_akeneo_schedules_status DEFAULT 'scheduled'::enum_akeneo_schedules_status NOT NULL,
-  last_result JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  credit_cost NUMERIC DEFAULT 0.1 NOT NULL,
-  last_credit_usage UUID
-);
+-- REMOVED: akeneo_schedules table (migrated to cron_jobs with source_type='integration', source_name='akeneo')
 
 CREATE TABLE IF NOT EXISTS attribute_sets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1689,18 +1639,7 @@ CREATE TABLE IF NOT EXISTS cron_job_executions (
   metadata JSON DEFAULT '{}'::json
 );
 
-CREATE TABLE IF NOT EXISTS cron_job_types (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type_name VARCHAR(100) NOT NULL,
-  display_name VARCHAR(200) NOT NULL,
-  description TEXT NOT NULL,
-  configuration_schema JSON NOT NULL,
-  default_configuration JSON DEFAULT '{}'::json,
-  is_enabled BOOLEAN DEFAULT true,
-  category VARCHAR(100) DEFAULT 'general'::character varying,
-  icon VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW()
-);
+-- REMOVED: cron_job_types table (use code constants instead)
 
 CREATE TABLE IF NOT EXISTS cron_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2118,18 +2057,7 @@ CREATE TABLE IF NOT EXISTS integration_configs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS job_history (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id UUID NOT NULL,
-  status VARCHAR(20) NOT NULL,
-  message TEXT,
-  progress NUMERIC,
-  result JSON,
-  error JSON,
-  metadata JSON DEFAULT '{}'::json NOT NULL,
-  executed_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  duration_ms INTEGER
-);
+-- REMOVED: job_history table (use cron_job_executions instead)
 
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2397,34 +2325,7 @@ CREATE TABLE IF NOT EXISTS plugin_hooks (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS plugin_cron (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  plugin_id UUID NOT NULL,
-  cron_name VARCHAR(255) NOT NULL,
-  description TEXT,
-  cron_schedule VARCHAR(100) NOT NULL,
-  timezone VARCHAR(50) DEFAULT 'UTC',
-  handler_method VARCHAR(255) NOT NULL,
-  handler_code TEXT,
-  handler_params JSONB DEFAULT '{}',
-  is_enabled BOOLEAN DEFAULT true,
-  priority INTEGER DEFAULT 10,
-  last_run_at TIMESTAMP WITH TIME ZONE,
-  next_run_at TIMESTAMP WITH TIME ZONE,
-  last_status VARCHAR(50),
-  last_error TEXT,
-  last_result JSONB,
-  run_count INTEGER DEFAULT 0,
-  success_count INTEGER DEFAULT 0,
-  failure_count INTEGER DEFAULT 0,
-  consecutive_failures INTEGER DEFAULT 0,
-  max_runs INTEGER,
-  max_failures INTEGER DEFAULT 5,
-  timeout_seconds INTEGER DEFAULT 300,
-  cron_job_id UUID,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- REMOVED: plugin_cron table (migrated to cron_jobs with source_type='plugin')
 
 CREATE TABLE IF NOT EXISTS plugin_marketplace (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

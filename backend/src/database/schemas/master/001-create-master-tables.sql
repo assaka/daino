@@ -258,48 +258,11 @@ CREATE INDEX IF NOT EXISTS idx_service_credit_costs_category ON service_credit_c
 CREATE INDEX IF NOT EXISTS idx_service_credit_costs_active ON service_credit_costs(is_active) WHERE is_active = true;
 
 -- ============================================
--- 8. JOB_QUEUE TABLE
--- Centralized job queue (from Multi-Tenant Job Architecture)
+-- 8. JOB_QUEUE TABLE - REMOVED
+-- Migrated to tenant's jobs table via Job Sequelize model
+-- Use BackgroundJobManager with jobs table instead
 -- ============================================
-CREATE TABLE IF NOT EXISTS job_queue (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id),
-
-  -- Job details
-  job_type VARCHAR(100) NOT NULL,
-  payload JSONB NOT NULL DEFAULT '{}',
-  priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('urgent', 'high', 'normal', 'low')),
-  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN (
-    'pending',
-    'running',
-    'completed',
-    'failed',
-    'cancelled'
-  )),
-
-  -- Execution
-  started_at TIMESTAMP,
-  completed_at TIMESTAMP,
-
-  -- Retry logic
-  retry_count INTEGER DEFAULT 0,
-  max_retries INTEGER DEFAULT 3,
-  error_message TEXT,
-
-  -- Results
-  result JSONB,
-
-  -- Metadata
-  metadata JSONB DEFAULT '{}',
-
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_job_queue_store_id ON job_queue(store_id);
-CREATE INDEX IF NOT EXISTS idx_job_queue_status ON job_queue(status);
-CREATE INDEX IF NOT EXISTS idx_job_queue_pending ON job_queue(status, priority, created_at) WHERE status = 'pending';
-CREATE INDEX IF NOT EXISTS idx_job_queue_created ON job_queue(created_at DESC);
+-- REMOVED: job_queue table and indexes
 
 -- ============================================
 -- 9. USAGE_METRICS TABLE
