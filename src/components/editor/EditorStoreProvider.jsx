@@ -16,7 +16,7 @@ import { StoreContext } from '@/components/storefront/StoreProvider';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import TranslationContext from '@/contexts/TranslationContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useCategories, useFilterableAttributes, useProductLabels, useTaxes } from '@/hooks/useApiQueries';
+import { useCategories, useFilterableAttributes, useProductLabels, useTaxes, useTranslations } from '@/hooks/useApiQueries';
 import { useSlotConfiguration } from '@/hooks/useApiQueries';
 import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
 
@@ -49,11 +49,17 @@ export function EditorStoreProvider({ children }) {
     return localStorage.getItem('selectedCountry') || 'US';
   });
 
+  // Get current language from localStorage or default to 'en'
+  const currentLanguage = typeof localStorage !== 'undefined'
+    ? localStorage.getItem('daino_language') || 'en'
+    : 'en';
+
   // Fetch additional data using React Query hooks
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
   const { data: filterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
   const { data: productLabels = [] } = useProductLabels(storeId, { enabled: !!storeId });
   const { data: taxes = [] } = useTaxes(storeId, { enabled: !!storeId });
+  const { data: translations = {} } = useTranslations(storeId, currentLanguage, { enabled: !!storeId });
 
   // Build the store context value
   const storeContextValue = useMemo(() => {
@@ -115,20 +121,40 @@ export function EditorStoreProvider({ children }) {
     };
   }, [selectedStore, categories, filterableAttributes, productLabels, taxes, selectedCountry]);
 
-  // Build translation context value (minimal for editor)
-  const translationContextValue = useMemo(() => ({
-    t: (key, fallback) => fallback || key,
-    currentLanguage: 'en',
-    availableLanguages: [],
-    translations: {},
-    loading: false,
-    isRTL: false,
-    changeLanguage: () => {},
-    getEntityTranslation: () => '',
-    formatNumber: (num) => num.toString(),
-    formatCurrency: (amount, currency = 'USD') => `${currency} ${amount.toFixed(2)}`,
-    formatDate: (date) => new Date(date).toLocaleDateString()
-  }), []);
+  // Build translation context value with fetched translations
+  const translationContextValue = useMemo(() => {
+    // Helper to get nested value from dotted key
+    const getNestedValue = (obj, key) => {
+      if (!obj || typeof key !== 'string') return null;
+      const keys = key.split('.');
+      let current = obj;
+      for (const k of keys) {
+        if (current && typeof current === 'object' && k in current) {
+          current = current[k];
+        } else {
+          return null;
+        }
+      }
+      return typeof current === 'string' ? current : null;
+    };
+
+    return {
+      t: (key, fallback) => {
+        const value = getNestedValue(translations, key);
+        return value || fallback || key;
+      },
+      currentLanguage,
+      availableLanguages: [],
+      translations,
+      loading: false,
+      isRTL: false,
+      changeLanguage: () => {},
+      getEntityTranslation: () => '',
+      formatNumber: (num) => num.toString(),
+      formatCurrency: (amount, currency = 'USD') => `${currency} ${amount.toFixed(2)}`,
+      formatDate: (date) => new Date(date).toLocaleDateString()
+    };
+  }, [translations, currentLanguage]);
 
   // If no store selected, just render children without context
   if (!storeId || !storeContextValue) {
