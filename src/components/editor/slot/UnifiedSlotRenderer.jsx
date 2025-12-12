@@ -985,11 +985,12 @@ export function UnifiedSlotRenderer({
         return wrapWithResize(textElement, slot, 20, 16);
       } else {
         // Storefront mode - check if this is a product name that should link to product
+        // Only add Link in actual storefront, not in editor (even in preview mode)
         const isProductCardName = id === 'product_card_name' || id === 'product_name';
         const product = productData?.product || productData;
         const store = categoryData?.store || productData?.store;
 
-        if (isProductCardName && product?.slug && store?.slug) {
+        if (context === 'storefront' && isProductCardName && product?.slug && store?.slug) {
           const productUrl = createProductUrl(store.slug, product.slug);
           const HtmlTag = metadata?.htmlTag || 'div';
 
