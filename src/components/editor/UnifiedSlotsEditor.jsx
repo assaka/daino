@@ -458,19 +458,8 @@ const UnifiedSlotsEditor = ({
             viewport={currentViewport}
             className="bg-white"
           >
-            {/* Header Section - When includeHeader is enabled */}
-            {includeHeader && headerSlots && typeof headerSlots === 'object' && Object.keys(headerSlots).length > 0 && (
-              <div className="editor-header-section border-b-2 border-dashed border-blue-300 mb-4">
-                <div className="bg-blue-50 px-2 py-1 text-xs text-blue-600 font-medium">
-                  Header Layout
-                </div>
-                <HeaderSlotRenderer
-                  slots={headerSlots}
-                  viewMode={currentViewport === 'mobile' ? 'mobile' : 'desktop'}
-                  headerContext={headerContext || {}}
-                />
-              </div>
-            )}
+            {/* Header Section - Temporarily disabled for debugging */}
+            {/* TODO: Re-enable once null pointer issue is resolved */}
 
             <div className="px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}
