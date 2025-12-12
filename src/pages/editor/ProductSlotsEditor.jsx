@@ -35,11 +35,12 @@ const createDefaultSlots = async () => {
 export default function ProductSlotsEditor({
   mode = 'edit',
   onSave,
-  viewMode = 'default'
+  viewMode = 'default',
+  initialItemSlug = null
 }) {
-  // Get initial product from URL params (e.g., ?product=my-product-slug)
+  // Get initial product from prop (from AI Workspace) or URL params
   const [searchParams] = useSearchParams();
-  const initialProductSlug = searchParams.get('product');
+  const initialProductSlug = initialItemSlug || searchParams.get('product');
 
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();

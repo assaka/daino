@@ -107,6 +107,30 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Preview refresh trigger (increments to signal storefront preview to reload)
   const [previewRefreshTrigger, setPreviewRefreshTrigger] = useState(0);
 
+  // Selected item slug (for category/product pages opened via Edit button)
+  const [selectedItemSlug, setSelectedItemSlug] = useState(null);
+
+  // Read URL params on mount to handle Edit button navigation
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pageParam = params.get('page');
+    const itemParam = params.get('item');
+    const editParam = params.get('edit');
+
+    if (pageParam && PAGE_TYPES[pageParam.toUpperCase()]) {
+      setSelectedPageType(PAGE_TYPES[pageParam.toUpperCase()]);
+      setViewMode(DEFAULT_VIEW_MODES[pageParam] || 'default');
+    }
+
+    if (itemParam) {
+      setSelectedItemSlug(itemParam);
+    }
+
+    if (editParam === 'true') {
+      setEditorMode(true);
+    }
+  }, []); // Only run on mount
+
   // Provision all slot configuration drafts when entering AI Workspace
   useEffect(() => {
     const provisionDrafts = async () => {
@@ -361,6 +385,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     editorMode,
     viewportMode,
     viewMode,
+    selectedItemSlug,
+    setSelectedItemSlug,
     setViewportMode,
     setViewMode,
 
@@ -429,6 +455,7 @@ export const AIWorkspaceProvider = ({ children }) => {
     editorMode,
     viewportMode,
     viewMode,
+    selectedItemSlug,
     currentConfiguration,
     hasUnsavedChanges,
     selectedSlotId,

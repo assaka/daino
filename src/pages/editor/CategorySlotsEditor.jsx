@@ -130,11 +130,12 @@ const categoryCustomSlotRenderer = (slot, context) => {
 const CategorySlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode = 'grid'
+  viewMode = 'grid',
+  initialItemSlug = null
 }) => {
-  // Get initial category from URL params (e.g., ?category=electronics)
+  // Get initial category from prop (from AI Workspace) or URL params
   const [searchParams] = useSearchParams();
-  const initialCategorySlug = searchParams.get('category');
+  const initialCategorySlug = initialItemSlug || searchParams.get('category');
 
   // Get store context for settings and filterableAttributes
   // Handle null case when StoreProvider is not available in editor context
