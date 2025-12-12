@@ -845,10 +845,36 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                   {status.expiresAt && (
                     <p className={status.isExpired ? 'text-red-600' : ''}>
                       Token Expires: {new Date(status.expiresAt).toLocaleString()}
-                      {status.isExpired && ' (Expired - will be auto-refreshed)'}
+                      {status.isExpired && ' (Expired)'}
                     </p>
                   )}
                 </div>
+
+                {/* Reconnect button for expired tokens */}
+                {status.isExpired && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-sm text-amber-700 mb-2">
+                      Your token has expired. Click below to re-authenticate.
+                    </p>
+                    <button
+                      onClick={handleConnect}
+                      disabled={connecting}
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md disabled:opacity-50"
+                    >
+                      {connecting ? (
+                        <>
+                          <div className="animate-spin -ml-1 mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                          Reconnecting...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Reconnect
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
