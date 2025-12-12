@@ -107,23 +107,50 @@ IntegrationToken.findExpiringTokens = async function(bufferMinutes = 60) {
  * @param {string} integrationType - Integration type (e.g., 'supabase-oauth')
  * @param {Object} tokenData - Token data to upsert
  * @param {string} configKey - Config key (default: 'default')
- * @returns {Promise<IntegrationToken>}
+ * @returns {Promise<Object>}
  */
 IntegrationToken.upsertToken = async function(storeId, integrationType, tokenData, configKey = 'default') {
-  const [token, created] = await this.upsert({
-    store_id: storeId,
-    integration_type: integrationType,
-    config_key: configKey,
-    token_expires_at: tokenData.token_expires_at || tokenData.expiresAt,
-    refresh_token_expires_at: tokenData.refresh_token_expires_at,
-    status: 'active',
-    consecutive_failures: 0,
-    last_refresh_error: null
-  }, {
-    conflictFields: ['store_id', 'integration_type', 'config_key']
+  // Use Supabase client directly instead of Sequelize for reliability
+  const { masterDbClient } = require('../../database/masterConnection');
+  const { v4: uuidv4 } = require('uuid');
+
+  const tokenExpiresAt = tokenData.token_expires_at || tokenData.expiresAt;
+
+  console.log('[IntegrationToken.upsertToken] Upserting token:', {
+    storeId,
+    integrationType,
+    configKey,
+    tokenExpiresAt
   });
 
-  return token;
+  const { data, error } = await masterDbClient
+    .from('integration_tokens')
+    .upsert({
+      id: uuidv4(),
+      store_id: storeId,
+      integration_type: integrationType,
+      config_key: configKey,
+      token_expires_at: tokenExpiresAt,
+      refresh_token_expires_at: tokenData.refresh_token_expires_at || null,
+      status: 'active',
+      consecutive_failures: 0,
+      last_refresh_error: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'store_id,integration_type,config_key',
+      ignoreDuplicates: false
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[IntegrationToken.upsertToken] Error:', error.message);
+    throw new Error(`Failed to upsert integration token: ${error.message}`);
+  }
+
+  console.log('[IntegrationToken.upsertToken] Success:', data?.id);
+  return data;
 };
 
 /**
