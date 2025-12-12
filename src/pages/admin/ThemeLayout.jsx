@@ -18,6 +18,7 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import { queryClient } from '@/config/queryClient';
 import { PageLoader } from '@/components/ui/page-loader';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -368,15 +369,15 @@ export default function ThemeLayout() {
                 checkout_3step_step1_name: fullStore?.settings?.checkout_3step_step1_name || 'Information',
                 checkout_3step_step2_name: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
                 checkout_3step_step3_name: fullStore?.settings?.checkout_3step_step3_name || 'Payment',
-                checkout_step_indicator_active_color: fullStore?.settings?.checkout_step_indicator_active_color || '#007bff',
-                checkout_step_indicator_inactive_color: fullStore?.settings?.checkout_step_indicator_inactive_color || '#D1D5DB',
-                checkout_step_indicator_completed_color: fullStore?.settings?.checkout_step_indicator_completed_color || '#10B981',
-                checkout_step_indicator_style: fullStore?.settings?.checkout_step_indicator_style || 'circles',
-                checkout_section_title_color: fullStore?.settings?.checkout_section_title_color || '#111827',
-                checkout_section_title_size: fullStore?.settings?.checkout_section_title_size || '1.25rem',
-                checkout_section_bg_color: fullStore?.settings?.checkout_section_bg_color || '#FFFFFF',
-                checkout_section_border_color: fullStore?.settings?.checkout_section_border_color || '#E5E7EB',
-                checkout_section_text_color: fullStore?.settings?.checkout_section_text_color || '#374151',
+                checkout_step_indicator_active_color: fullStore?.settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color,
+                checkout_step_indicator_inactive_color: fullStore?.settings?.checkout_step_indicator_inactive_color || getThemeDefaults().checkout_step_indicator_inactive_color,
+                checkout_step_indicator_completed_color: fullStore?.settings?.checkout_step_indicator_completed_color || getThemeDefaults().checkout_step_indicator_completed_color,
+                checkout_step_indicator_style: fullStore?.settings?.checkout_step_indicator_style || getThemeDefaults().checkout_step_indicator_style,
+                checkout_section_title_color: fullStore?.settings?.checkout_section_title_color || getThemeDefaults().checkout_section_title_color,
+                checkout_section_title_size: fullStore?.settings?.checkout_section_title_size || getThemeDefaults().checkout_section_title_size,
+                checkout_section_bg_color: fullStore?.settings?.checkout_section_bg_color || getThemeDefaults().checkout_section_bg_color,
+                checkout_section_border_color: fullStore?.settings?.checkout_section_border_color || getThemeDefaults().checkout_section_border_color,
+                checkout_section_text_color: fullStore?.settings?.checkout_section_text_color || getThemeDefaults().checkout_section_text_color,
                 // Checkout Layout Configuration
                 checkout_1step_columns: fullStore?.settings?.checkout_1step_columns ?? 3,
                 checkout_2step_columns: fullStore?.settings?.checkout_2step_columns ?? 2,
@@ -398,29 +399,9 @@ export default function ThemeLayout() {
                     rows: fullStore?.settings?.product_grid?.rows ?? 4
                 },
                 theme: {
-                    // Default values
-                    primary_button_color: '#007bff',
-                    secondary_button_color: '#6c757d',
-                    add_to_cart_button_color: '#28a745',
-                    view_cart_button_color: '#17a2b8',
-                    checkout_button_color: '#007bff',
-                    place_order_button_color: '#28a745',
-                    font_family: 'Inter',
+                    // Use centralized defaults from storeSettingsDefaults.js
+                    ...getThemeDefaults(),
                     custom_fonts: [], // Custom fonts array
-                    // Product Tabs Styling defaults
-                    product_tabs_title_color: '#DC2626', // red-600
-                    product_tabs_title_size: '1.875rem', // text-3xl
-                    product_tabs_content_bg: '#EFF6FF', // blue-50
-                    product_tabs_attribute_label_color: '#16A34A', // green-600
-                    // Breadcrumb defaults
-                    breadcrumb_show_home_icon: true,
-                    breadcrumb_item_text_color: '#6B7280', // gray-500
-                    breadcrumb_item_hover_color: '#374151', // gray-700
-                    breadcrumb_active_item_color: '#111827', // gray-900
-                    breadcrumb_separator_color: '#9CA3AF', // gray-400
-                    breadcrumb_font_size: '0.875rem', // text-sm
-                    breadcrumb_mobile_font_size: '0.75rem', // text-xs
-                    breadcrumb_font_weight: '400', // font-normal
                     // Override with existing settings if they exist
                     ...((fullStore?.settings || {}).theme || {})
                 },
@@ -2566,13 +2547,13 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="checkout_step_indicator_active_color"
                                                 type="color"
-                                                value={store.settings?.checkout_step_indicator_active_color || '#007bff'}
+                                                value={store.settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color}
                                                 onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
                                                 className="w-20 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings?.checkout_step_indicator_active_color || '#007bff'}
+                                                value={store.settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color}
                                                 onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
                                                 className="flex-1"
                                             />

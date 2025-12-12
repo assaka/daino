@@ -7,6 +7,7 @@ import { CustomerWishlist, CustomerAddress, CustomerOrder, CustomerAuth } from "
 import { Product } from "@/api/entities";
 import { useAlertTypes } from "@/hooks/useAlert";
 import { t } from '@/utils/translationHelper';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 import {
   User as UserIcon,
@@ -462,7 +463,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
                       className="flex-1 text-white border-0 hover:brightness-90 transition-all duration-200" 
                       onClick={() => handleAddToCart(item.product)}
                       style={{ 
-                        backgroundColor: settings?.theme?.add_to_cart_button_color || '#28a745',
+                        backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
                         color: 'white'
                       }}
                     >

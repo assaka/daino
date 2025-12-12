@@ -22,7 +22,7 @@ import { shouldSkipStoreProvider } from '@/utils/domainConfig';
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
 import { fetchAdditionalStoreData, fetchCookieConsentSettings } from '@/hooks/useStoreData';
-import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
+import { mergeStoreSettings, setThemeDefaultsFromBootstrap } from '@/utils/storeSettingsDefaults';
 import { clearCache, deleteCacheKey } from '@/utils/cacheUtils';
 import {PageLoader} from "@/components/ui/page-loader.jsx";
 
@@ -87,6 +87,12 @@ export const StoreProvider = ({ children }) => {
         if (!store) {
           setLoading(false);
           return;
+        }
+
+        // Set theme defaults from bootstrap (if available) before merging
+        // This ensures DB-defined defaults are used as the middle layer
+        if (bootstrap.themeDefaults) {
+          setThemeDefaultsFromBootstrap(bootstrap.themeDefaults);
         }
 
         // Merge settings with defaults

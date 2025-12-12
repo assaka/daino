@@ -18,6 +18,7 @@ import { formatPrice, safeNumber, calculateDisplayPrice } from '@/utils/priceUti
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 export default function MiniCart({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore();
@@ -465,7 +466,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                   <Button
                     asChild
                     className="w-full btn-view-cart"
-                    style={{ backgroundColor: settings?.theme?.view_cart_button_color || '#17a2b8' }}
+                    style={{ backgroundColor: settings?.theme?.view_cart_button_color || getThemeDefaults().view_cart_button_color }}
                     onClick={() => setIsOpen(false)}
                   >
                     <Link to={createPublicUrl(store.slug, 'CART')}>
@@ -476,7 +477,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                     <Button
                       asChild
                       className="w-full btn-checkout"
-                      style={{ backgroundColor: settings?.theme?.checkout_button_color || '#007bff' }}
+                      style={{ backgroundColor: settings?.theme?.checkout_button_color || getThemeDefaults().checkout_button_color }}
                       onClick={() => setIsOpen(false)}
                     >
                       <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>

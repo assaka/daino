@@ -7,6 +7,7 @@ import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import Breadcrumbs from '@/components/shared/Breadcrumbs.jsx';
 import { buildBreadcrumbs } from '@/utils/breadcrumbUtils';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 const BreadcrumbsSlotComponent = createSlotComponent({
   name: 'Breadcrumbs',
@@ -39,10 +40,10 @@ const BreadcrumbsSlotComponent = createSlotComponent({
 
     const config = {
       showHomeIcon: storeTheme.breadcrumb_show_home_icon ?? slotMetadata.showHomeIcon ?? true,
-      itemTextColor: storeTheme.breadcrumb_item_text_color || slotMetadata.itemTextColor || '#6B7280',
-      itemHoverColor: storeTheme.breadcrumb_item_hover_color || slotMetadata.itemHoverColor || '#374151',
-      activeItemColor: storeTheme.breadcrumb_active_item_color || slotMetadata.activeItemColor || '#111827',
-      separatorColor: storeTheme.breadcrumb_separator_color || slotMetadata.separatorColor || '#9CA3AF',
+      itemTextColor: storeTheme.breadcrumb_item_text_color || slotMetadata.itemTextColor || getThemeDefaults().breadcrumb_item_text_color,
+      itemHoverColor: storeTheme.breadcrumb_item_hover_color || slotMetadata.itemHoverColor || getThemeDefaults().breadcrumb_item_hover_color,
+      activeItemColor: storeTheme.breadcrumb_active_item_color || slotMetadata.activeItemColor || getThemeDefaults().breadcrumb_active_item_color,
+      separatorColor: storeTheme.breadcrumb_separator_color || slotMetadata.separatorColor || getThemeDefaults().breadcrumb_separator_color,
       fontSize: storeTheme.breadcrumb_font_size || slotMetadata.fontSize || '0.875rem',
       mobileFontSize: storeTheme.breadcrumb_mobile_font_size || slotMetadata.mobileFontSize || '0.75rem',
       fontWeight: storeTheme.breadcrumb_font_weight || slotMetadata.fontWeight || '400'

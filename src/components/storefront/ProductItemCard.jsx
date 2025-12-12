@@ -11,6 +11,7 @@ import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import { getStockLabel, getStockLabelStyle, isProductOutOfStock } from '@/utils/stockUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 /**
  * ProductItemCard - Reusable product card component
@@ -384,7 +385,7 @@ const ProductItemCard = ({
               className={addToCartConfig.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
               size="sm"
               style={{
-                backgroundColor: settings?.theme?.add_to_cart_button_color || '#28a745',
+                backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
                 color: 'white',
                 opacity: isProductOutOfStock(product) && !isEditorMode ? 0.5 : 1,
                 cursor: isProductOutOfStock(product) && !isEditorMode ? 'not-allowed' : 'pointer',

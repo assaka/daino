@@ -164,45 +164,94 @@ function getCategoryDefaults(settings) {
 }
 
 /**
+ * Cache for theme defaults from bootstrap/API
+ * This allows us to use DB-defined defaults when available
+ */
+let cachedThemeDefaults = null;
+
+/**
+ * Set theme defaults from bootstrap data
+ * Called once when bootstrap data is received from the server
+ * @param {Object} themeDefaults - Theme defaults from master DB
+ */
+export function setThemeDefaultsFromBootstrap(themeDefaults) {
+  if (themeDefaults && typeof themeDefaults === 'object') {
+    cachedThemeDefaults = themeDefaults;
+    console.log('✅ Theme defaults set from bootstrap');
+  }
+}
+
+/**
+ * Get cached theme defaults (for components that need direct access)
+ * @returns {Object|null} Cached theme defaults or null
+ */
+export function getCachedThemeDefaults() {
+  return cachedThemeDefaults;
+}
+
+/**
+ * Hardcoded fallback defaults (ultimate safety net when DB unavailable)
+ */
+const HARDCODED_THEME_DEFAULTS = {
+  // Button colors
+  primary_button_color: '#007bff',
+  secondary_button_color: '#6c757d',
+  add_to_cart_button_color: '#28a745',
+  view_cart_button_color: '#17a2b8',
+  checkout_button_color: '#007bff',
+  place_order_button_color: '#28a745',
+  font_family: 'Inter',
+
+  // Product Tabs defaults
+  product_tabs_title_color: '#DC2626',
+  product_tabs_title_size: '1.875rem',
+  product_tabs_content_bg: '#EFF6FF',
+  product_tabs_attribute_label_color: '#16A34A',
+  product_tabs_active_bg: 'transparent',
+  product_tabs_inactive_color: '#6B7280',
+  product_tabs_inactive_bg: 'transparent',
+  product_tabs_hover_color: '#111827',
+  product_tabs_hover_bg: '#F3F4F6',
+  product_tabs_font_weight: '500',
+  product_tabs_border_radius: '0.5rem',
+  product_tabs_border_color: '#E5E7EB',
+  product_tabs_text_decoration: 'none',
+
+  // Breadcrumb defaults
+  breadcrumb_show_home_icon: true,
+  breadcrumb_item_text_color: '#6B7280',
+  breadcrumb_item_hover_color: '#374151',
+  breadcrumb_active_item_color: '#111827',
+  breadcrumb_separator_color: '#9CA3AF',
+  breadcrumb_font_size: '0.875rem',
+  breadcrumb_mobile_font_size: '0.75rem',
+  breadcrumb_font_weight: '400',
+
+  // Checkout defaults
+  checkout_step_indicator_active_color: '#007bff',
+  checkout_step_indicator_inactive_color: '#D1D5DB',
+  checkout_step_indicator_completed_color: '#10B981',
+  checkout_step_indicator_style: 'circles',
+  checkout_section_title_color: '#111827',
+  checkout_section_title_size: '1.25rem',
+  checkout_section_bg_color: '#FFFFFF',
+  checkout_section_border_color: '#E5E7EB',
+  checkout_section_text_color: '#374151'
+};
+
+/**
  * Get theme default settings
+ * Priority: 1. themeSettings (user overrides), 2. Bootstrap/API defaults, 3. Hardcoded fallbacks
+ * @param {Object} themeSettings - User's custom theme settings
+ * @returns {Object} Merged theme settings
  */
 export function getThemeDefaults(themeSettings = {}) {
   return {
-    // Button colors
-    primary_button_color: '#007bff',
-    secondary_button_color: '#6c757d',
-    add_to_cart_button_color: '#28a745',
-    view_cart_button_color: '#17a2b8',
-    checkout_button_color: '#007bff',
-    place_order_button_color: '#28a745',
-    font_family: 'Inter',
-
-    // Product Tabs defaults
-    product_tabs_title_color: '#DC2626',
-    product_tabs_title_size: '1.875rem',
-    product_tabs_content_bg: '#EFF6FF',
-    product_tabs_attribute_label_color: '#16A34A',
-    product_tabs_active_bg: 'transparent',
-    product_tabs_inactive_color: '#6B7280',
-    product_tabs_inactive_bg: 'transparent',
-    product_tabs_hover_color: '#111827',
-    product_tabs_hover_bg: '#F3F4F6',
-    product_tabs_font_weight: '500',
-    product_tabs_border_radius: '0.5rem',
-    product_tabs_border_color: '#E5E7EB',
-    product_tabs_text_decoration: 'none',
-
-    // Breadcrumb defaults
-    breadcrumb_show_home_icon: true,
-    breadcrumb_item_text_color: '#6B7280',
-    breadcrumb_item_hover_color: '#374151',
-    breadcrumb_active_item_color: '#111827',
-    breadcrumb_separator_color: '#9CA3AF',
-    breadcrumb_font_size: '0.875rem',
-    breadcrumb_mobile_font_size: '0.75rem',
-    breadcrumb_font_weight: '400',
-
-    // Merge with existing settings (existing values take precedence)
+    // 1. Hardcoded fallbacks (lowest priority)
+    ...HARDCODED_THEME_DEFAULTS,
+    // 2. Bootstrap/API defaults from master DB (middle priority)
+    ...(cachedThemeDefaults || {}),
+    // 3. User's saved settings (highest priority)
     ...themeSettings
   };
 }

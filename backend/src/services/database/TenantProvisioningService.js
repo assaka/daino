@@ -15,6 +15,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { masterDbClient } = require('../../database/masterConnection');
 
 // Page types and their corresponding config exports
 const PAGE_CONFIGS = [
@@ -484,11 +485,48 @@ VALUES (
   }
 
   /**
+   * Fetch theme defaults from master database
+   * @private
+   */
+  async getThemeDefaults() {
+    try {
+      const { data: defaults, error } = await masterDbClient
+        .from('theme_defaults')
+        .select('theme_settings')
+        .eq('is_system_default', true)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error || !defaults) {
+        console.warn('⚠️ Could not fetch theme defaults from master DB, using empty defaults');
+        return {};
+      }
+
+      return defaults.theme_settings || {};
+    } catch (error) {
+      console.error('Error fetching theme defaults:', error.message);
+      return {};
+    }
+  }
+
+  /**
    * Create store record in tenant database
    * @private
    */
   async createStoreRecord(tenantDb, storeId, options, result) {
     try {
+      // Fetch theme defaults from master DB
+      const themeDefaults = await this.getThemeDefaults();
+
+      // Build initial settings with theme defaults
+      const initialSettings = {
+        ...(options.settings || {}),
+        theme: {
+          ...themeDefaults,
+          ...(options.settings?.theme || {})
+        }
+      };
+
       const storeData = {
         id: storeId,
         user_id: options.userId,
@@ -497,7 +535,7 @@ VALUES (
         currency: options.currency || 'USD',
         timezone: options.timezone || 'UTC',
         is_active: true,
-        settings: options.settings || {},
+        settings: initialSettings,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -595,6 +633,18 @@ VALUES (
     try {
       const axios = require('axios');
 
+      // Fetch theme defaults from master DB
+      const themeDefaults = await this.getThemeDefaults();
+
+      // Build initial settings with theme defaults
+      const initialSettings = {
+        ...(options.settings || {}),
+        theme: {
+          ...themeDefaults,
+          ...(options.settings?.theme || {})
+        }
+      };
+
       const insertSQL = `
 INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, created_at, updated_at)
 VALUES (
@@ -605,7 +655,7 @@ VALUES (
   '${options.currency || 'USD'}',
   '${options.timezone || 'UTC'}',
   true,
-  '${JSON.stringify(options.settings || {})}'::jsonb,
+  '${JSON.stringify(initialSettings).replace(/'/g, "''")}'::jsonb,
   NOW(),
   NOW()
 ) ON CONFLICT (id) DO NOTHING;

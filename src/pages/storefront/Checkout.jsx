@@ -47,6 +47,7 @@ import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription, getPaymentMethodName, getPaymentMethodDescription, getTranslatedField } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { useCheckoutPageBootstrap } from '@/hooks/usePageBootstrap';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
@@ -1369,18 +1370,18 @@ export default function Checkout() {
   const eligiblePaymentMethods = getEligiblePaymentMethods();
 
   // Get checkout styling from settings
-  const checkoutSectionTitleColor = settings?.checkout_section_title_color || '#111827';
-  const checkoutSectionTitleSize = settings?.checkout_section_title_size || '1.25rem';
-  const checkoutSectionBgColor = settings?.checkout_section_bg_color || '#FFFFFF';
-  const checkoutSectionBorderColor = settings?.checkout_section_border_color || '#E5E7EB';
-  const checkoutSectionTextColor = settings?.checkout_section_text_color || '#374151';
+  const checkoutSectionTitleColor = settings?.checkout_section_title_color || getThemeDefaults().checkout_section_title_color;
+  const checkoutSectionTitleSize = settings?.checkout_section_title_size || getThemeDefaults().checkout_section_title_size;
+  const checkoutSectionBgColor = settings?.checkout_section_bg_color || getThemeDefaults().checkout_section_bg_color;
+  const checkoutSectionBorderColor = settings?.checkout_section_border_color || getThemeDefaults().checkout_section_border_color;
+  const checkoutSectionTextColor = settings?.checkout_section_text_color || getThemeDefaults().checkout_section_text_color;
 
   // Get step settings
   const stepsCount = settings?.checkout_steps_count || 3;
   const stepIndicatorStyle = settings?.checkout_step_indicator_style || 'circles';
-  const stepActiveColor = settings?.checkout_step_indicator_active_color || '#007bff';
-  const stepInactiveColor = settings?.checkout_step_indicator_inactive_color || '#D1D5DB';
-  const stepCompletedColor = settings?.checkout_step_indicator_completed_color || '#10B981';
+  const stepActiveColor = settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color;
+  const stepInactiveColor = settings?.checkout_step_indicator_inactive_color || getThemeDefaults().checkout_step_indicator_inactive_color;
+  const stepCompletedColor = settings?.checkout_step_indicator_completed_color || getThemeDefaults().checkout_step_indicator_completed_color;
 
   // Get column configuration based on step count
   const getColumnCount = () => {
@@ -2505,7 +2506,7 @@ export default function Checkout() {
                   disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false)}
                   className="w-full h-12 text-lg"
                   style={{
-                    backgroundColor: settings?.theme?.place_order_button_color || '#28a745',
+                    backgroundColor: settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color,
                     color: '#FFFFFF',
                   }}
                 >

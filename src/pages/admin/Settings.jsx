@@ -24,6 +24,7 @@ import { queryClient } from '@/config/queryClient';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { PageLoader } from '@/components/ui/page-loader';
 import StoreLogoUpload from '@/components/admin/StoreLogoUpload';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -171,11 +172,7 @@ export default function Settings() {
           collect_phone_number_at_checkout: settings.hasOwnProperty('collect_phone_number_at_checkout') ? settings.collect_phone_number_at_checkout : false,
           allow_guest_checkout: settings.hasOwnProperty('allow_guest_checkout') ? settings.allow_guest_checkout : true,
           allowed_countries: settings.allowed_countries || ["US", "CA", "GB", "DE", "FR"],
-          theme: settings.theme || { // Ensure theme is loaded with defaults
-            primary_button_color: '#007bff',
-            secondary_button_color: '#6c757d',
-            font_family: 'Inter',
-          }, 
+          theme: settings.theme || getThemeDefaults(), 
           cookie_consent: settings.cookie_consent || { // Ensure cookie_consent is loaded with defaults
             enabled: false,
             message: 'We use cookies to ensure you get the best experience on our website. By continuing to use our site, you agree to our use of cookies.',

@@ -1,3 +1,5 @@
+import { getThemeDefaults } from './storeSettingsDefaults';
+
 // Mock product data generator for ProductSlotsEditor
 export const generateMockProductContext = (storeSettings = null) => {
   return {
@@ -147,10 +149,7 @@ export const generateMockProductContext = (storeSettings = null) => {
         out_of_stock_label: 'Out of Stock',
         low_stock_label: 'Only {quantity} left!'
       },
-      theme: {
-        // Use same default as storefront (storeSettingsDefaults.js)
-        add_to_cart_button_color: '#28a745'
-      },
+      theme: getThemeDefaults(),
       // Merge with real store settings (overrides defaults)
       ...(storeSettings || {})
     },

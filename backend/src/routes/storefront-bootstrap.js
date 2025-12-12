@@ -3,6 +3,7 @@ const translationService = require('../services/translation-service');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
@@ -380,7 +381,8 @@ router.get('/', cacheMiddleware({
       wishlistResult,
       headerSlotConfigResult,
       seoSettingsResult,
-      seoTemplatesResult
+      seoTemplatesResult,
+      themeDefaultsResult
     ] = await Promise.all([
       // 1. Get all active languages from tenant DB
       (async () => {
@@ -671,6 +673,28 @@ router.get('/', cacheMiddleware({
           console.error('❌ Bootstrap: Error fetching SEO templates:', error.message);
           return [];
         }
+      })(),
+
+      // 8. Get theme defaults from master DB
+      (async () => {
+        try {
+          const { data: defaults, error } = await masterDbClient
+            .from('theme_defaults')
+            .select('preset_name, display_name, theme_settings')
+            .eq('is_system_default', true)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (error) {
+            console.warn('⚠️ Bootstrap: Failed to fetch theme defaults:', error.message);
+            return null;
+          }
+
+          return defaults?.theme_settings || null;
+        } catch (error) {
+          console.error('❌ Bootstrap: Error fetching theme defaults:', error.message);
+          return null;
+        }
       })()
     ]);
 
@@ -706,6 +730,7 @@ router.get('/', cacheMiddleware({
         headerSlotConfig: headerSlotConfigResult || null,
         seoSettings: seoSettingsResult || null,
         seoTemplates: seoTemplatesResult || [],
+        themeDefaults: themeDefaultsResult || null,
         meta: {
           categoriesCount: categoriesResult.count || 0,
           wishlistCount: wishlistResult?.length || 0,

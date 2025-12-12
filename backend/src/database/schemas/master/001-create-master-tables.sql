@@ -404,6 +404,111 @@ CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
+-- 11. THEME_DEFAULTS TABLE
+-- Centralized theme presets for all tenants
+-- ============================================
+CREATE TABLE IF NOT EXISTS theme_defaults (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  preset_name VARCHAR(50) UNIQUE NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
+  description TEXT,
+  theme_settings JSONB NOT NULL DEFAULT '{}',
+  is_system_default BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_theme_defaults_preset ON theme_defaults(preset_name);
+CREATE INDEX IF NOT EXISTS idx_theme_defaults_active ON theme_defaults(is_active) WHERE is_active = true;
+
+-- Ensure only one system default
+CREATE UNIQUE INDEX IF NOT EXISTS idx_theme_defaults_single_default
+  ON theme_defaults(is_system_default) WHERE is_system_default = true;
+
+-- Trigger for updated_at
+CREATE TRIGGER update_theme_defaults_updated_at BEFORE UPDATE ON theme_defaults
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Seed default theme presets
+INSERT INTO theme_defaults (preset_name, display_name, description, theme_settings, is_system_default, sort_order)
+VALUES
+  ('default', 'Default', 'Standard blue/green theme', '{
+    "primary_button_color": "#007bff",
+    "secondary_button_color": "#6c757d",
+    "add_to_cart_button_color": "#28a745",
+    "view_cart_button_color": "#17a2b8",
+    "checkout_button_color": "#007bff",
+    "place_order_button_color": "#28a745",
+    "font_family": "Inter",
+    "breadcrumb_show_home_icon": true,
+    "breadcrumb_item_text_color": "#6B7280",
+    "breadcrumb_item_hover_color": "#374151",
+    "breadcrumb_active_item_color": "#111827",
+    "breadcrumb_separator_color": "#9CA3AF",
+    "breadcrumb_font_size": "0.875rem",
+    "breadcrumb_mobile_font_size": "0.75rem",
+    "breadcrumb_font_weight": "400",
+    "product_tabs_title_color": "#DC2626",
+    "product_tabs_title_size": "1.875rem",
+    "product_tabs_content_bg": "#EFF6FF",
+    "product_tabs_attribute_label_color": "#16A34A",
+    "product_tabs_active_bg": "transparent",
+    "product_tabs_inactive_color": "#6B7280",
+    "product_tabs_inactive_bg": "transparent",
+    "product_tabs_hover_color": "#111827",
+    "product_tabs_hover_bg": "#F3F4F6",
+    "product_tabs_font_weight": "500",
+    "product_tabs_border_radius": "0.5rem",
+    "product_tabs_border_color": "#E5E7EB",
+    "product_tabs_text_decoration": "none",
+    "checkout_step_indicator_active_color": "#007bff",
+    "checkout_step_indicator_inactive_color": "#D1D5DB",
+    "checkout_step_indicator_completed_color": "#10B981",
+    "checkout_step_indicator_style": "circles",
+    "checkout_section_title_color": "#111827",
+    "checkout_section_title_size": "1.25rem",
+    "checkout_section_bg_color": "#FFFFFF",
+    "checkout_section_border_color": "#E5E7EB",
+    "checkout_section_text_color": "#374151"
+  }'::jsonb, true, 1),
+  ('dark', 'Dark Mode', 'Dark theme with muted colors', '{
+    "primary_button_color": "#6366F1",
+    "secondary_button_color": "#4B5563",
+    "add_to_cart_button_color": "#10B981",
+    "view_cart_button_color": "#06B6D4",
+    "checkout_button_color": "#6366F1",
+    "place_order_button_color": "#10B981",
+    "font_family": "Inter",
+    "breadcrumb_item_text_color": "#9CA3AF",
+    "breadcrumb_item_hover_color": "#D1D5DB",
+    "breadcrumb_active_item_color": "#F9FAFB",
+    "breadcrumb_separator_color": "#6B7280",
+    "product_tabs_title_color": "#F87171",
+    "product_tabs_content_bg": "#1F2937",
+    "checkout_step_indicator_active_color": "#6366F1",
+    "checkout_step_indicator_completed_color": "#10B981"
+  }'::jsonb, false, 2),
+  ('professional', 'Professional', 'Clean professional look', '{
+    "primary_button_color": "#1E40AF",
+    "secondary_button_color": "#475569",
+    "add_to_cart_button_color": "#059669",
+    "view_cart_button_color": "#0284C7",
+    "checkout_button_color": "#1E40AF",
+    "place_order_button_color": "#059669",
+    "font_family": "Inter",
+    "breadcrumb_item_text_color": "#64748B",
+    "breadcrumb_item_hover_color": "#334155",
+    "breadcrumb_active_item_color": "#0F172A",
+    "product_tabs_title_color": "#1E40AF",
+    "product_tabs_content_bg": "#F8FAFC",
+    "checkout_step_indicator_active_color": "#1E40AF",
+    "checkout_step_indicator_completed_color": "#059669"
+  }'::jsonb, false, 3)
+ON CONFLICT (preset_name) DO NOTHING;
+
+-- ============================================
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================
 COMMENT ON TABLE users IS 'Platform users (agency/store owners only). Full user structure synced from tenant DBs where account_type = agency';
@@ -416,6 +521,7 @@ COMMENT ON TABLE service_credit_costs IS 'Pricing for all services that consume 
 COMMENT ON TABLE job_queue IS 'Centralized job queue for processing tenant jobs';
 COMMENT ON TABLE usage_metrics IS 'Daily usage metrics per store for analytics';
 COMMENT ON TABLE billing_transactions IS 'Subscription payment history';
+COMMENT ON TABLE theme_defaults IS 'Centralized theme presets (default, dark, professional) used for new tenant provisioning and as fallback values';
 
 -- ============================================
 -- MASTER DATABASE SCHEMA COMPLETE

@@ -15,6 +15,7 @@ import CategoryNav from './CategoryNav';
 import HeaderSearch from './HeaderSearch';
 import CmsBlockRenderer from './CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import RedirectHandler from '@/components/shared/RedirectHandler';
 import { SeoSettingsProvider } from '@/components/storefront/SeoSettingsProvider';
 import { CountrySelect } from "@/components/ui/country-select";
@@ -373,14 +374,15 @@ export default function StorefrontLayout({ children }) {
     const selectedFontFamily = settings?.theme?.font_family || 'Inter';
 
     // FIXED: Apply theme colors to cart buttons
+    const defaults = getThemeDefaults();
     const themeStyles = `
       :root {
-        --theme-primary-button: ${settings?.theme?.primary_button_color || '#007bff'};
-        --theme-secondary-button: ${settings?.theme?.secondary_button_color || '#6c757d'};
-        --theme-add-to-cart-button: ${settings?.theme?.add_to_cart_button_color || '#28a745'};
-        --theme-view-cart-button: ${settings?.theme?.view_cart_button_color || '#17a2b8'};
-        --theme-checkout-button: ${settings?.theme?.checkout_button_color || '#007bff'};
-        --theme-place-order-button: ${settings?.theme?.place_order_button_color || '#28a745'};
+        --theme-primary-button: ${settings?.theme?.primary_button_color || defaults.primary_button_color};
+        --theme-secondary-button: ${settings?.theme?.secondary_button_color || defaults.secondary_button_color};
+        --theme-add-to-cart-button: ${settings?.theme?.add_to_cart_button_color || defaults.add_to_cart_button_color};
+        --theme-view-cart-button: ${settings?.theme?.view_cart_button_color || defaults.view_cart_button_color};
+        --theme-checkout-button: ${settings?.theme?.checkout_button_color || defaults.checkout_button_color};
+        --theme-place-order-button: ${settings?.theme?.place_order_button_color || defaults.place_order_button_color};
         --theme-font-family: '${selectedFontFamily}', sans-serif;
       }
       body {

@@ -164,6 +164,7 @@
 
 import { formatPrice } from './priceUtils';
 import { getStockLabel } from './stockUtils';
+import { getThemeDefaults } from './storeSettingsDefaults';
 
 /**
  * processVariables - Main entry point for template variable processing
@@ -1173,12 +1174,7 @@ export const generateDemoData = (pageType, settings = {}) => {
         out_of_stock_label: 'Out of Stock',
         low_stock_label: 'Only {quantity} left!'
       },
-      theme: {
-        // Use same defaults as storefront (storeSettingsDefaults.js)
-        add_to_cart_button_color: '#28a745',
-        primary_color: '#007bff',
-        secondary_color: '#6c757d'
-      },
+      theme: getThemeDefaults(),
       ...settings // Merge any passed-in settings to override defaults
     }
   };

@@ -8,6 +8,7 @@ import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getProductName } from '@/utils/translationUtils';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 /**
  * CartSlotRenderer - Renders slots with full cart functionality
@@ -670,7 +671,7 @@ export function CartSlotRenderer({
                 className="w-full"
                 onClick={handleCheckout}
                 style={{
-                  backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+                  backgroundColor: settings?.theme?.checkout_button_color || getThemeDefaults().checkout_button_color,
                   color: '#FFFFFF',
                   ...styles  // Custom styles override defaults
                 }}
@@ -764,7 +765,7 @@ export function CartSlotRenderer({
           className={`${className} w-full`}
           onClick={handleCheckout}
           style={{
-            backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+            backgroundColor: settings?.theme?.checkout_button_color || getThemeDefaults().checkout_button_color,
             color: '#FFFFFF',
             ...styles  // Custom styles override defaults
           }}

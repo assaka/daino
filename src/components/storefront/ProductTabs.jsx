@@ -100,7 +100,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
     // Get attribute label color from slot config styles (synced from admin) or theme settings
     const slotStylesAttr = slotConfig?.styles || {};
-    const attributeLabelColor = slotStylesAttr.attributeLabelColor || settings?.theme?.product_tabs_attribute_label_color || '#16A34A';
+    const attributeLabelColor = slotStylesAttr.attributeLabelColor || settings?.theme?.product_tabs_attribute_label_color || getThemeDefaults().product_tabs_attribute_label_color;
 
     const attributesHTML = `
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -152,12 +152,12 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
           allTabs.forEach((btn, idx) => {
             if (idx === tabIndex) {
-              // Active tab styles
-              btn.style.color = theme.product_tabs_title_color || '#1F2937';
+              // Active tab styles - theme already has defaults from getThemeDefaults()
+              btn.style.color = theme.product_tabs_title_color;
               btn.style.backgroundColor = theme.product_tabs_active_bg || 'transparent';
             } else {
-              // Inactive tab styles
-              btn.style.color = theme.product_tabs_inactive_color || '#6B7280';
+              // Inactive tab styles - theme already has defaults from getThemeDefaults()
+              btn.style.color = theme.product_tabs_inactive_color;
               btn.style.backgroundColor = theme.product_tabs_inactive_bg || 'transparent';
             }
           });

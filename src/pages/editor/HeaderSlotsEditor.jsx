@@ -11,6 +11,7 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Store } from '@/api/entities';
 import { preprocessSlotData } from '@/utils/slotDataPreprocessor';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -83,10 +84,7 @@ export default function HeaderSlotsEditor() {
         show_permanent_search: storeSettings?.show_permanent_search || false,
         show_language_selector: storeSettings?.show_language_selector === true,
         allowed_countries: storeSettings?.allowed_countries || ['US', 'CA', 'UK'],
-        theme: storeSettings?.theme || {
-          primary_button_color: '#007bff',
-          add_to_cart_button_color: '#28a745'
-        }
+        theme: storeSettings?.theme || getThemeDefaults()
       },
       user: null,
       userLoading: false,
