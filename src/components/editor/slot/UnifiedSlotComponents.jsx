@@ -343,26 +343,25 @@ const ProductGallery = createSlotComponent({
       return `${mobileOrder} sm:order-last`;
     };
 
-    // EDITOR VERSION
-    if (context === 'editor') {
-      const demoImages = Array.from({ length: 4 }, (_, i) => `https://placehold.co/100x100?text=Thumb+${i + 1}`);
-      // Always flex-col on mobile, flex-row on desktop for vertical layout
-      const containerClass = isVertical
-        ? 'flex flex-col sm:flex-row gap-4'
-        : 'flex flex-col gap-4';
-      const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
+    // Use real product data in both editor and storefront modes
+    const { product, productLabels } = productContext || {};
 
+    // Container classes
+    const containerClass = isVertical
+      ? 'flex flex-col sm:flex-row gap-4'
+      : 'flex flex-col gap-4';
+    const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
+
+    // If no product, show placeholder (only happens if no product selected)
+    if (!product) {
+      const demoImages = Array.from({ length: 4 }, (_, i) => `https://placehold.co/100x100?text=Thumb+${i + 1}`);
       return (
         <div className={finalContainerClass} style={styles}>
-          {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, `order-none ${isVertical ? 'sm:flex-1' : ''}`)}
+          {renderMainImage('https://placehold.co/600x600?text=No+Product', 'No Product', null, null, `order-none ${isVertical ? 'sm:flex-1' : ''}`)}
           {renderThumbnails(demoImages, (img) => img, 'Demo', 0, null, getThumbnailOrderClass())}
         </div>
       );
     }
-
-    // STOREFRONT VERSION
-    const { product } = productContext || {};
-    if (!product) return null;
 
     const images = product.images || [];
 
@@ -377,12 +376,6 @@ const ProductGallery = createSlotComponent({
 
     const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
     const hasMultipleImages = images.length > 1;
-
-    // Container classes - always flex-col on mobile, flex-row on desktop for vertical
-    const containerClass = isVertical
-      ? 'flex flex-col sm:flex-row gap-4'
-      : 'flex flex-col gap-4';
-    const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
     return (
       <div className={finalContainerClass} style={styles}>
