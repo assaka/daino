@@ -1814,7 +1814,7 @@ export function useSlotConfiguration({
         const storeId = getSelectedStoreId();
         if (storeId) {
           // Log button template slot BEFORE filtering
-          const templateButtonSlot = configToSave.slots['product_card_add_to_cart'];
+          const templateButtonSlot = configToSave.slots['add_to_cart_button'];
 
           // Filter out instance slots (with _N suffix) before saving - only save template slots
           const filteredSlots = {};
@@ -1834,7 +1834,7 @@ export function useSlotConfiguration({
           });
 
           // Log button template slot AFTER filtering
-          const filteredTemplateButton = filteredSlots['product_card_add_to_cart'];
+          const filteredTemplateButton = filteredSlots['add_to_cart_button'];
 
           const configToSaveFiltered = {
             ...configToSave,
