@@ -48,15 +48,6 @@ export default function ProductSlotsEditor({
   const { data: headerConfig, isLoading: headerLoading } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
 
-  // Debug logging
-  console.log('[ProductSlotsEditor] State:', {
-    storeId,
-    selectedStore: !!selectedStore,
-    headerLoading,
-    headerSlots: headerConfig?.slots ? Object.keys(headerConfig.slots).length : 0,
-    selectedProductSlug
-  });
-
   const [realProduct, setRealProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
   const [selectedProductSlug, setSelectedProductSlug] = useState(initialProductSlug);
@@ -64,6 +55,16 @@ export default function ProductSlotsEditor({
   const [customOptions, setCustomOptions] = useState([]);
   const [productLabels, setProductLabels] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Debug logging (after state declarations)
+  console.log('[ProductSlotsEditor] State:', {
+    storeId,
+    selectedStore: !!selectedStore,
+    headerLoading,
+    headerSlots: headerConfig?.slots ? Object.keys(headerConfig.slots).length : 0,
+    selectedProductSlug,
+    initialProductSlug
+  });
 
   // Fetch all products for the selector
   useEffect(() => {
