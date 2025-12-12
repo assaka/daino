@@ -11,8 +11,8 @@ const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@daino.com';
 
 /**
  * Master Email Header Component
- * Consistent branding across all platform emails
- * Note: Uses solid background colors for email client compatibility (no gradients)
+ * Clean, modern design inspired by Payoneer
+ * Features: White background, centered logo, colorful top border
  */
 const PLATFORM_LOGO_URL = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/dainostore_logo.png` : 'https://www.dainostore.com/dainostore_logo.png';
 
@@ -21,60 +21,65 @@ const masterEmailHeader = (options = {}) => {
     title = '',
     subtitle = '',
     logoUrl = PLATFORM_LOGO_URL,
-    primaryColor = '#6366f1', // Indigo
+    primaryColor = '#6366f1', // Indigo (used for accent elements)
     secondaryColor = '#8b5cf6' // Purple (unused - keeping for API compatibility)
   } = options;
 
   return `
-    <!-- Email Header -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <!-- Colorful Top Border - Rainbow gradient effect using segments -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 12px 12px 0 0; overflow: hidden;">
       <tr>
-        <td style="padding: 0;">
-          <!-- Header with solid background (gradients don't work in email clients) -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: ${primaryColor}; border-radius: 12px 12px 0 0;">
+        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #eab308;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #22c55e;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #3b82f6;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #8b5cf6;"></td>
+      </tr>
+    </table>
+    <!-- Email Header - Clean white background -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 32px 40px 24px; text-align: center;">
+          ${logoUrl ? `
+          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 160px; height: auto; margin-bottom: 8px;" />
+          ` : `
+          <table role="presentation" style="margin: 0 auto 8px auto;">
             <tr>
-              <td style="padding: 40px 40px 30px; text-align: center; background-color: ${primaryColor};">
-                ${logoUrl ? `
-                <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 180px; height: auto; margin-bottom: 20px;" />
-                ` : `
-                <table role="presentation" style="margin: 0 auto 10px auto;">
-                  <tr>
-                    <td style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
-                      ${PLATFORM_NAME}
-                    </td>
-                  </tr>
-                </table>
-                `}
-                ${title ? `
-                <table role="presentation" style="width: 100%;">
-                  <tr>
-                    <td style="color: #ffffff; font-size: 26px; font-weight: 600; line-height: 1.3; text-align: center;">
-                      ${title}
-                    </td>
-                  </tr>
-                </table>
-                ` : ''}
-                ${subtitle ? `
-                <table role="presentation" style="width: 100%; margin-top: 12px;">
-                  <tr>
-                    <td style="color: #e0e7ff; font-size: 16px; font-weight: 400; text-align: center;">
-                      ${subtitle}
-                    </td>
-                  </tr>
-                </table>
-                ` : ''}
+              <td style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+                ${PLATFORM_NAME}
               </td>
             </tr>
           </table>
+          `}
         </td>
       </tr>
     </table>
+    <!-- Title Section (if provided) -->
+    ${title || subtitle ? `
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 0 40px 24px; text-align: left;">
+          ${title ? `
+          <h1 style="margin: 0 0 8px 0; color: #111827; font-size: 24px; font-weight: 600; line-height: 1.3;">
+            ${title}
+          </h1>
+          ` : ''}
+          ${subtitle ? `
+          <p style="margin: 0; color: #6b7280; font-size: 15px; font-weight: 400;">
+            ${subtitle}
+          </p>
+          ` : ''}
+        </td>
+      </tr>
+    </table>
+    ` : ''}
   `.trim();
 };
 
 /**
  * Master Email Footer Component
- * Consistent footer across all platform emails
+ * Clean, minimal footer matching the new design
  */
 const masterEmailFooter = (options = {}) => {
   const {
@@ -87,21 +92,21 @@ const masterEmailFooter = (options = {}) => {
 
   return `
     <!-- Email Footer -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 0 0 12px 12px;">
       <tr>
-        <td style="padding: 30px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <td style="padding: 24px 40px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
           <!-- Footer Links -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
             <tr>
               <td style="text-align: center;">
-                <a href="${PLATFORM_URL}" style="color: #6366f1; text-decoration: none; font-size: 14px; font-weight: 500; margin: 0 12px;">Dashboard</a>
-                <span style="color: #d1d5db;">|</span>
-                <a href="${PLATFORM_URL}/settings" style="color: #6366f1; text-decoration: none; font-size: 14px; font-weight: 500; margin: 0 12px;">Settings</a>
-                <span style="color: #d1d5db;">|</span>
-                <a href="mailto:${SUPPORT_EMAIL}" style="color: #6366f1; text-decoration: none; font-size: 14px; font-weight: 500; margin: 0 12px;">Support</a>
+                <a href="${PLATFORM_URL}" style="color: #6b7280; text-decoration: none; font-size: 13px; margin: 0 10px;">Dashboard</a>
+                <span style="color: #e5e7eb;">|</span>
+                <a href="${PLATFORM_URL}/settings" style="color: #6b7280; text-decoration: none; font-size: 13px; margin: 0 10px;">Settings</a>
+                <span style="color: #e5e7eb;">|</span>
+                <a href="mailto:${SUPPORT_EMAIL}" style="color: #6b7280; text-decoration: none; font-size: 13px; margin: 0 10px;">Support</a>
                 ${additionalLinks.map(link => `
-                  <span style="color: #d1d5db;">|</span>
-                  <a href="${link.url}" style="color: #6366f1; text-decoration: none; font-size: 14px; font-weight: 500; margin: 0 12px;">${link.label}</a>
+                  <span style="color: #e5e7eb;">|</span>
+                  <a href="${link.url}" style="color: #6b7280; text-decoration: none; font-size: 13px; margin: 0 10px;">${link.label}</a>
                 `).join('')}
               </td>
             </tr>
@@ -109,17 +114,17 @@ const masterEmailFooter = (options = {}) => {
 
           ${showSocial ? `
           <!-- Social Links -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
             <tr>
               <td style="text-align: center;">
-                <a href="#" style="display: inline-block; margin: 0 8px;">
-                  <img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="Twitter" style="width: 24px; height: 24px; opacity: 0.6;" />
+                <a href="#" style="display: inline-block; margin: 0 6px;">
+                  <img src="https://cdn-icons-png.flaticon.com/24/733/733547.png" alt="Twitter" style="width: 20px; height: 20px; opacity: 0.5;" />
                 </a>
-                <a href="#" style="display: inline-block; margin: 0 8px;">
-                  <img src="https://cdn-icons-png.flaticon.com/24/733/733553.png" alt="GitHub" style="width: 24px; height: 24px; opacity: 0.6;" />
+                <a href="#" style="display: inline-block; margin: 0 6px;">
+                  <img src="https://cdn-icons-png.flaticon.com/24/733/733553.png" alt="GitHub" style="width: 20px; height: 20px; opacity: 0.5;" />
                 </a>
-                <a href="#" style="display: inline-block; margin: 0 8px;">
-                  <img src="https://cdn-icons-png.flaticon.com/24/174/174857.png" alt="LinkedIn" style="width: 24px; height: 24px; opacity: 0.6;" />
+                <a href="#" style="display: inline-block; margin: 0 6px;">
+                  <img src="https://cdn-icons-png.flaticon.com/24/174/174857.png" alt="LinkedIn" style="width: 20px; height: 20px; opacity: 0.5;" />
                 </a>
               </td>
             </tr>
@@ -127,17 +132,17 @@ const masterEmailFooter = (options = {}) => {
           ` : ''}
 
           <!-- Copyright -->
-          <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 13px;">
+          <p style="margin: 0 0 4px 0; color: #9ca3af; font-size: 12px;">
             ${currentYear} ${PLATFORM_NAME}. All rights reserved.
           </p>
 
           <!-- Address/Legal -->
-          <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+          <p style="margin: 0; color: #d1d5db; font-size: 11px;">
             This is an automated message from ${PLATFORM_NAME}.
           </p>
 
           ${showUnsubscribe ? `
-          <p style="margin: 15px 0 0 0; color: #9ca3af; font-size: 12px;">
+          <p style="margin: 12px 0 0 0; color: #9ca3af; font-size: 11px;">
             <a href="${PLATFORM_URL}/email-preferences" style="color: #9ca3af; text-decoration: underline;">Manage email preferences</a>
           </p>
           ` : ''}
@@ -149,12 +154,12 @@ const masterEmailFooter = (options = {}) => {
 
 /**
  * Master Email Base Template
- * Wraps content with consistent styling
+ * Clean, minimal wrapper with light background
  */
 const masterEmailBase = (content, options = {}) => {
   const {
     preheader = '',
-    backgroundColor = '#f3f4f6'
+    backgroundColor = '#f9fafb'
   } = options;
 
   return `
@@ -184,8 +189,8 @@ const masterEmailBase = (content, options = {}) => {
 
     /* Responsive styles */
     @media screen and (max-width: 600px) {
-      .email-container { width: 100% !important; max-width: 100% !important; }
-      .email-content { padding: 20px !important; }
+      .email-container { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; }
+      .email-content { padding: 24px 20px !important; }
       .stack-column { display: block !important; width: 100% !important; }
     }
   </style>
@@ -204,9 +209,9 @@ const masterEmailBase = (content, options = {}) => {
   <!-- Email wrapper -->
   <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: ${backgroundColor};">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
+      <td align="center" style="padding: 32px 16px;">
         <!-- Email container -->
-        <table role="presentation" class="email-container" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+        <table role="presentation" class="email-container" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden;">
           <tr>
             <td>
               ${content}
@@ -332,7 +337,7 @@ const creditsPurchaseEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
               <td align="center">
-                <a href="${PLATFORM_URL}/admin/settings/credits" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);">
+                <a href="${PLATFORM_URL}/admin/settings/credits" style="display: inline-block; padding: 14px 32px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
                   View Dashboard
                 </a>
               </td>
@@ -413,7 +418,7 @@ const creditsLowBalanceEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
               <td align="center">
-                <a href="${PLATFORM_URL}/admin/settings/credits" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                <a href="${PLATFORM_URL}/admin/settings/credits" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
                   Purchase Credits
                 </a>
               </td>
@@ -475,13 +480,13 @@ const welcomeEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
             <tr>
               <td style="padding: 24px;">
-                <h3 style="margin: 0 0 16px 0; color: #6366f1; font-size: 16px; font-weight: 600;">
+                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 15px; font-weight: 600;">
                   Get Started in 3 Easy Steps
                 </h3>
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 12px 0; vertical-align: top; width: 40px;">
-                      <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 50%; text-align: center; line-height: 28px; color: white; font-weight: 600; font-size: 14px;">1</div>
+                      <div style="width: 26px; height: 26px; background-color: #6366f1; border-radius: 50%; text-align: center; line-height: 26px; color: white; font-weight: 600; font-size: 13px;">1</div>
                     </td>
                     <td style="padding: 12px 0; vertical-align: top;">
                       <p style="margin: 0; color: #111827; font-weight: 600; font-size: 14px;">Set up your store</p>
@@ -490,7 +495,7 @@ const welcomeEmail = (data) => {
                   </tr>
                   <tr>
                     <td style="padding: 12px 0; vertical-align: top; width: 40px;">
-                      <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 50%; text-align: center; line-height: 28px; color: white; font-weight: 600; font-size: 14px;">2</div>
+                      <div style="width: 26px; height: 26px; background-color: #6366f1; border-radius: 50%; text-align: center; line-height: 26px; color: white; font-weight: 600; font-size: 13px;">2</div>
                     </td>
                     <td style="padding: 12px 0; vertical-align: top;">
                       <p style="margin: 0; color: #111827; font-weight: 600; font-size: 14px;">Add your products</p>
@@ -499,7 +504,7 @@ const welcomeEmail = (data) => {
                   </tr>
                   <tr>
                     <td style="padding: 12px 0; vertical-align: top; width: 40px;">
-                      <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 50%; text-align: center; line-height: 28px; color: white; font-weight: 600; font-size: 14px;">3</div>
+                      <div style="width: 26px; height: 26px; background-color: #6366f1; border-radius: 50%; text-align: center; line-height: 26px; color: white; font-weight: 600; font-size: 13px;">3</div>
                     </td>
                     <td style="padding: 12px 0; vertical-align: top;">
                       <p style="margin: 0; color: #111827; font-weight: 600; font-size: 14px;">Go live</p>
@@ -515,7 +520,7 @@ const welcomeEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
               <td align="center">
-                <a href="${PLATFORM_URL}/admin" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);">
+                <a href="${PLATFORM_URL}/admin" style="display: inline-block; padding: 14px 32px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
                   Go to Dashboard
                 </a>
               </td>
@@ -576,7 +581,7 @@ const passwordResetEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
               <td align="center">
-                <a href="${resetLink}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                <a href="${resetLink}" style="display: inline-block; padding: 14px 32px; background-color: #ef4444; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
                   Reset Password
                 </a>
               </td>
@@ -649,64 +654,27 @@ const teamInvitationEmail = (data) => {
   const footer = masterEmailFooter();
 
   const content = `
-    <!-- Custom Header matching AcceptInvitation page -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <!-- Colorful Top Border - Rainbow gradient effect using segments -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 12px 12px 0 0; overflow: hidden;">
       <tr>
-        <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-          <!-- Daino Branding -->
-          <table role="presentation" style="margin: 0 auto 24px auto;">
-            <tr>
-              <td style="vertical-align: middle; padding-right: 12px;">
-                <!-- Daino Logo Icon -->
-                <table role="presentation" style="width: 40px; height: 40px; background-color: #6366f1; border-radius: 8px;">
-                  <tr>
-                    <td align="center" valign="middle" style="color: #ffffff; font-size: 20px; font-weight: 700;">
-                      D
-                    </td>
-                  </tr>
-                </table>
-              </td>
-              <td style="vertical-align: middle; text-align: left;">
-                <p style="margin: 0; color: #6366f1; font-size: 20px; font-weight: 700;">Daino</p>
-                <p style="margin: 0; color: #6b7280; font-size: 12px;">E-commerce Platform</p>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Invitation Icon (Team icon - styled text for email compatibility) -->
-          <table role="presentation" style="margin: 0 auto 16px auto;">
-            <tr>
-              <td style="width: 80px; height: 80px; background-color: #eef2ff; border-radius: 16px; text-align: center; vertical-align: middle;">
-                <!-- Two person silhouettes using styled circles -->
-                <table role="presentation" style="margin: 0 auto;">
-                  <tr>
-                    <td align="center" style="padding: 0 2px;">
-                      <table role="presentation">
-                        <tr><td style="width: 16px; height: 16px; background-color: #6366f1; border-radius: 50%;"></td></tr>
-                        <tr><td style="width: 20px; height: 12px; background-color: #6366f1; border-radius: 10px 10px 0 0; margin-top: 2px;"></td></tr>
-                      </table>
-                    </td>
-                    <td align="center" style="padding: 0 2px;">
-                      <table role="presentation">
-                        <tr><td style="width: 16px; height: 16px; background-color: #8b5cf6; border-radius: 50%;"></td></tr>
-                        <tr><td style="width: 20px; height: 12px; background-color: #8b5cf6; border-radius: 10px 10px 0 0; margin-top: 2px;"></td></tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
+        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #eab308;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #22c55e;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #3b82f6;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #8b5cf6;"></td>
+      </tr>
+    </table>
+    <!-- Team Invitation Header -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 32px 40px 24px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+          <!-- Logo -->
+          <img src="${PLATFORM_LOGO_URL}" alt="${PLATFORM_NAME}" style="max-width: 160px; height: auto; margin-bottom: 20px;" />
 
           <!-- Title -->
-          <table role="presentation" style="width: 100%;">
-            <tr>
-              <td style="text-align: center;">
-                <h1 style="margin: 0 0 8px 0; color: #111827; font-size: 24px; font-weight: 700;">You're Invited!</h1>
-                <p style="margin: 0; color: #6b7280; font-size: 16px;">Join the team and start collaborating</p>
-              </td>
-            </tr>
-          </table>
+          <h1 style="margin: 0 0 8px 0; color: #111827; font-size: 24px; font-weight: 600;">You're Invited!</h1>
+          <p style="margin: 0; color: #6b7280; font-size: 15px;">Join the team and start collaborating</p>
         </td>
       </tr>
     </table>
