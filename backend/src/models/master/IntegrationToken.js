@@ -3,74 +3,15 @@
  *
  * Tracks OAuth token expiry across all tenant stores.
  * Used by the token refresh cron job to efficiently find and refresh expiring tokens.
+ *
+ * Uses Supabase client directly for all operations (not Sequelize).
  */
 
-const { DataTypes, Op } = require('sequelize');
-const { masterSequelize } = require('../../database/masterConnection');
+const { masterDbClient } = require('../../database/masterConnection');
+const { v4: uuidv4 } = require('uuid');
 
-const IntegrationToken = masterSequelize.define('IntegrationToken', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  store_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'stores',
-      key: 'id'
-    },
-    onDelete: 'CASCADE'
-  },
-  integration_type: {
-    type: DataTypes.STRING(100),
-    allowNull: false
-  },
-  config_key: {
-    type: DataTypes.STRING(100),
-    defaultValue: 'default'
-  },
-  token_expires_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  refresh_token_expires_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  last_refresh_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  last_refresh_error: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.ENUM('active', 'expiring', 'expired', 'revoked', 'refresh_failed'),
-    defaultValue: 'active'
-  },
-  consecutive_failures: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  max_failures: {
-    type: DataTypes.INTEGER,
-    defaultValue: 5
-  }
-}, {
-  tableName: 'integration_tokens',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  indexes: [
-    { fields: ['store_id'] },
-    { fields: ['integration_type'] },
-    { fields: ['status'] },
-    { fields: ['token_expires_at'] }
-  ]
-});
+// Create a simple object to hold static methods
+const IntegrationToken = {};
 
 // ============================================
 // Class Methods
@@ -79,26 +20,31 @@ const IntegrationToken = masterSequelize.define('IntegrationToken', {
 /**
  * Find tokens that need refresh (expiring within the specified buffer)
  * @param {number} bufferMinutes - Minutes before expiry to consider for refresh (default: 60)
- * @returns {Promise<IntegrationToken[]>}
+ * @returns {Promise<Object[]>}
  */
 IntegrationToken.findExpiringTokens = async function(bufferMinutes = 60) {
   const bufferTime = new Date(Date.now() + bufferMinutes * 60 * 1000);
 
-  return this.findAll({
-    where: {
-      status: {
-        [Op.in]: ['active', 'expiring']
-      },
-      token_expires_at: {
-        [Op.lte]: bufferTime,
-        [Op.ne]: null
-      },
-      consecutive_failures: {
-        [Op.lt]: masterSequelize.col('max_failures')
-      }
-    },
-    order: [['token_expires_at', 'ASC']]
-  });
+  console.log('[IntegrationToken.findExpiringTokens] Looking for tokens expiring before:', bufferTime.toISOString());
+
+  const { data, error } = await masterDbClient
+    .from('integration_tokens')
+    .select('*')
+    .in('status', ['active', 'expiring'])
+    .not('token_expires_at', 'is', null)
+    .lte('token_expires_at', bufferTime.toISOString())
+    .order('token_expires_at', { ascending: true });
+
+  if (error) {
+    console.error('[IntegrationToken.findExpiringTokens] Error:', error.message);
+    throw new Error(`Failed to find expiring tokens: ${error.message}`);
+  }
+
+  // Filter by consecutive_failures < max_failures in JS since Supabase doesn't support column comparison
+  const filtered = (data || []).filter(token => token.consecutive_failures < token.max_failures);
+
+  console.log('[IntegrationToken.findExpiringTokens] Found:', filtered.length, 'tokens needing refresh');
+  return filtered;
 };
 
 /**
@@ -110,10 +56,6 @@ IntegrationToken.findExpiringTokens = async function(bufferMinutes = 60) {
  * @returns {Promise<Object>}
  */
 IntegrationToken.upsertToken = async function(storeId, integrationType, tokenData, configKey = 'default') {
-  // Use Supabase client directly instead of Sequelize for reliability
-  const { masterDbClient } = require('../../database/masterConnection');
-  const { v4: uuidv4 } = require('uuid');
-
   const tokenExpiresAt = tokenData.token_expires_at || tokenData.expiresAt;
 
   console.log('[IntegrationToken.upsertToken] Upserting token:', {
@@ -161,46 +103,71 @@ IntegrationToken.upsertToken = async function(storeId, integrationType, tokenDat
  * @param {string} configKey - Config key
  */
 IntegrationToken.recordRefreshSuccess = async function(storeId, integrationType, newExpiresAt, configKey = 'default') {
-  await this.update({
-    token_expires_at: newExpiresAt,
-    last_refresh_at: new Date(),
-    status: 'active',
-    consecutive_failures: 0,
-    last_refresh_error: null
-  }, {
-    where: {
-      store_id: storeId,
-      integration_type: integrationType,
-      config_key: configKey
-    }
-  });
+  console.log('[IntegrationToken.recordRefreshSuccess] Recording success for:', storeId, integrationType);
+
+  const { error } = await masterDbClient
+    .from('integration_tokens')
+    .update({
+      token_expires_at: newExpiresAt instanceof Date ? newExpiresAt.toISOString() : newExpiresAt,
+      last_refresh_at: new Date().toISOString(),
+      status: 'active',
+      consecutive_failures: 0,
+      last_refresh_error: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('store_id', storeId)
+    .eq('integration_type', integrationType)
+    .eq('config_key', configKey);
+
+  if (error) {
+    console.error('[IntegrationToken.recordRefreshSuccess] Error:', error.message);
+    throw new Error(`Failed to record refresh success: ${error.message}`);
+  }
+
+  console.log('[IntegrationToken.recordRefreshSuccess] Success');
 };
 
 /**
  * Record refresh failure
  * @param {string} storeId - Store UUID
  * @param {string} integrationType - Integration type
- * @param {string} error - Error message
+ * @param {string} errorMsg - Error message
  * @param {string} configKey - Config key
  */
-IntegrationToken.recordRefreshFailure = async function(storeId, integrationType, error, configKey = 'default') {
-  const token = await this.findOne({
-    where: {
-      store_id: storeId,
-      integration_type: integrationType,
-      config_key: configKey
-    }
-  });
+IntegrationToken.recordRefreshFailure = async function(storeId, integrationType, errorMsg, configKey = 'default') {
+  console.log('[IntegrationToken.recordRefreshFailure] Recording failure for:', storeId, integrationType);
+
+  // First get current token to check failures
+  const { data: token, error: fetchError } = await masterDbClient
+    .from('integration_tokens')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('integration_type', integrationType)
+    .eq('config_key', configKey)
+    .single();
+
+  if (fetchError) {
+    console.error('[IntegrationToken.recordRefreshFailure] Fetch error:', fetchError.message);
+    return;
+  }
 
   if (token) {
-    const newFailures = token.consecutive_failures + 1;
-    const newStatus = newFailures >= token.max_failures ? 'refresh_failed' : token.status;
+    const newFailures = (token.consecutive_failures || 0) + 1;
+    const newStatus = newFailures >= (token.max_failures || 5) ? 'refresh_failed' : token.status;
 
-    await token.update({
-      consecutive_failures: newFailures,
-      last_refresh_error: error,
-      status: newStatus
-    });
+    const { error: updateError } = await masterDbClient
+      .from('integration_tokens')
+      .update({
+        consecutive_failures: newFailures,
+        last_refresh_error: errorMsg,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', token.id);
+
+    if (updateError) {
+      console.error('[IntegrationToken.recordRefreshFailure] Update error:', updateError.message);
+    }
   }
 };
 
@@ -211,16 +178,23 @@ IntegrationToken.recordRefreshFailure = async function(storeId, integrationType,
  * @param {string} configKey - Config key
  */
 IntegrationToken.markAsRevoked = async function(storeId, integrationType, configKey = 'default') {
-  await this.update({
-    status: 'revoked',
-    last_refresh_error: 'Authorization was revoked'
-  }, {
-    where: {
-      store_id: storeId,
-      integration_type: integrationType,
-      config_key: configKey
-    }
-  });
+  console.log('[IntegrationToken.markAsRevoked] Marking as revoked:', storeId, integrationType);
+
+  const { error } = await masterDbClient
+    .from('integration_tokens')
+    .update({
+      status: 'revoked',
+      last_refresh_error: 'Authorization was revoked',
+      updated_at: new Date().toISOString()
+    })
+    .eq('store_id', storeId)
+    .eq('integration_type', integrationType)
+    .eq('config_key', configKey);
+
+  if (error) {
+    console.error('[IntegrationToken.markAsRevoked] Error:', error.message);
+    throw new Error(`Failed to mark token as revoked: ${error.message}`);
+  }
 };
 
 /**
@@ -230,13 +204,19 @@ IntegrationToken.markAsRevoked = async function(storeId, integrationType, config
  * @param {string} configKey - Config key
  */
 IntegrationToken.deleteToken = async function(storeId, integrationType, configKey = 'default') {
-  await this.destroy({
-    where: {
-      store_id: storeId,
-      integration_type: integrationType,
-      config_key: configKey
-    }
-  });
+  console.log('[IntegrationToken.deleteToken] Deleting token:', storeId, integrationType);
+
+  const { error } = await masterDbClient
+    .from('integration_tokens')
+    .delete()
+    .eq('store_id', storeId)
+    .eq('integration_type', integrationType)
+    .eq('config_key', configKey);
+
+  if (error) {
+    console.error('[IntegrationToken.deleteToken] Error:', error.message);
+    throw new Error(`Failed to delete token: ${error.message}`);
+  }
 };
 
 /**
@@ -245,10 +225,17 @@ IntegrationToken.deleteToken = async function(storeId, integrationType, configKe
  * @returns {Promise<Object[]>}
  */
 IntegrationToken.getStoreTokenStatus = async function(storeId) {
-  return this.findAll({
-    where: { store_id: storeId },
-    attributes: ['integration_type', 'config_key', 'status', 'token_expires_at', 'last_refresh_at', 'consecutive_failures']
-  });
+  const { data, error } = await masterDbClient
+    .from('integration_tokens')
+    .select('integration_type, config_key, status, token_expires_at, last_refresh_at, consecutive_failures')
+    .eq('store_id', storeId);
+
+  if (error) {
+    console.error('[IntegrationToken.getStoreTokenStatus] Error:', error.message);
+    throw new Error(`Failed to get store token status: ${error.message}`);
+  }
+
+  return data || [];
 };
 
 /**
@@ -256,19 +243,46 @@ IntegrationToken.getStoreTokenStatus = async function(storeId) {
  * @returns {Promise<Object>}
  */
 IntegrationToken.getHealthStats = async function() {
-  const stats = await this.findAll({
-    attributes: [
-      'status',
-      [masterSequelize.fn('COUNT', masterSequelize.col('id')), 'count']
-    ],
-    group: ['status'],
-    raw: true
-  });
+  const { data, error } = await masterDbClient
+    .from('integration_tokens')
+    .select('status');
 
-  return stats.reduce((acc, stat) => {
-    acc[stat.status] = parseInt(stat.count);
+  if (error) {
+    console.error('[IntegrationToken.getHealthStats] Error:', error.message);
+    throw new Error(`Failed to get health stats: ${error.message}`);
+  }
+
+  // Count by status in JS
+  const stats = (data || []).reduce((acc, token) => {
+    acc[token.status] = (acc[token.status] || 0) + 1;
     return acc;
   }, {});
+
+  return stats;
+};
+
+/**
+ * Find token by store and integration type
+ * @param {string} storeId - Store UUID
+ * @param {string} integrationType - Integration type
+ * @param {string} configKey - Config key
+ * @returns {Promise<Object|null>}
+ */
+IntegrationToken.findByStoreAndType = async function(storeId, integrationType, configKey = 'default') {
+  const { data, error } = await masterDbClient
+    .from('integration_tokens')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('integration_type', integrationType)
+    .eq('config_key', configKey)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[IntegrationToken.findByStoreAndType] Error:', error.message);
+    return null;
+  }
+
+  return data;
 };
 
 module.exports = IntegrationToken;
