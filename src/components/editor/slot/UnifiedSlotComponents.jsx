@@ -1579,25 +1579,14 @@ const StockStatus = createSlotComponent({
 
 /**
  * ProductImage - Main product image component
+ * Shows real product images in both editor and storefront modes
  */
 const ProductImage = createSlotComponent({
   name: 'ProductImage',
 
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
-    if (context === 'editor') {
-      // Editor version - visual preview only
-      return (
-        <img
-          src="https://placehold.co/600x600?text=Product+Image"
-          alt="Product"
-          className={className}
-          style={styles}
-        />
-      );
-    }
-
-    // Storefront version - full functionality
-    const { product, activeImageIndex } = productContext;
+    // Use real product data in both editor and storefront modes
+    const { product, activeImageIndex } = productContext || {};
 
     if (!product) {
       return (
@@ -1695,31 +1684,29 @@ const ProductThumbnails = createSlotComponent({
       ? 'thumbnail-gallery flex flex-col space-y-2 w-24'
       : 'thumbnail-gallery flex overflow-x-auto space-x-2 mt-4';
 
-    // Get images: real data in storefront, demo data in editor from variableContext
+    // Get images: use real product images in both editor and storefront
     const images = product?.images || [];
 
-    // In editor, always show thumbnails for layout preview
-    // In storefront, only show if multiple images exist
-    const shouldShow = context === 'editor' || (images && images.length > 1);
+    // Show thumbnails if multiple images exist (both editor and storefront)
+    // Fall back to demo images only if no real images available in editor
+    const shouldShow = images.length > 1 || (context === 'editor' && images.length === 0);
 
     if (!shouldShow) {
       return null;
     }
 
-    // Use demo images in editor (from variableContext), real images in storefront
-    const thumbnailImages = context === 'editor'
-      ? Array.from({ length: 4 }, (_, i) => ({
-          url: `https://placehold.co/100x100?text=Thumb+${i + 1}`,
-          name: `Demo Thumbnail ${i + 1}`
-        }))
-      : images;
+    // Use real images if available, only fall back to demo in editor if no images
+    const thumbnailImages = images.length > 0
+      ? images
+      : (context === 'editor'
+        ? Array.from({ length: 4 }, (_, i) => ({
+            url: `https://placehold.co/100x100?text=Thumb+${i + 1}`,
+            name: `Demo Thumbnail ${i + 1}`
+          }))
+        : []);
 
     const getImageUrl = (image, index) => {
-      if (context === 'editor') {
-        return image.url; // Already set above for demo
-      }
-
-      // Storefront: handle real image data
+      // Handle real image data
       if (typeof image === 'object' && image !== null) {
         return image.url || 'https://placehold.co/100x100?text=No+Image';
       }
@@ -1740,7 +1727,7 @@ const ProductThumbnails = createSlotComponent({
           >
             <img
               src={getImageUrl(image, index)}
-              alt={context === 'editor' ? `Demo Thumbnail ${index + 1}` : `${variableContext?.product?.name || product?.name || 'Product'} ${index + 1}`}
+              alt={`${variableContext?.product?.name || product?.name || 'Product'} ${index + 1}`}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
               onError={(e) => {
                 e.target.src = 'https://placehold.co/100x100?text=Error';
