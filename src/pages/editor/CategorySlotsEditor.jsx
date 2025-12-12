@@ -184,16 +184,25 @@ const CategorySlotsEditor = ({
     { enabled: !!selectedCategorySlug && !!storeId }
   );
 
+  // Debug logging for category data loading
+  console.log('[CategorySlotsEditor] Data loading state:', {
+    storeId,
+    selectedCategorySlug,
+    categoryLoading,
+    hasRealData: !!realCategoryData?.category,
+    categoryError: categoryError?.message
+  });
 
-  // Listen for settings updates from admin panel
+
+  // Listen for settings updates from admin panel - no page reload, just clear cache
   useEffect(() => {
     try {
       const channel = new BroadcastChannel('store_settings_update');
       channel.onmessage = (event) => {
         if (event.data.type === 'clear_cache') {
-          // Clear localStorage and reload
+          // Clear localStorage cache only - React Query will handle refetch
           localStorage.removeItem('storeProviderCache');
-          setTimeout(() => window.location.reload(), 500);
+          console.log('[CategorySlotsEditor] Settings cache cleared');
         }
       };
       return () => channel.close();
