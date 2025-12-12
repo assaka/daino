@@ -546,7 +546,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         </div>
       </div>
 
-      {status?.oauthConfigured === false ? (
+      {status?.oauthConfigured === false && !status?.connected ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <div className="flex items-start space-x-3">
             <Cloud className="w-6 h-6 text-yellow-600 mt-0.5" />
