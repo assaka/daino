@@ -559,7 +559,46 @@ VALUES
     "checkout_section_bg_color": "#FFFFFF",
     "checkout_section_border_color": "#E2E8F0",
     "checkout_section_text_color": "#334155"
-  }'::jsonb, false, 3)
+  }'::jsonb, false, 3),
+  ('bold', 'Bold Red', 'Vibrant red theme for high-energy brands', '{
+    "primary_button_color": "#DC2626",
+    "secondary_button_color": "#6B7280",
+    "add_to_cart_button_color": "#B91C1C",
+    "view_cart_button_color": "#EF4444",
+    "checkout_button_color": "#DC2626",
+    "place_order_button_color": "#B91C1C",
+    "font_family": "Inter",
+    "breadcrumb_show_home_icon": true,
+    "breadcrumb_item_text_color": "#6B7280",
+    "breadcrumb_item_hover_color": "#DC2626",
+    "breadcrumb_active_item_color": "#111827",
+    "breadcrumb_separator_color": "#9CA3AF",
+    "breadcrumb_font_size": "0.875rem",
+    "breadcrumb_mobile_font_size": "0.75rem",
+    "breadcrumb_font_weight": "400",
+    "product_tabs_title_color": "#DC2626",
+    "product_tabs_title_size": "1.875rem",
+    "product_tabs_content_bg": "#FEF2F2",
+    "product_tabs_attribute_label_color": "#B91C1C",
+    "product_tabs_active_bg": "transparent",
+    "product_tabs_inactive_color": "#6B7280",
+    "product_tabs_inactive_bg": "transparent",
+    "product_tabs_hover_color": "#DC2626",
+    "product_tabs_hover_bg": "#FEE2E2",
+    "product_tabs_font_weight": "500",
+    "product_tabs_border_radius": "0.5rem",
+    "product_tabs_border_color": "#FECACA",
+    "product_tabs_text_decoration": "none",
+    "checkout_step_indicator_active_color": "#DC2626",
+    "checkout_step_indicator_inactive_color": "#D1D5DB",
+    "checkout_step_indicator_completed_color": "#B91C1C",
+    "checkout_step_indicator_style": "circles",
+    "checkout_section_title_color": "#111827",
+    "checkout_section_title_size": "1.25rem",
+    "checkout_section_bg_color": "#FFFFFF",
+    "checkout_section_border_color": "#FECACA",
+    "checkout_section_text_color": "#374151"
+  }'::jsonb, false, 4)
 ON CONFLICT (preset_name) DO NOTHING;
 
 -- ============================================
