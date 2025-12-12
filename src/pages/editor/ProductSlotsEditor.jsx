@@ -45,8 +45,17 @@ export default function ProductSlotsEditor({
   const storeId = getSelectedStoreId();
 
   // Fetch header and categories for combined header + page editing
-  const { data: headerConfig } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
+  const { data: headerConfig, isLoading: headerLoading } = useSlotConfiguration(storeId, 'header', { enabled: !!storeId });
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
+
+  // Debug logging
+  console.log('[ProductSlotsEditor] State:', {
+    storeId,
+    selectedStore: !!selectedStore,
+    headerLoading,
+    headerSlots: headerConfig?.slots ? Object.keys(headerConfig.slots).length : 0,
+    selectedProductSlug
+  });
 
   const [realProduct, setRealProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
