@@ -14,11 +14,13 @@ const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@daino.com';
  * Consistent branding across all platform emails
  * Note: Uses solid background colors for email client compatibility (no gradients)
  */
+const PLATFORM_LOGO_URL = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/dainostore_logo.png` : 'https://www.dainostore.com/dainostore_logo.png';
+
 const masterEmailHeader = (options = {}) => {
   const {
     title = '',
     subtitle = '',
-    logoUrl = null,
+    logoUrl = PLATFORM_LOGO_URL,
     primaryColor = '#6366f1', // Indigo
     secondaryColor = '#8b5cf6' // Purple (unused - keeping for API compatibility)
   } = options;

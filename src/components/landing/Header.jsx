@@ -46,7 +46,7 @@ export default function Header() {
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-neutral-900 tracking-tight">DainoStore</span>
+                        <img src="/dainostore_logo.png" alt="DainoStore" className="h-8" />
                     </div>
 
                     {/* Navigation - Centered */}
