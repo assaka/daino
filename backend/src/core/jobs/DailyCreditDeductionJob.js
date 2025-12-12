@@ -89,15 +89,27 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           console.log(`[DAILY_DEDUCTION] Charge result for ${store.slug}:`, JSON.stringify(chargeResult));
 
           if (chargeResult.success) {
-            results.successful++;
-            results.stores.push({
-              store_id: store.id,
-              store_slug: store.slug,
-              owner_id: store.user_id,
-              credits_deducted: chargeResult.credits_deducted || 1,
-              remaining_balance: chargeResult.remaining_balance,
-              status: 'success'
-            });
+            if (chargeResult.already_charged) {
+              // Already charged today - count as skipped, not success or failure
+              results.stores.push({
+                store_id: store.id,
+                store_slug: store.slug,
+                owner_id: store.user_id,
+                credits_deducted: 0,
+                status: 'already_charged',
+                message: chargeResult.message
+              });
+            } else {
+              results.successful++;
+              results.stores.push({
+                store_id: store.id,
+                store_slug: store.slug,
+                owner_id: store.user_id,
+                credits_deducted: chargeResult.credits_deducted || 1,
+                remaining_balance: chargeResult.remaining_balance,
+                status: 'success'
+              });
+            }
           } else {
             results.failed++;
             results.errors.push({
@@ -179,17 +191,31 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           );
 
           if (chargeResult.success) {
-            domainResults.successful++;
-            domainResults.domains.push({
-              domain_id: domain.id,
-              domain_name: domain.domain,
-              store_id: domain.store_id,
-              store_slug: store.slug,
-              owner_id: store.user_id,
-              credits_deducted: chargeResult.credits_deducted,
-              remaining_balance: chargeResult.remaining_balance,
-              status: 'success'
-            });
+            if (chargeResult.already_charged) {
+              // Already charged today - count as skipped, not success or failure
+              domainResults.domains.push({
+                domain_id: domain.id,
+                domain_name: domain.domain,
+                store_id: domain.store_id,
+                store_slug: store.slug,
+                owner_id: store.user_id,
+                credits_deducted: 0,
+                status: 'already_charged',
+                message: chargeResult.message
+              });
+            } else {
+              domainResults.successful++;
+              domainResults.domains.push({
+                domain_id: domain.id,
+                domain_name: domain.domain,
+                store_id: domain.store_id,
+                store_slug: store.slug,
+                owner_id: store.user_id,
+                credits_deducted: chargeResult.credits_deducted,
+                remaining_balance: chargeResult.remaining_balance,
+                status: 'success'
+              });
+            }
           } else {
             domainResults.failed++;
             domainResults.errors.push({

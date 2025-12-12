@@ -264,6 +264,36 @@ class CreditService {
       };
     }
 
+    // Check if already charged today BEFORE deducting credits
+    const chargeDate = new Date().toISOString().split('T')[0];
+    try {
+      const ConnectionManager = require('./database/ConnectionManager');
+      const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
+
+      const { data: existingCharge, error: checkError } = await tenantDb
+        .from('credit_usage')
+        .select('id, created_at')
+        .eq('reference_id', domainId)
+        .eq('reference_type', 'custom_domain')
+        .gte('created_at', `${chargeDate}T00:00:00`)
+        .lt('created_at', `${chargeDate}T23:59:59`)
+        .maybeSingle();
+
+      if (!checkError && existingCharge) {
+        console.log(`[DAILY_DEDUCTION] Domain ${domainName} already charged today (${chargeDate}), skipping`);
+        return {
+          success: true,
+          already_charged: true,
+          message: `Already charged today (${chargeDate})`,
+          credits_deducted: 0,
+          charge_date: chargeDate
+        };
+      }
+    } catch (checkError) {
+      // If check fails, log but continue (fail-open to avoid missed charges)
+      console.warn(`[DAILY_DEDUCTION] Could not check existing charge for domain ${domainId}:`, checkError.message);
+    }
+
     // Get balance before deduction
     const balanceBefore = await this.getBalance(userId);
 
@@ -340,6 +370,34 @@ class CreditService {
         success: false,
         message: 'Store is not published, skipping daily charge'
       };
+    }
+
+    // Check if already charged today BEFORE deducting credits
+    const chargeDate = new Date().toISOString().split('T')[0];
+    try {
+      const ConnectionManager = require('./database/ConnectionManager');
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: existingCharge, error: checkError } = await tenantDb
+        .from('store_uptime')
+        .select('id, charged_date')
+        .eq('store_id', storeId)
+        .eq('charged_date', chargeDate)
+        .maybeSingle();
+
+      if (!checkError && existingCharge) {
+        console.log(`[DAILY_DEDUCTION] Store ${store.slug} already charged today (${chargeDate}), skipping`);
+        return {
+          success: true,
+          already_charged: true,
+          message: `Already charged today (${chargeDate})`,
+          credits_deducted: 0,
+          charge_date: chargeDate
+        };
+      }
+    } catch (checkError) {
+      // If check fails, log but continue (fail-open to avoid missed charges)
+      console.warn(`[DAILY_DEDUCTION] Could not check existing charge for store ${storeId}:`, checkError.message);
     }
 
     // Get balance before deduction
