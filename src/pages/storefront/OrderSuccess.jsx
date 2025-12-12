@@ -738,7 +738,7 @@ export default function OrderSuccess() {
                       }
                     }}
                     style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                    className="w-full text-white hover:opacity-90"
+                    className="w-full text-white btn-themed"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
                     {t('common.login', settings) || 'Login to Your Account'}
@@ -812,7 +812,7 @@ export default function OrderSuccess() {
                         <Button
                           onClick={() => setShowCreateAccount(true)}
                           style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                          className="w-full text-white hover:opacity-90"
+                          className="w-full text-white btn-themed"
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
                           {t('success.create_account', settings)}
@@ -860,7 +860,7 @@ export default function OrderSuccess() {
                               onClick={handleCreateAccount}
                               disabled={creatingAccount}
                               style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                              className="flex-1 text-white hover:opacity-90"
+                              className="flex-1 text-white btn-themed"
                             >
                               {creatingAccount ? (
                                 <>
