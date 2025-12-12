@@ -410,12 +410,13 @@ export default function StorefrontLayout({ children }) {
       }
       /* Hover effects for themed buttons */
       .btn-primary:hover, .btn-secondary:hover, .btn-add-to-cart:hover,
-      .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover {
-          filter: brightness(1.15);
+      .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover,
+      .btn-themed:hover {
+          filter: brightness(1.15) !important;
           transition: filter 0.2s ease;
       }
       .btn-primary, .btn-secondary, .btn-add-to-cart,
-      .btn-view-cart, .btn-checkout, .btn-place-order {
+      .btn-view-cart, .btn-checkout, .btn-place-order, .btn-themed {
           transition: filter 0.2s ease;
       }
       /* Override blue hover colors with theme color */
