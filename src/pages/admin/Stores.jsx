@@ -407,7 +407,7 @@ export default function Stores() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          window.location.href = `/admin/theme?store=${store.id}`;
+                          window.location.href = `/admin/theme-layout?store=${store.id}`;
                         }}
                         title="Customize store theme"
                       >
