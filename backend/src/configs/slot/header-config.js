@@ -48,14 +48,15 @@ const headerConfig = {
 
     header_top_row: {
       id: 'header_top_row',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'flex items-center justify-between h-16',
+      className: 'grid grid-cols-12 gap-2 items-center h-16',
       parentClassName: 'w-full',
       styles: {
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
+        gap: '0.5rem',
         alignItems: 'center',
-        justifyContent: 'space-between',
         height: '4rem'
       },
       parentId: 'header_inner',
