@@ -629,7 +629,7 @@ export default function StorefrontLayout({ children }) {
                                                         <Button
                                                             size="sm"
                                                             variant="themed"
-                                                            className="btn-themed text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                                                            className="text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                                                             style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                                         >
                                                             <UserIcon className="w-4 h-4" />
@@ -686,7 +686,7 @@ export default function StorefrontLayout({ children }) {
                                                 }}
                                                 disabled={userLoading}
                                                 variant="themed"
-                                                className="btn-themed text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                                                className="text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                                 style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                             >
                                                 <UserIcon className="w-5 h-5 mr-2" />

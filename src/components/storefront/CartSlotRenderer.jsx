@@ -166,7 +166,8 @@ export function CartSlotRenderer({
       return wrapWithParentClass(
         <Button
           onClick={() => navigate(getStoreBaseUrl(store))}
-          className={className || "btn-themed text-white"}
+          variant="themed"
+          className={className || "text-white"}
           style={styles || { backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
         >
           {content || t('common.continue_shopping', 'Continue Shopping')}
@@ -456,7 +457,8 @@ export function CartSlotRenderer({
                 <Button
                   onClick={handleApplyCoupon}
                   disabled={!couponCode.trim()}
-                  className="btn-themed text-white"
+                  variant="themed"
+                  className="text-white"
                   style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
                 >
                   <Tag className="w-4 h-4 mr-2" /> {t('apply', settings)}
@@ -510,7 +512,8 @@ export function CartSlotRenderer({
         <Button
           onClick={handleApplyCoupon}
           disabled={!couponCode.trim()}
-          className={className || "btn-themed text-white"}
+          variant="themed"
+          className={className || "text-white"}
           style={styles || { backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
         >
           <Tag className="w-4 h-4 mr-2" /> {content || t('apply', settings)}

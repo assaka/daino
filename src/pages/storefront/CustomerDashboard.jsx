@@ -632,8 +632,9 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
             </Button>
             <Button
               type="submit"
+              variant="themed"
               style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-              className="text-white btn-themed"
+              className="text-white"
               disabled={saving}
             >
               {saving ? t('common.saving', settings) : (editingAddress ? t('address.update', settings) : t('address.add', settings))}

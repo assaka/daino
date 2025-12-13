@@ -361,7 +361,7 @@ export function HeaderSlotRenderer({
                   <Button
                     size="sm"
                     variant="themed"
-                    className="px-4 py-2 flex items-center space-x-1 btn-themed"
+                    className="px-4 py-2 flex items-center space-x-1"
                     style={buttonStyles}
                   >
                     {getUserIcon('w-4 h-4')}
@@ -397,7 +397,7 @@ export function HeaderSlotRenderer({
                 }}
                 disabled={userLoading}
                 variant="themed"
-                className="px-4 py-2 flex items-center space-x-2 btn-themed"
+                className="px-4 py-2 flex items-center space-x-2"
                 style={buttonStyles}
               >
                 {getUserIcon('w-5 h-5 mr-2')}

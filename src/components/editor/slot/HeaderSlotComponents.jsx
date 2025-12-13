@@ -400,7 +400,8 @@ const UserAccountMenuSlot = createSlotComponent({
         <div className={className} style={styles}>
           <Button
             size="sm"
-            className="px-4 py-2 flex items-center space-x-2 btn-themed"
+            variant="themed"
+            className="px-4 py-2 flex items-center space-x-2"
             style={buttonStyles}
           >
             {getUserIcon()}
@@ -416,7 +417,8 @@ const UserAccountMenuSlot = createSlotComponent({
         <div className={className} style={styles}>
           <Button
             size="sm"
-            className="px-4 py-2 flex items-center space-x-1 btn-themed"
+            variant="themed"
+            className="px-4 py-2 flex items-center space-x-1"
             style={buttonStyles}
           >
             {getUserIcon()}
@@ -436,7 +438,8 @@ const UserAccountMenuSlot = createSlotComponent({
             navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
           }}
           disabled={userLoading}
-          className="px-4 py-2 flex items-center space-x-2 btn-themed"
+          variant="themed"
+          className="px-4 py-2 flex items-center space-x-2"
           style={buttonStyles}
         >
           {getUserIcon()}

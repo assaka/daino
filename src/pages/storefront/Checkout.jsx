@@ -1361,7 +1361,8 @@ export default function Checkout() {
         <p className="text-gray-600 mb-6">{t('common.add_products_checkout', 'Add products before checkout')}</p>
         <Button
           onClick={() => navigate(createPublicUrl(store?.slug || 'store', 'STOREFRONT'))}
-          className="btn-themed text-white"
+          variant="themed"
+          className="text-white"
           style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
         >
           {t('common.continue_shopping', 'Continue Shopping')}
@@ -2697,7 +2698,8 @@ export default function Checkout() {
                   {canGoNext() && (
                     <Button
                       onClick={goToNextStep}
-                      className="flex-1 btn-themed"
+                      variant="themed"
+                      className="flex-1"
                       disabled={!user && settings?.allow_guest_checkout === false}
                       style={{ backgroundColor: stepActiveColor, color: '#FFFFFF' }}
                     >
@@ -2804,7 +2806,8 @@ export default function Checkout() {
               <Button
                 type="submit"
                 disabled={loginLoading}
-                className="flex-1 btn-themed text-white"
+                variant="themed"
+                className="flex-1 text-white"
                 style={{ backgroundColor: stepActiveColor }}
               >
                 {loginLoading ? t('common.logging_in', 'Logging in...') : t('common.login', 'Login')}

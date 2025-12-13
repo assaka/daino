@@ -737,8 +737,9 @@ export default function OrderSuccess() {
                         navigate('/login?redirect=/account/orders');
                       }
                     }}
+                    variant="themed"
                     style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                    className="w-full text-white btn-themed"
+                    className="w-full text-white"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
                     {t('common.login', settings) || 'Login to Your Account'}
@@ -811,8 +812,9 @@ export default function OrderSuccess() {
                       {!showCreateAccount ? (
                         <Button
                           onClick={() => setShowCreateAccount(true)}
+                          variant="themed"
                           style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                          className="w-full text-white btn-themed"
+                          className="w-full text-white"
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
                           {t('success.create_account', settings)}
@@ -859,8 +861,9 @@ export default function OrderSuccess() {
                             <Button
                               onClick={handleCreateAccount}
                               disabled={creatingAccount}
+                              variant="themed"
                               style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                              className="flex-1 text-white btn-themed"
+                              className="flex-1 text-white"
                             >
                               {creatingAccount ? (
                                 <>
