@@ -408,17 +408,22 @@ export default function StorefrontLayout({ children }) {
       .btn-place-order {
           background-color: var(--theme-place-order-button);
       }
-      /* Hover effects for themed buttons - reset Tailwind hover and use brightness */
+      /* Hover effects for themed buttons - use brightness filter only */
       .btn-primary:hover, .btn-secondary:hover, .btn-add-to-cart:hover,
       .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover,
       .btn-themed:hover {
           filter: brightness(1.15) !important;
-          background-color: inherit !important;
           transition: filter 0.2s ease;
       }
+      /* Prevent Tailwind default hover from changing background color */
       .btn-primary, .btn-secondary, .btn-add-to-cart,
       .btn-view-cart, .btn-checkout, .btn-place-order, .btn-themed {
           transition: filter 0.2s ease;
+      }
+      .btn-primary:hover, .btn-secondary:hover, .btn-add-to-cart:hover,
+      .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover,
+      .btn-themed:hover {
+          --tw-bg-opacity: 1 !important;
       }
       /* Override blue hover colors with theme color */
       .nav-link-themed:hover, .hover\\:text-blue-600:hover {

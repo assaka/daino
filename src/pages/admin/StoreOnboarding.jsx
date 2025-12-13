@@ -13,7 +13,7 @@ import {
   CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X
 } from 'lucide-react';
 import apiClient from '@/utils/api';
-import { User } from '@/api/entities';
+import { User, Store as StoreEntity } from '@/api/entities';
 import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 
 const STEPS = [
@@ -83,8 +83,8 @@ export default function StoreOnboarding() {
   useEffect(() => {
     const checkExistingStores = async () => {
       try {
-        const response = await apiClient.get('/stores');
-        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const stores = await StoreEntity.findAll();
+        if (Array.isArray(stores) && stores.length > 0) {
           setHasExistingStores(true);
         }
       } catch (err) {
