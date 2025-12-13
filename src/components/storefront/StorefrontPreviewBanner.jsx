@@ -92,8 +92,7 @@ export default function StorefrontPreviewBanner() {
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5" />
             <div>
-              <span className="font-medium">Published Preview</span>
-              <span className="ml-2 text-blue-200 text-sm">Viewing the published version of this store</span>
+              <span className="font-medium">Published preview</span>
             </div>
           </div>
 
