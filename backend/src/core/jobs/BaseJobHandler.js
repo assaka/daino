@@ -76,11 +76,23 @@ class BaseJobHandler extends EventEmitter {
     if (this.isAborted) return;
 
     this.progress = Math.max(0, Math.min(100, progress));
-    await this.job.updateProgress(this.progress, message);
-    await JobHistory.recordJobProgress(this.job.id, this.progress, message || `Progress: ${this.progress}%`);
-    
+
+    // Only call job.updateProgress if it's a method (not available in direct execution mode)
+    if (typeof this.job.updateProgress === 'function') {
+      await this.job.updateProgress(this.progress, message);
+    }
+
+    // Only record to JobHistory if we have a real job ID (not system jobs)
+    if (this.job.id && !String(this.job.id).startsWith('system-')) {
+      try {
+        await JobHistory.recordJobProgress(this.job.id, this.progress, message || `Progress: ${this.progress}%`);
+      } catch (err) {
+        // Ignore history errors for direct execution
+      }
+    }
+
     this.emit('progress', this.progress, message);
-    
+
     if (message) {
       console.log(`📊 Job ${this.job.id} progress: ${this.progress}% - ${message}`);
     }

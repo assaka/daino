@@ -41,7 +41,7 @@ async function getDueCronJobs() {
     // Get all active stores
     const { data: stores, error: storesError } = await masterDbClient
       .from('stores')
-      .select('id, name, slug')
+      .select('id, slug')
       .eq('is_active', true);
 
     if (storesError) {
