@@ -14,6 +14,29 @@ class StorefrontApiClient {
 
   }
 
+  // Get the version parameter from URL if present (for published-only mode)
+  getVersionParam() {
+    if (typeof window === 'undefined') return null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const version = urlParams.get('version');
+    // Also check localStorage for persisted preview mode
+    if (!version) {
+      try {
+        const stored = localStorage.getItem('daino_preview_mode');
+        if (stored) {
+          const previewState = JSON.parse(stored);
+          const maxAge = 24 * 60 * 60 * 1000;
+          if (Date.now() - previewState.timestamp < maxAge) {
+            if (previewState.isPublishedPreview) return 'published';
+          }
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    return version;
+  }
+
   // Set the current store context
   setStoreContext(storeSlug, storeId = null) {
     this.currentStoreSlug = storeSlug;
@@ -77,7 +100,16 @@ class StorefrontApiClient {
   // Build public URL
   buildPublicUrl(endpoint) {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-    return `${this.baseURL}/api/public/${cleanEndpoint}`;
+    let url = `${this.baseURL}/api/public/${cleanEndpoint}`;
+
+    // Add version parameter if in published-only mode
+    const version = this.getVersionParam();
+    if (version === 'published') {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}version=published`;
+    }
+
+    return url;
   }
 
   // Build authenticated URL

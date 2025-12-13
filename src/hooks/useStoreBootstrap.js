@@ -57,9 +57,27 @@ export function useStoreBootstrap(storeSlug, language) {
   // Check for storefront preview in URL query params
   const urlParams = new URLSearchParams(window.location.search);
   const storefrontSlug = urlParams.get('storefront');
+  const versionParam = urlParams.get('version');
+
+  // Also check localStorage for persisted preview mode
+  let version = versionParam;
+  if (!version) {
+    try {
+      const stored = localStorage.getItem('daino_preview_mode');
+      if (stored) {
+        const previewState = JSON.parse(stored);
+        const maxAge = 24 * 60 * 60 * 1000;
+        if (Date.now() - previewState.timestamp < maxAge) {
+          if (previewState.isPublishedPreview) version = 'published';
+        }
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
 
   return useQuery({
-    queryKey: ['bootstrap', storeSlug, language, storefrontSlug],
+    queryKey: ['bootstrap', storeSlug, language, storefrontSlug, version],
     queryFn: async () => {
       if (!storeSlug) {
         throw new Error('Store slug is required for bootstrap');
@@ -82,6 +100,11 @@ export function useStoreBootstrap(storeSlug, language) {
         params.append('storefront', storefrontSlug);
       }
 
+      // Add version parameter for published-only mode
+      if (version === 'published') {
+        params.append('version', 'published');
+      }
+
       // Use getPublic (not .get) - returns data directly, not wrapped in response.data
       const result = await storefrontApiClient.getPublic(`storefront/bootstrap?${params.toString()}`);
 
@@ -92,7 +115,7 @@ export function useStoreBootstrap(storeSlug, language) {
 
       return result.data;
     },
-    staleTime: storefrontSlug ? 0 : 900000, // No cache when previewing, 15 minutes otherwise
+    staleTime: (storefrontSlug || version === 'published') ? 0 : 900000, // No cache when previewing or viewing published, 15 minutes otherwise
     gcTime: 1800000, // 30 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,

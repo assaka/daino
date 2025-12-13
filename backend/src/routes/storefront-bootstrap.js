@@ -248,15 +248,19 @@ router.get('/', cacheMiddleware({
     const slug = req.query.slug || 'default';
     const lang = req.query.lang || 'en';
     const storefront = req.query.storefront || 'primary';
-    // Include storefront in cache key for different theme variants
-    return `bootstrap:${slug}:${lang}:${storefront}`;
+    const version = req.query.version || 'default';
+    // Include storefront and version in cache key for different theme variants and published/draft modes
+    return `bootstrap:${slug}:${lang}:${storefront}:${version}`;
   },
   // Skip caching if user is authenticated (personalized data) or previewing specific storefront
   condition: (req) => !req.headers.authorization && !req.query.storefront
 }), async (req, res) => {
   try {
-    const { slug, lang, session_id, user_id, storefront: storefrontSlug } = req.query;
+    const { slug, lang, session_id, user_id, storefront: storefrontSlug, version } = req.query;
     const authHeader = req.headers.authorization;
+
+    // Check if we're in published-only mode (no fallback to draft)
+    const publishedOnly = version === 'published';
 
     // Validate required parameters
     if (!slug) {
@@ -614,7 +618,13 @@ router.get('/', cacheMiddleware({
             return publishedConfig;
           }
 
-          // If no published version, try to find draft
+          // If version=published is specified, don't fall back to draft
+          if (publishedOnly) {
+            console.log('📦 Bootstrap: No published header config found (version=published mode, no fallback to draft)');
+            return null;
+          }
+
+          // If no published version and not in published-only mode, try to find draft
           const { data: draftConfig, error: draftError } = await tenantDb
             .from('slot_configurations')
             .select('*')

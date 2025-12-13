@@ -805,7 +805,7 @@ router.post('/publish-all/:storeId', authMiddleware, async (req, res) => {
 // Public endpoint to get active slot configurations for storefront (matches old API)
 router.get('/public/slot-configurations', async (req, res) => {
   try {
-    const { store_id, page_type = 'cart' } = req.query;
+    const { store_id, page_type = 'cart', version } = req.query;
 
     if (!store_id) {
       return res.status(400).json({ success: false, error: 'store_id is required' });
@@ -816,8 +816,11 @@ router.get('/public/slot-configurations', async (req, res) => {
     // First try to find published version
     let configuration = await findLatestPublished(store_id, page_type);
 
-    // If no published version, try to find draft
-    if (!configuration) {
+    // If version=published is specified, ONLY return published versions (no fallback to draft)
+    const publishedOnly = version === 'published';
+
+    // If no published version and NOT in published-only mode, try to find draft
+    if (!configuration && !publishedOnly) {
       const { data, error } = await tenantDb
         .from('slot_configurations')
         .select('*')
@@ -832,7 +835,8 @@ router.get('/public/slot-configurations', async (req, res) => {
       configuration = data;
     }
 
-    if (!configuration) {
+    // If still no configuration and NOT in published-only mode, create default draft
+    if (!configuration && !publishedOnly) {
       // Create a new draft configuration with default content
       console.log('No configuration found, creating default draft for store:', store_id);
 
@@ -860,6 +864,13 @@ router.get('/public/slot-configurations', async (req, res) => {
         console.error('Error creating default draft configuration:', error);
         return res.status(500).json({ success: false, error: error.message });
       }
+    }
+
+    // If in published-only mode and no published version found, return empty array
+    // This allows the frontend to use default configuration from config files
+    if (!configuration && publishedOnly) {
+      console.log(`[Slot Config] No published configuration found for ${page_type}, returning empty (version=published mode)`);
+      return res.json({ success: true, data: [] });
     }
 
     res.json({ success: true, data: [configuration] });
