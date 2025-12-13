@@ -765,7 +765,7 @@ export default function ThemeLayout() {
 
         setCreatingTheme(true);
         try {
-            const response = await api.post('/api/theme-defaults', {
+            const response = await api.post('/theme-defaults', {
                 preset_name: newThemeName.toLowerCase().replace(/\s+/g, '-'),
                 display_name: newThemeName.trim(),
                 description: newThemeDescription.trim() || null,
