@@ -825,24 +825,37 @@ export default function ThemeLayout() {
     };
 
     // Apply a theme to the current store
-    const handleApplyTheme = (theme) => {
+    const handleApplyTheme = async (theme) => {
         if (!theme?.theme_settings) return;
+
+        const newThemeSettings = {
+            ...store.settings.theme,
+            ...theme.theme_settings
+        };
 
         // Merge the theme settings into the current store settings
         setStore(prev => ({
             ...prev,
-            theme_preset: theme.preset_name, // Track which preset is applied (stores.theme_preset in masterdb)
+            theme_preset: theme.preset_name,
             settings: {
                 ...prev.settings,
-                theme: {
-                    ...prev.settings.theme,
-                    ...theme.theme_settings
-                }
+                theme: newThemeSettings
             }
         }));
 
         setSelectedThemeId(theme.id);
-        setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" applied. Save to keep changes.` });
+
+        // Save immediately to backend
+        try {
+            await api.put(`/stores/${store.id}/settings`, {
+                settings: { ...store.settings, theme: newThemeSettings },
+                theme_preset: theme.preset_name
+            });
+            setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" applied and saved.` });
+        } catch (error) {
+            console.error('Failed to save theme:', error);
+            setFlashMessage({ type: 'error', message: 'Theme applied but failed to save. Please save manually.' });
+        }
     };
 
     // Delete a user-created theme
