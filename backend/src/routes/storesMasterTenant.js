@@ -1206,12 +1206,6 @@ router.get('/', authMiddleware, async (req, res) => {
 
     // Enrich with hostname info
     // Convert Sequelize instances to plain objects to ensure all fields are included
-    // Debug: Log raw owned stores to verify theme_preset is included
-    console.log('[GET /stores] Raw owned stores:', ownedStores.map(s => {
-      const obj = s.toJSON ? s.toJSON() : s;
-      return { id: obj.id, theme_preset: obj.theme_preset, status: obj.status };
-    }));
-
     const enrichedStores = await Promise.all(
       [
         ...ownedStores.map(s => ({ ...(s.toJSON ? s.toJSON() : s), membership_type: 'owner' })),
