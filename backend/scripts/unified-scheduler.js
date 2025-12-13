@@ -21,6 +21,7 @@ require('dotenv').config();
 
 const { masterDbClient } = require('../src/database/masterConnection');
 const ConnectionManager = require('../src/services/database/ConnectionManager');
+const CronLogService = require('../src/services/cron-log-service');
 
 // Track execution stats
 const stats = {
@@ -422,7 +423,17 @@ async function runSystemJobs() {
  * Main execution
  */
 async function main() {
+  let cronLog = null;
+
   try {
+    // Start cron log entry
+    cronLog = await CronLogService.startLog('unified_scheduler', {
+      job_type: 'system',
+      trigger_source: 'cron',
+      metadata: { node_version: process.version }
+    });
+    if (cronLog) console.log('📝 Cron log started:', cronLog.id);
+
     // 1. Run system jobs first (token refresh, credit deduction)
     console.log('\n[1/4] Running system jobs...');
     await runSystemJobs();
@@ -473,6 +484,21 @@ async function main() {
       });
     }
 
+    // Mark cron log as completed
+    if (cronLog) {
+      await CronLogService.markCompleted(cronLog.id, {
+        jobs_found: stats.jobs_found,
+        jobs_executed: stats.jobs_executed,
+        jobs_failed: stats.jobs_failed,
+        errors: stats.errors
+      }, {
+        stores_processed: stats.jobs_found,
+        stores_affected: stats.jobs_executed,
+        items_processed: stats.jobs_executed
+      });
+      console.log('📝 Cron log completed:', cronLog.id);
+    }
+
     console.log('='.repeat(60));
     console.log('UNIFIED SCHEDULER COMPLETED');
     console.log('='.repeat(60));
@@ -482,6 +508,13 @@ async function main() {
   } catch (error) {
     console.error('\nFATAL ERROR:', error.message);
     console.error(error.stack);
+
+    // Mark cron log as failed
+    if (cronLog) {
+      await CronLogService.markFailed(cronLog.id, error);
+      console.log('📝 Cron log marked as failed:', cronLog.id);
+    }
+
     process.exit(1);
   }
 }
