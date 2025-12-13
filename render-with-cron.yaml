@@ -135,4 +135,7 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Encryption key for tenant database credentials
+      - key: ENCRYPTION_KEY
+        sync: false
     autoDeploy: true
