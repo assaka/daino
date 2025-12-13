@@ -187,15 +187,15 @@ export default function ThemeLayout() {
         // Trigger re-render when product_grid settings change
     }, [store?.settings?.product_grid]);
 
-    // Initialize selected theme based on store's theme_preset
+    // Initialize selected theme based on store's theme_preset (stores.theme_preset in masterdb)
     useEffect(() => {
-        if (store?.settings?.theme_preset && availableThemes.length > 0) {
-            const matchingTheme = availableThemes.find(t => t.preset_name === store.settings.theme_preset);
+        if (store?.theme_preset && availableThemes.length > 0) {
+            const matchingTheme = availableThemes.find(t => t.preset_name === store.theme_preset);
             if (matchingTheme) {
                 setSelectedThemeId(matchingTheme.id);
             }
         }
-    }, [store?.settings?.theme_preset, availableThemes]);
+    }, [store?.theme_preset, availableThemes]);
 
     const loadStepTranslations = async () => {
         try {
@@ -828,13 +828,13 @@ export default function ThemeLayout() {
         // Merge the theme settings into the current store settings
         setStore(prev => ({
             ...prev,
+            theme_preset: theme.preset_name, // Track which preset is applied (stores.theme_preset in masterdb)
             settings: {
                 ...prev.settings,
                 theme: {
                     ...prev.settings.theme,
                     ...theme.theme_settings
-                },
-                theme_preset: theme.preset_name // Track which preset is applied
+                }
             }
         }));
 
