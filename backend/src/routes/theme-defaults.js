@@ -1,5 +1,6 @@
 const express = require('express');
 const { masterDbClient } = require('../database/masterConnection');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -137,6 +138,86 @@ router.get('/preset/:presetName', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch theme preset'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/theme-defaults
+ * @desc    Create a new user theme from current settings
+ * @access  Private (requires auth)
+ */
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const { preset_name, display_name, description, theme_settings, type = 'user' } = req.body;
+    const userId = req.user?.id;
+
+    if (!preset_name || !display_name || !theme_settings) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: preset_name, display_name, theme_settings'
+      });
+    }
+
+    // Check if preset_name already exists
+    const { data: existing } = await masterDbClient
+      .from('theme_defaults')
+      .select('id')
+      .eq('preset_name', preset_name)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: `A theme with the name "${preset_name}" already exists`
+      });
+    }
+
+    // Get max sort_order for user themes
+    const { data: maxSort } = await masterDbClient
+      .from('theme_defaults')
+      .select('sort_order')
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const sortOrder = (maxSort?.sort_order || 0) + 1;
+
+    // Insert new theme
+    const { data: newTheme, error } = await masterDbClient
+      .from('theme_defaults')
+      .insert({
+        preset_name,
+        display_name,
+        description: description || null,
+        theme_settings,
+        type,
+        user_id: userId,
+        is_system_default: false,
+        is_active: true,
+        sort_order: sortOrder
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating theme:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create theme'
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      data: newTheme,
+      message: 'Theme created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating theme:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create theme'
     });
   }
 });

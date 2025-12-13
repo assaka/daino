@@ -378,6 +378,7 @@ app.use('/api/public/attributes', publicAttributeRoutes);
 app.use('/api/public/coupons', couponRoutes);
 app.use('/api/public/product-labels', publicProductLabelRoutes);
 app.use('/api/public/theme-defaults', themeDefaultsRoutes);
+app.use('/api/theme-defaults', themeDefaultsRoutes); // Authenticated routes for creating user themes
 app.use('/api/public/attribute-sets', attributeSetRoutes);
 app.use('/api/public/seo-templates', seoTemplateRoutes);
 app.use('/api/public/seo-settings', seoSettingsRoutes);

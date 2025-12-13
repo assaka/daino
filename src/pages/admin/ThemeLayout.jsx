@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import SaveButton from '@/components/ui/save-button';
 import TranslationFields from '@/components/admin/TranslationFields';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -126,6 +128,10 @@ export default function ThemeLayout() {
     const [stepTranslations, setStepTranslations] = useState({});
     const [newFontName, setNewFontName] = useState('');
     const [newFontUrl, setNewFontUrl] = useState('');
+    const [showCreateThemeDialog, setShowCreateThemeDialog] = useState(false);
+    const [newThemeName, setNewThemeName] = useState('');
+    const [newThemeDescription, setNewThemeDescription] = useState('');
+    const [creatingTheme, setCreatingTheme] = useState(false);
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -750,6 +756,39 @@ export default function ThemeLayout() {
         setFlashMessage({ type: 'success', message: `Font "${fontToDelete.name}" removed.` });
     };
 
+    // Create a new theme from current settings
+    const handleCreateTheme = async () => {
+        if (!newThemeName.trim()) {
+            setFlashMessage({ type: 'error', message: 'Please enter a theme name' });
+            return;
+        }
+
+        setCreatingTheme(true);
+        try {
+            const response = await api.post('/api/theme-defaults', {
+                preset_name: newThemeName.toLowerCase().replace(/\s+/g, '-'),
+                display_name: newThemeName.trim(),
+                description: newThemeDescription.trim() || null,
+                theme_settings: store.settings.theme,
+                type: 'user'
+            });
+
+            if (response.data.success) {
+                setFlashMessage({ type: 'success', message: `Theme "${newThemeName}" created successfully!` });
+                setShowCreateThemeDialog(false);
+                setNewThemeName('');
+                setNewThemeDescription('');
+            } else {
+                setFlashMessage({ type: 'error', message: response.data.message || 'Failed to create theme' });
+            }
+        } catch (error) {
+            console.error('Failed to create theme:', error);
+            setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to create theme' });
+        } finally {
+            setCreatingTheme(false);
+        }
+    };
+
     // Unified drag handler - supports cross-column and cross-step dragging
     const handleUnifiedDragEnd = (event, stepType) => {
         const { active, over } = event;
@@ -1095,9 +1134,18 @@ export default function ThemeLayout() {
 
                 <div className="space-y-8" onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); } }}>
                     <Card className="material-elevation-1 border-0">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
-                            <CardDescription>Control the colors and fonts of your store.</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
+                                <CardDescription>Control the colors and fonts of your store.</CardDescription>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCreateThemeDialog(true)}
+                            >
+                                Create Theme
+                            </Button>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Typography Section */}
@@ -3039,6 +3087,48 @@ export default function ThemeLayout() {
                     />
                 </div>
             </div>
+
+            {/* Create Theme Dialog */}
+            <Dialog open={showCreateThemeDialog} onOpenChange={setShowCreateThemeDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create Theme</DialogTitle>
+                        <DialogDescription>
+                            Save your current theme settings as a reusable theme preset.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="themeName">Theme Name</Label>
+                            <Input
+                                id="themeName"
+                                placeholder="My Custom Theme"
+                                value={newThemeName}
+                                onChange={(e) => setNewThemeName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="themeDescription">Description (optional)</Label>
+                            <Textarea
+                                id="themeDescription"
+                                placeholder="A brief description of this theme..."
+                                value={newThemeDescription}
+                                onChange={(e) => setNewThemeDescription(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowCreateThemeDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreateTheme} disabled={creatingTheme}>
+                            {creatingTheme && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Create Theme
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
