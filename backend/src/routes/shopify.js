@@ -443,7 +443,7 @@ router.post('/import/collections',
  */
 router.post('/import/products-direct', storeAuth, async (req, res) => {
   try {
-    const { limit = null, overwrite = false } = req.body;
+    const { limit = null, overwrite = false, dry_run = false } = req.body;
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -470,6 +470,7 @@ router.post('/import/products-direct', storeAuth, async (req, res) => {
     const result = await importService.importProducts({
       limit,
       overwrite,
+      dryRun: dry_run,
       progressCallback: (progress) => {
         sendProgress(progress);
       }
@@ -480,6 +481,105 @@ router.post('/import/products-direct', storeAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Direct products import failed:', error);
+    res.write(`data: ${JSON.stringify({ stage: 'error', message: error.message })}\n\n`);
+    res.end();
+  }
+});
+
+/**
+ * @route POST /api/shopify/import/collections-direct
+ * @desc Import Shopify collections directly with real-time progress (SSE)
+ * @access Private
+ */
+router.post('/import/collections-direct', storeAuth, async (req, res) => {
+  try {
+    const { overwrite = false, dry_run = false } = req.body;
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (data) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    sendProgress({ stage: 'initializing', message: 'Initializing Shopify connection...' });
+
+    const importService = new ShopifyImportService(req.storeId);
+    const initResult = await importService.initialize();
+
+    if (!initResult.success) {
+      sendProgress({ stage: 'error', message: initResult.message });
+      res.end();
+      return;
+    }
+
+    sendProgress({ stage: 'importing', message: 'Starting collections import...' });
+
+    const result = await importService.importCollections({
+      overwrite,
+      dryRun: dry_run,
+      progressCallback: (progress) => {
+        sendProgress(progress);
+      }
+    });
+
+    sendProgress({ stage: 'complete', result });
+    res.end();
+
+  } catch (error) {
+    console.error('Direct collections import failed:', error);
+    res.write(`data: ${JSON.stringify({ stage: 'error', message: error.message })}\n\n`);
+    res.end();
+  }
+});
+
+/**
+ * @route POST /api/shopify/import/full-direct
+ * @desc Full import (collections + products) with real-time progress (SSE)
+ * @access Private
+ */
+router.post('/import/full-direct', storeAuth, async (req, res) => {
+  try {
+    const { limit = null, overwrite = false, dry_run = false } = req.body;
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (data) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    sendProgress({ stage: 'initializing', message: 'Initializing Shopify connection...' });
+
+    const importService = new ShopifyImportService(req.storeId);
+    const initResult = await importService.initialize();
+
+    if (!initResult.success) {
+      sendProgress({ stage: 'error', message: initResult.message });
+      res.end();
+      return;
+    }
+
+    sendProgress({ stage: 'importing', message: 'Starting full import...' });
+
+    const result = await importService.fullImport({
+      limit,
+      overwrite,
+      dryRun: dry_run,
+      progressCallback: (progress) => {
+        sendProgress(progress);
+      }
+    });
+
+    sendProgress({ stage: 'complete', result });
+    res.end();
+
+  } catch (error) {
+    console.error('Direct full import failed:', error);
     res.write(`data: ${JSON.stringify({ stage: 'error', message: error.message })}\n\n`);
     res.end();
   }
