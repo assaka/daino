@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { PageLoader } from '@/components/ui/page-loader';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
-  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle
+  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X
 } from 'lucide-react';
 import apiClient from '@/utils/api';
 import { User } from '@/api/entities';
@@ -44,6 +44,7 @@ export default function StoreOnboarding() {
   const [creditData, setCreditData] = useState({ amount: 100 });
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
   const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
+  const [hasExistingStores, setHasExistingStores] = useState(false);
   const slugCheckTimeoutRef = React.useRef(null);
 
   // Auth check - redirect to login if not authenticated
@@ -77,6 +78,22 @@ export default function StoreOnboarding() {
       }
     }
   }, [searchParams]);
+
+  // Check if user has existing stores (to show cancel button)
+  useEffect(() => {
+    const checkExistingStores = async () => {
+      try {
+        const response = await apiClient.get('/stores');
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+          setHasExistingStores(true);
+        }
+      } catch (err) {
+        // Ignore errors - just means we can't check for existing stores
+        console.log('Could not check for existing stores:', err.message);
+      }
+    };
+    checkExistingStores();
+  }, []);
 
   // Show loading while checking auth
   if (!authChecked) {
@@ -402,7 +419,19 @@ export default function StoreOnboarding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-3xl shadow-2xl">
+      <Card className="w-full max-w-3xl shadow-2xl relative">
+        {/* Cancel Button - only show if user has existing stores */}
+        {hasExistingStores && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            onClick={() => navigate('/admin/stores')}
+            title="Cancel and return to stores"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        )}
         {/* Progress Bar */}
         <div className="px-6 pt-6">
           <div className="flex items-center justify-between mb-2">
