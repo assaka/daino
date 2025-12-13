@@ -24,8 +24,20 @@ router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), a
       });
     }
 
-    // Get tenant DB connection for store-specific navigation
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    // Try to get tenant DB connection for store-specific navigation
+    let tenantDb = null;
+    try {
+      tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    } catch (connError) {
+      // If database not configured, return core navigation with a warning
+      console.warn(`[Navigation] No database for store ${store_id}:`, connError.message);
+      const navigation = await AdminNavigationService.getCoreNavigation();
+      return res.json({
+        success: true,
+        navigation,
+        warning: 'Store database not configured - showing limited navigation'
+      });
+    }
 
     // Pass tenantDb to service
     const navigation = await AdminNavigationService.getNavigationForTenant(store_id, tenantDb);
