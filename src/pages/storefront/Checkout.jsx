@@ -2510,6 +2510,7 @@ export default function Checkout() {
                 <Button
                   onClick={handleCheckout}
                   disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false)}
+                  variant="themed"
                   className="w-full h-12 text-lg"
                   style={{
                     backgroundColor: settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color,
