@@ -388,12 +388,16 @@ CREATE TABLE IF NOT EXISTS theme_defaults (
   is_system_default BOOLEAN DEFAULT false,
   is_active BOOLEAN DEFAULT true,
   sort_order INTEGER DEFAULT 0,
+  type VARCHAR(20) NOT NULL DEFAULT 'system',
+  user_id UUID NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_theme_defaults_preset ON theme_defaults(preset_name);
 CREATE INDEX IF NOT EXISTS idx_theme_defaults_active ON theme_defaults(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_theme_defaults_type ON theme_defaults(type);
+CREATE INDEX IF NOT EXISTS idx_theme_defaults_user_id ON theme_defaults(user_id) WHERE user_id IS NOT NULL;
 
 -- Ensure only one system default
 CREATE UNIQUE INDEX IF NOT EXISTS idx_theme_defaults_single_default
