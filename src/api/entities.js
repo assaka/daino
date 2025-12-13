@@ -450,10 +450,8 @@ class StoreService extends BaseEntity {
   async getUserStores() {
     try {
       const response = await apiClient.get('stores');
-      // Handle both direct array response and {success: true, data: {stores: []}} format
-      const stores = response?.data?.stores || response?.data || response;
-      const result = Array.isArray(stores) ? stores : [];
-      return result;
+      // Client already transforms to array
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`❌ StoreService.getUserStores() error:`, error.message);
       return [];

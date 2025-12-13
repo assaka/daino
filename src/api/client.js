@@ -453,6 +453,23 @@ class ApiClient {
         return result;
       }
 
+      // Special handling for stores endpoint - extract stores array from data
+      if (endpoint === 'stores' || endpoint === '/stores') {
+        const duration = performance.now() - startTime;
+        const stores = result?.data?.stores || result?.data || [];
+        apiDebugger.debugAPICall('response', {
+          debugId,
+          endpoint,
+          method,
+          duration: Math.round(duration),
+          rawResponse: result,
+          response: stores,
+          status: response.status,
+          transformed: true
+        });
+        return stores;
+      }
+
       // Special handling for heatmap endpoints - don't transform, return full response
       if (endpoint.includes('heatmap/')) {
         const duration = performance.now() - startTime;
