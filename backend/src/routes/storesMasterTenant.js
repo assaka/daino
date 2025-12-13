@@ -2051,6 +2051,9 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
 
     // Merge settings if provided
     let finalUpdates = { ...updates };
+    // Remove theme_preset from tenant updates - it's stored in master DB only
+    delete finalUpdates.theme_preset;
+
     if (updates.settings) {
       const currentSettings = currentStore.settings || {};
       const incomingSettings = updates.settings || {};
@@ -2061,7 +2064,7 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
       console.log('🔄 Merged settings:', finalUpdates.settings);
     }
 
-    // Update in tenant DB
+    // Update in tenant DB (theme_preset excluded - handled separately in master DB)
     const { data, error } = await tenantDb
       .from('stores')
       .update(finalUpdates)
