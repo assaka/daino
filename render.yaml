@@ -155,14 +155,14 @@ services:
         value: 1
     autoDeploy: true
 
-  # Daily Credit Deduction Cron Job (runs at midnight UTC daily)
+  # Unified Scheduler Cron Job (runs hourly, handles all scheduled tasks)
   - type: cron
-    name: daino-daily-credit-deduction
+    name: daino-unified-scheduler
     env: node
     rootDir: backend
-    schedule: "0 0 * * *"  # Every day at midnight UTC
+    schedule: "0 * * * *"  # Every hour
     buildCommand: npm install
-    startCommand: node scripts/run-daily-credit-deduction.js
+    startCommand: node scripts/unified-scheduler.js
     envVars:
       - key: NODE_ENV
         value: production
