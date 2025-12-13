@@ -36,7 +36,7 @@ export default function StoreOnboarding() {
   const [storeId, setStoreId] = useState(null);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
-  const [selectedThemePreset, setSelectedThemePreset] = useState(null);
+  const [selectedThemePreset, setSelectedThemePreset] = useState('default');
   const [dbData, setDbData] = useState({ connectionString: '', serviceRoleKey: '' });
   const [oauthCompleted, setOauthCompleted] = useState(false);
   const [needsServiceKey, setNeedsServiceKey] = useState(false);
