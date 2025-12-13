@@ -977,7 +977,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     // 1. Get stores owned by user
     const { data: ownedStores, error: ownedError } = await masterDbClient
       .from('stores')
-      .select('id, user_id, slug, status, is_active, created_at, updated_at')
+      .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
