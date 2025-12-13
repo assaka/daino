@@ -532,6 +532,50 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     console.log('✅ Database URL is available for use');
 
+    // Validate service role key before proceeding
+    if (serviceRoleKey && projectUrl) {
+      console.log('🔑 Validating service role key...');
+      try {
+        const { createClient } = require('@supabase/supabase-js');
+        const testClient = createClient(projectUrl, serviceRoleKey, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+
+        // Try a simple query to validate the key
+        const { error: testError } = await testClient.from('_test_connection_').select('id').limit(1);
+
+        // Check for authentication errors (not "table not found" which is expected)
+        if (testError) {
+          const isAuthError = testError.message?.toLowerCase().includes('invalid api key') ||
+                              testError.message?.toLowerCase().includes('invalid jwt') ||
+                              testError.message?.toLowerCase().includes('jwt') ||
+                              testError.code === 'PGRST301';
+
+          if (isAuthError) {
+            console.error('❌ Service role key validation failed:', testError.message);
+            return res.status(401).json({
+              success: false,
+              error: 'Invalid Service Role Key. Please check your Supabase Dashboard → Settings → API and copy the correct service_role key.',
+              code: 'INVALID_SERVICE_ROLE_KEY',
+              hint: testError.hint || 'The key should start with "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"'
+            });
+          }
+          // Table not found is OK - means connection works
+          console.log('✅ Service role key validated (table not found is expected)');
+        } else {
+          console.log('✅ Service role key validated successfully');
+        }
+      } catch (validationError) {
+        console.error('❌ Service role key validation error:', validationError.message);
+        return res.status(401).json({
+          success: false,
+          error: 'Failed to validate Service Role Key. Please ensure you copied the correct key from Supabase Dashboard.',
+          code: 'SERVICE_KEY_VALIDATION_FAILED',
+          details: validationError.message
+        });
+      }
+    }
+
     // Update store status to provisioning (use Supabase client)
     console.log('🔄 Updating store status to provisioning...');
     const { error: updateError } = await masterDbClient
