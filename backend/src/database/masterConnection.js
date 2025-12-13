@@ -199,29 +199,22 @@ async function closeMasterConnection() {
   }
 }
 
-// Test connection on startup (ALWAYS - even in production, for diagnostics)
-console.log('🔧 Testing master database connection on startup...');
-console.log('🔧 Sequelize config:');
-console.log('   - Dialect:', masterSequelize.getDialect());
-console.log('   - Host:', masterSequelize.config.host);
-console.log('   - Port:', masterSequelize.config.port);
-console.log('   - Database:', masterSequelize.config.database);
-console.log('   - Using connection string:', useMasterDbUrl);
-
-testMasterConnection()
-  .then(() => {
-    console.log('✅ Master DB connection test PASSED - credentials are correct!');
-    console.log('✅ Job creation should work now');
-  })
-  .catch(err => {
-    console.error('❌ Master DB connection test FAILED:', err.message);
-    console.error('❌ Full error:', err);
-    console.error('❌ This will cause job scheduling to fail!');
-    console.error('❌ Please check:');
-    console.error('   1. MASTER_DB_URL is set correctly in Render');
-    console.error('   2. Password in the URL matches Supabase password');
-    console.error('   3. Database user has correct permissions');
-  });
+// Skip Sequelize connection test on startup - we primarily use masterDbClient (Supabase REST API)
+// The Sequelize connection is only used by legacy models (Job, JobHistory)
+// Enable test with MASTER_DB_TEST_CONNECTION=true if debugging is needed
+if (process.env.MASTER_DB_TEST_CONNECTION === 'true') {
+  console.log('🔧 Testing master Sequelize connection (MASTER_DB_TEST_CONNECTION=true)...');
+  testMasterConnection()
+    .then(() => {
+      console.log('✅ Master DB Sequelize connection test PASSED');
+    })
+    .catch(err => {
+      console.error('❌ Master DB Sequelize connection test FAILED:', err.message);
+    });
+} else {
+  console.log('ℹ️ Skipping Sequelize connection test (set MASTER_DB_TEST_CONNECTION=true to enable)');
+  console.log('ℹ️ Using masterDbClient (Supabase REST API) for master DB operations');
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
