@@ -9,6 +9,7 @@ const creditService = require('../services/credit-service');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
+const jobManager = require('../core/BackgroundJobManager');
 
 // Debug route to test if integrations router is working
 router.get('/test', (req, res) => {
@@ -1821,5 +1822,280 @@ router.post('/category-mappings/:source/bulk-update', authMiddleware, storeResol
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// ============================================================================
+// BACKGROUND JOB ENDPOINTS FOR AKENEO IMPORTS
+// These endpoints schedule imports as background jobs that continue running
+// even if the user leaves the page
+// ============================================================================
+
+/**
+ * Schedule Akeneo categories import as background job
+ * POST /api/integrations/akeneo/import-categories-job
+ */
+router.post('/akeneo/import-categories-job',
+  authMiddleware,
+  storeResolver(),
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const storeId = req.store?.id || req.body.storeId;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID is required' });
+    }
+
+    try {
+      const { locale = 'en_US', dryRun = false, filters = {}, settings = {} } = req.body;
+
+      const job = await jobManager.scheduleJob({
+        type: 'akeneo:import:categories',
+        payload: {
+          storeId,
+          locale,
+          dryRun,
+          filters,
+          settings
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId,
+        userId: req.user?.id,
+        metadata: { importType: 'categories', source: 'akeneo' }
+      });
+
+      res.json({
+        success: true,
+        message: 'Categories import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
+      });
+    } catch (error) {
+      console.error('Akeneo categories import job scheduling failed:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
+/**
+ * Schedule Akeneo products import as background job
+ * POST /api/integrations/akeneo/import-products-job
+ */
+router.post('/akeneo/import-products-job',
+  authMiddleware,
+  storeResolver(),
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
+  body('customMappings').optional().isObject().withMessage('Custom mappings must be an object'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const storeId = req.store?.id || req.body.storeId;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID is required' });
+    }
+
+    try {
+      const {
+        locale = 'en_US',
+        dryRun = false,
+        filters = {},
+        settings = {},
+        customMappings = {},
+        batchSize = 50
+      } = req.body;
+
+      const job = await jobManager.scheduleJob({
+        type: 'akeneo:import:products',
+        payload: {
+          storeId,
+          locale,
+          dryRun,
+          filters,
+          settings,
+          customMappings,
+          batchSize,
+          downloadImages: settings.downloadImages !== false
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId,
+        userId: req.user?.id,
+        metadata: { importType: 'products', source: 'akeneo' }
+      });
+
+      res.json({
+        success: true,
+        message: 'Products import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
+      });
+    } catch (error) {
+      console.error('Akeneo products import job scheduling failed:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
+/**
+ * Schedule Akeneo attributes import as background job
+ * POST /api/integrations/akeneo/import-attributes-job
+ */
+router.post('/akeneo/import-attributes-job',
+  authMiddleware,
+  storeResolver(),
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const storeId = req.store?.id || req.body.storeId;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID is required' });
+    }
+
+    try {
+      const { dryRun = false, filters = {}, settings = {} } = req.body;
+
+      const job = await jobManager.scheduleJob({
+        type: 'akeneo:import:attributes',
+        payload: {
+          storeId,
+          dryRun,
+          filters,
+          settings
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId,
+        userId: req.user?.id,
+        metadata: { importType: 'attributes', source: 'akeneo' }
+      });
+
+      res.json({
+        success: true,
+        message: 'Attributes import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
+      });
+    } catch (error) {
+      console.error('Akeneo attributes import job scheduling failed:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
+/**
+ * Schedule Akeneo families import as background job
+ * POST /api/integrations/akeneo/import-families-job
+ */
+router.post('/akeneo/import-families-job',
+  authMiddleware,
+  storeResolver(),
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const storeId = req.store?.id || req.body.storeId;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID is required' });
+    }
+
+    try {
+      const { dryRun = false, filters = {} } = req.body;
+
+      const job = await jobManager.scheduleJob({
+        type: 'akeneo:import:families',
+        payload: {
+          storeId,
+          dryRun,
+          filters
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId,
+        userId: req.user?.id,
+        metadata: { importType: 'families', source: 'akeneo' }
+      });
+
+      res.json({
+        success: true,
+        message: 'Families import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
+      });
+    } catch (error) {
+      console.error('Akeneo families import job scheduling failed:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
+/**
+ * Schedule full Akeneo import (all data types) as background job
+ * POST /api/integrations/akeneo/import-all-job
+ */
+router.post('/akeneo/import-all-job',
+  authMiddleware,
+  storeResolver(),
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('locale').optional().isString().withMessage('Locale must be a string'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const storeId = req.store?.id || req.body.storeId;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID is required' });
+    }
+
+    try {
+      const { locale = 'en_US', dryRun = false } = req.body;
+
+      const job = await jobManager.scheduleJob({
+        type: 'akeneo:import:all',
+        payload: {
+          storeId,
+          locale,
+          dryRun
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId,
+        userId: req.user?.id,
+        metadata: { importType: 'all', source: 'akeneo' }
+      });
+
+      res.json({
+        success: true,
+        message: 'Full import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
+      });
+    } catch (error) {
+      console.error('Akeneo full import job scheduling failed:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
 
 module.exports = router;

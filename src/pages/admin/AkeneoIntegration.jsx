@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import CategoryMappingPanel from '../../components/admin/CategoryMappingPanel';
+import ImportJobProgress from '../../components/admin/integrations/ImportJobProgress';
 
 // Add global error handler to catch minified errors
 if (typeof window !== 'undefined' && !window.__akeneoErrorHandlerInstalled) {
@@ -1362,21 +1363,16 @@ const AkeneoIntegration = () => {
           };
         }
 
-        const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload);
+        // Use background job endpoint instead of direct import
+        const response = await apiClient.post('/integrations/akeneo/import-categories-job', requestPayload);
 
         const responseData = response.data || response;
-        // Enhance with error details and timestamp
-        const enhancedResponseData = enhanceImportResponse(responseData, 'categories');
-        setTabImportResults('categories', enhancedResponseData);
 
         if (responseData?.success) {
-          const stats = responseData?.stats || {};
-          toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
-          // Reload stats and config to reflect changes
-          await loadStats();
-          await loadConfigStatus();
+          toast.success(`Categories import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+          // Job progress will be shown by ImportJobProgress component
         } else {
-          toast.error(`Categories import failed: ${responseData.error}`);
+          toast.error(`Failed to start categories import: ${responseData.error || responseData.message}`);
         }
       } catch (error) {
         console.error('Categories import error:', error);
@@ -1465,33 +1461,16 @@ const AkeneoIntegration = () => {
         };
       }
 
-      const response = await apiClient.post('/integrations/akeneo/import-attributes', requestPayload);
+      // Use background job endpoint instead of direct import
+      const response = await apiClient.post('/integrations/akeneo/import-attributes-job', requestPayload);
 
       const responseData = response.data || response;
-      // Ensure responseData is not null before setting
-      if (responseData) {
-        const enhancedResponseData = enhanceImportResponse(responseData, 'attributes');
-        setTabImportResults('attributes', enhancedResponseData);
-      } else {
-        setTabImportResults('attributes', { success: false, error: 'Invalid response from server' });
-      }
 
       if (responseData?.success) {
-        const stats = responseData?.stats || {};
-        toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
-        // Reload stats and config to reflect changes
-        try {
-          await loadStats();
-        } catch (statsError) {
-          console.error('Error reloading stats:', statsError);
-        }
-        try {
-          await loadConfigStatus();
-        } catch (configError) {
-          console.error('Error reloading config status:', configError);
-        }
+        toast.success(`Attributes import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        // Job progress will be shown by ImportJobProgress component
       } else {
-        toast.error(`Attributes import failed: ${responseData.error}`);
+        toast.error(`Failed to start attributes import: ${responseData.error || responseData.message}`);
       }
     } catch (error) {
       console.error('❌ Attributes import error:', error);
@@ -1564,20 +1543,16 @@ const AkeneoIntegration = () => {
         };
       }
 
-      const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload);
+      // Use background job endpoint instead of direct import
+      const response = await apiClient.post('/integrations/akeneo/import-families-job', requestPayload);
 
       const responseData = response.data || response;
-      const enhancedResponseData = enhanceImportResponse(responseData, 'families');
-      setTabImportResults('families', enhancedResponseData);
 
       if (responseData?.success) {
-        const stats = responseData?.stats || {};
-        toast.success(`Families import completed! ${stats?.imported || 0} families imported`);
-        // Reload stats and config to reflect changes
-        await loadStats();
-        await loadConfigStatus();
+        toast.success(`Families import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        // Job progress will be shown by ImportJobProgress component
       } else {
-        toast.error(`Families import failed: ${responseData.error}`);
+        toast.error(`Failed to start families import: ${responseData.error || responseData.message}`);
       }
     } catch (error) {
       console.error('Families import error:', error);
@@ -1648,47 +1623,16 @@ const AkeneoIntegration = () => {
         customMappings: customMappings
       };
 
-      const response = await apiClient.post('/integrations/akeneo/import-products', requestPayload);
+      // Use background job endpoint instead of direct import
+      const response = await apiClient.post('/integrations/akeneo/import-products-job', requestPayload);
 
       const responseData = response.data || response;
 
-      // Ensure responseData has the expected structure
-      const finalResults = {
-        success: responseData?.success ?? false,
-        stats: responseData?.stats || {},
-        message: responseData?.message || '',
-        error: responseData?.error || '',
-        ...responseData
-      };
-
-      setTabImportResults('products', finalResults);
-
       if (responseData?.success) {
-        const stats = responseData?.stats || {};
-        toast.success(`Products import completed! ${stats?.imported || 0} products imported`);
-        // Reload stats and config to reflect changes with enhanced error handling
-
-        // Reload stats with isolation
-        setTimeout(async () => {
-          try {
-            await loadStats();
-          } catch (statsError) {
-            console.error('Error reloading stats after products import:', statsError);
-            // Continue even if stats reload fails
-          }
-        }, 100);
-
-        // Reload config with isolation
-        setTimeout(async () => {
-          try {
-            await loadConfigStatus();
-          } catch (configError) {
-            console.error('Error reloading config status after products import:', configError);
-            // Continue even if config reload fails
-          }
-        }, 200);
+        toast.success(`Products import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        // Job progress will be shown by ImportJobProgress component
       } else {
-        toast.error(`Products import failed: ${responseData.error}`);
+        toast.error(`Failed to start products import: ${responseData.error || responseData.message}`);
       }
     } catch (error) {
       console.error('Products import failed with error:', error);
@@ -1724,33 +1668,38 @@ const AkeneoIntegration = () => {
     setImportResults(null);
 
     try {
-      const response = await apiClient.post('/integrations/akeneo/import-all', {
+      // Use background job endpoint instead of direct import
+      const response = await apiClient.post('/integrations/akeneo/import-all-job', {
         ...config,
         dryRun
       });
 
-      // Handle both wrapped and direct response formats
       const responseData = response.data || response;
-      setImportResults(responseData);
-      
+
       if (responseData?.success) {
-        const categoryStats = responseData?.results?.categories?.stats || {};
-        const productStats = responseData?.results?.products?.stats || {};
-        toast.success(`Full import completed! ${categoryStats?.imported || 0} categories and ${productStats?.imported || 0} products imported`);
-        // Reload stats and config to reflect changes
-        await loadStats();
-        await loadConfigStatus();
+        toast.success(`Full import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        // Job progress will be shown by ImportJobProgress component
       } else {
-        toast.error(`Import failed: ${responseData?.error || 'Unknown error'}`);
+        toast.error(`Failed to start full import: ${responseData?.error || responseData?.message || 'Unknown error'}`);
       }
     } catch (error) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      setImportResults({ success: false, error: message });
-      toast.error(`Import failed: ${message}`);
+      toast.error(`Failed to start import: ${message}`);
     } finally {
       setImporting(false);
     }
   };
+
+  // Callbacks for import job completion/failure
+  const handleJobComplete = useCallback((job) => {
+    loadStats();
+    loadConfigStatus();
+    toast.success(`Import completed! Check the job details for results.`);
+  }, []);
+
+  const handleJobFailed = useCallback((job) => {
+    toast.error(`Import failed: ${job.error || 'Unknown error'}`);
+  }, []);
 
   const formatLastImportDate = (dateString) => {
     if (!dateString) return 'Never';
@@ -2000,6 +1949,16 @@ const AkeneoIntegration = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Import Job Progress */}
+      <ImportJobProgress
+        source="akeneo"
+        onJobComplete={handleJobComplete}
+        onJobFailed={handleJobFailed}
+        showHistory={true}
+        maxHistoryItems={5}
+        className="mb-6"
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">

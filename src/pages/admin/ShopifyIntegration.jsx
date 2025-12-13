@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import CategoryMappingPanel from '../../components/admin/CategoryMappingPanel';
+import ImportJobProgress from '../../components/admin/integrations/ImportJobProgress';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,15 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import {
   ShoppingBag,
   Settings,
   Package,
-  CheckCircle,
-  XCircle,
   RefreshCw,
   Download,
   Store,
@@ -51,7 +48,6 @@ const ShopifyIntegration = () => {
   const [loading, setLoading] = useState(false);
   const [shopDomain, setShopDomain] = useState('');
   const [importStats, setImportStats] = useState(null);
-  const [importProgress, setImportProgress] = useState(null);
   const [message, setMessage] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
   const [shopInfo, setShopInfo] = useState(null);
@@ -307,11 +303,25 @@ const ShopifyIntegration = () => {
 
     setLoading(true);
     setMessage(null);
-    setImportProgress({ type, progress: 0, message: 'Starting import...' });
 
     try {
-      const endpoint = `/api/shopify/import/${type}-direct`;
+      // Use background job endpoint instead of direct SSE
+      const endpoint = `/api/shopify/import/${type}`;
       const token = localStorage.getItem('store_owner_auth_token');
+
+      // Map options for the background job endpoint
+      const payload = {
+        dry_run: dryRun,
+        overwrite: options.overwrite || false
+      };
+
+      // Handle product limit
+      if (options.limit) {
+        payload.limit = options.limit;
+      }
+      if (type === 'full' && options.limit) {
+        payload.product_limit = options.limit;
+      }
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -320,69 +330,47 @@ const ShopifyIntegration = () => {
           'Content-Type': 'application/json',
           'x-store-id': storeId
         },
-        body: JSON.stringify({ ...options, dry_run: dryRun })
+        body: JSON.stringify(payload)
       });
 
-      if (response.headers.get('content-type')?.includes('text/event-stream')) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+      const data = await response.json();
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.substring(6));
-
-              if (data.stage === 'error') {
-                setMessage({ type: 'error', text: data.message });
-                setImportProgress(null);
-              } else if (data.stage === 'complete') {
-                setFlashMessage({
-                  type: 'success',
-                  text: `Successfully imported ${type}! ${data.result?.stats?.imported || 0} items imported.`
-                });
-                setImportProgress(null);
-                fetchImportStats();
-                loadStats();
-              } else {
-                const progressPercent = data.current && data.total
-                  ? Math.round((data.current / data.total) * 100)
-                  : data.progress || 0;
-
-                setImportProgress({
-                  type,
-                  progress: progressPercent,
-                  message: data.message || `${data.stage}...`
-                });
-              }
-            }
-          }
-        }
+      if (data.success) {
+        setFlashMessage({
+          type: 'success',
+          text: `Import job started! ${dryRun ? '(Dry run mode)' : ''} You can track progress below.`
+        });
+        // The ImportJobProgress component will handle showing the job status
       } else {
-        const data = await response.json();
-        if (data.success) {
-          setFlashMessage({ type: 'success', text: `Successfully imported ${type}` });
-          fetchImportStats();
-          loadStats();
-        } else {
-          setMessage({ type: 'error', text: data.message || `Failed to import ${type}` });
-        }
+        setMessage({ type: 'error', text: data.message || `Failed to start ${type} import` });
       }
     } catch (error) {
       setMessage({
         type: 'error',
-        text: `Error importing ${type}: ${error.message}`
+        text: `Error starting ${type} import: ${error.message}`
       });
     } finally {
       setLoading(false);
-      setImportProgress(null);
     }
   };
+
+  // Callback when import job completes
+  const handleJobComplete = useCallback((job) => {
+    fetchImportStats();
+    loadStats();
+    setFlashMessage({
+      type: 'success',
+      text: `Import completed! ${job.result?.stats?.imported || 0} items imported.`
+    });
+  }, []);
+
+  // Callback when import job fails
+  const handleJobFailed = useCallback((job) => {
+    setMessage({
+      type: 'error',
+      text: `Import failed: ${job.error || 'Unknown error'}`
+    });
+  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Never';
@@ -733,16 +721,14 @@ const ShopifyIntegration = () => {
                     />
                   </div>
 
-                  {/* Import Progress */}
-                  {importProgress && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>{importProgress.message}</span>
-                        <span>{importProgress.progress}%</span>
-                      </div>
-                      <Progress value={importProgress.progress} />
-                    </div>
-                  )}
+                  {/* Import Job Progress */}
+                  <ImportJobProgress
+                    source="shopify"
+                    onJobComplete={handleJobComplete}
+                    onJobFailed={handleJobFailed}
+                    showHistory={true}
+                    maxHistoryItems={5}
+                  />
 
                   {/* Import Buttons */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
