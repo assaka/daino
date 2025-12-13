@@ -428,7 +428,7 @@ export default function StoreOnboarding() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+          className="absolute top-2 right-2 z-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
           onClick={() => navigate('/admin/stores')}
           title="Cancel and return to stores"
         >
@@ -436,7 +436,7 @@ export default function StoreOnboarding() {
         </Button>
         {/* Progress Bar */}
         <div className="px-6 pt-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 pr-8">
             <span className="text-sm font-medium text-gray-600">Step {currentStep} of {STEPS.length}</span>
             <span className="text-sm font-medium text-gray-600">{Math.round(progressPercent)}% Complete</span>
           </div>
