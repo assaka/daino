@@ -1131,6 +1131,7 @@ export function UnifiedSlotRenderer({
 
         return (
           <Button
+            variant="themed"
             className={buttonClassName}
             style={buttonStyles}
             onClick={handleButtonClick}

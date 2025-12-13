@@ -548,7 +548,7 @@ const productConfig = {
       id: 'add_to_cart_button',
       type: 'button',
       content: '{{t "product.add_to_cart"}}',
-      className: 'w-fit h-12 text-lg text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2 transition-colors duration-200 hover:brightness-90',
+      className: 'w-fit h-12 text-lg text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2 transition-colors duration-200',
       parentClassName: '',
       styles: {
         backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
