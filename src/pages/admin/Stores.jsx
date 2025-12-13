@@ -395,8 +395,8 @@ export default function Stores() {
                          store.status}
                       </Badge>
                     )}
-                    {/* Theme Preset Badge */}
-                    {store.theme_preset && store.status === 'active' && (
+                    {/* Theme Preset Badge - show for all stores with non-default preset */}
+                    {store.theme_preset && store.theme_preset !== 'default' && (
                       <Badge className="bg-violet-100 text-violet-800 border-violet-200" variant="outline">
                         <Palette className="w-3 h-3 mr-1" />
                         {store.theme_preset.charAt(0).toUpperCase() + store.theme_preset.slice(1)}
