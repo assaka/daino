@@ -2142,7 +2142,6 @@ router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
 
     const updatedSettings = {
       ...currentSettings,
-      theme_preset: presetName,  // Store preset name in tenant settings
       theme: {
         ...(currentSettings.theme || {}),
         ...themeSettings  // Apply all preset colors
