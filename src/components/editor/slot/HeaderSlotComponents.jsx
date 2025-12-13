@@ -16,6 +16,7 @@ import WishlistDropdown from '@/components/storefront/WishlistDropdown';
 import CategoryNav from '@/components/storefront/CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 /**
  * StoreLogo Component
@@ -365,17 +366,17 @@ const UserMenuSlot = createSlotComponent({
 const UserAccountMenuSlot = createSlotComponent({
   name: 'UserAccountMenu',
   render: ({ slot, context, headerContext, className, styles }) => {
-    const { user, userLoading, handleCustomerLogout, store, navigate } = headerContext || {};
+    const { user, userLoading, handleCustomerLogout, store, navigate, settings } = headerContext || {};
     const iconVariant = slot?.metadata?.iconVariant || 'outline';
+    const themeDefaults = getThemeDefaults();
+    const primaryButtonColor = settings?.theme?.primary_button_color || themeDefaults.primary_button_color;
 
     const buttonStyles = {
-      backgroundColor: styles?.backgroundColor || '#2563EB',
+      backgroundColor: styles?.backgroundColor || primaryButtonColor,
       color: styles?.color || '#ffffff',
       borderRadius: styles?.borderRadius || '0.5rem',
       padding: styles?.padding || '0.5rem 1rem'
     };
-
-    const hoverBg = styles?.hoverBackgroundColor || '#1D4ED8';
 
     // Choose icon based on variant
     const getUserIcon = () => {
@@ -399,7 +400,7 @@ const UserAccountMenuSlot = createSlotComponent({
         <div className={className} style={styles}>
           <Button
             size="sm"
-            className="px-4 py-2 flex items-center space-x-2"
+            className="px-4 py-2 flex items-center space-x-2 btn-themed"
             style={buttonStyles}
           >
             {getUserIcon()}
@@ -415,10 +416,8 @@ const UserAccountMenuSlot = createSlotComponent({
         <div className={className} style={styles}>
           <Button
             size="sm"
-            className="px-4 py-2 flex items-center space-x-1"
+            className="px-4 py-2 flex items-center space-x-1 btn-themed"
             style={buttonStyles}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
           >
             {getUserIcon()}
             <span>{user.first_name || user.name || user.email}</span>
@@ -437,10 +436,8 @@ const UserAccountMenuSlot = createSlotComponent({
             navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
           }}
           disabled={userLoading}
-          className="px-4 py-2 flex items-center space-x-2"
+          className="px-4 py-2 flex items-center space-x-2 btn-themed"
           style={buttonStyles}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
         >
           {getUserIcon()}
           <span>Sign In</span>
