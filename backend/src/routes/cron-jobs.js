@@ -396,11 +396,11 @@ router.post('/:id/pause', async (req, res) => {
       });
     }
 
-    const updatedCronJob = await cronScheduler.pauseCronJob(cronJob.id);
+    await cronJob.update({ is_paused: true });
 
     res.json({
       success: true,
-      data: updatedCronJob,
+      data: cronJob,
       message: 'Cron job paused successfully'
     });
   } catch (error) {
@@ -432,11 +432,14 @@ router.post('/:id/resume', async (req, res) => {
       });
     }
 
-    const updatedCronJob = await cronScheduler.resumeCronJob(cronJob.id);
+    await cronJob.update({
+      is_paused: false,
+      next_run_at: calculateNextRun(cronJob.cron_expression, cronJob.timezone)
+    });
 
     res.json({
       success: true,
-      data: updatedCronJob,
+      data: cronJob,
       message: 'Cron job resumed successfully'
     });
   } catch (error) {
@@ -468,16 +471,24 @@ router.post('/:id/execute', async (req, res) => {
       });
     }
 
-    const job = await cronScheduler.executeCronJobManually(cronJob.id, req.user.id);
+    // Mark job for immediate execution by setting next_run_at to now
+    // The unified scheduler will pick it up on its next run
+    await cronJob.update({
+      next_run_at: new Date(),
+      metadata: {
+        ...cronJob.metadata,
+        last_manual_trigger: new Date().toISOString(),
+        triggered_by_user: req.user.id
+      }
+    });
 
     res.json({
       success: true,
       data: {
-        job_id: job.id,
         cron_job_id: cronJob.id,
-        scheduled_at: job.scheduled_at
+        scheduled_at: new Date()
       },
-      message: 'Cron job scheduled for manual execution'
+      message: 'Cron job scheduled for immediate execution (will run on next scheduler cycle)'
     });
   } catch (error) {
     console.error('Error executing cron job manually:', error);
