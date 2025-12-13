@@ -135,6 +135,7 @@ export default function ThemeLayout() {
     const [availableThemes, setAvailableThemes] = useState([]);
     const [loadingThemes, setLoadingThemes] = useState(false);
     const [deletingTheme, setDeletingTheme] = useState(null);
+    const [selectedThemeId, setSelectedThemeId] = useState(null);
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -185,6 +186,16 @@ export default function ThemeLayout() {
     useEffect(() => {
         // Trigger re-render when product_grid settings change
     }, [store?.settings?.product_grid]);
+
+    // Initialize selected theme based on store's theme_preset
+    useEffect(() => {
+        if (store?.settings?.theme_preset && availableThemes.length > 0) {
+            const matchingTheme = availableThemes.find(t => t.preset_name === store.settings.theme_preset);
+            if (matchingTheme) {
+                setSelectedThemeId(matchingTheme.id);
+            }
+        }
+    }, [store?.settings?.theme_preset, availableThemes]);
 
     const loadStepTranslations = async () => {
         try {
@@ -822,10 +833,12 @@ export default function ThemeLayout() {
                 theme: {
                     ...prev.settings.theme,
                     ...theme.theme_settings
-                }
+                },
+                theme_preset: theme.preset_name // Track which preset is applied
             }
         }));
 
+        setSelectedThemeId(theme.id);
         setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" applied. Save to keep changes.` });
     };
 
@@ -1205,14 +1218,14 @@ export default function ThemeLayout() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Select
-                                    value=""
+                                    value={selectedThemeId || ''}
                                     onValueChange={(themeId) => {
                                         const theme = availableThemes.find(t => t.id === themeId);
                                         if (theme) handleApplyTheme(theme);
                                     }}
                                 >
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Apply Theme..." />
+                                    <SelectTrigger className="w-[200px]">
+                                        <SelectValue placeholder="Select Theme..." />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {availableThemes.filter(t => t.type === 'system' || !t.type).length > 0 && (
