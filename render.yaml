@@ -171,11 +171,9 @@ services:
         sync: false
       - key: MASTER_SUPABASE_SERVICE_KEY
         sync: false
-      # Encryption Keys
+      # Encryption Key (for decrypting tenant DB credentials)
       - key: ENCRYPTION_KEY
-        sync: false  # For decrypting tenant DB credentials (store_databases)
-      - key: INTEGRATION_ENCRYPTION_KEY
-        sync: false  # For decrypting OAuth tokens (token refresh job)
+        sync: false
     autoDeploy: true
 
 # Key-Value Store (Redis) - Managed by Render
