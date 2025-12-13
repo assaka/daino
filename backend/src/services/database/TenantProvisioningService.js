@@ -40,7 +40,8 @@ class TenantProvisioningService {
    * @returns {Promise<Object>} Provisioning result
    */
   async provisionTenantDatabase(tenantDb, storeId, options = {}) {
-    console.log(`Starting tenant provisioning for store ${storeId}...`);
+    console.log(`🚀 Starting tenant provisioning for store ${storeId}...`);
+    console.log(`🎨 Theme preset from options: ${options.themePreset || 'not specified'}`);
 
     const result = {
       storeId,
@@ -73,12 +74,15 @@ class TenantProvisioningService {
           .eq('id', storeId)
           .maybeSingle();
 
+        console.log('🔍 Existing store check:', existingStore ? 'found' : 'not found');
+        console.log('🔍 Existing settings:', JSON.stringify(existingStore?.settings || {}).slice(0, 200));
+
         if (!existingStore) {
           console.log('📦 No store record found - creating it now...');
           await this.createStoreRecord(tenantDb, storeId, options, result);
         } else if (!existingStore.settings?.theme || Object.keys(existingStore.settings?.theme || {}).length === 0) {
           // Store exists but has no theme - apply theme preset
-          console.log('🎨 Store has no theme settings - applying theme preset...');
+          console.log('🎨 Store has no theme settings - applying theme preset (preset: ' + options.themePreset + ')...');
           const themeDefaults = await this.getThemeDefaults(options.themePreset);
           if (Object.keys(themeDefaults).length > 0) {
             const updatedSettings = {
