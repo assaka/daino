@@ -2075,6 +2075,18 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
 
     console.log('✅ Store settings updated successfully');
 
+    // Update theme_preset in master DB if provided
+    if (updates.theme_preset !== undefined) {
+      await masterDbClient
+        .from('stores')
+        .update({
+          theme_preset: updates.theme_preset,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+      console.log('✅ Theme preset updated in master DB:', updates.theme_preset);
+    }
+
     // Clear Redis bootstrap cache so storefront gets fresh settings
     try {
       const { deletePattern } = require('../utils/cacheManager');

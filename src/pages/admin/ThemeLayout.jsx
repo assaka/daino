@@ -437,9 +437,12 @@ export default function ThemeLayout() {
             };
             
             // Use the full store data instead of selectedStore, but ensure we have the ID
+            // theme_preset comes from master db (responseData.store), not tenant db
+            const masterStore = responseData?.store || {};
             const finalStore = {
                 ...fullStore,
                 id: fullStore?.id || actualStoreId, // Ensure we have the store ID
+                theme_preset: masterStore.theme_preset || fullStore?.theme_preset, // Get from master db
                 settings
             };
 
@@ -1013,7 +1016,10 @@ export default function ThemeLayout() {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
-                const apiResult = await Store.updateSettings(store.id, { settings: store.settings });
+                const apiResult = await Store.updateSettings(store.id, {
+                    settings: store.settings,
+                    theme_preset: store.theme_preset // Save to master db stores.theme_preset
+                });
                 return apiResult;
             });
 
