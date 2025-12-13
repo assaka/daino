@@ -24,18 +24,32 @@ router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), a
       });
     }
 
-    // Try to get tenant DB connection for store-specific navigation
+    // Try to get tenant DB connection with retry for race condition after store creation
     let tenantDb = null;
-    try {
-      tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    } catch (connError) {
-      // If database not configured, return core navigation with a warning
-      console.warn(`[Navigation] No database for store ${store_id}:`, connError.message);
-      const navigation = await AdminNavigationService.getCoreNavigation();
-      return res.json({
-        success: true,
-        navigation,
-        warning: 'Store database not configured - showing limited navigation'
+    let lastError = null;
+    const maxRetries = 3;
+    const retryDelay = 500; // 500ms between retries
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        tenantDb = await ConnectionManager.getStoreConnection(store_id);
+        break; // Success, exit retry loop
+      } catch (connError) {
+        lastError = connError;
+        if (attempt < maxRetries && connError.message.includes('No database configured')) {
+          console.log(`[Navigation] Retry ${attempt}/${maxRetries} for store ${store_id}...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
+    if (!tenantDb) {
+      console.warn(`[Navigation] Failed after ${maxRetries} retries for store ${store_id}:`, lastError?.message);
+      // Return 503 with retry hint for frontend
+      return res.status(503).json({
+        success: false,
+        error: lastError?.message || 'Database connection temporarily unavailable',
+        retryable: true
       });
     }
 
