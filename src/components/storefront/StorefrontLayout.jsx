@@ -622,7 +622,8 @@ export default function StorefrontLayout({ children }) {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button
                                                             size="sm"
-                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                                                            className="btn-themed text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                                                            style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                                         >
                                                             <UserIcon className="w-4 h-4" />
                                                             <span>{user.first_name || user.name || user.email}</span>
@@ -677,7 +678,8 @@ export default function StorefrontLayout({ children }) {
                                                     navigate(createPublicUrl(store.slug, 'CUSTOMER_AUTH'));
                                                 }}
                                                 disabled={userLoading}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                                                className="btn-themed text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                                                style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                             >
                                                 <UserIcon className="w-5 h-5 mr-2" />
                                                 <span>{t('common.sign_in', 'Sign In')}</span>
