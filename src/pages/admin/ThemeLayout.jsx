@@ -172,7 +172,9 @@ export default function ThemeLayout() {
         try {
             const response = await fetch('/api/public/theme-defaults/presets');
             const data = await response.json();
+            console.log('Theme presets response:', data);
             if (data.success && data.data) {
+                console.log('Available themes:', data.data.map(t => ({ name: t.display_name, type: t.type })));
                 setAvailableThemes(data.data);
             }
         } catch (error) {
@@ -1242,26 +1244,9 @@ export default function ThemeLayout() {
                                             <>
                                                 <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1">My Themes</div>
                                                 {availableThemes.filter(t => t.type === 'user').map(theme => (
-                                                    <div key={theme.id} className="flex items-center justify-between pr-2">
-                                                        <SelectItem value={theme.id} className="flex-1">
-                                                            {theme.display_name}
-                                                        </SelectItem>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteTheme(theme);
-                                                            }}
-                                                            className="p-1 text-gray-400 hover:text-red-500"
-                                                            title="Delete theme"
-                                                        >
-                                                            {deletingTheme === theme.id ? (
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                            ) : (
-                                                                <Trash2 className="w-3 h-3" />
-                                                            )}
-                                                        </button>
-                                                    </div>
+                                                    <SelectItem key={theme.id} value={theme.id}>
+                                                        {theme.display_name}
+                                                    </SelectItem>
                                                 ))}
                                             </>
                                         )}
