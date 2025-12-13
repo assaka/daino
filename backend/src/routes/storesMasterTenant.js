@@ -1035,6 +1035,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       ...(ownedStores || []).map(s => ({ ...(s.toJSON ? s.toJSON() : s), membership_type: 'owner' })),
       ...teamStores.map(s => ({ ...s, membership_type: 'team_member', team_role: teamRoleMap[s.id] }))
     ];
+    console.log('[Dropdown] Raw stores theme_preset:', stores.map(s => ({ id: s.id, theme_preset: s.theme_preset })));
 
     if (stores.length === 0) {
       return res.json({
@@ -1146,6 +1147,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     });
 
     console.log(`[Dropdown] Returning ${enrichedStores.length} stores for user ${userId} (owned: ${(ownedStores || []).length}, team: ${teamStores.length})`);
+    console.log('[Dropdown] Enriched stores theme_preset:', enrichedStores.map(s => ({ id: s.id, theme_preset: s.theme_preset })));
 
     res.json({
       success: true,
