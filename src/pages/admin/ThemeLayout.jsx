@@ -172,9 +172,7 @@ export default function ThemeLayout() {
         try {
             const response = await fetch('/api/public/theme-defaults/presets');
             const data = await response.json();
-            console.log('Theme presets response:', data);
             if (data.success && data.data) {
-                console.log('Available themes:', data.data.map(t => ({ name: t.display_name, type: t.type })));
                 setAvailableThemes(data.data);
             }
         } catch (error) {
