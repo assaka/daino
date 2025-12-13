@@ -27,15 +27,16 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
     const [configLoaded, setConfigLoaded] = useState(false);
 
     // Use context for preview mode (persists across navigation)
-    const { isPreviewDraftMode: contextPreviewMode } = usePreviewMode();
+    const { isPublishedPreview, isWorkspaceMode } = usePreviewMode();
 
-    // Also check URL as fallback
-    const urlPreviewMode = typeof window !== 'undefined' &&
+    // Also check URL as fallback for workspace mode only
+    const urlWorkspaceMode = typeof window !== 'undefined' &&
         (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
          new URLSearchParams(window.location.search).get('workspace') === 'true');
 
-    // Use context if available, otherwise fall back to URL check
-    const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
+    // Only load draft when in workspace mode (NOT when viewing published version)
+    // isPublishedPreview means "show published version only", NOT "load draft"
+    const shouldLoadDraft = isWorkspaceMode || urlWorkspaceMode;
 
     const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
@@ -51,8 +52,9 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
         try {
             let response;
 
-            // In draft preview mode, load draft configuration instead of published
-            if (isPreviewDraftMode) {
+            // In workspace/draft preview mode, load draft configuration
+            // When viewing published version (isPublishedPreview=true), always load published
+            if (shouldLoadDraft && !isPublishedPreview) {
                 response = await slotConfigurationService.getDraftConfiguration(store.id, pageType);
                 // Transform draft response to match published response structure
                 if (response.success && response.data?.configuration) {
