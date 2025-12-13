@@ -1011,7 +1011,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     if (teamStoreIds.length > 0) {
       const { data: teamStoreData, error: teamStoreError } = await masterDbClient
         .from('stores')
-        .select('id, user_id, slug, status, is_active, created_at, updated_at')
+        .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
         .in('id', teamStoreIds);
 
       console.log('[Dropdown] Team stores query result:', teamStoreData, 'error:', teamStoreError);
@@ -1138,7 +1138,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         active_domain_count: domainMap[store.id]?.active_domain_count || 0,
         // Membership info
         membership_type: store.membership_type || 'owner',
-        team_role: store.team_role || null
+        team_role: store.team_role || null,
+        // Theme preset
+        theme_preset: store.theme_preset || 'default'
       };
     });
 

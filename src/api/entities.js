@@ -446,12 +446,14 @@ class StoreService extends BaseEntity {
     super('stores');
   }
 
-  // Get user's stores (authenticated) - includes full store data with theme_preset
+  // Get user's stores for dropdown/selection (authenticated) - only Editor+ permissions
   async getUserStores() {
     try {
-      const response = await apiClient.get('stores');
-      // Client already transforms to array
-      return Array.isArray(response) ? response : [];
+      const response = await apiClient.get('stores/dropdown');
+      // Handle both direct array response and {success: true, data: []} format
+      const stores = response?.data || response;
+      const result = Array.isArray(stores) ? stores : [];
+      return result;
     } catch (error) {
       console.error(`❌ StoreService.getUserStores() error:`, error.message);
       return [];
