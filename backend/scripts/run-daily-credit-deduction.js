@@ -26,13 +26,13 @@ console.log('Loading DailyCreditDeductionJob...');
 const DailyCreditDeductionJob = require('../src/core/jobs/DailyCreditDeductionJob');
 console.log('DailyCreditDeductionJob loaded successfully');
 
-// Try to load CronLog for logging (graceful fallback if table doesn't exist yet)
-let CronLog = null;
+// Load CronLogService for logging (uses Supabase REST API, avoids Sequelize issues)
+let CronLogService = null;
 try {
-  CronLog = require('../src/models/CronLog');
-  console.log('CronLog model loaded successfully');
+  CronLogService = require('../src/services/cron-log-service');
+  console.log('CronLogService loaded successfully');
 } catch (err) {
-  console.warn('CronLog model not available:', err.message);
+  console.warn('CronLogService not available:', err.message);
 }
 
 async function runDailyDeduction() {
@@ -41,9 +41,9 @@ async function runDailyDeduction() {
 
   try {
     // Start cron log entry
-    if (CronLog) {
+    if (CronLogService) {
       try {
-        cronLog = await CronLog.startLog('daily_credit_deduction', {
+        cronLog = await CronLogService.startLog('daily_credit_deduction', {
           job_type: 'system',
           trigger_source: require.main === module ? 'cron' : 'api',
           metadata: {
@@ -51,7 +51,7 @@ async function runDailyDeduction() {
             node_version: process.version
           }
         });
-        console.log('📝 Cron log started:', cronLog.id);
+        if (cronLog) console.log('📝 Cron log started:', cronLog.id);
       } catch (logErr) {
         console.warn('Failed to start cron log (table may not exist yet):', logErr.message);
       }
@@ -75,14 +75,14 @@ async function runDailyDeduction() {
     console.log('Full result:', JSON.stringify(result, null, 2));
 
     // Mark cron log as completed
-    if (cronLog) {
+    if (CronLogService && cronLog) {
       try {
         const storesProcessed = result.stores?.processed || 0;
         const storesAffected = result.stores?.successful || 0;
         const domainsProcessed = result.custom_domains?.processed || 0;
         const domainsAffected = result.custom_domains?.successful || 0;
 
-        await cronLog.markAsCompleted(result, {
+        await CronLogService.markCompleted(cronLog.id, result, {
           stores_processed: storesProcessed + domainsProcessed,
           stores_affected: storesAffected + domainsAffected,
           items_processed: storesProcessed + domainsProcessed
@@ -103,9 +103,9 @@ async function runDailyDeduction() {
     console.error('Stack:', error.stack);
 
     // Mark cron log as failed
-    if (cronLog) {
+    if (CronLogService && cronLog) {
       try {
-        await cronLog.markAsFailed(error);
+        await CronLogService.markFailed(cronLog.id, error);
         console.log('📝 Cron log marked as failed:', cronLog.id);
       } catch (logErr) {
         console.warn('Failed to mark cron log as failed:', logErr.message);
