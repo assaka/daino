@@ -549,12 +549,17 @@ VALUES (
 
       const { data: defaults, error } = await query.maybeSingle();
 
-      if (error || !defaults) {
-        console.warn(`⚠️ Could not fetch theme preset '${presetName || 'default'}' from master DB, using empty defaults`);
+      if (error) {
+        console.error(`❌ Error fetching theme preset '${presetName || 'default'}':`, error.message);
         return {};
       }
 
-      console.log(`✅ Fetched theme preset '${defaults.preset_name}' from master DB`);
+      if (!defaults) {
+        console.warn(`⚠️ Theme preset '${presetName || 'default'}' not found in master DB theme_defaults table`);
+        return {};
+      }
+
+      console.log(`✅ Fetched theme preset '${defaults.preset_name}' with ${Object.keys(defaults.theme_settings || {}).length} settings`);
       return defaults.theme_settings || {};
     } catch (error) {
       console.error('Error fetching theme defaults:', error.message);
@@ -581,6 +586,7 @@ VALUES (
       };
 
       console.log(`📦 Creating store with theme preset: ${options.themePreset || 'default'}`);
+      console.log(`📦 Theme settings to save:`, JSON.stringify(initialSettings.theme || {}).slice(0, 200));
 
       const storeData = {
         id: storeId,
