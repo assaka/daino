@@ -628,6 +628,7 @@ export default function StorefrontLayout({ children }) {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button
                                                             size="sm"
+                                                            variant="themed"
                                                             className="btn-themed text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                                                             style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                                         >
@@ -684,6 +685,7 @@ export default function StorefrontLayout({ children }) {
                                                     navigate(createPublicUrl(store.slug, 'CUSTOMER_AUTH'));
                                                 }}
                                                 disabled={userLoading}
+                                                variant="themed"
                                                 className="btn-themed text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                                 style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                             >

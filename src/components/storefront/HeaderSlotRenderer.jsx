@@ -360,6 +360,7 @@ export function HeaderSlotRenderer({
                 <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
+                    variant="themed"
                     className="px-4 py-2 flex items-center space-x-1 btn-themed"
                     style={buttonStyles}
                   >
@@ -395,6 +396,7 @@ export function HeaderSlotRenderer({
                   navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
                 }}
                 disabled={userLoading}
+                variant="themed"
                 className="px-4 py-2 flex items-center space-x-2 btn-themed"
                 style={buttonStyles}
               >

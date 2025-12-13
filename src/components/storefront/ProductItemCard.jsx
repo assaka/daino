@@ -382,6 +382,7 @@ const ProductItemCard = ({
             <Button
               onClick={isEditorMode ? (e) => handleSlotClick(e, 'add_to_cart_button') : handleAddToCart}
               disabled={(addingToCart || isProductOutOfStock(product)) && !isEditorMode}
+              variant="themed"
               className={addToCartConfig.className || "w-full text-white border-0 btn-add-to-cart transition-all duration-200"}
               size="sm"
               style={{
