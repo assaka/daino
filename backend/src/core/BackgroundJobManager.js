@@ -743,9 +743,8 @@ class BackgroundJobManager extends EventEmitter {
         console.log('ℹ️ Pending orders finalization job already scheduled');
       }
 
-      // Start the cron scheduler for database-driven jobs
-      const cronScheduler = require('../services/cron-scheduler');
-      await cronScheduler.start();
+      // Note: Database-driven cron jobs are now handled by unified-scheduler.js
+      // which runs via Render cron (external) instead of internal polling
 
     } catch (error) {
       console.error('❌ Failed to schedule system jobs:', error.message);

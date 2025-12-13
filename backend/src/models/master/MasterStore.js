@@ -44,6 +44,11 @@ const MasterStore = masterSequelize.define('Store', {
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  theme_preset: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: 'default'
   }
 }, {
   tableName: 'stores',

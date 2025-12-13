@@ -5,7 +5,22 @@ const { Op } = require('sequelize');
 const CronJob = require('../models/CronJob');
 const CronJobType = require('../models/CronJobType');
 const CronJobExecution = require('../models/CronJobExecution');
-const cronScheduler = require('../services/cron-scheduler');
+const cron = require('node-cron');
+
+// Helper: Calculate next run time from cron expression
+function calculateNextRun(cronExpression, timezone = 'UTC') {
+  try {
+    const cronParser = require('cron-parser');
+    const interval = cronParser.parseExpression(cronExpression, {
+      currentDate: new Date(),
+      tz: timezone
+    });
+    return interval.next().toDate();
+  } catch (error) {
+    // Fallback: 1 hour from now
+    return new Date(Date.now() + 60 * 60 * 1000);
+  }
+}
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
@@ -37,11 +52,20 @@ router.get('/types', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await cronScheduler.getStats(req.user.id, req.user.store_id);
+    const stats = await CronJob.getStats(req.user.id, req.user.store_id);
 
     res.json({
       success: true,
-      data: stats
+      data: {
+        summary: stats[0] || {
+          total_jobs: 0,
+          active_jobs: 0,
+          paused_jobs: 0,
+          successful_jobs: 0,
+          failed_jobs: 0
+        },
+        by_type: stats.filter(s => s.job_type)
+      }
     });
   } catch (error) {
     console.error('Error fetching cron job stats:', error);
@@ -160,8 +184,11 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Create the cron job
-    const cronJob = await cronScheduler.createCronJob({
+    // Calculate initial next run time
+    const next_run_at = calculateNextRun(cron_expression, timezone);
+
+    // Create the cron job directly
+    const cronJob = await CronJob.create({
       name,
       description,
       cron_expression,
@@ -172,8 +199,11 @@ router.post('/', async (req, res) => {
       store_id: req.user.store_id,
       tags: tags || '',
       max_runs,
-      max_failures,
-      timeout_seconds
+      max_failures: max_failures || 5,
+      timeout_seconds: timeout_seconds || 300,
+      next_run_at,
+      is_active: true,
+      is_paused: false
     });
 
     res.status(201).json({
@@ -287,7 +317,16 @@ router.put('/:id', async (req, res) => {
       ...(timeout_seconds !== undefined && { timeout_seconds })
     };
 
-    const updatedCronJob = await cronScheduler.updateCronJob(cronJob.id, updates);
+    // Recalculate next run if cron expression or timezone changed
+    if (cron_expression || timezone) {
+      updates.next_run_at = calculateNextRun(
+        cron_expression || cronJob.cron_expression,
+        timezone || cronJob.timezone
+      );
+    }
+
+    await cronJob.update(updates);
+    const updatedCronJob = await cronJob.reload();
 
     res.json({
       success: true,
@@ -322,7 +361,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    await cronScheduler.deleteCronJob(cronJob.id);
+    await cronJob.destroy();
 
     res.json({
       success: true,
