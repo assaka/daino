@@ -233,15 +233,15 @@ const successConfig = {
       id: "continue_shopping_button",
       type: "button",
       content: "Continue Shopping",
-      className: "bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors",
+      className: "btn-themed text-white px-6 py-3 rounded-md transition-colors",
       parentClassName: "",
       styles: {
-        backgroundColor: "#2563eb",
+        backgroundColor: "{{settings.theme.primary_button_color}}",
         color: "white",
         padding: "0.75rem 1.5rem",
         borderRadius: "0.375rem",
         cursor: "pointer",
-        transition: "background-color 0.2s"
+        transition: "filter 0.2s"
       },
       parentId: "actions_container",
       position: { col: 1, row: 1 },

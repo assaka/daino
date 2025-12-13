@@ -4,13 +4,16 @@ import { CustomerAuth as CustomerAuthAPI } from "@/api/storefront-entities";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function ResetPassword() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { store } = useStore();
+  const { store, settings } = useStore();
+  const themeDefaults = getThemeDefaults();
+  const primaryButtonColor = settings?.theme?.primary_button_color || themeDefaults.primary_button_color;
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -219,7 +222,8 @@ export default function ResetPassword() {
               <button
                 type="submit"
                 disabled={loading || !password || !confirmPassword}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white btn-themed focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: primaryButtonColor }}
               >
                 {loading ? (
                   <span className="flex items-center">

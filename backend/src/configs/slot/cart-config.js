@@ -155,9 +155,9 @@ const cartConfig = {
       id: 'empty_cart_button',
       type: 'button',
       content: '{{t "common.continue_shopping"}}',
-      className: 'w-fit bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded mx-auto',
+      className: 'w-fit btn-themed text-white px-6 py-2 rounded mx-auto',
       parentClassName: 'text-center',
-      styles: {},
+      styles: { backgroundColor: '{{settings.theme.primary_button_color}}' },
       parentId: 'empty_cart_container',
       position: { col: 1, row: 4 },
       colSpan: {

@@ -408,11 +408,12 @@ export default function StorefrontLayout({ children }) {
       .btn-place-order {
           background-color: var(--theme-place-order-button);
       }
-      /* Hover effects for themed buttons */
+      /* Hover effects for themed buttons - reset Tailwind hover and use brightness */
       .btn-primary:hover, .btn-secondary:hover, .btn-add-to-cart:hover,
       .btn-view-cart:hover, .btn-checkout:hover, .btn-place-order:hover,
       .btn-themed:hover {
           filter: brightness(1.15) !important;
+          background-color: inherit !important;
           transition: filter 0.2s ease;
       }
       .btn-primary, .btn-secondary, .btn-add-to-cart,

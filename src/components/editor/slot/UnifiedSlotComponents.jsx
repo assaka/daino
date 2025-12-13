@@ -28,6 +28,7 @@ import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
 import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import ConfigurableProductSelectorComponent from '@/components/storefront/ConfigurableProductSelector';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
 import { getCurrentLanguage, getTranslatedField } from '@/utils/translationUtils';
@@ -997,7 +998,8 @@ const CartItemsSlot = createSlotComponent({
           <p className="text-gray-600 mb-6">Start shopping to add items to your cart</p>
           <Link
             to="/"
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white btn-themed"
+            style={{ backgroundColor: variableContext?.settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
           >
             Continue Shopping
           </Link>
