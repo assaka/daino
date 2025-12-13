@@ -187,6 +187,9 @@ services:
       # JWT Configuration
       - key: JWT_SECRET
         sync: false
+      # Integration Encryption Key (for token refresh)
+      - key: INTEGRATION_ENCRYPTION_KEY
+        sync: false
     autoDeploy: true
 
 # Key-Value Store (Redis) - Managed by Render
