@@ -132,6 +132,9 @@ export default function ThemeLayout() {
     const [newThemeName, setNewThemeName] = useState('');
     const [newThemeDescription, setNewThemeDescription] = useState('');
     const [creatingTheme, setCreatingTheme] = useState(false);
+    const [availableThemes, setAvailableThemes] = useState([]);
+    const [loadingThemes, setLoadingThemes] = useState(false);
+    const [deletingTheme, setDeletingTheme] = useState(null);
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -158,8 +161,25 @@ export default function ThemeLayout() {
         if (selectedStore) {
             loadStore();
             loadStepTranslations();
+            fetchAvailableThemes();
         }
     }, [selectedStore]);
+
+    // Fetch available themes (system + user)
+    const fetchAvailableThemes = async () => {
+        setLoadingThemes(true);
+        try {
+            const response = await fetch('/api/public/theme-defaults/presets');
+            const data = await response.json();
+            if (data.success && data.data) {
+                setAvailableThemes(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch themes:', error);
+        } finally {
+            setLoadingThemes(false);
+        }
+    };
 
     // Update UI when store settings change
     useEffect(() => {
@@ -778,6 +798,7 @@ export default function ThemeLayout() {
                 setShowCreateThemeDialog(false);
                 setNewThemeName('');
                 setNewThemeDescription('');
+                fetchAvailableThemes(); // Refresh themes list
             } else {
                 setFlashMessage({ type: 'error', message: response.message || 'Failed to create theme' });
             }
@@ -786,6 +807,49 @@ export default function ThemeLayout() {
             setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to create theme' });
         } finally {
             setCreatingTheme(false);
+        }
+    };
+
+    // Apply a theme to the current store
+    const handleApplyTheme = (theme) => {
+        if (!theme?.theme_settings) return;
+
+        // Merge the theme settings into the current store settings
+        setStore(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                theme: {
+                    ...prev.settings.theme,
+                    ...theme.theme_settings
+                }
+            }
+        }));
+
+        setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" applied. Save to keep changes.` });
+    };
+
+    // Delete a user-created theme
+    const handleDeleteTheme = async (theme) => {
+        if (theme.type === 'system') {
+            setFlashMessage({ type: 'error', message: 'Cannot delete system themes' });
+            return;
+        }
+
+        setDeletingTheme(theme.id);
+        try {
+            const response = await api.delete(`/theme-defaults/${theme.id}`);
+            if (response.success) {
+                setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" deleted` });
+                fetchAvailableThemes(); // Refresh the list
+            } else {
+                setFlashMessage({ type: 'error', message: response.message || 'Failed to delete theme' });
+            }
+        } catch (error) {
+            console.error('Failed to delete theme:', error);
+            setFlashMessage({ type: 'error', message: 'Failed to delete theme' });
+        } finally {
+            setDeletingTheme(null);
         }
     };
 
@@ -1139,13 +1203,65 @@ export default function ThemeLayout() {
                                 <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
                                 <CardDescription>Control the colors and fonts of your store.</CardDescription>
                             </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowCreateThemeDialog(true)}
-                            >
-                                Create Theme
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Select
+                                    value=""
+                                    onValueChange={(themeId) => {
+                                        const theme = availableThemes.find(t => t.id === themeId);
+                                        if (theme) handleApplyTheme(theme);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Apply Theme..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableThemes.filter(t => t.type === 'system' || !t.type).length > 0 && (
+                                            <>
+                                                <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">System Themes</div>
+                                                {availableThemes.filter(t => t.type === 'system' || !t.type).map(theme => (
+                                                    <SelectItem key={theme.id} value={theme.id}>
+                                                        {theme.display_name}
+                                                    </SelectItem>
+                                                ))}
+                                            </>
+                                        )}
+                                        {availableThemes.filter(t => t.type === 'user').length > 0 && (
+                                            <>
+                                                <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1">My Themes</div>
+                                                {availableThemes.filter(t => t.type === 'user').map(theme => (
+                                                    <div key={theme.id} className="flex items-center justify-between pr-2">
+                                                        <SelectItem value={theme.id} className="flex-1">
+                                                            {theme.display_name}
+                                                        </SelectItem>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteTheme(theme);
+                                                            }}
+                                                            className="p-1 text-gray-400 hover:text-red-500"
+                                                            title="Delete theme"
+                                                        >
+                                                            {deletingTheme === theme.id ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-3 h-3" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowCreateThemeDialog(true)}
+                                >
+                                    Create Theme
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Typography Section */}

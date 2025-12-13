@@ -222,4 +222,71 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @route   DELETE /api/theme-defaults/:id
+ * @desc    Delete a user-created theme
+ * @access  Private (requires auth)
+ */
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    // Check if theme exists and is a user theme
+    const { data: theme, error: fetchError } = await masterDbClient
+      .from('theme_defaults')
+      .select('id, type, user_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (fetchError || !theme) {
+      return res.status(404).json({
+        success: false,
+        message: 'Theme not found'
+      });
+    }
+
+    // Only allow deleting user themes
+    if (theme.type === 'system') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete system themes'
+      });
+    }
+
+    // Only allow owner to delete (or admin)
+    if (theme.user_id && theme.user_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own themes'
+      });
+    }
+
+    // Delete the theme
+    const { error: deleteError } = await masterDbClient
+      .from('theme_defaults')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Error deleting theme:', deleteError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete theme'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Theme deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting theme:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete theme'
+    });
+  }
+});
+
 module.exports = router;
