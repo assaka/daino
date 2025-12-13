@@ -189,6 +189,11 @@ function LayoutInner({ children, currentPageName }) {
       loadDynamicNavigation();
     };
 
+    // Listen for store selection changes (e.g., after first store creation)
+    const handleStoreSelectionChanged = () => {
+      loadDynamicNavigation();
+    };
+
     // Add global click detector to debug logout issues
     const globalClickHandler = (e) => {
       if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
@@ -200,12 +205,14 @@ function LayoutInner({ children, currentPageName }) {
     window.addEventListener('userDataReady', handleUserDataReady);
     window.addEventListener('creditsUpdated', handleCreditsUpdated);
     window.addEventListener('navigation-updated', handleNavigationUpdated);
+    window.addEventListener('storeSelectionChanged', handleStoreSelectionChanged);
 
     return () => {
       document.removeEventListener('click', globalClickHandler, true);
       window.removeEventListener('userDataReady', handleUserDataReady);
       window.removeEventListener('creditsUpdated', handleCreditsUpdated);
       window.removeEventListener('navigation-updated', handleNavigationUpdated);
+      window.removeEventListener('storeSelectionChanged', handleStoreSelectionChanged);
     };
   }, [location.pathname]);
 
