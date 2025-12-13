@@ -387,30 +387,31 @@ export const useCategory = (slug, storeId, options = {}) => {
 
 /**
  * Hook to fetch slot configuration for a page type
- * In draft preview mode (AI Workspace), loads draft configuration instead of published
+ * In workspace mode (AI Workspace), loads draft configuration instead of published
+ * When version=published, always loads published regardless of other params
  */
 export const useSlotConfiguration = (storeId, pageType, options = {}) => {
   // Use context for preview mode (persists across navigation)
-  const { isPreviewDraftMode: contextPreviewMode } = usePreviewMode();
+  const { isPublishedPreview, isWorkspaceMode } = usePreviewMode();
 
-  // Also check URL as fallback (for initial load before context is ready)
-  const urlPreviewMode = typeof window !== 'undefined' &&
-    (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
-     new URLSearchParams(window.location.search).get('workspace') === 'true');
+  // Check URL params - version=published takes priority
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isViewingPublished = urlParams?.get('version') === 'published' || isPublishedPreview;
+  const urlWorkspaceMode = urlParams?.get('preview') === 'draft' || urlParams?.get('workspace') === 'true';
 
-  // Use context if available, otherwise fall back to URL check
-  const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
+  // Only load draft when in workspace mode AND NOT viewing published version
+  const shouldLoadDraft = !isViewingPublished && (isWorkspaceMode || urlWorkspaceMode);
 
   return useQuery({
     // Use different query key for draft mode to avoid cache conflicts
-    queryKey: isPreviewDraftMode
+    queryKey: shouldLoadDraft
       ? [...queryKeys.slot.config(storeId, pageType), 'draft']
       : queryKeys.slot.config(storeId, pageType),
     queryFn: async () => {
       const { default: slotConfigurationService } = await import('@/services/slotConfigurationService');
 
-      // Load draft or published configuration based on preview mode
-      const response = isPreviewDraftMode
+      // Load draft or published configuration based on mode
+      const response = shouldLoadDraft
         ? await slotConfigurationService.getDraftConfiguration(storeId, pageType)
         : await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
 
@@ -424,10 +425,10 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
       return null; // No config found
     },
     enabled: !!(storeId && pageType),
-    // In draft preview mode, always fetch fresh to pick up editor changes
-    staleTime: isPreviewDraftMode ? 0 : 300000, // Always stale in draft mode, 5 min for published
-    gcTime: isPreviewDraftMode ? 30000 : 600000, // 30s cache in draft mode, 10 min for published
-    refetchOnMount: isPreviewDraftMode ? 'always' : true, // Always refetch in draft mode
+    // In workspace mode, always fetch fresh to pick up editor changes
+    staleTime: shouldLoadDraft ? 0 : 300000, // Always stale in draft mode, 5 min for published
+    gcTime: shouldLoadDraft ? 30000 : 600000, // 30s cache in draft mode, 10 min for published
+    refetchOnMount: shouldLoadDraft ? 'always' : true, // Always refetch in draft mode
     retry: 2,
     ...options
   });

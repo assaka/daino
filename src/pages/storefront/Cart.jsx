@@ -99,8 +99,10 @@ export default function Cart() {
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 
-    // Check if we're in draft preview mode (AI Workspace preview)
-    const isPreviewDraftMode = searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true';
+    // Check if we're viewing published version (version=published takes priority)
+    const isViewingPublished = searchParams.get('version') === 'published';
+    // Only load draft when in workspace mode AND NOT viewing published version
+    const shouldLoadDraft = !isViewingPublished && (searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true');
 
     // Load cart layout configuration directly
     useEffect(() => {
@@ -109,8 +111,8 @@ export default function Cart() {
                 return;
             }
 
-            // Priority 1: Use page bootstrap if available (no API call!) - only if NOT in draft preview mode
-            if (!isPreviewDraftMode && pageBootstrap?.cartSlotConfig) {
+            // Priority 1: Use page bootstrap if available (no API call!) - only if NOT loading draft
+            if (!shouldLoadDraft && pageBootstrap?.cartSlotConfig) {
                 setCartLayoutConfig(pageBootstrap.cartSlotConfig);
                 setConfigLoaded(true);
                 return;
@@ -120,7 +122,7 @@ export default function Cart() {
             if (!window.__slotConfigCache) window.__slotConfigCache = {};
             if (!window.__slotConfigFetching) window.__slotConfigFetching = {};
 
-            const cacheKey = isPreviewDraftMode ? `cart:draft:${store.id}` : `cart:${store.id}`;
+            const cacheKey = shouldLoadDraft ? `cart:draft:${store.id}` : `cart:${store.id}`;
             const cached = window.__slotConfigCache[cacheKey];
 
             if (cached && Date.now() - cached.timestamp < 300000) { // 5 min cache
@@ -142,8 +144,8 @@ export default function Cart() {
                 return;
             }
 
-            // Start fetching - use draft or published based on preview mode
-            const fetchPromise = isPreviewDraftMode
+            // Start fetching - use draft or published based on mode
+            const fetchPromise = shouldLoadDraft
                 ? slotConfigurationService.getDraftConfiguration(store.id, 'cart')
                 : slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
             window.__slotConfigFetching[cacheKey] = fetchPromise;
@@ -200,7 +202,7 @@ export default function Cart() {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, [store?.id, pageBootstrap, isPreviewDraftMode]);
+    }, [store?.id, pageBootstrap, shouldLoadDraft]);
     
     const [taxRules, setTaxRules] = useState([]);
     

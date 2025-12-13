@@ -27,8 +27,10 @@ export default function CustomerAuth() {
   const [loginLayoutConfig, setLoginLayoutConfig] = useState(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
-  // Check if we're in draft preview mode (AI Workspace preview)
-  const isPreviewDraftMode = searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true';
+  // Check if we're viewing published version (version=published takes priority)
+  const isViewingPublished = searchParams.get('version') === 'published';
+  // Only load draft when in workspace mode AND NOT viewing published version
+  const shouldLoadDraft = !isViewingPublished && (searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true');
 
   // Load login layout configuration
   useEffect(() => {
@@ -38,8 +40,8 @@ export default function CustomerAuth() {
       }
 
       try {
-        // Load draft or published configuration based on preview mode
-        const response = isPreviewDraftMode
+        // Load draft or published configuration based on mode
+        const response = shouldLoadDraft
           ? await slotConfigurationService.getDraftConfiguration(store.id, 'login')
           : await slotConfigurationService.getPublishedConfiguration(store.id, 'login');
 
@@ -67,7 +69,7 @@ export default function CustomerAuth() {
     };
 
     loadLoginLayoutConfig();
-  }, [store, isPreviewDraftMode]);
+  }, [store, shouldLoadDraft]);
 
   useEffect(() => {
     checkAuthStatus();
