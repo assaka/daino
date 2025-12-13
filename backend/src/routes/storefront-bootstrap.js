@@ -107,7 +107,7 @@ async function getStoreBySlug(slug) {
   // Note: We check WITHOUT is_active filter first to detect inactive stores
   const { data, error: masterError } = await masterDbClient
     .from('stores')
-    .select('id, is_active, primary_custom_domain, custom_domains_count, published, status')
+    .select('id, is_active, primary_custom_domain, custom_domains_count, published, status, theme_preset')
     .or(`slug.eq.${slug},primary_custom_domain.eq.${slug.toLowerCase()}`)
     .maybeSingle();
 
@@ -214,9 +214,9 @@ async function getStoreBySlug(slug) {
     }
   }
 
-  console.log(`✅ Loaded full store data from tenant DB:`, store.name);
+  console.log(`✅ Loaded full store data from tenant DB:`, store.name, `(theme_preset: ${masterStore.theme_preset || 'default'})`);
 
-  return { storeId: masterStore.id, store, tenantDb, redirectTo };
+  return { storeId: masterStore.id, store, tenantDb, redirectTo, themePreset: masterStore.theme_preset };
 }
 
 /**
@@ -296,7 +296,7 @@ router.get('/', cacheMiddleware({
 
     // Get store by slug - uses master for routing, tenant for data
     console.log('🔍 Looking up store by slug:', slug);
-    let storeId, store, tenantDb, redirectTo;
+    let storeId, store, tenantDb, redirectTo, themePreset;
 
     try {
       const result = await getStoreBySlug(slug);
@@ -304,6 +304,7 @@ router.get('/', cacheMiddleware({
       store = result.store;
       tenantDb = result.tenantDb;
       redirectTo = result.redirectTo;
+      themePreset = result.themePreset;
     } catch (err) {
       console.log('❌ Store lookup failed for slug:', slug, 'Error:', err.message, 'Code:', err.code);
 
@@ -675,9 +676,26 @@ router.get('/', cacheMiddleware({
         }
       })(),
 
-      // 8. Get theme defaults from master DB
+      // 8. Get theme defaults from master DB (using store's selected preset or system default)
       (async () => {
         try {
+          // First try the store's selected preset
+          if (themePreset) {
+            const { data: presetData, error: presetError } = await masterDbClient
+              .from('theme_defaults')
+              .select('preset_name, display_name, theme_settings')
+              .eq('preset_name', themePreset)
+              .eq('is_active', true)
+              .maybeSingle();
+
+            if (!presetError && presetData) {
+              console.log(`✅ Bootstrap: Loaded theme preset '${themePreset}' for store`);
+              return presetData.theme_settings || null;
+            }
+            console.warn(`⚠️ Bootstrap: Theme preset '${themePreset}' not found, falling back to system default`);
+          }
+
+          // Fall back to system default
           const { data: defaults, error } = await masterDbClient
             .from('theme_defaults')
             .select('preset_name, display_name, theme_settings')

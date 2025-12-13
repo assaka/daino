@@ -52,6 +52,46 @@ class TenantProvisioningService {
 
     try {
       // 1. Check if already provisioned
+      console.log('🔍 tenantDb exists:', !!tenantDb, 'type:', typeof tenantDb);
+      console.log('🔍 OAuth mode available:', !!(options.oauthAccessToken && options.projectId));
+
+      // If no tenantDb but have OAuth credentials, skip provisioned check and go straight to migrations
+      if (!tenantDb && options.oauthAccessToken && options.projectId) {
+        console.log('🔄 No tenantDb client - using OAuth Management API mode for provisioning');
+        // In OAuth mode without tenantDb, assume NOT provisioned and run migrations
+        console.log('Running tenant migrations via OAuth API...');
+        await this.runTenantMigrations(tenantDb, storeId, result, options);
+
+        // Check if migrations failed critically
+        if (result.errors.some(e => e.step === 'migrations')) {
+          console.error('❌ Migrations failed - skipping additional seeding');
+          return {
+            ...result,
+            success: false,
+            message: 'Database provisioning failed - migrations did not complete'
+          };
+        }
+
+        // Seed slot configurations via API
+        console.log('Seeding slot configurations via Management API SQL...');
+        await this.seedSlotConfigurationsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+
+        // Seed default SEO settings via API
+        console.log('Seeding default SEO settings via Management API SQL...');
+        await this.seedDefaultSeoSettingsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+
+        console.log(`✅ Tenant provisioning complete for store ${storeId} (OAuth mode)`);
+        return {
+          ...result,
+          success: true,
+          message: 'Tenant database provisioned successfully via OAuth'
+        };
+      }
+
+      if (!tenantDb) {
+        throw new Error('tenantDb is null and no OAuth credentials available - cannot proceed with provisioning');
+      }
+
       const alreadyProvisioned = await this.checkIfProvisioned(tenantDb);
       if (alreadyProvisioned && !options.force) {
         console.log('✅ Tenant database already provisioned - checking if slot configs and store need seeding...');
@@ -351,6 +391,18 @@ END $$;`;
 
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
           console.log('📤 Pass 2.5: Creating store record before seed data...');
+
+          // Fetch theme defaults and merge with options.settings
+          const themeDefaults = await this.getThemeDefaults(options.themePreset);
+          const storeSettings = {
+            ...(options.settings || {}),
+            theme: {
+              ...themeDefaults,
+              ...(options.settings?.theme || {})
+            }
+          };
+          console.log(`📦 Store settings with theme (preset: ${options.themePreset || 'default'}):`, JSON.stringify(storeSettings.theme || {}).slice(0, 200));
+
           const storeInsertSQL = `
 INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, created_at, updated_at)
 VALUES (
@@ -361,7 +413,7 @@ VALUES (
   '${options.currency || 'USD'}',
   '${options.timezone || 'UTC'}',
   true,
-  '${JSON.stringify(options.settings || {})}'::jsonb,
+  '${JSON.stringify(storeSettings).replace(/'/g, "''")}'::jsonb,
   NOW(),
   NOW()
 ) ON CONFLICT (id) DO NOTHING;

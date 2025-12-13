@@ -807,6 +807,39 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
+    // CRITICAL: Ensure store_databases record exists before proceeding
+    if (!storeDb) {
+      console.error('❌ CRITICAL: No StoreDatabase record was created!');
+      console.log('   autoProvision:', autoProvision);
+      console.log('   serviceRoleKey:', !!serviceRoleKey);
+      console.log('   oauthAccessToken:', !!oauthAccessToken);
+      console.log('   projectId:', projectId);
+      console.log('   projectUrl:', projectUrl);
+
+      // Last resort: Try to create store_databases with whatever we have
+      if (projectUrl) {
+        console.log('📝 Creating StoreDatabase record as last resort...');
+        const credentials = {
+          projectUrl,
+          serviceRoleKey: serviceRoleKey || null,
+          anonKey: anonKey || null,
+          connectionString: connectionString || null
+        };
+
+        storeDb = await StoreDatabase.createWithCredentials(
+          storeId,
+          'supabase',
+          credentials
+        );
+        console.log('✅ StoreDatabase record created (last resort)');
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Failed to create database configuration. Missing required credentials (projectUrl).'
+        });
+      }
+    }
+
     // 4. Get user password hash from master DB
     console.log('🔍 Fetching user details from master DB for tenant provisioning...');
     const { data: masterUser, error: userError } = await masterDbClient
