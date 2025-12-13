@@ -29,10 +29,6 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- REMOVED: enum_akeneo_schedules_import_type (migrated to cron_jobs.configuration)
--- REMOVED: enum_akeneo_schedules_schedule_type (migrated to cron_jobs.metadata)
--- REMOVED: enum_akeneo_schedules_status (use cron_jobs.is_active/is_paused instead)
-
 DO $$ BEGIN
     CREATE TYPE enum_ast_diffs_change_type AS ENUM (
     'addition',
@@ -349,19 +345,6 @@ DO $$ BEGIN
     'syncing',
     'success',
     'error'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE enum_job_history_status AS ENUM (
-    'started',
-    'progress_update',
-    'completed',
-    'failed',
-    'retried',
-    'cancelled'
 );
 EXCEPTION
     WHEN duplicate_object THEN null;
@@ -1106,8 +1089,6 @@ CREATE TABLE IF NOT EXISTS import_statistics (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- REMOVED: akeneo_schedules table (migrated to cron_jobs with source_type='integration', source_name='akeneo')
-
 CREATE TABLE IF NOT EXISTS attribute_sets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
@@ -1639,8 +1620,6 @@ CREATE TABLE IF NOT EXISTS cron_job_executions (
   metadata JSON DEFAULT '{}'::json
 );
 
--- REMOVED: cron_job_types table (use code constants instead)
-
 CREATE TABLE IF NOT EXISTS cron_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
@@ -2057,8 +2036,6 @@ CREATE TABLE IF NOT EXISTS integration_configs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- REMOVED: job_history table (use cron_job_executions instead)
-
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type VARCHAR(255) NOT NULL,
@@ -2324,8 +2301,6 @@ CREATE TABLE IF NOT EXISTS plugin_hooks (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- REMOVED: plugin_cron table (migrated to cron_jobs with source_type='plugin')
 
 CREATE TABLE IF NOT EXISTS plugin_marketplace (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3118,12 +3093,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id
 
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id, created_at);
 
-CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
-
-CREATE INDEX IF NOT EXISTS akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
-
-CREATE INDEX IF NOT EXISTS akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
-
 CREATE INDEX IF NOT EXISTS attribute_values_attribute_id ON attribute_values USING btree (attribute_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS attribute_values_attribute_id_code ON attribute_values USING btree (attribute_id, code);
@@ -3217,16 +3186,6 @@ CREATE INDEX IF NOT EXISTS idx_import_statistics_type ON import_statistics USING
 CREATE INDEX IF NOT EXISTS idx_import_statistics_source ON import_statistics USING btree (import_source);
 
 CREATE INDEX IF NOT EXISTS idx_import_statistics_unique ON import_statistics USING btree (store_id, import_type, import_source, import_date);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_credit_cost ON akeneo_schedules USING btree (credit_cost);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_status ON akeneo_schedules USING btree (status);
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
 
 CREATE INDEX IF NOT EXISTS idx_attribute_sets_store_id ON attribute_sets USING btree (store_id);
 
@@ -3402,14 +3361,6 @@ CREATE INDEX IF NOT EXISTS idx_heatmap_viewport ON heatmap_interactions USING bt
 
 CREATE INDEX IF NOT EXISTS idx_integration_configs_connection_status ON integration_configs USING btree (store_id, integration_type, connection_status);
 
-CREATE INDEX IF NOT EXISTS idx_job_history_executed_at ON job_history USING btree (executed_at);
-
-CREATE INDEX IF NOT EXISTS idx_job_history_job_id ON job_history USING btree (job_id);
-
-CREATE INDEX IF NOT EXISTS idx_job_history_status ON job_history USING btree (status);
-
-CREATE INDEX IF NOT EXISTS idx_job_history_timeline ON job_history USING btree (job_id, executed_at);
-
 CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS idx_jobs_priority ON jobs USING btree (priority);
@@ -3489,10 +3440,6 @@ CREATE INDEX IF NOT EXISTS idx_plugin_controllers_enabled ON plugin_controllers 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_method_path ON plugin_controllers USING btree (method, path);
 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_plugin_id ON plugin_controllers USING btree (plugin_id);
-
-CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
-CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
 
 CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data USING btree (data_key);
 
@@ -3697,14 +3644,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_primary_integration_per_store_type ON i
 CREATE INDEX IF NOT EXISTS idx_integration_configs_store_id ON integration_configs (store_id);
 CREATE INDEX IF NOT EXISTS idx_integration_configs_type ON integration_configs (integration_type);
 CREATE INDEX IF NOT EXISTS idx_integration_configs_active ON integration_configs (is_active) WHERE is_active = true;
-
-CREATE INDEX IF NOT EXISTS job_history_executed_at ON job_history USING btree (executed_at);
-
-CREATE INDEX IF NOT EXISTS job_history_job_id ON job_history USING btree (job_id);
-
-CREATE INDEX IF NOT EXISTS job_history_job_id_executed_at ON job_history USING btree (job_id, executed_at);
-
-CREATE INDEX IF NOT EXISTS job_history_status ON job_history USING btree (status);
 
 CREATE INDEX IF NOT EXISTS jobs_created_at ON jobs USING btree (created_at);
 
@@ -4053,8 +3992,6 @@ ALTER TABLE ai_usage_logs ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY 
 
 ALTER TABLE import_statistics ADD CONSTRAINT import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE akeneo_schedules ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
 ALTER TABLE attribute_sets ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE attribute_translations ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
@@ -4222,8 +4159,6 @@ ALTER TABLE heatmap_sessions ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREI
 ALTER TABLE heatmap_sessions ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE integration_configs ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-ALTER TABLE job_history ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
 
 ALTER TABLE jobs ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
