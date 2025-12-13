@@ -53,7 +53,46 @@ class TenantProvisioningService {
       // 1. Check if already provisioned
       const alreadyProvisioned = await this.checkIfProvisioned(tenantDb);
       if (alreadyProvisioned && !options.force) {
-        console.log('✅ Tenant database already provisioned - skipping');
+        console.log('✅ Tenant database already provisioned - checking if slot configs and store need seeding...');
+
+        // Even if provisioned, ensure slot configurations exist
+        const { data: existingSlots } = await tenantDb
+          .from('slot_configurations')
+          .select('id')
+          .limit(1);
+
+        if (!existingSlots || existingSlots.length === 0) {
+          console.log('📦 No slot configurations found - seeding them now...');
+          await this.seedSlotConfigurations(tenantDb, storeId, options, result);
+        }
+
+        // Even if provisioned, ensure store record exists with theme settings
+        const { data: existingStore } = await tenantDb
+          .from('stores')
+          .select('id, settings')
+          .eq('id', storeId)
+          .maybeSingle();
+
+        if (!existingStore) {
+          console.log('📦 No store record found - creating it now...');
+          await this.createStoreRecord(tenantDb, storeId, options, result);
+        } else if (!existingStore.settings?.theme || Object.keys(existingStore.settings?.theme || {}).length === 0) {
+          // Store exists but has no theme - apply theme preset
+          console.log('🎨 Store has no theme settings - applying theme preset...');
+          const themeDefaults = await this.getThemeDefaults(options.themePreset);
+          if (Object.keys(themeDefaults).length > 0) {
+            const updatedSettings = {
+              ...(existingStore.settings || {}),
+              theme: themeDefaults
+            };
+            await tenantDb
+              .from('stores')
+              .update({ settings: updatedSettings, updated_at: new Date().toISOString() })
+              .eq('id', storeId);
+            console.log('✅ Theme settings applied to existing store');
+          }
+        }
+
         return {
           ...result,
           success: true,
