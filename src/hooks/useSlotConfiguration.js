@@ -140,7 +140,7 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
                 setConfigLoaded(true);
             }
         }
-    }, [store?.id, pageType, fallbackConfig, shouldFetch, isPreviewDraftMode]);
+    }, [store?.id, pageType, fallbackConfig, shouldFetch, shouldLoadDraft, isPublishedPreview]);
 
     useEffect(() => {
         loadLayoutConfig();
