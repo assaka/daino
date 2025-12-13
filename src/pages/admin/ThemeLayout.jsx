@@ -358,6 +358,8 @@ export default function ThemeLayout() {
             // Backend GET /api/stores/:id returns: { success: true, data: { store: {...}, tenantData: {...} } }
             const responseData = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
             const fullStore = responseData?.tenantData || responseData;
+            console.log('🎨 Theme debug - responseData.store:', responseData?.store);
+            console.log('🎨 Theme debug - theme_preset:', responseData?.store?.theme_preset);
 
             // Initialize step translations with defaults from store settings if not already loaded
             setTimeout(() => {
