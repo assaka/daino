@@ -6,6 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
@@ -27,7 +35,8 @@ import {
   ChevronUp,
   Info,
   Unlink,
-  Database
+  Database,
+  AlertTriangle
 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import SaveButton from '@/components/ui/save-button';
@@ -53,6 +62,7 @@ const ShopifyIntegration = () => {
   const [storageProvider, setStorageProvider] = useState(null);
   const [dryRun, setDryRun] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
 
   // Statistics state
   const [stats, setStats] = useState({
@@ -250,16 +260,16 @@ const ShopifyIntegration = () => {
     }
   };
 
-  const disconnectShopify = async () => {
+  const handleDisconnectClick = () => {
     if (!storeId) {
       setMessage({ type: 'error', text: 'No store selected' });
       return;
     }
+    setShowDisconnectModal(true);
+  };
 
-    if (!window.confirm('Are you sure you want to disconnect from Shopify? This will remove your access token.')) {
-      return;
-    }
-
+  const handleDisconnectConfirm = async () => {
+    setShowDisconnectModal(false);
     setDisconnecting(true);
     setMessage(null);
 
@@ -458,7 +468,7 @@ const ShopifyIntegration = () => {
                         Connected
                       </span>
                       <button
-                        onClick={disconnectShopify}
+                        onClick={handleDisconnectClick}
                         disabled={disconnecting}
                         className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50"
                         title="Disconnect Shopify"
@@ -890,6 +900,45 @@ const ShopifyIntegration = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Disconnect Confirmation Modal */}
+      <Dialog open={showDisconnectModal} onOpenChange={setShowDisconnectModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <DialogTitle>Disconnect Shopify</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              Are you sure you want to disconnect from Shopify? This will remove your access token and you will need to reconnect to import data again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDisconnectModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnectConfirm}
+              disabled={disconnecting}
+            >
+              {disconnecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Disconnecting...
+                </>
+              ) : (
+                'Disconnect'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
