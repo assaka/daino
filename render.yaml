@@ -166,28 +166,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Master Database Configuration (required for credit deduction)
-      - key: MASTER_DB_URL
-        sync: false
+      # Master Database Configuration (for accessing stores and tenant credentials)
       - key: MASTER_SUPABASE_URL
         sync: false
       - key: MASTER_SUPABASE_SERVICE_KEY
         sync: false
-      # Database Configuration
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_DB_URL
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      # JWT Configuration
-      - key: JWT_SECRET
-        sync: false
-      # Integration Encryption Key (for token refresh)
+      # Encryption Key (for decrypting tenant DB credentials and OAuth tokens)
       - key: INTEGRATION_ENCRYPTION_KEY
         sync: false
     autoDeploy: true
