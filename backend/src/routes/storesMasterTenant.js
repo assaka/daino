@@ -1030,8 +1030,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     });
 
     // Combine owned and team stores
+    // Note: ownedStores are Sequelize instances, need toJSON() to get all fields
     const stores = [
-      ...(ownedStores || []).map(s => ({ ...s, membership_type: 'owner' })),
+      ...(ownedStores || []).map(s => ({ ...(s.toJSON ? s.toJSON() : s), membership_type: 'owner' })),
       ...teamStores.map(s => ({ ...s, membership_type: 'team_member', team_role: teamRoleMap[s.id] }))
     ];
 
