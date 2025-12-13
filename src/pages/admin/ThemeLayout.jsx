@@ -773,13 +773,13 @@ export default function ThemeLayout() {
                 type: 'user'
             });
 
-            if (response.data.success) {
+            if (response.success) {
                 setFlashMessage({ type: 'success', message: `Theme "${newThemeName}" created successfully!` });
                 setShowCreateThemeDialog(false);
                 setNewThemeName('');
                 setNewThemeDescription('');
             } else {
-                setFlashMessage({ type: 'error', message: response.data.message || 'Failed to create theme' });
+                setFlashMessage({ type: 'error', message: response.message || 'Failed to create theme' });
             }
         } catch (error) {
             console.error('Failed to create theme:', error);
