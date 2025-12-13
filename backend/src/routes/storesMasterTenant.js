@@ -1172,9 +1172,10 @@ router.get('/', authMiddleware, async (req, res) => {
     });
 
     // Enrich with hostname info
+    // Convert Sequelize instances to plain objects to ensure all fields are included
     const enrichedStores = await Promise.all(
       [
-        ...ownedStores.map(s => ({ ...s, membership_type: 'owner' })),
+        ...ownedStores.map(s => ({ ...(s.toJSON ? s.toJSON() : s), membership_type: 'owner' })),
         ...teamStores.map(s => ({ ...s, membership_type: 'team_member', team_role: teamRoleMap[s.id] }))
       ].map(async (store) => {
         const hostnames = await StoreHostname.findByStore(store.id);
