@@ -102,9 +102,9 @@ class StorefrontApiClient {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
     let url = `${this.baseURL}/api/public/${cleanEndpoint}`;
 
-    // Add version parameter if in published-only mode
+    // Add version parameter if in published-only mode (avoid duplicates)
     const version = this.getVersionParam();
-    if (version === 'published') {
+    if (version === 'published' && !url.includes('version=published')) {
       const separator = url.includes('?') ? '&' : '?';
       url = `${url}${separator}version=published`;
     }
