@@ -1,5 +1,6 @@
 const { Queue, Worker } = require('bullmq');
 const Redis = require('ioredis');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * BullMQ Manager - Persistent Job Queue System
@@ -245,18 +246,20 @@ class BullMQManager {
           handler.updateProgress = async (progress, message) => {
             await job.updateProgress(progress);
 
-            // Also update the database Job model
-            if (job.data.jobRecord && job.data.jobRecord.id) {
-              const { Job } = require('../models'); // Master DB model for job tracking
-              await Job.update(
-                {
-                  progress,
-                  progress_message: message,
-                },
-                {
-                  where: { id: job.data.jobRecord.id },
-                }
-              );
+            // Also update the job_queue table in master DB
+            if (job.data.jobRecord && job.data.jobRecord.id && masterDbClient) {
+              try {
+                await masterDbClient
+                  .from('job_queue')
+                  .update({
+                    progress,
+                    progress_message: message,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', job.data.jobRecord.id);
+              } catch (err) {
+                console.error('Failed to update job progress in DB:', err.message);
+              }
             }
           };
 
