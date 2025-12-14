@@ -285,6 +285,24 @@ class BullMQManager {
       queueName,
       async (job) => {
         console.log(`BullMQ: Processing job ${job.id} of type ${jobType}`);
+        const jobRecordId = job.data.jobRecord?.id;
+
+        // Update job status to 'running' in master DB
+        if (jobRecordId && masterDbClient) {
+          try {
+            await masterDbClient
+              .from('job_queue')
+              .update({
+                status: 'running',
+                started_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', jobRecordId);
+            console.log(`BullMQ: Job ${jobRecordId} status updated to 'running'`);
+          } catch (err) {
+            console.error('Failed to update job status to running:', err.message);
+          }
+        }
 
         try {
           // Create handler instance with job data
@@ -295,7 +313,7 @@ class BullMQManager {
             await job.updateProgress(progress);
 
             // Also update the job_queue table in master DB
-            if (job.data.jobRecord && job.data.jobRecord.id && masterDbClient) {
+            if (jobRecordId && masterDbClient) {
               try {
                 await masterDbClient
                   .from('job_queue')
@@ -304,7 +322,7 @@ class BullMQManager {
                     progress_message: message,
                     updated_at: new Date().toISOString(),
                   })
-                  .eq('id', job.data.jobRecord.id);
+                  .eq('id', jobRecordId);
               } catch (err) {
                 console.error('Failed to update job progress in DB:', err.message);
               }
@@ -314,11 +332,47 @@ class BullMQManager {
           // Execute the job
           const result = await handler.execute();
 
+          // Update job status to 'completed' in master DB
+          if (jobRecordId && masterDbClient) {
+            try {
+              await masterDbClient
+                .from('job_queue')
+                .update({
+                  status: 'completed',
+                  progress: 100,
+                  result: result,
+                  completed_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', jobRecordId);
+            } catch (err) {
+              console.error('Failed to update job status to completed:', err.message);
+            }
+          }
+
           console.log(`BullMQ: Job ${job.id} completed successfully`);
           return result;
 
         } catch (error) {
           console.error(`BullMQ: Job ${job.id} failed:`, error);
+
+          // Update job status to 'failed' in master DB
+          if (jobRecordId && masterDbClient) {
+            try {
+              await masterDbClient
+                .from('job_queue')
+                .update({
+                  status: 'failed',
+                  last_error: error.message,
+                  failed_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', jobRecordId);
+            } catch (err) {
+              console.error('Failed to update job status to failed:', err.message);
+            }
+          }
+
           throw error;
         }
       },
