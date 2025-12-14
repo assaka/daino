@@ -95,12 +95,11 @@ router.post('/schedule', async (req, res) => {
 
     // Verify store access if storeId is provided
     if (storeId) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, storeId);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this store'
-        });
+      req.params.storeId = storeId;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
@@ -156,12 +155,11 @@ router.get('/:jobId/status', async (req, res) => {
 
     // Check store access if job has a store_id
     if (jobStatus.store_id) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, jobStatus.store_id);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this job'
-        });
+      req.params.storeId = jobStatus.store_id;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
@@ -209,12 +207,11 @@ router.get('/:jobId', async (req, res) => {
 
     // Check store access if job has a store_id
     if (job.store_id) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, job.store_id);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this job'
-        });
+      req.params.storeId = job.store_id;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
@@ -264,12 +261,12 @@ router.post('/:jobId/cancel', async (req, res) => {
 
     // Check store access if job has a store_id
     if (job.store_id) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, job.store_id);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this job'
-        });
+      // Set storeId in params for checkStoreOwnership middleware
+      req.params.storeId = job.store_id;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
@@ -378,12 +375,11 @@ router.get('/:jobId/history', async (req, res) => {
 
     // Check store access if job has a store_id
     if (job.store_id) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, job.store_id);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this job'
-        });
+      req.params.storeId = job.store_id;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
@@ -422,12 +418,11 @@ router.get('/activity/recent', async (req, res) => {
 
     // If storeId provided, check access
     if (storeId) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, storeId);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this store'
-        });
+      req.params.storeId = storeId;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
@@ -479,12 +474,11 @@ router.get('/stats', async (req, res) => {
 
     // If storeId provided, check access
     if (storeId) {
-      const hasAccess = await checkStoreOwnership(req, res, () => {}, storeId);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied to this store'
-        });
+      req.params.storeId = storeId;
+      let accessGranted = false;
+      await checkStoreOwnership(req, res, () => { accessGranted = true; });
+      if (!accessGranted) {
+        return; // Response already sent by middleware
       }
     }
 
