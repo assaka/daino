@@ -113,31 +113,16 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Database Configuration
-      - key: SUPABASE_URL
+      # Master Database Configuration (to lookup tenant credentials)
+      - key: MASTER_SUPABASE_URL
         sync: false
-      - key: SUPABASE_ANON_KEY
+      - key: MASTER_SUPABASE_SERVICE_KEY
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_DB_URL
-        sync: false
-      - key: DATABASE_URL
+      # Encryption Key (for decrypting tenant DB credentials)
+      - key: ENCRYPTION_KEY
         sync: false
       # JWT Configuration (needed for some job processing)
       - key: JWT_SECRET
-        sync: false
-      # Akeneo Integration Configuration
-      - key: AKENEO_CLIENT_ID
-        sync: false
-      - key: AKENEO_CLIENT_SECRET
-        sync: false
-      - key: AKENEO_USERNAME
-        sync: false
-      - key: AKENEO_PASSWORD
-        sync: false
-      # Integration Encryption Key
-      - key: INTEGRATION_ENCRYPTION_KEY
         sync: false
       # Redis Configuration (Render managed Redis)
       - key: REDIS_URL
