@@ -653,7 +653,7 @@ export default function Stores() {
                 <Button
                   onClick={() => {
                     setShowValidationError(false);
-                    navigate('/admin/email-settings');
+                    navigate('/admin/email');
                   }}
                 >
                   <Mail className="w-4 h-4 mr-2" />
