@@ -162,6 +162,7 @@ class BullMQManager {
    * Add a job to the queue
    */
   async addJob(jobType, jobData, options = {}) {
+    const queueName = this.sanitizeQueueName(jobType);
     const queue = this.getQueue(jobType);
 
     // Map priority from string to number
@@ -186,10 +187,10 @@ class BullMQManager {
       }
     }
 
-    // Add job to queue
-    const job = await queue.add(jobType, jobData, bullMQOptions);
+    // Add job to queue (use sanitized name as job name too for consistency)
+    const job = await queue.add(queueName, jobData, bullMQOptions);
 
-    console.log(`BullMQ: Added job ${job.id} to queue ${jobType}`);
+    console.log(`BullMQ: Added job ${job.id} to queue "${queueName}" (type: ${jobType})`);
     return job;
   }
 
@@ -285,8 +286,11 @@ class BullMQManager {
     }
 
     console.log('BullMQ: Starting workers for all registered job types');
+    console.log(`BullMQ: ${this.jobHandlers.size} job types registered`);
 
     for (const jobType of this.jobHandlers.keys()) {
+      const queueName = this.sanitizeQueueName(jobType);
+      console.log(`BullMQ: Creating worker for queue "${queueName}"`);
       this.createWorker(jobType);
     }
 
