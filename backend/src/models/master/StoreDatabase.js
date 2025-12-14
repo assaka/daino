@@ -2,209 +2,151 @@
  * StoreDatabase Model (Master Database)
  *
  * Stores encrypted tenant database connection credentials
- * Allows backend to connect to each store's tenant database
+ * Uses Supabase REST API via masterDbClient
  */
 
-const { DataTypes } = require('sequelize');
-const { masterSequelize } = require('../../database/masterConnection');
+const { v4: uuidv4 } = require('uuid');
+const { masterDbClient } = require('../../database/masterConnection');
 const {
   encryptDatabaseCredentials,
   decryptDatabaseCredentials
 } = require('../../utils/encryption');
 
-const StoreDatabase = masterSequelize.define('StoreDatabase', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  store_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    unique: true,
-    references: {
-      model: 'stores',
-      key: 'id'
-    },
-    onDelete: 'CASCADE'
-  },
-  database_type: {
-    type: DataTypes.ENUM('supabase', 'postgresql', 'mysql'),
-    allowNull: false
-  },
-  connection_string_encrypted: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-    comment: 'AES-256-GCM encrypted database credentials JSON'
-  },
-  host: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    comment: 'Database host (non-sensitive)'
-  },
-  port: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  database_name: {
-    type: DataTypes.STRING,
-    defaultValue: 'postgres'
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  last_connection_test: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  connection_status: {
-    type: DataTypes.ENUM('pending', 'connected', 'failed', 'timeout'),
-    defaultValue: 'pending'
-  }
-}, {
-  tableName: 'store_databases',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  indexes: [
-    {
-      fields: ['store_id']
-    },
-    {
-      fields: ['is_active'],
-      where: {
-        is_active: true
-      }
-    }
-  ]
-});
-
-// Virtual Fields
+const TABLE_NAME = 'store_databases';
 
 /**
- * Get decrypted credentials (not stored, computed on access)
+ * StoreDatabase - Supabase-based model for database credentials
  */
-StoreDatabase.prototype.getCredentials = function() {
-  try {
-    return decryptDatabaseCredentials(this.connection_string_encrypted);
-  } catch (error) {
-    console.error('Failed to decrypt credentials:', error.message);
-    throw new Error('Unable to decrypt database credentials');
+class StoreDatabase {
+  constructor(data = {}) {
+    Object.assign(this, data);
   }
-};
 
-// Instance Methods
+  /**
+   * Create a new store database record
+   * @param {Object} data - Database data
+   * @returns {Promise<StoreDatabase>}
+   */
+  static async create(data) {
+    const now = new Date().toISOString();
+    const record = {
+      id: data.id || uuidv4(),
+      store_id: data.store_id,
+      database_type: data.database_type,
+      connection_string_encrypted: data.connection_string_encrypted,
+      host: data.host || null,
+      port: data.port || null,
+      database_name: data.database_name || 'postgres',
+      is_active: data.is_active !== undefined ? data.is_active : true,
+      is_primary: data.is_primary !== undefined ? data.is_primary : true,
+      last_connection_test: data.last_connection_test || null,
+      connection_status: data.connection_status || 'pending',
+      created_at: now,
+      updated_at: now
+    };
 
-/**
- * Set credentials (encrypts before storage)
- * @param {Object} credentials - Database credentials object
- * @param {string} credentials.projectUrl - Supabase project URL
- * @param {string} credentials.serviceRoleKey - Supabase service role key
- * @param {string} credentials.anonKey - Supabase anon key (optional)
- * @param {string} credentials.connectionString - PostgreSQL connection string
- */
-StoreDatabase.prototype.setCredentials = function(credentials) {
-  try {
-    this.connection_string_encrypted = encryptDatabaseCredentials(credentials);
+    const { data: result, error } = await masterDbClient
+      .from(TABLE_NAME)
+      .insert(record)
+      .select()
+      .single();
 
-    // Extract non-sensitive info for quick reference
-    if (credentials.projectUrl) {
-      const url = new URL(credentials.projectUrl);
-      this.host = url.hostname;
-    }
-  } catch (error) {
-    console.error('Failed to encrypt credentials:', error.message);
-    throw new Error('Unable to encrypt database credentials');
-  }
-};
-
-/**
- * Test database connection
- * @returns {Promise<boolean>}
- */
-StoreDatabase.prototype.testConnection = async function() {
-  try {
-    const credentials = this.getCredentials();
-
-    // Import dynamically to avoid circular dependency
-    const { createClient } = require('@supabase/supabase-js');
-
-    if (this.database_type === 'supabase') {
-      const client = createClient(
-        credentials.projectUrl,
-        credentials.serviceRoleKey
-      );
-
-      // Test with simple query
-      const { data, error } = await client
-        .from('stores')
-        .select('id')
-        .limit(1);
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = table not found (ok for new DB)
-        throw error;
-      }
-
-      this.connection_status = 'connected';
-      this.last_connection_test = new Date();
-      await this.save();
-
-      return true;
+    if (error) {
+      throw new Error(`Failed to create store database: ${error.message}`);
     }
 
-    // TODO: Add PostgreSQL/MySQL connection testing
-    return false;
-
-  } catch (error) {
-    console.error('Connection test failed:', error.message);
-    this.connection_status = 'failed';
-    this.last_connection_test = new Date();
-    await this.save();
-
-    return false;
+    return new StoreDatabase(result);
   }
-};
 
-/**
- * Mark as active
- * @returns {Promise<void>}
- */
-StoreDatabase.prototype.activate = async function() {
-  this.is_active = true;
-  this.connection_status = 'connected';
-  await this.save();
-};
-
-/**
- * Mark as inactive
- * @returns {Promise<void>}
- */
-StoreDatabase.prototype.deactivate = async function() {
-  this.is_active = false;
-  await this.save();
-};
-
-// Class Methods
-
-/**
- * Find by store ID
- * @param {string} storeId - Store UUID
- * @returns {Promise<StoreDatabase|null>}
- */
-StoreDatabase.findByStoreId = async function(storeId) {
-  try {
-    // Use Supabase client instead of Sequelize to avoid connection issues
-    const { masterDbClient } = require('../../database/masterConnection');
-
+  /**
+   * Find database by ID
+   * @param {string} id - Database UUID
+   * @returns {Promise<StoreDatabase|null>}
+   */
+  static async findByPk(id) {
     const { data, error } = await masterDbClient
-      .from('store_databases')
+      .from(TABLE_NAME)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to find database: ${error.message}`);
+    }
+
+    return data ? new StoreDatabase(data) : null;
+  }
+
+  /**
+   * Find one database matching criteria
+   * @param {Object} options - Query options with 'where' clause
+   * @returns {Promise<StoreDatabase|null>}
+   */
+  static async findOne(options = {}) {
+    let query = masterDbClient.from(TABLE_NAME).select('*');
+
+    if (options.where) {
+      for (const [key, value] of Object.entries(options.where)) {
+        query = query.eq(key, value);
+      }
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      throw new Error(`Failed to find database: ${error.message}`);
+    }
+
+    return data ? new StoreDatabase(data) : null;
+  }
+
+  /**
+   * Find all databases matching criteria
+   * @param {Object} options - Query options
+   * @returns {Promise<StoreDatabase[]>}
+   */
+  static async findAll(options = {}) {
+    let query = masterDbClient.from(TABLE_NAME).select('*');
+
+    if (options.where) {
+      for (const [key, value] of Object.entries(options.where)) {
+        query = query.eq(key, value);
+      }
+    }
+
+    if (options.order) {
+      for (const [field, direction] of options.order) {
+        query = query.order(field, { ascending: direction === 'ASC' });
+      }
+    }
+
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to find databases: ${error.message}`);
+    }
+
+    return (data || []).map(row => new StoreDatabase(row));
+  }
+
+  /**
+   * Find by store ID
+   * @param {string} storeId - Store UUID
+   * @returns {Promise<StoreDatabase|null>}
+   */
+  static async findByStoreId(storeId) {
+    const { data, error } = await masterDbClient
+      .from(TABLE_NAME)
       .select('*')
       .eq('store_id', storeId)
       .eq('is_active', true)
       .maybeSingle();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error querying store_databases:', error.message);
       return null;
     }
@@ -213,51 +155,32 @@ StoreDatabase.findByStoreId = async function(storeId) {
       return null;
     }
 
-    // Create a mock instance with getCredentials method
-    return {
-      ...data,
-      database_type: data.database_type,
-      connection_status: data.connection_status,
-      host: data.host,
-      getCredentials: function() {
-        return decryptDatabaseCredentials(data.connection_string_encrypted);
+    // Return instance with getCredentials method
+    const instance = new StoreDatabase(data);
+    return instance;
+  }
+
+  /**
+   * Find all active connections
+   * @returns {Promise<StoreDatabase[]>}
+   */
+  static async findAllActive() {
+    return this.findAll({
+      where: {
+        is_active: true,
+        connection_status: 'connected'
       }
-    };
-  } catch (error) {
-    console.error('StoreDatabase.findByStoreId error:', error.message);
-    // Fallback to Sequelize
-    return this.findOne({
-      where: { store_id: storeId, is_active: true }
     });
   }
-};
 
-/**
- * Find all active connections
- * @returns {Promise<StoreDatabase[]>}
- */
-StoreDatabase.findAllActive = async function() {
-  return this.findAll({
-    where: {
-      is_active: true,
-      connection_status: 'connected'
-    }
-  });
-};
-
-/**
- * Create and store encrypted credentials
- * @param {string} storeId - Store UUID
- * @param {string} databaseType - Database type
- * @param {Object} credentials - Credentials object
- * @returns {Promise<Object>} Created record (Supabase format)
- */
-StoreDatabase.createWithCredentials = async function(storeId, databaseType, credentials) {
-  try {
-    // Use Supabase client instead of Sequelize to avoid connection issues
-    const { masterDbClient } = require('../../database/masterConnection');
-    const { v4: uuidv4 } = require('uuid');
-
+  /**
+   * Create and store encrypted credentials
+   * @param {string} storeId - Store UUID
+   * @param {string} databaseType - Database type
+   * @param {Object} credentials - Credentials object
+   * @returns {Promise<StoreDatabase>}
+   */
+  static async createWithCredentials(storeId, databaseType, credentials) {
     // Encrypt credentials
     const encryptedCredentials = encryptDatabaseCredentials(credentials);
 
@@ -271,10 +194,9 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
       }
     }
 
-    // Upsert record via Supabase client (handles reconnection case)
-    // Always set is_primary=true - primary connections cannot be deleted
+    // Upsert record (handles reconnection case)
     const { data, error } = await masterDbClient
-      .from('store_databases')
+      .from(TABLE_NAME)
       .upsert({
         id: uuidv4(),
         store_id: storeId,
@@ -284,7 +206,7 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
         port: null,
         database_name: 'postgres',
         is_active: true,
-        is_primary: true, // Primary connection - cannot be deleted
+        is_primary: true,
         connection_status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -356,11 +278,165 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
       }
     }
 
-    return data;
-  } catch (error) {
-    console.error('StoreDatabase.createWithCredentials error:', error.message);
-    throw error;
+    return new StoreDatabase(data);
   }
-};
+
+  /**
+   * Update database record
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<StoreDatabase>}
+   */
+  async update(updates) {
+    updates.updated_at = new Date().toISOString();
+
+    const { data, error } = await masterDbClient
+      .from(TABLE_NAME)
+      .update(updates)
+      .eq('id', this.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update database: ${error.message}`);
+    }
+
+    Object.assign(this, data);
+    return this;
+  }
+
+  /**
+   * Save current instance
+   * @returns {Promise<StoreDatabase>}
+   */
+  async save() {
+    const updates = { ...this };
+    delete updates.id;
+    delete updates.created_at;
+    return this.update(updates);
+  }
+
+  /**
+   * Delete database record
+   * @returns {Promise<boolean>}
+   */
+  async destroy() {
+    const { error } = await masterDbClient
+      .from(TABLE_NAME)
+      .delete()
+      .eq('id', this.id);
+
+    if (error) {
+      throw new Error(`Failed to delete database: ${error.message}`);
+    }
+
+    return true;
+  }
+
+  /**
+   * Get decrypted credentials
+   * @returns {Object}
+   */
+  getCredentials() {
+    try {
+      return decryptDatabaseCredentials(this.connection_string_encrypted);
+    } catch (error) {
+      console.error('Failed to decrypt credentials:', error.message);
+      throw new Error('Unable to decrypt database credentials');
+    }
+  }
+
+  /**
+   * Set credentials (encrypts before storage)
+   * @param {Object} credentials - Database credentials object
+   */
+  setCredentials(credentials) {
+    try {
+      this.connection_string_encrypted = encryptDatabaseCredentials(credentials);
+
+      // Extract non-sensitive info for quick reference
+      if (credentials.projectUrl) {
+        const url = new URL(credentials.projectUrl);
+        this.host = url.hostname;
+      }
+    } catch (error) {
+      console.error('Failed to encrypt credentials:', error.message);
+      throw new Error('Unable to encrypt database credentials');
+    }
+  }
+
+  /**
+   * Test database connection
+   * @returns {Promise<boolean>}
+   */
+  async testConnection() {
+    try {
+      const credentials = this.getCredentials();
+
+      // Import dynamically to avoid circular dependency
+      const { createClient } = require('@supabase/supabase-js');
+
+      if (this.database_type === 'supabase') {
+        const client = createClient(
+          credentials.projectUrl,
+          credentials.serviceRoleKey
+        );
+
+        // Test with simple query
+        const { data, error } = await client
+          .from('stores')
+          .select('id')
+          .limit(1);
+
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+
+        await this.update({
+          connection_status: 'connected',
+          last_connection_test: new Date().toISOString()
+        });
+
+        return true;
+      }
+
+      return false;
+
+    } catch (error) {
+      console.error('Connection test failed:', error.message);
+      await this.update({
+        connection_status: 'failed',
+        last_connection_test: new Date().toISOString()
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Mark as active
+   * @returns {Promise<void>}
+   */
+  async activate() {
+    await this.update({
+      is_active: true,
+      connection_status: 'connected'
+    });
+  }
+
+  /**
+   * Mark as inactive
+   * @returns {Promise<void>}
+   */
+  async deactivate() {
+    await this.update({ is_active: false });
+  }
+
+  /**
+   * Get data values (Sequelize compatibility)
+   */
+  get dataValues() {
+    return { ...this };
+  }
+}
 
 module.exports = StoreDatabase;

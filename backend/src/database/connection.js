@@ -7,7 +7,7 @@
  *
  * DO NOT USE FOR ACTUAL DATABASE QUERIES.
  * All database queries MUST go through:
- * - Master DB: use masterSequelize from masterConnection.js
+ * - Master DB: use masterDbClient from masterConnection.js
  * - Tenant DB: use ConnectionManager.getStoreConnection(storeId)
  *
  * See MASTER_TENANT_DATABASE_ARCHITECTURE.md for guidance.
@@ -34,7 +34,7 @@ const wrapWithWarning = (methodName, originalMethod) => {
     console.warn(
       `⚠️ WARNING: sequelize.${methodName}() called on stub connection.\n` +
       '   This should NOT be used for production queries.\n' +
-      '   Use masterSequelize (master DB) or ConnectionManager.getStoreConnection() (tenant DB)'
+      '   Use masterDbClient (master DB) or ConnectionManager.getStoreConnection() (tenant DB)'
     );
     // Return empty/no-op results instead of throwing
     if (methodName === 'query') {

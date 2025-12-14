@@ -267,35 +267,13 @@ class DatabaseProvisioningService {
   /**
    * Convert Sequelize model to CREATE TABLE SQL
    * @private
-   * @deprecated This method uses Sequelize which is being phased out
+   * @deprecated This method is no longer supported - Sequelize has been removed
    */
   static async _modelToCreateTableSQL(model) {
-    try {
-      // Try to use masterSequelize for SQL generation (deprecated path)
-      const { masterSequelize } = require('../../database/masterConnection');
-
-      if (!masterSequelize) {
-        console.warn('⚠️ masterSequelize not available, skipping SQL generation');
-        return null;
-      }
-
-      const queryGenerator = masterSequelize.getQueryInterface().queryGenerator;
-
-      // Get table definition from model
-      const tableName = model.tableName;
-      const attributes = model.rawAttributes;
-
-      // Generate CREATE TABLE SQL
-      const sql = queryGenerator.createTableQuery(tableName, attributes, {
-        engine: 'InnoDB',
-        charset: 'utf8mb4'
-      });
-
-      return sql;
-    } catch (error) {
-      console.warn(`⚠️ Could not generate SQL for model: ${error.message}`);
-      return null;
-    }
+    // Sequelize has been removed from the codebase
+    // Schema is now managed directly in Supabase
+    console.warn('⚠️ _modelToCreateTableSQL is deprecated - schema managed in Supabase');
+    return null;
   }
 
   /**

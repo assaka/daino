@@ -8,7 +8,7 @@ const session = require('express-session');
 const passport = require('./config/passport');
 require('dotenv').config();
 
-const { masterSequelize, masterDbClient } = require('./database/masterConnection');
+const { masterDbClient } = require('./database/masterConnection');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/authMiddleware'); // Use same middleware as authMasterTenant
 
@@ -1445,48 +1445,20 @@ const startServer = async () => {
   // Connect to database after server is running
   try {
 
-    // Test Supabase REST API connection first (primary connection method)
+    // Test Supabase REST API connection (primary connection method)
     try {
       if (masterDbClient) {
         const { error } = await masterDbClient.from('stores').select('id').limit(1);
         if (error) {
-          console.warn('⚠️ Supabase REST API connection failed:', error.message);
+          console.warn('⚠️ Master database connection failed:', error.message);
         } else {
           console.log('✅ Master database connected via Supabase REST API');
         }
+      } else {
+        console.warn('⚠️ masterDbClient not initialized');
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Supabase REST API connection failed:', supabaseError.message);
-    }
-
-    // Test Sequelize connection (still needed for models that use Sequelize)
-    let sequelizeConnected = false;
-    let retries = 3;
-
-    while (retries > 0 && !sequelizeConnected) {
-      try {
-        await masterSequelize.authenticate();
-        sequelizeConnected = true;
-        console.log('✅ Sequelize connection established (for legacy models)');
-
-        // Sync database tables (required for Sequelize models)
-        if (process.env.NODE_ENV === 'development') {
-          await masterSequelize.sync({ alter: true });
-        } else {
-          await masterSequelize.sync({ alter: false });
-        }
-
-      } catch (dbError) {
-        retries--;
-        console.warn(`⚠️ Sequelize connection failed (${3 - retries}/3):`, dbError.message);
-
-        if (retries === 0) {
-          console.warn('⚠️ Sequelize connection failed. Some legacy model operations may not work.');
-          break;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
+    } catch (dbError) {
+      console.warn('⚠️ Master database connection failed:', dbError.message);
     }
 
     // Initialize Redis cache
@@ -1504,16 +1476,6 @@ const startServer = async () => {
       await pluginManager.initialize();
     } catch (error) {
       console.warn('Plugin Manager initialization failed:', error.message);
-    }
-
-    // Initialize Database-Driven Plugin Registry
-    if (sequelizeConnected) {
-      try {
-        const { initializePluginRegistry } = require('./routes/dynamic-plugins');
-        await initializePluginRegistry(masterSequelize);
-      } catch (error) {
-        console.warn('Plugin Registry initialization failed:', error.message);
-      }
     }
 
     // Initialize Background Job Manager
