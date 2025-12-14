@@ -285,7 +285,9 @@ class BullMQManager {
       queueName,
       async (job) => {
         console.log(`BullMQ: Processing job ${job.id} of type ${jobType}`);
+        console.log(`BullMQ: Job data:`, JSON.stringify(job.data, null, 2).substring(0, 500));
         const jobRecordId = job.data.jobRecord?.id;
+        console.log(`BullMQ: jobRecordId = ${jobRecordId}`);
 
         // Update job status to 'running' in master DB
         if (jobRecordId && masterDbClient) {
@@ -310,12 +312,13 @@ class BullMQManager {
 
           // Set up progress callback
           handler.updateProgress = async (progress, message) => {
+            console.log(`BullMQ: Updating progress for job ${jobRecordId}: ${progress}% - ${message}`);
             await job.updateProgress(progress);
 
             // Also update the job_queue table in master DB
             if (jobRecordId && masterDbClient) {
               try {
-                await masterDbClient
+                const { error } = await masterDbClient
                   .from('job_queue')
                   .update({
                     progress,
@@ -323,9 +326,17 @@ class BullMQManager {
                     updated_at: new Date().toISOString(),
                   })
                   .eq('id', jobRecordId);
+
+                if (error) {
+                  console.error('DB error updating progress:', error);
+                } else {
+                  console.log(`BullMQ: Progress saved to DB for job ${jobRecordId}`);
+                }
               } catch (err) {
                 console.error('Failed to update job progress in DB:', err.message);
               }
+            } else {
+              console.warn(`BullMQ: Cannot save progress - jobRecordId=${jobRecordId}, masterDbClient=${!!masterDbClient}`);
             }
           };
 
