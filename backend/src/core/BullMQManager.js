@@ -1,4 +1,4 @@
-const { Queue, Worker, QueueScheduler } = require('bullmq');
+const { Queue, Worker } = require('bullmq');
 const Redis = require('ioredis');
 
 /**
@@ -20,7 +20,6 @@ class BullMQManager {
     this.connection = null;
     this.queues = new Map();
     this.workers = new Map();
-    this.schedulers = new Map();
     this.jobHandlers = new Map();
     this.isInitialized = false;
   }
@@ -153,13 +152,6 @@ class BullMQManager {
       });
 
       this.queues.set(jobType, queue);
-
-      // Also create a scheduler for delayed jobs
-      const scheduler = new QueueScheduler(queueName, {
-        connection: this.connection,
-      });
-      this.schedulers.set(jobType, scheduler);
-
       console.log(`BullMQ: Created queue: ${queueName} (for ${jobType})`);
     }
 
@@ -390,11 +382,6 @@ class BullMQManager {
     // Close all workers
     for (const worker of this.workers.values()) {
       await worker.close();
-    }
-
-    // Close all schedulers
-    for (const scheduler of this.schedulers.values()) {
-      await scheduler.close();
     }
 
     // Close all queues
