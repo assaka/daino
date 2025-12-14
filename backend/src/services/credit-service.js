@@ -3,9 +3,25 @@ const CreditTransaction = require('../models/CreditTransaction');
 const AkeneoSchedule = require('../models/AkeneoSchedule');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 
+// Grace period for insufficient credits (in days)
+const CREDIT_GRACE_PERIOD_DAYS = 3;
+
 class CreditService {
   constructor() {
     // No hardcoded costs - any feature can specify its own cost
+  }
+
+  /**
+   * Calculate days since a date
+   * @param {string} dateString - ISO date string
+   * @returns {number} - Number of days since the date
+   */
+  _daysSince(dateString) {
+    if (!dateString) return 0;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
   }
 
   /**
@@ -245,6 +261,7 @@ class CreditService {
   /**
    * Charge daily fee for custom domain
    * Uses master DB lookup table and tenant DB via ConnectionManager
+   * Implements 3-day grace period before deactivating domain for insufficient credits
    */
   async chargeDailyCustomDomainFee(userId, domainId, domainName) {
     let dailyCost = 0.5;
@@ -254,10 +271,10 @@ class CreditService {
       // Use fallback
     }
 
-    // Check if domain is still active via master DB lookup table
+    // Check if domain is still active via master DB lookup table (include metadata for grace period)
     const { data: domain, error: lookupError } = await masterDbClient
       .from('custom_domains_lookup')
-      .select('id, store_id, domain, is_active, is_verified, ssl_status')
+      .select('id, store_id, domain, is_active, is_verified, ssl_status, metadata')
       .eq('id', domainId)
       .maybeSingle();
 
@@ -308,47 +325,120 @@ class CreditService {
 
     // Get balance before deduction
     const balanceBefore = await this.getBalance(userId);
+    const domainMetadata = domain.metadata || {};
 
     // Check if user has enough credits
     if (balanceBefore < dailyCost) {
-      // Deactivate domain in master DB lookup table if insufficient credits
-      const { error: updateError } = await masterDbClient
-        .from('custom_domains_lookup')
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', domainId);
+      const gracePeriodStart = domainMetadata.credit_grace_period_start;
+      const daysSinceGraceStart = this._daysSince(gracePeriodStart);
 
-      if (updateError) {
-        console.error(`[DAILY_DEDUCTION] Failed to deactivate domain ${domainId}:`, updateError.message);
-      }
+      if (!gracePeriodStart) {
+        // Start grace period
+        console.log(`[DAILY_DEDUCTION] Domain ${domainName}: Insufficient credits, starting ${CREDIT_GRACE_PERIOD_DAYS}-day grace period`);
 
-      // Also try to update tenant DB custom_domains table
-      try {
-        const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
-        await tenantDb
-          .from('custom_domains')
+        await masterDbClient
+          .from('custom_domains_lookup')
           .update({
-            is_active: false,
             metadata: {
-              deactivated_reason: 'insufficient_credits',
-              deactivated_at: new Date().toISOString()
+              ...domainMetadata,
+              credit_grace_period_start: new Date().toISOString(),
+              credit_warning_sent: false
             },
             updated_at: new Date().toISOString()
           })
           .eq('id', domainId);
-      } catch (tenantUpdateError) {
-        console.warn(`[DAILY_DEDUCTION] Could not update tenant DB domain:`, tenantUpdateError.message);
-      }
 
-      return {
-        success: false,
-        message: 'Insufficient credits - domain deactivated',
-        credits_deducted: 0,
-        remaining_balance: balanceBefore,
-        domain_deactivated: true
-      };
+        return {
+          success: false,
+          message: `Insufficient credits - grace period started (${CREDIT_GRACE_PERIOD_DAYS} days remaining)`,
+          credits_deducted: 0,
+          remaining_balance: balanceBefore,
+          grace_period: {
+            started: true,
+            days_remaining: CREDIT_GRACE_PERIOD_DAYS
+          }
+        };
+      } else if (daysSinceGraceStart >= CREDIT_GRACE_PERIOD_DAYS) {
+        // Grace period expired - deactivate domain
+        console.log(`[DAILY_DEDUCTION] Domain ${domainName}: Grace period expired after ${daysSinceGraceStart} days, deactivating`);
+
+        // Deactivate domain in master DB lookup table
+        await masterDbClient
+          .from('custom_domains_lookup')
+          .update({
+            is_active: false,
+            metadata: {
+              ...domainMetadata,
+              deactivated_reason: 'insufficient_credits',
+              deactivated_at: new Date().toISOString(),
+              credit_grace_period_start: null
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', domainId);
+
+        // Also try to update tenant DB custom_domains table
+        try {
+          const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
+          await tenantDb
+            .from('custom_domains')
+            .update({
+              is_active: false,
+              metadata: {
+                deactivated_reason: 'insufficient_credits',
+                deactivated_at: new Date().toISOString()
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', domainId);
+        } catch (tenantUpdateError) {
+          console.warn(`[DAILY_DEDUCTION] Could not update tenant DB domain:`, tenantUpdateError.message);
+        }
+
+        return {
+          success: false,
+          message: 'Grace period expired - domain deactivated due to insufficient credits',
+          credits_deducted: 0,
+          remaining_balance: balanceBefore,
+          domain_deactivated: true,
+          grace_period: {
+            expired: true,
+            days_elapsed: daysSinceGraceStart
+          }
+        };
+      } else {
+        // Still in grace period
+        const daysRemaining = CREDIT_GRACE_PERIOD_DAYS - daysSinceGraceStart;
+        console.log(`[DAILY_DEDUCTION] Domain ${domainName}: Still in grace period (${daysRemaining} days remaining)`);
+
+        return {
+          success: false,
+          message: `Insufficient credits - ${daysRemaining} day(s) remaining in grace period`,
+          credits_deducted: 0,
+          remaining_balance: balanceBefore,
+          grace_period: {
+            active: true,
+            days_remaining: daysRemaining,
+            started_at: gracePeriodStart
+          }
+        };
+      }
+    }
+
+    // User has enough credits - clear any existing grace period
+    if (domainMetadata.credit_grace_period_start) {
+      console.log(`[DAILY_DEDUCTION] Domain ${domainName}: Credits restored, clearing grace period`);
+      await masterDbClient
+        .from('custom_domains_lookup')
+        .update({
+          metadata: {
+            ...domainMetadata,
+            credit_grace_period_start: null,
+            credit_warning_sent: false
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', domainId);
     }
 
     // Ensure dailyCost is a number (not string)
@@ -382,6 +472,7 @@ class CreditService {
    * Record daily credit charge for published/active store
    * Uses master DB only - status='active' means store is published and billable
    * Also inserts record into store_uptime table in tenant DB for reporting
+   * Implements 3-day grace period before pausing store for insufficient credits
    */
   async chargeDailyPublishingFee(userId, storeId) {
     let dailyCost = 1.0;
@@ -391,10 +482,10 @@ class CreditService {
       // Use fallback
     }
 
-    // Check if store is published in master DB
+    // Check if store is published in master DB (include metadata for grace period)
     const { data: store, error: storeError } = await masterDbClient
       .from('stores')
-      .select('id, slug, status, is_active, published')
+      .select('id, slug, status, is_active, published, metadata')
       .eq('id', storeId)
       .maybeSingle();
 
@@ -435,6 +526,103 @@ class CreditService {
 
     // Get balance before deduction
     const balanceBefore = await this.getBalance(userId);
+    const storeMetadata = store.metadata || {};
+
+    // Check if user has enough credits
+    if (balanceBefore < dailyCost) {
+      const gracePeriodStart = storeMetadata.credit_grace_period_start;
+      const daysSinceGraceStart = this._daysSince(gracePeriodStart);
+
+      if (!gracePeriodStart) {
+        // Start grace period
+        console.log(`[DAILY_DEDUCTION] Store ${store.slug}: Insufficient credits, starting ${CREDIT_GRACE_PERIOD_DAYS}-day grace period`);
+
+        await masterDbClient
+          .from('stores')
+          .update({
+            metadata: {
+              ...storeMetadata,
+              credit_grace_period_start: new Date().toISOString(),
+              credit_warning_sent: false
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', storeId);
+
+        return {
+          success: false,
+          message: `Insufficient credits - grace period started (${CREDIT_GRACE_PERIOD_DAYS} days remaining)`,
+          credits_deducted: 0,
+          remaining_balance: balanceBefore,
+          grace_period: {
+            started: true,
+            days_remaining: CREDIT_GRACE_PERIOD_DAYS
+          }
+        };
+      } else if (daysSinceGraceStart >= CREDIT_GRACE_PERIOD_DAYS) {
+        // Grace period expired - pause the store
+        console.log(`[DAILY_DEDUCTION] Store ${store.slug}: Grace period expired after ${daysSinceGraceStart} days, pausing store`);
+
+        await masterDbClient
+          .from('stores')
+          .update({
+            published: false,
+            status: 'paused',
+            metadata: {
+              ...storeMetadata,
+              paused_reason: 'insufficient_credits',
+              paused_at: new Date().toISOString(),
+              credit_grace_period_start: null // Clear grace period
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', storeId);
+
+        return {
+          success: false,
+          message: 'Grace period expired - store paused due to insufficient credits',
+          credits_deducted: 0,
+          remaining_balance: balanceBefore,
+          store_paused: true,
+          grace_period: {
+            expired: true,
+            days_elapsed: daysSinceGraceStart
+          }
+        };
+      } else {
+        // Still in grace period
+        const daysRemaining = CREDIT_GRACE_PERIOD_DAYS - daysSinceGraceStart;
+        console.log(`[DAILY_DEDUCTION] Store ${store.slug}: Still in grace period (${daysRemaining} days remaining)`);
+
+        return {
+          success: false,
+          message: `Insufficient credits - ${daysRemaining} day(s) remaining in grace period`,
+          credits_deducted: 0,
+          remaining_balance: balanceBefore,
+          grace_period: {
+            active: true,
+            days_remaining: daysRemaining,
+            started_at: gracePeriodStart
+          }
+        };
+      }
+    }
+
+    // User has enough credits - clear any existing grace period
+    if (storeMetadata.credit_grace_period_start) {
+      console.log(`[DAILY_DEDUCTION] Store ${store.slug}: Credits restored, clearing grace period`);
+      await masterDbClient
+        .from('stores')
+        .update({
+          metadata: {
+            ...storeMetadata,
+            credit_grace_period_start: null,
+            credit_warning_sent: false
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+    }
 
     // Deduct credits
     const deductResult = await this.deduct(
