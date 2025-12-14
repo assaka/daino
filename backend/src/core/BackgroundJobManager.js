@@ -581,17 +581,43 @@ class BackgroundJobManager extends EventEmitter {
 
   /**
    * Resume jobs that were interrupted by server restart
-   * Note: With multi-tenant setup, this would need to iterate all tenant DBs.
-   * For now, rely on BullMQ for job persistence across restarts.
+   * Note: With centralized master DB, we reset running jobs to pending on startup.
    */
   async resumeInterruptedJobs() {
-    // Skip - jobs are in tenant DBs and BullMQ handles persistence
-    console.log('ℹ️ Job resume handled by BullMQ queue persistence');
-    return;
+    if (!masterDbClient) {
+      console.warn('⚠️ masterDbClient not available, skipping interrupted jobs check');
+      return;
+    }
 
-      if (updateError) {
-        console.error('❌ Error resuming interrupted jobs:', updateError.message);
+    try {
+      // Reset any jobs that were running when the server shut down
+      const { data: interruptedJobs, error } = await masterDbClient
+        .from('job_queue')
+        .select('id')
+        .eq('status', 'running');
+
+      if (error) {
+        console.error('❌ Error fetching interrupted jobs:', error.message);
+        return;
       }
+
+      if (interruptedJobs && interruptedJobs.length > 0) {
+        console.log(`🔄 Resuming ${interruptedJobs.length} interrupted jobs...`);
+
+        const { error: updateError } = await masterDbClient
+          .from('job_queue')
+          .update({
+            status: 'pending',
+            scheduled_at: new Date().toISOString()
+          })
+          .eq('status', 'running');
+
+        if (updateError) {
+          console.error('❌ Error resuming interrupted jobs:', updateError.message);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error in resumeInterruptedJobs:', err.message);
     }
   }
 
