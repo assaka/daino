@@ -309,15 +309,8 @@ const defineAssociations = () => {
   // Note: CreditTransaction, CreditUsage now use Supabase client - no Sequelize associations needed
   // Associations are handled at the database level via foreign keys
 
-  // Job associations
-  Job.belongsTo(Store, { foreignKey: 'store_id' });
-  Job.belongsTo(User, { foreignKey: 'user_id' });
-  Job.hasMany(JobHistory, { foreignKey: 'job_id', as: 'history' });
-  Store.hasMany(Job, { foreignKey: 'store_id' });
-  User.hasMany(Job, { foreignKey: 'user_id' });
-
-  // JobHistory associations
-  JobHistory.belongsTo(Job, { foreignKey: 'job_id', as: 'job' });
+  // Note: Job and JobHistory models removed - now using job_queue table via masterDbClient
+  // Associations are handled at the database level via foreign keys
 
   // CronJob associations
   CronJob.hasMany(CronJobExecution, { foreignKey: 'cron_job_id', as: 'executions', onDelete: 'CASCADE' });
