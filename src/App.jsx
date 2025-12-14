@@ -410,7 +410,7 @@ function App() {
           <Route path="/admin/cms-blocks" element={<PageWrapper Component={Pages.CmsBlocks} pageName="CMS_BLOCKS" />} />
           <Route path="/admin/cms-pages" element={<PageWrapper Component={Pages.CmsPages} pageName="CMS_PAGES" />} />
           <Route path="/admin/emails" element={<PageWrapper Component={Pages.Emails} pageName="EMAILS" />} />
-          <Route path="/admin/settings/email" element={<PageWrapper Component={Pages.EmailSettings} pageName="EMAIL_SETTINGS" />} />
+          <Route path="/admin/email" element={<PageWrapper Component={Pages.EmailSettings} pageName="EMAIL_SETTINGS" />} />
           <Route path="/admin/file-library" element={<PageWrapper Component={Pages.FileLibrary} pageName="file-library" />} />
           <Route path="/admin/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="COOKIE_CONSENT" />} />
           <Route path="/admin/analytics" element={<PageWrapper Component={Pages.AnalyticsSettings} pageName="ANALYTICS" />} />

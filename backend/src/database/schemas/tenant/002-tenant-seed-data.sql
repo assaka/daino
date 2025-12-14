@@ -118,7 +118,7 @@ VALUES
   -- =============================================
   ('e4de6184-0894-409c-b819-58bd3a0539d5', 'settings', 'General Settings', 'Settings', '/admin/settings', 'store', 1, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('18727c04-a31b-4dc4-9b06-9d81a71beeee', 'database_integrations', 'Database', 'Database', '/admin/database-integrations', 'store', 2, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('93b2fb65-e369-4631-976a-35a764de7459', 'store_email', 'Email', 'Mail', '/admin/settings/email', 'store', 3, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('93b2fb65-e369-4631-976a-35a764de7459', 'store_email', 'Email', 'Mail', '/admin/email', 'store', 3, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('31085f55-2a25-40ed-83ba-be0c80998b81', 'media_storage', 'Media Storage', 'Image', '/admin/media-storage', 'store', 4, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('ada124ce-e1a5-4d93-b071-0514350deda0', 'uptime-report', 'Uptime Report', 'Activity', '/admin/uptime-report', 'store', 5, true, true, NULL, 'store', NULL, 'Track daily charges and uptime for running stores', NULL, NOW(), NOW(), 'standard'),
   ('2e6e8b58-03e9-4ad2-9ecc-8051c343a269', 'custom_domains', 'Custom Domains', 'Globe', '/admin/custom-domains', 'store', 6, true, true, NULL, 'store', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
