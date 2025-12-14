@@ -116,12 +116,16 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
 
   sensitiveFields.forEach(field => {
     if (decrypted[field] && typeof decrypted[field] === 'string' && decrypted[field].startsWith('encrypted:')) {
+      console.log(`🔐 Attempting to decrypt field: ${field}`);
+      console.log(`🔐 Key being used: ${key.substring(0, 10)}...`);
+      console.log(`🔐 Encrypted value preview: ${decrypted[field].substring(0, 50)}...`);
+
       try {
         const encryptedValue = decrypted[field].replace('encrypted:', '');
         const decipher = crypto.createDecipher('aes-256-cbc', key);
         let decryptedValue = decipher.update(encryptedValue, 'hex', 'utf8');
         decryptedValue += decipher.final('utf8');
-        
+
         // Handle double encryption (legacy issue)
         if (decryptedValue.startsWith('encrypted:')) {
           console.warn(`Field ${field} appears to be double-encrypted, fixing...`);
@@ -135,10 +139,12 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
             console.error(`Failed to decrypt double-encrypted field ${field}:`, doubleDecryptError.message);
           }
         }
-        
+
         decrypted[field] = decryptedValue;
+        console.log(`✅ Successfully decrypted field: ${field} (length: ${decryptedValue.length})`);
       } catch (error) {
-        console.error(`Failed to decrypt field ${field}:`, error.message);
+        console.error(`❌ Failed to decrypt field ${field}:`, error.message);
+        console.error(`❌ Error stack:`, error.stack);
         // Keep encrypted value if decryption fails
       }
     }
