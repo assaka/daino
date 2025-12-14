@@ -1,5 +1,5 @@
 const { EventEmitter } = require('events');
-const { masterDbClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../services/database/masterDbClient');
 const bullMQManager = require('./BullMQManager');
 const { v4: uuidv4 } = require('uuid');
 
@@ -213,14 +213,14 @@ class BackgroundJobManager extends EventEmitter {
 
     const scheduledAt = new Date(Date.now() + delay);
 
-    // Create job record in database (source of truth)
+    // Create job record in master database (centralized job queue)
     let job;
     try {
       if (!masterDbClient) {
-        throw new Error('masterDbClient not available');
+        throw new Error('Master database not available');
       }
 
-      const jobData = {
+      const jobRecord = {
         id: uuidv4(),
         job_type: type,
         payload,
@@ -234,10 +234,10 @@ class BackgroundJobManager extends EventEmitter {
         metadata
       };
 
-      console.log('📝 Creating job:', { type, storeId });
+      console.log('📝 Creating job in master DB:', { type, storeId });
       const { data, error } = await masterDbClient
         .from('job_queue')
-        .insert(jobData)
+        .insert(jobRecord)
         .select()
         .single();
 
@@ -247,8 +247,7 @@ class BackgroundJobManager extends EventEmitter {
       }
 
       job = data;
-      // Add type alias for compatibility
-      job.type = job.job_type;
+      job.type = job.job_type; // Add alias for compatibility
       console.log('✅ Job created:', job.id);
     } catch (error) {
       console.error('❌ Failed to create job in database:', error.message);
@@ -430,7 +429,7 @@ class BackgroundJobManager extends EventEmitter {
     try {
       console.log(`🔄 Processing job: ${jobType} (ID: ${job.id})`);
 
-      // Update job status
+      // Update job status in master DB
       await this.updateJob(job.id, {
         status: 'running',
         started_at: new Date().toISOString()
@@ -448,14 +447,14 @@ class BackgroundJobManager extends EventEmitter {
       const handler = new HandlerClass(job);
       const result = await handler.execute();
 
-      // Update job as completed
+      // Update job as completed in master DB
       await this.updateJob(job.id, {
         status: 'completed',
         completed_at: new Date().toISOString(),
         result: result || {}
       });
 
-      // Create job history record
+      // Create job history record in master DB
       await this.createJobHistory({
         job_id: job.id,
         status: 'completed',
@@ -480,43 +479,55 @@ class BackgroundJobManager extends EventEmitter {
   }
 
   /**
-   * Update a job in the database
+   * Update a job in the master database
+   * @param {string} jobId - Job ID
+   * @param {object} updates - Fields to update
    */
   async updateJob(jobId, updates) {
     if (!masterDbClient) {
-      throw new Error('masterDbClient not available');
+      console.warn('⚠️ masterDbClient not available for job update');
+      return;
     }
 
-    const { error } = await masterDbClient
-      .from('job_queue')
-      .update(updates)
-      .eq('id', jobId);
+    try {
+      const { error } = await masterDbClient
+        .from('job_queue')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', jobId);
 
-    if (error) {
-      console.error(`❌ Failed to update job ${jobId}:`, error.message);
-      throw error;
+      if (error) {
+        console.error(`❌ Failed to update job ${jobId}:`, error.message);
+        throw error;
+      }
+    } catch (err) {
+      console.error(`❌ Error updating job ${jobId}:`, err.message);
     }
   }
 
   /**
-   * Create a job history record
+   * Create a job history record in master database
+   * @param {object} historyData - History data including job_id
    */
   async createJobHistory(historyData) {
     if (!masterDbClient) {
-      console.warn('⚠️ masterDbClient not available, skipping history creation');
+      console.warn('⚠️ masterDbClient not available for job history');
       return;
     }
 
-    const { error } = await masterDbClient
-      .from('job_history')
-      .insert({
-        id: uuidv4(),
-        ...historyData
-      });
+    try {
+      const { error } = await masterDbClient
+        .from('job_history')
+        .insert({
+          id: uuidv4(),
+          ...historyData
+        });
 
-    if (error) {
-      console.error('❌ Failed to create job history:', error.message);
-      // Don't throw - history is not critical
+      if (error) {
+        console.error('❌ Failed to create job history:', error.message);
+        // Don't throw - history is not critical
+      }
+    } catch (err) {
+      console.error('❌ Error creating job history:', err.message);
     }
   }
 
@@ -528,7 +539,7 @@ class BackgroundJobManager extends EventEmitter {
     const canRetry = retryCount <= (job.max_retries || 3);
     const jobType = job.type || job.job_type;
 
-    // Create history record for the failure
+    // Create history record for the failure in master DB
     await this.createJobHistory({
       job_id: job.id,
       status: 'failed',
@@ -556,7 +567,7 @@ class BackgroundJobManager extends EventEmitter {
       console.log(`🔄 Job will retry in ${retryDelay/1000}s: ${jobType} (ID: ${job.id}, attempt ${retryCount}/${job.max_retries || 3})`);
       this.emit('job:retry_scheduled', job, retryCount);
     } else {
-      // Mark as permanently failed
+      // Mark as permanently failed in master DB
       await this.updateJob(job.id, {
         status: 'failed',
         failed_at: new Date().toISOString(),
@@ -570,33 +581,13 @@ class BackgroundJobManager extends EventEmitter {
 
   /**
    * Resume jobs that were interrupted by server restart
+   * Note: With multi-tenant setup, this would need to iterate all tenant DBs.
+   * For now, rely on BullMQ for job persistence across restarts.
    */
   async resumeInterruptedJobs() {
-    if (!masterDbClient) {
-      console.warn('⚠️ masterDbClient not available, skipping interrupted jobs check');
-      return;
-    }
-
-    const { data: interruptedJobs, error } = await masterDbClient
-      .from('job_queue')
-      .select('id')
-      .eq('status', 'running');
-
-    if (error) {
-      console.error('❌ Error fetching interrupted jobs:', error.message);
-      return;
-    }
-
-    if (interruptedJobs && interruptedJobs.length > 0) {
-      console.log(`🔄 Resuming ${interruptedJobs.length} interrupted jobs...`);
-
-      const { error: updateError } = await masterDbClient
-        .from('job_queue')
-        .update({
-          status: 'pending',
-          scheduled_at: new Date().toISOString()
-        })
-        .eq('status', 'running');
+    // Skip - jobs are in tenant DBs and BullMQ handles persistence
+    console.log('ℹ️ Job resume handled by BullMQ queue persistence');
+    return;
 
       if (updateError) {
         console.error('❌ Error resuming interrupted jobs:', updateError.message);

@@ -3,7 +3,7 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const jobManager = require('../core/BackgroundJobManager');
-const { masterDbClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../services/database/masterDbClient');
 
 // Apply authentication to all job routes
 router.use(authMiddleware);
@@ -310,9 +310,10 @@ router.get('/store/:storeId', checkStoreOwnership, async (req, res) => {
       });
     }
 
+    // Query job_queue in master database, filtered by store_id
     let query = masterDbClient
       .from('job_queue')
-      .select('id, job_type, priority, status, progress, progress_message, scheduled_at, started_at, completed_at, failed_at, cancelled_at, retry_count, max_retries, last_error, created_at, updated_at')
+      .select('id, job_type, priority, status, progress, progress_message, scheduled_at, started_at, completed_at, failed_at, cancelled_at, retry_count, max_retries, last_error, result, created_at, updated_at')
       .eq('store_id', storeId)
       .order('created_at', { ascending: false })
       .limit(parseInt(limit));
@@ -326,10 +327,16 @@ router.get('/store/:storeId', checkStoreOwnership, async (req, res) => {
       throw new Error(error.message);
     }
 
+    // Map job_type to type for frontend compatibility
+    const mappedJobs = (jobs || []).map(job => ({
+      ...job,
+      type: job.job_type
+    }));
+
     res.json({
       success: true,
-      jobs: (jobs || []).map(job => ({ ...job, type: job.job_type })),
-      count: jobs?.length || 0
+      jobs: mappedJobs,
+      count: mappedJobs.length
     });
   } catch (error) {
     console.error('Error getting store jobs:', error);
