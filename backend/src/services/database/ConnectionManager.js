@@ -294,22 +294,6 @@ class ConnectionManager {
   static masterConnection = null;
 
   /**
-   * Get the master database connection (platform DB)
-   * Contains: users (agencies), stores (minimal), subscriptions, credits, monitoring
-   *
-   * @deprecated Use masterDbClient from masterConnection.js directly instead.
-   * This method uses Sequelize which has pooler authentication issues.
-   */
-  static getMasterConnection() {
-    console.warn('⚠️ DEPRECATED: getMasterConnection() is deprecated. Use masterDbClient from masterConnection.js instead.');
-    if (!this.masterConnection) {
-      const { masterSequelize } = require('../../database/masterConnection');
-      this.masterConnection = masterSequelize;
-    }
-    return this.masterConnection;
-  }
-
-  /**
    * Get store-specific database connection (client DB)
    * Contains: products, categories, orders, customers, etc.
    *
@@ -524,23 +508,6 @@ class ConnectionManager {
       default:
         throw new Error(`Query not supported for type: ${type}`);
     }
-  }
-
-  /**
-   * Execute a query on the master database
-   *
-   * @deprecated Use masterDbClient from masterConnection.js directly instead.
-   * This method uses Sequelize which has pooler authentication issues.
-   *
-   * @param {string} sql - SQL query
-   * @param {Object} options - Query options
-   * @returns {Promise<Array>} Query results
-   */
-  static async queryMaster(sql, options = {}) {
-    console.warn('⚠️ DEPRECATED: queryMaster() is deprecated. Use masterDbClient from masterConnection.js instead.');
-    const sequelize = this.getMasterConnection();
-    const [results] = await sequelize.query(sql, options);
-    return results;
   }
 
   /**

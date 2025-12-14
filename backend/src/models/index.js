@@ -56,8 +56,6 @@ const Credit = require('./Credit');
 const CreditTransaction = require('./CreditTransaction');
 const CreditUsage = require('./CreditUsage');
 const ServiceCreditCost = require('./ServiceCreditCost');
-const Job = require('./Job');
-const JobHistory = require('./JobHistory');
 const CronJob = require('./CronJob');
 const CronJobExecution = require('./CronJobExecution');
 const SlotConfiguration = require('./SlotConfiguration');
@@ -422,8 +420,6 @@ module.exports = {
   CreditTransaction,
   CreditUsage,
   ServiceCreditCost,
-  Job,
-  JobHistory,
   CronJob,
   CronJobExecution,
   SlotConfiguration,

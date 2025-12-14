@@ -8,7 +8,7 @@ const session = require('express-session');
 const passport = require('./config/passport');
 require('dotenv').config();
 
-const { masterSequelize } = require('./database/masterConnection');
+const { masterSequelize, masterDbClient } = require('./database/masterConnection');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/authMiddleware'); // Use same middleware as authMasterTenant
 
@@ -313,13 +313,23 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Database health check endpoint
+// Database health check endpoint (uses Supabase REST API)
 app.get('/health/db', async (req, res) => {
   try {
-    await masterSequelize.authenticate();
+    // Test master database connection via Supabase REST API
+    if (!masterDbClient) {
+      throw new Error('masterDbClient not initialized');
+    }
+
+    const { error } = await masterDbClient.from('stores').select('id').limit(1);
+    if (error) {
+      throw new Error(error.message);
+    }
+
     res.json({
       status: 'OK',
       database: 'Connected',
+      connection_type: 'Supabase REST API',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -1434,86 +1444,103 @@ const startServer = async () => {
 
   // Connect to database after server is running
   try {
-    
-    // Test database connection with retry logic
+
+    // Test Supabase REST API connection first (primary connection method)
+    try {
+      if (masterDbClient) {
+        const { error } = await masterDbClient.from('stores').select('id').limit(1);
+        if (error) {
+          console.warn('⚠️ Supabase REST API connection failed:', error.message);
+        } else {
+          console.log('✅ Master database connected via Supabase REST API');
+        }
+      }
+    } catch (supabaseError) {
+      console.warn('⚠️ Supabase REST API connection failed:', supabaseError.message);
+    }
+
+    // Test Sequelize connection (still needed for models that use Sequelize)
+    let sequelizeConnected = false;
     let retries = 3;
-    let dbConnected = false;
-    
-    while (retries > 0 && !dbConnected) {
+
+    while (retries > 0 && !sequelizeConnected) {
       try {
         await masterSequelize.authenticate();
-        dbConnected = true;
+        sequelizeConnected = true;
+        console.log('✅ Sequelize connection established (for legacy models)');
 
-        // Sync database tables
+        // Sync database tables (required for Sequelize models)
         if (process.env.NODE_ENV === 'development') {
           await masterSequelize.sync({ alter: true });
         } else {
           await masterSequelize.sync({ alter: false });
         }
 
-        // Initialize Redis cache
-        try {
-          const { initRedis } = require('./config/redis');
-          await initRedis();
-          console.log('✅ Redis cache initialized');
-        } catch (error) {
-          console.warn('⚠️  Redis initialization failed, continuing without cache:', error.message);
-        }
-
-        // Initialize Plugin Manager
-        try {
-          const pluginManager = require('./core/PluginManager');
-          await pluginManager.initialize();
-        } catch (error) {
-          console.warn('Plugin Manager initialization failed:', error.message);
-        }
-
-        // Initialize Database-Driven Plugin Registry
-        try {
-          const { initializePluginRegistry } = require('./routes/dynamic-plugins');
-          await initializePluginRegistry(masterSequelize);
-        } catch (error) {
-          console.warn('Plugin Registry initialization failed:', error.message);
-        }
-
-        // Initialize Background Job Manager
-        try {
-          const jobManager = require('./core/BackgroundJobManager');
-          await jobManager.initialize();
-
-          // Initialize Akeneo Scheduler Integration
-          const akeneoSchedulerIntegration = require('./services/akeneo-scheduler-integration');
-          await akeneoSchedulerIntegration.initialize();
-
-        } catch (error) {
-          console.warn('Background Job Manager initialization failed:', error.message);
-        }
-
-        // Run all pending database migrations automatically
-        try {
-          const { runPendingMigrations } = require('./database/migrations/migration-tracker');
-          const migrationResult = await runPendingMigrations();
-
-          if (!migrationResult.success && migrationResult.error) {
-            console.warn('Some database migrations failed:', migrationResult.error);
-          }
-        } catch (migrationError) {
-          console.warn('Database migration warning:', migrationError.message);
-        }
-
       } catch (dbError) {
         retries--;
-        console.error(`Database connection failed (${3 - retries}/3):`, dbError.message);
+        console.warn(`⚠️ Sequelize connection failed (${3 - retries}/3):`, dbError.message);
 
         if (retries === 0) {
-          console.warn('Database connection failed. Server will continue without database.');
+          console.warn('⚠️ Sequelize connection failed. Some legacy model operations may not work.');
           break;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
-    
+
+    // Initialize Redis cache
+    try {
+      const { initRedis } = require('./config/redis');
+      await initRedis();
+      console.log('✅ Redis cache initialized');
+    } catch (error) {
+      console.warn('⚠️  Redis initialization failed, continuing without cache:', error.message);
+    }
+
+    // Initialize Plugin Manager
+    try {
+      const pluginManager = require('./core/PluginManager');
+      await pluginManager.initialize();
+    } catch (error) {
+      console.warn('Plugin Manager initialization failed:', error.message);
+    }
+
+    // Initialize Database-Driven Plugin Registry
+    if (sequelizeConnected) {
+      try {
+        const { initializePluginRegistry } = require('./routes/dynamic-plugins');
+        await initializePluginRegistry(masterSequelize);
+      } catch (error) {
+        console.warn('Plugin Registry initialization failed:', error.message);
+      }
+    }
+
+    // Initialize Background Job Manager
+    try {
+      const jobManager = require('./core/BackgroundJobManager');
+      await jobManager.initialize();
+
+      // Initialize Akeneo Scheduler Integration
+      const akeneoSchedulerIntegration = require('./services/akeneo-scheduler-integration');
+      await akeneoSchedulerIntegration.initialize();
+
+    } catch (error) {
+      console.warn('Background Job Manager initialization failed:', error.message);
+    }
+
+    // Run all pending database migrations automatically
+    try {
+      const { runPendingMigrations } = require('./database/migrations/migration-tracker');
+      const migrationResult = await runPendingMigrations();
+
+      if (!migrationResult.success && migrationResult.error) {
+        console.warn('Some database migrations failed:', migrationResult.error);
+      }
+    } catch (migrationError) {
+      console.warn('Database migration warning:', migrationError.message);
+    }
+
   } catch (error) {
     console.error('Server startup error:', error.message);
   }

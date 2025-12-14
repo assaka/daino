@@ -6973,22 +6973,37 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
       }
 
       try {
-        // Create job in master database
-        const Job = require('../models/Job');
+        // Create job in master database using masterDbClient
+        const { masterDbClient } = require('../database/masterConnection');
+        const { v4: uuidv4 } = require('uuid');
 
-        const job = await Job.create({
-          type: jobType,
-          priority: priority,
-          status: 'pending',
-          store_id: resolvedStoreId,
-          user_id: userId,
-          payload: intent.details?.payload || {},
-          scheduled_at: new Date(),
-          metadata: {
-            triggered_by: 'ai_chat',
-            message: message
-          }
-        });
+        if (!masterDbClient) {
+          throw new Error('Database not available');
+        }
+
+        const jobId = uuidv4();
+        const { data: job, error } = await masterDbClient
+          .from('job_queue')
+          .insert({
+            id: jobId,
+            job_type: jobType,
+            priority: priority,
+            status: 'pending',
+            store_id: resolvedStoreId,
+            user_id: userId,
+            payload: intent.details?.payload || {},
+            scheduled_at: new Date().toISOString(),
+            metadata: {
+              triggered_by: 'ai_chat',
+              message: message
+            }
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw new Error(error.message);
+        }
 
         console.log('[AI Chat] Created job:', job.id, jobType);
 

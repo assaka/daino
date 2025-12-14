@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Job = require('../models/Job');
+const { masterDbClient } = require('../database/masterConnection');
 
 // Import all job handlers
 const UILabelsBulkTranslationJob = require('../core/jobs/UILabelsBulkTranslationJob');
@@ -72,20 +72,26 @@ router.post('/process-pending', verifyCronSecret, async (req, res) => {
   try {
     console.log('🔍 Processing pending jobs...');
 
-    // Get all pending jobs, prioritized
-    const pendingJobs = await Job.findAll({
-      where: {
-        status: 'pending',
-        type: Object.keys(JOB_HANDLERS) // Only job types we have handlers for
-      },
-      order: [
-        ['priority', 'ASC'], // High priority first (urgent=1, high=2, normal=5, low=10)
-        ['created_at', 'ASC'] // Then oldest first (FIFO)
-      ],
-      limit: MAX_JOBS
-    });
+    if (!masterDbClient) {
+      return res.status(503).json({ error: 'Database not available' });
+    }
 
-    if (pendingJobs.length === 0) {
+    // Get all pending jobs, prioritized
+    const jobTypes = Object.keys(JOB_HANDLERS);
+    const { data: pendingJobs, error } = await masterDbClient
+      .from('job_queue')
+      .select('*')
+      .eq('status', 'pending')
+      .in('job_type', jobTypes)
+      .order('priority', { ascending: true })
+      .order('created_at', { ascending: true })
+      .limit(MAX_JOBS);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!pendingJobs || pendingJobs.length === 0) {
       console.log('ℹ️ No pending jobs to process');
       return res.json({
         processed: 0,
@@ -110,32 +116,39 @@ router.post('/process-pending', verifyCronSecret, async (req, res) => {
       }
 
       try {
-        console.log(`🚀 Processing job ${job.id}: ${job.type}`);
+        console.log(`🚀 Processing job ${job.id}: ${job.job_type}`);
 
-        const HandlerClass = JOB_HANDLERS[job.type];
+        const HandlerClass = JOB_HANDLERS[job.job_type];
         if (!HandlerClass) {
-          console.error(`❌ No handler for job type: ${job.type}`);
+          console.error(`❌ No handler for job type: ${job.job_type}`);
           skipped++;
           continue;
         }
 
         // Update to running
-        await job.update({
-          status: 'running',
-          started_at: new Date()
-        });
+        await masterDbClient
+          .from('job_queue')
+          .update({
+            status: 'running',
+            started_at: new Date().toISOString()
+          })
+          .eq('id', job.id);
 
-        // Execute job
+        // Execute job (add type alias for compatibility)
+        job.type = job.job_type;
         const handler = new HandlerClass(job);
         const result = await handler.execute();
 
         // Mark as completed
-        await job.update({
-          status: 'completed',
-          completed_at: new Date(),
-          result: result,
-          progress: 100
-        });
+        await masterDbClient
+          .from('job_queue')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            result: result,
+            progress: 100
+          })
+          .eq('id', job.id);
 
         console.log(`✅ Job ${job.id} completed`);
         processed++;
@@ -148,21 +161,29 @@ router.post('/process-pending', verifyCronSecret, async (req, res) => {
 
         if (retryCount < maxRetries) {
           // Retry later
-          await job.update({
-            status: 'pending',
-            retry_count: retryCount,
-            error_message: error.message
-          });
+          await masterDbClient
+            .from('job_queue')
+            .update({
+              status: 'pending',
+              retry_count: retryCount,
+              last_error: error.message
+            })
+            .eq('id', job.id);
+
           console.log(`   ↻ Will retry (${retryCount}/${maxRetries})`);
           skipped++; // Will be retried, not failed yet
         } else {
           // Failed permanently
-          await job.update({
-            status: 'failed',
-            completed_at: new Date(),
-            error_message: error.message,
-            retry_count: retryCount
-          });
+          await masterDbClient
+            .from('job_queue')
+            .update({
+              status: 'failed',
+              completed_at: new Date().toISOString(),
+              last_error: error.message,
+              retry_count: retryCount
+            })
+            .eq('id', job.id);
+
           console.log(`   ✗ Failed permanently`);
           failed++;
         }
@@ -199,35 +220,46 @@ router.post('/process-pending', verifyCronSecret, async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   try {
-    const [pending, running, completed, failed] = await Promise.all([
-      Job.count({ where: { status: 'pending' } }),
-      Job.count({ where: { status: 'running' } }),
-      Job.count({
-        where: {
-          status: 'completed',
-          completed_at: {
-            [require('sequelize').Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
-        }
-      }),
-      Job.count({
-        where: {
-          status: 'failed',
-          updated_at: {
-            [require('sequelize').Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
-        }
-      }),
+    if (!masterDbClient) {
+      return res.status(503).json({ error: 'Database not available' });
+    }
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const [
+      { count: pending },
+      { count: running },
+      { count: completed },
+      { count: failed }
+    ] = await Promise.all([
+      masterDbClient
+        .from('job_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      masterDbClient
+        .from('job_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'running'),
+      masterDbClient
+        .from('job_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed')
+        .gte('completed_at', twentyFourHoursAgo),
+      masterDbClient
+        .from('job_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'failed')
+        .gte('updated_at', twentyFourHoursAgo),
     ]);
 
     res.json({
       queue: {
-        pending,
-        running,
-        completed_24h: completed,
-        failed_24h: failed
+        pending: pending || 0,
+        running: running || 0,
+        completed_24h: completed || 0,
+        failed_24h: failed || 0
       },
-      healthy: pending < 100 && running < 10 // Simple health check
+      healthy: (pending || 0) < 100 && (running || 0) < 10 // Simple health check
     });
 
   } catch (error) {

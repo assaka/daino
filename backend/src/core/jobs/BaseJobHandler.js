@@ -1,8 +1,10 @@
 const { EventEmitter } = require('events');
-const JobHistory = require('../../models/JobHistory');
 
 /**
  * Base class for all background job handlers
+ *
+ * Job handlers implement the execute() method which contains the actual job logic.
+ * BackgroundJobManager handles job lifecycle (status updates, history tracking).
  */
 class BaseJobHandler extends EventEmitter {
   constructor(job) {
@@ -21,76 +23,12 @@ class BaseJobHandler extends EventEmitter {
   }
 
   /**
-   * Start job execution with tracking
-   */
-  async start() {
-    this.startTime = Date.now();
-    
-    try {
-      // Mark job as started
-      await this.job.markAsStarted();
-      await JobHistory.recordJobStart(this.job.id);
-      
-      console.log(`🔄 Starting job: ${this.job.type} (ID: ${this.job.id})`);
-      this.emit('job:started');
-
-      // Execute the actual job logic
-      const result = await this.execute();
-
-      // Calculate duration
-      const duration = Date.now() - this.startTime;
-
-      // Mark job as completed
-      await this.job.markAsCompleted(result);
-      await JobHistory.recordJobCompletion(this.job.id, result, duration);
-
-      console.log(`✅ Job completed: ${this.job.type} (ID: ${this.job.id}) in ${duration}ms`);
-      this.emit('job:completed', result);
-
-      return result;
-    } catch (error) {
-      const duration = this.startTime ? Date.now() - this.startTime : null;
-      
-      console.error(`❌ Job failed: ${this.job.type} (ID: ${this.job.id}):`, error);
-      
-      // Record failure in history
-      await JobHistory.recordJobFailure(this.job.id, error, duration);
-      
-      // Handle retry logic
-      const canRetry = this.job.retry_count < this.job.max_retries;
-      await this.job.markAsFailed(error, canRetry);
-
-      if (canRetry) {
-        await JobHistory.recordJobRetry(this.job.id, this.job.retry_count + 1, this.job.scheduled_at);
-      }
-
-      this.emit('job:failed', error);
-      throw error;
-    }
-  }
-
-  /**
    * Update job progress
    */
   async updateProgress(progress, message = null) {
     if (this.isAborted) return;
 
     this.progress = Math.max(0, Math.min(100, progress));
-
-    // Only call job.updateProgress if it's a method (not available in direct execution mode)
-    if (typeof this.job.updateProgress === 'function') {
-      await this.job.updateProgress(this.progress, message);
-    }
-
-    // Only record to JobHistory if we have a real job ID (not system jobs)
-    if (this.job.id && !String(this.job.id).startsWith('system-')) {
-      try {
-        await JobHistory.recordJobProgress(this.job.id, this.progress, message || `Progress: ${this.progress}%`);
-      } catch (err) {
-        // Ignore history errors for direct execution
-      }
-    }
-
     this.emit('progress', this.progress, message);
 
     if (message) {
@@ -103,7 +41,6 @@ class BaseJobHandler extends EventEmitter {
    */
   async abort(reason = 'Job aborted') {
     this.isAborted = true;
-    await JobHistory.recordJobCancellation(this.job.id, reason);
     this.emit('job:aborted', reason);
     throw new Error(reason);
   }
@@ -140,8 +77,9 @@ class BaseJobHandler extends EventEmitter {
    */
   log(message, level = 'info') {
     const timestamp = new Date().toISOString();
-    const prefix = `[${this.job.type}:${this.job.id}]`;
-    
+    const jobType = this.job.type || this.job.job_type || 'unknown';
+    const prefix = `[${jobType}:${this.job.id}]`;
+
     switch (level) {
       case 'error':
         console.error(`${timestamp} ${prefix} ❌`, message);
@@ -179,7 +117,7 @@ class BaseJobHandler extends EventEmitter {
   async executeWithTimeout(operation, timeoutMs = 300000) { // 5 minutes default
     return Promise.race([
       operation,
-      new Promise((_, reject) => 
+      new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
       )
     ]);
@@ -195,7 +133,7 @@ class BaseJobHandler extends EventEmitter {
 
     for (let i = 0; i < total; i += batchSize) {
       this.checkAbort(); // Check for abort between batches
-      
+
       const batch = items.slice(i, i + batchSize);
       const batchResults = await Promise.allSettled(
         batch.map(item => processor(item, i + batch.indexOf(item)))
@@ -207,7 +145,7 @@ class BaseJobHandler extends EventEmitter {
       // Update progress
       const progressPercent = Math.floor((processed / total) * 100);
       await this.updateProgress(
-        progressPercent, 
+        progressPercent,
         `Processed ${processed}/${total} items`
       );
 
@@ -225,20 +163,20 @@ class BaseJobHandler extends EventEmitter {
    */
   async retryOperation(operation, maxRetries = 3, baseDelay = 1000) {
     let lastError;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error;
-        
+
         if (attempt === maxRetries) {
           break; // Don't wait after the last attempt
         }
 
         const delay = baseDelay * Math.pow(2, attempt - 1);
         this.log(`Attempt ${attempt}/${maxRetries} failed, retrying in ${delay}ms: ${error.message}`, 'warn');
-        
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -252,7 +190,7 @@ class BaseJobHandler extends EventEmitter {
   getContext() {
     return {
       jobId: this.job.id,
-      jobType: this.job.type,
+      jobType: this.job.type || this.job.job_type,
       storeId: this.job.store_id,
       userId: this.job.user_id,
       priority: this.job.priority,
