@@ -76,9 +76,16 @@ class BullMQManager {
         // BullMQ needs the URL parsed into options
         const url = new URL(process.env.REDIS_URL);
 
-        // Render Redis uses TLS - check for rediss:// or render.com host
-        const isRenderRedis = url.hostname.includes('render.com') || url.hostname.includes('redis.render');
+        // Render Redis uses TLS - check protocol or common Render hostname patterns
+        const isRenderRedis = url.hostname.includes('render.com') ||
+                              url.hostname.includes('redis.render') ||
+                              url.hostname.startsWith('red-') ||
+                              url.hostname.includes('ohio') ||
+                              url.hostname.includes('oregon') ||
+                              url.hostname.includes('frankfurt');
         const needsTLS = url.protocol === 'rediss:' || isRenderRedis;
+
+        console.log(`BullMQ: Redis URL analysis - protocol: ${url.protocol}, host: ${url.hostname}, isRenderRedis: ${isRenderRedis}`);
 
         this.connectionConfig = {
           host: url.hostname,
@@ -89,6 +96,10 @@ class BullMQManager {
           tls: needsTLS ? {
             rejectUnauthorized: false,  // Required for Render managed Redis
           } : undefined,
+          // Force IPv4 to avoid IPv6 issues
+          family: 4,
+          // Socket settings for stability
+          socketTimeout: 30000,
           ...bullMQOptions,
         };
         console.log(`BullMQ: Parsed Redis URL - host: ${url.hostname}, port: ${url.port}, tls: ${needsTLS}`);
