@@ -3187,9 +3187,12 @@ export default function ThemeLayout() {
 
                 </div>
 
-            {/* Sticky Save Button */}
-            <div className="sticky bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 -mx-6 mt-8">
-                <div className="max-w-7xl mx-auto flex justify-end">
+            {/* Spacer for fixed button */}
+            <div className="h-20" />
+
+            {/* Fixed Save Button at bottom of viewport */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
+                <div className="max-w-7xl mx-auto flex justify-end px-6">
                     <SaveButton
                         type="button"
                         onClick={(e) => {
