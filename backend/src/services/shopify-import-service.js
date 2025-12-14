@@ -34,7 +34,26 @@ class ShopifyImportService {
         throw new Error('No Shopify connection found for this store. Please connect your Shopify account first.');
       }
 
-      this.client = new ShopifyClient(tokenRecord.shop_domain, tokenRecord.access_token);
+      // Debug: Check if token looks encrypted (starts with 'encrypted:')
+      const accessToken = tokenRecord.access_token;
+      if (!accessToken) {
+        throw new Error('Shopify access token is missing from the configuration.');
+      }
+
+      if (accessToken.startsWith('encrypted:')) {
+        console.error('❌ Shopify access token is still encrypted! Decryption may have failed.');
+        console.error('Token preview:', accessToken.substring(0, 50) + '...');
+        throw new Error('Shopify access token decryption failed. Please reconnect your Shopify account.');
+      }
+
+      // Log token preview for debugging (first/last few chars only for security)
+      console.log('🔐 Shopify token retrieved:', {
+        shopDomain: tokenRecord.shop_domain,
+        tokenLength: accessToken.length,
+        tokenPreview: accessToken.substring(0, 8) + '...' + accessToken.substring(accessToken.length - 4)
+      });
+
+      this.client = new ShopifyClient(tokenRecord.shop_domain, accessToken);
       this.shopDomain = tokenRecord.shop_domain;
 
       return { success: true };
