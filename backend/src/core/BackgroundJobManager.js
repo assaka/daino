@@ -407,7 +407,7 @@ class BackgroundJobManager extends EventEmitter {
 
     // When BullMQ is running, only pick up stale jobs as fallback
     // This prevents double-processing while catching jobs that BullMQ failed to process
-    const staleThreshold = this.useBullMQ ? 30000 : 0; // 30 seconds if BullMQ active
+    const staleThreshold = this.useBullMQ ? 5000 : 0; // 5 seconds if BullMQ active
     const maxScheduledAt = new Date(Date.now() - staleThreshold).toISOString();
 
     const { data: job, error } = await masterDbClient
