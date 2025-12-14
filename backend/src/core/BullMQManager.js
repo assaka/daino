@@ -18,7 +18,7 @@ const { masterDbClient } = require('../database/masterConnection');
  */
 class BullMQManager {
   constructor() {
-    this.connection = null;
+    this.connectionConfig = null;  // Store config, not connection instance
     this.queues = new Map();
     this.workers = new Map();
     this.jobHandlers = new Map();
@@ -26,7 +26,7 @@ class BullMQManager {
   }
 
   /**
-   * Initialize BullMQ with Redis connection
+   * Initialize BullMQ with Redis connection config
    */
   async initialize() {
     if (this.isInitialized) {
@@ -34,48 +34,38 @@ class BullMQManager {
     }
 
     try {
-      // BullMQ requires these Redis options
-      const bullMQRedisOptions = {
-        maxRetriesPerRequest: null,  // Required by BullMQ
-        enableReadyCheck: false,
-      };
-
       // Check if Redis is disabled
       if (process.env.REDIS_ENABLED === 'false') {
         console.warn('BullMQ: Redis disabled, falling back to database queue');
         return false;
       }
 
-      // Create ioredis connection for BullMQ
+      // Build connection config (BullMQ will create its own connections)
       if (process.env.REDIS_URL) {
-        // Use URL with BullMQ-required options
-        this.connection = new Redis(process.env.REDIS_URL, bullMQRedisOptions);
+        this.connectionConfig = process.env.REDIS_URL;
       } else if (process.env.REDIS_HOST) {
-        // Use individual config with BullMQ-required options
-        this.connection = new Redis({
+        this.connectionConfig = {
           host: process.env.REDIS_HOST,
           port: parseInt(process.env.REDIS_PORT || '6379', 10),
           db: parseInt(process.env.REDIS_DB || '0', 10),
           password: process.env.REDIS_PASSWORD || undefined,
-          ...bullMQRedisOptions,
-        });
+        };
       } else {
         console.warn('BullMQ: Redis not configured, falling back to database queue');
         return false;
       }
 
-      // Test connection
-      await this.connection.ping();
+      // Test connection with a temporary connection
+      const testConnection = new Redis(this.connectionConfig, {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+      });
+
+      await testConnection.ping();
       console.log('BullMQ: Redis connection established');
 
-      // Handle connection events
-      this.connection.on('error', (err) => {
-        console.error('BullMQ Redis Error:', err);
-      });
-
-      this.connection.on('connect', () => {
-        console.log('BullMQ: Connected to Redis');
-      });
+      // Close test connection - BullMQ will create its own
+      await testConnection.quit();
 
       this.isInitialized = true;
       return true;
@@ -152,9 +142,9 @@ class BullMQManager {
     const queueName = this.sanitizeQueueName(jobType);
 
     if (!this.queues.has(jobType)) {
-      // Create queue with default options (use sanitized name)
+      // Create queue with its own connection (BullMQ best practice)
       const queue = new Queue(queueName, {
-        connection: this.connection,
+        connection: this.connectionConfig,
         defaultJobOptions: {
           attempts: 3,
           backoff: {
@@ -275,7 +265,7 @@ class BullMQManager {
         }
       },
       {
-        connection: this.connection,
+        connection: this.connectionConfig,
         concurrency: parseInt(process.env.BULLMQ_CONCURRENCY || '5', 10),
       }
     );
@@ -415,10 +405,7 @@ class BullMQManager {
       await queue.close();
     }
 
-    // Close Redis connection
-    if (this.connection) {
-      await this.connection.quit();
-    }
+    // No need to close a shared connection anymore - each queue/worker manages its own
 
     this.isInitialized = false;
     console.log('BullMQ: All connections closed');
@@ -428,7 +415,7 @@ class BullMQManager {
    * Check if BullMQ is available and initialized
    */
   isAvailable() {
-    return this.isInitialized && this.connection && this.connection.status === 'ready';
+    return this.isInitialized && this.connectionConfig !== null;
   }
 }
 
