@@ -1233,18 +1233,20 @@ export default function ThemeLayout() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
-                                <CardDescription>Control the colors and fonts of your store.</CardDescription>
+                                <CardDescription>Control the colors and fonts of your store. Select a preset theme or create your own from current settings.</CardDescription>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Select
-                                    value={selectedThemeId || ''}
-                                    onValueChange={(themeId) => {
-                                        const theme = availableThemes.find(t => t.id === themeId);
-                                        if (theme) handleApplyTheme(theme);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[200px]">
-                                        <SelectValue placeholder="Select Theme..." />
+                            <div className="flex items-center gap-3">
+                                <div className="flex flex-col items-end gap-1">
+                                    <Label className="text-xs text-gray-500">Current theme</Label>
+                                    <Select
+                                        value={selectedThemeId || ''}
+                                        onValueChange={(themeId) => {
+                                            const theme = availableThemes.find(t => t.id === themeId);
+                                            if (theme) handleApplyTheme(theme);
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select Theme..." />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {availableThemes.filter(t => t.type === 'system' || !t.type).length > 0 && (
@@ -1268,7 +1270,8 @@ export default function ThemeLayout() {
                                             </>
                                         )}
                                     </SelectContent>
-                                </Select>
+                                    </Select>
+                                </div>
                                 <Button
                                     variant="outline"
                                     size="sm"
