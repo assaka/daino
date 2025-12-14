@@ -45,6 +45,30 @@ class BullMQManager {
       const bullMQOptions = {
         maxRetriesPerRequest: null,
         enableReadyCheck: false,
+        // Reconnection settings for managed Redis (Render)
+        retryStrategy: (times) => {
+          if (times > 10) {
+            console.error(`BullMQ: Redis reconnect failed after ${times} attempts`);
+            return null; // Stop retrying
+          }
+          const delay = Math.min(times * 200, 5000);
+          console.log(`BullMQ: Redis reconnecting in ${delay}ms (attempt ${times})`);
+          return delay;
+        },
+        // Keep connection alive
+        keepAlive: 30000,
+        connectTimeout: 10000,
+        // Don't queue commands when disconnected
+        enableOfflineQueue: true,
+        // Reconnect on error
+        reconnectOnError: (err) => {
+          const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED'];
+          if (targetErrors.some(e => err.message.includes(e))) {
+            console.log(`BullMQ: Reconnecting due to ${err.message}`);
+            return true;
+          }
+          return false;
+        },
       };
 
       if (process.env.REDIS_URL) {
