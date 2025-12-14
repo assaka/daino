@@ -1,24 +1,13 @@
 /**
  * Dynamic Plugin API Handler
- * Replaces unified-plugins.js with database-driven plugin execution
+ * Database-driven plugin execution using Supabase REST API
  */
 
 const express = require('express');
 const router = express.Router();
-const PluginRegistry = require('../core/PluginRegistry');
+const { getPluginRegistry } = require('../core/PluginRegistry');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
-
-let pluginRegistry = null;
-
-// Initialize plugin registry
-const initializePluginRegistry = async (db) => {
-  if (!pluginRegistry) {
-    pluginRegistry = new PluginRegistry(db);
-    await pluginRegistry.initialize();
-  }
-  return pluginRegistry;
-};
 
 // Generic plugin endpoint handler - routes to database-stored plugin code
 router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, res) => {
@@ -26,17 +15,20 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
     const { pluginId } = req.params;
     const path = req.params[0]; // Everything after /dynamic/:pluginId/
     const method = req.method;
-    
+
     console.log(`🔌 Dynamic plugin request: ${method} ${pluginId}/${path}`);
-    
+
+    // Get plugin registry for this store
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
     // Get plugin endpoints from database
     const endpoints = await pluginRegistry.getPluginEndpoints(pluginId);
-    const endpoint = endpoints.find(ep => 
-      ep.method === method && 
+    const endpoint = endpoints.find(ep =>
+      ep.method === method &&
       matchPath(ep.path, `/${path}`) &&
       ep.enabled
     );
-    
+
     if (!endpoint) {
       return res.status(404).json({
         success: false,
@@ -44,7 +36,7 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
         pluginId
       });
     }
-    
+
     // Execute the plugin endpoint code
     const context = {
       req: {
@@ -60,10 +52,9 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
         json: (data) => res.json(data),
         status: (code) => res.status(code),
         send: (data) => res.send(data)
-      },
-      db: req.db || null // Database connection would be injected
+      }
     };
-    
+
     // Execute plugin code in sandbox
     const execution = await pluginRegistry.executePluginCode(
       pluginId,
@@ -71,7 +62,7 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
       endpoint.handler_code,
       context
     );
-    
+
     if (!execution.success) {
       return res.status(500).json({
         success: false,
@@ -79,7 +70,7 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
         details: execution.result?.error
       });
     }
-    
+
     // If the plugin code didn't send a response, send the result
     if (!res.headersSent) {
       res.json({
@@ -88,7 +79,7 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
         executionTime: execution.executionTime
       });
     }
-    
+
   } catch (error) {
     console.error('Error in dynamic plugin handler:', error);
     res.status(500).json({
@@ -115,33 +106,39 @@ router.get('/test', async (req, res) => {
 });
 
 // Plugin management endpoints
-router.get('/registry', authMiddleware, async (req, res) => {
+router.get('/registry', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    const pluginRegistry = await getPluginRegistry(req.storeId);
     const { category, type, status } = req.query;
-    let query = 'SELECT * FROM plugin_registry WHERE 1=1';
-    const params = [];
-    
+
+    // Get all plugins and filter in memory (simpler than building dynamic query)
+    let plugins = await pluginRegistry.getActivePlugins();
+
+    // Apply filters if provided
+    if (status && status !== 'active') {
+      // Need to get all plugins for non-active status
+      const db = await pluginRegistry._getConnection();
+      const { data, error } = await db.from('plugin_registry')
+        .select('*')
+        .eq('status', status)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      plugins = data || [];
+    }
+
     if (category) {
-      query += ' AND category = $' + (params.length + 1);
-      params.push(category);
+      plugins = plugins.filter(p => p.category === category);
     }
-    
+
     if (type) {
-      query += ' AND type = $' + (params.length + 1);
-      params.push(type);
+      plugins = plugins.filter(p => p.type === type);
     }
-    
-    if (status) {
-      query += ' AND status = $' + (params.length + 1);
-      params.push(status);
-    }
-    
-    const result = await req.db.query(query + ' ORDER BY name ASC', params);
-    
+
     res.json({
       success: true,
-      data: result.rows,
-      count: result.rows.length
+      data: plugins,
+      count: plugins.length
     });
   } catch (error) {
     console.error('Error getting plugin registry:', error);
@@ -153,10 +150,11 @@ router.get('/registry', authMiddleware, async (req, res) => {
 });
 
 // Register new plugin
-router.post('/registry', authMiddleware, async (req, res) => {
+router.post('/registry', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    const pluginRegistry = await getPluginRegistry(req.storeId);
     const result = await pluginRegistry.registerPlugin(req.body);
-    
+
     if (result.success) {
       res.status(201).json({
         success: true,
@@ -179,40 +177,36 @@ router.post('/registry', authMiddleware, async (req, res) => {
 });
 
 // Get plugin details
-router.get('/registry/:pluginId', authMiddleware, async (req, res) => {
+router.get('/registry/:pluginId', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { pluginId } = req.params;
-    
-    const pluginResult = await req.db.query(
-      'SELECT * FROM plugin_registry WHERE id = $1',
-      [pluginId]
-    );
-    
-    if (pluginResult.rows.length === 0) {
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const plugin = await pluginRegistry.getPlugin(pluginId);
+
+    if (!plugin) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
-    
-    const plugin = pluginResult.rows[0];
-    
-    // Get hooks, events, endpoints, and admin pages
-    const [hooks, events, endpoints, adminPages] = await Promise.all([
+
+    // Get hooks, endpoints, and scripts
+    const [hooks, endpoints, scripts, dependencies] = await Promise.all([
       pluginRegistry.getPluginHooks(pluginId),
-      req.db.query('SELECT * FROM plugin_events WHERE plugin_id = $1', [pluginId]),
       pluginRegistry.getPluginEndpoints(pluginId),
-      req.db.query('SELECT * FROM plugin_admin_pages WHERE plugin_id = $1 ORDER BY order_position ASC', [pluginId])
+      pluginRegistry.getPluginScripts(pluginId),
+      pluginRegistry.getPluginDependencies(pluginId)
     ]);
 
     res.json({
       success: true,
       data: {
         ...plugin,
-        hooks: hooks,
-        events: events.rows,
-        endpoints: endpoints,
-        adminPages: adminPages.rows
+        hooks,
+        endpoints,
+        scripts,
+        dependencies
       }
     });
   } catch (error) {
@@ -225,27 +219,32 @@ router.get('/registry/:pluginId', authMiddleware, async (req, res) => {
 });
 
 // Update plugin status
-router.patch('/registry/:pluginId/status', authMiddleware, async (req, res) => {
+router.patch('/registry/:pluginId/status', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { pluginId } = req.params;
     const { status } = req.body;
-    
+
     if (!['active', 'inactive', 'error'].includes(status)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid status. Must be: active, inactive, or error'
       });
     }
-    
-    await req.db.query(
-      'UPDATE plugin_registry SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [status, pluginId]
-    );
-    
-    res.json({
-      success: true,
-      message: `Plugin status updated to ${status}`
-    });
+
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+    const result = await pluginRegistry.updatePluginStatus(pluginId, status);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Plugin status updated to ${status}`
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
   } catch (error) {
     console.error('Error updating plugin status:', error);
     res.status(500).json({
@@ -256,26 +255,24 @@ router.patch('/registry/:pluginId/status', authMiddleware, async (req, res) => {
 });
 
 // Delete plugin
-router.delete('/registry/:pluginId', authMiddleware, async (req, res) => {
+router.delete('/registry/:pluginId', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { pluginId } = req.params;
-    
-    const result = await req.db.query(
-      'DELETE FROM plugin_registry WHERE id = $1',
-      [pluginId]
-    );
-    
-    if (result.rowCount === 0) {
-      return res.status(404).json({
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const result = await pluginRegistry.deletePlugin(pluginId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Plugin deleted successfully'
+      });
+    } else {
+      res.status(404).json({
         success: false,
-        error: 'Plugin not found'
+        error: result.error || 'Plugin not found'
       });
     }
-    
-    res.json({
-      success: true,
-      message: 'Plugin deleted successfully'
-    });
   } catch (error) {
     console.error('Error deleting plugin:', error);
     res.status(500).json({
@@ -285,26 +282,21 @@ router.delete('/registry/:pluginId', authMiddleware, async (req, res) => {
   }
 });
 
-// Get plugin execution logs
-router.get('/registry/:pluginId/logs', authMiddleware, async (req, res) => {
+// Get plugin scripts
+router.get('/registry/:pluginId/scripts', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { pluginId } = req.params;
-    const { limit = 100, offset = 0 } = req.query;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
 
-    const result = await req.db.query(`
-      SELECT * FROM plugin_execution_logs
-      WHERE plugin_id = $1
-      ORDER BY created_at DESC
-      LIMIT $2 OFFSET $3
-    `, [pluginId, limit, offset]);
+    const scripts = await pluginRegistry.getPluginScripts(pluginId);
 
     res.json({
       success: true,
-      data: result.rows,
-      count: result.rows.length
+      data: scripts,
+      count: scripts.length
     });
   } catch (error) {
-    console.error('Error getting plugin logs:', error);
+    console.error('Error getting plugin scripts:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -312,33 +304,77 @@ router.get('/registry/:pluginId/logs', authMiddleware, async (req, res) => {
   }
 });
 
-// Get plugin admin pages
-router.get('/admin-pages/:pluginId', authMiddleware, async (req, res) => {
+// Register plugin script
+router.post('/registry/:pluginId/scripts', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { pluginId } = req.params;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
 
-    const result = await req.db.query(`
-      SELECT
-        id,
-        plugin_id,
-        page_key,
-        page_name,
-        route,
-        description,
-        icon,
-        category,
-        order_position,
-        is_enabled,
-        created_at,
-        updated_at
-      FROM plugin_admin_pages
-      WHERE plugin_id = $1
-      ORDER BY order_position ASC
-    `, [pluginId]);
+    const result = await pluginRegistry.registerPluginScript(pluginId, req.body);
 
-    res.json(result.rows);
+    if (result.success) {
+      res.status(201).json({
+        success: true,
+        message: 'Script registered successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
   } catch (error) {
-    console.error('Error getting plugin admin pages:', error);
+    console.error('Error registering plugin script:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get plugin hooks
+router.get('/registry/:pluginId/hooks', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const hooks = await pluginRegistry.getPluginHooks(pluginId);
+
+    res.json({
+      success: true,
+      data: hooks,
+      count: hooks.length
+    });
+  } catch (error) {
+    console.error('Error getting plugin hooks:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Register plugin hook
+router.post('/registry/:pluginId/hooks', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const result = await pluginRegistry.registerPluginHook(pluginId, req.body);
+
+    if (result.success) {
+      res.status(201).json({
+        success: true,
+        message: 'Hook registered successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error registering plugin hook:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -351,20 +387,16 @@ router.post('/hooks/:hookName', authMiddleware, storeResolver(), async (req, res
   try {
     const { hookName } = req.params;
     const { input, context = {} } = req.body;
-    
+
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
     // Get all active hooks for this hook name
-    const hooks = await req.db.query(`
-      SELECT h.*, p.security_level 
-      FROM plugin_hooks h
-      JOIN plugin_registry p ON h.plugin_id = p.id
-      WHERE h.hook_name = $1 AND h.enabled = true AND p.status = 'active'
-      ORDER BY h.priority ASC
-    `, [hookName]);
-    
+    const hooks = await pluginRegistry.getHooksByName(hookName);
+
     let result = input;
     const executionResults = [];
-    
-    for (const hook of hooks.rows) {
+
+    for (const hook of hooks) {
       try {
         const execution = await pluginRegistry.executePluginCode(
           hook.plugin_id,
@@ -372,7 +404,7 @@ router.post('/hooks/:hookName', authMiddleware, storeResolver(), async (req, res
           hook.handler_code,
           { input: result, context, hookName }
         );
-        
+
         if (execution.success) {
           result = execution.result;
           executionResults.push({
@@ -396,12 +428,12 @@ router.post('/hooks/:hookName', authMiddleware, storeResolver(), async (req, res
         });
       }
     }
-    
+
     res.json({
       success: true,
       data: result,
       hookExecutions: executionResults,
-      hooksExecuted: hooks.rows.length
+      hooksExecuted: hooks.length
     });
   } catch (error) {
     console.error('Error executing hooks:', error);
@@ -412,59 +444,75 @@ router.post('/hooks/:hookName', authMiddleware, storeResolver(), async (req, res
   }
 });
 
-// Plugin events trigger endpoint
-router.post('/events/:eventName', authMiddleware, storeResolver(), async (req, res) => {
+// Plugin data endpoints
+router.get('/registry/:pluginId/data/:key', authMiddleware, storeResolver(), async (req, res) => {
   try {
-    const { eventName } = req.params;
-    const { data, context = {} } = req.body;
-    
-    // Get all active event listeners
-    const events = await req.db.query(`
-      SELECT e.*, p.security_level 
-      FROM plugin_events e
-      JOIN plugin_registry p ON e.plugin_id = p.id
-      WHERE e.event_name = $1 AND e.enabled = true AND p.status = 'active'
-      ORDER BY e.priority ASC
-    `, [eventName]);
-    
-    const executionResults = [];
-    
-    // Execute all event listeners in parallel
-    const executions = events.rows.map(async (event) => {
-      try {
-        const execution = await pluginRegistry.executePluginCode(
-          event.plugin_id,
-          'event',
-          event.listener_code,
-          { data, context, eventName }
-        );
-        
-        return {
-          pluginId: event.plugin_id,
-          success: execution.success,
-          executionTime: execution.executionTime,
-          error: execution.success ? null : execution.result?.error
-        };
-      } catch (error) {
-        console.error(`Error executing event ${eventName} for plugin ${event.plugin_id}:`, error);
-        return {
-          pluginId: event.plugin_id,
-          success: false,
-          error: error.message
-        };
-      }
-    });
-    
-    const results = await Promise.all(executions);
-    
+    const { pluginId, key } = req.params;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const value = await pluginRegistry.getPluginData(pluginId, key);
+
     res.json({
       success: true,
-      message: `Event ${eventName} triggered`,
-      eventExecutions: results,
-      listenersExecuted: events.rows.length
+      data: value
     });
   } catch (error) {
-    console.error('Error triggering events:', error);
+    console.error('Error getting plugin data:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.put('/registry/:pluginId/data/:key', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { pluginId, key } = req.params;
+    const { value } = req.body;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const result = await pluginRegistry.setPluginData(pluginId, key, value);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Plugin data saved'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error setting plugin data:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.delete('/registry/:pluginId/data/:key', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { pluginId, key } = req.params;
+    const pluginRegistry = await getPluginRegistry(req.storeId);
+
+    const result = await pluginRegistry.deletePluginData(pluginId, key);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Plugin data deleted'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting plugin data:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -477,30 +525,29 @@ function matchPath(pattern, actual) {
   // Simple path matching - could be enhanced with proper regex
   const patternParts = pattern.split('/').filter(p => p);
   const actualParts = actual.split('/').filter(p => p);
-  
+
   if (patternParts.length !== actualParts.length) {
     return false;
   }
-  
+
   for (let i = 0; i < patternParts.length; i++) {
     const patternPart = patternParts[i];
     const actualPart = actualParts[i];
-    
+
     // Skip parameter parts (start with :)
     if (patternPart.startsWith(':')) {
       continue;
     }
-    
+
     if (patternPart !== actualPart) {
       return false;
     }
   }
-  
+
   return true;
 }
 
-// Export initialization function
+// Export just the router (no initialization needed)
 module.exports = {
-  router,
-  initializePluginRegistry
+  router
 };
