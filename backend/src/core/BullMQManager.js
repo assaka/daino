@@ -108,6 +108,13 @@ class BullMQManager {
   }
 
   /**
+   * Sanitize job type for use as queue name (BullMQ doesn't allow colons)
+   */
+  sanitizeQueueName(jobType) {
+    return jobType.replace(/:/g, '-');
+  }
+
+  /**
    * Register a job handler
    */
   registerJobType(jobType, handlerClass) {
@@ -123,9 +130,11 @@ class BullMQManager {
       throw new Error('BullMQ not initialized. Call initialize() first.');
     }
 
+    const queueName = this.sanitizeQueueName(jobType);
+
     if (!this.queues.has(jobType)) {
-      // Create queue with default options
-      const queue = new Queue(jobType, {
+      // Create queue with default options (use sanitized name)
+      const queue = new Queue(queueName, {
         connection: this.connection,
         defaultJobOptions: {
           attempts: 3,
@@ -146,12 +155,12 @@ class BullMQManager {
       this.queues.set(jobType, queue);
 
       // Also create a scheduler for delayed jobs
-      const scheduler = new QueueScheduler(jobType, {
+      const scheduler = new QueueScheduler(queueName, {
         connection: this.connection,
       });
       this.schedulers.set(jobType, scheduler);
 
-      console.log(`BullMQ: Created queue: ${jobType}`);
+      console.log(`BullMQ: Created queue: ${queueName} (for ${jobType})`);
     }
 
     return this.queues.get(jobType);
@@ -209,8 +218,10 @@ class BullMQManager {
       throw new Error(`No handler registered for job type: ${jobType}`);
     }
 
+    const queueName = this.sanitizeQueueName(jobType);
+
     const worker = new Worker(
-      jobType,
+      queueName,
       async (job) => {
         console.log(`BullMQ: Processing job ${job.id} of type ${jobType}`);
 
@@ -268,7 +279,7 @@ class BullMQManager {
     });
 
     this.workers.set(jobType, worker);
-    console.log(`BullMQ: Created worker for ${jobType}`);
+    console.log(`BullMQ: Created worker for ${queueName} (${jobType})`);
 
     return worker;
   }
