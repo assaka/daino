@@ -25,28 +25,15 @@ class ShopifyImportProductsJob extends BaseJobHandler {
     await this.updateProgress(10, 'Connection established, fetching products...');
 
     // Import products with progress tracking
-    // Progress stages: 5-10% init, 10-15% fetch, 15-95% import, 95-100% complete
+    // Simple linear progress: current/total * 100
     const result = await importService.importProducts({
       ...options,
       progressCallback: async (progress) => {
-        if (progress.stage === 'fetching_products') {
-          // Fetching is quick: 10-15%
-          const fetchProgress = 10 + (progress.current / progress.total * 5);
+        if (progress.stage === 'importing_products') {
+          // Linear progress based on products: 1/17 = 6%, 17/17 = 100%
+          const percent = Math.round((progress.current / progress.total) * 100);
           await this.updateProgress(
-            Math.round(fetchProgress),
-            `Fetching products: ${progress.current}/${progress.total}`
-          );
-        } else if (progress.stage === 'downloading_images') {
-          // Downloading images merged into importing stage for simplicity
-          await this.updateProgress(
-            15,
-            `Preparing images...`
-          );
-        } else if (progress.stage === 'importing_products') {
-          // Importing is the main work: 15-95%
-          const importProgress = 15 + (progress.current / progress.total * 80);
-          await this.updateProgress(
-            Math.round(importProgress),
+            percent,
             `Importing: ${progress.item} (${progress.current}/${progress.total})`
           );
         }
