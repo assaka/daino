@@ -173,9 +173,21 @@ services:
         sync: false
       - key: MASTER_SUPABASE_SERVICE_KEY
         sync: false
+      # Tenant Database Configuration (for ConnectionManager)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       # Encryption Key (for decrypting tenant DB credentials)
       - key: ENCRYPTION_KEY
         sync: false
+      # Redis for job scheduling
+      - key: REDIS_URL
+        fromDatabase:
+          name: daino-redis
+          property: connectionString
+      - key: REDIS_ENABLED
+        value: true
     autoDeploy: true
 
 # Key-Value Store (Redis) - Managed by Render
