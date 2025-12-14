@@ -334,14 +334,15 @@ class BackgroundJobManager extends EventEmitter {
     // Resume any jobs that were running when the server shut down
     await this.resumeInterruptedJobs();
 
-    // If using BullMQ, start workers
+    // If using BullMQ, start workers as primary
     if (this.useBullMQ) {
-      console.log('🚀 Starting BullMQ workers...');
+      console.log('🚀 Starting BullMQ workers (primary)...');
       await bullMQManager.startWorkers();
-    } else {
-      // Start the main processing loop (database queue)
-      this.processLoop();
     }
+
+    // Always start database queue as fallback (picks up stale pending jobs)
+    console.log('🚀 Starting database queue (fallback for stale jobs)...');
+    this.processLoop();
 
     this.emit('manager:started');
   }
@@ -355,23 +356,22 @@ class BackgroundJobManager extends EventEmitter {
     console.log('⏹️ Stopping background job processor...');
     this.isRunning = false;
 
-    // If using BullMQ, close all connections
+    // Close BullMQ if it was running
     if (this.useBullMQ) {
       await bullMQManager.close();
-    } else {
-      // Wait for current jobs to finish or timeout (database queue)
-      const timeout = setTimeout(() => {
-        console.warn('⚠️ Force stopping job processor (timeout reached)');
-        this.processing.clear();
-      }, this.shutdownTimeout);
-
-      // Wait for all jobs to finish
-      while (this.processing.size > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      clearTimeout(timeout);
     }
+
+    // Wait for current database queue jobs to finish or timeout
+    const timeout = setTimeout(() => {
+      console.warn('⚠️ Force stopping job processor (timeout reached)');
+      this.processing.clear();
+    }, this.shutdownTimeout);
+
+    while (this.processing.size > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    clearTimeout(timeout);
 
     this.emit('manager:stopped');
     console.log('✅ Background job processor stopped');
@@ -400,15 +400,21 @@ class BackgroundJobManager extends EventEmitter {
 
   /**
    * Get the next job to process
+   * When BullMQ is active, only pick up stale jobs (pending > 30s) as fallback
    */
   async getNextJob() {
     if (!masterDbClient) return null;
+
+    // When BullMQ is running, only pick up stale jobs as fallback
+    // This prevents double-processing while catching jobs that BullMQ failed to process
+    const staleThreshold = this.useBullMQ ? 30000 : 0; // 30 seconds if BullMQ active
+    const maxScheduledAt = new Date(Date.now() - staleThreshold).toISOString();
 
     const { data: job, error } = await masterDbClient
       .from('job_queue')
       .select('*')
       .eq('status', 'pending')
-      .lte('scheduled_at', new Date().toISOString())
+      .lte('scheduled_at', maxScheduledAt)
       .order('priority', { ascending: false })
       .order('scheduled_at', { ascending: true })
       .order('created_at', { ascending: true })

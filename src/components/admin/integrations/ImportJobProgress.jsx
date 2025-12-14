@@ -61,7 +61,8 @@ const ImportJobProgress = ({
   onJobFailed,
   showHistory = true,
   maxHistoryItems = 5,
-  className = ''
+  className = '',
+  refreshTrigger = 0  // Increment this to trigger a refresh after scheduling a job
 }) => {
   const { selectedStore } = useStoreSelection();
   const storeId = selectedStore?.id;
@@ -122,21 +123,29 @@ const ImportJobProgress = ({
     }
   }, [storeId, source, maxHistoryItems, onJobComplete, onJobFailed]);
 
-  // Poll for job updates when there are active jobs
+  // Initial fetch and fetch when refreshTrigger changes (after scheduling a job)
   useEffect(() => {
     mountedRef.current = true;
-
-    // Initial fetch
     fetchJobs();
 
-    // Set up polling
+    return () => {
+      mountedRef.current = false;
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [fetchJobs, refreshTrigger]);
+
+  // Start/stop polling based on active jobs
+  useEffect(() => {
     const startPolling = () => {
       if (pollingRef.current) return;
       pollingRef.current = setInterval(() => {
         if (mountedRef.current) {
           fetchJobs();
         }
-      }, 3000); // Poll every 3 seconds
+      }, 5000); // Poll every 5 seconds (only when active jobs exist)
     };
 
     const stopPolling = () => {
@@ -146,14 +155,15 @@ const ImportJobProgress = ({
       }
     };
 
-    // Always poll to check for new jobs
-    startPolling();
-
-    return () => {
-      mountedRef.current = false;
+    // Only poll when there are active jobs
+    if (activeJobs.length > 0) {
+      startPolling();
+    } else {
       stopPolling();
-    };
-  }, [fetchJobs]);
+    }
+
+    return () => stopPolling();
+  }, [activeJobs.length, fetchJobs]);
 
   // Cancel a job
   const cancelJob = async (jobId) => {
