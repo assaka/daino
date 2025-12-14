@@ -52,7 +52,9 @@ class ShopifyImportProductsJob extends BaseJobHandler {
 
     await this.updateProgress(100, 'Products import completed');
 
-    this.log(`Products import complete: ${result.stats.products.imported} imported, ${result.stats.products.failed} failed`);
+    // result.stats contains { total, imported, skipped, failed } directly
+    const stats = result.stats || {};
+    this.log(`Products import complete: ${stats.imported || 0} imported, ${stats.failed || 0} failed`);
 
     return result;
   }
