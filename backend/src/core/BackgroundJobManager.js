@@ -1,5 +1,5 @@
 const { EventEmitter } = require('events');
-const { masterDbClient } = require('../services/database/masterDbClient');
+const { masterDbClient } = require('../database/masterConnection');
 const bullMQManager = require('./BullMQManager');
 const { v4: uuidv4 } = require('uuid');
 

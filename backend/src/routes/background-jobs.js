@@ -3,7 +3,7 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const jobManager = require('../core/BackgroundJobManager');
-const { masterDbClient } = require('../services/database/masterDbClient');
+const { masterDbClient } = require('../database/masterConnection');
 
 // Apply authentication to all job routes
 router.use(authMiddleware);
