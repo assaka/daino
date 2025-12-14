@@ -358,8 +358,6 @@ export default function ThemeLayout() {
             // Backend GET /api/stores/:id returns: { success: true, data: { store: {...}, tenantData: {...} } }
             const responseData = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
             const fullStore = responseData?.tenantData || responseData;
-            console.log('🎨 Theme debug - responseData.store:', responseData?.store);
-            console.log('🎨 Theme debug - theme_preset:', responseData?.store?.theme_preset);
 
             // Initialize step translations with defaults from store settings if not already loaded
             setTimeout(() => {
@@ -3205,7 +3203,11 @@ export default function ThemeLayout() {
                     </Card>
                 </div>
 
-                <div className="flex justify-end mt-8">
+                </div>
+
+            {/* Sticky Save Button */}
+            <div className="sticky bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 -mx-6 mt-8">
+                <div className="max-w-7xl mx-auto flex justify-end">
                     <SaveButton
                         type="button"
                         onClick={(e) => {
