@@ -57,24 +57,8 @@ export function useStoreBootstrap(storeSlug, language) {
   // Check for storefront preview in URL query params
   const urlParams = new URLSearchParams(window.location.search);
   const storefrontSlug = urlParams.get('storefront');
-  const versionParam = urlParams.get('version');
-
-  // Also check localStorage for persisted preview mode
-  let version = versionParam;
-  if (!version) {
-    try {
-      const stored = localStorage.getItem('daino_preview_mode');
-      if (stored) {
-        const previewState = JSON.parse(stored);
-        const maxAge = 24 * 60 * 60 * 1000;
-        if (Date.now() - previewState.timestamp < maxAge) {
-          if (previewState.isPublishedPreview) version = 'published';
-        }
-      }
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }
+  // version=published is only used to bypass pause modal - only check URL, not localStorage
+  const version = urlParams.get('version');
 
   return useQuery({
     queryKey: ['bootstrap', storeSlug, language, storefrontSlug, version],
@@ -100,8 +84,10 @@ export function useStoreBootstrap(storeSlug, language) {
         params.append('storefront', storefrontSlug);
       }
 
-      // Note: version=published is handled automatically by buildPublicUrl in storefront-client.js
-      // Do NOT add it here to avoid duplicates
+      // Only add version when explicitly in URL (for bypassing pause modal on paused stores)
+      if (version === 'published') {
+        params.append('version', 'published');
+      }
 
       // Use getPublic (not .get) - returns data directly, not wrapped in response.data
       const result = await storefrontApiClient.getPublic(`storefront/bootstrap?${params.toString()}`);
