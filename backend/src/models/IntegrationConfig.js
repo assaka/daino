@@ -11,6 +11,43 @@ const crypto = require('crypto');
 
 const IntegrationConfig = {};
 
+// Modern encryption helpers (Node.js 22+ compatible)
+// The old createCipher/createDecipher used EVP_BytesToKey internally
+// We need to replicate that for backwards compatibility
+function evpBytesToKey(password, keyLen, ivLen) {
+  const key = Buffer.alloc(keyLen);
+  const iv = Buffer.alloc(ivLen);
+  let tmp = Buffer.alloc(0);
+
+  while (key.length + iv.length > tmp.length) {
+    const hash = crypto.createHash('md5');
+    hash.update(tmp);
+    hash.update(Buffer.from(password));
+    tmp = Buffer.concat([tmp, hash.digest()]);
+  }
+
+  tmp.copy(key, 0, 0, keyLen);
+  tmp.copy(iv, 0, keyLen, keyLen + ivLen);
+
+  return { key, iv };
+}
+
+function encryptLegacy(text, password) {
+  const { key, iv } = evpBytesToKey(password, 32, 16); // AES-256-CBC
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return encrypted;
+}
+
+function decryptLegacy(encryptedHex, password) {
+  const { key, iv } = evpBytesToKey(password, 32, 16); // AES-256-CBC
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
 // Encryption/Decryption utilities
 IntegrationConfig.getEncryptionKey = () => {
   // Use environment variable or generate a key
@@ -72,9 +109,8 @@ IntegrationConfig.encryptSensitiveData = (configData, integrationType) => {
   sensitiveFields.forEach(field => {
     if (encrypted[field] && typeof encrypted[field] === 'string') {
       try {
-        const cipher = crypto.createCipher('aes-256-cbc', key);
-        let encryptedValue = cipher.update(encrypted[field], 'utf8', 'hex');
-        encryptedValue += cipher.final('hex');
+        // Use modern encryption (Node.js 22+ compatible)
+        const encryptedValue = encryptLegacy(encrypted[field], key);
         encrypted[field] = `encrypted:${encryptedValue}`;
       } catch (error) {
         console.error(`Failed to encrypt field ${field}:`, error.message);
@@ -117,24 +153,18 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
   sensitiveFields.forEach(field => {
     if (decrypted[field] && typeof decrypted[field] === 'string' && decrypted[field].startsWith('encrypted:')) {
       console.log(`🔐 Attempting to decrypt field: ${field}`);
-      console.log(`🔐 Key being used: ${key.substring(0, 10)}...`);
-      console.log(`🔐 Encrypted value preview: ${decrypted[field].substring(0, 50)}...`);
 
       try {
         const encryptedValue = decrypted[field].replace('encrypted:', '');
-        const decipher = crypto.createDecipher('aes-256-cbc', key);
-        let decryptedValue = decipher.update(encryptedValue, 'hex', 'utf8');
-        decryptedValue += decipher.final('utf8');
+        // Use modern decryption (Node.js 22+ compatible)
+        let decryptedValue = decryptLegacy(encryptedValue, key);
 
         // Handle double encryption (legacy issue)
         if (decryptedValue.startsWith('encrypted:')) {
           console.warn(`Field ${field} appears to be double-encrypted, fixing...`);
           try {
             const encryptedValue2 = decryptedValue.replace('encrypted:', '');
-            const decipher2 = crypto.createDecipher('aes-256-cbc', key);
-            let decryptedValue2 = decipher2.update(encryptedValue2, 'hex', 'utf8');
-            decryptedValue2 += decipher2.final('utf8');
-            decryptedValue = decryptedValue2;
+            decryptedValue = decryptLegacy(encryptedValue2, key);
           } catch (doubleDecryptError) {
             console.error(`Failed to decrypt double-encrypted field ${field}:`, doubleDecryptError.message);
           }
@@ -144,7 +174,6 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
         console.log(`✅ Successfully decrypted field: ${field} (length: ${decryptedValue.length})`);
       } catch (error) {
         console.error(`❌ Failed to decrypt field ${field}:`, error.message);
-        console.error(`❌ Error stack:`, error.stack);
         // Keep encrypted value if decryption fails
       }
     }
