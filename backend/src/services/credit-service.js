@@ -244,6 +244,7 @@ class CreditService {
 
   /**
    * Charge daily fee for custom domain
+   * Uses master DB lookup table and tenant DB via ConnectionManager
    */
   async chargeDailyCustomDomainFee(userId, domainId, domainName) {
     let dailyCost = 0.5;
@@ -253,21 +254,32 @@ class CreditService {
       // Use fallback
     }
 
-    // Check if domain is still active
-    const CustomDomain = require('../models/CustomDomain');
-    const domain = await CustomDomain.findByPk(domainId);
+    // Check if domain is still active via master DB lookup table
+    const { data: domain, error: lookupError } = await masterDbClient
+      .from('custom_domains_lookup')
+      .select('id, store_id, domain, is_active, is_verified, ssl_status')
+      .eq('id', domainId)
+      .maybeSingle();
 
-    if (!domain || !domain.is_active || domain.verification_status !== 'verified') {
+    if (lookupError || !domain) {
+      return {
+        success: false,
+        message: 'Domain not found in lookup table'
+      };
+    }
+
+    if (!domain.is_active || !domain.is_verified || domain.ssl_status !== 'active') {
       return {
         success: false,
         message: 'Domain is not active, skipping daily charge'
       };
     }
 
+    const ConnectionManager = require('./database/ConnectionManager');
+
     // Check if already charged today BEFORE deducting credits
     const chargeDate = new Date().toISOString().split('T')[0];
     try {
-      const ConnectionManager = require('./database/ConnectionManager');
       const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
 
       const { data: existingCharge, error: checkError } = await tenantDb
@@ -299,15 +311,36 @@ class CreditService {
 
     // Check if user has enough credits
     if (balanceBefore < dailyCost) {
-      // Deactivate domain if insufficient credits
-      await domain.update({
-        is_active: false,
-        metadata: {
-          ...domain.metadata,
-          deactivated_reason: 'insufficient_credits',
-          deactivated_at: new Date().toISOString()
-        }
-      });
+      // Deactivate domain in master DB lookup table if insufficient credits
+      const { error: updateError } = await masterDbClient
+        .from('custom_domains_lookup')
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', domainId);
+
+      if (updateError) {
+        console.error(`[DAILY_DEDUCTION] Failed to deactivate domain ${domainId}:`, updateError.message);
+      }
+
+      // Also try to update tenant DB custom_domains table
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
+        await tenantDb
+          .from('custom_domains')
+          .update({
+            is_active: false,
+            metadata: {
+              deactivated_reason: 'insufficient_credits',
+              deactivated_at: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', domainId);
+      } catch (tenantUpdateError) {
+        console.warn(`[DAILY_DEDUCTION] Could not update tenant DB domain:`, tenantUpdateError.message);
+      }
 
       return {
         success: false,
