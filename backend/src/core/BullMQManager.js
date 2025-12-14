@@ -41,14 +41,32 @@ class BullMQManager {
       }
 
       // Build connection config (BullMQ will create its own connections)
+      // BullMQ requires maxRetriesPerRequest: null for proper operation
+      const bullMQOptions = {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+      };
+
       if (process.env.REDIS_URL) {
-        this.connectionConfig = process.env.REDIS_URL;
+        // For URL-based config, create a new IORedis instance factory
+        // BullMQ needs the URL parsed into options
+        const url = new URL(process.env.REDIS_URL);
+        this.connectionConfig = {
+          host: url.hostname,
+          port: parseInt(url.port || '6379', 10),
+          password: url.password || undefined,
+          username: url.username || undefined,
+          tls: url.protocol === 'rediss:' ? {} : undefined,
+          ...bullMQOptions,
+        };
+        console.log(`BullMQ: Parsed Redis URL - host: ${url.hostname}, port: ${url.port}`);
       } else if (process.env.REDIS_HOST) {
         this.connectionConfig = {
           host: process.env.REDIS_HOST,
           port: parseInt(process.env.REDIS_PORT || '6379', 10),
           db: parseInt(process.env.REDIS_DB || '0', 10),
           password: process.env.REDIS_PASSWORD || undefined,
+          ...bullMQOptions,
         };
       } else {
         console.warn('BullMQ: Redis not configured, falling back to database queue');
@@ -56,10 +74,7 @@ class BullMQManager {
       }
 
       // Test connection with a temporary connection
-      const testConnection = new Redis(this.connectionConfig, {
-        maxRetriesPerRequest: null,
-        enableReadyCheck: false,
-      });
+      const testConnection = new Redis(this.connectionConfig);
 
       await testConnection.ping();
       console.log('BullMQ: Redis connection established');
