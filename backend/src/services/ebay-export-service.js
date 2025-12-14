@@ -109,8 +109,7 @@ class EbayExportService {
       }
     }
 
-    // Update statistics
-    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+    // Update statistics (reuse tenantDb from above)
     const stats = this.integration.config_data.statistics || {};
     const updatedConfigData = {
       ...this.integration.config_data,

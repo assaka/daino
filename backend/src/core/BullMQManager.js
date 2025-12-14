@@ -75,15 +75,23 @@ class BullMQManager {
         // For URL-based config, create a new IORedis instance factory
         // BullMQ needs the URL parsed into options
         const url = new URL(process.env.REDIS_URL);
+
+        // Render Redis uses TLS - check for rediss:// or render.com host
+        const isRenderRedis = url.hostname.includes('render.com') || url.hostname.includes('redis.render');
+        const needsTLS = url.protocol === 'rediss:' || isRenderRedis;
+
         this.connectionConfig = {
           host: url.hostname,
           port: parseInt(url.port || '6379', 10),
           password: url.password || undefined,
           username: url.username || undefined,
-          tls: url.protocol === 'rediss:' ? {} : undefined,
+          // Render Redis requires TLS with specific settings
+          tls: needsTLS ? {
+            rejectUnauthorized: false,  // Required for Render managed Redis
+          } : undefined,
           ...bullMQOptions,
         };
-        console.log(`BullMQ: Parsed Redis URL - host: ${url.hostname}, port: ${url.port}`);
+        console.log(`BullMQ: Parsed Redis URL - host: ${url.hostname}, port: ${url.port}, tls: ${needsTLS}`);
       } else if (process.env.REDIS_HOST) {
         this.connectionConfig = {
           host: process.env.REDIS_HOST,
