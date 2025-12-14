@@ -322,8 +322,21 @@ class BullMQManager {
       console.error(`BullMQ: Worker error for ${jobType}:`, err);
     });
 
+    worker.on('ready', () => {
+      console.log(`BullMQ: Worker for ${queueName} is READY to process jobs`);
+    });
+
+    worker.on('closing', () => {
+      console.log(`BullMQ: Worker for ${queueName} is closing`);
+    });
+
+    worker.on('closed', () => {
+      console.log(`BullMQ: Worker for ${queueName} has closed`);
+    });
+
     this.workers.set(jobType, worker);
     console.log(`BullMQ: Created worker for ${queueName} (${jobType})`);
+    console.log(`BullMQ: Worker is now listening on queue "${queueName}"`);
 
     return worker;
   }
@@ -333,10 +346,13 @@ class BullMQManager {
    */
   async startWorkers() {
     if (!this.isInitialized) {
+      console.error('BullMQ: Cannot start workers - not initialized');
+      console.error('BullMQ: connectionConfig:', this.connectionConfig ? 'set' : 'NOT SET');
       throw new Error('BullMQ not initialized. Call initialize() first.');
     }
 
     console.log('BullMQ: Starting workers for all registered job types');
+    console.log('BullMQ: Registered job handlers:', Array.from(this.jobHandlers.keys()));
     console.log(`BullMQ: ${this.jobHandlers.size} job types registered`);
 
     for (const jobType of this.jobHandlers.keys()) {

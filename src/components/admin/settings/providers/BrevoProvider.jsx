@@ -15,12 +15,6 @@ export default function BrevoProvider({
   getSelectedStoreId,
   showConfirm
 }) {
-  console.log('📧 BrevoProvider - Props received:', {
-    storeEmail,
-    storeName,
-    hasStoreEmail: !!storeEmail,
-    hasStoreName: !!storeName
-  });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
