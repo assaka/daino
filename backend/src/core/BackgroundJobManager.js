@@ -51,6 +51,17 @@ class BackgroundJobManager extends EventEmitter {
       this.useBullMQ = await bullMQManager.initialize();
       if (this.useBullMQ) {
         console.log('✅ BullMQ initialized - using persistent queue');
+
+        // Register job types with BullMQ now that it's initialized
+        console.log('📝 Registering job types with BullMQ...');
+        for (const [type, handlerClass] of this.workers) {
+          try {
+            bullMQManager.registerJobType(type, handlerClass);
+          } catch (err) {
+            console.error(`❌ Failed to register '${type}' with BullMQ:`, err.message);
+          }
+        }
+        console.log(`✅ Registered ${this.workers.size} job types with BullMQ`);
       } else {
         console.log('ℹ️ BullMQ not available - using database queue');
       }
