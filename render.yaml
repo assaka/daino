@@ -166,22 +166,15 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Master Database Configuration
-      - key: MASTER_DB_URL
-        sync: false
+      # Master Database Configuration (connects to master to get tenant list)
       - key: MASTER_SUPABASE_URL
         sync: false
       - key: MASTER_SUPABASE_SERVICE_KEY
         sync: false
-      # Tenant Database Configuration (for ConnectionManager)
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      # Encryption Key (for decrypting tenant DB credentials)
+      # Encryption Key (for decrypting tenant DB credentials from master)
       - key: ENCRYPTION_KEY
         sync: false
-      # Redis for job scheduling
+      # Redis for scheduling background jobs
       - key: REDIS_URL
         fromDatabase:
           name: daino-redis
