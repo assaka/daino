@@ -72,37 +72,42 @@ class BullMQManager {
       };
 
       if (process.env.REDIS_URL) {
-        // For URL-based config, create a new IORedis instance factory
-        // BullMQ needs the URL parsed into options
-        const url = new URL(process.env.REDIS_URL);
+        const redisUrl = process.env.REDIS_URL;
+        console.log(`BullMQ: REDIS_URL starts with: ${redisUrl.substring(0, 20)}...`);
 
-        // Render Redis uses TLS - check protocol or common Render hostname patterns
-        const isRenderRedis = url.hostname.includes('render.com') ||
-                              url.hostname.includes('redis.render') ||
-                              url.hostname.startsWith('red-') ||
-                              url.hostname.includes('ohio') ||
-                              url.hostname.includes('oregon') ||
-                              url.hostname.includes('frankfurt');
-        const needsTLS = url.protocol === 'rediss:' || isRenderRedis;
+        // Try using the URL directly first - ioredis supports URL strings
+        // Check if it's a TLS URL (rediss://)
+        const needsTLS = redisUrl.startsWith('rediss://');
+        console.log(`BullMQ: Using TLS: ${needsTLS}`);
 
-        console.log(`BullMQ: Redis URL analysis - protocol: ${url.protocol}, host: ${url.hostname}, isRenderRedis: ${isRenderRedis}`);
-
-        this.connectionConfig = {
-          host: url.hostname,
-          port: parseInt(url.port || '6379', 10),
-          password: url.password || undefined,
-          username: url.username || undefined,
-          // Render Redis requires TLS with specific settings
-          tls: needsTLS ? {
-            rejectUnauthorized: false,  // Required for Render managed Redis
-          } : undefined,
-          // Force IPv4 to avoid IPv6 issues
-          family: 4,
-          // Socket settings for stability
-          socketTimeout: 30000,
-          ...bullMQOptions,
-        };
-        console.log(`BullMQ: Parsed Redis URL - host: ${url.hostname}, port: ${url.port}, tls: ${needsTLS}`);
+        if (needsTLS) {
+          // For TLS connections, parse and configure properly
+          const url = new URL(redisUrl);
+          this.connectionConfig = {
+            host: url.hostname,
+            port: parseInt(url.port || '6379', 10),
+            password: url.password || undefined,
+            username: url.username && url.username !== 'default' ? url.username : undefined,
+            tls: {
+              rejectUnauthorized: false,
+            },
+            family: 4,
+            ...bullMQOptions,
+          };
+          console.log(`BullMQ: TLS config - host: ${url.hostname}, port: ${url.port}`);
+        } else {
+          // For non-TLS, try using the URL directly
+          const url = new URL(redisUrl);
+          this.connectionConfig = {
+            host: url.hostname,
+            port: parseInt(url.port || '6379', 10),
+            password: url.password || undefined,
+            username: url.username && url.username !== 'default' ? url.username : undefined,
+            family: 4,
+            ...bullMQOptions,
+          };
+          console.log(`BullMQ: Non-TLS config - host: ${url.hostname}, port: ${url.port}`);
+        }
       } else if (process.env.REDIS_HOST) {
         this.connectionConfig = {
           host: process.env.REDIS_HOST,
