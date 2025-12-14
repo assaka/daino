@@ -231,9 +231,15 @@ process.on('SIGTERM', async () => {
 // EXPORTS
 // ============================================
 
+/**
+ * @deprecated masterSequelize is deprecated due to pooler authentication issues.
+ * Use masterDbClient (Supabase REST API) for all master DB operations.
+ *
+ * masterSequelize is kept for backwards compatibility with legacy code.
+ */
 module.exports = {
-  masterSequelize,
-  masterDbClient,
+  masterSequelize, // DEPRECATED - use masterDbClient instead
+  masterDbClient,  // PREFERRED - Supabase REST API client
   testMasterConnection,
   closeMasterConnection
 };

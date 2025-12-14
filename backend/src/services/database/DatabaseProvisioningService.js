@@ -267,22 +267,35 @@ class DatabaseProvisioningService {
   /**
    * Convert Sequelize model to CREATE TABLE SQL
    * @private
+   * @deprecated This method uses Sequelize which is being phased out
    */
   static async _modelToCreateTableSQL(model) {
-    const masterConnection = ConnectionManager.getMasterConnection();
-    const queryGenerator = masterConnection.getQueryInterface().queryGenerator;
+    try {
+      // Try to use masterSequelize for SQL generation (deprecated path)
+      const { masterSequelize } = require('../../database/masterConnection');
 
-    // Get table definition from model
-    const tableName = model.tableName;
-    const attributes = model.rawAttributes;
+      if (!masterSequelize) {
+        console.warn('⚠️ masterSequelize not available, skipping SQL generation');
+        return null;
+      }
 
-    // Generate CREATE TABLE SQL
-    const sql = queryGenerator.createTableQuery(tableName, attributes, {
-      engine: 'InnoDB',
-      charset: 'utf8mb4'
-    });
+      const queryGenerator = masterSequelize.getQueryInterface().queryGenerator;
 
-    return sql;
+      // Get table definition from model
+      const tableName = model.tableName;
+      const attributes = model.rawAttributes;
+
+      // Generate CREATE TABLE SQL
+      const sql = queryGenerator.createTableQuery(tableName, attributes, {
+        engine: 'InnoDB',
+        charset: 'utf8mb4'
+      });
+
+      return sql;
+    } catch (error) {
+      console.warn(`⚠️ Could not generate SQL for model: ${error.message}`);
+      return null;
+    }
   }
 
   /**

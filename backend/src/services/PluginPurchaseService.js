@@ -1,6 +1,5 @@
 // backend/src/services/PluginPurchaseService.js
-const ConnectionManager = require('./database/ConnectionManager');
-const { QueryTypes } = require('sequelize');
+const { masterDbClient } = require('../database/masterConnection');
 const { v4: uuidv4 } = require('uuid');
 // const stripeService = require('./StripeService'); // TODO: Implement Stripe service
 // const pluginManager = require('../core/PluginManager'); // Will be created next
@@ -136,43 +135,36 @@ class PluginPurchaseService {
    */
   async createLicense(marketplacePluginId, tenantId, plugin, pricingDetails, paymentResult, userId) {
     const licenseKey = this.generateLicenseKey();
-    const masterConnection = ConnectionManager.getMasterConnection();
 
-    const [result] = await masterConnection.query(`
-      INSERT INTO plugin_licenses (
-        id,
-        marketplace_plugin_id,
-        tenant_id,
-        user_id,
-        license_key,
-        license_type,
-        status,
-        amount_paid,
-        currency,
-        billing_interval,
-        subscription_id,
-        current_period_start,
-        current_period_end
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8, $9, $10, NOW(), $11)
-      RETURNING *
-    `, {
-      bind: [
-        uuidv4(),
-        marketplacePluginId,
-        tenantId,
-        userId,
-        licenseKey,
-        plugin.license_type,
-        pricingDetails.amount,
-        pricingDetails.currency,
-        pricingDetails.billingInterval,
-        paymentResult?.subscriptionId || null,
-        paymentResult?.nextBillingDate || null
-      ],
-      type: QueryTypes.INSERT
-    });
+    if (!masterDbClient) {
+      throw new Error('Master database client not available');
+    }
 
-    return result[0];
+    const { data, error } = await masterDbClient
+      .from('plugin_licenses')
+      .insert({
+        id: uuidv4(),
+        marketplace_plugin_id: marketplacePluginId,
+        tenant_id: tenantId,
+        user_id: userId,
+        license_key: licenseKey,
+        license_type: plugin.license_type,
+        status: 'active',
+        amount_paid: pricingDetails.amount,
+        currency: pricingDetails.currency,
+        billing_interval: pricingDetails.billingInterval,
+        subscription_id: paymentResult?.subscriptionId || null,
+        current_period_start: new Date().toISOString(),
+        current_period_end: paymentResult?.nextBillingDate?.toISOString() || null
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create license: ${error.message}`);
+    }
+
+    return data;
   }
 
   /**
@@ -192,17 +184,25 @@ class PluginPurchaseService {
    * Update marketplace metrics
    */
   async updateMarketplaceMetrics(pluginId, revenue) {
-    const masterConnection = ConnectionManager.getMasterConnection();
-    await masterConnection.query(`
-      UPDATE plugin_marketplace
-      SET
-        active_installations = active_installations + 1,
-        updated_at = NOW()
-      WHERE id = $1
-    `, {
-      bind: [pluginId],
-      type: QueryTypes.UPDATE
-    });
+    if (!masterDbClient) {
+      console.warn('Master database client not available, skipping metrics update');
+      return;
+    }
+
+    const { error } = await masterDbClient
+      .rpc('increment_plugin_installations', { plugin_id: pluginId });
+
+    // If RPC doesn't exist, fallback to direct update
+    if (error && error.code === 'PGRST202') {
+      const { error: updateError } = await masterDbClient
+        .from('plugin_marketplace')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', pluginId);
+
+      if (updateError) {
+        console.warn('Failed to update marketplace metrics:', updateError.message);
+      }
+    }
   }
 
   /**
@@ -228,35 +228,46 @@ class PluginPurchaseService {
    * Get marketplace plugin
    */
   async getMarketplacePlugin(pluginId) {
-    const masterConnection = ConnectionManager.getMasterConnection();
-    const result = await masterConnection.query(`
-      SELECT * FROM plugin_marketplace WHERE id = $1 AND status = 'approved'
-    `, {
-      bind: [pluginId],
-      type: QueryTypes.SELECT
-    });
+    if (!masterDbClient) {
+      throw new Error('Master database client not available');
+    }
 
-    if (!result[0]) {
+    const { data, error } = await masterDbClient
+      .from('plugin_marketplace')
+      .select('*')
+      .eq('id', pluginId)
+      .eq('status', 'approved')
+      .single();
+
+    if (error || !data) {
       throw new Error('Plugin not found in marketplace');
     }
 
-    return result[0];
+    return data;
   }
 
   /**
    * Check existing license
    */
   async checkExistingLicense(pluginId, tenantId) {
-    const masterConnection = ConnectionManager.getMasterConnection();
-    const result = await masterConnection.query(`
-      SELECT * FROM plugin_licenses
-      WHERE marketplace_plugin_id = $1 AND tenant_id = $2 AND status = 'active'
-    `, {
-      bind: [pluginId, tenantId],
-      type: QueryTypes.SELECT
-    });
+    if (!masterDbClient) {
+      throw new Error('Master database client not available');
+    }
 
-    return result[0] || null;
+    const { data, error } = await masterDbClient
+      .from('plugin_licenses')
+      .select('*')
+      .eq('marketplace_plugin_id', pluginId)
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking existing license:', error.message);
+      return null;
+    }
+
+    return data;
   }
 }
 

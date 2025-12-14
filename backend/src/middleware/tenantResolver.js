@@ -12,12 +12,19 @@
  *   });
  */
 
-const { StoreHostname } = require('../models/master');
+const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 // In-memory cache for hostname → storeId mapping
 const hostnameCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Check if store is operational
+ */
+function isStoreOperational(store) {
+  return store.status === 'active' && store.is_active === true;
+}
 
 /**
  * Resolve tenant from hostname
@@ -58,9 +65,21 @@ async function tenantResolver(req, res, next) {
     }
 
     // 3. Query master DB for hostname mapping
-    const hostnameRecord = await StoreHostname.findByHostname(hostname);
+    if (!masterDbClient) {
+      return res.status(503).json({
+        success: false,
+        error: 'Master database unavailable',
+        code: 'MASTER_DB_UNAVAILABLE'
+      });
+    }
 
-    if (!hostnameRecord) {
+    const { data: hostnameRecord, error: hostnameError } = await masterDbClient
+      .from('store_hostnames')
+      .select('store_id')
+      .eq('hostname', hostname.toLowerCase())
+      .single();
+
+    if (hostnameError || !hostnameRecord) {
       return res.status(404).json({
         success: false,
         error: 'Store not found for this hostname',
@@ -72,10 +91,13 @@ async function tenantResolver(req, res, next) {
     const storeId = hostnameRecord.store_id;
 
     // 4. Verify store is active
-    const { MasterStore } = require('../models/master');
-    const store = await MasterStore.findByPk(storeId);
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, status, is_active')
+      .eq('id', storeId)
+      .single();
 
-    if (!store) {
+    if (storeError || !store) {
       return res.status(404).json({
         success: false,
         error: 'Store not found',
@@ -83,7 +105,7 @@ async function tenantResolver(req, res, next) {
       });
     }
 
-    if (!store.isOperational()) {
+    if (!isStoreOperational(store)) {
       return res.status(503).json({
         success: false,
         error: 'Store is not operational',
@@ -143,11 +165,15 @@ async function optionalTenantResolver(req, res, next) {
   try {
     const hostname = req.hostname || req.get('host')?.split(':')[0];
 
-    if (!hostname) {
+    if (!hostname || !masterDbClient) {
       return next();
     }
 
-    const hostnameRecord = await StoreHostname.findByHostname(hostname);
+    const { data: hostnameRecord } = await masterDbClient
+      .from('store_hostnames')
+      .select('store_id')
+      .eq('hostname', hostname.toLowerCase())
+      .single();
 
     if (hostnameRecord) {
       const storeId = hostnameRecord.store_id;
@@ -184,11 +210,22 @@ async function tenantResolverById(req, res, next) {
       });
     }
 
-    // Verify store exists and is active
-    const { MasterStore } = require('../models/master');
-    const store = await MasterStore.findByPk(storeId);
+    if (!masterDbClient) {
+      return res.status(503).json({
+        success: false,
+        error: 'Master database unavailable',
+        code: 'MASTER_DB_UNAVAILABLE'
+      });
+    }
 
-    if (!store) {
+    // Verify store exists and is active
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('id, status, is_active')
+      .eq('id', storeId)
+      .single();
+
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         error: 'Store not found',
@@ -196,7 +233,7 @@ async function tenantResolverById(req, res, next) {
       });
     }
 
-    if (!store.isOperational()) {
+    if (!isStoreOperational(store)) {
       return res.status(503).json({
         success: false,
         error: 'Store is not operational',

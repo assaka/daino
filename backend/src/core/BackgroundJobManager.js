@@ -1,8 +1,7 @@
 const { EventEmitter } = require('events');
-const Job = require('../models/Job');
-const JobHistory = require('../models/JobHistory');
-const { masterSequelize } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const bullMQManager = require('./BullMQManager');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Unified Background Job Manager
@@ -97,8 +96,22 @@ class BackgroundJobManager extends EventEmitter {
   async ensureTablesExist() {
     // Tables will be created by migrations, but we verify they exist
     try {
-      await Job.findAll({ limit: 1 });
-      await JobHistory.findAll({ limit: 1 });
+      if (!masterDbClient) {
+        console.warn('⚠️ masterDbClient not available, skipping table verification');
+        return;
+      }
+      const { error: jobError } = await masterDbClient
+        .from('job_queue')
+        .select('id')
+        .limit(1);
+
+      const { error: historyError } = await masterDbClient
+        .from('job_history')
+        .select('id')
+        .limit(1);
+
+      if (jobError) console.warn('⚠️ job_queue table check failed:', jobError.message);
+      if (historyError) console.warn('⚠️ job_history table check failed:', historyError.message);
     } catch (error) {
       console.warn('⚠️ Job tables may not exist:', error.message);
     }
@@ -201,67 +214,44 @@ class BackgroundJobManager extends EventEmitter {
     const scheduledAt = new Date(Date.now() + delay);
 
     // Create job record in database (source of truth)
-    // Use Supabase client directly to avoid Sequelize authentication issues
     let job;
     try {
-      const { masterDbClient } = require('../database/masterConnection');
-      const { v4: uuidv4 } = require('uuid');
-
       if (!masterDbClient) {
-        console.error('❌ masterDbClient not available, falling back to Sequelize');
-        // Fallback to Sequelize
-        job = await Job.create({
-          type,
-          payload,
-          priority,
-          status: 'pending',
-          scheduled_at: scheduledAt,
-          max_retries: maxRetries,
-          retry_count: 0,
-          store_id: storeId,
-          user_id: userId,
-          metadata
-        });
-      } else {
-        // Use Supabase client directly - map to job_queue table schema
-        const jobData = {
-          id: uuidv4(),
-          job_type: type,  // job_queue uses 'job_type' not 'type'
-          payload,
-          priority,
-          status: 'pending',
-          max_retries: maxRetries,
-          retry_count: 0,
-          store_id: storeId,
-          user_id: userId,
-          metadata
-          // Note: created_at will be set by database default
-        };
-
-        console.log('📝 Creating job via Supabase client:', { type, storeId });
-        const { data, error } = await masterDbClient
-          .from('job_queue')
-          .insert(jobData)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('❌ Supabase job creation failed:', error);
-          throw new Error(`Failed to create job: ${error.message}`);
-        }
-
-        job = data;
-        console.log('✅ Job created via Supabase:', job.id);
+        throw new Error('masterDbClient not available');
       }
+
+      const jobData = {
+        id: uuidv4(),
+        job_type: type,
+        payload,
+        priority,
+        status: 'pending',
+        scheduled_at: scheduledAt.toISOString(),
+        max_retries: maxRetries,
+        retry_count: 0,
+        store_id: storeId,
+        user_id: userId,
+        metadata
+      };
+
+      console.log('📝 Creating job:', { type, storeId });
+      const { data, error } = await masterDbClient
+        .from('job_queue')
+        .insert(jobData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Job creation failed:', error);
+        throw new Error(`Failed to create job: ${error.message}`);
+      }
+
+      job = data;
+      // Add type alias for compatibility
+      job.type = job.job_type;
+      console.log('✅ Job created:', job.id);
     } catch (error) {
       console.error('❌ Failed to create job in database:', error.message);
-      console.error('Database error details:', {
-        error: error.name,
-        message: error.message,
-        code: error.code,
-        type: type,
-        storeId: storeId
-      });
       throw new Error(`Failed to schedule job: ${error.message}`);
     }
 
@@ -269,7 +259,7 @@ class BackgroundJobManager extends EventEmitter {
     if (this.useBullMQ) {
       try {
         await bullMQManager.addJob(type, {
-          jobRecord: job.toJSON(),
+          jobRecord: job,
           jobId: job.id,
         }, {
           priority,
@@ -402,17 +392,30 @@ class BackgroundJobManager extends EventEmitter {
    * Get the next job to process
    */
   async getNextJob() {
-    return Job.findOne({
-      where: {
-        status: 'pending',
-        scheduled_at: { [masterSequelize.Sequelize.Op.lte]: new Date() }
-      },
-      order: [
-        ['priority', 'DESC'], // High priority first
-        ['scheduled_at', 'ASC'], // Older jobs first
-        ['created_at', 'ASC']
-      ]
-    });
+    if (!masterDbClient) return null;
+
+    const { data: job, error } = await masterDbClient
+      .from('job_queue')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_at', new Date().toISOString())
+      .order('priority', { ascending: false })
+      .order('scheduled_at', { ascending: true })
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('❌ Error fetching next job:', error.message);
+      return null;
+    }
+
+    if (job) {
+      // Add type alias for compatibility
+      job.type = job.job_type;
+    }
+
+    return job;
   }
 
   /**
@@ -422,22 +425,23 @@ class BackgroundJobManager extends EventEmitter {
     if (this.processing.has(job.id)) return;
 
     this.processing.add(job.id);
-    
+    const jobType = job.type || job.job_type;
+
     try {
-      console.log(`🔄 Processing job: ${job.type} (ID: ${job.id})`);
-      
+      console.log(`🔄 Processing job: ${jobType} (ID: ${job.id})`);
+
       // Update job status
-      await job.update({ 
-        status: 'running', 
-        started_at: new Date() 
+      await this.updateJob(job.id, {
+        status: 'running',
+        started_at: new Date().toISOString()
       });
 
       this.emit('job:started', job);
 
       // Get the job handler
-      const HandlerClass = this.workers.get(job.type);
+      const HandlerClass = this.workers.get(jobType);
       if (!HandlerClass) {
-        throw new Error(`No handler found for job type: ${job.type}`);
+        throw new Error(`No handler found for job type: ${jobType}`);
       }
 
       // Create and execute the job
@@ -445,30 +449,30 @@ class BackgroundJobManager extends EventEmitter {
       const result = await handler.execute();
 
       // Update job as completed
-      await job.update({
+      await this.updateJob(job.id, {
         status: 'completed',
-        completed_at: new Date(),
+        completed_at: new Date().toISOString(),
         result: result || {}
       });
 
       // Create job history record
-      await JobHistory.create({
+      await this.createJobHistory({
         job_id: job.id,
         status: 'completed',
         result: result || {},
-        executed_at: new Date()
+        executed_at: new Date().toISOString()
       });
 
-      console.log(`✅ Job completed: ${job.type} (ID: ${job.id})`);
+      console.log(`✅ Job completed: ${jobType} (ID: ${job.id})`);
       this.emit('job:completed', job, result);
 
       // Handle recurring jobs
-      if (job.payload.isRecurring) {
+      if (job.payload?.isRecurring) {
         await this.scheduleNextRecurrence(job);
       }
 
     } catch (error) {
-      console.error(`❌ Job failed: ${job.type} (ID: ${job.id}):`, error);
+      console.error(`❌ Job failed: ${jobType} (ID: ${job.id}):`, error);
       await this.handleJobFailure(job, error);
     } finally {
       this.processing.delete(job.id);
@@ -476,14 +480,56 @@ class BackgroundJobManager extends EventEmitter {
   }
 
   /**
+   * Update a job in the database
+   */
+  async updateJob(jobId, updates) {
+    if (!masterDbClient) {
+      throw new Error('masterDbClient not available');
+    }
+
+    const { error } = await masterDbClient
+      .from('job_queue')
+      .update(updates)
+      .eq('id', jobId);
+
+    if (error) {
+      console.error(`❌ Failed to update job ${jobId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a job history record
+   */
+  async createJobHistory(historyData) {
+    if (!masterDbClient) {
+      console.warn('⚠️ masterDbClient not available, skipping history creation');
+      return;
+    }
+
+    const { error } = await masterDbClient
+      .from('job_history')
+      .insert({
+        id: uuidv4(),
+        ...historyData
+      });
+
+    if (error) {
+      console.error('❌ Failed to create job history:', error.message);
+      // Don't throw - history is not critical
+    }
+  }
+
+  /**
    * Handle job failure and retries
    */
   async handleJobFailure(job, error) {
-    const retryCount = job.retry_count + 1;
-    const canRetry = retryCount <= job.max_retries;
+    const retryCount = (job.retry_count || 0) + 1;
+    const canRetry = retryCount <= (job.max_retries || 3);
+    const jobType = job.type || job.job_type;
 
     // Create history record for the failure
-    await JobHistory.create({
+    await this.createJobHistory({
       job_id: job.id,
       status: 'failed',
       error: {
@@ -491,7 +537,7 @@ class BackgroundJobManager extends EventEmitter {
         stack: error.stack,
         retry_count: retryCount
       },
-      executed_at: new Date()
+      executed_at: new Date().toISOString()
     });
 
     if (canRetry) {
@@ -500,24 +546,24 @@ class BackgroundJobManager extends EventEmitter {
       const retryDelay = this.retryDelays[delayIndex];
       const nextAttempt = new Date(Date.now() + retryDelay);
 
-      await job.update({
+      await this.updateJob(job.id, {
         status: 'pending',
         retry_count: retryCount,
-        scheduled_at: nextAttempt,
+        scheduled_at: nextAttempt.toISOString(),
         last_error: error.message
       });
 
-      console.log(`🔄 Job will retry in ${retryDelay/1000}s: ${job.type} (ID: ${job.id}, attempt ${retryCount}/${job.max_retries})`);
+      console.log(`🔄 Job will retry in ${retryDelay/1000}s: ${jobType} (ID: ${job.id}, attempt ${retryCount}/${job.max_retries || 3})`);
       this.emit('job:retry_scheduled', job, retryCount);
     } else {
       // Mark as permanently failed
-      await job.update({
+      await this.updateJob(job.id, {
         status: 'failed',
-        failed_at: new Date(),
+        failed_at: new Date().toISOString(),
         last_error: error.message
       });
 
-      console.error(`💀 Job permanently failed: ${job.type} (ID: ${job.id})`);
+      console.error(`💀 Job permanently failed: ${jobType} (ID: ${job.id})`);
       this.emit('job:failed', job, error);
     }
   }
@@ -526,18 +572,34 @@ class BackgroundJobManager extends EventEmitter {
    * Resume jobs that were interrupted by server restart
    */
   async resumeInterruptedJobs() {
-    const interruptedJobs = await Job.findAll({
-      where: { status: 'running' }
-    });
+    if (!masterDbClient) {
+      console.warn('⚠️ masterDbClient not available, skipping interrupted jobs check');
+      return;
+    }
 
-    if (interruptedJobs.length > 0) {
+    const { data: interruptedJobs, error } = await masterDbClient
+      .from('job_queue')
+      .select('id')
+      .eq('status', 'running');
+
+    if (error) {
+      console.error('❌ Error fetching interrupted jobs:', error.message);
+      return;
+    }
+
+    if (interruptedJobs && interruptedJobs.length > 0) {
       console.log(`🔄 Resuming ${interruptedJobs.length} interrupted jobs...`);
-      
-      for (const job of interruptedJobs) {
-        await job.update({ 
+
+      const { error: updateError } = await masterDbClient
+        .from('job_queue')
+        .update({
           status: 'pending',
-          scheduled_at: new Date() // Reschedule immediately
-        });
+          scheduled_at: new Date().toISOString()
+        })
+        .eq('status', 'running');
+
+      if (updateError) {
+        console.error('❌ Error resuming interrupted jobs:', updateError.message);
       }
     }
   }
@@ -591,6 +653,13 @@ class BackgroundJobManager extends EventEmitter {
    * Get job statistics
    */
   async getStatistics(timeRange = '24h') {
+    if (!masterDbClient) {
+      return {
+        total: 0, completed: 0, failed: 0, pending: 0, running: 0,
+        success_rate: '0%', currently_processing: this.processing.size
+      };
+    }
+
     const since = new Date();
     switch (timeRange) {
       case '1h':
@@ -607,21 +676,47 @@ class BackgroundJobManager extends EventEmitter {
         break;
     }
 
-    const [totalJobs, completedJobs, failedJobs, pendingJobs, runningJobs] = await Promise.all([
-      Job.count({ where: { created_at: { [masterSequelize.Sequelize.Op.gte]: since } } }),
-      Job.count({ where: { status: 'completed', created_at: { [masterSequelize.Sequelize.Op.gte]: since } } }),
-      Job.count({ where: { status: 'failed', created_at: { [masterSequelize.Sequelize.Op.gte]: since } } }),
-      Job.count({ where: { status: 'pending' } }),
-      Job.count({ where: { status: 'running' } })
-    ]);
+    const sinceISO = since.toISOString();
+
+    // Count jobs in time range
+    const { count: totalJobs } = await masterDbClient
+      .from('job_queue')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', sinceISO);
+
+    const { count: completedJobs } = await masterDbClient
+      .from('job_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .gte('created_at', sinceISO);
+
+    const { count: failedJobs } = await masterDbClient
+      .from('job_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'failed')
+      .gte('created_at', sinceISO);
+
+    // Current queue status (no time filter)
+    const { count: pendingJobs } = await masterDbClient
+      .from('job_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    const { count: runningJobs } = await masterDbClient
+      .from('job_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'running');
+
+    const total = totalJobs || 0;
+    const completed = completedJobs || 0;
 
     return {
-      total: totalJobs,
-      completed: completedJobs,
-      failed: failedJobs,
-      pending: pendingJobs,
-      running: runningJobs,
-      success_rate: totalJobs > 0 ? (completedJobs / totalJobs * 100).toFixed(2) + '%' : '0%',
+      total,
+      completed,
+      failed: failedJobs || 0,
+      pending: pendingJobs || 0,
+      running: runningJobs || 0,
+      success_rate: total > 0 ? (completed / total * 100).toFixed(2) + '%' : '0%',
       currently_processing: this.processing.size
     };
   }
@@ -630,8 +725,17 @@ class BackgroundJobManager extends EventEmitter {
    * Cancel a job
    */
   async cancelJob(jobId) {
-    const job = await Job.findByPk(jobId);
-    if (!job) {
+    if (!masterDbClient) {
+      throw new Error('masterDbClient not available');
+    }
+
+    const { data: job, error } = await masterDbClient
+      .from('job_queue')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (error || !job) {
       throw new Error('Job not found');
     }
 
@@ -639,11 +743,12 @@ class BackgroundJobManager extends EventEmitter {
       throw new Error('Cannot cancel a running job');
     }
 
-    await job.update({ 
+    await this.updateJob(jobId, {
       status: 'cancelled',
-      cancelled_at: new Date()
+      cancelled_at: new Date().toISOString()
     });
 
+    job.type = job.job_type;
     this.emit('job:cancelled', job);
     return job;
   }
@@ -652,27 +757,36 @@ class BackgroundJobManager extends EventEmitter {
    * Get job details with history
    */
   async getJobDetails(jobId) {
-    const job = await Job.findByPk(jobId);
-    if (!job) return null;
+    if (!masterDbClient) return null;
 
-    const history = await JobHistory.findAll({
-      where: { job_id: jobId },
-      order: [['executed_at', 'DESC']]
-    });
+    const { data: job, error } = await masterDbClient
+      .from('job_queue')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (error || !job) return null;
+
+    const { data: history } = await masterDbClient
+      .from('job_history')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('executed_at', { ascending: false });
 
     // If using BullMQ, also get queue status
     let queueStatus = null;
     if (this.useBullMQ) {
       try {
-        queueStatus = await bullMQManager.getJobStatus(job.type, jobId);
+        queueStatus = await bullMQManager.getJobStatus(job.job_type, jobId);
       } catch (error) {
         console.warn('Failed to get BullMQ status:', error.message);
       }
     }
 
+    job.type = job.job_type;
     return {
-      ...job.toJSON(),
-      history,
+      ...job,
+      history: history || [],
       queueStatus
     };
   }
@@ -681,15 +795,20 @@ class BackgroundJobManager extends EventEmitter {
    * Get job status for polling (lightweight)
    */
   async getJobStatus(jobId) {
-    const job = await Job.findByPk(jobId, {
-      attributes: ['id', 'type', 'status', 'progress', 'progress_message', 'result', 'last_error']
-    });
+    if (!masterDbClient) return null;
 
-    if (!job) {
+    const { data: job, error } = await masterDbClient
+      .from('job_queue')
+      .select('id, job_type, status, progress, progress_message, result, last_error')
+      .eq('id', jobId)
+      .single();
+
+    if (error || !job) {
       return null;
     }
 
-    return job.toJSON();
+    job.type = job.job_type;
+    return job;
   }
 
   /**
@@ -698,14 +817,20 @@ class BackgroundJobManager extends EventEmitter {
   async scheduleSystemJobs() {
     console.log('📅 Scheduling system jobs...');
 
+    if (!masterDbClient) {
+      console.warn('⚠️ masterDbClient not available, skipping system jobs scheduling');
+      return;
+    }
+
     try {
       // Check if daily credit deduction job is already scheduled
-      const existingJob = await Job.findOne({
-        where: {
-          type: 'system:daily_credit_deduction',
-          status: 'pending'
-        }
-      });
+      const { data: existingJob } = await masterDbClient
+        .from('job_queue')
+        .select('id')
+        .eq('job_type', 'system:daily_credit_deduction')
+        .eq('status', 'pending')
+        .limit(1)
+        .single();
 
       if (!existingJob) {
         // Schedule daily credit deduction job
@@ -722,12 +847,13 @@ class BackgroundJobManager extends EventEmitter {
       }
 
       // Check if pending orders finalization job is already scheduled
-      const existingFinalizationJob = await Job.findOne({
-        where: {
-          type: 'system:finalize_pending_orders',
-          status: 'pending'
-        }
-      });
+      const { data: existingFinalizationJob } = await masterDbClient
+        .from('job_queue')
+        .select('id')
+        .eq('job_type', 'system:finalize_pending_orders')
+        .eq('status', 'pending')
+        .limit(1)
+        .single();
 
       if (!existingFinalizationJob) {
         // Schedule pending orders finalization job (every 10 minutes)
