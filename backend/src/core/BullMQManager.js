@@ -33,15 +33,35 @@ class BullMQManager {
     }
 
     try {
-      // Create ioredis connection for BullMQ
-      const redisConfig = this.getRedisConfig();
+      // BullMQ requires these Redis options
+      const bullMQRedisOptions = {
+        maxRetriesPerRequest: null,  // Required by BullMQ
+        enableReadyCheck: false,
+      };
 
-      if (!redisConfig) {
-        console.warn('BullMQ: Redis not configured, falling back to database queue');
+      // Check if Redis is disabled
+      if (process.env.REDIS_ENABLED === 'false') {
+        console.warn('BullMQ: Redis disabled, falling back to database queue');
         return false;
       }
 
-      this.connection = new Redis(redisConfig);
+      // Create ioredis connection for BullMQ
+      if (process.env.REDIS_URL) {
+        // Use URL with BullMQ-required options
+        this.connection = new Redis(process.env.REDIS_URL, bullMQRedisOptions);
+      } else if (process.env.REDIS_HOST) {
+        // Use individual config with BullMQ-required options
+        this.connection = new Redis({
+          host: process.env.REDIS_HOST,
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+          db: parseInt(process.env.REDIS_DB || '0', 10),
+          password: process.env.REDIS_PASSWORD || undefined,
+          ...bullMQRedisOptions,
+        });
+      } else {
+        console.warn('BullMQ: Redis not configured, falling back to database queue');
+        return false;
+      }
 
       // Test connection
       await this.connection.ping();
@@ -67,7 +87,8 @@ class BullMQManager {
   }
 
   /**
-   * Get Redis configuration compatible with ioredis
+   * Get Redis configuration compatible with ioredis and BullMQ
+   * BullMQ requires maxRetriesPerRequest: null
    */
   getRedisConfig() {
     // Check if Redis is disabled
@@ -75,32 +96,30 @@ class BullMQManager {
       return null;
     }
 
+    // BullMQ requires these settings
+    const bullMQOptions = {
+      maxRetriesPerRequest: null,  // Required by BullMQ
+      enableReadyCheck: false,
+    };
+
     // Use REDIS_URL if available (Render.com managed Redis)
     if (process.env.REDIS_URL) {
-      return process.env.REDIS_URL;
+      return {
+        ...bullMQOptions,
+        // Parse the URL and merge with BullMQ options
+        url: process.env.REDIS_URL,
+      };
     }
 
     // Build config from individual parameters
     if (process.env.REDIS_HOST) {
-      const config = {
+      return {
         host: process.env.REDIS_HOST,
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
         db: parseInt(process.env.REDIS_DB || '0', 10),
-        maxRetriesPerRequest: 3,
-        enableOfflineQueue: true,
-        retryStrategy: (times) => {
-          if (times > 10) {
-            return null; // Stop retrying
-          }
-          return Math.min(times * 50, 3000); // Exponential backoff
-        },
+        password: process.env.REDIS_PASSWORD || undefined,
+        ...bullMQOptions,
       };
-
-      if (process.env.REDIS_PASSWORD) {
-        config.password = process.env.REDIS_PASSWORD;
-      }
-
-      return config;
     }
 
     return null;
