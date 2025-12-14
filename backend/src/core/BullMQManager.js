@@ -33,6 +33,11 @@ class BullMQManager {
       return;
     }
 
+    // Disable BullMQ/Redis entirely - use database queue for reliability
+    // Redis on Render has persistent ECONNRESET issues
+    console.log('BullMQ: Disabled - using database queue for reliability');
+    return false;
+
     try {
       // Check if Redis is disabled
       if (process.env.REDIS_ENABLED === 'false') {

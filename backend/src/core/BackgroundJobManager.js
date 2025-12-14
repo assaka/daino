@@ -454,8 +454,27 @@ class BackgroundJobManager extends EventEmitter {
         throw new Error(`No handler found for job type: ${jobType}`);
       }
 
-      // Create and execute the job
+      // Create the job handler
       const handler = new HandlerClass(job);
+
+      // Set up progress callback to update database
+      const originalUpdateProgress = handler.updateProgress.bind(handler);
+      handler.updateProgress = async (progress, message) => {
+        // Call original to emit events
+        await originalUpdateProgress(progress, message);
+
+        // Update progress in master DB
+        try {
+          await this.updateJob(job.id, {
+            progress,
+            progress_message: message
+          });
+        } catch (err) {
+          console.error('Failed to update job progress:', err.message);
+        }
+      };
+
+      // Execute the job
       const result = await handler.execute();
 
       // Update job as completed in master DB
