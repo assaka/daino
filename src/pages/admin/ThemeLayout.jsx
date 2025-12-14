@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import SaveButton from '@/components/ui/save-button';
 import TranslationFields from '@/components/admin/TranslationFields';
+import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import { queryClient } from '@/config/queryClient';
@@ -136,6 +137,9 @@ export default function ThemeLayout() {
     const [loadingThemes, setLoadingThemes] = useState(false);
     const [deletingTheme, setDeletingTheme] = useState(null);
     const [selectedThemeId, setSelectedThemeId] = useState(null);
+    const [showThemePickerModal, setShowThemePickerModal] = useState(false);
+    const [selectedPresetInModal, setSelectedPresetInModal] = useState(null);
+    const [applyingTheme, setApplyingTheme] = useState(false);
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -1233,45 +1237,20 @@ export default function ThemeLayout() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
-                                <CardDescription>Control the colors and fonts of your store. Select a preset theme or create your own from current settings.</CardDescription>
+                                <CardDescription>Customize colors and fonts, or select a preset theme.</CardDescription>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex flex-col items-end gap-1">
-                                    <Label className="text-xs text-gray-500">Current theme</Label>
-                                    <Select
-                                        value={selectedThemeId || ''}
-                                        onValueChange={(themeId) => {
-                                            const theme = availableThemes.find(t => t.id === themeId);
-                                            if (theme) handleApplyTheme(theme);
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-[200px]">
-                                            <SelectValue placeholder="Select Theme..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableThemes.filter(t => t.type === 'system' || !t.type).length > 0 && (
-                                            <>
-                                                <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">System Themes</div>
-                                                {availableThemes.filter(t => t.type === 'system' || !t.type).map(theme => (
-                                                    <SelectItem key={theme.id} value={theme.id}>
-                                                        {theme.display_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </>
-                                        )}
-                                        {availableThemes.filter(t => t.type === 'user').length > 0 && (
-                                            <>
-                                                <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1">My Themes</div>
-                                                {availableThemes.filter(t => t.type === 'user').map(theme => (
-                                                    <SelectItem key={theme.id} value={theme.id}>
-                                                        {theme.display_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </>
-                                        )}
-                                    </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setSelectedPresetInModal(store?.theme_preset || 'default');
+                                        setShowThemePickerModal(true);
+                                    }}
+                                    className="gap-2"
+                                >
+                                    <Palette className="w-4 h-4" />
+                                    {availableThemes.find(t => t.preset_name === store?.theme_preset)?.display_name || 'Default'}
+                                </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -3265,6 +3244,76 @@ export default function ThemeLayout() {
                             Create Theme
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Theme Picker Modal */}
+            <Dialog open={showThemePickerModal} onOpenChange={(open) => {
+                if (!open) {
+                    setShowThemePickerModal(false);
+                    setSelectedPresetInModal(null);
+                }
+            }}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Palette className="w-5 h-5 text-violet-600" />
+                            Select Theme Preset
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+                            <p className="text-sm text-violet-700">
+                                Select a theme preset to apply all colors at once. You can further customize colors after applying.
+                            </p>
+                        </div>
+
+                        <ThemePresetSelector
+                            value={selectedPresetInModal}
+                            onChange={setSelectedPresetInModal}
+                            variant="cards"
+                        />
+
+                        <DialogFooter className="flex justify-end gap-2 pt-4 border-t">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowThemePickerModal(false);
+                                    setSelectedPresetInModal(null);
+                                }}
+                                disabled={applyingTheme}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="bg-violet-600 hover:bg-violet-700"
+                                onClick={async () => {
+                                    if (!selectedPresetInModal) return;
+                                    const theme = availableThemes.find(t => t.preset_name === selectedPresetInModal);
+                                    if (theme) {
+                                        setApplyingTheme(true);
+                                        await handleApplyTheme(theme);
+                                        setApplyingTheme(false);
+                                        setShowThemePickerModal(false);
+                                        setSelectedPresetInModal(null);
+                                    }
+                                }}
+                                disabled={applyingTheme || !selectedPresetInModal}
+                            >
+                                {applyingTheme ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Applying...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Palette className="w-4 h-4 mr-2" />
+                                        Apply Theme
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
