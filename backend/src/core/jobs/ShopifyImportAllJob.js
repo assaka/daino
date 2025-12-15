@@ -67,7 +67,7 @@ class ShopifyImportAllJob extends BaseJobHandler {
 
     await this.updateProgress(100, 'Full import completed');
 
-    this.log(`Full import complete: ${result.stats.collections.imported} collections, ${result.stats.products.imported} products imported`);
+    this.log(`Full import complete: ${result.collections?.stats?.imported || 0} collections, ${result.products?.stats?.imported || 0} products imported`);
 
     return result;
   }
