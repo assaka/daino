@@ -286,6 +286,15 @@ class BullMQManager {
 
     const queueName = this.sanitizeQueueName(jobType);
 
+    // Worker options for long-running jobs (like imports)
+    // Default lockDuration is 30s which is too short for import jobs
+    const workerOptions = {
+      connection: this.connectionConfig,
+      lockDuration: 600000,      // 10 minutes - time before job is considered stalled
+      stalledInterval: 300000,   // 5 minutes - how often to check for stalled jobs
+      maxStalledCount: 1,        // Only retry stalled jobs once
+    };
+
     const worker = new Worker(
       queueName,
       async (job) => {
@@ -393,7 +402,7 @@ class BullMQManager {
         }
       },
       {
-        connection: this.connectionConfig,
+        ...workerOptions,
         concurrency: parseInt(process.env.BULLMQ_CONCURRENCY || '5', 10),
       }
     );
@@ -409,6 +418,10 @@ class BullMQManager {
 
     worker.on('error', (err) => {
       console.error(`BullMQ: Worker error for ${jobType}:`, err);
+    });
+
+    worker.on('stalled', (jobId) => {
+      console.warn(`BullMQ: Job ${jobId} stalled for ${jobType} - will be retried`);
     });
 
     worker.on('ready', () => {
