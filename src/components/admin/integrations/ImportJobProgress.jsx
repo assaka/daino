@@ -224,7 +224,7 @@ const ImportJobProgress = ({
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-gray-500" />
             <span className="font-medium">{formatJobType(job.type)}</span>
-            <Badge className={status.color}>
+            <Badge variant="outline" className={status.color}>
               <StatusIcon className={`h-3 w-3 mr-1 ${status.iconClass || ''}`} />
               {status.label}
             </Badge>

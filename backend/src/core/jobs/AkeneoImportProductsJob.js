@@ -16,8 +16,7 @@ class AkeneoImportProductsJob extends BaseJobHandler {
       locale = 'en_US',
       dryRun = false,
       filters = {},
-      downloadImages = true,
-      batchSize = 50,
+      settings = {},
       customMappings = {}
     } = payload;
 
@@ -56,8 +55,6 @@ class AkeneoImportProductsJob extends BaseJobHandler {
       }
       akeneoIntegration = new AkeneoIntegration(integrationConfig.config_data);
 
-      await this.updateProgress(10, 'Testing Akeneo connection...');
-
       // Test connection
       const connectionTest = await akeneoIntegration.testConnection();
       if (!connectionTest.success) {
@@ -65,91 +62,46 @@ class AkeneoImportProductsJob extends BaseJobHandler {
       }
 
       this.log('Akeneo connection successful');
-      await this.updateProgress(15, 'Fetching products from Akeneo...');
+      await this.updateProgress(10, 'Fetching products from Akeneo...');
 
-      // Get products from Akeneo
-      const products = await this.executeWithTimeout(
-        () => akeneoIntegration.client.getAllProducts(filters),
-        600000 // 10 minutes timeout
-      );
+      // Import products using the integration's built-in method with progress callback
+      const result = await akeneoIntegration.importProducts(storeId, {
+        locale,
+        dryRun,
+        filters,
+        settings,
+        customMappings,
+        progressCallback: async (progress) => {
+          // Map progress stages to percentages
+          let percent = 10;
+          let message = 'Processing...';
 
-      this.log(`Found ${products.length} products in Akeneo`);
-      importStats.total = products.length;
+          if (progress.stage === 'fetching_products') {
+            percent = 15;
+            message = 'Fetching products from Akeneo...';
+          } else if (progress.stage === 'importing_products' || progress.stage === 'importing_standalone' || progress.stage === 'importing_variants' || progress.stage === 'importing_configurables') {
+            // Linear progress from 20% to 90%
+            percent = 20 + Math.round((progress.current / progress.total) * 70);
+            message = `Importing: ${progress.item || 'product'} (${progress.current}/${progress.total})`;
+          } else if (progress.stage === 'linking_variants') {
+            percent = 92;
+            message = 'Linking variants to parent products...';
+          }
 
-      if (products.length === 0) {
-        await this.updateProgress(100, 'No products found to import');
-        return {
-          success: true,
-          message: 'No products found to import',
-          stats: importStats
+          await this.updateProgress(percent, message);
+        }
+      });
+
+      // Extract stats from result (stats are returned directly, not nested)
+      if (result.stats) {
+        importStats = {
+          total: result.stats.total || 0,
+          imported: result.stats.imported || 0,
+          skipped: result.stats.skipped || 0,
+          failed: result.stats.failed || 0,
+          errors: result.stats.errors || []
         };
       }
-
-      await this.updateProgress(20, `Processing ${products.length} products...`);
-
-      // Process products in batches
-      let processedCount = 0;
-      const results = await this.batchProcess(
-        products,
-        async (product, index) => {
-          this.checkAbort();
-          
-          try {
-            if (dryRun) {
-              this.log(`[DRY RUN] Would import product: ${product.identifier}`, 'debug');
-              return { success: true, product: product.identifier, action: 'dry_run' };
-            }
-
-            // Transform and import product
-            const transformedProduct = await akeneoIntegration.mapping.transformProduct(
-              product,
-              storeId,
-              locale,
-              null,
-              customMappings,
-              { downloadImages }
-            );
-
-            const importResult = await akeneoIntegration.importSingleProduct(
-              transformedProduct,
-              storeId
-            );
-
-            if (importResult.success) {
-              importStats.imported++;
-            } else if (importResult.skipped) {
-              importStats.skipped++;
-            } else {
-              importStats.failed++;
-              importStats.errors.push({
-                product: product.identifier,
-                error: importResult.error
-              });
-            }
-
-            return importResult;
-          } catch (error) {
-            importStats.failed++;
-            importStats.errors.push({
-              product: product.identifier,
-              error: error.message
-            });
-            
-            this.log(`Failed to import product ${product.identifier}: ${error.message}`, 'error');
-            return { success: false, error: error.message, product: product.identifier };
-          }
-        },
-        batchSize,
-        async (processed, total) => {
-          // Update progress based on processed items
-          const baseProgress = 20;
-          const importProgress = Math.floor(((processed / total) * 70)); // 70% for import process
-          await this.updateProgress(
-            baseProgress + importProgress,
-            `Imported ${importStats.imported} of ${processed} processed products`
-          );
-        }
-      );
 
       await this.updateProgress(95, 'Saving import statistics...');
 
@@ -166,20 +118,15 @@ class AkeneoImportProductsJob extends BaseJobHandler {
       await this.updateProgress(100, 'Product import completed');
 
       const finalResult = {
-        success: true,
+        success: result.success,
         message: `Import completed: ${importStats.imported} imported, ${importStats.skipped} skipped, ${importStats.failed} failed`,
         stats: importStats,
         dryRun,
-        processingDetails: {
-          batchSize,
-          totalBatches: Math.ceil(products.length / batchSize),
-          downloadImages,
-          locale,
-          filters
-        }
+        locale,
+        filters
       };
 
-      this.log(`Import completed successfully: ${JSON.stringify(finalResult.stats)}`);
+      this.log(`Product import completed: ${JSON.stringify(finalResult.stats)}`);
       return finalResult;
 
     } catch (error) {

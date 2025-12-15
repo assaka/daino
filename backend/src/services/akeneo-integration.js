@@ -1715,7 +1715,7 @@ class AkeneoIntegration {
    * - false: Skip product models, import only products (all as simple, no linking)
    */
   async importProductsWithModels(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {} } = options;
+    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {}, progressCallback } = options;
 
     // Ensure downloadImages is enabled by default in settings
     const enhancedSettings = {
@@ -1826,6 +1826,17 @@ class AkeneoIntegration {
 
           for (const akeneoProduct of batch) {
             processed++;
+
+            // Call progress callback for linear progress tracking
+            if (progressCallback) {
+              await progressCallback({
+                stage: 'importing_standalone',
+                current: processed,
+                total: this.importStats.products.total,
+                item: akeneoProduct.identifier
+              });
+            }
+
             try {
               // Transform product to DainoStore format
               const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
@@ -1899,6 +1910,17 @@ class AkeneoIntegration {
 
           for (const akeneoProduct of batch) {
             processed++;
+
+            // Call progress callback for linear progress tracking
+            if (progressCallback) {
+              await progressCallback({
+                stage: 'importing_variants',
+                current: processed,
+                total: this.importStats.products.total,
+                item: akeneoProduct.identifier
+              });
+            }
+
             try {
               // Transform variant as a simple product (for now, we'll link to parent later)
               const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
@@ -1976,6 +1998,17 @@ class AkeneoIntegration {
 
           for (const akeneoProductModel of batch) {
             processed++;
+
+            // Call progress callback for linear progress tracking
+            if (progressCallback) {
+              await progressCallback({
+                stage: 'importing_configurables',
+                current: processed,
+                total: this.importStats.products.total,
+                item: akeneoProductModel.code
+              });
+            }
+
             try {
               // Transform product model to configurable product
               const configurableProduct = await this.mapping.transformProductModel(akeneoProductModel, storeId, locale, null, customMappings, enhancedSettings, this.client, akeneoAttributeTypes);
