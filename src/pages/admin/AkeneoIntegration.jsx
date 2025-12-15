@@ -218,6 +218,8 @@ const AkeneoIntegration = () => {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingFamilies, setLoadingFamilies] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  // Trigger to refresh ImportJobProgress after scheduling a job
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Progress tracking for import operations
   const [importProgress, setImportProgress] = useState({
@@ -1318,7 +1320,8 @@ const AkeneoIntegration = () => {
 
         if (responseData?.success) {
           toast.success(`Categories import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
-          // Job progress will be shown by ImportJobProgress component
+          // Trigger refresh of ImportJobProgress to show the new job
+          setRefreshTrigger(prev => prev + 1);
         } else {
           toast.error(`Failed to start categories import: ${responseData.error || responseData.message}`);
         }
@@ -1416,7 +1419,8 @@ const AkeneoIntegration = () => {
 
       if (responseData?.success) {
         toast.success(`Attributes import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
-        // Job progress will be shown by ImportJobProgress component
+        // Trigger refresh of ImportJobProgress to show the new job
+        setRefreshTrigger(prev => prev + 1);
       } else {
         toast.error(`Failed to start attributes import: ${responseData.error || responseData.message}`);
       }
@@ -1498,7 +1502,8 @@ const AkeneoIntegration = () => {
 
       if (responseData?.success) {
         toast.success(`Families import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
-        // Job progress will be shown by ImportJobProgress component
+        // Trigger refresh of ImportJobProgress to show the new job
+        setRefreshTrigger(prev => prev + 1);
       } else {
         toast.error(`Failed to start families import: ${responseData.error || responseData.message}`);
       }
@@ -1578,7 +1583,8 @@ const AkeneoIntegration = () => {
 
       if (responseData?.success) {
         toast.success(`Products import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
-        // Job progress will be shown by ImportJobProgress component
+        // Trigger refresh of ImportJobProgress to show the new job
+        setRefreshTrigger(prev => prev + 1);
       } else {
         toast.error(`Failed to start products import: ${responseData.error || responseData.message}`);
       }
@@ -1626,7 +1632,8 @@ const AkeneoIntegration = () => {
 
       if (responseData?.success) {
         toast.success(`Full import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
-        // Job progress will be shown by ImportJobProgress component
+        // Trigger refresh of ImportJobProgress to show the new job
+        setRefreshTrigger(prev => prev + 1);
       } else {
         toast.error(`Failed to start full import: ${responseData?.error || responseData?.message || 'Unknown error'}`);
       }
@@ -1906,6 +1913,7 @@ const AkeneoIntegration = () => {
         showHistory={true}
         maxHistoryItems={5}
         className="mb-6"
+        refreshTrigger={refreshTrigger}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
