@@ -987,8 +987,14 @@ class AkeneoIntegration {
               delete attributeData.akeneo_code;
               delete attributeData.akeneo_type;
               delete attributeData.akeneo_group;
-              delete attributeData.name; // Remove name - it goes in attribute_translations table
+              // Keep name - attributes table has NOT NULL constraint on name column
+              // Note: name is also stored in attribute_translations for i18n
               delete attributeData.options; // Remove options - they go in attribute_values table
+
+              // Ensure name is never null - fallback to code if needed
+              if (!attributeData.name) {
+                attributeData.name = attribute.code || `attribute_${Date.now()}`;
+              }
 
               // Override filterable setting for new attributes
               if (shouldBeFilterable) {
