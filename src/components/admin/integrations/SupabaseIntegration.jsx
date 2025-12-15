@@ -27,6 +27,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const [loadingBuckets, setLoadingBuckets] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [forceResetting, setForceResetting] = useState(false);
 
   // Check for flash message after reload
   useEffect(() => {
@@ -368,6 +369,29 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
   const handleDisconnectCancel = () => {
     setShowDisconnectModal(false);
+  };
+
+  const handleForceReset = async () => {
+    try {
+      setForceResetting(true);
+      const response = await apiClient.post('/supabase/force-reset');
+
+      if (response.success) {
+        toast.success('Connection reset successfully', {
+          description: 'You can now reconnect to Supabase.'
+        });
+        // Reload status to show disconnected state
+        await loadStatus();
+        setStorageStats(null);
+      } else {
+        throw new Error(response.message || 'Failed to reset connection');
+      }
+    } catch (error) {
+      console.error('Error force resetting:', error);
+      toast.error(error.message || 'Failed to reset connection');
+    } finally {
+      setForceResetting(false);
+    }
   };
 
   const handleTestUpload = async () => {
@@ -810,6 +834,67 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : status?.connectionError ? (
+        /* Connection error - show reset option */
+        <div className="space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-red-900 mb-1">
+                  Connection Error
+                </h4>
+                <p className="text-sm text-red-700 mb-2">
+                  {status.message || 'Unable to connect to Supabase. The connection may be corrupted.'}
+                </p>
+                {status.error && (
+                  <p className="text-xs text-red-600 mb-3 font-mono bg-red-100 p-2 rounded">
+                    {status.error}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleForceReset}
+                    disabled={forceResetting}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                  >
+                    {forceResetting ? (
+                      <>
+                        <div className="animate-spin -ml-1 mr-3 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Resetting...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Reset Connection
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleRefreshStatus}
+                    disabled={refreshing}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    {refreshing ? (
+                      <>
+                        <div className="animate-spin -ml-1 mr-3 h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Retry Connection
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-red-600 mt-3">
+                  Reset will clear all stored credentials. You'll need to reconnect to Supabase after resetting.
+                </p>
               </div>
             </div>
           </div>
