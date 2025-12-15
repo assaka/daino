@@ -21,6 +21,15 @@ class SupabaseIntegration {
     this.authorizationBaseUrl = 'https://api.supabase.com/v1/oauth/authorize';
     this.tokenUrl = 'https://api.supabase.com/v1/oauth/token';
 
+    // Debug: Log what env vars we're receiving
+    console.log('[SUPABASE_INIT] Environment check:', {
+      hasClientId: !!process.env.SUPABASE_OAUTH_CLIENT_ID,
+      clientIdLength: process.env.SUPABASE_OAUTH_CLIENT_ID?.length || 0,
+      clientIdPreview: this.clientId.substring(0, 8) + '...',
+      hasClientSecret: !!process.env.SUPABASE_OAUTH_CLIENT_SECRET,
+      clientSecretLength: process.env.SUPABASE_OAUTH_CLIENT_SECRET?.length || 0
+    });
+
     // Check if OAuth is properly configured
     this.oauthConfigured = this.clientId !== 'pending_configuration' &&
                            this.clientSecret !== 'pending_configuration';
