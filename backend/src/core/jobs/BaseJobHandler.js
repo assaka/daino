@@ -29,7 +29,8 @@ class BaseJobHandler extends EventEmitter {
    * Update job progress
    */
   async updateProgress(progress, message = null) {
-    if (this.isAborted) return;
+    // Check for cancellation on every progress update
+    await this.checkAbort();
 
     this.progress = Math.max(0, Math.min(100, progress));
     this.emit('progress', this.progress, message);
