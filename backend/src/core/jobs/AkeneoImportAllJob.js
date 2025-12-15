@@ -48,7 +48,7 @@ class AkeneoImportAllJob extends BaseJobHandler {
       let currentProgress = 10;
 
       for (const importType of importOrder) {
-        this.checkAbort();
+        await this.checkAbort();
         
         await this.updateProgress(currentProgress, `Starting ${importType} import...`);
 

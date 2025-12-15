@@ -99,6 +99,9 @@ class UILabelsBulkTranslationJob extends BaseJobHandler {
     this.log(`Processing ${keysToTranslate.length} labels in ${batches.length} batches of ${BATCH_SIZE}`);
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      // Check for cancellation before each batch
+      await this.checkAbort();
+
       const batch = batches[batchIndex];
 
       // Calculate progress (15% to 90% for translation)

@@ -29,6 +29,8 @@ class ShopifyImportProductsJob extends BaseJobHandler {
     const result = await importService.importProducts({
       ...options,
       progressCallback: async (progress) => {
+        // Check for cancellation on each progress update
+        await this.checkAbort();
         if (progress.stage === 'importing_products') {
           // Linear progress based on products: 1/17 = 6%, 17/17 = 100%
           const percent = Math.round((progress.current / progress.total) * 100);

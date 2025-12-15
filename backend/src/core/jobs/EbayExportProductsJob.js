@@ -16,6 +16,8 @@ class EbayExportProductsJob extends BaseJobHandler {
     const result = await exportService.exportProducts(productIds, {
       ...options,
       progressCallback: async (progress) => {
+        // Check for cancellation on each progress update
+        await this.checkAbort();
         const percent = 20 + (progress.current / progress.total * 75);
         await this.updateProgress(Math.round(percent), `Processing: ${progress.item}`);
       }

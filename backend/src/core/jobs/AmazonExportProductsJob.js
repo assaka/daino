@@ -21,6 +21,8 @@ class AmazonExportProductsJob extends BaseJobHandler {
     const result = await exportService.exportProducts(productIds, {
       ...options,
       progressCallback: async (progress) => {
+        // Check for cancellation on each progress update
+        await this.checkAbort();
         let progressPercent = 10;
 
         if (progress.stage === 'fetching_products') {

@@ -28,6 +28,8 @@ class ShopifyImportAllJob extends BaseJobHandler {
     const result = await importService.fullImport({
       ...options,
       progressCallback: async (progress) => {
+        // Check for cancellation on each progress update
+        await this.checkAbort();
         // Collections: 10% - 40%
         if (progress.stage === 'fetching_collections') {
           const fetchProgress = 10 + (progress.current / progress.total * 10);
