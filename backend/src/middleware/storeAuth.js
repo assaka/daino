@@ -69,19 +69,6 @@ const checkTeamMembership = async (userId, storeId, requiredPermissions = []) =>
  */
 const checkStoreOwnership = async (req, res, next) => {
   try {
-    console.log('🔍 Store ownership check started');
-    console.log('🔍 Request details:', {
-      method: req.method,
-      path: req.path,
-      params: req.params,
-      body: req.body,
-      query: req.query,
-      headers: {
-        'x-store-id': req.headers['x-store-id'],
-        'authorization': req.headers.authorization ? 'Bearer ...' : 'None'
-      },
-      user: req.user ? { id: req.user.id, email: req.user.email, role: req.user.role } : 'No user'
-    });
 
     // Check if user is authenticated
     if (!req.user) {
@@ -100,10 +87,7 @@ const checkStoreOwnership = async (req, res, next) => {
                    req.query?.store_id ||
                    req.headers['x-store-id'];
 
-    console.log('🔍 Extracted storeId:', storeId);
-
     if (!storeId) {
-      console.log('⚠️ No store_id provided, skipping ownership check');
       return next();
     }
 
@@ -115,7 +99,6 @@ const checkStoreOwnership = async (req, res, next) => {
       .maybeSingle();
 
     if (storeError || !store) {
-      console.log('❌ Store not found in master DB:', storeId, storeError?.message);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -133,17 +116,7 @@ const checkStoreOwnership = async (req, res, next) => {
     
     const hasAccess = isDirectOwner || teamAccess.hasAccess;
 
-    console.log('🔍 Ownership check result:', {
-      storeId: store.id,
-      storeUserId: store.user_id,
-      isDirectOwner,
-      teamRole: teamAccess.role,
-      teamPermissions: teamAccess.permissions,
-      hasAccess
-    });
-
     if (!hasAccess) {
-      console.log('❌ User does not have access to this store');
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -162,8 +135,6 @@ const checkStoreOwnership = async (req, res, next) => {
     
     next();
   } catch (error) {
-    console.error('❌ Store ownership check error:', error);
-    console.error('Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Error checking store ownership: ' + error.message,
@@ -192,7 +163,6 @@ const checkResourceOwnership = (modelName) => {
       const storeId = req.storeId || req.headers['x-store-id'] || req.query.store_id;
 
       if (!storeId) {
-        console.log(`⚠️ No storeId provided for resource ownership check of ${modelName}`);
         return res.status(400).json({
           success: false,
           message: 'Store ID required for resource access'
@@ -235,7 +205,6 @@ const checkResourceOwnership = (modelName) => {
         const hasAccess = isDirectOwner || teamAccess.hasAccess;
 
         if (!hasAccess) {
-          console.log(`❌ User does not have access to the store for this ${modelName}`);
           return res.status(403).json({
             success: false,
             message: 'Access denied'
@@ -253,7 +222,6 @@ const checkResourceOwnership = (modelName) => {
       req.resource = resource;
       next();
     } catch (error) {
-      console.error(`❌ Resource ownership check error for ${modelName}:`, error);
       return res.status(500).json({
         success: false,
         message: 'Error checking resource ownership'
