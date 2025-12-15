@@ -772,6 +772,29 @@ const AkeneoIntegration = () => {
     }
   };
 
+  // Toggle schedule active status
+  const toggleSchedule = async (schedule) => {
+    try {
+      const storeId = selectedStore?.id;
+      if (!storeId) return;
+
+      const newStatus = !schedule.is_active;
+      const response = await apiClient.post('/integrations/akeneo/schedules', {
+        id: schedule.id,
+        is_active: newStatus,
+        status: newStatus ? 'scheduled' : 'paused'
+      });
+
+      if (response.data?.success || response.success) {
+        toast.success(newStatus ? 'Schedule activated' : 'Schedule paused');
+        await loadSchedules();
+      }
+    } catch (error) {
+      console.error('Failed to toggle schedule:', error);
+      toast.error('Failed to update schedule');
+    }
+  };
+
   // Load configuration and locales on component mount
   useEffect(() => {
     // Add a small delay to ensure localStorage is ready
@@ -2494,6 +2517,11 @@ const AkeneoIntegration = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Switch
+                              checked={schedule.is_active}
+                              onCheckedChange={() => toggleSchedule(schedule)}
+                              title={schedule.is_active ? 'Pause schedule' : 'Activate schedule'}
+                            />
                             <Button
                               variant="ghost"
                               size="sm"
