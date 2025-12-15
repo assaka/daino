@@ -68,11 +68,9 @@ services:
         sync: false
       - key: PDF_SERVICE_URL
         value: http://daino-pdf-service:3001
-      # Redis Configuration (Render managed Redis)
+      # Redis Configuration (set manually in Render dashboard for Upstash)
       - key: REDIS_URL
-        fromDatabase:
-          name: daino-redis
-          property: connectionString
+        sync: false
       - key: REDIS_ENABLED
         value: true
       # Cloudflare CDN Configuration
@@ -124,11 +122,9 @@ services:
       # JWT Configuration (needed for some job processing)
       - key: JWT_SECRET
         sync: false
-      # Redis Configuration (Render managed Redis)
+      # Redis Configuration (set manually in Render dashboard for Upstash)
       - key: REDIS_URL
-        fromDatabase:
-          name: daino-redis
-          property: connectionString
+        sync: false
       - key: REDIS_ENABLED
         value: true
       # Service type for connection pool optimization
@@ -159,11 +155,9 @@ services:
       # Encryption Key (for decrypting tenant DB credentials from master)
       - key: ENCRYPTION_KEY
         sync: false
-      # Redis for scheduling background jobs
+      # Redis for scheduling background jobs (set manually in Render dashboard for Upstash)
       - key: REDIS_URL
-        fromDatabase:
-          name: daino-redis
-          property: connectionString
+        sync: false
       - key: REDIS_ENABLED
         value: true
     autoDeploy: true
