@@ -778,6 +778,8 @@ class BackgroundJobManager extends EventEmitter {
    * Cancel a job (works for both pending and running jobs)
    */
   async cancelJob(jobId) {
+    console.log(`[CANCEL-MGR] cancelJob called for ${jobId}`);
+
     if (!masterDbClient) {
       throw new Error('masterDbClient not available');
     }
@@ -789,8 +791,11 @@ class BackgroundJobManager extends EventEmitter {
       .single();
 
     if (error || !job) {
+      console.log(`[CANCEL-MGR] Job ${jobId} not found`);
       throw new Error('Job not found');
     }
+
+    console.log(`[CANCEL-MGR] Job ${jobId} current status: ${job.status}`);
 
     if (job.status === 'completed' || job.status === 'cancelled' || job.status === 'failed') {
       throw new Error(`Cannot cancel a job with status: ${job.status}`);
@@ -799,11 +804,14 @@ class BackgroundJobManager extends EventEmitter {
     // For running jobs, set status to 'cancelling' so the worker knows to abort
     // For pending jobs, set directly to 'cancelled'
     const newStatus = job.status === 'running' ? 'cancelling' : 'cancelled';
+    console.log(`[CANCEL-MGR] Setting job ${jobId} status to: ${newStatus}`);
 
     await this.updateJob(jobId, {
       status: newStatus,
       cancelled_at: new Date().toISOString()
     });
+
+    console.log(`[CANCEL-MGR] Job ${jobId} status updated to ${newStatus}`);
 
     // Also try to remove from BullMQ if available (for pending jobs)
     if (this.bullMQManager && job.job_type && job.status === 'pending') {

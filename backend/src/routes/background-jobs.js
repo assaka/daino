@@ -238,8 +238,10 @@ router.get('/:jobId', async (req, res) => {
 router.post('/:jobId/cancel', async (req, res) => {
   try {
     const { jobId } = req.params;
+    console.log(`[CANCEL] Received cancel request for job ${jobId}`);
 
     if (!masterDbClient) {
+      console.log(`[CANCEL] Database not available`);
       return res.status(503).json({
         success: false,
         message: 'Database not available'
@@ -252,7 +254,10 @@ router.post('/:jobId/cancel', async (req, res) => {
       .eq('id', jobId)
       .single();
 
+    console.log(`[CANCEL] Job ${jobId} current status: ${job?.status}`);
+
     if (error || !job) {
+      console.log(`[CANCEL] Job ${jobId} not found`);
       return res.status(404).json({
         success: false,
         message: 'Job not found'
@@ -270,7 +275,9 @@ router.post('/:jobId/cancel', async (req, res) => {
       }
     }
 
+    console.log(`[CANCEL] Calling jobManager.cancelJob for ${jobId}`);
     const cancelledJob = await jobManager.cancelJob(jobId);
+    console.log(`[CANCEL] Job ${jobId} status after cancel: ${cancelledJob.status}`);
 
     res.json({
       success: true,
@@ -282,7 +289,7 @@ router.post('/:jobId/cancel', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error cancelling job:', error);
+    console.error('[CANCEL] Error cancelling job:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to cancel job',
