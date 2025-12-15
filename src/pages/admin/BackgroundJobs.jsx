@@ -281,6 +281,7 @@ const BackgroundJobs = () => {
           <TabsTrigger value="active">Active ({activeJobs.length})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completedJobs.length})</TabsTrigger>
           <TabsTrigger value="failed">Failed ({failedJobs.length})</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled ({cancelledJobs.length})</TabsTrigger>
           <TabsTrigger value="all">All ({filteredJobs.length})</TabsTrigger>
         </TabsList>
 
@@ -409,6 +410,46 @@ const BackgroundJobs = () => {
           )}
         </TabsContent>
 
+        <TabsContent value="cancelled" className="space-y-3">
+          {cancelledJobs.map(job => (
+            <Card key={job.id} className="border-l-4 border-l-gray-400">
+              <CardContent className="pt-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <h3 className="font-medium">{formatJobType(job.type)}</h3>
+                        <p className="text-sm text-gray-600">
+                          Cancelled {job.cancelled_at ? new Date(job.cancelled_at).toLocaleString() : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline">#{job.id}</Badge>
+                  </div>
+                  {/* Show partial results if available */}
+                  {job.result?.stats && (
+                    <div className="bg-gray-50 border border-gray-200 rounded p-3">
+                      <p className="text-sm text-gray-700">
+                        <strong>Imported before cancel:</strong> {job.result.stats.imported || 0}
+                        {job.result.stats.total > 0 && ` of ${job.result.stats.total}`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {cancelledJobs.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center text-gray-500">
+                <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No cancelled jobs</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="all" className="space-y-3">
           {filteredJobs.map(job => (
             <Card key={job.id}>
@@ -423,6 +464,8 @@ const BackgroundJobs = () => {
                         {job.status === 'failed' && `Failed ${new Date(job.failed_at).toLocaleString()}`}
                         {job.status === 'running' && `Started ${new Date(job.started_at).toLocaleString()}`}
                         {job.status === 'pending' && `Scheduled ${new Date(job.scheduled_at).toLocaleString()}`}
+                        {job.status === 'cancelled' && `Cancelled ${job.cancelled_at ? new Date(job.cancelled_at).toLocaleString() : ''}`}
+                        {job.status === 'cancelling' && `Cancelling...`}
                       </p>
                     </div>
                   </div>

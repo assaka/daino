@@ -417,19 +417,30 @@ const ImportExportJobs = () => {
                       <p className="text-sm text-gray-600">
                         {job.status === 'completed' && (
                           <>
-                            Imported {job.result?.stats?.products?.imported || 0} products,{' '}
-                            {job.result?.stats?.collections?.imported || 0} collections
+                            Imported {job.result?.stats?.imported || job.result?.stats?.products?.imported || 0} items
+                          </>
+                        )}
+                        {job.status === 'cancelled' && (
+                          <>
+                            Cancelled - {job.result?.stats?.imported || 0} imported before cancel
+                            {job.result?.stats?.total > 0 && ` of ${job.result.stats.total}`}
                           </>
                         )}
                         {job.status === 'failed' && job.last_error}
                         {job.status === 'running' && job.progress_message}
+                        {job.status === 'cancelling' && 'Cancelling...'}
                       </p>
                       <p className="text-xs text-gray-500">
                         {new Date(job.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
-                  <Badge variant={job.status === 'completed' ? 'default' : job.status === 'failed' ? 'destructive' : 'outline'}>
+                  <Badge variant={
+                    job.status === 'completed' ? 'default' :
+                    job.status === 'failed' ? 'destructive' :
+                    job.status === 'cancelled' ? 'outline' :
+                    'outline'
+                  }>
                     {job.status}
                   </Badge>
                 </div>
