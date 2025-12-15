@@ -648,15 +648,17 @@ const CustomDomains = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Settings button - always show */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => showDNSInstructions(domain)}
+                        >
+                          Settings
+                        </Button>
+
                         {domain.verification_status === 'pending' && (
                           <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => showDNSInstructions(domain)}
-                            >
-                              Configure
-                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
