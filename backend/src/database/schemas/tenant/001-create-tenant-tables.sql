@@ -1098,7 +1098,8 @@ CREATE TABLE IF NOT EXISTS attribute_sets (
   store_id UUID NOT NULL,
   attribute_ids JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS attribute_translations (
@@ -1109,6 +1110,7 @@ CREATE TABLE IF NOT EXISTS attribute_translations (
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  demo BOOLEAN DEFAULT false,
   UNIQUE(attribute_id, language_code)
 );
 
@@ -1120,6 +1122,7 @@ CREATE TABLE IF NOT EXISTS attribute_value_translations (
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  demo BOOLEAN DEFAULT false,
   UNIQUE(attribute_value_id, language_code)
 );
 
@@ -1130,7 +1133,8 @@ CREATE TABLE IF NOT EXISTS attribute_values (
   sort_order INTEGER DEFAULT 0,
   metadata JSON DEFAULT '{}'::json,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS attributes (
@@ -1148,7 +1152,8 @@ CREATE TABLE IF NOT EXISTS attributes (
   store_id UUID NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  is_configurable BOOLEAN DEFAULT false
+  is_configurable BOOLEAN DEFAULT false,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
@@ -1315,7 +1320,8 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   akeneo_code VARCHAR(255),
-  seo JSON DEFAULT '{}'::json
+  seo JSON DEFAULT '{}'::json,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS category_seo (
@@ -1343,6 +1349,7 @@ CREATE TABLE IF NOT EXISTS category_translations (
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  demo BOOLEAN DEFAULT false,
   PRIMARY KEY (category_id, language_code)
 );
 
@@ -1396,6 +1403,7 @@ CREATE TABLE IF NOT EXISTS cms_block_translations (
   content TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  demo BOOLEAN DEFAULT false,
   PRIMARY KEY (cms_block_id, language_code)
 );
 
@@ -1410,7 +1418,8 @@ CREATE TABLE IF NOT EXISTS cms_blocks (
   store_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  placement JSONB DEFAULT '["content"]'::jsonb
+  placement JSONB DEFAULT '["content"]'::jsonb,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS cms_page_seo (
@@ -1439,6 +1448,7 @@ CREATE TABLE IF NOT EXISTS cms_page_translations (
   excerpt TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  demo BOOLEAN DEFAULT false,
   PRIMARY KEY (cms_page_id, language_code)
 );
 
@@ -1457,7 +1467,8 @@ CREATE TABLE IF NOT EXISTS cms_pages (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   is_system BOOLEAN DEFAULT false,
-  seo JSON DEFAULT '{}'::json
+  seo JSON DEFAULT '{}'::json,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS consent_logs (
@@ -1570,7 +1581,8 @@ CREATE TABLE IF NOT EXISTS coupons (
   applicable_attributes JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  translations JSON DEFAULT '{}'::json
+  translations JSON DEFAULT '{}'::json,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS credit_transactions (
@@ -1813,7 +1825,8 @@ CREATE TABLE IF NOT EXISTS customer_activities (
   operating_system VARCHAR(100),
   utm_source VARCHAR(255),
   utm_medium VARCHAR(255),
-  utm_campaign VARCHAR(255)
+  utm_campaign VARCHAR(255),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS customer_addresses (
@@ -1833,7 +1846,8 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
   user_id UUID,
   customer_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -1867,7 +1881,8 @@ CREATE TABLE IF NOT EXISTS customers (
   customer_type VARCHAR(20) DEFAULT 'guest'::character varying NOT NULL,
   is_blacklisted BOOLEAN DEFAULT false,
   blacklist_reason TEXT,
-  blacklisted_at TIMESTAMP
+  blacklisted_at TIMESTAMP,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS delivery_settings (
@@ -2519,7 +2534,8 @@ CREATE TABLE IF NOT EXISTS product_attribute_values (
   date_value TIMESTAMP WITH TIME ZONE,
   boolean_value BOOLEAN,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS product_label_translations (
@@ -2545,7 +2561,8 @@ CREATE TABLE IF NOT EXISTS product_labels (
   priority INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  sort_order INTEGER DEFAULT 0 NOT NULL
+  sort_order INTEGER DEFAULT 0 NOT NULL,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS product_seo (
@@ -2587,7 +2604,8 @@ CREATE TABLE IF NOT EXISTS product_tabs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   tab_type VARCHAR(20) DEFAULT 'text'::character varying NOT NULL,
   attribute_ids JSONB DEFAULT '[]'::jsonb,
-  attribute_set_ids JSONB DEFAULT '[]'::jsonb
+  attribute_set_ids JSONB DEFAULT '[]'::jsonb,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS product_translations (
@@ -2599,6 +2617,7 @@ CREATE TABLE IF NOT EXISTS product_translations (
   short_description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  demo BOOLEAN DEFAULT false,
   UNIQUE(product_id, language_code)
 );
 
@@ -2668,7 +2687,8 @@ CREATE TABLE IF NOT EXISTS products (
   parent_id UUID,
   configurable_attributes JSONB DEFAULT '[]'::jsonb,
   external_id VARCHAR(255),
-  external_source VARCHAR(50)
+  external_source VARCHAR(50),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS redirects (
@@ -2701,7 +2721,8 @@ CREATE TABLE IF NOT EXISTS sales_invoices (
   error_message TEXT,
   metadata JSON DEFAULT '{}'::json,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS sales_order_items (
@@ -2718,7 +2739,8 @@ CREATE TABLE IF NOT EXISTS sales_order_items (
   order_id UUID NOT NULL,
   product_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS sales_orders (
@@ -2755,7 +2777,8 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   delivered_at TIMESTAMP WITH TIME ZONE,
   cancelled_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS sales_shipments (
@@ -2775,7 +2798,8 @@ CREATE TABLE IF NOT EXISTS sales_shipments (
   error_message TEXT,
   metadata JSON DEFAULT '{}'::json,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS seo_settings (
@@ -2807,7 +2831,8 @@ CREATE TABLE IF NOT EXISTS seo_templates (
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  template JSON DEFAULT '{}'::json
+  template JSON DEFAULT '{}'::json,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS shipping_method_translations (
@@ -2921,7 +2946,8 @@ CREATE TABLE IF NOT EXISTS taxes (
   country_rates JSONB DEFAULT '[]'::jsonb,
   store_id UUID NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS tax_translations (
