@@ -645,6 +645,20 @@ class SupabaseIntegration {
         throw new Error('No Supabase token found for this store');
       }
 
+      if (!token.refresh_token) {
+        throw new Error('No refresh_token found in stored token data');
+      }
+
+      // Debug logging
+      console.log('[SUPABASE_REFRESH] Attempting token refresh:', {
+        storeId,
+        clientId: this.clientId.substring(0, 8) + '...',
+        clientIdLength: this.clientId.length,
+        hasRefreshToken: !!token.refresh_token,
+        refreshTokenLength: token.refresh_token?.length,
+        tokenUrl: this.tokenUrl
+      });
+
       // Use form-urlencoded for OAuth token refresh (standard OAuth2 format)
       const params = new URLSearchParams({
         grant_type: 'refresh_token',
@@ -659,6 +673,8 @@ class SupabaseIntegration {
         }
       });
 
+      console.log('[SUPABASE_REFRESH] Token refresh successful');
+
       const { access_token, refresh_token, expires_in } = response.data;
       const expires_at = new Date(Date.now() + expires_in * 1000);
 
@@ -671,8 +687,19 @@ class SupabaseIntegration {
 
       return { success: true, access_token, expires_at, expires_in };
     } catch (error) {
-      console.error('Error refreshing token:', error.response?.data || error.message);
-      throw new Error('Failed to refresh Supabase token: ' + (error.response?.data?.error || error.message));
+      // Log full error details for debugging
+      console.error('[SUPABASE_REFRESH] Token refresh failed:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error_description ||
+                          error.response?.data?.error ||
+                          error.message;
+      throw new Error('Failed to refresh Supabase token: ' + errorMessage);
     }
   }
 
