@@ -2036,29 +2036,7 @@ CREATE TABLE IF NOT EXISTS integration_configs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type VARCHAR(255) NOT NULL,
-  priority VARCHAR(20) DEFAULT 'normal'::character varying NOT NULL,
-  status VARCHAR(20) DEFAULT 'pending'::character varying NOT NULL,
-  payload JSON DEFAULT '{}'::json NOT NULL,
-  result JSON,
-  scheduled_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  started_at TIMESTAMP,
-  completed_at TIMESTAMP,
-  failed_at TIMESTAMP,
-  cancelled_at TIMESTAMP,
-  max_retries INTEGER DEFAULT 3 NOT NULL,
-  retry_count INTEGER DEFAULT 0 NOT NULL,
-  last_error TEXT,
-  store_id UUID,
-  user_id UUID,
-  metadata JSON DEFAULT '{}'::json NOT NULL,
-  progress NUMERIC DEFAULT 0,
-  progress_message VARCHAR(500),
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
+-- NOTE: jobs table removed - job management is in master DB (job_queue, job_history tables)
 
 CREATE TABLE IF NOT EXISTS languages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
