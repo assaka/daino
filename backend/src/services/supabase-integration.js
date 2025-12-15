@@ -1603,9 +1603,10 @@ class SupabaseIntegration {
           console.error('[getConnectionStatus] Error checking for pending tokens:', pendingTokenError);
         }
 
-        // If no pending tokens were found, get existing token and refresh if needed
+        // If no pending tokens were found, just get existing token (don't refresh during status check)
+        // Token refresh is handled by the hourly cron job
         if (!token) {
-          token = await this.ensureValidToken(storeId);
+          token = await this.getSupabaseToken(storeId);
         }
       } catch (dbError) {
         // DB might not be accessible yet, continue without config
