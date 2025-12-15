@@ -165,13 +165,29 @@ router.get('/oauth-status', authMiddleware, async (req, res) => {
 // Get connection status and ensure buckets exist
 router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
   try {
-    const status = await supabaseIntegration.getConnectionStatus(req.storeId);
+    // Add timeout to prevent hanging requests
+    const statusPromise = supabaseIntegration.getConnectionStatus(req.storeId);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Status check timed out')), 15000)
+    );
 
-    // If connected with service role key, ensure buckets exist
+    const status = await Promise.race([statusPromise, timeoutPromise]);
+
+    // If connected with service role key, ensure buckets exist (with timeout)
     if (status.connected && status.hasServiceRoleKey) {
-      const bucketResult = await supabaseStorage.ensureBucketsExist(req.storeId);
-      if (bucketResult.success && bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
-        console.log('Auto-created buckets on status check:', bucketResult.bucketsCreated);
+      try {
+        const bucketPromise = supabaseStorage.ensureBucketsExist(req.storeId);
+        const bucketTimeout = new Promise((resolve) =>
+          setTimeout(() => resolve({ success: false, timedOut: true }), 5000)
+        );
+        const bucketResult = await Promise.race([bucketPromise, bucketTimeout]);
+
+        if (bucketResult.success && bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
+          console.log('Auto-created buckets on status check:', bucketResult.bucketsCreated);
+        }
+      } catch (bucketError) {
+        console.warn('Bucket check failed:', bucketError.message);
+        // Don't fail the status check for bucket issues
       }
     }
 
