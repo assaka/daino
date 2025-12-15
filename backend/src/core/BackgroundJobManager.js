@@ -444,7 +444,25 @@ class BackgroundJobManager extends EventEmitter {
     const jobType = job.type || job.job_type;
 
     try {
-      console.log(`🔄 Processing job: ${jobType} (ID: ${job.id})`);
+      console.log(`🔄 [DB Queue] Processing job: ${jobType} (ID: ${job.id})`);
+
+      // Check if job was already cancelled before we start
+      if (masterDbClient) {
+        const { data: currentJob } = await masterDbClient
+          .from('job_queue')
+          .select('status')
+          .eq('id', job.id)
+          .single();
+
+        if (currentJob?.status === 'cancelling' || currentJob?.status === 'cancelled') {
+          console.log(`🔄 [DB Queue] Job ${job.id} was cancelled - skipping`);
+          await this.updateJob(job.id, {
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString()
+          });
+          return;
+        }
+      }
 
       // Update job status in master DB
       await this.updateJob(job.id, {
@@ -463,9 +481,23 @@ class BackgroundJobManager extends EventEmitter {
       // Create the job handler
       const handler = new HandlerClass(job);
 
-      // Set up progress callback to update database
+      // Set up progress callback to update database with cancellation check
       const originalUpdateProgress = handler.updateProgress.bind(handler);
       handler.updateProgress = async (progress, message) => {
+        // Check for cancellation on every progress update
+        if (masterDbClient) {
+          const { data: currentJob } = await masterDbClient
+            .from('job_queue')
+            .select('status')
+            .eq('id', job.id)
+            .single();
+
+          if (currentJob?.status === 'cancelling' || currentJob?.status === 'cancelled') {
+            console.log(`🔄 [DB Queue] Job ${job.id} cancellation detected - throwing`);
+            throw new Error('Job was cancelled by user');
+          }
+        }
+
         // Call original to emit events
         await originalUpdateProgress(progress, message);
 
@@ -571,9 +603,32 @@ class BackgroundJobManager extends EventEmitter {
    * Handle job failure and retries
    */
   async handleJobFailure(job, error) {
+    const jobType = job.type || job.job_type;
+
+    // Check if this was a cancellation - don't retry cancelled jobs
+    const isCancellation = error.message?.includes('cancelled') ||
+                           error.message?.includes('canceled') ||
+                           error.message?.includes('Job was cancelled');
+
+    if (isCancellation) {
+      console.log(`🔄 [DB Queue] Job ${job.id} was cancelled - marking as cancelled (no retry)`);
+      await this.updateJob(job.id, {
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        last_error: error.message
+      });
+      await this.createJobHistory({
+        job_id: job.id,
+        status: 'cancelled',
+        error: { message: error.message },
+        executed_at: new Date().toISOString()
+      });
+      this.emit('job:cancelled', job);
+      return;
+    }
+
     const retryCount = (job.retry_count || 0) + 1;
     const canRetry = retryCount <= (job.max_retries || 3);
-    const jobType = job.type || job.job_type;
 
     // Create history record for the failure in master DB
     await this.createJobHistory({
