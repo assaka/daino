@@ -471,7 +471,7 @@ function LayoutInner({ children, currentPageName }) {
   return (
     <StoreProvider>
       <PriceUtilsProvider>
-      <div className={`${isAIWorkspacePage ? 'h-screen' : ''} bg-gray-50 flex overflow-hidden`}>
+      <div className="h-screen bg-gray-50 flex overflow-hidden">
         <RoleSwitcher />
       <style>{`
         :root {
