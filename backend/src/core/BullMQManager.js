@@ -381,20 +381,40 @@ class BullMQManager {
         } catch (error) {
           console.error(`BullMQ: Job ${job.id} failed:`, error);
 
-          // Update job status to 'failed' in master DB
+          // Check if this was a cancellation
+          const isCancellation = error.message?.includes('cancelled') ||
+                                 error.message?.includes('canceled') ||
+                                 error.message?.includes('Job was cancelled');
+
+          // Update job status in master DB
           if (jobRecordId && masterDbClient) {
             try {
-              await masterDbClient
-                .from('job_queue')
-                .update({
-                  status: 'failed',
-                  last_error: error.message,
-                  failed_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', jobRecordId);
+              if (isCancellation) {
+                // Job was cancelled - mark as cancelled, not failed
+                await masterDbClient
+                  .from('job_queue')
+                  .update({
+                    status: 'cancelled',
+                    last_error: error.message,
+                    cancelled_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', jobRecordId);
+                console.log(`BullMQ: Job ${jobRecordId} marked as cancelled`);
+              } else {
+                // Regular failure
+                await masterDbClient
+                  .from('job_queue')
+                  .update({
+                    status: 'failed',
+                    last_error: error.message,
+                    failed_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', jobRecordId);
+              }
             } catch (err) {
-              console.error('Failed to update job status to failed:', err.message);
+              console.error('Failed to update job status:', err.message);
             }
           }
 
