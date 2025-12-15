@@ -250,6 +250,8 @@ class BullMQManager {
       priority: priorityMap[options.priority] || 5,
       attempts: options.maxRetries || 3,
       jobId: jobData.jobId ? `job-${jobData.jobId}` : undefined,
+      removeOnComplete: true,  // Remove job from queue after completion
+      removeOnFail: true,      // Remove job from queue after failure (we handle status in DB)
     };
 
     // Add delay if scheduled_at is provided
@@ -299,6 +301,7 @@ class BullMQManager {
       queueName,
       async (job) => {
         console.log(`BullMQ: Processing job ${job.id} of type ${jobType}`);
+        console.log(`BullMQ: Attempt ${job.attemptsMade + 1} of ${job.opts?.attempts || 3}`);
         console.log(`BullMQ: Job data:`, JSON.stringify(job.data, null, 2).substring(0, 500));
         const jobRecordId = job.data.jobRecord?.id;
         console.log(`BullMQ: jobRecordId = ${jobRecordId}`);
@@ -321,6 +324,28 @@ class BullMQManager {
         }
 
         try {
+          // Check if job was already cancelled before we start
+          if (jobRecordId && masterDbClient) {
+            const { data: currentJob } = await masterDbClient
+              .from('job_queue')
+              .select('status')
+              .eq('id', jobRecordId)
+              .single();
+
+            if (currentJob?.status === 'cancelling' || currentJob?.status === 'cancelled') {
+              console.log(`BullMQ: Job ${jobRecordId} was cancelled before execution - skipping`);
+              await masterDbClient
+                .from('job_queue')
+                .update({
+                  status: 'cancelled',
+                  cancelled_at: currentJob.cancelled_at || new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', jobRecordId);
+              return { cancelled: true, message: 'Job was cancelled before execution' };
+            }
+          }
+
           // Create handler instance with job data
           const handler = new HandlerClass(job.data.jobRecord);
 
