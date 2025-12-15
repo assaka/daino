@@ -179,13 +179,24 @@ router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
   } catch (error) {
     console.error('Error getting Supabase status:', error);
 
-    // Return disconnected status instead of error - allows UI to show disconnect button
+    // Determine if this is a timeout/connection issue
+    const isTimeout = error.message?.includes('timeout') || error.message?.includes('Timeout');
+    const isConnectionError = error.message?.includes('ECONNREFUSED') ||
+                              error.message?.includes('ENOTFOUND') ||
+                              error.message?.includes('NetworkError');
+
+    // Return disconnected status instead of error - allows UI to show disconnect/reset buttons
     res.json({
       success: true,
       connected: false,
-      message: 'Unable to verify connection status',
+      connectionError: true,
+      message: isTimeout
+        ? 'Connection timed out. Try resetting the connection.'
+        : 'Unable to verify connection status',
       error: error.message,
-      canDisconnect: true  // Allow user to disconnect even when status check fails
+      canDisconnect: true,
+      canForceReset: true,  // Show force reset button
+      recommendForceReset: isTimeout || isConnectionError  // Recommend reset for connection issues
     });
   }
 });
@@ -883,6 +894,71 @@ router.post('/disconnect', authMiddleware, storeResolver(), async (req, res) => 
         error: error.message
       });
     }
+  }
+});
+
+// Force reset connection - always works regardless of connection state
+// Use this when normal disconnect fails or connection is in a bad state
+router.post('/force-reset', authMiddleware, storeResolver(), async (req, res) => {
+  const storeId = req.storeId;
+  console.log(`[FORCE_RESET] Starting force reset for store ${storeId}`);
+
+  const results = {
+    tenant_integration_configs: false,
+    master_integration_tokens: false,
+    errors: []
+  };
+
+  // 1. Clean tenant integration_configs
+  try {
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await tenantDb
+      .from('integration_configs')
+      .delete()
+      .eq('store_id', storeId)
+      .in('integration_type', ['supabase-oauth', 'supabase-keys']);
+
+    if (error) throw error;
+    results.tenant_integration_configs = true;
+    console.log('[FORCE_RESET] Cleaned tenant integration_configs');
+  } catch (err) {
+    console.error('[FORCE_RESET] Error cleaning tenant:', err.message);
+    results.errors.push(`Tenant cleanup: ${err.message}`);
+  }
+
+  // 2. Clean master integration_tokens
+  try {
+    const { masterDbClient } = require('../database/masterConnection');
+
+    const { error } = await masterDbClient
+      .from('integration_tokens')
+      .delete()
+      .eq('store_id', storeId)
+      .eq('integration_type', 'supabase-oauth');
+
+    if (error) throw error;
+    results.master_integration_tokens = true;
+    console.log('[FORCE_RESET] Cleaned master integration_tokens');
+  } catch (err) {
+    console.error('[FORCE_RESET] Error cleaning master:', err.message);
+    results.errors.push(`Master cleanup: ${err.message}`);
+  }
+
+  // Return success if at least tenant was cleaned
+  if (results.tenant_integration_configs) {
+    res.json({
+      success: true,
+      message: 'Connection reset successfully. You can now reconnect to Supabase.',
+      results
+    });
+  } else {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset connection. Please contact support.',
+      results
+    });
   }
 });
 
