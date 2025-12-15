@@ -776,17 +776,6 @@ const AkeneoIntegration = () => {
     const loadData = async () => {
       // Wait a bit for localStorage to be ready
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Load saved connection status
-      const savedConnectionStatus = localStorage.getItem('akeneo_connection_status');
-      if (savedConnectionStatus) {
-        try {
-          const parsedStatus = JSON.parse(savedConnectionStatus);
-          setConnectionStatus(parsedStatus);
-        } catch (error) {
-          // Ignore parse errors
-        }
-      }
 
       // Load saved category selections
       const savedCategories = localStorage.getItem('akeneo_selected_categories');
@@ -947,66 +936,6 @@ const AkeneoIntegration = () => {
     };
   }, []);
 
-  // Load saved connection status on page load
-  const loadConnectionStatus = async () => {
-    try {
-      const storeId = selectedStore?.id;
-      if (!storeId) {
-        return;
-      }
-
-      const response = await apiClient.get('/integrations/akeneo/connection-status');
-
-      const responseData = response.data || response;
-      if (responseData.success && responseData.connectionStatus) {
-        const { status, message, testedAt } = responseData.connectionStatus;
-
-        if (status === 'success') {
-          setConnectionStatus({
-            success: true,
-            message: 'Connection verified',
-            testedAt
-          });
-          return;
-        } else if (status === 'failed') {
-          setConnectionStatus({
-            success: false,
-            message: message || 'Connection failed',
-            testedAt
-          });
-          return;
-        }
-      }
-
-      // Fallback to localStorage if backend status is 'untested' or not available
-      const savedStatus = localStorage.getItem('akeneo_connection_status');
-      if (savedStatus) {
-        try {
-          const parsedStatus = JSON.parse(savedStatus);
-          if (parsedStatus.success) {
-            setConnectionStatus(parsedStatus);
-          }
-        } catch (e) {
-          // Ignore parse errors
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load connection status:', error);
-      // On API error, also try localStorage fallback
-      const savedStatus = localStorage.getItem('akeneo_connection_status');
-      if (savedStatus) {
-        try {
-          const parsedStatus = JSON.parse(savedStatus);
-          if (parsedStatus.success) {
-            setConnectionStatus(parsedStatus);
-          }
-        } catch (e) {
-          // Ignore parse errors
-        }
-      }
-    }
-  };
-
   const checkStorageConnection = async () => {
     try {
       const storeId = selectedStore?.id;
@@ -1062,14 +991,13 @@ const AkeneoIntegration = () => {
           setLastImportDates(responseData.config.lastImportDates);
         }
 
-        // If we have a complete configuration, set configSaved to true
+        // If we have a complete configuration, set configSaved to true and assume connection works
         const loadedConfig = responseData.config;
         if (loadedConfig.baseUrl && loadedConfig.clientId && loadedConfig.clientSecret &&
             loadedConfig.username && loadedConfig.password) {
           setConfigSaved(true);
-
-          // Load saved connection status after config is loaded
-          await loadConnectionStatus();
+          // Assume connection works if we have a complete saved config
+          setConnectionStatus({ success: true, message: 'Configuration loaded' });
         }
       }
     } catch (error) {
@@ -1101,7 +1029,6 @@ const AkeneoIntegration = () => {
     }));
     setConfigSaved(false); // Reset saved status when config changes
     setConnectionStatus(null); // Reset connection status when config changes
-    localStorage.removeItem('akeneo_connection_status'); // Clear saved connection status
     // Clear validation error for this field when user types
     if (validationErrors[field]) {
       setValidationErrors(prev => {
@@ -1158,23 +1085,17 @@ const AkeneoIntegration = () => {
       const message = responseData.message || 'Connection test completed';
 
       if (success) {
-        const successStatus = { success: true, message };
-        setConnectionStatus(successStatus);
-        localStorage.setItem('akeneo_connection_status', JSON.stringify(successStatus));
+        setConnectionStatus({ success: true, message });
         toast.success('Connection successful!');
       } else {
-        const failureStatus = { success: false, message };
-        setConnectionStatus(failureStatus);
-        localStorage.setItem('akeneo_connection_status', JSON.stringify(failureStatus));
+        setConnectionStatus({ success: false, message });
         toast.error('Connection failed');
       }
     } catch (error) {
       console.error('Connection test error:', error);
 
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      const errorStatus = { success: false, message };
-      setConnectionStatus(errorStatus);
-      localStorage.setItem('akeneo_connection_status', JSON.stringify(errorStatus));
+      setConnectionStatus({ success: false, message });
       toast.error(`Connection failed: ${message}`);
     } finally {
       setTesting(false);
