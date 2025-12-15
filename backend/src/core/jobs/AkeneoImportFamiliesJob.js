@@ -76,13 +76,13 @@ class AkeneoImportFamiliesJob extends BaseJobHandler {
         }
       });
 
-      // Extract stats from result
+      // Extract stats from result (stats are returned directly, not nested)
       if (result.stats) {
         importStats = {
-          total: result.stats.families.total,
-          imported: result.stats.families.imported,
-          skipped: result.stats.families.skipped,
-          failed: result.stats.families.failed,
+          total: result.stats.total || 0,
+          imported: result.stats.imported || 0,
+          skipped: result.stats.skipped || 0,
+          failed: result.stats.failed || 0,
           errors: result.stats.errors || []
         };
       }
