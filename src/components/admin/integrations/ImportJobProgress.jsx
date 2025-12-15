@@ -21,6 +21,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 const JOB_STATUS = {
   PENDING: 'pending',
   RUNNING: 'running',
+  CANCELLING: 'cancelling',
   COMPLETED: 'completed',
   FAILED: 'failed',
   CANCELLED: 'cancelled'
@@ -36,6 +37,12 @@ const STATUS_CONFIG = {
     color: 'bg-blue-100 text-blue-800',
     icon: Loader2,
     label: 'Running',
+    iconClass: 'animate-spin'
+  },
+  [JOB_STATUS.CANCELLING]: {
+    color: 'bg-orange-100 text-orange-800',
+    icon: Loader2,
+    label: 'Cancelling...',
     iconClass: 'animate-spin'
   },
   [JOB_STATUS.COMPLETED]: {
@@ -99,12 +106,12 @@ const ImportJobProgress = ({
       const allJobs = data.jobs || [];
       const active = allJobs.filter(job =>
         job.type?.startsWith(sourcePrefix) &&
-        (job.status === JOB_STATUS.PENDING || job.status === JOB_STATUS.RUNNING)
+        (job.status === JOB_STATUS.PENDING || job.status === JOB_STATUS.RUNNING || job.status === JOB_STATUS.CANCELLING)
       );
 
       const recent = allJobs.filter(job =>
         job.type?.startsWith(sourcePrefix) &&
-        (job.status === JOB_STATUS.COMPLETED || job.status === JOB_STATUS.FAILED)
+        (job.status === JOB_STATUS.COMPLETED || job.status === JOB_STATUS.FAILED || job.status === JOB_STATUS.CANCELLED)
       ).slice(0, maxHistoryItems);
 
       // Detect jobs that transitioned from active to completed/failed
@@ -240,23 +247,26 @@ const ImportJobProgress = ({
               {status.label}
             </Badge>
           </div>
-          {isActive && job.status === JOB_STATUS.PENDING && (
+          {isActive && (job.status === JOB_STATUS.PENDING || job.status === JOB_STATUS.RUNNING) && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => cancelJob(job.id)}
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              title="Cancel import"
             >
               <X className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        {isActive && job.status === JOB_STATUS.RUNNING && (
+        {isActive && (job.status === JOB_STATUS.RUNNING || job.status === JOB_STATUS.CANCELLING) && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">
-                {job.progress_message || 'Processing...'}
+                {job.status === JOB_STATUS.CANCELLING
+                  ? 'Cancelling... Please wait'
+                  : (job.progress_message || 'Processing...')}
               </span>
               <span className="font-medium">{progress}%</span>
             </div>

@@ -1,4 +1,5 @@
 const { EventEmitter } = require('events');
+const { masterDbClient } = require('../../database/masterConnection');
 
 /**
  * Base class for all background job handlers
@@ -13,6 +14,8 @@ class BaseJobHandler extends EventEmitter {
     this.startTime = null;
     this.progress = 0;
     this.isAborted = false;
+    this.lastCancellationCheck = 0;
+    this.cancellationCheckInterval = 5000; // Check every 5 seconds
   }
 
   /**
@@ -46,11 +49,45 @@ class BaseJobHandler extends EventEmitter {
   }
 
   /**
-   * Check if the job should be aborted
+   * Check if the job should be aborted (checks local flag and database)
    */
-  checkAbort() {
+  async checkAbort() {
     if (this.isAborted) {
-      throw new Error('Job was aborted');
+      throw new Error('Job was cancelled');
+    }
+
+    // Periodically check database for cancellation (not every call, to avoid DB spam)
+    const now = Date.now();
+    if (now - this.lastCancellationCheck > this.cancellationCheckInterval) {
+      this.lastCancellationCheck = now;
+      await this.checkCancellationStatus();
+    }
+  }
+
+  /**
+   * Check database for cancellation status
+   */
+  async checkCancellationStatus() {
+    if (!masterDbClient || !this.job.id) return;
+
+    try {
+      const { data: job } = await masterDbClient
+        .from('job_queue')
+        .select('status')
+        .eq('id', this.job.id)
+        .single();
+
+      if (job && (job.status === 'cancelling' || job.status === 'cancelled')) {
+        this.isAborted = true;
+        this.log('Job cancellation detected from database', 'warn');
+        throw new Error('Job was cancelled by user');
+      }
+    } catch (error) {
+      if (error.message === 'Job was cancelled by user') {
+        throw error; // Re-throw cancellation error
+      }
+      // Ignore other database errors, don't abort job due to DB check failure
+      console.warn('Failed to check cancellation status:', error.message);
     }
   }
 
@@ -132,7 +169,7 @@ class BaseJobHandler extends EventEmitter {
     let processed = 0;
 
     for (let i = 0; i < total; i += batchSize) {
-      this.checkAbort(); // Check for abort between batches
+      await this.checkAbort(); // Check for abort/cancellation between batches
 
       const batch = items.slice(i, i + batchSize);
       const batchResults = await Promise.allSettled(

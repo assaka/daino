@@ -775,7 +775,7 @@ class BackgroundJobManager extends EventEmitter {
   }
 
   /**
-   * Cancel a job
+   * Cancel a job (works for both pending and running jobs)
    */
   async cancelJob(jobId) {
     if (!masterDbClient) {
@@ -792,16 +792,37 @@ class BackgroundJobManager extends EventEmitter {
       throw new Error('Job not found');
     }
 
-    if (job.status === 'running') {
-      throw new Error('Cannot cancel a running job');
+    if (job.status === 'completed' || job.status === 'cancelled' || job.status === 'failed') {
+      throw new Error(`Cannot cancel a job with status: ${job.status}`);
     }
 
+    // For running jobs, set status to 'cancelling' so the worker knows to abort
+    // For pending jobs, set directly to 'cancelled'
+    const newStatus = job.status === 'running' ? 'cancelling' : 'cancelled';
+
     await this.updateJob(jobId, {
-      status: 'cancelled',
+      status: newStatus,
       cancelled_at: new Date().toISOString()
     });
 
+    // Also try to remove from BullMQ if available (for pending jobs)
+    if (this.bullMQManager && job.job_type && job.status === 'pending') {
+      try {
+        const queue = this.bullMQManager.getQueue(job.job_type);
+        if (queue) {
+          const bullJob = await queue.getJob(`job-${jobId}`);
+          if (bullJob) {
+            await bullJob.remove();
+            console.log(`Removed job ${jobId} from BullMQ queue`);
+          }
+        }
+      } catch (bullError) {
+        console.warn(`Could not remove job from BullMQ: ${bullError.message}`);
+      }
+    }
+
     job.type = job.job_type;
+    job.status = newStatus;
     this.emit('job:cancelled', job);
     return job;
   }
