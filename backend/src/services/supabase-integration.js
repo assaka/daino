@@ -625,6 +625,11 @@ class SupabaseIntegration {
    */
   async refreshAccessToken(storeId) {
     try {
+      // Check if OAuth is configured
+      if (!this.oauthConfigured) {
+        throw new Error('Supabase OAuth not configured - set SUPABASE_OAUTH_CLIENT_ID and SUPABASE_OAUTH_CLIENT_SECRET');
+      }
+
       const token = await this.getSupabaseToken(storeId);
       if (!token) {
         throw new Error('No Supabase token found for this store');
