@@ -1666,85 +1666,21 @@ class SupabaseIntegration {
         };
       }
       
-      // If we have a token, quickly test if it's still valid
+      // Skip live validation during status check - trust stored credentials
+      // Live validation happens during actual operations (storage, database queries)
+      // This makes status checks fast and reliable
       if (token && token.project_url && token.project_url !== 'https://pending-configuration.supabase.co') {
-        try {
-          // Quick validation check - just see if token works
-          const axios = require('axios');
-          const testResponse = await axios.get('https://api.supabase.com/v1/projects', {
-            headers: {
-              'Authorization': `Bearer ${token.access_token}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 5000 // 5 second timeout for quick check
-          });
-          
-          // Token is valid, continue normal flow
-          console.log('Token validation successful during status check');
-          
-        } catch (validationError) {
-          console.log('Token validation failed during status check:', validationError.response?.status);
+        console.log('[getConnectionStatus] Token exists, skipping live validation for fast status check');
 
-          // If 401, try to refresh the token first before assuming revoked
-          if (validationError.response?.status === 401) {
-            console.log('Token expired or invalid, attempting refresh...');
-
-            try {
-              // Try to refresh the token
-              const refreshResult = await this.refreshToken(storeId);
-
-              if (refreshResult.success) {
-                console.log('Token refresh successful during status check');
-                // Update token variable with new access token for continued use
-                token.access_token = refreshResult.access_token;
-                // Token refreshed successfully, continue with normal flow
-              }
-            } catch (refreshError) {
-              console.log('Token refresh failed:', refreshError.message);
-
-              // Refresh failed - now we can assume authorization was truly revoked
-              console.log('Detected revoked authorization during status check - auto-disconnecting');
-
-              // Store the project URL before deleting token
-              const lastProjectUrl = token.project_url;
-
-              // Deactivate the integration
-              await this.deleteSupabaseToken(storeId);
-
-              // Update config to mark as disconnected with revocation history
-              const tenantDb3 = await ConnectionManager.getStoreConnection(storeId);
-              await tenantDb3
-                .from('integration_configs')
-                .update({
-                  is_active: false,
-                  connection_status: 'failed',
-                  config_data: {
-                    connected: false,
-                    autoDisconnected: true,
-                    autoDisconnectedAt: new Date(),
-                    revokedAt: new Date(),
-                    revokedDetected: true,
-                    disconnectedReason: 'Authorization was revoked in Supabase',
-                    lastKnownProjectUrl: lastProjectUrl,
-                    userEmail: config?.config_data?.userEmail,
-                    message: 'Authorization was revoked and connection was automatically removed.'
-                  },
-                  updated_at: new Date()
-                })
-                .eq('store_id', storeId)
-                .eq('integration_type', this.integrationType);
-
-              return {
-                connected: false,
-                message: 'Authorization was revoked. Connection has been automatically removed.',
-                oauthConfigured: true,
-                authorizationRevoked: true,
-                autoDisconnected: true,
-                hasToken: false,
-                userEmail: config?.config_data?.userEmail,
-                lastKnownProjectUrl: lastProjectUrl
-              };
-            }
+        // Check if token is expired based on stored expiry time
+        if (token.expires_at) {
+          const expiresAt = new Date(token.expires_at);
+          const now = new Date();
+          if (expiresAt < now) {
+            console.log('[getConnectionStatus] Token appears expired, marking as needing refresh');
+            // Token is expired - the hourly cron will refresh it
+            // Don't block status check, just flag it
+            token._needsRefresh = true;
           }
         }
       }
@@ -1870,30 +1806,12 @@ class SupabaseIntegration {
       const hasLimitedScope = token.project_url === 'https://pending-configuration.supabase.co' || 
                               token.project_url === 'pending_configuration';
 
-      // If service role key is missing, try to fetch it
+      // If service role key is missing, flag it but don't fetch during status check
+      // Fetching API keys can be slow and should be done explicitly when needed
       if (!token.service_role_key && !hasLimitedScope) {
-        console.log('Service role key missing, attempting to fetch from Supabase API...');
-        const keyFetchResult = await this.fetchAndUpdateApiKeys(storeId);
-        if (keyFetchResult.updated) {
-          // Refetch token to get updated keys
-          token = await this.getSupabaseToken(storeId);
-        } else if (keyFetchResult.requiresReconnection) {
-          // OAuth token lacks permissions
-          return {
-            connected: true,
-            projectUrl: token.project_url,
-            expiresAt: token.expires_at,
-            isExpired,
-            connectionStatus: 'limited',
-            lastTestedAt: config?.connection_tested_at,
-            oauthConfigured: true,
-            limitedScope: true,
-            userEmail: config?.config_data?.userEmail,
-            hasServiceRoleKey: false,
-            message: 'Connected but with limited permissions. Storage operations require reconnecting to Supabase to grant secrets:read permission.',
-            requiresReconnection: true
-          };
-        }
+        console.log('[getConnectionStatus] Service role key missing - flagging for later fetch');
+        // Don't block status check with API call - just return connected with flag
+        token._needsApiKeyFetch = true;
       }
 
       // Check if service role key is properly configured
