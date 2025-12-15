@@ -12,8 +12,7 @@ class ShopifyImportCollectionsJob extends BaseJobHandler {
     const { storeId, options = {} } = this.job.payload;
 
     this.log(`Starting Shopify collections import for store ${storeId}`);
-    await this.updateProgress(0, 'Starting import...');
-    await this.updateProgress(2, 'Initializing Shopify connection...');
+    await this.updateProgress(0, 'Initializing...');
 
     // Initialize import service
     const importService = new ShopifyImportService(storeId);
@@ -23,25 +22,29 @@ class ShopifyImportCollectionsJob extends BaseJobHandler {
       throw new Error(`Failed to initialize Shopify connection: ${initResult.message}`);
     }
 
-    await this.updateProgress(10, 'Connection established, fetching collections...');
+    await this.updateProgress(0, 'Fetching collections from Shopify...');
 
     // Import collections with progress tracking
+    // Progress starts at 0% and only increases when items are actually imported
     const result = await importService.importCollections({
       ...options,
       progressCallback: async (progress) => {
         // Check for cancellation on each progress update
         await this.checkAbort();
         if (progress.stage === 'fetching_collections') {
-          const fetchProgress = 10 + (progress.current / progress.total * 30);
-          await this.updateProgress(
-            Math.round(fetchProgress),
-            `Fetching collections: ${progress.current}/${progress.total}`
-          );
+          // Stay at 0% while fetching
+          await this.updateProgress(0, `Fetching collections: ${progress.current}/${progress.total}`);
         } else if (progress.stage === 'importing_collections') {
-          const importProgress = 40 + (progress.current / progress.total * 55);
+          // Only show progress once first item is imported
+          let percent = 0;
+          if (progress.current >= 1 && progress.total > 0) {
+            percent = Math.round((progress.current / progress.total) * 100);
+          }
           await this.updateProgress(
-            Math.round(importProgress),
-            `Importing collection: ${progress.item} (${progress.current}/${progress.total})`
+            percent,
+            progress.current >= 1
+              ? `Importing: ${progress.item} (${progress.current}/${progress.total})`
+              : 'Starting import...'
           );
         }
       }

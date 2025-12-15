@@ -45,8 +45,7 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
     };
 
     try {
-      await this.updateProgress(0, 'Starting import...');
-      await this.updateProgress(2, 'Initializing Akeneo integration...');
+      await this.updateProgress(0, 'Initializing...');
 
       // Initialize Akeneo integration
       const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
@@ -61,7 +60,7 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
         throw new Error(`Akeneo connection failed: ${connectionTest.message}`);
       }
 
-      await this.updateProgress(5, 'Fetching categories from Akeneo...');
+      await this.updateProgress(0, 'Fetching categories from Akeneo...');
 
       // Import categories with progress callback for linear progress
       const result = await akeneoIntegration.importCategories(storeId, {
@@ -77,11 +76,16 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
           if (progress.total) importStats.total = progress.total;
           if (progress.current) importStats.imported = progress.current;
 
-          // Linear progress: current/total * 100 (capped at 99 to leave room for final steps)
-          const percent = Math.min(99, Math.round((progress.current / progress.total) * 100));
+          // Progress starts at 0% and only increases when items are actually imported
+          let percent = 0;
+          if (progress.current >= 1 && progress.total > 0) {
+            percent = Math.round((progress.current / progress.total) * 100);
+          }
           await this.updateProgress(
             percent,
-            `Importing: ${progress.item} (${progress.current}/${progress.total})`
+            progress.current >= 1
+              ? `Importing: ${progress.item} (${progress.current}/${progress.total})`
+              : 'Starting import...'
           );
         }
       });

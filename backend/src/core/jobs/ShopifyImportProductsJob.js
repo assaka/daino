@@ -12,8 +12,7 @@ class ShopifyImportProductsJob extends BaseJobHandler {
     const { storeId, options = {} } = this.job.payload;
 
     this.log(`Starting Shopify products import for store ${storeId}`);
-    await this.updateProgress(0, 'Starting import...');
-    await this.updateProgress(2, 'Initializing Shopify connection...');
+    await this.updateProgress(0, 'Initializing...');
 
     // Initialize import service
     const importService = new ShopifyImportService(storeId);
@@ -23,21 +22,26 @@ class ShopifyImportProductsJob extends BaseJobHandler {
       throw new Error(`Failed to initialize Shopify connection: ${initResult.message}`);
     }
 
-    await this.updateProgress(10, 'Connection established, fetching products...');
+    await this.updateProgress(0, 'Fetching products from Shopify...');
 
     // Import products with progress tracking
-    // Simple linear progress: current/total * 100
+    // Progress starts at 0% and only increases when items are actually imported
     const result = await importService.importProducts({
       ...options,
       progressCallback: async (progress) => {
         // Check for cancellation on each progress update
         await this.checkAbort();
         if (progress.stage === 'importing_products') {
-          // Linear progress based on products: 1/17 = 6%, 17/17 = 100%
-          const percent = Math.round((progress.current / progress.total) * 100);
+          // Only show progress once first item is imported
+          let percent = 0;
+          if (progress.current >= 1 && progress.total > 0) {
+            percent = Math.round((progress.current / progress.total) * 100);
+          }
           await this.updateProgress(
             percent,
-            `Importing: ${progress.item} (${progress.current}/${progress.total})`
+            progress.current >= 1
+              ? `Importing: ${progress.item} (${progress.current}/${progress.total})`
+              : 'Starting import...'
           );
         }
       }

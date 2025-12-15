@@ -46,8 +46,7 @@ class AkeneoImportProductsJob extends BaseJobHandler {
     };
 
     try {
-      await this.updateProgress(0, 'Starting import...');
-      await this.updateProgress(2, 'Initializing Akeneo integration...');
+      await this.updateProgress(0, 'Initializing...');
 
       // Initialize Akeneo integration
       const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
@@ -63,7 +62,7 @@ class AkeneoImportProductsJob extends BaseJobHandler {
       }
 
       this.log('Akeneo connection successful');
-      await this.updateProgress(10, 'Fetching products from Akeneo...');
+      await this.updateProgress(0, 'Fetching products from Akeneo...');
 
       // Import products using the integration's built-in method with progress callback
       const result = await akeneoIntegration.importProducts(storeId, {
@@ -81,23 +80,27 @@ class AkeneoImportProductsJob extends BaseJobHandler {
             importStats.total = progress.total;
           }
           if (progress.current) {
-            // Estimate imported count based on progress (actual count comes from result)
             importStats.imported = progress.current;
           }
 
-          // Linear progress: current/total * 100
+          // Progress starts at 0% and only increases when items are actually imported
           let percent = 0;
-          let message = 'Processing...';
+          let message = 'Fetching products...';
 
           if (progress.stage === 'fetching_products') {
-            percent = 1;
+            percent = 0;
             message = 'Fetching products from Akeneo...';
           } else if (progress.stage === 'importing_products' || progress.stage === 'importing_standalone' || progress.stage === 'importing_variants' || progress.stage === 'importing_configurables') {
-            // Linear progress from 0% to 100%
-            percent = Math.round((progress.current / progress.total) * 100);
-            message = `Importing: ${progress.item || 'product'} (${progress.current}/${progress.total})`;
+            // Only show progress once first item is imported (current >= 1)
+            if (progress.current >= 1 && progress.total > 0) {
+              percent = Math.round((progress.current / progress.total) * 100);
+              message = `Importing: ${progress.item || 'product'} (${progress.current}/${progress.total})`;
+            } else {
+              percent = 0;
+              message = 'Starting import...';
+            }
           } else if (progress.stage === 'linking_variants') {
-            percent = 98;
+            percent = 99;
             message = 'Linking variants to parent products...';
           }
 
