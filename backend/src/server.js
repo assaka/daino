@@ -130,6 +130,7 @@ const emailTemplatesRoutes = require('./routes/email-templates');
 const pdfTemplatesRoutes = require('./routes/pdf-templates');
 const brevoOAuthRoutes = require('./routes/brevo-oauth');
 const storefrontsRoutes = require('./routes/storefronts');
+const demoDataRoutes = require('./routes/demo-data');
 
 // Import usage tracking middleware
 const {
@@ -1323,6 +1324,7 @@ const creditsMasterTenantRoutes = require('./routes/creditsMasterTenant');
 const testMasterDbRoutes = require('./routes/testMasterDb');
 
 app.use('/api/stores', storesMasterTenantRoutes); // Master-tenant store management (auth handled in routes)
+app.use('/api/stores', authMiddleware, demoDataRoutes); // Demo data provisioning and restoration
 app.use('/api/credits', creditsMasterTenantRoutes); // Master-tenant credits (replaces old)
 app.use('/api/test', testMasterDbRoutes); // Test endpoint for master DB
 app.use('/api/test-master-connection', require('./routes/test-master-connection')); // Test Sequelize connection

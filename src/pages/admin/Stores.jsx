@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette, Loader2 } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette, Loader2, Database, RefreshCw, Beaker } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -40,6 +40,12 @@ export default function Stores() {
   const [storeForTheme, setStoreForTheme] = useState(null);
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [applyingTheme, setApplyingTheme] = useState(false);
+  // Demo data modal state
+  const [showDemoProvisionModal, setShowDemoProvisionModal] = useState(false);
+  const [showDemoRestoreModal, setShowDemoRestoreModal] = useState(false);
+  const [storeForDemo, setStoreForDemo] = useState(null);
+  const [provisioningDemo, setProvisioningDemo] = useState(false);
+  const [restoringDemo, setRestoringDemo] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -237,6 +243,61 @@ export default function Stores() {
     }
   };
 
+  // Demo data provisioning handlers
+  const handleProvisionDemo = (storeId) => {
+    const store = stores.find(s => s.id === storeId);
+    setStoreForDemo(store);
+    setShowDemoProvisionModal(true);
+  };
+
+  const confirmProvisionDemo = async () => {
+    if (!storeForDemo) return;
+
+    setProvisioningDemo(true);
+    try {
+      const response = await apiClient.post(`stores/${storeForDemo.id}/provision-demo`);
+      if (response.success) {
+        await loadData();
+        setShowDemoProvisionModal(false);
+        setStoreForDemo(null);
+      } else {
+        alert(response.error || 'Failed to provision demo data');
+      }
+    } catch (error) {
+      console.error('Demo provisioning error:', error);
+      alert('Failed to provision demo data. Please try again.');
+    } finally {
+      setProvisioningDemo(false);
+    }
+  };
+
+  const handleRestoreDemo = (storeId) => {
+    const store = stores.find(s => s.id === storeId);
+    setStoreForDemo(store);
+    setShowDemoRestoreModal(true);
+  };
+
+  const confirmRestoreDemo = async () => {
+    if (!storeForDemo) return;
+
+    setRestoringDemo(true);
+    try {
+      const response = await apiClient.post(`stores/${storeForDemo.id}/restore-demo`);
+      if (response.success) {
+        await loadData();
+        setShowDemoRestoreModal(false);
+        setStoreForDemo(null);
+      } else {
+        alert(response.error || 'Failed to restore store');
+      }
+    } catch (error) {
+      console.error('Demo restoration error:', error);
+      alert('Failed to restore store. Please try again.');
+    } finally {
+      setRestoringDemo(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -296,6 +357,7 @@ export default function Stores() {
           <SelectContent>
             <SelectItem value="all">All Stores</SelectItem>
             <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="demo">Demo</SelectItem>
             <SelectItem value="pending_database">Pending Database</SelectItem>
             <SelectItem value="provisioning">Provisioning</SelectItem>
             <SelectItem value="suspended">Suspended</SelectItem>
@@ -381,15 +443,18 @@ export default function Stores() {
                     {store.status && (
                       <Badge className={
                         store.status === 'active' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                        store.status === 'demo' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                         store.status === 'pending_database' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                         store.status === 'provisioning' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                         store.status === 'suspended' ? 'bg-red-100 text-red-800 border-red-200' :
                         store.status === 'inactive' ? 'bg-gray-100 text-gray-800 border-gray-200' :
                         'bg-gray-100 text-gray-800 border-gray-200'
                       } variant="outline">
+                        {store.status === 'demo' && <Beaker className="w-3 h-3 mr-1" />}
                         {store.status === 'pending_database' ? 'Pending DB' :
                          store.status === 'provisioning' ? 'Provisioning' :
                          store.status === 'active' ? 'Ready' :
+                         store.status === 'demo' ? 'Demo' :
                          store.status === 'suspended' ? 'Suspended' :
                          store.status === 'inactive' ? 'Inactive' :
                          store.status}
@@ -452,6 +517,30 @@ export default function Stores() {
                         <Palette className="w-4 h-4" />
                       </Button>
                     )}
+                    {/* Provision Demo Data Button - for active, paused stores */}
+                    {store.status === 'active' && !store.published && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleProvisionDemo(store.id)}
+                        title="Provision demo data"
+                        className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
+                      >
+                        <Database className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {/* Restore Demo Store Button - for demo stores */}
+                    {store.status === 'demo' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRestoreDemo(store.id)}
+                        title="Clear demo data and restore"
+                        className="text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <Button
@@ -459,7 +548,10 @@ export default function Stores() {
                       variant="ghost"
                       onClick={() => handleTogglePublished(store.id, store.published)}
                       className={store.published ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                      title={store.published ? "Pause store (stop daily charges)" : "Run store (start daily charges)"}
+                      disabled={store.status === 'demo'}
+                      title={store.status === 'demo'
+                        ? "Demo stores cannot run. Clear demo data first."
+                        : (store.published ? "Pause store (stop daily charges)" : "Run store (start daily charges)")}
                     >
                       {store.published ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </Button>
@@ -747,6 +839,132 @@ export default function Stores() {
                   )}
                 </Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Demo Data Provision Confirmation Modal */}
+      <Dialog open={showDemoProvisionModal} onOpenChange={setShowDemoProvisionModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-purple-600">
+              <Beaker className="w-5 h-5" />
+              Provision Demo Data?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-900 font-medium mb-2">Warning</p>
+              <p className="text-sm text-amber-800">
+                This will clear ALL existing data in your store and replace it with demo content.
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <p className="text-sm text-purple-900 font-medium mb-2">Demo data includes:</p>
+              <ul className="text-sm text-purple-800 space-y-1 list-disc list-inside">
+                <li>4 categories with subcategories</li>
+                <li>25+ demo products with images</li>
+                <li>Attribute sets and attributes</li>
+                <li>20 demo customers</li>
+                <li>50 demo orders</li>
+                <li>CMS pages and blocks</li>
+                <li>Tax configuration and coupons</li>
+                <li>SEO templates</li>
+              </ul>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Store: <strong>{storeForDemo?.name}</strong>
+            </p>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDemoProvisionModal(false);
+                  setStoreForDemo(null);
+                }}
+                disabled={provisioningDemo}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={confirmProvisionDemo}
+                disabled={provisioningDemo}
+              >
+                {provisioningDemo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Provisioning...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4 mr-2" />
+                    Provision Demo Data
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Demo Data Restore Confirmation Modal */}
+      <Dialog open={showDemoRestoreModal} onOpenChange={setShowDemoRestoreModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <RefreshCw className="w-5 h-5" />
+              Restore Store?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900 font-medium mb-2">What this does:</p>
+              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                <li>Removes all demo data (products, orders, customers)</li>
+                <li>Keeps any data you added manually</li>
+                <li>Sets store to Active + Paused state</li>
+                <li>You can then run the store or add your own data</li>
+              </ul>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Store: <strong>{storeForDemo?.name}</strong>
+            </p>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDemoRestoreModal(false);
+                  setStoreForDemo(null);
+                }}
+                disabled={restoringDemo}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-amber-600 hover:bg-amber-700"
+                onClick={confirmRestoreDemo}
+                disabled={restoringDemo}
+              >
+                {restoringDemo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Restoring...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Restore Store
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>
