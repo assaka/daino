@@ -100,8 +100,10 @@ export function useStoreBootstrap(storeSlug, language) {
         params.append('storefront', storefrontSlug);
       }
 
-      // Note: version=published is handled automatically by buildPublicUrl in storefront-client.js
-      // Do NOT add it here to avoid duplicates
+      // Add version parameter for published-only mode
+      if (version === 'published') {
+        params.append('version', 'published');
+      }
 
       // Use getPublic (not .get) - returns data directly, not wrapped in response.data
       const result = await storefrontApiClient.getPublic(`storefront/bootstrap?${params.toString()}`);
