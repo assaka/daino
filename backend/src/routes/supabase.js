@@ -178,9 +178,14 @@ router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
     res.json({ success: true, ...status });
   } catch (error) {
     console.error('Error getting Supabase status:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
+
+    // Return disconnected status instead of error - allows UI to show disconnect button
+    res.json({
+      success: true,
+      connected: false,
+      message: 'Unable to verify connection status',
+      error: error.message,
+      canDisconnect: true  // Allow user to disconnect even when status check fails
     });
   }
 });
@@ -843,17 +848,41 @@ router.post('/test', authMiddleware, storeResolver(), async (req, res) => {
   }
 });
 
-// Disconnect
+// Disconnect - always attempt cleanup even if errors occur
 router.post('/disconnect', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseIntegration.disconnect(req.storeId);
     res.json(result);
   } catch (error) {
     console.error('Error disconnecting Supabase:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+
+    // Try force cleanup even if main disconnect fails
+    try {
+      const ConnectionManager = require('../services/database/ConnectionManager');
+      const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
+
+      // Force delete integration configs
+      await tenantDb
+        .from('integration_configs')
+        .delete()
+        .eq('store_id', req.storeId)
+        .in('integration_type', ['supabase-oauth', 'supabase-keys']);
+
+      console.log('Force cleanup of integration_configs completed');
+
+      res.json({
+        success: true,
+        message: 'Connection forcefully cleaned up. You can now reconnect.',
+        forceCleanup: true
+      });
+    } catch (cleanupError) {
+      console.error('Force cleanup also failed:', cleanupError);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to disconnect. Please try again or contact support.',
+        error: error.message
+      });
+    }
   }
 });
 
