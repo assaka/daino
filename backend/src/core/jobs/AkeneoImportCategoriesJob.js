@@ -69,6 +69,8 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
         filters,
         settings,
         progressCallback: async (progress) => {
+          // Check for cancellation on each progress update
+          await this.checkAbort();
           // Linear progress: current/total * 100
           const percent = Math.round((progress.current / progress.total) * 100);
           await this.updateProgress(

@@ -72,6 +72,9 @@ class AkeneoImportProductsJob extends BaseJobHandler {
         settings,
         customMappings,
         progressCallback: async (progress) => {
+          // Check for cancellation on each progress update
+          await this.checkAbort();
+
           // Map progress stages to percentages
           let percent = 10;
           let message = 'Processing...';
