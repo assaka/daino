@@ -266,7 +266,8 @@ class BackgroundJobManager extends EventEmitter {
     }
 
     // If BullMQ is available, add to persistent queue
-    if (this.useBullMQ) {
+    console.log(`📋 Job scheduling - useBullMQ: ${this.useBullMQ}, bullMQManager.isInitialized: ${bullMQManager.isInitialized}`);
+    if (this.useBullMQ && bullMQManager.isInitialized) {
       try {
         await bullMQManager.addJob(type, {
           jobRecord: job,
@@ -281,7 +282,7 @@ class BackgroundJobManager extends EventEmitter {
         console.error('❌ Failed to add job to BullMQ, will use database queue:', error.message);
       }
     } else {
-      console.log(`📅 Job scheduled in database: ${type} (ID: ${job.id}) for ${scheduledAt.toISOString()}`);
+      console.log(`📅 Job scheduled in database queue (BullMQ not available): ${type} (ID: ${job.id})`);
     }
 
     this.emit('job:scheduled', job);
@@ -381,6 +382,8 @@ class BackgroundJobManager extends EventEmitter {
    * Main processing loop
    */
   async processLoop() {
+    let cleanupCounter = 0;
+
     while (this.isRunning) {
       try {
         if (this.processing.size < this.maxConcurrentJobs) {
@@ -389,12 +392,61 @@ class BackgroundJobManager extends EventEmitter {
             this.processJob(job);
           }
         }
+
+        // Cleanup stuck 'cancelling' jobs every 12 iterations (about 1 minute)
+        cleanupCounter++;
+        if (cleanupCounter >= 12) {
+          cleanupCounter = 0;
+          await this.cleanupStuckCancellingJobs();
+        }
       } catch (error) {
         console.error('❌ Error in job processing loop:', error);
       }
 
       // Wait before next iteration
       await new Promise(resolve => setTimeout(resolve, this.pollInterval));
+    }
+  }
+
+  /**
+   * Cleanup jobs stuck in 'cancelling' state for more than 2 minutes
+   */
+  async cleanupStuckCancellingJobs() {
+    if (!masterDbClient) return;
+
+    try {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
+      const { data: stuckJobs, error } = await masterDbClient
+        .from('job_queue')
+        .select('id, job_type')
+        .eq('status', 'cancelling')
+        .lt('updated_at', twoMinutesAgo);
+
+      if (error) {
+        console.error('❌ Error finding stuck cancelling jobs:', error.message);
+        return;
+      }
+
+      if (stuckJobs && stuckJobs.length > 0) {
+        console.log(`🧹 Found ${stuckJobs.length} stuck 'cancelling' jobs, marking as cancelled`);
+
+        for (const job of stuckJobs) {
+          await masterDbClient
+            .from('job_queue')
+            .update({
+              status: 'cancelled',
+              cancelled_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_error: 'Marked as cancelled by cleanup (stuck in cancelling state)'
+            })
+            .eq('id', job.id);
+
+          console.log(`🧹 Cleaned up stuck job: ${job.job_type} (${job.id})`);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error in cleanupStuckCancellingJobs:', err.message);
     }
   }
 
