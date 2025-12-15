@@ -26,17 +26,13 @@ router.get('/stores/:storeId/default-database-provider',
 
       // Get the default database provider from store settings
       const defaultProvider = store.settings?.default_database_provider || null;
-      
-      console.log('Store settings:', store.settings);
-      console.log('Default provider:', defaultProvider);
-      
+
       res.json({
         success: true,
         provider: defaultProvider,
         store_id: storeId
       });
     } catch (error) {
-      console.error('Error fetching default database provider:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Failed to fetch default database provider' 
@@ -95,9 +91,6 @@ router.post('/stores/:storeId/default-database-provider',
         updatedSettings.default_mediastorage_provider_updated_at = new Date().toISOString();
       }
 
-      console.log('Current settings before update:', currentSettings);
-      console.log('Updating store settings with:', updatedSettings);
-
       // Update the store in master DB
       const { error: updateError } = await masterDbClient
         .from('stores')
@@ -118,8 +111,6 @@ router.post('/stores/:storeId/default-database-provider',
         .eq('id', storeId)
         .single();
 
-      console.log('Settings after save:', updatedStore.settings);
-      
       res.json({
         success: true,
         message: `${provider} set as default database provider`,
@@ -127,7 +118,6 @@ router.post('/stores/:storeId/default-database-provider',
         store_id: storeId
       });
     } catch (error) {
-      console.error('Error setting default database provider:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Failed to set default database provider' 
@@ -181,7 +171,6 @@ router.delete('/stores/:storeId/default-database-provider',
         store_id: storeId
       });
     } catch (error) {
-      console.error('Error clearing default database provider:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Failed to clear default database provider' 
