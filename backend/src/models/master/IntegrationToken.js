@@ -27,13 +27,17 @@ IntegrationToken.findExpiringTokens = async function(bufferMinutes = 60) {
 
   console.log('[IntegrationToken.findExpiringTokens] Looking for tokens expiring before:', bufferTime.toISOString());
 
+  // TESTING MODE: Get ALL active tokens regardless of expiry
+  // TODO: Revert after testing - re-enable .lte() filter
+  console.log('[IntegrationToken.findExpiringTokens] TESTING MODE: Bypassing expiry check, fetching ALL tokens');
+
   const { data, error } = await masterDbClient
     .from('integration_tokens')
     .select('*')
     .in('status', ['active', 'expiring'])
-    .not('token_expires_at', 'is', null)
-    .lte('token_expires_at', bufferTime.toISOString())
-    .order('token_expires_at', { ascending: true });
+    // .not('token_expires_at', 'is', null)  // DISABLED FOR TESTING
+    // .lte('token_expires_at', bufferTime.toISOString())  // DISABLED FOR TESTING
+    .order('token_expires_at', { ascending: true, nullsFirst: false });
 
   if (error) {
     console.error('[IntegrationToken.findExpiringTokens] Error:', error.message);
