@@ -45,7 +45,8 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
     };
 
     try {
-      await this.updateProgress(10, 'Initializing Akeneo integration...');
+      await this.updateProgress(0, 'Starting import...');
+      await this.updateProgress(2, 'Initializing Akeneo integration...');
 
       // Initialize Akeneo integration
       const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');

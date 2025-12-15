@@ -12,7 +12,8 @@ class ShopifyImportCollectionsJob extends BaseJobHandler {
     const { storeId, options = {} } = this.job.payload;
 
     this.log(`Starting Shopify collections import for store ${storeId}`);
-    await this.updateProgress(5, 'Initializing Shopify connection...');
+    await this.updateProgress(0, 'Starting import...');
+    await this.updateProgress(2, 'Initializing Shopify connection...');
 
     // Initialize import service
     const importService = new ShopifyImportService(storeId);
