@@ -606,10 +606,10 @@ function LayoutInner({ children, currentPageName }) {
       )}
 
       {showSidebar && (
-        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white material-elevation-2 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white material-elevation-2 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 transition-colors">
@@ -685,7 +685,7 @@ function LayoutInner({ children, currentPageName }) {
           </Button>
         </div>
 
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col flex-1 min-h-0">
           <div className="px-6 pt-6 pb-1 flex-shrink-0">
             <div className="mb-6">
               <div className="flex items-center space-x-3 mb-2">
