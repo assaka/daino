@@ -82,6 +82,9 @@ const CustomDomains = () => {
   const [includeCompanion, setIncludeCompanion] = useState(true);
   const [showCompanionOption, setShowCompanionOption] = useState(false);
 
+  // Custom domain daily cost from service_credit_costs table
+  const [customDomainCost, setCustomDomainCost] = useState(0.5); // default fallback
+
   // Helper to detect domain type and get companion
   const getDomainInfo = (domain) => {
     const normalized = domain.trim().toLowerCase();
@@ -157,6 +160,22 @@ const CustomDomains = () => {
       loadDomains();
     }
   }, [storeId]);
+
+  // Fetch custom domain cost from service_credit_costs table
+  useEffect(() => {
+    const fetchCustomDomainCost = async () => {
+      try {
+        const response = await apiClient.get('/service-credit-costs/key/custom_domain');
+        if (response.success && response.service) {
+          setCustomDomainCost(response.service.cost_per_unit);
+        }
+      } catch (error) {
+        console.error('Error fetching custom domain cost:', error);
+        // Keep default fallback value of 0.5
+      }
+    };
+    fetchCustomDomainCost();
+  }, []);
 
   const loadDomains = async () => {
     try {
@@ -550,7 +569,7 @@ const CustomDomains = () => {
         <Info className="h-4 w-4" />
         <AlertDescription>
           Custom domains allow you to use your own domain name (e.g., www.myshop.com) instead of /public/storecode URLs.<br/>
-          <strong> Costs 0.5 credits per day</strong>
+          <strong> Costs {customDomainCost} credits per day</strong>
         </AlertDescription>
       </Alert>
 
@@ -750,7 +769,7 @@ const CustomDomains = () => {
           <Alert className="bg-yellow-50 border-yellow-200">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              <strong>Daily Cost:</strong> 0.5 credits per day will be automatically deducted for active custom domains.
+              <strong>Daily Cost:</strong> {customDomainCost} credits per day will be automatically deducted for active custom domains.
             </AlertDescription>
           </Alert>
 
