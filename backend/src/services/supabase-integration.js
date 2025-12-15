@@ -691,8 +691,6 @@ class SupabaseIntegration {
         }
       });
 
-      console.log('[SUPABASE_REFRESH] Token refresh successful');
-
       const { access_token, refresh_token, expires_in } = response.data;
       const expires_at = new Date(Date.now() + expires_in * 1000);
 
@@ -703,15 +701,28 @@ class SupabaseIntegration {
         expires_at
       });
 
+      // Visual confirmation logging
+      console.log('═'.repeat(60));
+      console.log('✅ SUPABASE TOKEN REFRESH SUCCESSFUL');
+      console.log('═'.repeat(60));
+      console.log(`   Store ID:      ${storeId}`);
+      console.log(`   Old Expiry:    ${token.expires_at || 'unknown'}`);
+      console.log(`   New Expiry:    ${expires_at.toISOString()}`);
+      console.log(`   Expires In:    ${expires_in} seconds (${Math.round(expires_in/60)} minutes)`);
+      console.log(`   Refresh Time:  ${new Date().toISOString()}`);
+      console.log('═'.repeat(60));
+
       return { success: true, access_token, expires_at, expires_in };
     } catch (error) {
-      // Log full error details for debugging
-      console.error('[SUPABASE_REFRESH] Token refresh failed:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
+      // Visual failure logging
+      console.log('═'.repeat(60));
+      console.log('❌ SUPABASE TOKEN REFRESH FAILED');
+      console.log('═'.repeat(60));
+      console.log(`   Store ID:      ${storeId}`);
+      console.log(`   Error Status:  ${error.response?.status || 'N/A'}`);
+      console.log(`   Error Message: ${error.response?.data?.message || error.response?.data?.error || error.message}`);
+      console.log(`   Attempt Time:  ${new Date().toISOString()}`);
+      console.log('═'.repeat(60));
 
       const errorMessage = error.response?.data?.message ||
                           error.response?.data?.error_description ||
