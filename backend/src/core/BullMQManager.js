@@ -457,6 +457,13 @@ class BullMQManager {
             }
           }
 
+          // For cancelled jobs, don't throw - this prevents BullMQ from retrying
+          // The job is already marked as cancelled in the database
+          if (isCancellation) {
+            console.log(`BullMQ: Job ${jobRecordId} cancelled - not throwing to prevent retry`);
+            return { cancelled: true, message: error.message };
+          }
+
           throw error;
         }
       },
