@@ -641,6 +641,15 @@ class SupabaseIntegration {
       }
 
       const token = await this.getSupabaseToken(storeId);
+      console.log('[SUPABASE_REFRESH] Token data from store:', {
+        storeId,
+        tokenFound: !!token,
+        hasAccessToken: !!token?.access_token,
+        hasRefreshToken: !!token?.refresh_token,
+        refreshTokenPreview: token?.refresh_token ? token.refresh_token.substring(0, 20) + '...' : null,
+        expiresAt: token?.expires_at
+      });
+
       if (!token) {
         throw new Error('No Supabase token found for this store');
       }
