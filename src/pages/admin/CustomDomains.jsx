@@ -561,6 +561,12 @@ const CustomDomains = () => {
           <CardDescription>
             Manage custom domains for your store. DNS changes may take 5-60 minutes to propagate.
           </CardDescription>
+          <Alert className="mt-3 bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800 text-sm">
+              <strong>Steps:</strong> 1. Configure DNS records → 2. Click <strong>"Verify"</strong> → 3. When status shows "SSL Pending", click <strong>"Check SSL"</strong>
+            </AlertDescription>
+          </Alert>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -849,45 +855,35 @@ const CustomDomains = () => {
               </AlertDescription>
             </Alert>
 
-            {/* Show companion domain alert if both domains were added */}
             {(() => {
               const redirectDomain = domains.find(d => d.redirect_to === selectedDomain?.domain);
-              if (redirectDomain) {
-                return (
-                  <Alert className="bg-orange-50 border-orange-200">
-                    <AlertTriangle className="h-4 w-4 text-orange-600" />
-                    <AlertDescription className="text-orange-800">
-                      <strong>Both domains configured:</strong> You also added <code>{redirectDomain.domain}</code> which redirects to <code>{selectedDomain?.domain}</code>.
-                      Make sure to add DNS records for <strong>both</strong> domains.
-                    </AlertDescription>
-                  </Alert>
-                );
-              }
-              return null;
-            })()}
+              const hasCompanion = !!redirectDomain;
 
-            <Tabs defaultValue="records">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="records">DNS Records</TabsTrigger>
-                <TabsTrigger value="instructions">Step-by-Step</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="records" className="space-y-4">
-                {isRootDomain(selectedDomain?.domain) && (
-                  <Alert className="bg-yellow-50 border-yellow-200">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800">
-                      <strong>Root domain ({selectedDomain?.domain}):</strong> Must use A records. CNAME is not supported for root/apex domains.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
+              // Helper to render DNS records for a domain
+              const renderDnsRecords = (domain, token, isRedirect = false) => (
                 <div className="space-y-4">
+                  {isRootDomain(domain) && (
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800">
+                        <strong>Root domain ({domain}):</strong> Must use A records. CNAME is not supported for root/apex domains.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isRedirect && (
+                    <Alert className="bg-orange-50 border-orange-200">
+                      <ArrowRight className="h-4 w-4 text-orange-600" />
+                      <AlertDescription className="text-orange-800">
+                        This domain will redirect visitors to <strong>{selectedDomain?.domain}</strong>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* A Records Section */}
                   <div>
                     <h4 className="font-semibold mb-2">
-                      A Records for {selectedDomain?.domain}
-                      {isRootDomain(selectedDomain?.domain) ? ' (Required)' : ' (Recommended)'}
+                      A Records {isRootDomain(domain) ? '(Required)' : '(Recommended)'}
                     </h4>
                     <Table>
                       <TableHeader>
@@ -900,9 +896,9 @@ const CustomDomains = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow className="bg-green-50">
+                        <TableRow className={isRedirect ? "bg-orange-50" : "bg-green-50"}>
                           <TableCell className="font-mono font-bold">A</TableCell>
-                          <TableCell className="font-mono">{getDnsRecordName(selectedDomain?.domain)}</TableCell>
+                          <TableCell className="font-mono">{getDnsRecordName(domain)}</TableCell>
                           <TableCell className="font-mono">76.76.21.21</TableCell>
                           <TableCell className="font-mono">3600</TableCell>
                           <TableCell>
@@ -911,9 +907,9 @@ const CustomDomains = () => {
                             </Button>
                           </TableCell>
                         </TableRow>
-                        <TableRow className="bg-green-50">
+                        <TableRow className={isRedirect ? "bg-orange-50" : "bg-green-50"}>
                           <TableCell className="font-mono font-bold">A</TableCell>
-                          <TableCell className="font-mono">{getDnsRecordName(selectedDomain?.domain)}</TableCell>
+                          <TableCell className="font-mono">{getDnsRecordName(domain)}</TableCell>
                           <TableCell className="font-mono">76.76.21.22</TableCell>
                           <TableCell className="font-mono">3600</TableCell>
                           <TableCell>
@@ -927,7 +923,7 @@ const CustomDomains = () => {
                   </div>
 
                   {/* CNAME Alternative - only show for non-root domains */}
-                  {!isRootDomain(selectedDomain?.domain) && (
+                  {!isRootDomain(domain) && (
                     <div>
                       <h4 className="font-semibold mb-2">OR CNAME Record (Alternative to A records)</h4>
                       <Table>
@@ -943,7 +939,7 @@ const CustomDomains = () => {
                         <TableBody>
                           <TableRow>
                             <TableCell className="font-mono">CNAME</TableCell>
-                            <TableCell className="font-mono">{getDnsRecordName(selectedDomain?.domain)}</TableCell>
+                            <TableCell className="font-mono">{getDnsRecordName(domain)}</TableCell>
                             <TableCell className="font-mono">cname.vercel-dns.com</TableCell>
                             <TableCell className="font-mono">3600</TableCell>
                             <TableCell>
@@ -973,132 +969,71 @@ const CustomDomains = () => {
                       <TableBody>
                         <TableRow className="bg-yellow-50">
                           <TableCell className="font-mono font-bold">TXT</TableCell>
-                          <TableCell className="font-mono">{getTxtRecordName(selectedDomain?.domain)}</TableCell>
-                          <TableCell className="font-mono text-xs break-all">{selectedDomain?.verification_token}</TableCell>
+                          <TableCell className="font-mono">{getTxtRecordName(domain)}</TableCell>
+                          <TableCell className="font-mono text-xs break-all">{token}</TableCell>
                           <TableCell className="font-mono">300</TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="sm" onClick={() => copyToClipboard(selectedDomain?.verification_token)}>
-                              {copiedText === selectedDomain?.verification_token ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                            <Button variant="ghost" size="sm" onClick={() => copyToClipboard(token)}>
+                              {copiedText === token ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                             </Button>
                           </TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
                   </div>
-
-                  {/* Show companion domain records if exists */}
-                  {(() => {
-                    const redirectDomain = domains.find(d => d.redirect_to === selectedDomain?.domain);
-                    if (redirectDomain) {
-                      return (
-                        <div className="border-t pt-4 mt-4">
-                          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                            <ArrowRight className="w-5 h-5 text-orange-500" />
-                            Also configure: {redirectDomain.domain} (redirects to {selectedDomain?.domain})
-                          </h3>
-
-                          {/* A Records for redirect domain */}
-                          <div className="mb-4">
-                            <h4 className="font-semibold mb-2">
-                              A Records for {redirectDomain.domain}
-                              {isRootDomain(redirectDomain.domain) ? ' (Required - root domain)' : ''}
-                            </h4>
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Type</TableHead>
-                                  <TableHead>Name</TableHead>
-                                  <TableHead>Value</TableHead>
-                                  <TableHead>TTL</TableHead>
-                                  <TableHead></TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                <TableRow className="bg-orange-50">
-                                  <TableCell className="font-mono font-bold">A</TableCell>
-                                  <TableCell className="font-mono">{getDnsRecordName(redirectDomain.domain)}</TableCell>
-                                  <TableCell className="font-mono">76.76.21.21</TableCell>
-                                  <TableCell className="font-mono">3600</TableCell>
-                                  <TableCell>
-                                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard('76.76.21.21')}>
-                                      {copiedText === '76.76.21.21' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                                <TableRow className="bg-orange-50">
-                                  <TableCell className="font-mono font-bold">A</TableCell>
-                                  <TableCell className="font-mono">{getDnsRecordName(redirectDomain.domain)}</TableCell>
-                                  <TableCell className="font-mono">76.76.21.22</TableCell>
-                                  <TableCell className="font-mono">3600</TableCell>
-                                  <TableCell>
-                                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard('76.76.21.22')}>
-                                      {copiedText === '76.76.21.22' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </div>
-
-                          {/* TXT Record for redirect domain */}
-                          <div>
-                            <h4 className="font-semibold mb-2">TXT Record for {redirectDomain.domain} (Required)</h4>
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Type</TableHead>
-                                  <TableHead>Name</TableHead>
-                                  <TableHead>Value</TableHead>
-                                  <TableHead>TTL</TableHead>
-                                  <TableHead></TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                <TableRow className="bg-orange-50">
-                                  <TableCell className="font-mono font-bold">TXT</TableCell>
-                                  <TableCell className="font-mono">{getTxtRecordName(redirectDomain.domain)}</TableCell>
-                                  <TableCell className="font-mono text-xs break-all">{redirectDomain.verification_token}</TableCell>
-                                  <TableCell className="font-mono">300</TableCell>
-                                  <TableCell>
-                                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(redirectDomain.verification_token)}>
-                                      {copiedText === redirectDomain.verification_token ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
                 </div>
+              );
 
-                <Alert>
-                  <ExternalLink className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p className="font-semibold">Common DNS Providers:</p>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <a href="https://www.transip.nl/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          TransIP →
-                        </a>
-                        <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          Cloudflare →
-                        </a>
-                        <a href="https://www.namecheap.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          Namecheap →
-                        </a>
-                        <a href="https://dcc.godaddy.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          GoDaddy →
-                        </a>
-                      </div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              </TabsContent>
-            </Tabs>
+              if (hasCompanion) {
+                // Show tabs with actual domain names
+                return (
+                  <Tabs defaultValue="primary">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="primary" className="text-xs sm:text-sm">
+                        {selectedDomain?.domain}
+                      </TabsTrigger>
+                      <TabsTrigger value="redirect" className="text-xs sm:text-sm">
+                        {redirectDomain.domain}
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="primary" className="space-y-4 mt-4">
+                      {renderDnsRecords(selectedDomain?.domain, selectedDomain?.verification_token, false)}
+                    </TabsContent>
+
+                    <TabsContent value="redirect" className="space-y-4 mt-4">
+                      {renderDnsRecords(redirectDomain.domain, redirectDomain.verification_token, true)}
+                    </TabsContent>
+                  </Tabs>
+                );
+              } else {
+                // Single domain - no tabs needed
+                return renderDnsRecords(selectedDomain?.domain, selectedDomain?.verification_token, false);
+              }
+            })()}
+
+            <Alert>
+              <ExternalLink className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-semibold">Common DNS Providers:</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <a href="https://www.transip.nl/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      TransIP →
+                    </a>
+                    <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      Cloudflare →
+                    </a>
+                    <a href="https://www.namecheap.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      Namecheap →
+                    </a>
+                    <a href="https://dcc.godaddy.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      GoDaddy →
+                    </a>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
           </div>
 
           <DialogFooter>
