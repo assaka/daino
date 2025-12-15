@@ -391,31 +391,30 @@ async function runSystemJobs() {
     stats.errors.push({ job: 'System: Token Refresh', store: 'system', error: error.message });
   }
 
-  // 2. Credit Deduction - TEMPORARILY running every hour for testing
-  // TODO: Revert to midnight-only (hour 0) after testing
+  // 2. Credit Deduction - Only runs at midnight UTC (hour 0)
   const currentHour = new Date().getUTCHours();
-  // if (currentHour === 0) {  // DISABLED FOR TESTING - runs every hour
-  console.log(`\n[SYSTEM] Running credit deduction (TESTING MODE - hourly, current hour: ${currentHour})...`);
-  try {
-    const DailyCreditDeductionJob = require('../src/core/jobs/DailyCreditDeductionJob');
-    const job = new DailyCreditDeductionJob({
-      id: `system-credit-${Date.now()}`,
-      type: 'system:daily_credit_deduction',
-      payload: {}
-    });
-    const result = await job.execute();
-    systemResults.daily_credit = { success: true, ...result };
-    console.log(`  Credit deduction: ${result.stores?.successful || 0} stores, ${result.custom_domains?.successful || 0} domains`);
-    stats.jobs_executed++;
-  } catch (error) {
-    systemResults.daily_credit = { success: false, error: error.message };
-    console.error(`  Credit deduction FAILED: ${error.message}`);
-    stats.jobs_failed++;
-    stats.errors.push({ job: 'System: Daily Credit Deduction', store: 'system', error: error.message });
+  if (currentHour === 0) {
+    console.log(`\n[SYSTEM] Running daily credit deduction (midnight UTC)...`);
+    try {
+      const DailyCreditDeductionJob = require('../src/core/jobs/DailyCreditDeductionJob');
+      const job = new DailyCreditDeductionJob({
+        id: `system-credit-${Date.now()}`,
+        type: 'system:daily_credit_deduction',
+        payload: {}
+      });
+      const result = await job.execute();
+      systemResults.daily_credit = { success: true, ...result };
+      console.log(`  Credit deduction: ${result.stores?.successful || 0} stores, ${result.custom_domains?.successful || 0} domains`);
+      stats.jobs_executed++;
+    } catch (error) {
+      systemResults.daily_credit = { success: false, error: error.message };
+      console.error(`  Credit deduction FAILED: ${error.message}`);
+      stats.jobs_failed++;
+      stats.errors.push({ job: 'System: Daily Credit Deduction', store: 'system', error: error.message });
+    }
+  } else {
+    console.log(`\n[SYSTEM] Skipping daily credit deduction (current hour: ${currentHour}, runs at midnight UTC)`);
   }
-  // } else {
-  //   console.log(`\n[SYSTEM] Skipping daily credit deduction (current hour: ${currentHour}, runs at 0)`);
-  // }
 
   return systemResults;
 }

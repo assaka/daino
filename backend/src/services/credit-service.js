@@ -294,9 +294,6 @@ class CreditService {
 
     const ConnectionManager = require('./database/ConnectionManager');
 
-    // TESTING MODE: Skip "already charged today" check to allow multiple deductions per day
-    // TODO: Re-enable after testing
-    /*
     // Check if already charged today BEFORE deducting credits
     const chargeDate = new Date().toISOString().split('T')[0];
     try {
@@ -325,8 +322,6 @@ class CreditService {
       // If check fails, log but continue (fail-open to avoid missed charges)
       console.warn(`[DAILY_DEDUCTION] Could not check existing charge for domain ${domainId}:`, checkError.message);
     }
-    */
-    console.log(`[DAILY_DEDUCTION] TESTING MODE: Skipping duplicate check for domain ${domainName}`);
 
     // Get balance before deduction
     const balanceBefore = await this.getBalance(userId);
@@ -502,31 +497,18 @@ class CreditService {
       found: !!store,
       storeId: store?.id,
       slug: store?.slug,
+      published: store?.published,
       error: storeError?.message
     });
 
-    // TESTING MODE: Bypass published check
-    // TODO: Re-enable after testing
-    /*
+    // Only charge published stores
     if (storeError || !store || !store.published) {
       return {
         success: false,
         message: 'Store is not published, skipping daily charge'
       };
     }
-    */
-    if (storeError || !store) {
-      console.log(`[DAILY_DEDUCTION] Store not found! storeError=${storeError?.message}, store=${!!store}`);
-      return {
-        success: false,
-        message: `Store not found: ${storeError?.message || 'no data returned'}`
-      };
-    }
-    console.log(`[DAILY_DEDUCTION] TESTING MODE: Bypassing published check for store ${store.slug}`);
 
-    // TESTING MODE: Skip "already charged today" check to allow multiple deductions per day
-    // TODO: Re-enable after testing
-    /*
     // Check if already charged today BEFORE deducting credits
     const chargeDate = new Date().toISOString().split('T')[0];
     try {
@@ -554,8 +536,6 @@ class CreditService {
       // If check fails, log but continue (fail-open to avoid missed charges)
       console.warn(`[DAILY_DEDUCTION] Could not check existing charge for store ${storeId}:`, checkError.message);
     }
-    */
-    console.log(`[DAILY_DEDUCTION] TESTING MODE: Skipping duplicate check for store ${store.slug}`);
 
     // Get balance before deduction
     const balanceBefore = await this.getBalance(userId);
