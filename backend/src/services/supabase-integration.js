@@ -1667,11 +1667,11 @@ class SupabaseIntegration {
         };
       }
       
-      // Skip live validation during status check - trust stored credentials
-      // Live validation happens during actual operations (storage, database queries)
-      // This makes status checks fast and reliable
+      // Quick connection verification with short timeout
+      // If it fails/times out, still return connected but flag as unverified
+      let connectionVerified = false;
       if (token && token.project_url && token.project_url !== 'https://pending-configuration.supabase.co') {
-        console.log('[getConnectionStatus] Token exists, skipping live validation for fast status check');
+        console.log('[getConnectionStatus] Token exists, doing quick verification...');
 
         // Check if token is expired based on stored expiry time
         if (token.expires_at) {
@@ -1679,10 +1679,24 @@ class SupabaseIntegration {
           const now = new Date();
           if (expiresAt < now) {
             console.log('[getConnectionStatus] Token appears expired, marking as needing refresh');
-            // Token is expired - the hourly cron will refresh it
-            // Don't block status check, just flag it
             token._needsRefresh = true;
           }
+        }
+
+        // Quick database verification - simple SELECT 1 query
+        try {
+          const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+          const { error } = await tenantDb.from('integration_configs').select('id').limit(1);
+          if (!error) {
+            connectionVerified = true;
+            console.log('[getConnectionStatus] Database connection verified');
+          } else {
+            console.log('[getConnectionStatus] Database query failed:', error.message);
+            token._verificationFailed = true;
+          }
+        } catch (verifyError) {
+          console.log('[getConnectionStatus] Database verification failed:', verifyError.message);
+          token._verificationFailed = true;
         }
       }
 
@@ -1838,6 +1852,7 @@ class SupabaseIntegration {
 
       return {
         connected: true,
+        connectionVerified,
         projectUrl: projectUrl || 'Unknown',
         expiresAt: token.expires_at,
         isExpired,
