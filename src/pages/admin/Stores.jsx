@@ -414,13 +414,12 @@ export default function Stores() {
                       onClick={() => {
                         const storeCode = store.slug || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                         if (store.published) {
+                          // Store is running - open directly without version param
                           const baseUrl = getStoreBaseUrl(store);
-                          // Add ?version=published to view published/live version
                           const storeUrl = getExternalStoreUrl(storeCode, '', baseUrl);
-                          const separator = storeUrl.includes('?') ? '&' : '?';
-                          window.open(`${storeUrl}${separator}version=published`, '_blank');
+                          window.open(storeUrl, '_blank');
                         } else {
-                          // Use preview URL when store is not running (still add version=published to bypass pause modal)
+                          // Store is paused - add version=published to bypass pause modal
                           window.open(`/public/${storeCode}?version=published`, '_blank');
                         }
                       }}
