@@ -480,19 +480,30 @@ class CreditService {
    * Implements 3-day grace period before pausing store for insufficient credits
    */
   async chargeDailyPublishingFee(userId, storeId) {
+    console.log(`[DAILY_DEDUCTION] chargeDailyPublishingFee called with userId=${userId}, storeId=${storeId}`);
+
     let dailyCost = 1.0;
     try {
       dailyCost = await ServiceCreditCost.getCostByKey('store_daily_publishing');
+      console.log(`[DAILY_DEDUCTION] Got daily cost from config: ${dailyCost}`);
     } catch (error) {
-      // Use fallback
+      console.log(`[DAILY_DEDUCTION] Using fallback daily cost: ${dailyCost}`);
     }
 
-    // Check if store is published in master DB (include metadata for grace period)
+    // Check if store exists in master DB (include metadata for grace period)
+    console.log(`[DAILY_DEDUCTION] Querying store from master DB...`);
     const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('id, slug, status, is_active, published, metadata')
       .eq('id', storeId)
       .maybeSingle();
+
+    console.log(`[DAILY_DEDUCTION] Store query result:`, {
+      found: !!store,
+      storeId: store?.id,
+      slug: store?.slug,
+      error: storeError?.message
+    });
 
     // TESTING MODE: Bypass published check
     // TODO: Re-enable after testing
@@ -505,9 +516,10 @@ class CreditService {
     }
     */
     if (storeError || !store) {
+      console.log(`[DAILY_DEDUCTION] Store not found! storeError=${storeError?.message}, store=${!!store}`);
       return {
         success: false,
-        message: 'Store not found'
+        message: `Store not found: ${storeError?.message || 'no data returned'}`
       };
     }
     console.log(`[DAILY_DEDUCTION] TESTING MODE: Bypassing published check for store ${store.slug}`);
