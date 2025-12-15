@@ -159,7 +159,7 @@ const masterEmailFooter = (options = {}) => {
 const masterEmailBase = (content, options = {}) => {
   const {
     preheader = '',
-    backgroundColor = '#ffffff'
+    backgroundColor = '#f9fafb'
   } = options;
 
   return `
