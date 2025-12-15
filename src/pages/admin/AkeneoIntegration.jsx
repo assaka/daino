@@ -967,16 +967,43 @@ const AkeneoIntegration = () => {
             message: 'Connection verified',
             testedAt
           });
+          return;
         } else if (status === 'failed') {
           setConnectionStatus({
             success: false,
             message: message || 'Connection failed',
             testedAt
           });
+          return;
+        }
+      }
+
+      // Fallback to localStorage if backend status is 'untested' or not available
+      const savedStatus = localStorage.getItem('akeneo_connection_status');
+      if (savedStatus) {
+        try {
+          const parsedStatus = JSON.parse(savedStatus);
+          if (parsedStatus.success) {
+            setConnectionStatus(parsedStatus);
+          }
+        } catch (e) {
+          // Ignore parse errors
         }
       }
     } catch (error) {
       console.error('Failed to load connection status:', error);
+      // On API error, also try localStorage fallback
+      const savedStatus = localStorage.getItem('akeneo_connection_status');
+      if (savedStatus) {
+        try {
+          const parsedStatus = JSON.parse(savedStatus);
+          if (parsedStatus.success) {
+            setConnectionStatus(parsedStatus);
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
     }
   };
 
