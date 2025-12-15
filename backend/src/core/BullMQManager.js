@@ -34,7 +34,13 @@ class BullMQManager {
     }
 
     try {
-      // Check if Redis is disabled
+      // Check if BullMQ is disabled (use database queue instead)
+      if (process.env.DISABLE_BULLMQ === 'true' || process.env.BULLMQ_ENABLED === 'false') {
+        console.log('BullMQ: Disabled via environment variable, using database queue');
+        return false;
+      }
+
+      // Check if Redis is disabled entirely
       if (process.env.REDIS_ENABLED === 'false') {
         console.warn('BullMQ: Redis disabled, falling back to database queue');
         return false;
