@@ -13,8 +13,9 @@ const IntegrationToken = require('../models/master/IntegrationToken');
  */
 class SupabaseIntegration {
   constructor() {
-    this.clientId = process.env.SUPABASE_OAUTH_CLIENT_ID || 'pending_configuration';
-    this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration';
+    // Trim whitespace from env vars (common issue with copy/paste)
+    this.clientId = (process.env.SUPABASE_OAUTH_CLIENT_ID || 'pending_configuration').trim();
+    this.clientSecret = (process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration').trim();
     this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI ||
                       `${process.env.BACKEND_URL || 'https://backend.dainostore.com'}/api/supabase/callback`;
     this.authorizationBaseUrl = 'https://api.supabase.com/v1/oauth/authorize';
@@ -23,6 +24,15 @@ class SupabaseIntegration {
     // Check if OAuth is properly configured
     this.oauthConfigured = this.clientId !== 'pending_configuration' &&
                            this.clientSecret !== 'pending_configuration';
+
+    // Validate UUID format for client_id
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (this.oauthConfigured && !uuidRegex.test(this.clientId)) {
+      console.error(`⚠️ [SUPABASE] SUPABASE_OAUTH_CLIENT_ID is not a valid UUID format!`);
+      console.error(`   Value: "${this.clientId.substring(0, 8)}..." (length: ${this.clientId.length})`);
+      console.error(`   Expected format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`);
+      this.oauthConfigured = false;
+    }
 
     this.integrationType = 'supabase-oauth';
     this.keysIntegrationType = 'supabase-keys';
