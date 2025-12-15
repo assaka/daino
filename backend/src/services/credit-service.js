@@ -494,12 +494,23 @@ class CreditService {
       .eq('id', storeId)
       .maybeSingle();
 
+    // TESTING MODE: Bypass published check
+    // TODO: Re-enable after testing
+    /*
     if (storeError || !store || !store.published) {
       return {
         success: false,
         message: 'Store is not published, skipping daily charge'
       };
     }
+    */
+    if (storeError || !store) {
+      return {
+        success: false,
+        message: 'Store not found'
+      };
+    }
+    console.log(`[DAILY_DEDUCTION] TESTING MODE: Bypassing published check for store ${store.slug}`);
 
     // TESTING MODE: Skip "already charged today" check to allow multiple deductions per day
     // TODO: Re-enable after testing

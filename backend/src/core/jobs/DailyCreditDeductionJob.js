@@ -20,12 +20,15 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         throw new Error('masterDbClient not initialized - check MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY');
       }
 
-      // Query published stores from master DB
+      // TESTING MODE: Query ALL stores (bypass published check)
+      // TODO: Re-enable .eq('published', true) after testing
       const { data: publishedStores, error: storesError } = await masterDbClient
         .from('stores')
         .select('id, user_id, slug, published')
-        .eq('published', true)
+        // .eq('published', true)  // DISABLED FOR TESTING
         .order('created_at', { ascending: false });
+
+      console.log('[DAILY_DEDUCTION] TESTING MODE: Processing ALL stores (published check bypassed)');
 
       if (storesError) {
         throw new Error(`Failed to fetch published stores: ${storesError.message}`);
