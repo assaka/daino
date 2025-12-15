@@ -326,8 +326,26 @@ class BullMQManager {
 
           // Set up progress callback
           handler.updateProgress = async (progress, message) => {
-            // Check for cancellation on every progress update
-            await handler.checkAbort();
+            // Check for cancellation directly from database on every progress update
+            if (jobRecordId && masterDbClient) {
+              try {
+                const { data: jobStatus } = await masterDbClient
+                  .from('job_queue')
+                  .select('status')
+                  .eq('id', jobRecordId)
+                  .single();
+
+                if (jobStatus && (jobStatus.status === 'cancelling' || jobStatus.status === 'cancelled')) {
+                  console.log(`BullMQ: Job ${jobRecordId} cancellation detected (status: ${jobStatus.status})`);
+                  throw new Error('Job was cancelled by user');
+                }
+              } catch (err) {
+                if (err.message === 'Job was cancelled by user') {
+                  throw err;
+                }
+                console.warn('BullMQ: Error checking cancellation status:', err.message);
+              }
+            }
 
             console.log(`BullMQ: Updating progress for job ${jobRecordId}: ${progress}% - ${message}`);
             await job.updateProgress(progress);
