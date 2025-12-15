@@ -38,7 +38,7 @@ class AkeneoIntegration {
    * Import categories from Akeneo to DainoStore
    */
   async importCategories(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false, filters = {}, settings = {} } = options;
+    const { locale = 'en_US', dryRun = false, filters = {}, settings = {}, progressCallback } = options;
     
     // Create separate stats for this import job
     const jobStats = {
@@ -116,8 +116,22 @@ class AkeneoIntegration {
       // Import categories (respecting hierarchy - parents first)
       const sortedCategories = hierarchicalCategories.sort((a, b) => a.level - b.level);
       const createdCategories = {}; // Map of akeneo_code to database ID
-      
+      const totalCategories = sortedCategories.length;
+      let processed = 0;
+
       for (const category of sortedCategories) {
+        processed++;
+
+        // Call progress callback for linear progress tracking
+        if (progressCallback) {
+          await progressCallback({
+            stage: 'importing_categories',
+            current: processed,
+            total: totalCategories,
+            item: category.name || category._temp_akeneo_code
+          });
+        }
+
         try {
           // Validate category
           const validationErrors = this.mapping.validateCategory(category);
@@ -776,7 +790,7 @@ class AkeneoIntegration {
    * Import attributes from Akeneo to DainoStore
    */
   async importAttributes(storeId, options = {}) {
-    const { dryRun = false, filters = {}, settings = {} } = options;
+    const { dryRun = false, filters = {}, settings = {}, progressCallback } = options;
     
     try {
       console.log('🚀 Starting attribute import from Akeneo...');
@@ -886,10 +900,22 @@ class AkeneoIntegration {
       // Import attributes
       console.log('💾 Starting database import process...');
       let processed = 0;
+      const totalAttributes = dainoAttributes.length;
       for (const attribute of dainoAttributes) {
         processed++;
+
+        // Call progress callback for linear progress tracking
+        if (progressCallback) {
+          await progressCallback({
+            stage: 'importing_attributes',
+            current: processed,
+            total: totalAttributes,
+            item: attribute.name || attribute.code
+          });
+        }
+
         if (processed % 50 === 0) {
-          console.log(`📊 Progress: ${processed}/${dainoAttributes.length} attributes processed`);
+          console.log(`📊 Progress: ${processed}/${totalAttributes} attributes processed`);
         }
         try {
           // Validate attribute
@@ -1111,7 +1137,7 @@ class AkeneoIntegration {
    * Import families from Akeneo to DainoStore AttributeSets
    */
   async importFamilies(storeId, options = {}) {
-    const { dryRun = false, filters = {} } = options;
+    const { dryRun = false, filters = {}, progressCallback } = options;
     
     try {
       console.log('Starting family import from Akeneo...');
@@ -1142,7 +1168,21 @@ class AkeneoIntegration {
       const attributeMapping = await this.buildAttributeMapping(storeId);
 
       // Import families
+      const totalFamilies = dainoFamilies.length;
+      let processed = 0;
       for (const family of dainoFamilies) {
+        processed++;
+
+        // Call progress callback for linear progress tracking
+        if (progressCallback) {
+          await progressCallback({
+            stage: 'importing_families',
+            current: processed,
+            total: totalFamilies,
+            item: family.name || family.akeneo_code
+          });
+        }
+
         try {
           // Validate family
           const validationErrors = this.mapping.validateFamily(family);

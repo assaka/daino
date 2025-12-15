@@ -59,13 +59,21 @@ class AkeneoImportFamiliesJob extends BaseJobHandler {
         throw new Error(`Akeneo connection failed: ${connectionTest.message}`);
       }
 
-      await this.updateProgress(20, 'Importing families from Akeneo...');
+      await this.updateProgress(5, 'Fetching families from Akeneo...');
 
-      // Import families using the existing method
+      // Import families with progress callback for linear progress
       const result = await akeneoIntegration.importFamilies(storeId, {
         locale,
         dryRun,
-        filters
+        filters,
+        progressCallback: async (progress) => {
+          // Linear progress: current/total * 100
+          const percent = Math.round((progress.current / progress.total) * 100);
+          await this.updateProgress(
+            percent,
+            `Importing: ${progress.item} (${progress.current}/${progress.total})`
+          );
+        }
       });
 
       // Extract stats from result
@@ -79,7 +87,7 @@ class AkeneoImportFamiliesJob extends BaseJobHandler {
         };
       }
 
-      await this.updateProgress(90, 'Saving import statistics...');
+      await this.updateProgress(95, 'Saving import statistics...');
 
       // Save import statistics
       await ImportStatistic.saveImportResults(storeId, 'families', {
