@@ -356,24 +356,36 @@ class AkeneoClient {
    * Uses search_after pagination to avoid 100-page limit
    * @param {Object} options - Optional filters
    * @param {number} options.updatedSinceHours - Only fetch products updated within this many hours
+   * @param {Array<string>} options.families - Only fetch products from these families
    */
   async getAllProducts(options = {}) {
     const allProducts = [];
     const primaryEndpoint = this.getProductsEndpoint();
     const fallbackEndpoint = this.version >= 6 ? '/api/rest/v1/products' : '/api/rest/v1/products-uuid';
 
-    // Build search filter for updated date if specified
-    let searchFilter = null;
+    // Build search filter object
+    const searchFilterObj = {};
+
+    // Add updated date filter if specified
     if (options.updatedSinceHours && options.updatedSinceHours > 0) {
       const sinceDate = new Date();
       sinceDate.setHours(sinceDate.getHours() - options.updatedSinceHours);
       // Akeneo expects date format "Y-m-d H:i:s" (e.g., "2024-12-11 10:30:00")
       const akeneoDate = sinceDate.toISOString().replace('T', ' ').substring(0, 19);
-      searchFilter = JSON.stringify({
-        updated: [{ operator: '>', value: akeneoDate }]
-      });
+      searchFilterObj.updated = [{ operator: '>', value: akeneoDate }];
       console.log(`🔍 Filtering products updated since: ${akeneoDate} (last ${options.updatedSinceHours} hours)`);
     }
+
+    // Add family filter if specified (server-side filtering is much more efficient)
+    if (options.families && options.families.length > 0) {
+      searchFilterObj.family = [{ operator: 'IN', value: options.families }];
+      console.log(`🔍 Filtering products by families (server-side): ${options.families.join(', ')}`);
+    }
+
+    // Convert to JSON string if we have any filters
+    const searchFilter = Object.keys(searchFilterObj).length > 0
+      ? JSON.stringify(searchFilterObj)
+      : null;
 
     try {
       console.log(`🔍 Fetching products with search_after pagination (Akeneo v${this.version})...`);

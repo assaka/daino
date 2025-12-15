@@ -1759,13 +1759,17 @@ class AkeneoIntegration {
         console.warn('⚠️ Could not fetch attribute types for auto-mapping:', attrError.message);
       }
 
-      // Fetch all products and product models
-      // Pass updatedSince filter to API for efficient server-side filtering
+      // Fetch products with server-side filters for efficiency
       console.log('📡 Fetching products from Akeneo...');
       const productFetchOptions = {};
       if (filters.updatedSince && filters.updatedSince > 0) {
         productFetchOptions.updatedSinceHours = filters.updatedSince;
         console.log(`🔍 Will filter products updated in last ${filters.updatedSince} hours`);
+      }
+      // Pass families filter for server-side filtering (much more efficient than fetching all)
+      if (filters.families && filters.families.length > 0) {
+        productFetchOptions.families = filters.families;
+        console.log(`🔍 Will filter products by families (server-side): ${filters.families.join(', ')}`);
       }
       let akeneoProducts = await this.client.getAllProducts(productFetchOptions);
       console.log(`📦 Found ${akeneoProducts.length} products from Akeneo`);
@@ -1775,22 +1779,17 @@ class AkeneoIntegration {
         console.log('📡 Fetching all product models from Akeneo...');
         akeneoProductModels = await this.client.getAllProductModels();
         console.log(`📦 Found ${akeneoProductModels.length} product models in Akeneo`);
-      } else {
-        console.log('⏭️ Skipping product models (importProductModels is disabled)');
-      }
 
-      // Apply filters to products
-      if (filters.families && filters.families.length > 0) {
-        console.log(`🔍 Filtering products by families: ${filters.families.join(', ')}`);
-        akeneoProducts = akeneoProducts.filter(product =>
-          filters.families.includes(product.family)
-        );
-        if (enhancedSettings.importProductModels) {
+        // Filter product models by family (API doesn't support family filter for product models)
+        if (filters.families && filters.families.length > 0) {
+          const beforeCount = akeneoProductModels.length;
           akeneoProductModels = akeneoProductModels.filter(model =>
             filters.families.includes(model.family)
           );
+          console.log(`📊 Filtered product models by family: ${beforeCount} -> ${akeneoProductModels.length}`);
         }
-        console.log(`📊 After family filtering: ${akeneoProducts.length} products${enhancedSettings.importProductModels ? `, ${akeneoProductModels.length} product models` : ''}`);
+      } else {
+        console.log('⏭️ Skipping product models (importProductModels is disabled)');
       }
 
       // Separate products into variants (have parent) and standalone products
