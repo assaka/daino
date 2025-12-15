@@ -319,6 +319,18 @@ const ImportJobProgress = ({
             )}
           </div>
         )}
+
+        {/* Stats for cancelled jobs with partial results */}
+        {job.status === JOB_STATUS.CANCELLED && job.result?.stats && (
+          <div className="text-sm bg-gray-50 p-2 rounded">
+            <div className="flex gap-4">
+              <span>Imported before cancel: <strong className="text-blue-600">{job.result.stats.imported || 0}</strong></span>
+              {job.result.stats.total > 0 && (
+                <span>of <strong>{job.result.stats.total}</strong> total</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   };

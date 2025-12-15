@@ -391,14 +391,23 @@ class BullMQManager {
             try {
               if (isCancellation) {
                 // Job was cancelled - mark as cancelled, not failed
+                // Include partial results if available
+                const updateData = {
+                  status: 'cancelled',
+                  last_error: error.message,
+                  cancelled_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+
+                // Save partial result if available (attached by job handler)
+                if (error.partialResult) {
+                  updateData.result = error.partialResult;
+                  console.log(`BullMQ: Saving partial result for cancelled job ${jobRecordId}:`, error.partialResult);
+                }
+
                 await masterDbClient
                   .from('job_queue')
-                  .update({
-                    status: 'cancelled',
-                    last_error: error.message,
-                    cancelled_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  })
+                  .update(updateData)
                   .eq('id', jobRecordId);
                 console.log(`BullMQ: Job ${jobRecordId} marked as cancelled`);
               } else {

@@ -71,6 +71,11 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
         progressCallback: async (progress) => {
           // Check for cancellation on each progress update
           await this.checkAbort();
+
+          // Track progress stats for partial results on cancellation
+          if (progress.total) importStats.total = progress.total;
+          if (progress.current) importStats.imported = progress.current;
+
           // Linear progress: current/total * 100
           const percent = Math.round((progress.current / progress.total) * 100);
           await this.updateProgress(
@@ -119,7 +124,7 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
 
     } catch (error) {
       // Save partial statistics if available
-      if (importStats.total > 0) {
+      if (importStats.total > 0 || importStats.imported > 0) {
         await ImportStatistic.saveImportResults(storeId, 'categories', {
           totalProcessed: importStats.total,
           successfulImports: importStats.imported,
@@ -128,6 +133,19 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
           errorDetails: importStats.errors.length > 0 ? JSON.stringify(importStats.errors) : error.message,
           importMethod: 'background_job'
         });
+      }
+
+      // For cancellation, include partial stats in the error so they can be saved
+      const isCancellation = error.message?.includes('cancelled') || error.message?.includes('canceled');
+      if (isCancellation) {
+        error.partialResult = {
+          success: false,
+          cancelled: true,
+          message: `Import cancelled: ${importStats.imported} imported before cancellation`,
+          stats: importStats,
+          dryRun,
+          locale
+        };
       }
 
       throw error;
