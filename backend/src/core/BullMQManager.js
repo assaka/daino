@@ -388,8 +388,31 @@ class BullMQManager {
           const result = await handler.execute();
 
           // Update job status to 'completed' in master DB
+          // But first check if job was cancelled while running
           if (jobRecordId && masterDbClient) {
             try {
+              // Check current status - if 'cancelling', mark as 'cancelled' instead of 'completed'
+              const { data: currentJob } = await masterDbClient
+                .from('job_queue')
+                .select('status')
+                .eq('id', jobRecordId)
+                .single();
+
+              if (currentJob?.status === 'cancelling' || currentJob?.status === 'cancelled') {
+                console.log(`BullMQ: Job ${jobRecordId} was cancelled while running - marking as cancelled`);
+                await masterDbClient
+                  .from('job_queue')
+                  .update({
+                    status: 'cancelled',
+                    progress: handler.progress || 0,
+                    result: { ...result, cancelled: true, message: 'Job was cancelled' },
+                    cancelled_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', jobRecordId);
+                return { cancelled: true, partialResult: result };
+              }
+
               await masterDbClient
                 .from('job_queue')
                 .update({
