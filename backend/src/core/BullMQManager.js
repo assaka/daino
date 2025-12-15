@@ -326,6 +326,9 @@ class BullMQManager {
 
           // Set up progress callback
           handler.updateProgress = async (progress, message) => {
+            // Check for cancellation on every progress update
+            await handler.checkAbort();
+
             console.log(`BullMQ: Updating progress for job ${jobRecordId}: ${progress}% - ${message}`);
             await job.updateProgress(progress);
 

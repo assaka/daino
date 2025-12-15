@@ -85,19 +85,19 @@ class AkeneoImportProductsJob extends BaseJobHandler {
             importStats.imported = progress.current;
           }
 
-          // Map progress stages to percentages
-          let percent = 10;
+          // Linear progress: current/total * 100
+          let percent = 0;
           let message = 'Processing...';
 
           if (progress.stage === 'fetching_products') {
-            percent = 15;
+            percent = 1;
             message = 'Fetching products from Akeneo...';
           } else if (progress.stage === 'importing_products' || progress.stage === 'importing_standalone' || progress.stage === 'importing_variants' || progress.stage === 'importing_configurables') {
-            // Linear progress from 20% to 90%
-            percent = 20 + Math.round((progress.current / progress.total) * 70);
+            // Linear progress from 0% to 100%
+            percent = Math.round((progress.current / progress.total) * 100);
             message = `Importing: ${progress.item || 'product'} (${progress.current}/${progress.total})`;
           } else if (progress.stage === 'linking_variants') {
-            percent = 92;
+            percent = 98;
             message = 'Linking variants to parent products...';
           }
 

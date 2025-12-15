@@ -77,8 +77,8 @@ class AkeneoImportCategoriesJob extends BaseJobHandler {
           if (progress.total) importStats.total = progress.total;
           if (progress.current) importStats.imported = progress.current;
 
-          // Linear progress: current/total * 100
-          const percent = Math.round((progress.current / progress.total) * 100);
+          // Linear progress: current/total * 100 (capped at 99 to leave room for final steps)
+          const percent = Math.min(99, Math.round((progress.current / progress.total) * 100));
           await this.updateProgress(
             percent,
             `Importing: ${progress.item} (${progress.current}/${progress.total})`
