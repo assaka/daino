@@ -19,7 +19,9 @@ import {
   RefreshCw,
   BarChart3,
   DollarSign,
-  Activity
+  Activity,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 
 const ImportExportJobs = () => {
@@ -99,6 +101,26 @@ const ImportExportJobs = () => {
     setAnalytics(analytics);
   };
 
+  const cancelJob = async (jobId) => {
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
+      const res = await fetch(`/api/background-jobs/${jobId}/cancel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setFlashMessage({ type: 'success', message: 'Job cancelled successfully' });
+        loadData();
+      } else {
+        setFlashMessage({ type: 'error', message: data.message });
+      }
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to cancel job' });
+    }
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed':
@@ -107,12 +129,31 @@ const ImportExportJobs = () => {
         return <XCircle className="w-5 h-5 text-red-500" />;
       case 'running':
         return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
+      case 'cancelling':
+        return <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />;
+      case 'cancelled':
+        return <AlertCircle className="w-5 h-5 text-gray-500" />;
       default:
         return <Clock className="w-5 h-5 text-gray-400" />;
     }
   };
 
-  const activeJobs = jobs.filter(j => j.status === 'running' || j.status === 'pending');
+  const getStatusBadge = (status) => {
+    const variants = {
+      completed: 'default',
+      failed: 'destructive',
+      running: 'default',
+      cancelling: 'outline',
+      pending: 'secondary',
+      cancelled: 'outline'
+    };
+    const labels = {
+      cancelling: 'Cancelling...',
+    };
+    return <Badge variant={variants[status] || 'outline'}>{labels[status] || status}</Badge>;
+  };
+
+  const activeJobs = jobs.filter(j => j.status === 'running' || j.status === 'pending' || j.status === 'cancelling');
   const exportJobs = jobs.filter(j => j.type.includes('export'));
   const importJobs = jobs.filter(j => j.type.includes('import'));
 
@@ -271,6 +312,7 @@ const ImportExportJobs = () => {
           <CardContent className="space-y-3">
             {activeJobs.map(job => (
               <div key={job.id} className="border rounded-lg p-4 space-y-3">
+                {/* Header: Job type on left, status badge on right */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {getStatusIcon(job.status)}
@@ -279,21 +321,40 @@ const ImportExportJobs = () => {
                       <p className="text-sm text-gray-600">Job #{job.id}</p>
                     </div>
                   </div>
-                  <Badge>{job.status}</Badge>
+                  {getStatusBadge(job.status)}
                 </div>
 
+                {/* Progress bar */}
                 {job.progress !== null && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">{job.progress_message || 'Processing...'}</span>
+                      <span className="text-gray-600">
+                        {job.status === 'cancelling'
+                          ? 'Cancelling... Please wait'
+                          : (job.progress_message || 'Processing...')}
+                      </span>
                       <span className="font-medium">{job.progress}%</span>
                     </div>
                     <Progress value={job.progress} className="h-2" />
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500">
-                  Started: {new Date(job.started_at).toLocaleString()}
+                {/* Footer: Elapsed time on left, cancel button on right */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-gray-500">
+                    {job.started_at ? `Started: ${new Date(job.started_at).toLocaleString()}` : 'Waiting to start...'}
+                  </div>
+                  {(job.status === 'pending' || job.status === 'running') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => cancelJob(job.id)}
+                      title="Cancel job"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

@@ -14,7 +14,8 @@ import {
   ChevronUp,
   AlertCircle,
   Package,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -238,28 +239,19 @@ const ImportJobProgress = ({
 
     return (
       <div key={job.id} className="border rounded-lg p-4 space-y-3">
+        {/* Header: Job type on left, status badge on right */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-gray-500" />
             <span className="font-medium">{formatJobType(job.type)}</span>
-            <Badge variant="outline" className={status.color}>
-              <StatusIcon className={`h-3 w-3 mr-1 ${status.iconClass || ''}`} />
-              {status.label}
-            </Badge>
           </div>
-          {isActive && (job.status === JOB_STATUS.PENDING || job.status === JOB_STATUS.RUNNING) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => cancelJob(job.id)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              title="Cancel import"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <Badge variant="outline" className={status.color}>
+            <StatusIcon className={`h-3 w-3 mr-1 ${status.iconClass || ''}`} />
+            {status.label}
+          </Badge>
         </div>
 
+        {/* Progress bar for running/cancelling jobs */}
         {isActive && (job.status === JOB_STATUS.RUNNING || job.status === JOB_STATUS.CANCELLING) && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
@@ -271,14 +263,30 @@ const ImportJobProgress = ({
               <span className="font-medium">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2" />
-            {job.started_at && (
-              <div className="text-xs text-gray-500">
-                Elapsed: {getElapsedTime(job.started_at)}
-              </div>
+          </div>
+        )}
+
+        {/* Footer: Elapsed time on left, cancel button on right */}
+        {isActive && (
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-500">
+              {job.started_at ? `Elapsed: ${getElapsedTime(job.started_at)}` : 'Waiting to start...'}
+            </div>
+            {(job.status === JOB_STATUS.PENDING || job.status === JOB_STATUS.RUNNING) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => cancelJob(job.id)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                title="Cancel import"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
           </div>
         )}
 
+        {/* Date info for completed jobs */}
         {!isActive && (
           <div className="text-sm text-gray-500">
             {job.completed_at ? (
@@ -289,6 +297,7 @@ const ImportJobProgress = ({
           </div>
         )}
 
+        {/* Error message for failed jobs */}
         {job.status === JOB_STATUS.FAILED && job.error && (
           <Alert className="border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -298,6 +307,7 @@ const ImportJobProgress = ({
           </Alert>
         )}
 
+        {/* Stats for completed jobs */}
         {job.status === JOB_STATUS.COMPLETED && job.result && (
           <div className="text-sm bg-green-50 p-2 rounded">
             {job.result.stats && (

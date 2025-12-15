@@ -96,6 +96,8 @@ const BackgroundJobs = () => {
         return <XCircle className="w-5 h-5 text-red-500" />;
       case 'running':
         return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
+      case 'cancelling':
+        return <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />;
       case 'pending':
         return <Clock className="w-5 h-5 text-yellow-500" />;
       case 'cancelled':
@@ -110,10 +112,14 @@ const BackgroundJobs = () => {
       completed: 'default',
       failed: 'destructive',
       running: 'default',
+      cancelling: 'outline',
       pending: 'secondary',
       cancelled: 'outline'
     };
-    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
+    const labels = {
+      cancelling: 'Cancelling...',
+    };
+    return <Badge variant={variants[status] || 'outline'}>{labels[status] || status}</Badge>;
   };
 
   const formatJobType = (type) => {
@@ -130,9 +136,10 @@ const BackgroundJobs = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const activeJobs = jobs.filter(j => j.status === 'running' || j.status === 'pending');
+  const activeJobs = jobs.filter(j => j.status === 'running' || j.status === 'pending' || j.status === 'cancelling');
   const completedJobs = jobs.filter(j => j.status === 'completed');
   const failedJobs = jobs.filter(j => j.status === 'failed');
+  const cancelledJobs = jobs.filter(j => j.status === 'cancelled');
 
   return (
     <div className="p-6 space-y-6">
@@ -244,6 +251,7 @@ const BackgroundJobs = () => {
                 <option value="all">All Status</option>
                 <option value="running">Running</option>
                 <option value="pending">Pending</option>
+                <option value="cancelling">Cancelling</option>
                 <option value="completed">Completed</option>
                 <option value="failed">Failed</option>
                 <option value="cancelled">Cancelled</option>
@@ -291,8 +299,14 @@ const BackgroundJobs = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(job.status)}
-                      {job.status === 'pending' && (
-                        <Button variant="outline" size="sm" onClick={() => cancelJob(job.id)}>
+                      {(job.status === 'pending' || job.status === 'running') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cancelJob(job.id)}
+                          title="Cancel job"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
@@ -414,9 +428,17 @@ const BackgroundJobs = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(job.status)}
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
-                    </Button>
+                    {(job.status === 'pending' || job.status === 'running') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => cancelJob(job.id)}
+                        title="Cancel job"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 {job.progress !== null && job.status === 'running' && (
