@@ -15,7 +15,7 @@ class BaseJobHandler extends EventEmitter {
     this.progress = 0;
     this.isAborted = false;
     this.lastCancellationCheck = 0;
-    this.cancellationCheckInterval = 5000; // Check every 5 seconds
+    this.cancellationCheckInterval = 2000; // Check every 2 seconds for faster cancellation response
   }
 
   /**
@@ -53,12 +53,15 @@ class BaseJobHandler extends EventEmitter {
    */
   async checkAbort() {
     if (this.isAborted) {
+      console.log(`[BaseJobHandler] checkAbort: Job ${this.job?.id} already marked as aborted, throwing`);
       throw new Error('Job was cancelled');
     }
 
     // Periodically check database for cancellation (not every call, to avoid DB spam)
     const now = Date.now();
-    if (now - this.lastCancellationCheck > this.cancellationCheckInterval) {
+    const timeSinceLastCheck = now - this.lastCancellationCheck;
+    if (timeSinceLastCheck > this.cancellationCheckInterval) {
+      console.log(`[BaseJobHandler] checkAbort: Checking DB for job ${this.job?.id} (last check ${timeSinceLastCheck}ms ago)`);
       this.lastCancellationCheck = now;
       await this.checkCancellationStatus();
     }
@@ -68,14 +71,29 @@ class BaseJobHandler extends EventEmitter {
    * Check database for cancellation status
    */
   async checkCancellationStatus() {
-    if (!masterDbClient || !this.job.id) return;
+    if (!masterDbClient) {
+      console.warn(`[BaseJobHandler] checkCancellationStatus: masterDbClient not available`);
+      return;
+    }
+    if (!this.job.id) {
+      console.warn(`[BaseJobHandler] checkCancellationStatus: job.id not available`);
+      return;
+    }
 
     try {
-      const { data: job } = await masterDbClient
+      console.log(`[BaseJobHandler] Checking cancellation status for job ${this.job.id}`);
+      const { data: job, error } = await masterDbClient
         .from('job_queue')
         .select('status')
         .eq('id', this.job.id)
         .single();
+
+      if (error) {
+        console.warn(`[BaseJobHandler] DB error checking status: ${error.message}`);
+        return;
+      }
+
+      console.log(`[BaseJobHandler] Job ${this.job.id} status from DB: ${job?.status}`);
 
       if (job && (job.status === 'cancelling' || job.status === 'cancelled')) {
         this.isAborted = true;
