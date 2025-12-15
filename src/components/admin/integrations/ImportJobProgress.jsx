@@ -73,6 +73,7 @@ const ImportJobProgress = ({
   const [showRecentJobs, setShowRecentJobs] = useState(false);
   const pollingRef = useRef(null);
   const mountedRef = useRef(true);
+  const previousActiveJobIdsRef = useRef(new Set()); // Track previously active job IDs
 
   // Fetch active jobs for this integration source
   const fetchJobs = useCallback(async () => {
@@ -106,17 +107,27 @@ const ImportJobProgress = ({
         (job.status === JOB_STATUS.COMPLETED || job.status === JOB_STATUS.FAILED)
       ).slice(0, maxHistoryItems);
 
-      setActiveJobs(active);
-      setRecentJobs(recent);
+      // Detect jobs that transitioned from active to completed/failed
+      const previousActiveIds = previousActiveJobIdsRef.current;
+      const currentActiveIds = new Set(active.map(j => j.id));
 
-      // Check for newly completed/failed jobs
-      active.forEach(job => {
-        if (job.status === JOB_STATUS.COMPLETED && onJobComplete) {
-          onJobComplete(job);
-        } else if (job.status === JOB_STATUS.FAILED && onJobFailed) {
-          onJobFailed(job);
+      // Check if any previously active jobs are now completed/failed
+      recent.forEach(job => {
+        if (previousActiveIds.has(job.id)) {
+          // This job was active before and now it's completed/failed
+          if (job.status === JOB_STATUS.COMPLETED && onJobComplete) {
+            onJobComplete(job);
+          } else if (job.status === JOB_STATUS.FAILED && onJobFailed) {
+            onJobFailed(job);
+          }
         }
       });
+
+      // Update the ref with current active job IDs
+      previousActiveJobIdsRef.current = currentActiveIds;
+
+      setActiveJobs(active);
+      setRecentJobs(recent);
 
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
