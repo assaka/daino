@@ -1393,30 +1393,30 @@ class DemoDataProvisioningService {
         name: 'Product SEO Template',
         type: 'product',
         template: {
-          meta_title: '{{product.name}} | Buy Online',
-          meta_description: 'Shop {{product.name}} at great prices. {{product.short_description}}',
-          og_title: '{{product.name}}',
-          og_description: '{{product.short_description}}'
+          meta_title: '{{product_name}} | Buy Online',
+          meta_description: 'Shop {{product_name}} at great prices. {{short_description}}',
+          og_title: '{{product_name}}',
+          og_description: '{{short_description}}'
         }
       },
       {
         name: 'Category SEO Template',
         type: 'category',
         template: {
-          meta_title: '{{category.name}} - Shop Our Collection',
-          meta_description: 'Browse our {{category.name}} collection. {{category.description}}',
-          og_title: '{{category.name}} Collection',
-          og_description: '{{category.description}}'
+          meta_title: '{{category_name}} - Shop Our Collection',
+          meta_description: 'Browse our {{category_name}} collection. {{category_description}}',
+          og_title: '{{category_name}} Collection',
+          og_description: '{{category_description}}'
         }
       },
       {
         name: 'CMS Page SEO Template',
         type: 'cms_page',
         template: {
-          meta_title: '{{page.title}} | Our Store',
-          meta_description: '{{page.excerpt}}',
-          og_title: '{{page.title}}',
-          og_description: '{{page.excerpt}}'
+          meta_title: '{{page_title}} | Our Store',
+          meta_description: '{{page_excerpt}}',
+          og_title: '{{page_title}}',
+          og_description: '{{page_excerpt}}'
         }
       }
     ];
