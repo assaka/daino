@@ -32,10 +32,10 @@ const CategoryMappingPanel = ({
     setLoading(true);
     try {
       const response = await apiClient.get(`/integrations/category-mappings/${integrationSource}`);
-      if (response.data.success) {
-        setMappings(response.data.mappings || []);
-        setStoreCategories(response.data.storeCategories || []);
-        setStats(response.data.stats || { total: 0, mapped: 0, unmapped: 0 });
+      if (response.success) {
+        setMappings(response.mappings || []);
+        setStoreCategories(response.storeCategories || []);
+        setStats(response.stats || { total: 0, mapped: 0, unmapped: 0 });
       }
     } catch (error) {
       console.error('Error fetching category mappings:', error);
@@ -86,11 +86,11 @@ const CategoryMappingPanel = ({
     setFlashMessage(null);
     try {
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/auto-match`);
-      if (response.data.success) {
+      if (response.success) {
         await fetchMappings();
         setFlashMessage({
           type: 'success',
-          message: `Auto-matched ${response.data.results?.matched || 0} categories`
+          message: `Auto-matched ${response.results?.matched || 0} categories`
         });
       }
     } catch (error) {
@@ -108,11 +108,11 @@ const CategoryMappingPanel = ({
     setFlashMessage(null);
     try {
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-from-unmapped`);
-      if (response.data.success) {
+      if (response.success) {
         await fetchMappings();
         setFlashMessage({
           type: 'success',
-          message: response.data.message || `Created ${response.data.results?.created || 0} categories`
+          message: response.message || `Created ${response.results?.created || 0} categories`
         });
       }
     } catch (error) {
@@ -132,7 +132,7 @@ const CategoryMappingPanel = ({
         { internal_category_id: internalCategoryId || null }
       );
 
-      if (response.data.success) {
+      if (response.success) {
         // Update local state
         setMappings(prev => prev.map(m =>
           m.external_category_code === externalCode
