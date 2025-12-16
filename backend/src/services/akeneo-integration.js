@@ -1,6 +1,7 @@
 const AkeneoClient = require('./akeneo-client');
 const AkeneoMapping = require('./akeneo-mapping');
 const ConnectionManager = require('./database/ConnectionManager');
+const CategoryMappingService = require('./CategoryMappingService');
 
 class AkeneoIntegration {
   constructor(config) {
@@ -371,6 +372,32 @@ class AkeneoIntegration {
       console.log('📂 Building category mapping...');
       const categoryMapping = await this.buildCategoryMapping(storeId);
       console.log(`✅ Category mapping built: ${Object.keys(categoryMapping).length} categories`);
+
+      // Initialize CategoryMappingService for auto-creation of unmapped categories
+      const categoryMappingService = new CategoryMappingService(storeId, 'akeneo');
+      const autoCreateSettings = await categoryMappingService.getAutoCreateSettings();
+      console.log(`🔧 Category auto-create: ${autoCreateSettings.enabled ? 'enabled' : 'disabled'}`);
+
+      // Fetch Akeneo categories for name lookup (needed for auto-creation)
+      let akeneoCategories = [];
+      if (autoCreateSettings.enabled) {
+        console.log('📂 Fetching Akeneo categories for auto-creation lookup...');
+        try {
+          akeneoCategories = await this.client.getAllCategories();
+          console.log(`✅ Loaded ${akeneoCategories.length} Akeneo categories for lookup`);
+        } catch (catError) {
+          console.warn('⚠️ Could not fetch Akeneo categories for auto-creation:', catError.message);
+        }
+      }
+      // Build category code to name map for quick lookup
+      const akeneoCategoryMap = {};
+      akeneoCategories.forEach(cat => {
+        akeneoCategoryMap[cat.code] = {
+          code: cat.code,
+          name: cat.labels?.en_US || cat.labels?.en_GB || cat.code,
+          parent_code: cat.parent
+        };
+      });
       
       // Get family mapping for product attribute set assignment
       console.log('🏷️ Building family mapping...');
@@ -483,10 +510,33 @@ class AkeneoIntegration {
               }
             }
             
-            // Map category IDs
+            // Map category IDs with auto-creation support for unmapped categories
             const originalCategoryIds = akeneoProduct.categories || [];
-            dainoProduct.category_ids = this.mapping.mapCategoryIds(originalCategoryIds, categoryMapping);
-            
+            const mappedCategoryIds = this.mapping.mapCategoryIds(originalCategoryIds, categoryMapping);
+
+            // For unmapped categories, try auto-creation if enabled
+            const unmappedCategoryCodes = originalCategoryIds.filter(code => !categoryMapping[code]);
+
+            if (unmappedCategoryCodes.length > 0 && autoCreateSettings.enabled && !dryRun) {
+              console.log(`🔄 Auto-creating ${unmappedCategoryCodes.length} unmapped categories for product ${dainoProduct.sku}...`);
+              for (const catCode of unmappedCategoryCodes) {
+                const catInfo = akeneoCategoryMap[catCode] || { code: catCode, name: catCode };
+                const newCategoryId = await categoryMappingService.autoCreateCategory({
+                  id: catCode,
+                  code: catCode,
+                  name: catInfo.name,
+                  parent_code: catInfo.parent_code
+                });
+                if (newCategoryId) {
+                  mappedCategoryIds.push(newCategoryId);
+                  // Add to categoryMapping for future products in this import
+                  categoryMapping[catCode] = newCategoryId;
+                }
+              }
+            }
+
+            dainoProduct.category_ids = mappedCategoryIds;
+
             if (originalCategoryIds.length > 0 && dainoProduct.category_ids.length === 0) {
               console.warn(`⚠️ Product ${dainoProduct.sku}: No valid category mappings found for ${originalCategoryIds.join(', ')}`);
             }
@@ -1740,6 +1790,32 @@ class AkeneoIntegration {
       const categoryMapping = await this.buildCategoryMapping(storeId);
       console.log(`✅ Category mapping built: ${Object.keys(categoryMapping).length} categories`);
 
+      // Initialize CategoryMappingService for auto-creation of unmapped categories
+      const categoryMappingService = new CategoryMappingService(storeId, 'akeneo');
+      const autoCreateSettings = await categoryMappingService.getAutoCreateSettings();
+      console.log(`🔧 Category auto-create: ${autoCreateSettings.enabled ? 'enabled' : 'disabled'}`);
+
+      // Fetch Akeneo categories for name lookup (needed for auto-creation)
+      let akeneoCategories = [];
+      if (autoCreateSettings.enabled) {
+        console.log('📂 Fetching Akeneo categories for auto-creation lookup...');
+        try {
+          akeneoCategories = await this.client.getAllCategories();
+          console.log(`✅ Loaded ${akeneoCategories.length} Akeneo categories for lookup`);
+        } catch (catError) {
+          console.warn('⚠️ Could not fetch Akeneo categories for auto-creation:', catError.message);
+        }
+      }
+      // Build category code to name map for quick lookup
+      const akeneoCategoryMap = {};
+      akeneoCategories.forEach(cat => {
+        akeneoCategoryMap[cat.code] = {
+          code: cat.code,
+          name: cat.labels?.en_US || cat.labels?.en_GB || cat.code,
+          parent_code: cat.parent
+        };
+      });
+
       console.log('🏷️ Building family mapping...');
       const familyMapping = await this.buildFamilyMapping(storeId);
       console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
@@ -1847,8 +1923,28 @@ class AkeneoIntegration {
                 dainoProduct.status = 'active';
               }
 
-              // Map category IDs and family
-              dainoProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
+              // Map category IDs with auto-creation support
+              const originalCategoryIds1 = akeneoProduct.categories || [];
+              const mappedCategoryIds1 = this.mapping.mapCategoryIds(originalCategoryIds1, categoryMapping);
+              const unmappedCategoryCodes1 = originalCategoryIds1.filter(code => !categoryMapping[code]);
+
+              if (unmappedCategoryCodes1.length > 0 && autoCreateSettings.enabled && !dryRun) {
+                for (const catCode of unmappedCategoryCodes1) {
+                  const catInfo = akeneoCategoryMap[catCode] || { code: catCode, name: catCode };
+                  const newCategoryId = await categoryMappingService.autoCreateCategory({
+                    id: catCode,
+                    code: catCode,
+                    name: catInfo.name,
+                    parent_code: catInfo.parent_code
+                  });
+                  if (newCategoryId) {
+                    mappedCategoryIds1.push(newCategoryId);
+                    categoryMapping[catCode] = newCategoryId;
+                  }
+                }
+              }
+              dainoProduct.category_ids = mappedCategoryIds1;
+
               if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
                 dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
               }
@@ -1934,8 +2030,28 @@ class AkeneoIntegration {
                 dainoProduct.status = 'active';
               }
 
-              // Map category IDs and family
-              dainoProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
+              // Map category IDs with auto-creation support
+              const originalCategoryIds2 = akeneoProduct.categories || [];
+              const mappedCategoryIds2 = this.mapping.mapCategoryIds(originalCategoryIds2, categoryMapping);
+              const unmappedCategoryCodes2 = originalCategoryIds2.filter(code => !categoryMapping[code]);
+
+              if (unmappedCategoryCodes2.length > 0 && autoCreateSettings.enabled && !dryRun) {
+                for (const catCode of unmappedCategoryCodes2) {
+                  const catInfo = akeneoCategoryMap[catCode] || { code: catCode, name: catCode };
+                  const newCategoryId = await categoryMappingService.autoCreateCategory({
+                    id: catCode,
+                    code: catCode,
+                    name: catInfo.name,
+                    parent_code: catInfo.parent_code
+                  });
+                  if (newCategoryId) {
+                    mappedCategoryIds2.push(newCategoryId);
+                    categoryMapping[catCode] = newCategoryId;
+                  }
+                }
+              }
+              dainoProduct.category_ids = mappedCategoryIds2;
+
               if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
                 dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
               }
@@ -2019,8 +2135,28 @@ class AkeneoIntegration {
                 configurableProduct.status = 'active';
               }
 
-              // Map category IDs and family
-              configurableProduct.category_ids = this.mapping.mapCategoryIds(akeneoProductModel.categories || [], categoryMapping);
+              // Map category IDs with auto-creation support
+              const originalCategoryIds3 = akeneoProductModel.categories || [];
+              const mappedCategoryIds3 = this.mapping.mapCategoryIds(originalCategoryIds3, categoryMapping);
+              const unmappedCategoryCodes3 = originalCategoryIds3.filter(code => !categoryMapping[code]);
+
+              if (unmappedCategoryCodes3.length > 0 && autoCreateSettings.enabled && !dryRun) {
+                for (const catCode of unmappedCategoryCodes3) {
+                  const catInfo = akeneoCategoryMap[catCode] || { code: catCode, name: catCode };
+                  const newCategoryId = await categoryMappingService.autoCreateCategory({
+                    id: catCode,
+                    code: catCode,
+                    name: catInfo.name,
+                    parent_code: catInfo.parent_code
+                  });
+                  if (newCategoryId) {
+                    mappedCategoryIds3.push(newCategoryId);
+                    categoryMapping[catCode] = newCategoryId;
+                  }
+                }
+              }
+              configurableProduct.category_ids = mappedCategoryIds3;
+
               if (akeneoProductModel.family && familyMapping[akeneoProductModel.family]) {
                 configurableProduct.attribute_set_id = familyMapping[akeneoProductModel.family];
               }

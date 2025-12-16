@@ -464,6 +464,205 @@ class CategoryMappingService {
 
     return result;
   }
+
+  /**
+   * Get auto-creation settings from integration config
+   */
+  async getAutoCreateSettings() {
+    const IntegrationConfig = require('../models/IntegrationConfig');
+    const config = await IntegrationConfig.findByStoreAndType(this.storeId, this.integrationSource);
+
+    const defaults = {
+      enabled: false,
+      defaultIsActive: true,
+      defaultHideInMenu: true
+    };
+
+    if (!config || !config.config_data) return defaults;
+
+    return {
+      enabled: config.config_data.categoryAutoCreate?.enabled ?? false,
+      defaultIsActive: config.config_data.categoryAutoCreate?.defaultIsActive ?? true,
+      defaultHideInMenu: config.config_data.categoryAutoCreate?.defaultHideInMenu ?? true
+    };
+  }
+
+  /**
+   * Auto-create a category in DainoStore from external category data
+   * @param {Object} externalCategory - External category data
+   * @param {string} externalCategory.id - External ID
+   * @param {string} externalCategory.code - External code
+   * @param {string} externalCategory.name - Category name
+   * @param {string} externalCategory.parent_code - Parent category code
+   * @returns {string|null} - Created category UUID or null on failure
+   */
+  async autoCreateCategory(externalCategory) {
+    const { v4: uuidv4 } = require('uuid');
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    try {
+      const settings = await this.getAutoCreateSettings();
+      const now = new Date().toISOString();
+
+      // Generate slug from name or code
+      const categoryName = externalCategory.name || externalCategory.code || 'Unnamed Category';
+      const slug = categoryName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Check if category with this slug already exists
+      const { data: existing } = await tenantDb
+        .from('categories')
+        .select('id')
+        .eq('store_id', this.storeId)
+        .eq('slug', slug)
+        .maybeSingle();
+
+      if (existing) {
+        console.log(`📁 Category with slug "${slug}" already exists (${existing.id}), using existing`);
+        // Update the mapping to point to existing category
+        await this.upsertMapping({
+          external_category_id: externalCategory.id,
+          external_category_code: externalCategory.code,
+          external_category_name: categoryName,
+          external_parent_code: externalCategory.parent_code,
+          internal_category_id: existing.id,
+          mapping_type: 'auto',
+          auto_created: false
+        });
+        return existing.id;
+      }
+
+      // Resolve parent category if exists
+      let parentId = null;
+      let level = 0;
+      let path = slug;
+
+      if (externalCategory.parent_code) {
+        parentId = await this.getInternalCategoryId(externalCategory.parent_code);
+        if (parentId) {
+          const { data: parent } = await tenantDb
+            .from('categories')
+            .select('level, path')
+            .eq('id', parentId)
+            .single();
+
+          if (parent) {
+            level = (parent.level || 0) + 1;
+            path = parent.path ? `${parent.path}/${slug}` : slug;
+          }
+        }
+      }
+
+      // Create new category
+      const categoryId = uuidv4();
+      const { error: categoryError } = await tenantDb
+        .from('categories')
+        .insert({
+          id: categoryId,
+          store_id: this.storeId,
+          slug: slug,
+          parent_id: parentId,
+          level: level,
+          path: path,
+          is_active: settings.defaultIsActive,
+          hide_in_menu: settings.defaultHideInMenu,
+          sort_order: 0,
+          created_at: now,
+          updated_at: now
+        });
+
+      if (categoryError) {
+        console.error(`❌ Failed to create category: ${categoryError.message}`);
+        return null;
+      }
+
+      // Create category translation
+      const { error: translationError } = await tenantDb
+        .from('category_translations')
+        .insert({
+          category_id: categoryId,
+          language_code: 'en',
+          name: categoryName,
+          description: '',
+          created_at: now,
+          updated_at: now
+        });
+
+      if (translationError) {
+        console.error(`⚠️ Failed to create category translation: ${translationError.message}`);
+        // Continue anyway - category was created
+      }
+
+      // Update mapping record to mark as auto-created
+      await this.upsertMapping({
+        external_category_id: externalCategory.id,
+        external_category_code: externalCategory.code,
+        external_category_name: categoryName,
+        external_parent_code: externalCategory.parent_code,
+        internal_category_id: categoryId,
+        mapping_type: 'auto',
+        auto_created: true,
+        auto_created_at: now
+      });
+
+      console.log(`✅ Auto-created category: "${categoryName}" (${slug}) → ${categoryId}`);
+      console.log(`   Settings: is_active=${settings.defaultIsActive}, hide_in_menu=${settings.defaultHideInMenu}`);
+
+      return categoryId;
+
+    } catch (error) {
+      console.error(`❌ Error auto-creating category "${externalCategory.name}":`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve category with auto-creation fallback
+   * First tries to find existing mapping, then auto-creates if enabled
+   * @param {Object} externalCategory - External category data
+   * @returns {string|null} - Internal category UUID or null
+   */
+  async resolveCategoryWithAutoCreate(externalCategory) {
+    // First try to find existing mapping
+    const existingId = await this.getInternalCategoryId(externalCategory.code);
+    if (existingId) {
+      return existingId;
+    }
+
+    // Check if auto-creation is enabled
+    const settings = await this.getAutoCreateSettings();
+    if (!settings.enabled) {
+      console.log(`⚠️ No mapping for "${externalCategory.name}" and auto-create is disabled`);
+      return null;
+    }
+
+    // Auto-create the category
+    return await this.autoCreateCategory(externalCategory);
+  }
+
+  /**
+   * Batch resolve categories with auto-creation
+   * @param {Array} externalCategories - Array of external category objects
+   * @returns {Array} - Array of internal category UUIDs
+   */
+  async resolveCategoriesWithAutoCreate(externalCategories) {
+    if (!externalCategories || externalCategories.length === 0) {
+      return [];
+    }
+
+    const resolvedIds = [];
+
+    for (const extCat of externalCategories) {
+      const internalId = await this.resolveCategoryWithAutoCreate(extCat);
+      if (internalId) {
+        resolvedIds.push(internalId);
+      }
+    }
+
+    return resolvedIds;
+  }
 }
 
 module.exports = CategoryMappingService;

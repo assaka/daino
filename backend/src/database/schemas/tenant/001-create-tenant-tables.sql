@@ -1215,6 +1215,10 @@ CREATE TABLE IF NOT EXISTS integration_category_mappings (
   is_active BOOLEAN DEFAULT true,
   sync_enabled BOOLEAN DEFAULT true, -- Whether to sync products in this category
 
+  -- Auto-creation tracking
+  auto_created BOOLEAN DEFAULT false, -- Whether category was auto-created during import
+  auto_created_at TIMESTAMP, -- When the category was auto-created
+
   -- Timestamps
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),

@@ -4,6 +4,7 @@ const ImportStatistic = require('../models/ImportStatistic');
 const StorageManager = require('./storage-manager');
 const ConnectionManager = require('./database/ConnectionManager');
 const AttributeMappingService = require('./AttributeMappingService');
+const CategoryMappingService = require('./CategoryMappingService');
 const axios = require('axios');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -296,6 +297,32 @@ class ShopifyImportService {
       // Track all attribute IDs used during import
       this.allShopifyAttributeIds = new Set(shopifyAttributeSet.attribute_ids || []);
 
+      // Initialize category mapping service for auto-creation of unmapped categories
+      this.categoryMappingService = new CategoryMappingService(this.storeId, 'shopify');
+      this.autoCreateSettings = await this.categoryMappingService.getAutoCreateSettings();
+      console.log(`🔧 Category auto-create: ${this.autoCreateSettings.enabled ? 'enabled' : 'disabled'}`);
+
+      // Build collection ID to name map for auto-creation (fetch from Shopify)
+      this.shopifyCollectionMap = {};
+      if (this.autoCreateSettings.enabled) {
+        console.log('📂 Fetching Shopify collections for auto-creation lookup...');
+        try {
+          const collectionsData = await this.client.getAllCollections();
+          const allCollections = collectionsData.all || [];
+          allCollections.forEach(col => {
+            this.shopifyCollectionMap[col.id.toString()] = {
+              id: col.id.toString(),
+              code: col.id.toString(),
+              name: col.title,
+              handle: col.handle
+            };
+          });
+          console.log(`✅ Loaded ${allCollections.length} Shopify collections for lookup`);
+        } catch (colError) {
+          console.warn('⚠️ Could not fetch Shopify collections for auto-creation:', colError.message);
+        }
+      }
+
       // Process products
       for (const product of productsToImport) {
         try {
@@ -466,19 +493,47 @@ class ShopifyImportService {
 
       const existingProduct = existingProducts && existingProducts.length > 0 ? existingProducts[0] : null;
 
-      // Map collections to categories
+      // Map collections to categories with auto-creation support
       const categoryIds = [];
       if (product.collections && product.collections.length > 0) {
         for (const collectionId of product.collections) {
+          const collectionIdStr = collectionId.toString();
+
+          // First check if category already exists for this collection
           const { data: category } = await tenantDb
             .from('categories')
             .select('id')
             .eq('store_id', this.storeId)
-            .eq('external_id', collectionId.toString())
+            .eq('external_id', collectionIdStr)
             .maybeSingle();
 
           if (category) {
             categoryIds.push(category.id);
+          } else if (this.autoCreateSettings?.enabled && this.categoryMappingService) {
+            // Auto-create category if enabled and collection not found
+            const collectionInfo = this.shopifyCollectionMap?.[collectionIdStr] || {
+              id: collectionIdStr,
+              code: collectionIdStr,
+              name: `Collection ${collectionIdStr}`
+            };
+
+            console.log(`🔄 Auto-creating category for Shopify collection: ${collectionInfo.name}`);
+            const newCategoryId = await this.categoryMappingService.autoCreateCategory({
+              id: collectionIdStr,
+              code: collectionIdStr,
+              name: collectionInfo.name,
+              parent_code: null
+            });
+
+            if (newCategoryId) {
+              categoryIds.push(newCategoryId);
+
+              // Also update the category with the external_id for future lookups
+              await tenantDb
+                .from('categories')
+                .update({ external_id: collectionIdStr, external_source: 'shopify' })
+                .eq('id', newCategoryId);
+            }
           }
         }
       }

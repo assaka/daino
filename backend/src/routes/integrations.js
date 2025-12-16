@@ -1823,6 +1823,81 @@ router.post('/category-mappings/:source/bulk-update', authMiddleware, storeResol
   }
 });
 
+/**
+ * GET /integrations/:source/category-auto-create-settings
+ * Get auto-creation settings for category mappings
+ */
+router.get('/:source/category-auto-create-settings', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+    const settings = await mappingService.getAutoCreateSettings();
+
+    res.json({
+      success: true,
+      settings
+    });
+  } catch (error) {
+    console.error('Error fetching auto-create settings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /integrations/:source/category-auto-create-settings
+ * Update auto-creation settings for category mappings
+ */
+router.put('/:source/category-auto-create-settings', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+    const { enabled, defaultIsActive, defaultHideInMenu } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    // Get current config
+    const currentConfig = await IntegrationConfig.findByStoreAndType(storeId, source);
+
+    if (!currentConfig) {
+      return res.status(404).json({
+        success: false,
+        message: `Integration "${source}" not configured for this store`
+      });
+    }
+
+    // Update config_data with new auto-create settings
+    const updatedConfigData = {
+      ...currentConfig.config_data,
+      categoryAutoCreate: {
+        enabled: enabled ?? false,
+        defaultIsActive: defaultIsActive ?? true,
+        defaultHideInMenu: defaultHideInMenu ?? true
+      }
+    };
+
+    await IntegrationConfig.createOrUpdate(storeId, source, updatedConfigData);
+
+    console.log(`✅ Updated category auto-create settings for ${source}:`, updatedConfigData.categoryAutoCreate);
+
+    res.json({
+      success: true,
+      message: 'Auto-create settings updated successfully',
+      settings: updatedConfigData.categoryAutoCreate
+    });
+  } catch (error) {
+    console.error('Error updating auto-create settings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ============================================================================
 // BACKGROUND JOB ENDPOINTS FOR AKENEO IMPORTS
 // These endpoints schedule imports as background jobs that continue running

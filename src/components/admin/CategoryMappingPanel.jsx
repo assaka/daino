@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp, Settings, Sparkles } from 'lucide-react';
 import apiClient from '../../utils/api';
 
 /**
@@ -19,9 +19,18 @@ const CategoryMappingPanel = ({
   const [syncing, setSyncing] = useState(false);
   const [autoMatching, setAutoMatching] = useState(false);
   const [expanded, setExpanded] = useState(true);
-  const [filter, setFilter] = useState('all'); // 'all', 'mapped', 'unmapped'
+  const [filter, setFilter] = useState('all'); // 'all', 'mapped', 'unmapped', 'auto_created'
   const [searchTerm, setSearchTerm] = useState('');
   const [savingMapping, setSavingMapping] = useState(null);
+
+  // Auto-create settings state
+  const [autoCreateSettings, setAutoCreateSettings] = useState({
+    enabled: false,
+    defaultIsActive: true,
+    defaultHideInMenu: true
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Fetch mappings from API
   const fetchMappings = useCallback(async () => {
@@ -40,9 +49,41 @@ const CategoryMappingPanel = ({
     }
   }, [integrationSource]);
 
+  // Fetch auto-create settings
+  const fetchAutoCreateSettings = useCallback(async () => {
+    try {
+      const response = await apiClient.get(`/integrations/${integrationSource}/category-auto-create-settings`);
+      if (response.data.success) {
+        setAutoCreateSettings(response.data.settings);
+      }
+    } catch (error) {
+      console.error('Error fetching auto-create settings:', error);
+    }
+  }, [integrationSource]);
+
+  // Save auto-create settings
+  const handleSaveAutoCreateSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const response = await apiClient.put(
+        `/integrations/${integrationSource}/category-auto-create-settings`,
+        autoCreateSettings
+      );
+      if (response.data.success) {
+        alert('Auto-create settings saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving auto-create settings:', error);
+      alert('Failed to save settings: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   useEffect(() => {
     fetchMappings();
-  }, [fetchMappings]);
+    fetchAutoCreateSettings();
+  }, [fetchMappings, fetchAutoCreateSettings]);
 
   // Sync external categories to mappings table
   const handleSync = async () => {
@@ -155,11 +196,15 @@ const CategoryMappingPanel = ({
     return options;
   };
 
+  // Calculate auto-created count for stats
+  const autoCreatedCount = mappings.filter(m => m.auto_created).length;
+
   // Filter mappings
   const filteredMappings = mappings.filter(m => {
     // Filter by status
     if (filter === 'mapped' && !m.internal_category_id) return false;
     if (filter === 'unmapped' && m.internal_category_id) return false;
+    if (filter === 'auto_created' && !m.auto_created) return false;
 
     // Filter by search
     if (searchTerm) {
@@ -201,6 +246,104 @@ const CategoryMappingPanel = ({
 
       {expanded && (
         <div className="p-4">
+          {/* Auto-Create Settings Section */}
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-gray-600" />
+                <h4 className="font-medium text-gray-900">Auto-Create Settings</h4>
+                {autoCreateSettings.enabled && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Enabled
+                  </span>
+                )}
+              </div>
+              {showSettings ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+            </div>
+
+            {showSettings && (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-gray-600">
+                  When enabled, categories that don't have a mapping will be automatically created during product import.
+                </p>
+
+                {/* Enable Auto-Create Toggle */}
+                <div className="flex items-center justify-between py-2 border-b border-gray-200">
+                  <div>
+                    <label className="font-medium text-gray-800">Enable Auto-Creation</label>
+                    <p className="text-xs text-gray-500">Automatically create categories when not mapped</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoCreateSettings.enabled}
+                      onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {autoCreateSettings.enabled && (
+                  <>
+                    {/* Default Active Status */}
+                    <div className="flex items-center justify-between py-2 border-b border-gray-200">
+                      <div>
+                        <label className="font-medium text-gray-800">Default: Active</label>
+                        <p className="text-xs text-gray-500">New categories will be active (visible to customers)</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={autoCreateSettings.defaultIsActive}
+                          onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, defaultIsActive: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Default Hide in Menu */}
+                    <div className="flex items-center justify-between py-2 border-b border-gray-200">
+                      <div>
+                        <label className="font-medium text-gray-800">Default: Hide in Menu</label>
+                        <p className="text-xs text-gray-500">New categories will be hidden from navigation menu</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={autoCreateSettings.defaultHideInMenu}
+                          onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, defaultHideInMenu: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  onClick={handleSaveAutoCreateSettings}
+                  disabled={savingSettings}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {savingSettings ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Settings'
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <button
@@ -232,6 +375,9 @@ const CategoryMappingPanel = ({
               <option value="all">All ({stats.total})</option>
               <option value="mapped">Mapped ({stats.mapped})</option>
               <option value="unmapped">Unmapped ({stats.unmapped})</option>
+              {autoCreatedCount > 0 && (
+                <option value="auto_created">Auto-Created ({autoCreatedCount})</option>
+              )}
             </select>
 
             {/* Search */}
@@ -307,7 +453,14 @@ const CategoryMappingPanel = ({
                         {savingMapping === mapping.external_category_code ? (
                           <RefreshCw className="h-4 w-4 mx-auto text-gray-400 animate-spin" />
                         ) : mapping.internal_category_id ? (
-                          <Check className="h-4 w-4 mx-auto text-green-500" />
+                          <div className="flex items-center justify-center gap-1">
+                            <Check className="h-4 w-4 text-green-500" />
+                            {mapping.auto_created && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+                                Auto
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <X className="h-4 w-4 mx-auto text-gray-300" />
                         )}
