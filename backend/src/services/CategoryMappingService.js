@@ -668,8 +668,7 @@ class CategoryMappingService {
           external_category_name: categoryName,
           external_parent_code: externalCategory.parent_code,
           internal_category_id: existing.id,
-          mapping_type: 'auto',
-          auto_created: false
+          mapping_type: 'auto'
         });
         return existing.id;
       }
@@ -742,9 +741,7 @@ class CategoryMappingService {
         external_category_name: categoryName,
         external_parent_code: externalCategory.parent_code,
         internal_category_id: categoryId,
-        mapping_type: 'auto',
-        auto_created: true,
-        auto_created_at: now
+        mapping_type: 'auto'
       });
 
       console.log(`✅ Auto-created category: "${categoryName}" (${slug}) → ${categoryId}`);
