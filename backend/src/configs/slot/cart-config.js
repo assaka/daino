@@ -7,6 +7,32 @@ const cartConfig = {
 
   // Slot configuration with content, styling and metadata
   slots: {
+    // CMS Block - Cart Above (at the very top)
+    cms_block_cart_above: {
+      id: 'cms_block_cart_above',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-cart-above mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 0 },
+      colSpan: {
+        emptyCart: 12,
+        withProducts: 12
+      },
+      viewMode: ['emptyCart', 'withProducts'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Cart Above',
+        cmsPosition: 'cart_above',
+        props: {
+          position: 'cart_above'
+        }
+      }
+    },
+
     main_layout: {
       id: 'main_layout',
       type: 'grid',
@@ -167,6 +193,31 @@ const cartConfig = {
       metadata: { hierarchical: true }
     },
 
+    // CMS Block - Above Cart Items
+    cms_block_cart_above_items: {
+      id: 'cms_block_cart_above_items',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-cart-above-items mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'content_area',
+      position: { col: 1, row: 0 },
+      colSpan: {
+        withProducts: 12
+      },
+      viewMode: ['withProducts'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Above Cart Items',
+        cmsPosition: 'cart_above_items',
+        props: {
+          position: 'cart_above_items'
+        }
+      }
+    },
+
     cart_items: {
       id: 'cart_items',
       type: 'component',
@@ -211,6 +262,31 @@ const cartConfig = {
       metadata: { hierarchical: true }
     },
 
+    // CMS Block - Below Cart Items
+    cms_block_cart_below_items: {
+      id: 'cms_block_cart_below_items',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-cart-below-items mt-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'content_area',
+      position: { col: 1, row: 2 },
+      colSpan: {
+        withProducts: 12
+      },
+      viewMode: ['withProducts'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Below Cart Items',
+        cmsPosition: 'cart_below_items',
+        props: {
+          position: 'cart_below_items'
+        }
+      }
+    },
+
     coupon_section: {
       id: 'coupon_section',
       type: 'component',
@@ -246,6 +322,31 @@ const cartConfig = {
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
+    },
+
+    // CMS Block - Above Total (in sidebar)
+    cms_block_cart_above_total: {
+      id: 'cms_block_cart_above_total',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-cart-above-total',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sidebar_area',
+      position: { col: 1, row: 1.5 },
+      colSpan: {
+        withProducts: 12
+      },
+      viewMode: ['withProducts'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Above Total',
+        cmsPosition: 'cart_above_total',
+        props: {
+          position: 'cart_above_total'
+        }
+      }
     },
 
     order_summary: {
@@ -292,6 +393,57 @@ const cartConfig = {
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
+    },
+
+    // CMS Block - Below Total (in sidebar)
+    cms_block_cart_below_total: {
+      id: 'cms_block_cart_below_total',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-cart-below-total mt-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sidebar_area',
+      position: { col: 1, row: 3 },
+      colSpan: {
+        withProducts: 12
+      },
+      viewMode: ['withProducts'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Below Total',
+        cmsPosition: 'cart_below_total',
+        props: {
+          position: 'cart_below_total'
+        }
+      }
+    },
+
+    // CMS Block - Cart Below (at the very bottom)
+    cms_block_cart_below: {
+      id: 'cms_block_cart_below',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-cart-below mt-8',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 99 },
+      colSpan: {
+        emptyCart: 12,
+        withProducts: 12
+      },
+      viewMode: ['emptyCart', 'withProducts'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Cart Below',
+        cmsPosition: 'cart_below',
+        props: {
+          position: 'cart_below'
+        }
+      }
     }
   },
 

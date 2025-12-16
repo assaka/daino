@@ -1394,6 +1394,117 @@ class DemoDataProvisioningService {
             <p class="text-blue-800 text-sm">You'll receive an email confirmation shortly. Your order will be shipped within 1-2 business days.</p>
           </div>
         `
+      },
+      // Category page blocks (from category-config.js)
+      {
+        identifier: 'category-promo-banner',
+        title: 'Category Promo Banner',
+        placement: ['category_above'],
+        content: `
+          <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg text-center mb-4">
+            <span class="font-medium">🛍️ Shop this category and save up to 30% on select items!</span>
+          </div>
+        `
+      },
+      {
+        identifier: 'category-filter-tip',
+        title: 'Category Filter Tip',
+        placement: ['category_above_products'],
+        content: `
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600 mb-4">
+            <span class="font-medium">💡 Tip:</span> Use the filters on the left to narrow down your search and find exactly what you're looking for.
+          </div>
+        `
+      },
+      {
+        identifier: 'category-newsletter',
+        title: 'Category Newsletter',
+        placement: ['category_below_products'],
+        content: `
+          <div class="bg-blue-50 border border-blue-100 rounded-lg p-6 text-center mt-6">
+            <h4 class="text-lg font-semibold text-blue-900 mb-2">Stay Updated</h4>
+            <p class="text-blue-700 text-sm">Subscribe to get notified about new arrivals and exclusive deals in this category.</p>
+          </div>
+        `
+      },
+      {
+        identifier: 'category-help-banner',
+        title: 'Category Help Banner',
+        placement: ['category_below'],
+        content: `
+          <div class="flex items-center justify-center gap-4 py-4 text-sm text-gray-600 mt-4">
+            <span>🤔 Need help choosing?</span>
+            <a href="/contact" class="text-blue-600 hover:underline font-medium">Contact our experts</a>
+          </div>
+        `
+      },
+      // Cart page blocks (from cart-config.js)
+      {
+        identifier: 'cart-free-shipping',
+        title: 'Cart Free Shipping Banner',
+        placement: ['cart_above'],
+        content: `
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center mb-4">
+            <span class="text-green-800 font-medium">🚚 You're only $25 away from FREE shipping!</span>
+          </div>
+        `
+      },
+      {
+        identifier: 'cart-promo-items',
+        title: 'Cart Promo Items',
+        placement: ['cart_above_items'],
+        content: `
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 mb-4">
+            <span class="font-medium">💡 Did you forget something?</span> Complete your look with our recommended accessories.
+          </div>
+        `
+      },
+      {
+        identifier: 'cart-continue-shopping',
+        title: 'Cart Continue Shopping',
+        placement: ['cart_below_items'],
+        content: `
+          <div class="text-center py-4 border-t border-gray-100 mt-4">
+            <a href="/products" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              ← Continue Shopping
+            </a>
+          </div>
+        `
+      },
+      {
+        identifier: 'cart-coupon-reminder',
+        title: 'Cart Coupon Reminder',
+        placement: ['cart_above_total'],
+        content: `
+          <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm text-purple-800 mb-4">
+            <span class="font-medium">🎟️ Have a coupon?</span> Enter it at checkout to save more!
+          </div>
+        `
+      },
+      {
+        identifier: 'cart-payment-methods',
+        title: 'Cart Payment Methods',
+        placement: ['cart_below_total'],
+        content: `
+          <div class="flex items-center justify-center gap-3 text-gray-400 text-sm mt-4">
+            <span>We accept:</span>
+            <span class="font-medium">Visa</span>
+            <span class="font-medium">Mastercard</span>
+            <span class="font-medium">PayPal</span>
+          </div>
+        `
+      },
+      {
+        identifier: 'cart-trust-badges',
+        title: 'Cart Trust Badges',
+        placement: ['cart_below'],
+        content: `
+          <div class="flex items-center justify-center gap-6 py-6 text-sm text-gray-500 mt-4 border-t border-gray-100">
+            <span class="flex items-center gap-1">🔒 Secure Checkout</span>
+            <span class="flex items-center gap-1">↩️ Easy Returns</span>
+            <span class="flex items-center gap-1">📞 24/7 Support</span>
+          </div>
+        `
       }
     ];
 
@@ -1665,7 +1776,7 @@ class DemoDataProvisioningService {
       customers: this.createdIds.customers.length,
       orders: this.createdIds.orders.length,
       cmsPages: 5,
-      cmsBlocks: 2,
+      cmsBlocks: 22,
       taxes: 2,
       coupons: 3,
       seoTemplates: 3,

@@ -6,6 +6,29 @@ const categoryConfig = {
   slot_type: 'category_layout',
 
   slots: {
+    // CMS Block - Category Above (at the very top)
+    cms_block_category_above: {
+      id: 'cms_block_category_above',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-category-above mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 0 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Category Above',
+        cmsPosition: 'category_above',
+        props: {
+          position: 'category_above'
+        }
+      }
+    },
+
     page_header: {
       id: 'page_header',
       type: 'container',
@@ -84,6 +107,29 @@ const categoryConfig = {
       colSpan: { grid: 'col-span-12 sm:col-span-9', list: 'col-span-12 sm:col-span-9' },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
+    },
+
+    // CMS Block - Above Products
+    cms_block_category_above_products: {
+      id: 'cms_block_category_above_products',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-category-above-products mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 0 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Above Products',
+        cmsPosition: 'category_above_products',
+        props: {
+          position: 'category_above_products'
+        }
+      }
     },
 
     sorting_controls: {
@@ -382,6 +428,29 @@ const categoryConfig = {
       }
     },
 
+    // CMS Block - Below Products
+    cms_block_category_below_products: {
+      id: 'cms_block_category_below_products',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-category-below-products mt-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 6 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Below Products',
+        cmsPosition: 'category_below_products',
+        props: {
+          position: 'category_below_products'
+        }
+      }
+    },
+
     filters_container: {
       id: 'filters_container',
       type: 'container',
@@ -509,6 +578,29 @@ const categoryConfig = {
       position: { col: 1, row: 4 },
       viewMode: ['grid', 'list'],
       metadata: { displayName: 'Active Filter Styles' }
+    },
+
+    // CMS Block - Category Below (at the very bottom)
+    cms_block_category_below: {
+      id: 'cms_block_category_below',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-category-below mt-8',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 99 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'CMS Block - Category Below',
+        cmsPosition: 'category_below',
+        props: {
+          position: 'category_below'
+        }
+      }
     }
   },
 
