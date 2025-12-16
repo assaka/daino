@@ -16,6 +16,7 @@ const TABLES_WITH_DEMO_COLUMN = [
   // Product-related
   'products',
   'product_translations',
+  'product_files',
 
   // Category-related
   'categories',

@@ -543,6 +543,100 @@ class DemoDataProvisioningService {
           short_description: prod.description.substring(0, 100),
           demo: true
         });
+
+      // Create product attribute values (brand and color for all products)
+      await this.createProductAttributeValues(productId, prod.attrSetCode);
+    }
+  }
+
+  /**
+   * Create attribute values for a product based on its attribute set
+   */
+  async createProductAttributeValues(productId, attrSetCode) {
+    // Get random attribute values to assign
+    const brandAttr = this.createdIds.attributes.find(a => a.code === 'brand');
+    const colorAttr = this.createdIds.attributes.find(a => a.code === 'color');
+    const sizeAttr = this.createdIds.attributes.find(a => a.code === 'size');
+    const materialAttr = this.createdIds.attributes.find(a => a.code === 'material');
+    const warrantyAttr = this.createdIds.attributes.find(a => a.code === 'warranty');
+
+    // Get random values for each attribute
+    const brandValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'brand');
+    const colorValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'color');
+    const sizeValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'size');
+    const materialValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'material');
+    const warrantyValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'warranty');
+
+    const attributesToAssign = [];
+
+    // All products get brand and color
+    if (brandAttr && brandValues.length > 0) {
+      const randomBrand = brandValues[Math.floor(Math.random() * brandValues.length)];
+      attributesToAssign.push({
+        id: uuidv4(),
+        product_id: productId,
+        attribute_id: brandAttr.id,
+        value_id: randomBrand.id,
+        demo: true
+      });
+    }
+
+    if (colorAttr && colorValues.length > 0) {
+      const randomColor = colorValues[Math.floor(Math.random() * colorValues.length)];
+      attributesToAssign.push({
+        id: uuidv4(),
+        product_id: productId,
+        attribute_id: colorAttr.id,
+        value_id: randomColor.id,
+        demo: true
+      });
+    }
+
+    // Clothing and sports get size
+    if ((attrSetCode === 'clothing' || attrSetCode === 'sports') && sizeAttr && sizeValues.length > 0) {
+      const randomSize = sizeValues[Math.floor(Math.random() * sizeValues.length)];
+      attributesToAssign.push({
+        id: uuidv4(),
+        product_id: productId,
+        attribute_id: sizeAttr.id,
+        value_id: randomSize.id,
+        demo: true
+      });
+    }
+
+    // Clothing and home get material
+    if ((attrSetCode === 'clothing' || attrSetCode === 'home-living') && materialAttr && materialValues.length > 0) {
+      const randomMaterial = materialValues[Math.floor(Math.random() * materialValues.length)];
+      attributesToAssign.push({
+        id: uuidv4(),
+        product_id: productId,
+        attribute_id: materialAttr.id,
+        value_id: randomMaterial.id,
+        demo: true
+      });
+    }
+
+    // Electronics and home get warranty
+    if ((attrSetCode === 'electronics' || attrSetCode === 'home-living') && warrantyAttr && warrantyValues.length > 0) {
+      const randomWarranty = warrantyValues[Math.floor(Math.random() * warrantyValues.length)];
+      attributesToAssign.push({
+        id: uuidv4(),
+        product_id: productId,
+        attribute_id: warrantyAttr.id,
+        value_id: randomWarranty.id,
+        demo: true
+      });
+    }
+
+    // Insert all attribute values
+    for (const attrValue of attributesToAssign) {
+      const { error } = await this.tenantDb
+        .from('product_attribute_values')
+        .insert(attrValue);
+
+      if (error) {
+        console.error(`[DemoData] Error creating product attribute value:`, error);
+      }
     }
   }
 
@@ -550,14 +644,17 @@ class DemoDataProvisioningService {
    * Create demo product tabs
    */
   async createDemoProductTabs() {
+    // Get all attribute set IDs for Specifications tab
+    const attributeSetIds = this.createdIds.attributeSets.map(as => as.id);
+
     const tabs = [
       { name: 'Description', slug: 'description', tab_type: 'description', sort_order: 0 },
-      { name: 'Specifications', slug: 'specifications', tab_type: 'attributes', sort_order: 1 },
+      { name: 'Specifications', slug: 'specifications', tab_type: 'attributes', sort_order: 1, attribute_set_ids: attributeSetIds },
       { name: 'Reviews', slug: 'reviews', tab_type: 'text', content: '<p>Customer reviews will appear here.</p>', sort_order: 2 }
     ];
 
     for (const tab of tabs) {
-      await this.tenantDb
+      const { error } = await this.tenantDb
         .from('product_tabs')
         .insert({
           id: uuidv4(),
@@ -568,8 +665,13 @@ class DemoDataProvisioningService {
           content: tab.content || null,
           sort_order: tab.sort_order,
           is_active: true,
+          attribute_set_ids: tab.attribute_set_ids || [],
           demo: true
         });
+
+      if (error) {
+        console.error(`[DemoData] Error creating product tab ${tab.name}:`, error);
+      }
     }
   }
 
