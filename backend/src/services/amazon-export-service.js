@@ -331,10 +331,12 @@ class AmazonExportService {
       bullets.push(...product.features.slice(0, 5));
     }
 
-    // Generate from attributes
-    if (product.attributes) {
-      Object.entries(product.attributes).slice(0, 5 - bullets.length).forEach(([key, value]) => {
-        bullets.push(`${key}: ${value}`);
+    // Generate from attributes (array format from product_attribute_values)
+    if (product.attributes && Array.isArray(product.attributes)) {
+      product.attributes.slice(0, 5 - bullets.length).forEach(attr => {
+        if (attr.code && attr.value) {
+          bullets.push(`${attr.code}: ${attr.value}`);
+        }
       });
     }
 

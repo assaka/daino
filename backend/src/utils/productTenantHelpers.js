@@ -83,79 +83,7 @@ async function getProductById(storeId, productId) {
 
   if (error) return null;
 
-  // Load attributes from product_attribute_values table
-  product.attributes = await loadProductAttributes(tenantDb, productId);
-
   return product;
-}
-
-/**
- * Load product attributes from product_attribute_values table
- * Returns format: {attributeCode: value}
- *
- * @param {Object} tenantDb - Tenant database connection
- * @param {string} productId - Product UUID
- * @returns {Promise<Object>} Attributes as {code: value}
- */
-async function loadProductAttributes(tenantDb, productId) {
-  try {
-    const { data: pavs } = await tenantDb
-      .from('product_attribute_values')
-      .select('*')
-      .eq('product_id', productId);
-
-    if (!pavs || pavs.length === 0) return {};
-
-    // Get attribute info to map IDs to codes
-    const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
-
-    const { data: attrs } = await tenantDb
-      .from('attributes')
-      .select('id, code, type')
-      .in('id', attributeIds);
-    const attrMap = new Map(attrs?.map(a => [a.id, a]) || []);
-
-    // Get attribute values for select/multiselect
-    const valueIds = pavs.filter(p => p.value_id).map(p => p.value_id);
-    let valMap = new Map();
-    if (valueIds.length > 0) {
-      const { data: vals } = await tenantDb
-        .from('attribute_values')
-        .select('id, code')
-        .in('id', valueIds);
-      valMap = new Map(vals?.map(v => [v.id, v.code]) || []);
-    }
-
-    // Build attributes object {code: value}
-    const attributes = {};
-    for (const pav of pavs) {
-      const attr = attrMap.get(pav.attribute_id);
-      if (!attr) continue;
-
-      let value;
-      if (pav.value_id) {
-        // Select/multiselect - use the value code
-        value = valMap.get(pav.value_id);
-      } else if (pav.text_value !== null) {
-        value = pav.text_value;
-      } else if (pav.number_value !== null) {
-        value = pav.number_value;
-      } else if (pav.boolean_value !== null) {
-        value = pav.boolean_value;
-      } else if (pav.date_value !== null) {
-        value = pav.date_value;
-      }
-
-      if (value !== undefined) {
-        attributes[attr.code] = value;
-      }
-    }
-
-    return attributes;
-  } catch (err) {
-    console.error('Error loading product attributes:', err);
-    return {};
-  }
 }
 
 /**
@@ -216,12 +144,11 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Exclude translation fields (name, description, short_description) - these go in product_translations table
-  // Also extract images to sync to product_files table
+  // Also extract images to sync to product_files table, attributes sync to product_attribute_values
   const { name, description, short_description, attributes, images, ...productFieldsOnly } = productData;
 
   const updateFields = {
     ...productFieldsOnly,
-    attributes, // Keep attributes in products table for admin
     updated_at: new Date().toISOString()
   };
 

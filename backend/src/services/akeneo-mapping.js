@@ -520,9 +520,6 @@ class AkeneoMapping {
           dainoProduct.custom_attributes = {};
         }
         dainoProduct.custom_attributes[dainoField] = akeneoValue;
-        
-        // Also add to the main attributes object for backward compatibility
-        dainoProduct.attributes[akeneoField] = akeneoValue;
         break;
     }
   }

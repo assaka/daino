@@ -171,7 +171,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         is_coupon_eligible: product.is_coupon_eligible || false,
         attribute_set_id: finalAttrSetId, // Use the validated ID
         configurable_attributes: Array.isArray(product.configurable_attributes) ? product.configurable_attributes : [], // Configurable attributes
-        attributes: product.attributes || product.attribute_values || {},
+        attributes: product.attributes || {},
         translations: translations, // Multilingual translations
         seo: product.seo ? { // Ensure product.seo is handled, providing defaults for new fields
           meta_title: product.seo.meta_title || "",

@@ -43,39 +43,42 @@ import { useABTesting } from '@/hooks/useABTest';
 
 // Utility function to generate a product name from attributes
 const generateProductName = (product, basePrefix = '') => {
-  if (!product?.attributes) return '';
-  
+  if (!product?.attributes || !Array.isArray(product.attributes)) return '';
+
   const nameComponents = [];
-  
+
   // Add base prefix if provided
   if (basePrefix) {
     nameComponents.push(basePrefix);
   }
-  
+
   // Define priority order of attributes for name generation
   const priorityAttributes = [
     'brand', 'manufacturer', 'model', 'color', 'size', 'material', 'style', 'type'
   ];
-  
+
   // Add attributes in priority order
   priorityAttributes.forEach(attrCode => {
-    const value = product.attributes[attrCode];
+    const attr = product.attributes.find(a => a.code === attrCode);
+    const value = attr?.value;
     if (value && typeof value === 'string' && value.trim()) {
       nameComponents.push(value.trim());
     }
   });
 
   // Add any other string attributes not yet included
-  Object.entries(product.attributes).forEach(([code, value]) => {
-    if (!priorityAttributes.includes(code) && 
-        value && 
-        typeof value === 'string' && 
-        value.trim() && 
+  product.attributes.forEach(attr => {
+    const code = attr.code;
+    const value = attr.value;
+    if (!priorityAttributes.includes(code) &&
+        value &&
+        typeof value === 'string' &&
+        value.trim() &&
         !nameComponents.includes(value.trim())) {
       nameComponents.push(value.trim());
     }
   });
-  
+
   return nameComponents.join(' ');
 };
 
@@ -328,27 +331,14 @@ export default function ProductDetail() {
           // Check both direct product properties and nested attributes
           let productValue = product[condition.attribute_code];
 
-          // If not found directly, check in product.attributes
-          if (productValue === undefined && product.attributes) {
-            // Handle both array and object structures for attributes
-            if (Array.isArray(product.attributes)) {
-              // Attributes stored as array - find by code or attribute_code
-              const attrObj = product.attributes.find(
-                attr => attr.code === condition.attribute_code || attr.attribute_code === condition.attribute_code
-              );
+          // If not found directly, check in product.attributes (array format)
+          if (productValue === undefined && product.attributes && Array.isArray(product.attributes)) {
+            const attrObj = product.attributes.find(
+              attr => attr.code === condition.attribute_code || attr.attribute_code === condition.attribute_code
+            );
 
-              if (attrObj) {
-                // Handle different attribute structures
-                productValue = attrObj.value || attrObj.label || attrObj;
-              }
-            } else {
-              // Attributes stored as object - direct property access
-              productValue = product.attributes[condition.attribute_code];
-
-              // Handle attributes that are objects with value/label structure
-              if (productValue && typeof productValue === 'object' && productValue.value) {
-                productValue = productValue.value;
-              }
+            if (attrObj) {
+              productValue = attrObj.value || attrObj.label || attrObj;
             }
           }
 
@@ -802,7 +792,7 @@ export default function ProductDetail() {
               product: product ? (() => {
                 // Calculate the final name to use
                 const translatedName = getProductName(product, getCurrentLanguage());
-                const attributeName = product.attributes?.name;
+                const attributeName = product.attributes?.find(a => a.code === 'name')?.value;
                 const directName = product.name;
                 const finalName = translatedName || attributeName || directName;
 

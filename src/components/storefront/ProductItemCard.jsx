@@ -121,11 +121,14 @@ const ProductItemCard = ({
         // Check attribute conditions
         if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
           const attributeMatch = label.conditions.attribute_conditions.every(cond => {
-            if (product.attributes && product.attributes[cond.attribute_code]) {
-              const productAttributeValue = String(product.attributes[cond.attribute_code]).toLowerCase();
-              const conditionValue = String(cond.attribute_value).toLowerCase();
-              const matches = productAttributeValue === conditionValue;
-              return matches;
+            if (product.attributes && Array.isArray(product.attributes)) {
+              const attr = product.attributes.find(a => a.code === cond.attribute_code);
+              if (attr?.value) {
+                const productAttributeValue = String(attr.value).toLowerCase();
+                const conditionValue = String(cond.attribute_value).toLowerCase();
+                const matches = productAttributeValue === conditionValue;
+                return matches;
+              }
             }
             return false;
           });
