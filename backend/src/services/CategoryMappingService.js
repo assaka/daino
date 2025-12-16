@@ -724,7 +724,6 @@ class CategoryMappingService {
           category_id: categoryId,
           language_code: 'en',
           name: categoryName,
-          description: '',
           created_at: now,
           updated_at: now
         });
