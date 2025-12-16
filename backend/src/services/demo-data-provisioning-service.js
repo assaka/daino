@@ -1234,23 +1234,32 @@ class DemoDataProvisioningService {
     console.log(`[DemoData] CMS pages created: ${pagesCreated}/${pages.length}`);
 
     // Create CMS blocks for various placement locations
-    // Placements must match:
-    // - Homepage.jsx: homepage_above_hero, homepage_hero, homepage_below_hero, homepage_above_featured, homepage_below_featured, homepage_above_content, homepage_below_content
-    // - StorefrontLayout: header, before_content, after_content, footer
-    // - Checkout.jsx: checkout_above_form, checkout_below_form, checkout_above_payment, checkout_below_payment
-    // - OrderSuccess.jsx: success_above_content, success_below_content
-    // - product-config.js slots: product_above, product_above_price, product_below
+    // Placements must match actual slot cmsPosition values from config files
     const blocks = [
-      // Homepage blocks
+      // ==================== HOMEPAGE BLOCKS ====================
       {
         identifier: 'homepage-hero',
         title: 'Homepage Hero Banner',
         placement: ['homepage_hero'],
         content: `
-          <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-lg text-center">
-            <h2 class="text-3xl font-bold mb-4">Welcome to Our Store</h2>
-            <p class="text-lg mb-6">Discover amazing products at great prices</p>
-            <a href="/products" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Shop Now</a>
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white">
+            <div class="absolute inset-0 bg-black/10"></div>
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="relative px-8 py-16 md:py-24 text-center">
+              <span class="inline-block px-4 py-1 mb-4 text-sm font-medium bg-white/20 rounded-full backdrop-blur-sm">New Season Collection</span>
+              <h1 class="text-4xl md:text-6xl font-bold mb-6 tracking-tight">Discover Your Style</h1>
+              <p class="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl mx-auto">Curated collections that define modern elegance. Premium quality, exceptional value.</p>
+              <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/products" class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-white text-indigo-600 rounded-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                  Shop Collection
+                  <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                </a>
+                <a href="/categories" class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold border-2 border-white/50 rounded-xl hover:bg-white/10 transition-all">
+                  Browse Categories
+                </a>
+              </div>
+            </div>
           </div>
         `
       },
@@ -1259,8 +1268,14 @@ class DemoDataProvisioningService {
         title: 'Promo Banner',
         placement: ['homepage_above_hero'],
         content: `
-          <div class="bg-yellow-400 text-yellow-900 py-2 px-4 text-center text-sm font-medium">
-            🎉 Free shipping on orders over $100! Use code: FREESHIP
+          <div class="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 text-amber-900 py-3 px-4">
+            <div class="flex items-center justify-center gap-3 text-sm md:text-base font-medium">
+              <span class="animate-pulse">✨</span>
+              <span>LIMITED TIME: Free shipping on orders over $100!</span>
+              <span class="hidden md:inline">|</span>
+              <span class="hidden md:inline">Use code: <strong class="bg-amber-900 text-amber-100 px-2 py-0.5 rounded font-mono">FREESHIP</strong></span>
+              <span class="animate-pulse">✨</span>
+            </div>
           </div>
         `
       },
@@ -1269,21 +1284,36 @@ class DemoDataProvisioningService {
         title: 'Homepage Features',
         placement: ['homepage_below_hero'],
         content: `
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 py-8">
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">🚚</div>
-              <h3 class="font-semibold mb-1">Free Shipping</h3>
-              <p class="text-gray-600 text-sm">On orders over $100</p>
-            </div>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">↩️</div>
-              <h3 class="font-semibold mb-1">Easy Returns</h3>
-              <p class="text-gray-600 text-sm">30-day return policy</p>
-            </div>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">🔒</div>
-              <h3 class="font-semibold mb-1">Secure Payment</h3>
-              <p class="text-gray-600 text-sm">100% secure checkout</p>
+          <div class="py-12 bg-gradient-to-b from-gray-50 to-white">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-6xl mx-auto px-4">
+              <div class="group text-center p-6 rounded-2xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                </div>
+                <h3 class="font-bold text-gray-900 mb-2">Free Shipping</h3>
+                <p class="text-gray-500 text-sm">On all orders over $100. Fast & reliable delivery.</p>
+              </div>
+              <div class="group text-center p-6 rounded-2xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </div>
+                <h3 class="font-bold text-gray-900 mb-2">Easy Returns</h3>
+                <p class="text-gray-500 text-sm">30-day hassle-free return policy. No questions asked.</p>
+              </div>
+              <div class="group text-center p-6 rounded-2xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h3 class="font-bold text-gray-900 mb-2">Secure Payment</h3>
+                <p class="text-gray-500 text-sm">256-bit SSL encryption. Your data is always safe.</p>
+              </div>
+              <div class="group text-center p-6 rounded-2xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+                <h3 class="font-bold text-gray-900 mb-2">24/7 Support</h3>
+                <p class="text-gray-500 text-sm">Expert assistance whenever you need it.</p>
+              </div>
             </div>
           </div>
         `
@@ -1293,20 +1323,45 @@ class DemoDataProvisioningService {
         title: 'Newsletter Signup',
         placement: ['homepage_below_content', 'footer'],
         content: `
-          <div class="bg-gray-100 p-6 rounded-lg text-center">
-            <h3 class="text-xl font-semibold mb-2">Subscribe to Our Newsletter</h3>
-            <p class="text-gray-600 mb-4">Get the latest updates and exclusive offers</p>
+          <div class="relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-8 md:p-12 my-8">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M1.22676 0C1.91374 0 2.45351 0.539773 2.45351 1.22676C2.45351 1.91374 1.91374 2.45351 1.22676 2.45351C0.539773 2.45351 0 1.91374 0 1.22676C0 0.539773 0.539773 0 1.22676 0Z\" fill=\"rgba(255,255,255,0.05)\"%3E%3C/path%3E%3C/svg%3E')] opacity-50"></div>
+            <div class="relative text-center max-w-2xl mx-auto">
+              <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-emerald-400 bg-emerald-400/10 rounded-full uppercase">Newsletter</span>
+              <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">Stay in the Loop</h3>
+              <p class="text-gray-400 mb-6 text-lg">Subscribe for exclusive deals, early access to new arrivals, and insider tips delivered straight to your inbox.</p>
+              <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <div class="flex-1 relative">
+                  <input type="email" placeholder="Enter your email" class="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                <button class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all transform hover:scale-105 shadow-lg shadow-emerald-500/25">
+                  Subscribe
+                </button>
+              </div>
+              <p class="text-gray-500 text-sm mt-4">No spam, unsubscribe anytime. We respect your privacy.</p>
+            </div>
           </div>
         `
       },
-      // Product page blocks (using actual slot cmsPositions from product-config.js)
+      // ==================== PRODUCT PAGE BLOCKS ====================
       {
         identifier: 'product-promo-banner',
         title: 'Product Page Promo',
         placement: ['product_above'],
         content: `
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center text-sm text-yellow-800 mb-4">
-            🎁 Buy 2 or more and get 10% off automatically!
+          <div class="relative overflow-hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div class="absolute -right-8 -top-8 w-24 h-24 bg-amber-200/50 rounded-full blur-2xl"></div>
+            <div class="relative flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
+                  <span class="text-xl">🎁</span>
+                </div>
+                <div>
+                  <p class="font-semibold text-amber-900">Bundle & Save!</p>
+                  <p class="text-sm text-amber-700">Buy 2+ items and get 10% off automatically</p>
+                </div>
+              </div>
+              <span class="hidden md:block px-3 py-1 bg-amber-500 text-white text-sm font-bold rounded-lg">AUTO-APPLIED</span>
+            </div>
           </div>
         `
       },
@@ -1315,9 +1370,25 @@ class DemoDataProvisioningService {
         title: 'Product Trust Badges',
         placement: ['product_above_price'],
         content: `
-          <div class="flex items-center gap-4 text-sm text-gray-600 mb-2">
-            <span class="flex items-center gap-1">✓ In Stock</span>
-            <span class="flex items-center gap-1">✓ Authentic</span>
+          <div class="flex flex-wrap items-center gap-4 py-3 mb-2">
+            <div class="flex items-center gap-2 text-sm">
+              <div class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              </div>
+              <span class="text-green-700 font-medium">In Stock</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              </div>
+              <span class="text-blue-700 font-medium">100% Authentic</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <div class="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+              </div>
+              <span class="text-purple-700 font-medium">Top Rated</span>
+            </div>
           </div>
         `
       },
@@ -1326,49 +1397,78 @@ class DemoDataProvisioningService {
         title: 'Product Shipping Info',
         placement: ['product_below'],
         content: `
-          <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 class="font-medium mb-3">Shipping & Returns</h4>
-            <div class="text-sm text-gray-600 space-y-2">
-              <div class="flex items-center gap-2">
-                <span>🚚</span>
-                <span>Free shipping on orders over $100</span>
+          <div class="mt-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+            <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Shipping & Returns
+            </h4>
+            <div class="grid md:grid-cols-3 gap-4">
+              <div class="flex items-start gap-3 p-4 bg-white rounded-xl">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900">Free Shipping</p>
+                  <p class="text-sm text-gray-500">On orders over $100</p>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                <span>📦</span>
-                <span>Usually ships within 1-2 business days</span>
+              <div class="flex items-start gap-3 p-4 bg-white rounded-xl">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900">Fast Delivery</p>
+                  <p class="text-sm text-gray-500">Ships in 1-2 days</p>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                <span>↩️</span>
-                <span>30-day hassle-free returns</span>
+              <div class="flex items-start gap-3 p-4 bg-white rounded-xl">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900">Easy Returns</p>
+                  <p class="text-sm text-gray-500">30-day guarantee</p>
+                </div>
               </div>
             </div>
           </div>
         `
       },
-      // Global blocks
+      // ==================== GLOBAL BLOCKS ====================
       {
         identifier: 'site-announcement',
         title: 'Site Announcement',
         placement: ['header'],
         content: `
-          <div class="bg-blue-600 text-white py-2 px-4 text-center text-sm">
-            📢 New arrivals every week! <a href="/products" class="underline font-medium">Shop now</a>
+          <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white py-2.5 px-4">
+            <div class="flex items-center justify-center gap-2 text-sm font-medium">
+              <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"></path></svg>
+              <span>New arrivals every week!</span>
+              <a href="/products" class="underline decoration-2 underline-offset-2 hover:text-white/80 transition-colors">Shop now →</a>
+            </div>
           </div>
         `
       },
-      // Checkout blocks
+      // ==================== CHECKOUT BLOCKS ====================
       {
         identifier: 'checkout-guarantee',
         title: 'Checkout Guarantee',
         placement: ['checkout_above_payment'],
         content: `
-          <div class="bg-gray-50 rounded-lg p-4 mb-4">
-            <h4 class="font-medium mb-2">🛡️ Our Guarantee</h4>
-            <ul class="text-sm text-gray-600 space-y-1">
-              <li>✓ 30-day money-back guarantee</li>
-              <li>✓ Free returns on all orders</li>
-              <li>✓ Secure payment processing</li>
-            </ul>
+          <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-5 mb-6">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-200">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <div>
+                <h4 class="font-bold text-emerald-900 mb-2">Shop with Confidence</h4>
+                <ul class="space-y-1.5 text-sm text-emerald-800">
+                  <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> 30-day money-back guarantee</li>
+                  <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> Free returns on all orders</li>
+                  <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> Price match promise</li>
+                </ul>
+              </div>
+            </div>
           </div>
         `
       },
@@ -1377,32 +1477,60 @@ class DemoDataProvisioningService {
         title: 'Checkout Security Notice',
         placement: ['checkout_below_payment'],
         content: `
-          <div class="flex items-center justify-center gap-2 text-sm text-gray-500 mt-4">
-            <span>🔒</span>
-            <span>Your payment is secured with 256-bit SSL encryption</span>
+          <div class="flex flex-col items-center justify-center gap-3 py-6 mt-4 border-t border-gray-100">
+            <div class="flex items-center gap-6 text-gray-400">
+              <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M8.5 3.5h-7A1.5 1.5 0 000 5v10a1.5 1.5 0 001.5 1.5h7A1.5 1.5 0 0010 15V5A1.5 1.5 0 008.5 3.5zM5 14.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"></path></svg>
+              <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M20 5v10h-5V5h5zm-2.5 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path></svg>
+              <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M35 10a5 5 0 11-10 0 5 5 0 0110 0zm-5 3a3 3 0 100-6 3 3 0 000 6z"></path></svg>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+              <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+              <span>Secured with 256-bit SSL encryption</span>
+            </div>
           </div>
         `
       },
-      // Success page blocks
+      // ==================== SUCCESS PAGE BLOCKS ====================
       {
         identifier: 'order-success-message',
         title: 'Order Success Message',
         placement: ['success_below_content'],
         content: `
-          <div class="bg-blue-50 rounded-lg p-6 text-center mt-6">
-            <h3 class="text-lg font-semibold text-blue-900 mb-2">What's Next?</h3>
-            <p class="text-blue-800 text-sm">You'll receive an email confirmation shortly. Your order will be shipped within 1-2 business days.</p>
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-8 text-center mt-8">
+            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-blue-900 mb-2">What Happens Next?</h3>
+            <div class="flex flex-col md:flex-row justify-center gap-6 mt-6 text-sm">
+              <div class="flex items-center gap-2 text-blue-700"><span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">1</span> Confirmation email sent</div>
+              <div class="flex items-center gap-2 text-blue-700"><span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">2</span> Order processing (1-2 days)</div>
+              <div class="flex items-center gap-2 text-blue-700"><span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">3</span> Shipped with tracking</div>
+            </div>
           </div>
         `
       },
-      // Category page blocks (from category-config.js)
+      // ==================== CATEGORY PAGE BLOCKS ====================
       {
         identifier: 'category-promo-banner',
         title: 'Category Promo Banner',
         placement: ['category_above'],
         content: `
-          <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg text-center mb-4">
-            <span class="font-medium">🛍️ Shop this category and save up to 30% on select items!</span>
+          <div class="relative overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl p-6 mb-6">
+            <div class="absolute -right-12 -top-12 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="relative flex flex-col md:flex-row items-center justify-between gap-4">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                  <span class="text-3xl">🏷️</span>
+                </div>
+                <div>
+                  <h3 class="font-bold text-xl">Category Sale!</h3>
+                  <p class="text-white/80">Save up to 30% on select items in this collection</p>
+                </div>
+              </div>
+              <a href="#products" class="px-6 py-3 bg-white text-purple-600 font-semibold rounded-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap">
+                View Deals
+              </a>
+            </div>
           </div>
         `
       },
@@ -1411,8 +1539,14 @@ class DemoDataProvisioningService {
         title: 'Category Filter Tip',
         placement: ['category_above_products'],
         content: `
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600 mb-4">
-            <span class="font-medium">💡 Tip:</span> Use the filters on the left to narrow down your search and find exactly what you're looking for.
+          <div class="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+            </div>
+            <div>
+              <p class="text-amber-900 font-medium">Pro tip!</p>
+              <p class="text-amber-700 text-sm">Use the filters to narrow down your search and find exactly what you're looking for faster.</p>
+            </div>
           </div>
         `
       },
@@ -1421,9 +1555,13 @@ class DemoDataProvisioningService {
         title: 'Category Newsletter',
         placement: ['category_below_products'],
         content: `
-          <div class="bg-blue-50 border border-blue-100 rounded-lg p-6 text-center mt-6">
-            <h4 class="text-lg font-semibold text-blue-900 mb-2">Stay Updated</h4>
-            <p class="text-blue-700 text-sm">Subscribe to get notified about new arrivals and exclusive deals in this category.</p>
+          <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 mt-12 text-center">
+            <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-cyan-400 bg-cyan-400/10 rounded-full uppercase">Stay Updated</span>
+            <h3 class="text-2xl font-bold text-white mb-2">Love This Category?</h3>
+            <p class="text-slate-400 mb-6 max-w-md mx-auto">Get notified when we add new products and exclusive deals to this collection.</p>
+            <button class="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/25">
+              Notify Me
+            </button>
           </div>
         `
       },
@@ -1432,20 +1570,45 @@ class DemoDataProvisioningService {
         title: 'Category Help Banner',
         placement: ['category_below'],
         content: `
-          <div class="flex items-center justify-center gap-4 py-4 text-sm text-gray-600 mt-4">
-            <span>🤔 Need help choosing?</span>
-            <a href="/contact" class="text-blue-600 hover:underline font-medium">Contact our experts</a>
+          <div class="flex flex-col md:flex-row items-center justify-center gap-4 py-8 mt-8 border-t border-gray-200">
+            <div class="flex items-center gap-3 text-gray-600">
+              <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <span>Need help choosing the right product?</span>
+            </div>
+            <a href="/contact" class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+              Chat with Expert
+            </a>
           </div>
         `
       },
-      // Cart page blocks (from cart-config.js)
+      // ==================== CART PAGE BLOCKS ====================
       {
         identifier: 'cart-free-shipping',
         title: 'Cart Free Shipping Banner',
         placement: ['cart_above'],
         content: `
-          <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center mb-4">
-            <span class="text-green-800 font-medium">🚚 You're only $25 away from FREE shipping!</span>
+          <div class="relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-5 mb-6">
+            <div class="absolute -right-8 top-1/2 -translate-y-1/2 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="relative flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                </div>
+                <div>
+                  <p class="font-bold text-lg">Almost there!</p>
+                  <p class="text-white/80">Add $25 more for FREE shipping</p>
+                </div>
+              </div>
+              <div class="hidden md:block">
+                <div class="w-32 h-2 bg-white/30 rounded-full overflow-hidden">
+                  <div class="w-3/4 h-full bg-white rounded-full"></div>
+                </div>
+                <p class="text-xs text-white/70 mt-1 text-right">75% to free shipping</p>
+              </div>
+            </div>
           </div>
         `
       },
@@ -1454,8 +1617,17 @@ class DemoDataProvisioningService {
         title: 'Cart Promo Items',
         placement: ['cart_above_items'],
         content: `
-          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 mb-4">
-            <span class="font-medium">💡 Did you forget something?</span> Complete your look with our recommended accessories.
+          <div class="flex items-center gap-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span class="text-xl">💡</span>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-amber-900">Complete your order!</p>
+              <p class="text-sm text-amber-700">Customers who bought these items also loved our accessories collection.</p>
+            </div>
+            <a href="/products" class="hidden md:block px-4 py-2 text-sm font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors">
+              Browse
+            </a>
           </div>
         `
       },
@@ -1464,9 +1636,10 @@ class DemoDataProvisioningService {
         title: 'Cart Continue Shopping',
         placement: ['cart_below_items'],
         content: `
-          <div class="text-center py-4 border-t border-gray-100 mt-4">
-            <a href="/products" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-              ← Continue Shopping
+          <div class="flex items-center justify-center py-6 mt-4 border-t border-gray-100">
+            <a href="/products" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+              Continue Shopping
             </a>
           </div>
         `
@@ -1476,8 +1649,16 @@ class DemoDataProvisioningService {
         title: 'Cart Coupon Reminder',
         placement: ['cart_above_total'],
         content: `
-          <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm text-purple-800 mb-4">
-            <span class="font-medium">🎟️ Have a coupon?</span> Enter it at checkout to save more!
+          <div class="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-xl">🎟️</span>
+              </div>
+              <div>
+                <p class="font-medium text-violet-900">Have a promo code?</p>
+                <p class="text-sm text-violet-700">Enter it at checkout to unlock savings!</p>
+              </div>
+            </div>
           </div>
         `
       },
@@ -1486,11 +1667,22 @@ class DemoDataProvisioningService {
         title: 'Cart Payment Methods',
         placement: ['cart_below_total'],
         content: `
-          <div class="flex items-center justify-center gap-3 text-gray-400 text-sm mt-4">
-            <span>We accept:</span>
-            <span class="font-medium">Visa</span>
-            <span class="font-medium">Mastercard</span>
-            <span class="font-medium">PayPal</span>
+          <div class="py-4 mt-4 border-t border-gray-100">
+            <p class="text-xs text-gray-500 text-center mb-3">Secure payment methods</p>
+            <div class="flex items-center justify-center gap-3">
+              <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
+                <span class="text-xs font-bold text-gray-600">VISA</span>
+              </div>
+              <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
+                <span class="text-xs font-bold text-gray-600">MC</span>
+              </div>
+              <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
+                <span class="text-xs font-bold text-blue-600">Pay</span>
+              </div>
+              <div class="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
+                <span class="text-xs font-bold text-gray-600">AMEX</span>
+              </div>
+            </div>
           </div>
         `
       },
@@ -1499,10 +1691,27 @@ class DemoDataProvisioningService {
         title: 'Cart Trust Badges',
         placement: ['cart_below'],
         content: `
-          <div class="flex items-center justify-center gap-6 py-6 text-sm text-gray-500 mt-4 border-t border-gray-100">
-            <span class="flex items-center gap-1">🔒 Secure Checkout</span>
-            <span class="flex items-center gap-1">↩️ Easy Returns</span>
-            <span class="flex items-center gap-1">📞 24/7 Support</span>
+          <div class="bg-gray-50 rounded-xl p-6 mt-6">
+            <div class="flex flex-col md:flex-row items-center justify-center gap-6 text-sm">
+              <div class="flex items-center gap-2 text-gray-600">
+                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                </div>
+                <span>Secure Checkout</span>
+              </div>
+              <div class="flex items-center gap-2 text-gray-600">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" clip-rule="evenodd"></path></svg>
+                </div>
+                <span>30-Day Returns</span>
+              </div>
+              <div class="flex items-center gap-2 text-gray-600">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+                </div>
+                <span>24/7 Support</span>
+              </div>
+            </div>
           </div>
         `
       }
