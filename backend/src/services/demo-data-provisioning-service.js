@@ -1234,15 +1234,38 @@ class DemoDataProvisioningService {
     for (const block of blocks) {
       const blockId = uuidv4();
 
-      // Delete any existing block with same identifier (unique constraint on identifier+store_id)
-      const { error: deleteError } = await this.tenantDb
+      // First, find any existing block with the same identifier to delete its translations
+      const { data: existingBlock } = await this.tenantDb
         .from('cms_blocks')
-        .delete()
+        .select('id')
         .eq('store_id', this.storeId)
-        .eq('identifier', block.identifier);
+        .eq('identifier', block.identifier)
+        .maybeSingle();
 
-      if (deleteError) {
-        console.log(`[DemoData] Note: Could not delete existing block ${block.identifier}:`, deleteError.message);
+      if (existingBlock) {
+        console.log(`[DemoData] Found existing block ${block.identifier} (${existingBlock.id}), deleting translations first...`);
+
+        // Delete translations first (foreign key constraint)
+        const { error: transDeleteError } = await this.tenantDb
+          .from('cms_block_translations')
+          .delete()
+          .eq('cms_block_id', existingBlock.id);
+
+        if (transDeleteError) {
+          console.log(`[DemoData] Note: Could not delete block translations:`, transDeleteError.message);
+        }
+
+        // Now delete the block
+        const { error: deleteError } = await this.tenantDb
+          .from('cms_blocks')
+          .delete()
+          .eq('id', existingBlock.id);
+
+        if (deleteError) {
+          console.log(`[DemoData] Note: Could not delete existing block ${block.identifier}:`, deleteError.message);
+        } else {
+          console.log(`[DemoData] Deleted existing block ${block.identifier}`);
+        }
       }
 
       const { data: blockData, error: blockError } = await this.tenantDb
