@@ -52,12 +52,30 @@ class CategoryMappingService {
     if (categoryIds.length > 0) {
       const { data: categories } = await tenantDb
         .from('categories')
-        .select('id, name, slug, parent_id')
+        .select('id, slug, parent_id')
         .in('id', categoryIds);
+
+      // Fetch translations for category names
+      const { data: translations } = await tenantDb
+        .from('category_translations')
+        .select('category_id, name')
+        .in('category_id', categoryIds)
+        .eq('language_code', 'en');
+
+      // Build translations map
+      const translationsMap = {};
+      if (translations) {
+        for (const t of translations) {
+          translationsMap[t.category_id] = t.name;
+        }
+      }
 
       if (categories) {
         for (const cat of categories) {
-          categoriesMap[cat.id] = cat;
+          categoriesMap[cat.id] = {
+            ...cat,
+            name: translationsMap[cat.id] || cat.slug
+          };
         }
       }
     }
@@ -85,7 +103,7 @@ class CategoryMappingService {
 
     const { data: categories, error } = await tenantDb
       .from('categories')
-      .select('id, name, slug, parent_id, level, path')
+      .select('id, slug, parent_id, level, path')
       .eq('store_id', this.storeId)
       .eq('is_active', true)
       .order('path', { ascending: true });
@@ -95,7 +113,31 @@ class CategoryMappingService {
       throw error;
     }
 
-    return categories || [];
+    if (!categories || categories.length === 0) {
+      return [];
+    }
+
+    // Fetch translations for category names
+    const categoryIds = categories.map(c => c.id);
+    const { data: translations } = await tenantDb
+      .from('category_translations')
+      .select('category_id, name')
+      .in('category_id', categoryIds)
+      .eq('language_code', 'en');
+
+    // Build translations map
+    const translationsMap = {};
+    if (translations) {
+      for (const t of translations) {
+        translationsMap[t.category_id] = t.name;
+      }
+    }
+
+    // Attach names to categories
+    return categories.map(cat => ({
+      ...cat,
+      name: translationsMap[cat.id] || cat.slug
+    }));
   }
 
   /**
@@ -166,15 +208,36 @@ class CategoryMappingService {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
     // Get all store categories
-    const { data: storeCategories } = await tenantDb
+    const { data: categories } = await tenantDb
       .from('categories')
-      .select('id, name, slug, parent_id')
+      .select('id, slug, parent_id')
       .eq('store_id', this.storeId)
       .eq('is_active', true);
 
-    if (!storeCategories || storeCategories.length === 0) {
+    if (!categories || categories.length === 0) {
       return null;
     }
+
+    // Fetch translations for category names
+    const categoryIds = categories.map(c => c.id);
+    const { data: translations } = await tenantDb
+      .from('category_translations')
+      .select('category_id, name')
+      .in('category_id', categoryIds)
+      .eq('language_code', 'en');
+
+    // Build translations map and add names to categories
+    const translationsMap = {};
+    if (translations) {
+      for (const t of translations) {
+        translationsMap[t.category_id] = t.name;
+      }
+    }
+
+    const storeCategories = categories.map(cat => ({
+      ...cat,
+      name: translationsMap[cat.id] || cat.slug
+    }));
 
     // Normalize for comparison
     const normalizedCode = (code || '').toLowerCase().replace(/[-_]/g, '');
