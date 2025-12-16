@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp, Settings, Sparkles } from 'lucide-react';
 import apiClient from '../../utils/api';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 /**
  * CategoryMappingPanel - Reusable component for mapping external categories to store categories
@@ -31,6 +32,7 @@ const CategoryMappingPanel = ({
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Fetch mappings from API
   const fetchMappings = useCallback(async () => {
@@ -119,7 +121,7 @@ const CategoryMappingPanel = ({
       }
     } catch (error) {
       console.error('Error syncing categories:', error);
-      alert('Failed to sync categories: ' + error.message);
+      setFlashMessage({ type: 'error', message: 'Failed to sync categories: ' + error.message });
     } finally {
       setSyncing(false);
     }
@@ -222,6 +224,7 @@ const CategoryMappingPanel = ({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Header */}
       <div
         className="px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer"
