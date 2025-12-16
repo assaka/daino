@@ -854,11 +854,11 @@ export default function Stores() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-900 font-medium mb-2">Warning</p>
-              <p className="text-sm text-amber-800">
-                This will clear ALL existing data in your store and replace it with demo content.
-                This action cannot be undone.
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900 font-medium mb-2">Your data is safe</p>
+              <p className="text-sm text-blue-800">
+                Demo content will be added to your store. You can revert this action later
+                without losing any data you've manually added.
               </p>
             </div>
 
