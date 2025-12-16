@@ -52,7 +52,6 @@ class EventBus {
 
       // Check for duplicate events (idempotency)
       if (this.isDuplicate(idempotencyKey)) {
-        console.log(`[EVENT BUS] Duplicate event detected: ${idempotencyKey}`);
         return {
           success: true,
           eventId: this.processedEvents.get(idempotencyKey),
@@ -81,7 +80,6 @@ class EventBus {
 
       // Check queue size limit
       if (this.eventQueue.length >= this.config.maxQueueSize) {
-        console.error('[EVENT BUS] Queue size limit reached. Dropping low priority events.');
         this.dropLowPriorityEvents();
       }
 
@@ -90,8 +88,6 @@ class EventBus {
 
       // Mark as seen (for deduplication)
       this.processedEvents.set(idempotencyKey, eventId);
-
-      console.log(`[EVENT BUS] Event queued: ${eventType} (${eventId})`);
 
       // Trigger batch processing if needed
       this.scheduleBatchProcessing();
@@ -103,12 +99,6 @@ class EventBus {
         correlationId
       };
     } catch (error) {
-      console.error('[EVENT BUS] Error publishing event:', {
-        error: error.message,
-        eventType,
-        stack: error.stack
-      });
-
       return {
         success: false,
         error: error.message
@@ -140,7 +130,6 @@ class EventBus {
       // Sort handlers by priority (higher priority first)
       this.subscribers.get(type).sort((a, b) => b.priority - a.priority);
 
-      console.log(`[EVENT BUS] Subscribed to ${type}: ${options.name || 'anonymous'}`);
     });
   }
 
@@ -199,8 +188,6 @@ class EventBus {
     const batchSize = Math.min(this.config.batchSize, this.eventQueue.length);
     const batch = this.eventQueue.splice(0, batchSize);
 
-    console.log(`[EVENT BUS] Processing batch of ${batch.length} events`);
-
     // Group events by type for batch handlers
     const eventsByType = new Map();
     const individualEvents = [];
@@ -247,13 +234,7 @@ class EventBus {
     for (const handlerInfo of batchHandlers) {
       try {
         await handlerInfo.handler(events);
-        console.log(`[EVENT BUS] Batch processed by ${handlerInfo.name}: ${events.length} ${eventType} events`);
       } catch (error) {
-        console.error(`[EVENT BUS] Batch handler error (${handlerInfo.name}):`, {
-          error: error.message,
-          eventType,
-          count: events.length
-        });
 
         // Re-queue events for retry
         events.forEach(event => {
@@ -261,7 +242,6 @@ class EventBus {
             event.metadata.retryCount++;
             this.eventQueue.push(event);
           } else {
-            console.error(`[EVENT BUS] Max retries exceeded for event ${event.id}`);
           }
         });
       }
@@ -276,7 +256,6 @@ class EventBus {
     const individualHandlers = handlers.filter(h => !h.batchHandler);
 
     if (individualHandlers.length === 0) {
-      console.warn(`[EVENT BUS] No handlers for event type: ${event.type}`);
       return;
     }
 
@@ -299,8 +278,6 @@ class EventBus {
         )
       );
 
-      console.log(`[EVENT BUS] Event processed: ${event.type} (${event.id})`);
-
       // Remove from processing queue
       this.processingQueue.delete(event.id);
     } catch (error) {
@@ -308,18 +285,11 @@ class EventBus {
       if (retryCount < this.config.maxRetries) {
         const backoffDelay = this.config.retryDelay * Math.pow(2, retryCount);
 
-        console.warn(`[EVENT BUS] Retrying event ${event.id} in ${backoffDelay}ms (attempt ${retryCount + 1}/${this.config.maxRetries})`);
-
         setTimeout(() => {
           event.metadata.retryCount = retryCount + 1;
           this.processEvent(event, retryCount + 1);
         }, backoffDelay);
       } else {
-        console.error(`[EVENT BUS] Max retries exceeded for event ${event.id}. Event dropped.`, {
-          eventType: event.type,
-          error: error.message
-        });
-
         this.processingQueue.delete(event.id);
       }
     }
@@ -384,8 +354,6 @@ class EventBus {
         this.eventQueue.splice(index, 1);
       }
     }
-
-    console.warn(`[EVENT BUS] Dropped ${dropCount} low priority events due to queue overflow`);
   }
 
   /**
@@ -416,8 +384,6 @@ class EventBus {
           this.processedEvents.delete(key);
         }
       }
-
-      console.log(`[EVENT BUS] Cleanup complete. Processed events cache size: ${this.processedEvents.size}`);
     }, 60000); // Run every minute
   }
 
@@ -440,13 +406,9 @@ class EventBus {
    * Useful for graceful shutdown
    */
   async flush() {
-    console.log('[EVENT BUS] Flushing event queue...');
-
     while (this.eventQueue.length > 0) {
       await this.processBatch();
     }
-
-    console.log('[EVENT BUS] Queue flushed');
   }
 }
 

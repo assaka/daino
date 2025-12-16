@@ -152,7 +152,6 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
 
   sensitiveFields.forEach(field => {
     if (decrypted[field] && typeof decrypted[field] === 'string' && decrypted[field].startsWith('encrypted:')) {
-      console.log(`🔐 Attempting to decrypt field: ${field}`);
 
       try {
         const encryptedValue = decrypted[field].replace('encrypted:', '');
@@ -161,19 +160,15 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
 
         // Handle double encryption (legacy issue)
         if (decryptedValue.startsWith('encrypted:')) {
-          console.warn(`Field ${field} appears to be double-encrypted, fixing...`);
           try {
             const encryptedValue2 = decryptedValue.replace('encrypted:', '');
             decryptedValue = decryptLegacy(encryptedValue2, key);
           } catch (doubleDecryptError) {
-            console.error(`Failed to decrypt double-encrypted field ${field}:`, doubleDecryptError.message);
           }
         }
 
         decrypted[field] = decryptedValue;
-        console.log(`✅ Successfully decrypted field: ${field} (length: ${decryptedValue.length})`);
       } catch (error) {
-        console.error(`❌ Failed to decrypt field ${field}:`, error.message);
         // Keep encrypted value if decryption fails
       }
     }
@@ -273,25 +268,13 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
       return null;
     }
 
-    console.log('🔍 findByStoreAndType raw data:', {
-      storeId,
-      integrationType,
-      rawConfigData: data.config_data,
-      rawConfigDataType: typeof data.config_data
-    });
-
     // Ensure we have the id field
     if (!data.id) {
-      console.error('IntegrationConfig data missing id field:', data);
       throw new Error('Integration config data is missing required id field');
     }
 
     // Decrypt sensitive data before returning
     const decryptedConfigData = IntegrationConfig.decryptSensitiveData(data.config_data, integrationType);
-    console.log('🔍 findByStoreAndType decrypted data:', {
-      decryptedConfigData,
-      decryptedConfigDataType: typeof decryptedConfigData
-    });
 
     const decryptedData = {
       ...data,
