@@ -1734,14 +1734,15 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
       } else if (source === 'shopify') {
         // Fetch from Shopify
         const shopifyIntegration = require('../services/shopify-integration');
-        const credentials = await shopifyIntegration.getShopifyCredentials(storeId);
+        const accessToken = await shopifyIntegration.getAccessToken(storeId);
+        const shopDomain = await shopifyIntegration.getShopDomain(storeId);
 
-        if (!credentials) {
+        if (!accessToken || !shopDomain) {
           return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
         }
 
         const ShopifyClient = require('../services/shopify-client');
-        const client = new ShopifyClient(credentials.shopDomain, credentials.accessToken);
+        const client = new ShopifyClient(shopDomain, accessToken);
 
         const collectionsData = await client.getAllCollections();
         const allCollections = collectionsData.all || [];

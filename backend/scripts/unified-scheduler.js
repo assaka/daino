@@ -349,8 +349,8 @@ async function executeWebhook(cronJob) {
  */
 function calculateNextRun(cronExpression, timezone = 'UTC') {
   try {
-    const cronParser = require('cron-parser');
-    const interval = cronParser.parseExpression(cronExpression, {
+    const { parseExpression } = require('cron-parser');
+    const interval = parseExpression(cronExpression, {
       currentDate: new Date(),
       tz: timezone
     });
