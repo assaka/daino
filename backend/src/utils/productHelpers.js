@@ -361,6 +361,12 @@ async function fetchProductImages(productIds, tenantDb) {
       .eq('file_type', 'image')
       .order('position', { ascending: true });
 
+    // Debug logging
+    console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
+    if (filesError) {
+      console.error('🖼️ fetchProductImages error:', filesError);
+    }
+
     // Group images by product_id from product_files
     const imagesByProduct = {};
     if (!filesError && files && files.length > 0) {
