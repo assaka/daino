@@ -609,6 +609,9 @@ class DemoDataProvisioningService {
    * Create attribute values for a product based on its attribute set
    */
   async createProductAttributeValues(productId, attrSetCode) {
+    console.log(`[DemoData] createProductAttributeValues called for product ${productId}, attrSetCode: ${attrSetCode}`);
+    console.log(`[DemoData] Available attributes: ${this.createdIds.attributes.length}, values: ${this.createdIds.attributeValues.length}`);
+
     // Get random attribute values to assign
     const brandAttr = this.createdIds.attributes.find(a => a.code === 'brand');
     const colorAttr = this.createdIds.attributes.find(a => a.code === 'color');
@@ -616,12 +619,16 @@ class DemoDataProvisioningService {
     const materialAttr = this.createdIds.attributes.find(a => a.code === 'material');
     const warrantyAttr = this.createdIds.attributes.find(a => a.code === 'warranty');
 
+    console.log(`[DemoData] Found attrs - brand: ${!!brandAttr}, color: ${!!colorAttr}, size: ${!!sizeAttr}, material: ${!!materialAttr}, warranty: ${!!warrantyAttr}`);
+
     // Get random values for each attribute
     const brandValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'brand');
     const colorValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'color');
     const sizeValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'size');
     const materialValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'material');
     const warrantyValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'warranty');
+
+    console.log(`[DemoData] Found values - brand: ${brandValues.length}, color: ${colorValues.length}, size: ${sizeValues.length}, material: ${materialValues.length}, warranty: ${warrantyValues.length}`);
 
     const attributesToAssign = [];
 
@@ -685,6 +692,8 @@ class DemoDataProvisioningService {
     }
 
     // Insert all attribute values
+    console.log(`[DemoData] Inserting ${attributesToAssign.length} attribute values for product ${productId}`);
+
     for (const attrValue of attributesToAssign) {
       const { error } = await this.tenantDb
         .from('product_attribute_values')
@@ -694,6 +703,8 @@ class DemoDataProvisioningService {
         console.error(`[DemoData] Error creating product attribute value:`, error);
       }
     }
+
+    console.log(`[DemoData] Successfully created ${attributesToAssign.length} attribute values for product ${productId}`);
   }
 
   /**

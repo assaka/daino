@@ -472,10 +472,16 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     // Load product attributes - skip if fails to not break product page
     productData.attributes = [];
     try {
-      const { data: pavs } = await tenantDb
+      console.log(`📊 [ProductDetail] Loading attributes for product ${product.id}`);
+      const { data: pavs, error: pavError } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .eq('product_id', product.id);
+
+      console.log(`📊 [ProductDetail] Found ${pavs?.length || 0} product_attribute_values`);
+      if (pavError) {
+        console.error(`📊 [ProductDetail] Error loading pavs:`, pavError);
+      }
 
       if (pavs && pavs.length > 0) {
         const attributeIds = [...new Set(pavs.map(pav => pav.attribute_id))];

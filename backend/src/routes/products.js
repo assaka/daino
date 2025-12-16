@@ -65,7 +65,16 @@ router.get('/', authAdmin, async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Apply images from product_files table
+    console.log(`🖼️ Admin Products: Fetching images for ${rows.length} products`);
+    console.log(`🖼️ Admin Products: First 3 product IDs:`, rows.slice(0, 3).map(p => p.id));
     let products = await applyProductImages(rows, tenantDb);
+
+    // Debug: Check how many products got images
+    const productsWithImages = products.filter(p => p.images && p.images.length > 0);
+    console.log(`🖼️ Admin Products: ${productsWithImages.length}/${products.length} products have images`);
+    if (products.length > 0 && products[0].images) {
+      console.log(`🖼️ Admin Products: First product images:`, JSON.stringify(products[0].images.slice(0, 2)));
+    }
 
     // Apply all translations if requested (for admin translation management)
     if (include_all_translations === 'true') {
