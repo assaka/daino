@@ -202,7 +202,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                 <SelectItem value="text">Text Content</SelectItem>
                 <SelectItem value="description">Product Description</SelectItem>
                 <SelectItem value="attributes">Specific Attributes</SelectItem>
-                <SelectItem value="attribute_sets">Attribute Sets</SelectItem>
+                <SelectItem value="attribute_set">Product Attributes</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-sm text-gray-500 mt-1">
@@ -273,29 +273,10 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
             </div>
           )}
 
-          {formData.tab_type === 'attribute_sets' && (
-            <div>
-              <Label>Select Attribute Sets</Label>
-              <div className="grid grid-cols-1 gap-3 mt-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                {attributeSets.length > 0 ? (
-                  attributeSets.map((attributeSet) => (
-                    <div key={attributeSet.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`set-${attributeSet.id}`}
-                        checked={formData.attribute_set_ids.includes(attributeSet.id)}
-                        onCheckedChange={(checked) => handleArrayChange("attribute_set_ids", attributeSet.id, checked)}
-                      />
-                      <Label htmlFor={`set-${attributeSet.id}`} className="text-sm cursor-pointer">
-                        {attributeSet.name}
-                      </Label>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">No attribute sets available</p>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                All attributes from selected sets will be displayed in this tab for each product
+          {(formData.tab_type === 'attribute_set' || formData.tab_type === 'attribute_sets') && (
+            <div className="bg-blue-50 p-4 rounded-md">
+              <p className="text-sm text-blue-800">
+                This tab will automatically display all attributes from the product's attribute set. No additional configuration needed.
               </p>
             </div>
           )}

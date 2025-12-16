@@ -31,7 +31,7 @@ const ProductTab = sequelize.define('ProductTab', {
     defaultValue: 'text',
     allowNull: false,
     validate: {
-      isIn: [['text', 'description', 'attributes', 'attribute_sets']]
+      isIn: [['text', 'description', 'attributes', 'attribute_set', 'attribute_sets']] // attribute_sets kept for backward compat
     }
   },
   content: {

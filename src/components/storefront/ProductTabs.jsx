@@ -97,26 +97,11 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       });
     }
 
-    // For "attribute_sets" tab type, show all attributes if product's attribute_set_id matches
-    if (activeTab?.tab_type === 'attribute_sets') {
-      const tabAttributeSetIds = activeTab?.attribute_set_ids || [];
-      console.log('📊 Specifications tab - tabAttributeSetIds:', tabAttributeSetIds, 'type:', typeof tabAttributeSetIds[0]);
-      console.log('📊 Specifications tab - product.attribute_set_id:', product?.attribute_set_id, 'type:', typeof product?.attribute_set_id);
-      console.log('📊 Specifications tab - product.attributes:', product?.attributes);
-      console.log('📊 Specifications tab - attributesArray count:', attributesArray.length);
-
-      // If tab has attribute_set_ids and product has attribute_set_id, check for match
-      if (tabAttributeSetIds.length > 0 && product?.attribute_set_id) {
-        // If product's attribute set is not in the tab's allowed sets, show nothing
-        if (!tabAttributeSetIds.includes(product.attribute_set_id)) {
-          console.log('📊 Specifications tab - attribute_set_id NOT in allowed list, clearing attributes');
-          attributesArray = [];
-        } else {
-          console.log('📊 Specifications tab - attribute_set_id IS in allowed list, showing all attributes');
-        }
-      } else {
-        console.log('📊 Specifications tab - No filtering: tabAttributeSetIds.length=', tabAttributeSetIds.length, 'product.attribute_set_id=', product?.attribute_set_id);
-      }
+    // For "attribute_set" tab type, show all product attributes (uses product's attribute set)
+    // Also support legacy "attribute_sets" for backward compatibility
+    if (activeTab?.tab_type === 'attribute_set' || activeTab?.tab_type === 'attribute_sets') {
+      // Simply show all attributes the product has - no filtering needed
+      console.log('📊 Attribute set tab - showing all product attributes:', attributesArray.length);
     }
 
     if (!attributesArray || attributesArray.length === 0) {
