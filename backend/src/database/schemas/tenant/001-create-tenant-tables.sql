@@ -2636,7 +2636,7 @@ CREATE TABLE IF NOT EXISTS product_files (
   title TEXT,
   file_size INTEGER, -- bytes
   mime_type VARCHAR(100),
-  metadata JSONB DEFAULT '{}', -- Extra data: width, height, duration, shopify_id, akeneo_code, thumbnail_url, etc.
+  metadata JSONB DEFAULT '{}', -- Extra data: width, height, duration, shopify_id, thumbnail_url, etc.
   store_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -3212,8 +3212,6 @@ CREATE INDEX IF NOT EXISTS idx_blacklist_ips_store_ip ON blacklist_ips USING btr
 CREATE INDEX IF NOT EXISTS idx_blacklist_settings_store ON blacklist_settings USING btree (store_id);
 
 CREATE INDEX IF NOT EXISTS idx_categories_active_menu ON categories USING btree (store_id, is_active, hide_in_menu, sort_order) WHERE ((is_active = true) AND (hide_in_menu = false));
-
-CREATE INDEX IF NOT EXISTS idx_categories_akeneo_code ON categories USING btree (akeneo_code);
 
 CREATE INDEX IF NOT EXISTS idx_categories_hide_in_menu ON categories USING btree (hide_in_menu);
 
