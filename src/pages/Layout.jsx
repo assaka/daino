@@ -723,6 +723,21 @@ function LayoutInner({ children, currentPageName }) {
               {currentPageName === 'Dashboard' && <ChevronRight className="w-4 h-4 ml-auto" />}
             </Link>
 
+            <Link
+                to="/admin/stores"
+                className={`flex items-center space-x-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname === '/admin/stores'
+                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setSidebarOpen(false)}
+            >
+              <ShoppingBag className="w-5 h-5" />
+              <span className="flex-1">Stores</span>
+              {location.pathname === '/admin/stores' && <ChevronRight className="w-4 h-4 ml-auto" />}
+            </Link>
+
+
             {/* Manage Navigation Meta-Tool */}
             <Link
               to="/admin/navigation-manager"
