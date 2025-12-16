@@ -1176,11 +1176,27 @@ class DemoDataProvisioningService {
       }
     ];
 
+    console.log(`[DemoData] Creating ${pages.length} CMS pages...`);
+    let pagesCreated = 0;
+
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i];
       const pageId = uuidv4();
 
-      await this.tenantDb
+      // Check if page with same slug already exists - skip if so
+      const { data: existingPage } = await this.tenantDb
+        .from('cms_pages')
+        .select('id')
+        .eq('store_id', this.storeId)
+        .eq('slug', page.slug)
+        .maybeSingle();
+
+      if (existingPage) {
+        console.log(`[DemoData] CMS page ${page.slug} already exists, skipping...`);
+        continue;
+      }
+
+      const { error: pageError } = await this.tenantDb
         .from('cms_pages')
         .insert({
           id: pageId,
@@ -1192,7 +1208,12 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      await this.tenantDb
+      if (pageError) {
+        console.error(`[DemoData] Error creating CMS page ${page.slug}:`, pageError);
+        continue;
+      }
+
+      const { error: transError } = await this.tenantDb
         .from('cms_page_translations')
         .insert({
           cms_page_id: pageId,
@@ -1201,7 +1222,16 @@ class DemoDataProvisioningService {
           content: page.content,
           demo: true
         });
+
+      if (transError) {
+        console.error(`[DemoData] Error creating CMS page translation ${page.slug}:`, transError);
+      } else {
+        pagesCreated++;
+        console.log(`[DemoData] Created CMS page: ${page.slug}`);
+      }
     }
+
+    console.log(`[DemoData] CMS pages created: ${pagesCreated}/${pages.length}`);
 
     // Create CMS blocks
     const blocks = [
