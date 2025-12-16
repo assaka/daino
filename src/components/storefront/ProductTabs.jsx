@@ -42,8 +42,9 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       let translatedContent = tab.content || '';
 
       // For description tab_type, use product.description if no content is set
-      if (tab.tab_type === 'description' && !translatedContent && product?.description) {
-        translatedContent = product.description;
+      if (tab.tab_type === 'description' && !translatedContent) {
+        translatedContent = product?.description || '';
+        console.log('📝 Description tab - product.description:', product?.description ? 'HAS VALUE' : 'EMPTY', 'content set to:', translatedContent ? 'HAS VALUE' : 'EMPTY');
       }
 
       return {
@@ -99,18 +100,25 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     // For "attribute_sets" tab type, show all attributes if product's attribute_set_id matches
     if (activeTab?.tab_type === 'attribute_sets') {
       const tabAttributeSetIds = activeTab?.attribute_set_ids || [];
+      console.log('📊 Specifications tab - tabAttributeSetIds:', tabAttributeSetIds);
+      console.log('📊 Specifications tab - product.attribute_set_id:', product?.attribute_set_id);
+      console.log('📊 Specifications tab - product.attributes count:', attributesArray.length);
+
       // If tab has attribute_set_ids and product has attribute_set_id, check for match
       if (tabAttributeSetIds.length > 0 && product?.attribute_set_id) {
         // If product's attribute set is not in the tab's allowed sets, show nothing
         if (!tabAttributeSetIds.includes(product.attribute_set_id)) {
+          console.log('📊 Specifications tab - attribute_set_id NOT in allowed list, clearing attributes');
           attributesArray = [];
+        } else {
+          console.log('📊 Specifications tab - attribute_set_id IS in allowed list, showing all attributes');
         }
-        // Otherwise, show all product attributes (no filtering)
       }
       // If no attribute_set_ids specified, show all attributes
     }
 
     if (!attributesArray || attributesArray.length === 0) {
+      console.log('📊 No attributes to display');
       attributesContainers.forEach(container => {
         container.innerHTML = '<p class="text-gray-500">No specifications available for this product.</p>';
       });

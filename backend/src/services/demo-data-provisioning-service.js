@@ -1223,13 +1223,16 @@ class DemoDataProvisioningService {
     for (const block of blocks) {
       const blockId = uuidv4();
 
-      // Use upsert behavior - first try to delete any existing block with same identifier
-      await this.tenantDb
+      // Delete any existing block with same identifier (unique constraint on identifier+store_id)
+      const { error: deleteError } = await this.tenantDb
         .from('cms_blocks')
         .delete()
         .eq('store_id', this.storeId)
-        .eq('identifier', block.identifier)
-        .eq('demo', true);
+        .eq('identifier', block.identifier);
+
+      if (deleteError) {
+        console.log(`[DemoData] Note: Could not delete existing block ${block.identifier}:`, deleteError.message);
+      }
 
       const { data: blockData, error: blockError } = await this.tenantDb
         .from('cms_blocks')
