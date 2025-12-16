@@ -225,6 +225,7 @@ const AkeneoIntegration = () => {
   const [fetchingCategories, setFetchingCategories] = useState(false);
   const [showCategoryImportResult, setShowCategoryImportResult] = useState(true);
   const [categoryMappingKey, setCategoryMappingKey] = useState(0);
+  const [categoryMappingStats, setCategoryMappingStats] = useState({ total: 0, mapped: 0, unmapped: 0 });
 
   // Progress tracking for import operations
   const [importProgress, setImportProgress] = useState({
@@ -1684,15 +1685,41 @@ const AkeneoIntegration = () => {
     toast.error(`Import failed: ${job.error || 'Unknown error'}`);
   }, []);
 
-  // Fetch categories from Akeneo to category mappings
+  // Fetch category mapping stats
+  const fetchCategoryMappingStats = async () => {
+    try {
+      const response = await apiClient.get('/integrations/category-mappings/akeneo');
+      if (response.success) {
+        setCategoryMappingStats(response.stats || { total: 0, mapped: 0, unmapped: 0 });
+      }
+    } catch (error) {
+      console.error('Error fetching category mapping stats:', error);
+    }
+  };
+
+  // Fetch mapping stats on mount
+  useEffect(() => {
+    if (selectedStore?.id) {
+      fetchCategoryMappingStats();
+    }
+  }, [selectedStore?.id]);
+
+  // Fetch categories from Akeneo to category mappings (with filters)
   const handleFetchCategories = async () => {
     setFetchingCategories(true);
     setShowCategoryImportResult(false); // Hide import result
     try {
-      const response = await apiClient.post('/integrations/category-mappings/akeneo/sync', {});
+      // Pass selected root categories as filters
+      const filters = selectedRootCategories.length > 0
+        ? { rootCategories: selectedRootCategories }
+        : {};
+
+      const response = await apiClient.post('/integrations/category-mappings/akeneo/sync', { filters });
       if (response.success) {
         // Force refresh the CategoryMappingPanel by changing its key
         setCategoryMappingKey(prev => prev + 1);
+        // Refresh mapping stats
+        await fetchCategoryMappingStats();
         setFlashMessage({
           type: 'success',
           text: response.message || 'Categories fetched successfully'
@@ -1711,6 +1738,45 @@ const AkeneoIntegration = () => {
       });
     } finally {
       setFetchingCategories(false);
+    }
+  };
+
+  // Import categories from integration_category_mappings to categories table
+  const handleImportFromMappings = async () => {
+    setImporting(true);
+    setShowCategoryImportResult(false);
+    try {
+      const response = await apiClient.post('/integrations/category-mappings/akeneo/create-from-unmapped', {});
+      if (response.success) {
+        setCategoryMappingKey(prev => prev + 1);
+        // Refresh mapping stats after import
+        await fetchCategoryMappingStats();
+        setShowCategoryImportResult(true);
+        setImportResults({
+          categories: {
+            imported: response.results?.created || 0,
+            failed: response.results?.failed || 0,
+            total: (response.results?.created || 0) + (response.results?.failed || 0)
+          }
+        });
+        setFlashMessage({
+          type: 'success',
+          text: response.message || 'Categories imported successfully'
+        });
+      } else {
+        setFlashMessage({
+          type: 'error',
+          text: response.message || 'Failed to import categories'
+        });
+      }
+    } catch (error) {
+      console.error('Error importing categories:', error);
+      setFlashMessage({
+        type: 'error',
+        text: error.message || 'Failed to import categories'
+      });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -3013,22 +3079,20 @@ const AkeneoIntegration = () => {
                     {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
                   </Button>
 
-                  <Button
-                    onClick={importCategories}
-                    disabled={importing || !connectionStatus?.success || selectedRootCategories.length === 0}
-                    className="flex items-center gap-2"
-                  >
-                    {importing ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4" />
-                    )}
-                    {importing ? (
-                      importProgress.categories.isActive && importProgress.categories.total > 0
-                        ? `Importing... ${importProgress.categories.current}/${importProgress.categories.total}`
-                        : 'Importing...'
-                    ) : 'Import Categories'}
-                  </Button>
+                  {categoryMappingStats.unmapped > 0 && (
+                    <Button
+                      onClick={handleImportFromMappings}
+                      disabled={importing || !connectionStatus?.success}
+                      className="flex items-center gap-2"
+                    >
+                      {importing ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      {importing ? 'Importing...' : `Import ${categoryMappingStats.unmapped} Categories`}
+                    </Button>
+                  )}
 
                   {availableCategories.length > 0 && !loadingCategories && (
                     <Button

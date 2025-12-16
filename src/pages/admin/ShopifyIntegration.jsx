@@ -72,6 +72,8 @@ const ShopifyIntegration = () => {
   const [fetchingCategories, setFetchingCategories] = useState(false);
   const [showCollectionImportResult, setShowCollectionImportResult] = useState(true);
   const [categoryMappingKey, setCategoryMappingKey] = useState(0); // To force refresh
+  const [categoryMappingStats, setCategoryMappingStats] = useState({ total: 0, mapped: 0, unmapped: 0 });
+  const [importingFromMappings, setImportingFromMappings] = useState(false);
 
   // Scheduled imports state
   const [schedules, setSchedules] = useState([]);
@@ -399,6 +401,25 @@ const ShopifyIntegration = () => {
     });
   }, []);
 
+  // Fetch category mapping stats
+  const fetchCategoryMappingStats = async () => {
+    try {
+      const response = await apiClient.get('/integrations/category-mappings/shopify');
+      if (response.success) {
+        setCategoryMappingStats(response.stats || { total: 0, mapped: 0, unmapped: 0 });
+      }
+    } catch (error) {
+      console.error('Error fetching category mapping stats:', error);
+    }
+  };
+
+  // Fetch mapping stats when store changes
+  useEffect(() => {
+    if (storeId && storeId !== 'undefined') {
+      fetchCategoryMappingStats();
+    }
+  }, [storeId]);
+
   // Fetch categories from Shopify to category mappings
   const handleFetchCategories = async () => {
     setFetchingCategories(true);
@@ -408,24 +429,65 @@ const ShopifyIntegration = () => {
       if (response.success) {
         // Force refresh the CategoryMappingPanel by changing its key
         setCategoryMappingKey(prev => prev + 1);
+        // Refresh mapping stats
+        await fetchCategoryMappingStats();
         setFlashMessage({
           type: 'success',
-          text: response.message || 'Categories fetched successfully'
+          text: response.message || 'Collections fetched successfully'
         });
       } else {
         setFlashMessage({
           type: 'error',
-          text: response.message || 'Failed to fetch categories'
+          text: response.message || 'Failed to fetch collections'
         });
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Error fetching collections:', error);
       setFlashMessage({
         type: 'error',
-        text: error.message || 'Failed to fetch categories'
+        text: error.message || 'Failed to fetch collections'
       });
     } finally {
       setFetchingCategories(false);
+    }
+  };
+
+  // Import categories from integration_category_mappings to categories table
+  const handleImportFromMappings = async () => {
+    setImportingFromMappings(true);
+    setShowCollectionImportResult(false);
+    try {
+      const response = await apiClient.post('/integrations/category-mappings/shopify/create-from-unmapped', {});
+      if (response.success) {
+        setCategoryMappingKey(prev => prev + 1);
+        // Refresh mapping stats after import
+        await fetchCategoryMappingStats();
+        setShowCollectionImportResult(true);
+        setImportStats({
+          collections: {
+            imported: response.results?.created || 0,
+            failed: response.results?.failed || 0,
+            total: (response.results?.created || 0) + (response.results?.failed || 0)
+          }
+        });
+        setFlashMessage({
+          type: 'success',
+          text: response.message || 'Collections imported successfully'
+        });
+      } else {
+        setFlashMessage({
+          type: 'error',
+          text: response.message || 'Failed to import collections'
+        });
+      }
+    } catch (error) {
+      console.error('Error importing collections:', error);
+      setFlashMessage({
+        type: 'error',
+        text: error.message || 'Failed to import collections'
+      });
+    } finally {
+      setImportingFromMappings(false);
     }
   };
 
@@ -1289,39 +1351,22 @@ const ShopifyIntegration = () => {
                       className="flex items-center gap-2"
                     >
                       <Download className={`w-4 h-4 ${fetchingCategories ? 'animate-pulse' : ''}`} />
-                      {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
+                      {fetchingCategories ? 'Fetching...' : 'Fetch Collections'}
                     </Button>
 
-                    <Button
-                      onClick={() => {
-                        importData('collections');
-                        setShowCollectionImportResult(true);
-                      }}
-                      disabled={loading}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Package className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                      {loading ? 'Importing...' : 'Import Collections'}
-                    </Button>
+                    {categoryMappingStats.unmapped > 0 && (
+                      <Button
+                        onClick={handleImportFromMappings}
+                        disabled={importingFromMappings}
+                        className="flex items-center gap-2"
+                      >
+                        <Package className={`w-4 h-4 ${importingFromMappings ? 'animate-spin' : ''}`} />
+                        {importingFromMappings ? 'Importing...' : `Import ${categoryMappingStats.unmapped} Collections`}
+                      </Button>
+                    )}
                   </div>
 
-                  {/* Dry Run Toggle */}
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label htmlFor="dry-run-collections" className="font-medium text-sm">Dry Run Mode</Label>
-                      <p className="text-xs text-gray-600">
-                        Preview what will be imported without making changes
-                      </p>
-                    </div>
-                    <Switch
-                      id="dry-run-collections"
-                      checked={dryRun}
-                      onCheckedChange={setDryRun}
-                    />
-                  </div>
-
-                  {/* Import Result - Only show after import, hide after fetch */}
+                  {/* Import Result - Only show after import */}
                   {showCollectionImportResult && importStats?.collections && (
                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2 text-green-700">
@@ -1329,7 +1374,7 @@ const ShopifyIntegration = () => {
                         <span className="font-medium text-sm">Last Import</span>
                       </div>
                       <p className="text-sm text-green-600 mt-1">
-                        {importStats.collections.successful_imports || 0} imported, {importStats.collections.failed_imports || 0} failed
+                        {importStats.collections.imported || importStats.collections.successful_imports || 0} imported, {importStats.collections.failed || importStats.collections.failed_imports || 0} failed
                       </p>
                     </div>
                   )}

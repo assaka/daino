@@ -1688,95 +1688,124 @@ router.get('/category-mappings/:source', authMiddleware, storeResolver, async (r
 /**
  * POST /integrations/category-mappings/:source/sync
  * Sync external categories to the mappings table
- * Can receive categories in body, or fetch directly from integration
+ * Supports filters for root categories (same as import)
  */
 router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
-    let { categories } = req.body;
+    const { filters = {} } = req.body;
 
     if (!storeId) {
       return res.status(400).json({ success: false, message: 'Store ID required' });
     }
 
-    // If no categories provided, fetch directly from integration
-    if (!categories || categories.length === 0) {
-      console.log(`📂 Fetching categories directly from ${source}...`);
+    console.log(`📂 Fetching categories from ${source} for store ${storeId}...`);
+    console.log(`📂 Filters:`, filters);
 
-      if (source === 'akeneo') {
-        // Fetch from Akeneo
-        try {
-          const config = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
-          if (!config || !config.config_data) {
-            return res.status(400).json({ success: false, message: 'Akeneo integration not configured' });
-          }
+    let categories = [];
 
-          console.log('📂 Connecting to Akeneo:', config.config_data.baseUrl);
-
-          const AkeneoClient = require('../services/akeneo-client');
-          const client = new AkeneoClient(
-            config.config_data.baseUrl,
-            config.config_data.clientId,
-            config.config_data.clientSecret,
-            config.config_data.username,
-            config.config_data.password,
-            config.config_data.version || '7'
-          );
-
-          const akeneoCategories = await client.getAllCategories();
-          console.log(`📂 Raw Akeneo categories count: ${akeneoCategories?.length || 0}`);
-
-          categories = (akeneoCategories || []).map(cat => ({
-            id: cat.code,
-            code: cat.code,
-            name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code,
-            parent_code: cat.parent || null
-          }));
-
-          console.log(`✅ Fetched ${categories.length} categories from Akeneo`);
-        } catch (akeneoError) {
-          console.error('❌ Akeneo category fetch error:', akeneoError.message);
-          return res.status(500).json({ success: false, message: `Akeneo error: ${akeneoError.message}` });
+    if (source === 'akeneo') {
+      // Fetch from Akeneo with filters
+      try {
+        const config = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+        if (!config || !config.config_data) {
+          return res.status(400).json({ success: false, message: 'Akeneo integration not configured' });
         }
 
-      } else if (source === 'shopify') {
-        // Fetch from Shopify
-        try {
-          const shopifyIntegration = require('../services/shopify-integration');
-          const accessToken = await shopifyIntegration.getAccessToken(storeId);
-          const shopDomain = await shopifyIntegration.getShopDomain(storeId);
+        console.log('📂 Connecting to Akeneo:', config.config_data.baseUrl);
 
-          if (!accessToken || !shopDomain) {
-            return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
-          }
+        const AkeneoClient = require('../services/akeneo-client');
+        const client = new AkeneoClient(
+          config.config_data.baseUrl,
+          config.config_data.clientId,
+          config.config_data.clientSecret,
+          config.config_data.username,
+          config.config_data.password,
+          config.config_data.version || '7'
+        );
 
-          console.log('📂 Connecting to Shopify:', shopDomain);
+        let akeneoCategories = await client.getAllCategories();
+        console.log(`📂 Raw Akeneo categories count: ${akeneoCategories?.length || 0}`);
 
-          const ShopifyClient = require('../services/shopify-client');
-          const client = new ShopifyClient(shopDomain, accessToken);
+        // Apply root category filter if provided
+        if (filters.rootCategories && filters.rootCategories.length > 0) {
+          console.log(`🌱 Filtering to root categories: ${filters.rootCategories.join(', ')}`);
 
-          const collectionsData = await client.getAllCollections();
-          const allCollections = collectionsData?.all || [];
+          const selectedCategoryTree = new Set();
 
-          console.log(`📂 Raw Shopify collections count: ${allCollections.length}`);
+          // Add selected root categories
+          filters.rootCategories.forEach(rootCode => {
+            if (akeneoCategories.find(cat => cat.code === rootCode)) {
+              selectedCategoryTree.add(rootCode);
+            }
+          });
 
-          categories = allCollections.map(col => ({
-            id: String(col.id),
-            code: String(col.id),
-            name: col.title || `Collection ${col.id}`,
-            parent_code: null // Shopify collections are flat
-          }));
+          // Recursively add descendants
+          const addDescendants = (parentCode) => {
+            akeneoCategories.forEach(cat => {
+              if (cat.parent === parentCode && !selectedCategoryTree.has(cat.code)) {
+                selectedCategoryTree.add(cat.code);
+                addDescendants(cat.code);
+              }
+            });
+          };
 
-          console.log(`✅ Fetched ${categories.length} collections from Shopify`);
-        } catch (shopifyError) {
-          console.error('❌ Shopify collection fetch error:', shopifyError.message);
-          return res.status(500).json({ success: false, message: `Shopify error: ${shopifyError.message}` });
+          filters.rootCategories.forEach(rootCode => addDescendants(rootCode));
+
+          akeneoCategories = akeneoCategories.filter(cat => selectedCategoryTree.has(cat.code));
+          console.log(`📊 After filtering: ${akeneoCategories.length} categories`);
         }
 
-      } else {
-        return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
+        categories = (akeneoCategories || []).map(cat => ({
+          id: cat.code,
+          code: cat.code,
+          name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code,
+          parent_code: cat.parent || null
+        }));
+
+        console.log(`✅ Fetched ${categories.length} categories from Akeneo`);
+      } catch (akeneoError) {
+        console.error('❌ Akeneo category fetch error:', akeneoError.message);
+        return res.status(500).json({ success: false, message: `Akeneo error: ${akeneoError.message}` });
       }
+
+    } else if (source === 'shopify') {
+      // Fetch from Shopify
+      try {
+        const shopifyIntegration = require('../services/shopify-integration');
+        const accessToken = await shopifyIntegration.getAccessToken(storeId);
+        const shopDomain = await shopifyIntegration.getShopDomain(storeId);
+
+        if (!accessToken || !shopDomain) {
+          return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
+        }
+
+        console.log('📂 Connecting to Shopify:', shopDomain);
+
+        const ShopifyClient = require('../services/shopify-client');
+        const client = new ShopifyClient(shopDomain, accessToken);
+
+        const collectionsData = await client.getAllCollections();
+        const allCollections = collectionsData?.all || [];
+
+        console.log(`📂 Raw Shopify collections count: ${allCollections.length}`);
+
+        categories = allCollections.map(col => ({
+          id: String(col.id),
+          code: String(col.id),
+          name: col.title || `Collection ${col.id}`,
+          parent_code: null // Shopify collections are flat
+        }));
+
+        console.log(`✅ Fetched ${categories.length} collections from Shopify`);
+      } catch (shopifyError) {
+        console.error('❌ Shopify collection fetch error:', shopifyError.message);
+        return res.status(500).json({ success: false, message: `Shopify error: ${shopifyError.message}` });
+      }
+
+    } else {
+      return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
     }
 
     if (!categories || categories.length === 0) {
