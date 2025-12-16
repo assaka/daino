@@ -1242,12 +1242,30 @@ const ShopifyIntegration = () => {
                 </CardContent>
               </Card>
 
-              {/* Collection/Category Mapping Panel */}
-              <CategoryMappingPanel
-                integrationSource="shopify"
-                title="Shopify Collection Mapping"
-              />
             </>
+          )}
+        </TabsContent>
+
+        {/* Categories Tab */}
+        <TabsContent value="categories" className="space-y-6">
+          {!connectionStatus?.connected ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <FolderTree className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Not Connected</h3>
+                <p className="text-gray-600 mb-4">
+                  Please connect to your Shopify store first before managing category mappings.
+                </p>
+                <Button onClick={() => setActiveTab('configuration')}>
+                  Go to Configuration
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <CategoryMappingPanel
+              integrationSource="shopify"
+              title="Shopify Collection Mapping"
+            />
           )}
         </TabsContent>
       </Tabs>
