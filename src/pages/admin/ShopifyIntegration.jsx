@@ -405,19 +405,24 @@ const ShopifyIntegration = () => {
     setShowCollectionImportResult(false); // Hide import result
     try {
       const response = await apiClient.post('/integrations/category-mappings/shopify/sync', {});
-      if (response.data.success) {
+      if (response.success) {
         // Force refresh the CategoryMappingPanel by changing its key
         setCategoryMappingKey(prev => prev + 1);
         setFlashMessage({
           type: 'success',
-          text: response.data.message || 'Categories fetched successfully'
+          text: response.message || 'Categories fetched successfully'
+        });
+      } else {
+        setFlashMessage({
+          type: 'error',
+          text: response.message || 'Failed to fetch categories'
         });
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
       setFlashMessage({
         type: 'error',
-        text: error.response?.data?.message || 'Failed to fetch categories'
+        text: error.message || 'Failed to fetch categories'
       });
     } finally {
       setFetchingCategories(false);

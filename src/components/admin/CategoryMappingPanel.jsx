@@ -57,18 +57,23 @@ const CategoryMappingPanel = ({
       // Call sync endpoint without categories - backend will fetch them
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, {});
 
-      if (response.data.success) {
+      if (response.success) {
         await fetchMappings();
         setFlashMessage({
           type: 'success',
-          message: response.data.message || `Fetched ${response.data.results?.created || 0} new, ${response.data.results?.updated || 0} updated`
+          message: response.message || `Fetched ${response.results?.created || 0} new, ${response.results?.updated || 0} updated`
+        });
+      } else {
+        setFlashMessage({
+          type: 'error',
+          message: response.message || 'Failed to fetch categories'
         });
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
       setFlashMessage({
         type: 'error',
-        message: error.response?.data?.message || 'Failed to fetch categories'
+        message: error.message || 'Failed to fetch categories'
       });
     } finally {
       setFetching(false);
