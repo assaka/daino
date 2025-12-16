@@ -68,6 +68,11 @@ const ShopifyIntegration = () => {
   const [disconnecting, setDisconnecting] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
 
+  // Category mapping state
+  const [fetchingCategories, setFetchingCategories] = useState(false);
+  const [showCollectionImportResult, setShowCollectionImportResult] = useState(true);
+  const [categoryMappingKey, setCategoryMappingKey] = useState(0); // To force refresh
+
   // Scheduled imports state
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
@@ -393,6 +398,31 @@ const ShopifyIntegration = () => {
       text: `Import failed: ${job.error || 'Unknown error'}`
     });
   }, []);
+
+  // Fetch categories from Shopify to category mappings
+  const handleFetchCategories = async () => {
+    setFetchingCategories(true);
+    setShowCollectionImportResult(false); // Hide import result
+    try {
+      const response = await apiClient.post('/integrations/category-mappings/shopify/sync', {});
+      if (response.data.success) {
+        // Force refresh the CategoryMappingPanel by changing its key
+        setCategoryMappingKey(prev => prev + 1);
+        setFlashMessage({
+          type: 'success',
+          text: response.data.message || 'Categories fetched successfully'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setFlashMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to fetch categories'
+      });
+    } finally {
+      setFetchingCategories(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Never';
@@ -1236,20 +1266,47 @@ const ShopifyIntegration = () => {
             </Card>
           ) : (
             <>
-              {/* Import Collections Card */}
+              {/* Action Buttons */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Import Collections</CardTitle>
+                  <CardTitle>Shopify Collections</CardTitle>
                   <CardDescription>
-                    Import collections from Shopify to use as categories
+                    Fetch collections from Shopify and map them to store categories
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
+                <CardContent className="space-y-4">
+                  {/* Action Buttons Row */}
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={handleFetchCategories}
+                      disabled={fetchingCategories}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className={`w-4 h-4 ${fetchingCategories ? 'animate-pulse' : ''}`} />
+                      {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        importData('collections');
+                        setShowCollectionImportResult(true);
+                      }}
+                      disabled={loading}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Package className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                      {loading ? 'Importing...' : 'Import Collections'}
+                    </Button>
+                  </div>
+
+                  {/* Dry Run Toggle */}
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label htmlFor="dry-run-collections" className="font-medium">Dry Run Mode</Label>
-                      <p className="text-sm text-gray-600">
-                        Preview what will be imported without making any changes
+                      <Label htmlFor="dry-run-collections" className="font-medium text-sm">Dry Run Mode</Label>
+                      <p className="text-xs text-gray-600">
+                        Preview what will be imported without making changes
                       </p>
                     </div>
                     <Switch
@@ -1258,25 +1315,25 @@ const ShopifyIntegration = () => {
                       onCheckedChange={setDryRun}
                     />
                   </div>
-                  <Button
-                    onClick={() => importData('collections')}
-                    disabled={loading}
-                    className="h-auto py-4 flex-col w-full md:w-auto"
-                    variant="outline"
-                  >
-                    <Package className="w-6 h-6 mb-2" />
-                    <span>Import Collections</span>
-                    {importStats?.collections && (
-                      <span className="text-xs text-gray-500 mt-1">
-                        Last: {importStats.collections.successful_imports || 0} imported
-                      </span>
-                    )}
-                  </Button>
+
+                  {/* Import Result - Only show after import, hide after fetch */}
+                  {showCollectionImportResult && importStats?.collections && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <Package className="w-4 h-4" />
+                        <span className="font-medium text-sm">Last Import</span>
+                      </div>
+                      <p className="text-sm text-green-600 mt-1">
+                        {importStats.collections.successful_imports || 0} imported, {importStats.collections.failed_imports || 0} failed
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
               {/* Category Mapping Panel */}
               <CategoryMappingPanel
+                key={categoryMappingKey}
                 integrationSource="shopify"
                 title="Shopify Collection Mapping"
               />
