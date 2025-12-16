@@ -956,6 +956,8 @@ class DemoDataProvisioningService {
           status: 'active',
           visibility: 'not_visible', // Custom options are not visible in catalog
           manage_stock: false,
+          infinite_stock: true, // Always in stock
+          stock_quantity: 9999, // High stock for display purposes
           is_custom_option: true, // This marks it as a custom option product
           sort_order: 100 + i,
           demo: true

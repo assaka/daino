@@ -79,7 +79,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       }));
     }
 
-    // Get the active tab to check if it has specific attribute_ids
+    // Get the active tab to check if it has specific attribute_ids or attribute_set_ids
     const activeTab = tabsData[activeTabIndex];
 
     // Filter attributes based on the tab's attribute_ids (for "attributes" tab type)
@@ -89,6 +89,20 @@ export default function ProductTabs({ productTabs = [], product = null, settings
         // Match by attribute ID if available, otherwise skip
         return attr.id && activeTab.attribute_ids.includes(attr.id);
       });
+    }
+
+    // For "attribute_sets" tab type, show all attributes if product's attribute_set_id matches
+    if (activeTab?.tab_type === 'attribute_sets') {
+      const tabAttributeSetIds = activeTab?.attribute_set_ids || [];
+      // If tab has attribute_set_ids and product has attribute_set_id, check for match
+      if (tabAttributeSetIds.length > 0 && product?.attribute_set_id) {
+        // If product's attribute set is not in the tab's allowed sets, show nothing
+        if (!tabAttributeSetIds.includes(product.attribute_set_id)) {
+          attributesArray = [];
+        }
+        // Otherwise, show all product attributes (no filtering)
+      }
+      // If no attribute_set_ids specified, show all attributes
     }
 
     if (!attributesArray || attributesArray.length === 0) {
@@ -276,6 +290,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
               {{#if (eq this.tab_type "attributes")}}
                 <div id="attributes-placeholder" data-attributes-container></div>
               {{/if}}
+
+              {{#if (eq this.tab_type "attribute_sets")}}
+                <div id="attributes-placeholder" data-attributes-container data-attribute-set-ids="{{this.attribute_set_ids}}"></div>
+              {{/if}}
             </div>
           </div>
         {{/each}}
@@ -348,6 +366,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
                 {{#if (eq this.tab_type "attributes")}}
                   <div id="attributes-placeholder-mobile" data-attributes-container></div>
+                {{/if}}
+
+                {{#if (eq this.tab_type "attribute_sets")}}
+                  <div id="attributes-placeholder-mobile" data-attributes-container data-attribute-set-ids="{{this.attribute_set_ids}}"></div>
                 {{/if}}
               </div>
             </div>
