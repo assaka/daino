@@ -221,6 +221,11 @@ const AkeneoIntegration = () => {
   // Trigger to refresh ImportJobProgress after scheduling a job
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Category mapping state
+  const [fetchingCategories, setFetchingCategories] = useState(false);
+  const [showCategoryImportResult, setShowCategoryImportResult] = useState(true);
+  const [categoryMappingKey, setCategoryMappingKey] = useState(0);
+
   // Progress tracking for import operations
   const [importProgress, setImportProgress] = useState({
     categories: { current: 0, total: 0, isActive: false },
@@ -1679,6 +1684,31 @@ const AkeneoIntegration = () => {
     toast.error(`Import failed: ${job.error || 'Unknown error'}`);
   }, []);
 
+  // Fetch categories from Akeneo to category mappings
+  const handleFetchCategories = async () => {
+    setFetchingCategories(true);
+    setShowCategoryImportResult(false); // Hide import result
+    try {
+      const response = await apiClient.post('/integrations/category-mappings/akeneo/sync', {});
+      if (response.data.success) {
+        // Force refresh the CategoryMappingPanel by changing its key
+        setCategoryMappingKey(prev => prev + 1);
+        setFlashMessage({
+          type: 'success',
+          text: response.data.message || 'Categories fetched successfully'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setFlashMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to fetch categories'
+      });
+    } finally {
+      setFetchingCategories(false);
+    }
+  };
+
   const formatLastImportDate = (dateString) => {
     if (!dateString) return 'Never';
     const date = new Date(dateString);
@@ -2969,6 +2999,16 @@ const AkeneoIntegration = () => {
 
                 <div className="flex items-center gap-4">
                   <Button
+                    onClick={handleFetchCategories}
+                    disabled={fetchingCategories || !connectionStatus?.success}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className={`h-4 w-4 ${fetchingCategories ? 'animate-pulse' : ''}`} />
+                    {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
+                  </Button>
+
+                  <Button
                     onClick={importCategories}
                     disabled={importing || !connectionStatus?.success || selectedRootCategories.length === 0}
                     className="flex items-center gap-2"
@@ -2979,39 +3019,34 @@ const AkeneoIntegration = () => {
                       <Download className="h-4 w-4" />
                     )}
                     {importing ? (
-                      importProgress.categories.isActive && importProgress.categories.total > 0 
+                      importProgress.categories.isActive && importProgress.categories.total > 0
                         ? `Importing... ${importProgress.categories.current}/${importProgress.categories.total}`
                         : 'Importing...'
                     ) : 'Import Categories'}
                   </Button>
 
                   {availableCategories.length > 0 && !loadingCategories && (
-                    <Button 
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={loadAvailableCategories}
                       className="flex items-center gap-2"
                     >
                       <RefreshCw className="h-3 w-3" />
-                      Refresh Categories
+                      Refresh
                     </Button>
                   )}
                 </div>
               </div>
 
-              {renderTabImportResults('categories')}
+              {showCategoryImportResult && renderTabImportResults('categories')}
             </CardContent>
           </Card>
 
           {/* Category Mapping Panel */}
           <CategoryMappingPanel
+            key={categoryMappingKey}
             integrationSource="akeneo"
-            externalCategories={availableCategories.map(cat => ({
-              id: cat.code,
-              code: cat.code,
-              name: cat.labels?.en_US || cat.labels?.en || cat.code,
-              parent_code: cat.parent
-            }))}
             title="Akeneo Category Mapping"
           />
         </TabsContent>
