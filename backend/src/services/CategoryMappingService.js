@@ -378,6 +378,7 @@ class CategoryMappingService {
             external_parent_code: extCat.parent_code,
             internal_category_id: null,
             mapping_type: 'manual',
+            is_active: true,
             created_at: now,
             updated_at: now
           });
@@ -392,14 +393,19 @@ class CategoryMappingService {
         const batch = toInsert.slice(i, i + BATCH_SIZE);
         console.log(`📁 Inserting batch ${i}-${i + batch.length}...`);
 
+        console.log(`📁 Batch data sample:`, JSON.stringify(batch[0], null, 2));
+
         const { data: insertedData, error } = await tenantDb
           .from('integration_category_mappings')
           .insert(batch)
           .select();
 
         if (error) {
-          console.error('❌ Batch insert error:', error.message, error.details, error.hint);
-          results.errors.push({ batch: `insert ${i}-${i + batch.length}`, error: error.message });
+          console.error('❌ Batch insert error:', error.message);
+          console.error('❌ Error details:', error.details);
+          console.error('❌ Error hint:', error.hint);
+          console.error('❌ Error code:', error.code);
+          results.errors.push({ batch: `insert ${i}-${i + batch.length}`, error: error.message, details: error.details });
         } else {
           console.log(`✅ Inserted ${insertedData?.length || batch.length} records`);
           results.created += batch.length;
