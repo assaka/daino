@@ -204,7 +204,7 @@ const HARDCODED_THEME_DEFAULTS = {
 
   // Product Tabs defaults
   product_tabs_title_color: '#DC2626',
-  product_tabs_title_size: '1.875rem',
+  product_tabs_title_size: '1rem',
   product_tabs_content_bg: '#EFF6FF',
   product_tabs_attribute_label_color: '#16A34A',
   product_tabs_active_bg: 'transparent',
@@ -282,7 +282,7 @@ function getCheckoutDefaults(settings) {
   const theme = settings?.theme || {};
 
   return {
-    checkout_steps_count: settings?.checkout_steps_count ?? 3,
+    checkout_steps_count: settings?.checkout_steps_count ?? 2,
 
     // Step names for 2-step checkout
     checkout_2step_step1_name: settings?.checkout_2step_step1_name || 'Information',
