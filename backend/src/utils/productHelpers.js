@@ -363,8 +363,22 @@ async function fetchProductImages(productIds, tenantDb) {
 
     // Debug logging
     console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
+    console.log(`🖼️ fetchProductImages: First 3 product IDs:`, idsArray.slice(0, 3));
     if (filesError) {
       console.error('🖼️ fetchProductImages error:', filesError);
+    }
+
+    // If no files found, check if there are ANY files for these products (regardless of file_type)
+    if (!files || files.length === 0) {
+      const { data: allFiles, error: allFilesError } = await tenantDb
+        .from('product_files')
+        .select('product_id, file_type, file_url')
+        .in('product_id', idsArray.slice(0, 5))
+        .limit(10);
+      console.log(`🖼️ fetchProductImages: Checking all file types for first 5 products:`, allFiles?.length || 0, 'files');
+      if (allFiles && allFiles.length > 0) {
+        console.log(`🖼️ fetchProductImages: Sample files:`, allFiles.slice(0, 3));
+      }
     }
 
     // Group images by product_id from product_files
