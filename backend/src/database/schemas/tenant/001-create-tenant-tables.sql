@@ -351,29 +351,6 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE enum_jobs_priority AS ENUM (
-    'low',
-    'normal',
-    'high',
-    'urgent'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE enum_jobs_status AS ENUM (
-    'pending',
-    'running',
-    'completed',
-    'failed',
-    'cancelled'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
     CREATE TYPE enum_marketplace_credentials_marketplace AS ENUM (
     'amazon',
     'ebay',
@@ -3367,22 +3344,6 @@ CREATE INDEX IF NOT EXISTS idx_heatmap_viewport ON heatmap_interactions USING bt
 
 CREATE INDEX IF NOT EXISTS idx_integration_configs_connection_status ON integration_configs USING btree (store_id, integration_type, connection_status);
 
-CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs USING btree (created_at);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_priority ON jobs USING btree (priority);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_queue ON jobs USING btree (status, priority, scheduled_at);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_scheduled_at ON jobs USING btree (scheduled_at);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs USING btree (status);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_store_id ON jobs USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs USING btree (type);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs USING btree (user_id);
-
 CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts USING btree (email, attempted_at);
 
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts USING btree (ip_address, attempted_at);
@@ -3650,22 +3611,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_primary_integration_per_store_type ON i
 CREATE INDEX IF NOT EXISTS idx_integration_configs_store_id ON integration_configs (store_id);
 CREATE INDEX IF NOT EXISTS idx_integration_configs_type ON integration_configs (integration_type);
 CREATE INDEX IF NOT EXISTS idx_integration_configs_active ON integration_configs (is_active) WHERE is_active = true;
-
-CREATE INDEX IF NOT EXISTS jobs_created_at ON jobs USING btree (created_at);
-
-CREATE INDEX IF NOT EXISTS jobs_priority ON jobs USING btree (priority);
-
-CREATE INDEX IF NOT EXISTS jobs_scheduled_at ON jobs USING btree (scheduled_at);
-
-CREATE INDEX IF NOT EXISTS jobs_status ON jobs USING btree (status);
-
-CREATE INDEX IF NOT EXISTS jobs_status_priority_scheduled_at ON jobs USING btree (status, priority, scheduled_at);
-
-CREATE INDEX IF NOT EXISTS jobs_store_id ON jobs USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS jobs_type ON jobs USING btree (type);
-
-CREATE INDEX IF NOT EXISTS jobs_user_id ON jobs USING btree (user_id);
 
 CREATE INDEX IF NOT EXISTS login_attempts_email_attempted_at ON login_attempts USING btree (email, attempted_at);
 
@@ -4165,10 +4110,6 @@ ALTER TABLE heatmap_sessions ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREI
 ALTER TABLE heatmap_sessions ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE integration_configs ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-ALTER TABLE jobs ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-ALTER TABLE jobs ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE media_assets ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
