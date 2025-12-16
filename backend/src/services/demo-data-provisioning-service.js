@@ -1234,7 +1234,7 @@ class DemoDataProvisioningService {
     for (const block of blocks) {
       const blockId = uuidv4();
 
-      // First, find any existing block with the same identifier to delete its translations
+      // Check if block with same identifier already exists - skip if so
       const { data: existingBlock } = await this.tenantDb
         .from('cms_blocks')
         .select('id')
@@ -1243,29 +1243,8 @@ class DemoDataProvisioningService {
         .maybeSingle();
 
       if (existingBlock) {
-        console.log(`[DemoData] Found existing block ${block.identifier} (${existingBlock.id}), deleting translations first...`);
-
-        // Delete translations first (foreign key constraint)
-        const { error: transDeleteError } = await this.tenantDb
-          .from('cms_block_translations')
-          .delete()
-          .eq('cms_block_id', existingBlock.id);
-
-        if (transDeleteError) {
-          console.log(`[DemoData] Note: Could not delete block translations:`, transDeleteError.message);
-        }
-
-        // Now delete the block
-        const { error: deleteError } = await this.tenantDb
-          .from('cms_blocks')
-          .delete()
-          .eq('id', existingBlock.id);
-
-        if (deleteError) {
-          console.log(`[DemoData] Note: Could not delete existing block ${block.identifier}:`, deleteError.message);
-        } else {
-          console.log(`[DemoData] Deleted existing block ${block.identifier}`);
-        }
+        console.log(`[DemoData] CMS block ${block.identifier} already exists, skipping...`);
+        continue;
       }
 
       const { data: blockData, error: blockError } = await this.tenantDb
