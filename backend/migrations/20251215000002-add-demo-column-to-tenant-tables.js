@@ -52,7 +52,8 @@ const TABLES_WITH_DEMO_COLUMN = [
   'coupons',
   'seo_templates',
   'product_tabs',
-  'product_labels'
+  'product_labels',
+  'custom_option_rules'
 ];
 
 /**

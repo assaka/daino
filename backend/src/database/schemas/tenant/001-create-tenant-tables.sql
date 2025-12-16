@@ -1760,7 +1760,8 @@ CREATE TABLE IF NOT EXISTS custom_option_rules (
   store_id UUID NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  translations JSONB DEFAULT '{}'::jsonb
+  translations JSONB DEFAULT '{}'::jsonb,
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS custom_pricing_discounts (

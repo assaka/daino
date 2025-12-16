@@ -871,7 +871,9 @@ export default function Stores() {
                 <li>20 demo customers</li>
                 <li>50 demo orders</li>
                 <li>CMS pages and blocks</li>
+                <li>Product tabs and product labels</li>
                 <li>Tax configuration and coupons</li>
+                <li>Custom options rule</li>
                 <li>SEO templates</li>
               </ul>
             </div>

@@ -62,6 +62,7 @@ class DemoDataRestorationService {
     'cms_blocks',
 
     // Configuration
+    'custom_option_rules',
     'product_tabs',
     'product_labels',
     'taxes',

@@ -59,6 +59,9 @@ class DemoDataProvisioningService {
       console.log('[DemoData] Creating products...');
       await this.createDemoProducts();
 
+      console.log('[DemoData] Creating custom option rules...');
+      await this.createDemoCustomOptionRules();
+
       console.log('[DemoData] Creating product tabs...');
       await this.createDemoProductTabs();
 
@@ -424,33 +427,69 @@ class DemoDataProvisioningService {
    * Note: price = regular price, compare_price = sale/discounted price (shown with strikethrough on regular)
    */
   async createDemoProducts() {
+    // Realistic product images from Unsplash
+    const productImages = {
+      // Electronics
+      'DEMO-ELEC-001': ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&h=600&fit=crop'],
+      'DEMO-ELEC-002': ['https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1589003077984-894e133dabab?w=600&h=600&fit=crop'],
+      'DEMO-ELEC-003': ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&h=600&fit=crop'],
+      'DEMO-ELEC-004': ['https://images.unsplash.com/photo-1625723044792-44de16ccb4e9?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop'],
+      'DEMO-ELEC-005': ['https://images.unsplash.com/photo-1586816879360-004f5b0c51e3?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1622675363311-3e1904dc1885?w=600&h=600&fit=crop'],
+      'DEMO-ELEC-006': ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&h=600&fit=crop'],
+      // Clothing
+      'DEMO-CLTH-001': ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=600&h=600&fit=crop'],
+      'DEMO-CLTH-002': ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&h=600&fit=crop'],
+      'DEMO-CLTH-003': ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&h=600&fit=crop'],
+      'DEMO-CLTH-004': ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=600&h=600&fit=crop'],
+      'DEMO-CLTH-005': ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=600&h=600&fit=crop'],
+      'DEMO-CLTH-006': ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&h=600&fit=crop'],
+      // Home & Living
+      'DEMO-HOME-001': ['https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&h=600&fit=crop'],
+      'DEMO-HOME-002': ['https://images.unsplash.com/photo-1603199506016-5d54ebfc0173?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&h=600&fit=crop'],
+      'DEMO-HOME-003': ['https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&h=600&fit=crop'],
+      'DEMO-HOME-004': ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1592789705501-f9ae4287c4e9?w=600&h=600&fit=crop'],
+      'DEMO-HOME-005': ['https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&h=600&fit=crop'],
+      'DEMO-HOME-006': ['https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&h=600&fit=crop'],
+      // Sports
+      'DEMO-SPRT-001': ['https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop'],
+      'DEMO-SPRT-002': ['https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&h=600&fit=crop'],
+      'DEMO-SPRT-003': ['https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=600&h=600&fit=crop'],
+      'DEMO-SPRT-004': ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&h=600&fit=crop'],
+      'DEMO-SPRT-005': ['https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1562886877-f12251816e01?w=600&h=600&fit=crop'],
+      'DEMO-SPRT-006': ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&h=600&fit=crop', 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600&h=600&fit=crop']
+    };
+
+    // Map subcategory slugs to parent category slugs
+    const categoryParentMap = {
+      'smartphones': 'electronics', 'laptops': 'electronics', 'audio': 'electronics', 'electronics-accessories': 'electronics',
+      'mens-wear': 'clothing', 'womens-wear': 'clothing', 'kids-clothing': 'clothing', 'footwear': 'clothing',
+      'furniture': 'home-living', 'kitchen': 'home-living', 'decor': 'home-living', 'bedding': 'home-living',
+      'fitness-equipment': 'sports-outdoors', 'outdoor-gear': 'sports-outdoors', 'sports-apparel': 'sports-outdoors'
+    };
+
     const products = [
-      // Electronics - use 'electronics' attribute set
-      // price = regular price, compare_price = sale price (discounted)
+      // Electronics
       { name: 'Premium Wireless Headphones', sku: 'DEMO-ELEC-001', price: 249.99, compare_price: 199.99, category: 'audio', attrSetCode: 'electronics', description: 'High-quality wireless headphones with active noise cancellation and 30-hour battery life.' },
       { name: 'Bluetooth Speaker Pro', sku: 'DEMO-ELEC-002', price: 99.99, compare_price: 79.99, category: 'audio', attrSetCode: 'electronics', description: 'Portable waterproof speaker with deep bass and 360-degree sound.' },
       { name: 'Smart Watch Series X', sku: 'DEMO-ELEC-003', price: 349.99, compare_price: 299.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Advanced smartwatch with health monitoring, GPS, and cellular connectivity.' },
       { name: 'USB-C Hub 7-in-1', sku: 'DEMO-ELEC-004', price: 49.99, compare_price: null, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Multi-port adapter with HDMI, USB 3.0, SD card reader, and PD charging.' },
       { name: 'Wireless Charging Pad', sku: 'DEMO-ELEC-005', price: 39.99, compare_price: 29.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Fast wireless charger compatible with all Qi-enabled devices.' },
       { name: 'Noise Cancelling Earbuds', sku: 'DEMO-ELEC-006', price: 179.99, compare_price: 149.99, category: 'audio', attrSetCode: 'electronics', description: 'True wireless earbuds with premium sound and ANC technology.' },
-
-      // Clothing - use 'clothing' attribute set
+      // Clothing
       { name: 'Classic Cotton T-Shirt', sku: 'DEMO-CLTH-001', price: 24.99, compare_price: null, category: 'mens-wear', attrSetCode: 'clothing', description: 'Comfortable 100% cotton t-shirt in various colors. Perfect for everyday wear.' },
       { name: 'Slim Fit Jeans', sku: 'DEMO-CLTH-002', price: 79.99, compare_price: 59.99, category: 'mens-wear', attrSetCode: 'clothing', description: 'Modern slim fit jeans with stretch comfort and durable construction.' },
       { name: 'Summer Floral Dress', sku: 'DEMO-CLTH-003', price: 69.99, compare_price: 49.99, category: 'womens-wear', attrSetCode: 'clothing', description: 'Light and breezy floral print dress perfect for summer occasions.' },
       { name: 'Leather Belt', sku: 'DEMO-CLTH-004', price: 34.99, compare_price: null, category: 'mens-wear', attrSetCode: 'clothing', description: 'Genuine leather belt with classic buckle design.' },
       { name: 'Running Shoes Pro', sku: 'DEMO-CLTH-005', price: 159.99, compare_price: 129.99, category: 'footwear', attrSetCode: 'clothing', description: 'Lightweight running shoes with responsive cushioning and breathable mesh.' },
       { name: 'Kids Hoodie', sku: 'DEMO-CLTH-006', price: 29.99, compare_price: null, category: 'kids-clothing', attrSetCode: 'clothing', description: 'Cozy pullover hoodie for kids with fun designs.' },
-
-      // Home & Living - use 'home-living' attribute set
+      // Home & Living
       { name: 'Modern Coffee Table', sku: 'DEMO-HOME-001', price: 249.99, compare_price: 199.99, category: 'furniture', attrSetCode: 'home-living', description: 'Sleek modern coffee table with tempered glass top and wooden legs.' },
       { name: 'Ceramic Dinner Set', sku: 'DEMO-HOME-002', price: 89.99, compare_price: null, category: 'kitchen', attrSetCode: 'home-living', description: '16-piece ceramic dinner set for 4, dishwasher safe.' },
       { name: 'Decorative Wall Art', sku: 'DEMO-HOME-003', price: 79.99, compare_price: 59.99, category: 'decor', attrSetCode: 'home-living', description: 'Canvas wall art set of 3 panels with abstract design.' },
       { name: 'Memory Foam Pillow', sku: 'DEMO-HOME-004', price: 44.99, compare_price: null, category: 'bedding', attrSetCode: 'home-living', description: 'Ergonomic memory foam pillow for optimal neck support.' },
       { name: 'LED Desk Lamp', sku: 'DEMO-HOME-005', price: 49.99, compare_price: 39.99, category: 'decor', attrSetCode: 'home-living', description: 'Adjustable LED desk lamp with touch control and USB charging port.' },
       { name: 'Cotton Bed Sheet Set', sku: 'DEMO-HOME-006', price: 89.99, compare_price: 69.99, category: 'bedding', attrSetCode: 'home-living', description: '400 thread count Egyptian cotton sheet set, queen size.' },
-
-      // Sports - use 'sports' attribute set
+      // Sports
       { name: 'Yoga Mat Premium', sku: 'DEMO-SPRT-001', price: 49.99, compare_price: null, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Extra thick non-slip yoga mat with carrying strap.' },
       { name: 'Adjustable Dumbbells', sku: 'DEMO-SPRT-002', price: 249.99, compare_price: 199.99, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Space-saving adjustable dumbbells from 5-52.5 lbs per hand.' },
       { name: 'Camping Tent 4-Person', sku: 'DEMO-SPRT-003', price: 189.99, compare_price: 149.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Waterproof dome tent with easy setup and ventilation.' },
@@ -463,15 +502,37 @@ class DemoDataProvisioningService {
       const prod = products[i];
       const productId = uuidv4();
 
-      // Find category ID by slug
-      const { data: categoryData } = await this.tenantDb
+      // Find subcategory ID by slug
+      const { data: subCategoryData } = await this.tenantDb
         .from('categories')
-        .select('id')
+        .select('id, parent_id')
         .eq('slug', prod.category)
         .eq('demo', true)
         .maybeSingle();
 
-      const categoryIds = categoryData ? [categoryData.id] : [];
+      // Build category_ids array with both parent and subcategory
+      const categoryIds = [];
+      if (subCategoryData) {
+        categoryIds.push(subCategoryData.id);
+        // Also add parent category
+        if (subCategoryData.parent_id) {
+          categoryIds.push(subCategoryData.parent_id);
+        } else {
+          // Find parent by slug mapping
+          const parentSlug = categoryParentMap[prod.category];
+          if (parentSlug) {
+            const { data: parentData } = await this.tenantDb
+              .from('categories')
+              .select('id')
+              .eq('slug', parentSlug)
+              .eq('demo', true)
+              .maybeSingle();
+            if (parentData) {
+              categoryIds.push(parentData.id);
+            }
+          }
+        }
+      }
 
       // Find attribute set ID by code
       const attrSet = this.createdIds.attributeSets.find(as => as.code === prod.attrSetCode);
@@ -502,27 +563,22 @@ class DemoDataProvisioningService {
         continue;
       }
 
-      this.createdIds.products.push(productId);
+      this.createdIds.products.push({ id: productId, sku: prod.sku, name: prod.name });
 
-      // Create product images in product_files table
-      const imageFiles = [
-        { url: `https://picsum.photos/seed/${prod.sku}-1/600/600`, alt: prod.name, position: 0, isPrimary: true },
-        { url: `https://picsum.photos/seed/${prod.sku}-2/600/600`, alt: `${prod.name} - View 2`, position: 1, isPrimary: false },
-        { url: `https://picsum.photos/seed/${prod.sku}-3/600/600`, alt: `${prod.name} - View 3`, position: 2, isPrimary: false }
-      ];
-
-      for (const img of imageFiles) {
+      // Create product images in product_files table using realistic images
+      const images = productImages[prod.sku] || [];
+      for (let imgIdx = 0; imgIdx < images.length; imgIdx++) {
         const { error: imgError } = await this.tenantDb
           .from('product_files')
           .insert({
             id: uuidv4(),
             product_id: productId,
             store_id: this.storeId,
-            file_url: img.url,
+            file_url: images[imgIdx],
             file_type: 'image',
-            position: img.position,
-            is_primary: img.isPrimary,
-            alt_text: img.alt,
+            position: imgIdx,
+            is_primary: imgIdx === 0,
+            alt_text: imgIdx === 0 ? prod.name : `${prod.name} - View ${imgIdx + 1}`,
             mime_type: 'image/jpeg',
             demo: true
           });
@@ -544,7 +600,7 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      // Create product attribute values (brand and color for all products)
+      // Create product attribute values
       await this.createProductAttributeValues(productId, prod.attrSetCode);
     }
   }
@@ -649,7 +705,7 @@ class DemoDataProvisioningService {
 
     const tabs = [
       { name: 'Description', slug: 'description', tab_type: 'description', sort_order: 0 },
-      { name: 'Specifications', slug: 'specifications', tab_type: 'attributes', sort_order: 1, attribute_set_ids: attributeSetIds },
+      { name: 'Specifications', slug: 'specifications', tab_type: 'attribute_sets', sort_order: 1, attribute_set_ids: attributeSetIds },
       { name: 'Reviews', slug: 'reviews', tab_type: 'text', content: '<p>Customer reviews will appear here.</p>', sort_order: 2 }
     ];
 
@@ -855,6 +911,169 @@ class DemoDataProvisioningService {
   }
 
   /**
+   * Create demo custom option rules and mark some products as custom options
+   */
+  async createDemoCustomOptionRules() {
+    // First, mark some products as custom options (these can be added to other products)
+    // We'll mark 3 products as custom options: gift wrapping, extended warranty, and priority shipping
+    const customOptionProducts = [
+      {
+        name: 'Gift Wrapping Service',
+        sku: 'DEMO-CUSTOM-001',
+        price: 4.99,
+        description: 'Beautiful gift wrapping with ribbon and card. Perfect for special occasions.'
+      },
+      {
+        name: 'Extended Warranty - 2 Year',
+        sku: 'DEMO-CUSTOM-002',
+        price: 29.99,
+        description: 'Extend your product warranty by an additional 2 years for peace of mind.'
+      },
+      {
+        name: 'Priority Shipping Upgrade',
+        sku: 'DEMO-CUSTOM-003',
+        price: 9.99,
+        description: 'Upgrade to priority shipping for faster delivery (2-3 business days).'
+      }
+    ];
+
+    const customOptionProductIds = [];
+
+    for (let i = 0; i < customOptionProducts.length; i++) {
+      const prod = customOptionProducts[i];
+      const productId = uuidv4();
+
+      const { data: insertedProduct, error: prodError } = await this.tenantDb
+        .from('products')
+        .insert({
+          id: productId,
+          store_id: this.storeId,
+          slug: prod.sku.toLowerCase(),
+          sku: prod.sku,
+          price: prod.price,
+          compare_price: null,
+          type: 'simple',
+          status: 'active',
+          visibility: 'not_visible', // Custom options are not visible in catalog
+          manage_stock: false,
+          is_custom_option: true, // This marks it as a custom option product
+          sort_order: 100 + i,
+          demo: true
+        })
+        .select('id')
+        .single();
+
+      if (prodError) {
+        console.error(`[DemoData] Error creating custom option product ${prod.name}:`, prodError);
+        continue;
+      }
+
+      customOptionProductIds.push(productId);
+      this.createdIds.products.push({ id: productId, sku: prod.sku, name: prod.name });
+
+      // Create product translation
+      await this.tenantDb
+        .from('product_translations')
+        .insert({
+          product_id: productId,
+          language_code: 'en',
+          name: prod.name,
+          description: `<p>${prod.description}</p>`,
+          short_description: prod.description,
+          demo: true
+        });
+
+      // Create a simple product image for custom options
+      await this.tenantDb
+        .from('product_files')
+        .insert({
+          id: uuidv4(),
+          product_id: productId,
+          store_id: this.storeId,
+          file_url: `https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&h=600&fit=crop`,
+          file_type: 'image',
+          position: 0,
+          is_primary: true,
+          alt_text: prod.name,
+          mime_type: 'image/jpeg',
+          demo: true
+        });
+    }
+
+    // Now create custom option rules that make these products available as options for other products
+    if (customOptionProductIds.length > 0) {
+      // Rule 1: Gift Wrapping for all products
+      const { error: rule1Error } = await this.tenantDb
+        .from('custom_option_rules')
+        .insert({
+          id: uuidv4(),
+          store_id: this.storeId,
+          name: 'Gift Wrapping Available',
+          display_label: 'Add Gift Wrapping',
+          is_active: true,
+          conditions: { applies_to: 'all' },
+          optional_product_ids: [customOptionProductIds[0]], // Gift wrapping product
+          translations: {
+            en: { display_label: 'Add Gift Wrapping', description: 'Add beautiful gift wrapping to your order' }
+          },
+          demo: true
+        });
+
+      if (rule1Error) {
+        console.error('[DemoData] Error creating gift wrapping rule:', rule1Error);
+      }
+
+      // Rule 2: Extended Warranty for Electronics
+      if (customOptionProductIds.length > 1) {
+        const { error: rule2Error } = await this.tenantDb
+          .from('custom_option_rules')
+          .insert({
+            id: uuidv4(),
+            store_id: this.storeId,
+            name: 'Extended Warranty - Electronics',
+            display_label: 'Add Extended Warranty',
+            is_active: true,
+            conditions: { category_slug: 'electronics', applies_to: 'category' },
+            optional_product_ids: [customOptionProductIds[1]], // Extended warranty product
+            translations: {
+              en: { display_label: 'Add Extended Warranty', description: 'Protect your electronics with extended warranty' }
+            },
+            demo: true
+          });
+
+        if (rule2Error) {
+          console.error('[DemoData] Error creating extended warranty rule:', rule2Error);
+        }
+      }
+
+      // Rule 3: Priority Shipping for all products (multiple options example)
+      if (customOptionProductIds.length > 2) {
+        const { error: rule3Error } = await this.tenantDb
+          .from('custom_option_rules')
+          .insert({
+            id: uuidv4(),
+            store_id: this.storeId,
+            name: 'Shipping Upgrades',
+            display_label: 'Upgrade Shipping',
+            is_active: true,
+            conditions: { applies_to: 'all' },
+            optional_product_ids: [customOptionProductIds[2]], // Priority shipping
+            translations: {
+              en: { display_label: 'Upgrade Shipping', description: 'Get your order faster with shipping upgrades' }
+            },
+            demo: true
+          });
+
+        if (rule3Error) {
+          console.error('[DemoData] Error creating shipping upgrade rule:', rule3Error);
+        }
+      }
+    }
+
+    this.createdIds.customOptionRules = customOptionProductIds.length;
+  }
+
+  /**
    * Create demo CMS content
    */
   async createDemoCMSContent() {
@@ -996,38 +1215,67 @@ class DemoDataProvisioningService {
       }
     ];
 
+    console.log(`[DemoData] Creating ${blocks.length} CMS blocks...`);
+    let blocksCreated = 0;
+
     for (const block of blocks) {
       const blockId = uuidv4();
 
-      const { error: blockError } = await this.tenantDb
+      // Use upsert behavior - first try to delete any existing block with same identifier
+      await this.tenantDb
+        .from('cms_blocks')
+        .delete()
+        .eq('store_id', this.storeId)
+        .eq('identifier', block.identifier)
+        .eq('demo', true);
+
+      const { data: blockData, error: blockError } = await this.tenantDb
         .from('cms_blocks')
         .insert({
           id: blockId,
           store_id: this.storeId,
           identifier: block.identifier,
           is_active: true,
+          sort_order: blocks.indexOf(block),
           demo: true
-        });
+        })
+        .select('id')
+        .single();
 
       if (blockError) {
         console.error(`[DemoData] Error creating CMS block ${block.identifier}:`, blockError);
+        console.error(`[DemoData] Block insert payload:`, { blockId, storeId: this.storeId, identifier: block.identifier });
         continue;
       }
 
-      const { error: transError } = await this.tenantDb
+      if (!blockData) {
+        console.error(`[DemoData] CMS block ${block.identifier} was not created (no data returned)`);
+        continue;
+      }
+
+      console.log(`[DemoData] Created CMS block: ${block.identifier} with ID: ${blockData.id}`);
+
+      const { data: transData, error: transError } = await this.tenantDb
         .from('cms_block_translations')
         .insert({
-          cms_block_id: blockId,
+          cms_block_id: blockData.id,
           language_code: 'en',
           title: block.title,
           content: block.content,
           demo: true
-        });
+        })
+        .select('cms_block_id')
+        .single();
 
       if (transError) {
         console.error(`[DemoData] Error creating CMS block translation ${block.identifier}:`, transError);
+      } else {
+        blocksCreated++;
+        console.log(`[DemoData] Created CMS block translation for: ${block.identifier}`);
       }
     }
+
+    console.log(`[DemoData] CMS blocks created: ${blocksCreated}/${blocks.length}`);
   }
 
   /**
@@ -1224,6 +1472,8 @@ class DemoDataProvisioningService {
       attributeSets: this.createdIds.attributeSets.length,
       attributes: this.createdIds.attributes.length,
       products: this.createdIds.products.length,
+      customOptionProducts: 3,
+      customOptionRules: this.createdIds.customOptionRules || 3,
       customers: this.createdIds.customers.length,
       orders: this.createdIds.orders.length,
       cmsPages: 5,
