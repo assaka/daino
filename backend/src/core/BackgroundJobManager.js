@@ -166,7 +166,10 @@ class BackgroundJobManager extends EventEmitter {
       ['amazon:sync:inventory', './jobs/AmazonSyncInventoryJob'],
 
       // eBay export jobs
-      ['ebay:export:products', './jobs/EbayExportProductsJob']
+      ['ebay:export:products', './jobs/EbayExportProductsJob'],
+
+      // Integration category jobs
+      ['integration:create:categories', './jobs/IntegrationCreateCategoriesJob']
     ];
 
     for (const [type, path] of jobTypes) {

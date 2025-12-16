@@ -74,6 +74,7 @@ const ShopifyIntegration = () => {
   const [categoryMappingKey, setCategoryMappingKey] = useState(0); // To force refresh
   const [categoryMappingStats, setCategoryMappingStats] = useState({ total: 0, mapped: 0, unmapped: 0 });
   const [importingFromMappings, setImportingFromMappings] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger to refresh ImportJobProgress
 
   // Scheduled imports state
   const [schedules, setSchedules] = useState([]);
@@ -452,40 +453,28 @@ const ShopifyIntegration = () => {
     }
   };
 
-  // Import categories from integration_category_mappings to categories table
+  // Import categories from integration_category_mappings to categories table (via background job)
   const handleImportFromMappings = async () => {
     setImportingFromMappings(true);
-    setShowCollectionImportResult(false);
     try {
-      const response = await apiClient.post('/integrations/category-mappings/shopify/create-from-unmapped', {});
+      // Schedule a background job for category creation
+      const response = await apiClient.post('/integrations/category-mappings/shopify/create-categories-job', {});
+
       if (response.success) {
-        setCategoryMappingKey(prev => prev + 1);
-        // Refresh mapping stats after import
-        await fetchCategoryMappingStats();
-        setShowCollectionImportResult(true);
-        setImportStats({
-          collections: {
-            imported: response.results?.created || 0,
-            failed: response.results?.failed || 0,
-            total: (response.results?.created || 0) + (response.results?.failed || 0)
-          }
-        });
-        setFlashMessage({
-          type: 'success',
-          text: response.message || 'Collections imported successfully'
-        });
+        toast.success('Collection category creation job started! Track progress below.');
+        // Trigger refresh of ImportJobProgress to show the new job
+        setRefreshTrigger(prev => prev + 1);
+        // Refresh mapping stats after job is scheduled (with delay to let job start)
+        setTimeout(() => {
+          fetchCategoryMappingStats();
+          setCategoryMappingKey(prev => prev + 1);
+        }, 2000);
       } else {
-        setFlashMessage({
-          type: 'error',
-          text: response.message || 'Failed to import collections'
-        });
+        toast.error(response.message || 'Failed to schedule category creation job');
       }
     } catch (error) {
-      console.error('Error importing collections:', error);
-      setFlashMessage({
-        type: 'error',
-        text: error.message || 'Failed to import collections'
-      });
+      console.error('Error scheduling category creation job:', error);
+      toast.error(error.message || 'Failed to schedule category creation job');
     } finally {
       setImportingFromMappings(false);
     }
@@ -654,6 +643,7 @@ const ShopifyIntegration = () => {
         showHistory={true}
         maxHistoryItems={5}
         className="mb-6"
+        refreshTrigger={refreshTrigger}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

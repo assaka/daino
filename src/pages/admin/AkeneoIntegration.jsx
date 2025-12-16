@@ -1741,40 +1741,30 @@ const AkeneoIntegration = () => {
     }
   };
 
-  // Import categories from integration_category_mappings to categories table
+  // Import categories from integration_category_mappings to categories table (via background job)
   const handleImportFromMappings = async () => {
     setImporting(true);
-    setShowCategoryImportResult(false);
     try {
-      const response = await apiClient.post('/integrations/category-mappings/akeneo/create-from-unmapped', {});
+      // Schedule a background job for category creation
+      const response = await apiClient.post('/integrations/category-mappings/akeneo/create-categories-job', {
+        settings: categorySettings
+      });
+
       if (response.success) {
-        setCategoryMappingKey(prev => prev + 1);
-        // Refresh mapping stats after import
-        await fetchCategoryMappingStats();
-        setShowCategoryImportResult(true);
-        setImportResults({
-          categories: {
-            imported: response.results?.created || 0,
-            failed: response.results?.failed || 0,
-            total: (response.results?.created || 0) + (response.results?.failed || 0)
-          }
-        });
-        setFlashMessage({
-          type: 'success',
-          text: response.message || 'Categories imported successfully'
-        });
+        toast.success('Category creation job started! Track progress below.');
+        // Trigger refresh of ImportJobProgress to show the new job
+        setRefreshTrigger(prev => prev + 1);
+        // Refresh mapping stats after job is scheduled (with delay to let job start)
+        setTimeout(() => {
+          fetchCategoryMappingStats();
+          setCategoryMappingKey(prev => prev + 1);
+        }, 2000);
       } else {
-        setFlashMessage({
-          type: 'error',
-          text: response.message || 'Failed to import categories'
-        });
+        toast.error(response.message || 'Failed to schedule category creation job');
       }
     } catch (error) {
-      console.error('Error importing categories:', error);
-      setFlashMessage({
-        type: 'error',
-        text: error.message || 'Failed to import categories'
-      });
+      console.error('Error scheduling category creation job:', error);
+      toast.error(error.message || 'Failed to schedule category creation job');
     } finally {
       setImporting(false);
     }
@@ -2959,6 +2949,64 @@ const AkeneoIntegration = () => {
                 </div>
               </div>
 
+              {/* Category Settings */}
+              <Card className="bg-gray-50">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm">Import Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="hide-from-menu"
+                      checked={categorySettings.hideFromMenu}
+                      onCheckedChange={(checked) =>
+                        setCategorySettings(prev => ({ ...prev, hideFromMenu: checked }))
+                      }
+                    />
+                    <Label htmlFor="hide-from-menu">Hide new categories from menu</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="set-new-active"
+                      checked={categorySettings.setNewActive}
+                      onCheckedChange={(checked) =>
+                        setCategorySettings(prev => ({ ...prev, setNewActive: checked }))
+                      }
+                    />
+                    <Label htmlFor="set-new-active">Set new categories as active</Label>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="prevent-category-url-override"
+                      checked={categorySettings.preventUrlKeyOverride}
+                      onCheckedChange={(checked) =>
+                        setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
+                      }
+                    />
+                    <Label htmlFor="prevent-category-url-override">Prevent URL key override</Label>
+                  </div>
+
+                  {!categorySettings.preventUrlKeyOverride && (
+                    <div className="space-y-1 pl-6">
+                      <Label htmlFor="category-akeneo-url-field" className="text-xs">Akeneo URL field</Label>
+                      <Input
+                        id="category-akeneo-url-field"
+                        placeholder="e.g., url_key, slug"
+                        value={categorySettings.akeneoUrlField}
+                        onChange={(e) =>
+                          setCategorySettings(prev => ({ ...prev, akeneoUrlField: e.target.value }))
+                        }
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Action Buttons */}
               <div className="flex items-center gap-3">
                 <Button
@@ -2980,7 +3028,7 @@ const AkeneoIntegration = () => {
                     ) : (
                       <Download className="h-4 w-4 mr-2" />
                     )}
-                    {importing ? 'Importing...' : `Import ${categoryMappingStats.unmapped} Categories`}
+                    {importing ? 'Scheduling...' : `Import ${categoryMappingStats.unmapped} Categories`}
                   </Button>
                 )}
               </div>

@@ -1915,6 +1915,56 @@ router.post('/category-mappings/:source/create-from-unmapped', authMiddleware, s
 });
 
 /**
+ * POST /integrations/category-mappings/:source/create-categories-job
+ * Schedule a background job to create store categories from unmapped external categories
+ */
+router.post('/category-mappings/:source/create-categories-job', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+    const userId = req.user?.id;
+    const { settings = {} } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    if (!['akeneo', 'shopify'].includes(source)) {
+      return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
+    }
+
+    // Schedule the job
+    const jobManager = require('../core/BackgroundJobManager');
+
+    const job = await jobManager.scheduleJob({
+      type: 'integration:create:categories',
+      payload: {
+        storeId,
+        integrationSource: source,
+        settings
+      },
+      priority: 'normal',
+      storeId,
+      userId,
+      metadata: {
+        description: `Create categories from ${source} mappings`
+      }
+    });
+
+    console.log(`📋 Scheduled create categories job for ${source}: ${job.id}`);
+
+    res.json({
+      success: true,
+      message: 'Category creation job scheduled',
+      jobId: job.id
+    });
+  } catch (error) {
+    console.error('Error scheduling create categories job:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * POST /integrations/category-mappings/:source/auto-match
  * Auto-match all unmapped categories
  */
