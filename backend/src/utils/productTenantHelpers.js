@@ -16,7 +16,11 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  */
 async function getProducts(storeId, filters = {}, pagination = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-  const { limit = 100, offset = 0 } = pagination;
+  // Supabase has a default max of 1000 rows per query - enforce this limit
+  const SUPABASE_MAX_ROWS = 1000;
+  const requestedLimit = pagination.limit || 100;
+  const limit = Math.min(requestedLimit, SUPABASE_MAX_ROWS);
+  const offset = pagination.offset || 0;
 
   // Build query with count option
   let query = tenantDb.from('products').select('*', { count: 'exact' });

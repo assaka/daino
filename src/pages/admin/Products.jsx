@@ -176,9 +176,11 @@ export default function Products() {
       };
 
       // First, load other data and get initial product batch
+      // Use 1000 as page size (Supabase max rows per query)
+      const PAGE_SIZE = 1000;
       const [firstProductBatch, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
         retryApiCall(() => {
-          return Product.findPaginated(1, 10000, productFilters);
+          return Product.findPaginated(1, PAGE_SIZE, productFilters);
         }).catch((error) => {
           console.error('❌ Product.findPaginated failed:', error);
           return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
@@ -212,10 +214,10 @@ export default function Products() {
       const totalProductsInStore = firstProductBatch.pagination?.total || 0;
       const totalPages = firstProductBatch.pagination?.total_pages || 1;
 
-      // Check if we need to load more products (should be rare with limit 10000)
+      // Check if we need to load more products
       if (totalPages > 1) {
         // Load pages 2 onwards in smaller batches to avoid timeout
-        const batchSize = 2; // Load 2 pages at a time to avoid timeout with large datasets
+        const batchSize = 3; // Load 3 pages at a time
 
         for (let page = 2; page <= totalPages; page += batchSize) {
           const pagesToLoad = [];
@@ -224,7 +226,7 @@ export default function Products() {
           // Create promises for this batch
           for (let p = page; p <= endPage; p++) {
             pagesToLoad.push(
-              retryApiCall(() => Product.findPaginated(p, 10000, productFilters))
+              retryApiCall(() => Product.findPaginated(p, PAGE_SIZE, productFilters))
                 .catch((error) => {
                   console.error(`❌ Failed to load page ${p}:`, error);
                   return { data: [] };
