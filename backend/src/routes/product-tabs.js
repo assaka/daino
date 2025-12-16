@@ -201,7 +201,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 // @access  Private
 router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
-  body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
+  body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_set']).withMessage('Invalid tab type'),
   body('content').optional().isString(),
   body('attribute_ids').optional().isArray().withMessage('Attribute IDs must be an array'),
   body('attribute_set_ids').optional().isArray().withMessage('Attribute set IDs must be an array'),
