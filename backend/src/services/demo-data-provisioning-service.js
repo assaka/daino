@@ -1776,7 +1776,7 @@ class DemoDataProvisioningService {
       customers: this.createdIds.customers.length,
       orders: this.createdIds.orders.length,
       cmsPages: 5,
-      cmsBlocks: 22,
+      cmsBlocks: 21,
       taxes: 2,
       coupons: 3,
       seoTemplates: 3,
