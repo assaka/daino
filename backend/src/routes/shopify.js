@@ -792,9 +792,13 @@ router.get('/shop-info', storeAuth, async (req, res) => {
 router.get('/schedules', storeAuth, async (req, res) => {
   try {
     const ShopifySchedule = require('../models/ShopifySchedule');
+    console.log(`[GET /shopify/schedules] storeId: ${req.storeId}`);
+
     const schedules = await ShopifySchedule.findAll({
       where: { store_id: req.storeId }
     });
+
+    console.log(`[GET /shopify/schedules] Found ${schedules.length} schedules`);
 
     res.json({
       success: true,

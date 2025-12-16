@@ -239,12 +239,13 @@ const ShopifySchedule = {
 
     const tenantDb = await ConnectionManager.getConnection(store_id);
 
+    // Query for Shopify schedules - match by source OR job_type
+    // This ensures we find schedules regardless of how they were created
     let query = tenantDb
       .from(this.tableName)
       .select('*')
-      .eq('source_type', this.sourceType)
-      .eq('source_name', this.sourceName)
-      .eq('store_id', store_id);
+      .eq('store_id', store_id)
+      .or(`source_name.eq.${this.sourceName},job_type.eq.shopify_import`);
 
     Object.keys(otherFilters).forEach(key => {
       if (key === 'is_active') {
@@ -262,6 +263,8 @@ const ShopifySchedule = {
       query = query.order('created_at', { ascending: false });
     }
 
+    console.log(`[ShopifySchedule.findAll] Querying for store_id: ${store_id}`);
+
     const { data, error } = await query;
 
     if (error) {
@@ -269,6 +272,7 @@ const ShopifySchedule = {
       return [];
     }
 
+    console.log(`[ShopifySchedule.findAll] Found ${data?.length || 0} schedules`);
     return (data || []).map(toCronJobToScheduleFormat);
   },
 
