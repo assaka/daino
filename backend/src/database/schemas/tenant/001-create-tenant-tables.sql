@@ -1323,7 +1323,6 @@ CREATE TABLE IF NOT EXISTS categories (
   product_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  akeneo_code VARCHAR(255),
   seo JSON DEFAULT '{}'::json,
   demo BOOLEAN DEFAULT false
 );
@@ -2678,7 +2677,6 @@ CREATE TABLE IF NOT EXISTS products (
   is_coupon_eligible BOOLEAN DEFAULT false,
   featured BOOLEAN DEFAULT false,
   tags JSONB DEFAULT '[]'::jsonb,
-  attributes JSONB DEFAULT '{}'::jsonb,
   seo JSONB DEFAULT '{}'::jsonb,
   store_id UUID NOT NULL,
   attribute_set_id UUID,
