@@ -25,12 +25,10 @@ class CategoryMappingService {
   async getMappings() {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
+    // Fetch mappings without join (FK may not exist)
     const { data: mappings, error } = await tenantDb
       .from('integration_category_mappings')
-      .select(`
-        *,
-        internal_category:categories(id, name, slug, parent_id)
-      `)
+      .select('*')
       .eq('store_id', this.storeId)
       .eq('integration_source', this.integrationSource)
       .order('external_category_name', { ascending: true });
@@ -40,7 +38,35 @@ class CategoryMappingService {
       throw error;
     }
 
-    return mappings || [];
+    if (!mappings || mappings.length === 0) {
+      return [];
+    }
+
+    // Get mapped category IDs
+    const categoryIds = mappings
+      .filter(m => m.internal_category_id)
+      .map(m => m.internal_category_id);
+
+    // Fetch categories separately if there are any mapped
+    let categoriesMap = {};
+    if (categoryIds.length > 0) {
+      const { data: categories } = await tenantDb
+        .from('categories')
+        .select('id, name, slug, parent_id')
+        .in('id', categoryIds);
+
+      if (categories) {
+        for (const cat of categories) {
+          categoriesMap[cat.id] = cat;
+        }
+      }
+    }
+
+    // Attach category info to mappings
+    return mappings.map(m => ({
+      ...m,
+      internal_category: m.internal_category_id ? categoriesMap[m.internal_category_id] || null : null
+    }));
   }
 
   /**
