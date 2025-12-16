@@ -257,7 +257,8 @@ class DemoDataProvisioningService {
     const attributeSets = [
       { name: 'Electronics', code: 'electronics', description: 'Attributes for electronic products' },
       { name: 'Clothing', code: 'clothing', description: 'Attributes for clothing items' },
-      { name: 'Home & Living', code: 'home-living', description: 'Attributes for home products' }
+      { name: 'Home & Living', code: 'home-living', description: 'Attributes for home products' },
+      { name: 'Sports & Outdoors', code: 'sports', description: 'Attributes for sports products' }
     ];
 
     for (const attrSet of attributeSets) {
@@ -270,11 +271,14 @@ class DemoDataProvisioningService {
           store_id: this.storeId,
           name: attrSet.name,
           description: attrSet.description,
+          attribute_ids: [], // Will be populated after attributes are created
           demo: true
         });
 
       if (!error) {
-        this.createdIds.attributeSets.push({ id, code: attrSet.code });
+        this.createdIds.attributeSets.push({ id, code: attrSet.code, name: attrSet.name });
+      } else {
+        console.error(`[DemoData] Error creating attribute set ${attrSet.name}:`, error);
       }
     }
   }
@@ -289,37 +293,45 @@ class DemoDataProvisioningService {
         code: 'brand',
         type: 'select',
         is_filterable: true,
-        values: ['Apple', 'Samsung', 'Sony', 'Nike', 'Adidas', 'IKEA', 'Generic']
+        values: ['Apple', 'Samsung', 'Sony', 'Nike', 'Adidas', 'IKEA', 'Generic'],
+        forSets: ['electronics', 'clothing', 'home-living', 'sports'] // All sets
       },
       {
         name: 'Color',
         code: 'color',
         type: 'select',
         is_filterable: true,
-        values: ['Black', 'White', 'Blue', 'Red', 'Green', 'Gray', 'Brown']
+        values: ['Black', 'White', 'Blue', 'Red', 'Green', 'Gray', 'Brown'],
+        forSets: ['electronics', 'clothing', 'home-living', 'sports']
       },
       {
         name: 'Size',
         code: 'size',
         type: 'select',
         is_filterable: true,
-        values: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+        values: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+        forSets: ['clothing', 'sports']
       },
       {
         name: 'Material',
         code: 'material',
         type: 'select',
         is_filterable: true,
-        values: ['Cotton', 'Polyester', 'Leather', 'Metal', 'Plastic', 'Wood']
+        values: ['Cotton', 'Polyester', 'Leather', 'Metal', 'Plastic', 'Wood'],
+        forSets: ['clothing', 'home-living']
       },
       {
         name: 'Warranty',
         code: 'warranty',
         type: 'select',
         is_filterable: false,
-        values: ['1 Year', '2 Years', '3 Years', 'Lifetime']
+        values: ['1 Year', '2 Years', '3 Years', 'Lifetime'],
+        forSets: ['electronics', 'home-living']
       }
     ];
+
+    // Track which attributes belong to which sets
+    const setAttributeMap = {};
 
     for (let i = 0; i < attributes.length; i++) {
       const attr = attributes[i];
@@ -346,13 +358,21 @@ class DemoDataProvisioningService {
 
       this.createdIds.attributes.push({ id: attrId, code: attr.code });
 
+      // Track which sets this attribute belongs to
+      for (const setCode of attr.forSets) {
+        if (!setAttributeMap[setCode]) {
+          setAttributeMap[setCode] = [];
+        }
+        setAttributeMap[setCode].push(attrId);
+      }
+
       // Create attribute translation
       await this.tenantDb
         .from('attribute_translations')
         .insert({
           attribute_id: attrId,
           language_code: 'en',
-          name: attr.name,
+          label: attr.name,
           demo: true
         });
 
@@ -382,6 +402,21 @@ class DemoDataProvisioningService {
           });
       }
     }
+
+    // Update attribute sets with their attribute IDs
+    for (const attrSet of this.createdIds.attributeSets) {
+      const attributeIds = setAttributeMap[attrSet.code] || [];
+      if (attributeIds.length > 0) {
+        const { error: updateError } = await this.tenantDb
+          .from('attribute_sets')
+          .update({ attribute_ids: attributeIds })
+          .eq('id', attrSet.id);
+
+        if (updateError) {
+          console.error(`[DemoData] Error updating attribute set ${attrSet.name}:`, updateError);
+        }
+      }
+    }
   }
 
   /**
@@ -389,41 +424,38 @@ class DemoDataProvisioningService {
    */
   async createDemoProducts() {
     const products = [
-      // Electronics
-      { name: 'Premium Wireless Headphones', sku: 'DEMO-ELEC-001', price: 199.99, compare_price: 249.99, category: 'audio', description: 'High-quality wireless headphones with active noise cancellation and 30-hour battery life.' },
-      { name: 'Bluetooth Speaker Pro', sku: 'DEMO-ELEC-002', price: 79.99, compare_price: 99.99, category: 'audio', description: 'Portable waterproof speaker with deep bass and 360-degree sound.' },
-      { name: 'Smart Watch Series X', sku: 'DEMO-ELEC-003', price: 299.99, compare_price: 349.99, category: 'electronics-accessories', description: 'Advanced smartwatch with health monitoring, GPS, and cellular connectivity.' },
-      { name: 'USB-C Hub 7-in-1', sku: 'DEMO-ELEC-004', price: 49.99, compare_price: null, category: 'electronics-accessories', description: 'Multi-port adapter with HDMI, USB 3.0, SD card reader, and PD charging.' },
-      { name: 'Wireless Charging Pad', sku: 'DEMO-ELEC-005', price: 29.99, compare_price: 39.99, category: 'electronics-accessories', description: 'Fast wireless charger compatible with all Qi-enabled devices.' },
-      { name: 'Noise Cancelling Earbuds', sku: 'DEMO-ELEC-006', price: 149.99, compare_price: 179.99, category: 'audio', description: 'True wireless earbuds with premium sound and ANC technology.' },
+      // Electronics - use 'electronics' attribute set
+      { name: 'Premium Wireless Headphones', sku: 'DEMO-ELEC-001', price: 199.99, compare_price: 249.99, category: 'audio', attrSetCode: 'electronics', description: 'High-quality wireless headphones with active noise cancellation and 30-hour battery life.' },
+      { name: 'Bluetooth Speaker Pro', sku: 'DEMO-ELEC-002', price: 79.99, compare_price: 99.99, category: 'audio', attrSetCode: 'electronics', description: 'Portable waterproof speaker with deep bass and 360-degree sound.' },
+      { name: 'Smart Watch Series X', sku: 'DEMO-ELEC-003', price: 299.99, compare_price: 349.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Advanced smartwatch with health monitoring, GPS, and cellular connectivity.' },
+      { name: 'USB-C Hub 7-in-1', sku: 'DEMO-ELEC-004', price: 49.99, compare_price: null, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Multi-port adapter with HDMI, USB 3.0, SD card reader, and PD charging.' },
+      { name: 'Wireless Charging Pad', sku: 'DEMO-ELEC-005', price: 29.99, compare_price: 39.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Fast wireless charger compatible with all Qi-enabled devices.' },
+      { name: 'Noise Cancelling Earbuds', sku: 'DEMO-ELEC-006', price: 149.99, compare_price: 179.99, category: 'audio', attrSetCode: 'electronics', description: 'True wireless earbuds with premium sound and ANC technology.' },
 
-      // Clothing
-      { name: 'Classic Cotton T-Shirt', sku: 'DEMO-CLTH-001', price: 24.99, compare_price: null, category: 'mens-wear', description: 'Comfortable 100% cotton t-shirt in various colors. Perfect for everyday wear.' },
-      { name: 'Slim Fit Jeans', sku: 'DEMO-CLTH-002', price: 59.99, compare_price: 79.99, category: 'mens-wear', description: 'Modern slim fit jeans with stretch comfort and durable construction.' },
-      { name: 'Summer Floral Dress', sku: 'DEMO-CLTH-003', price: 49.99, compare_price: 69.99, category: 'womens-wear', description: 'Light and breezy floral print dress perfect for summer occasions.' },
-      { name: 'Leather Belt', sku: 'DEMO-CLTH-004', price: 34.99, compare_price: null, category: 'mens-wear', description: 'Genuine leather belt with classic buckle design.' },
-      { name: 'Running Shoes Pro', sku: 'DEMO-CLTH-005', price: 129.99, compare_price: 159.99, category: 'footwear', description: 'Lightweight running shoes with responsive cushioning and breathable mesh.' },
-      { name: 'Kids Hoodie', sku: 'DEMO-CLTH-006', price: 29.99, compare_price: null, category: 'kids-clothing', description: 'Cozy pullover hoodie for kids with fun designs.' },
+      // Clothing - use 'clothing' attribute set
+      { name: 'Classic Cotton T-Shirt', sku: 'DEMO-CLTH-001', price: 24.99, compare_price: null, category: 'mens-wear', attrSetCode: 'clothing', description: 'Comfortable 100% cotton t-shirt in various colors. Perfect for everyday wear.' },
+      { name: 'Slim Fit Jeans', sku: 'DEMO-CLTH-002', price: 59.99, compare_price: 79.99, category: 'mens-wear', attrSetCode: 'clothing', description: 'Modern slim fit jeans with stretch comfort and durable construction.' },
+      { name: 'Summer Floral Dress', sku: 'DEMO-CLTH-003', price: 49.99, compare_price: 69.99, category: 'womens-wear', attrSetCode: 'clothing', description: 'Light and breezy floral print dress perfect for summer occasions.' },
+      { name: 'Leather Belt', sku: 'DEMO-CLTH-004', price: 34.99, compare_price: null, category: 'mens-wear', attrSetCode: 'clothing', description: 'Genuine leather belt with classic buckle design.' },
+      { name: 'Running Shoes Pro', sku: 'DEMO-CLTH-005', price: 129.99, compare_price: 159.99, category: 'footwear', attrSetCode: 'clothing', description: 'Lightweight running shoes with responsive cushioning and breathable mesh.' },
+      { name: 'Kids Hoodie', sku: 'DEMO-CLTH-006', price: 29.99, compare_price: null, category: 'kids-clothing', attrSetCode: 'clothing', description: 'Cozy pullover hoodie for kids with fun designs.' },
 
-      // Home & Living
-      { name: 'Modern Coffee Table', sku: 'DEMO-HOME-001', price: 199.99, compare_price: 249.99, category: 'furniture', description: 'Sleek modern coffee table with tempered glass top and wooden legs.' },
-      { name: 'Ceramic Dinner Set', sku: 'DEMO-HOME-002', price: 89.99, compare_price: null, category: 'kitchen', description: '16-piece ceramic dinner set for 4, dishwasher safe.' },
-      { name: 'Decorative Wall Art', sku: 'DEMO-HOME-003', price: 59.99, compare_price: 79.99, category: 'decor', description: 'Canvas wall art set of 3 panels with abstract design.' },
-      { name: 'Memory Foam Pillow', sku: 'DEMO-HOME-004', price: 44.99, compare_price: null, category: 'bedding', description: 'Ergonomic memory foam pillow for optimal neck support.' },
-      { name: 'LED Desk Lamp', sku: 'DEMO-HOME-005', price: 39.99, compare_price: 49.99, category: 'decor', description: 'Adjustable LED desk lamp with touch control and USB charging port.' },
-      { name: 'Cotton Bed Sheet Set', sku: 'DEMO-HOME-006', price: 69.99, compare_price: 89.99, category: 'bedding', description: '400 thread count Egyptian cotton sheet set, queen size.' },
+      // Home & Living - use 'home-living' attribute set
+      { name: 'Modern Coffee Table', sku: 'DEMO-HOME-001', price: 199.99, compare_price: 249.99, category: 'furniture', attrSetCode: 'home-living', description: 'Sleek modern coffee table with tempered glass top and wooden legs.' },
+      { name: 'Ceramic Dinner Set', sku: 'DEMO-HOME-002', price: 89.99, compare_price: null, category: 'kitchen', attrSetCode: 'home-living', description: '16-piece ceramic dinner set for 4, dishwasher safe.' },
+      { name: 'Decorative Wall Art', sku: 'DEMO-HOME-003', price: 59.99, compare_price: 79.99, category: 'decor', attrSetCode: 'home-living', description: 'Canvas wall art set of 3 panels with abstract design.' },
+      { name: 'Memory Foam Pillow', sku: 'DEMO-HOME-004', price: 44.99, compare_price: null, category: 'bedding', attrSetCode: 'home-living', description: 'Ergonomic memory foam pillow for optimal neck support.' },
+      { name: 'LED Desk Lamp', sku: 'DEMO-HOME-005', price: 39.99, compare_price: 49.99, category: 'decor', attrSetCode: 'home-living', description: 'Adjustable LED desk lamp with touch control and USB charging port.' },
+      { name: 'Cotton Bed Sheet Set', sku: 'DEMO-HOME-006', price: 69.99, compare_price: 89.99, category: 'bedding', attrSetCode: 'home-living', description: '400 thread count Egyptian cotton sheet set, queen size.' },
 
-      // Sports
-      { name: 'Yoga Mat Premium', sku: 'DEMO-SPRT-001', price: 49.99, compare_price: null, category: 'fitness-equipment', description: 'Extra thick non-slip yoga mat with carrying strap.' },
-      { name: 'Adjustable Dumbbells', sku: 'DEMO-SPRT-002', price: 199.99, compare_price: 249.99, category: 'fitness-equipment', description: 'Space-saving adjustable dumbbells from 5-52.5 lbs per hand.' },
-      { name: 'Camping Tent 4-Person', sku: 'DEMO-SPRT-003', price: 149.99, compare_price: 189.99, category: 'outdoor-gear', description: 'Waterproof dome tent with easy setup and ventilation.' },
-      { name: 'Sports Water Bottle', sku: 'DEMO-SPRT-004', price: 24.99, compare_price: null, category: 'fitness-equipment', description: 'Insulated stainless steel bottle keeps drinks cold for 24 hours.' },
-      { name: 'Athletic Shorts', sku: 'DEMO-SPRT-005', price: 34.99, compare_price: null, category: 'sports-apparel', description: 'Quick-dry athletic shorts with zip pockets.' },
-      { name: 'Hiking Backpack 40L', sku: 'DEMO-SPRT-006', price: 89.99, compare_price: 109.99, category: 'outdoor-gear', description: 'Durable hiking backpack with rain cover and hydration compatible.' }
+      // Sports - use 'sports' attribute set
+      { name: 'Yoga Mat Premium', sku: 'DEMO-SPRT-001', price: 49.99, compare_price: null, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Extra thick non-slip yoga mat with carrying strap.' },
+      { name: 'Adjustable Dumbbells', sku: 'DEMO-SPRT-002', price: 199.99, compare_price: 249.99, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Space-saving adjustable dumbbells from 5-52.5 lbs per hand.' },
+      { name: 'Camping Tent 4-Person', sku: 'DEMO-SPRT-003', price: 149.99, compare_price: 189.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Waterproof dome tent with easy setup and ventilation.' },
+      { name: 'Sports Water Bottle', sku: 'DEMO-SPRT-004', price: 24.99, compare_price: null, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Insulated stainless steel bottle keeps drinks cold for 24 hours.' },
+      { name: 'Athletic Shorts', sku: 'DEMO-SPRT-005', price: 34.99, compare_price: null, category: 'sports-apparel', attrSetCode: 'sports', description: 'Quick-dry athletic shorts with zip pockets.' },
+      { name: 'Hiking Backpack 40L', sku: 'DEMO-SPRT-006', price: 89.99, compare_price: 109.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Durable hiking backpack with rain cover and hydration compatible.' }
     ];
-
-    // Map category slugs to IDs
-    const allCategories = [...this.createdIds.categories, ...this.createdIds.subcategories];
 
     for (let i = 0; i < products.length; i++) {
       const prod = products[i];
@@ -439,6 +471,10 @@ class DemoDataProvisioningService {
 
       const categoryIds = categoryData ? [categoryData.id] : [];
 
+      // Find attribute set ID by code
+      const attrSet = this.createdIds.attributeSets.find(as => as.code === prod.attrSetCode);
+      const attributeSetId = attrSet ? attrSet.id : null;
+
       const { error: prodError } = await this.tenantDb
         .from('products')
         .insert({
@@ -448,16 +484,18 @@ class DemoDataProvisioningService {
           sku: prod.sku,
           price: prod.price,
           compare_price: prod.compare_price,
-          images: JSON.stringify([
+          images: [
             { url: `https://picsum.photos/seed/${prod.sku}-1/600/600`, alt: prod.name },
-            { url: `https://picsum.photos/seed/${prod.sku}-2/600/600`, alt: `${prod.name} - View 2` }
-          ]),
+            { url: `https://picsum.photos/seed/${prod.sku}-2/600/600`, alt: `${prod.name} - View 2` },
+            { url: `https://picsum.photos/seed/${prod.sku}-3/600/600`, alt: `${prod.name} - View 3` }
+          ],
           type: 'simple',
           status: 'active',
           visibility: 'visible',
           manage_stock: true,
           stock_quantity: Math.floor(Math.random() * 100) + 10,
-          category_ids: JSON.stringify(categoryIds),
+          category_ids: categoryIds,
+          attribute_set_id: attributeSetId,
           sort_order: i,
           demo: true
         });
@@ -581,10 +619,9 @@ class DemoDataProvisioningService {
         .insert({
           id: uuidv4(),
           customer_id: customerId,
-          store_id: this.storeId,
           type: 'both',
           full_name: `${firstName} ${lastName}`,
-          address_line1: `${100 + i} Demo Street`,
+          street: `${100 + i} Demo Street`,
           city: 'Demo City',
           state: 'CA',
           postal_code: `90${String(i).padStart(3, '0')}`,
@@ -618,6 +655,16 @@ class DemoDataProvisioningService {
       const shippingAmount = subtotal > 100 ? 0 : 9.99;
       const totalAmount = Math.round((subtotal + taxAmount + shippingAmount) * 100) / 100;
 
+      // Get customer info for the address
+      const { data: customerData } = await this.tenantDb
+        .from('customers')
+        .select('first_name, last_name, email')
+        .eq('id', customerId)
+        .maybeSingle();
+
+      const customerName = customerData ? `${customerData.first_name} ${customerData.last_name}` : 'Demo Customer';
+      const customerEmail = customerData ? customerData.email : `demo.customer${i}@example.com`;
+
       const { error: orderError } = await this.tenantDb
         .from('sales_orders')
         .insert({
@@ -625,6 +672,7 @@ class DemoDataProvisioningService {
           store_id: this.storeId,
           order_number: `DEMO-${String(i + 1).padStart(6, '0')}`,
           customer_id: customerId,
+          customer_email: customerEmail,
           status,
           payment_status: paymentStatus,
           subtotal,
@@ -632,22 +680,22 @@ class DemoDataProvisioningService {
           shipping_amount: shippingAmount,
           total_amount: totalAmount,
           currency: 'USD',
-          billing_address: JSON.stringify({
-            full_name: 'Demo Customer',
-            address_line1: '123 Demo St',
+          billing_address: {
+            full_name: customerName,
+            street: '123 Demo St',
             city: 'Demo City',
             state: 'CA',
             postal_code: '90001',
             country: 'US'
-          }),
-          shipping_address: JSON.stringify({
-            full_name: 'Demo Customer',
-            address_line1: '123 Demo St',
+          },
+          shipping_address: {
+            full_name: customerName,
+            street: '123 Demo St',
             city: 'Demo City',
             state: 'CA',
             postal_code: '90001',
             country: 'US'
-          }),
+          },
           created_at: orderDate.toISOString(),
           demo: true
         });
@@ -824,7 +872,7 @@ class DemoDataProvisioningService {
     for (const block of blocks) {
       const blockId = uuidv4();
 
-      await this.tenantDb
+      const { error: blockError } = await this.tenantDb
         .from('cms_blocks')
         .insert({
           id: blockId,
@@ -834,7 +882,12 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      await this.tenantDb
+      if (blockError) {
+        console.error(`[DemoData] Error creating CMS block ${block.identifier}:`, blockError);
+        continue;
+      }
+
+      const { error: transError } = await this.tenantDb
         .from('cms_block_translations')
         .insert({
           cms_block_id: blockId,
@@ -843,6 +896,10 @@ class DemoDataProvisioningService {
           content: block.content,
           demo: true
         });
+
+      if (transError) {
+        console.error(`[DemoData] Error creating CMS block translation ${block.identifier}:`, transError);
+      }
     }
   }
 
@@ -875,7 +932,7 @@ class DemoDataProvisioningService {
     ];
 
     for (const tax of taxes) {
-      await this.tenantDb
+      const { error } = await this.tenantDb
         .from('taxes')
         .insert({
           id: uuidv4(),
@@ -884,9 +941,13 @@ class DemoDataProvisioningService {
           description: tax.description,
           is_default: tax.is_default,
           is_active: true,
-          country_rates: JSON.stringify(tax.country_rates),
+          country_rates: tax.country_rates, // Pass as native array, not stringified
           demo: true
         });
+
+      if (error) {
+        console.error(`[DemoData] Error creating tax ${tax.name}:`, error);
+      }
     }
   }
 
@@ -985,18 +1046,26 @@ class DemoDataProvisioningService {
 
     for (let i = 0; i < templates.length; i++) {
       const tpl = templates[i];
-      await this.tenantDb
+      const { error } = await this.tenantDb
         .from('seo_templates')
         .insert({
           id: uuidv4(),
           store_id: this.storeId,
           name: tpl.name,
           type: tpl.type,
-          template: JSON.stringify(tpl.template),
+          meta_title: tpl.template.meta_title,
+          meta_description: tpl.template.meta_description,
+          og_title: tpl.template.og_title,
+          og_description: tpl.template.og_description,
+          template: tpl.template, // Pass as native object
           is_active: true,
           sort_order: i,
           demo: true
         });
+
+      if (error) {
+        console.error(`[DemoData] Error creating SEO template ${tpl.name}:`, error);
+      }
     }
   }
 
