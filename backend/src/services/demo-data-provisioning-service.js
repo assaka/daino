@@ -1234,6 +1234,12 @@ class DemoDataProvisioningService {
     console.log(`[DemoData] CMS pages created: ${pagesCreated}/${pages.length}`);
 
     // Create CMS blocks for various placement locations
+    // Placements must match:
+    // - Homepage.jsx: homepage_above_hero, homepage_hero, homepage_below_hero, homepage_above_featured, homepage_below_featured, homepage_above_content, homepage_below_content
+    // - StorefrontLayout: header, before_content, after_content, footer
+    // - Checkout.jsx: checkout_above_form, checkout_below_form, checkout_above_payment, checkout_below_payment
+    // - OrderSuccess.jsx: success_above_content, success_below_content
+    // - product-config.js slots: product_above, product_above_price, product_below
     const blocks = [
       // Homepage blocks
       {
@@ -1293,66 +1299,60 @@ class DemoDataProvisioningService {
           </div>
         `
       },
-      // Product page blocks
+      // Product page blocks (using actual slot cmsPositions from product-config.js)
       {
-        identifier: 'product-shipping-info',
-        title: 'Product Shipping Info',
-        placement: ['product_below_cart_button'],
+        identifier: 'product-promo-banner',
+        title: 'Product Page Promo',
+        placement: ['product_above'],
         content: `
-          <div class="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
-            <div class="flex items-center gap-2 mb-2">
-              <span>🚚</span>
-              <span class="font-medium">Free shipping on orders over $100</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span>📦</span>
-              <span>Usually ships within 1-2 business days</span>
-            </div>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center text-sm text-yellow-800 mb-4">
+            🎁 Buy 2 or more and get 10% off automatically!
           </div>
         `
       },
       {
         identifier: 'product-trust-badges',
         title: 'Product Trust Badges',
-        placement: ['product_below_price'],
+        placement: ['product_above_price'],
         content: `
-          <div class="flex items-center gap-4 text-sm text-gray-600 mt-2">
+          <div class="flex items-center gap-4 text-sm text-gray-600 mb-2">
             <span class="flex items-center gap-1">✓ In Stock</span>
-            <span class="flex items-center gap-1">✓ Secure Checkout</span>
-            <span class="flex items-center gap-1">✓ 30-Day Returns</span>
-          </div>
-        `
-      },
-      // Category page blocks
-      {
-        identifier: 'category-promo',
-        title: 'Category Promotion',
-        placement: ['category_above_products'],
-        content: `
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-center">
-            <p class="text-blue-800 font-medium">🏷️ Use code SAVE10 for 10% off your first order!</p>
-          </div>
-        `
-      },
-      // Cart blocks
-      {
-        identifier: 'cart-free-shipping-reminder',
-        title: 'Free Shipping Reminder',
-        placement: ['cart_above_total'],
-        content: `
-          <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-            💡 Add more items to qualify for free shipping on orders over $100!
+            <span class="flex items-center gap-1">✓ Authentic</span>
           </div>
         `
       },
       {
-        identifier: 'cart-secure-checkout',
-        title: 'Secure Checkout Notice',
-        placement: ['cart_below_total'],
+        identifier: 'product-shipping-info',
+        title: 'Product Shipping Info',
+        placement: ['product_below'],
         content: `
-          <div class="flex items-center justify-center gap-2 text-sm text-gray-500 mt-4">
-            <span>🔒</span>
-            <span>Secure checkout powered by Stripe</span>
+          <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 class="font-medium mb-3">Shipping & Returns</h4>
+            <div class="text-sm text-gray-600 space-y-2">
+              <div class="flex items-center gap-2">
+                <span>🚚</span>
+                <span>Free shipping on orders over $100</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>📦</span>
+                <span>Usually ships within 1-2 business days</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>↩️</span>
+                <span>30-day hassle-free returns</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      // Global blocks
+      {
+        identifier: 'site-announcement',
+        title: 'Site Announcement',
+        placement: ['header'],
+        content: `
+          <div class="bg-blue-600 text-white py-2 px-4 text-center text-sm">
+            📢 New arrivals every week! <a href="/products" class="underline font-medium">Shop now</a>
           </div>
         `
       },
@@ -1369,6 +1369,17 @@ class DemoDataProvisioningService {
               <li>✓ Free returns on all orders</li>
               <li>✓ Secure payment processing</li>
             </ul>
+          </div>
+        `
+      },
+      {
+        identifier: 'checkout-security',
+        title: 'Checkout Security Notice',
+        placement: ['checkout_below_payment'],
+        content: `
+          <div class="flex items-center justify-center gap-2 text-sm text-gray-500 mt-4">
+            <span>🔒</span>
+            <span>Your payment is secured with 256-bit SSL encryption</span>
           </div>
         `
       },
