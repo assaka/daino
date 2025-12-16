@@ -318,7 +318,11 @@ class CategoryMappingService {
     const results = { created: 0, updated: 0, errors: [] };
     const now = new Date().toISOString();
 
+    console.log(`📁 syncExternalCategories called with ${externalCategories?.length || 0} categories`);
+    console.log(`📁 Store ID: ${this.storeId}, Source: ${this.integrationSource}`);
+
     if (!externalCategories || externalCategories.length === 0) {
+      console.log('📁 No categories to sync');
       return results;
     }
 
@@ -327,11 +331,20 @@ class CategoryMappingService {
       const externalCodes = externalCategories.map(c => c.code).filter(Boolean);
       const externalIds = externalCategories.map(c => c.id).filter(Boolean);
 
-      const { data: existingMappings } = await tenantDb
+      console.log(`📁 Checking for existing mappings...`);
+      const { data: existingMappings, error: fetchError } = await tenantDb
         .from('integration_category_mappings')
         .select('id, external_category_id, external_category_code, internal_category_id')
         .eq('store_id', this.storeId)
         .eq('integration_source', this.integrationSource);
+
+      if (fetchError) {
+        console.error('❌ Error fetching existing mappings:', fetchError.message);
+        results.errors.push({ error: `Fetch error: ${fetchError.message}` });
+        return results;
+      }
+
+      console.log(`📁 Found ${existingMappings?.length || 0} existing mappings`);
 
       // Build lookup maps for existing mappings
       const existingByCode = new Map();
@@ -371,18 +384,24 @@ class CategoryMappingService {
         }
       }
 
+      console.log(`📁 To insert: ${toInsert.length}, To update: ${toUpdate.length}`);
+
       // 3. Batch insert new mappings (max 100 at a time for Supabase)
       const BATCH_SIZE = 100;
       for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
         const batch = toInsert.slice(i, i + BATCH_SIZE);
-        const { error } = await tenantDb
+        console.log(`📁 Inserting batch ${i}-${i + batch.length}...`);
+
+        const { data: insertedData, error } = await tenantDb
           .from('integration_category_mappings')
-          .insert(batch);
+          .insert(batch)
+          .select();
 
         if (error) {
-          console.error('Batch insert error:', error.message);
+          console.error('❌ Batch insert error:', error.message, error.details, error.hint);
           results.errors.push({ batch: `insert ${i}-${i + batch.length}`, error: error.message });
         } else {
+          console.log(`✅ Inserted ${insertedData?.length || batch.length} records`);
           results.created += batch.length;
         }
       }
