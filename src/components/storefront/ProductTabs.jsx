@@ -100,9 +100,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     // For "attribute_sets" tab type, show all attributes if product's attribute_set_id matches
     if (activeTab?.tab_type === 'attribute_sets') {
       const tabAttributeSetIds = activeTab?.attribute_set_ids || [];
-      console.log('📊 Specifications tab - tabAttributeSetIds:', tabAttributeSetIds);
-      console.log('📊 Specifications tab - product.attribute_set_id:', product?.attribute_set_id);
-      console.log('📊 Specifications tab - product.attributes count:', attributesArray.length);
+      console.log('📊 Specifications tab - tabAttributeSetIds:', tabAttributeSetIds, 'type:', typeof tabAttributeSetIds[0]);
+      console.log('📊 Specifications tab - product.attribute_set_id:', product?.attribute_set_id, 'type:', typeof product?.attribute_set_id);
+      console.log('📊 Specifications tab - product.attributes:', product?.attributes);
+      console.log('📊 Specifications tab - attributesArray count:', attributesArray.length);
 
       // If tab has attribute_set_ids and product has attribute_set_id, check for match
       if (tabAttributeSetIds.length > 0 && product?.attribute_set_id) {
@@ -113,8 +114,9 @@ export default function ProductTabs({ productTabs = [], product = null, settings
         } else {
           console.log('📊 Specifications tab - attribute_set_id IS in allowed list, showing all attributes');
         }
+      } else {
+        console.log('📊 Specifications tab - No filtering: tabAttributeSetIds.length=', tabAttributeSetIds.length, 'product.attribute_set_id=', product?.attribute_set_id);
       }
-      // If no attribute_set_ids specified, show all attributes
     }
 
     if (!attributesArray || attributesArray.length === 0) {

@@ -522,10 +522,16 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
 
           return { id: attr.id, code: attr.code, label: attrLabel, value: valueLabel, rawValue: value, type: attr.type, metadata };
         }).filter(Boolean);
+        console.log(`📊 [ProductDetail] Final attributes count: ${productData.attributes.length}`);
+        if (productData.attributes.length > 0) {
+          console.log(`📊 [ProductDetail] Sample attribute:`, productData.attributes[0]);
+        }
       }
     } catch (attrErr) {
       console.error('Error loading product attributes:', attrErr);
     }
+    console.log(`📊 [ProductDetail] Product attribute_set_id: ${productData.attribute_set_id}`);
+    console.log(`📊 [ProductDetail] Product attributes array length: ${productData.attributes?.length || 0}`);
 
     // 2. Load product tabs
     const { getProductTabsWithTranslations } = require('../utils/productTabHelpers');
@@ -533,6 +539,13 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
       store_id,
       is_active: true
     }, lang, false); // false = only current language
+
+    // Log tabs info for debugging
+    productTabs.forEach(tab => {
+      if (tab.tab_type === 'attribute_sets') {
+        console.log(`📋 [ProductTabs] Tab "${tab.name}" (type: ${tab.tab_type}) - attribute_set_ids:`, tab.attribute_set_ids);
+      }
+    });
 
     // 3. Load and evaluate product labels
     const { getProductLabelsWithTranslations } = require('../utils/productLabelHelpers');
