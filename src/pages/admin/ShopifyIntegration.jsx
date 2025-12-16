@@ -549,6 +549,16 @@ const ShopifyIntegration = () => {
         </CardContent>
       </Card>
 
+      {/* Import Job Progress - Above Tabs like Akeneo */}
+      <ImportJobProgress
+        source="shopify"
+        onJobComplete={handleJobComplete}
+        onJobFailed={handleJobFailed}
+        showHistory={true}
+        maxHistoryItems={5}
+        className="mb-6"
+      />
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="configuration" className="flex items-center gap-2">
@@ -827,9 +837,9 @@ const ShopifyIntegration = () => {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle>Import Data</CardTitle>
+                  <CardTitle>Import Products</CardTitle>
                   <CardDescription>
-                    Import collections and products from your Shopify store into DainoStore
+                    Import products from your Shopify store into DainoStore
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -848,57 +858,20 @@ const ShopifyIntegration = () => {
                     />
                   </div>
 
-                  {/* Import Job Progress */}
-                  <ImportJobProgress
-                    source="shopify"
-                    onJobComplete={handleJobComplete}
-                    onJobFailed={handleJobFailed}
-                    showHistory={true}
-                    maxHistoryItems={5}
-                  />
-
-                  {/* Import Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button
-                      onClick={() => importData('collections')}
-                      disabled={loading}
-                      className="h-auto py-4 flex-col"
-                      variant="outline"
-                    >
-                      <Package className="w-6 h-6 mb-2" />
-                      <span>Import Collections</span>
-                      {importStats?.collections && (
-                        <span className="text-xs text-gray-500 mt-1">
-                          Last: {importStats.collections.successful_imports || 0} imported
-                        </span>
-                      )}
-                    </Button>
-
+                  {/* Import Products Button */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button
                       onClick={() => importData('products')}
                       disabled={loading}
                       className="h-auto py-4 flex-col"
-                      variant="outline"
                     >
                       <ShoppingBag className="w-6 h-6 mb-2" />
                       <span>Import Products</span>
                       {importStats?.products && (
-                        <span className="text-xs text-gray-500 mt-1">
+                        <span className="text-xs text-gray-300 mt-1">
                           Last: {importStats.products.successful_imports || 0} imported
                         </span>
                       )}
-                    </Button>
-
-                    <Button
-                      onClick={() => importData('full')}
-                      disabled={loading}
-                      className="h-auto py-4 flex-col"
-                    >
-                      <Download className="w-6 h-6 mb-2" />
-                      <span>Full Import</span>
-                      <span className="text-xs text-gray-300 mt-1">
-                        Collections + Products
-                      </span>
                     </Button>
                   </div>
 
@@ -1262,10 +1235,52 @@ const ShopifyIntegration = () => {
               </CardContent>
             </Card>
           ) : (
-            <CategoryMappingPanel
-              integrationSource="shopify"
-              title="Shopify Collection Mapping"
-            />
+            <>
+              {/* Import Collections Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Import Collections</CardTitle>
+                  <CardDescription>
+                    Import collections from Shopify to use as categories
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
+                    <div>
+                      <Label htmlFor="dry-run-collections" className="font-medium">Dry Run Mode</Label>
+                      <p className="text-sm text-gray-600">
+                        Preview what will be imported without making any changes
+                      </p>
+                    </div>
+                    <Switch
+                      id="dry-run-collections"
+                      checked={dryRun}
+                      onCheckedChange={setDryRun}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => importData('collections')}
+                    disabled={loading}
+                    className="h-auto py-4 flex-col w-full md:w-auto"
+                    variant="outline"
+                  >
+                    <Package className="w-6 h-6 mb-2" />
+                    <span>Import Collections</span>
+                    {importStats?.collections && (
+                      <span className="text-xs text-gray-500 mt-1">
+                        Last: {importStats.collections.successful_imports || 0} imported
+                      </span>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Category Mapping Panel */}
+              <CategoryMappingPanel
+                integrationSource="shopify"
+                title="Shopify Collection Mapping"
+              />
+            </>
           )}
         </TabsContent>
       </Tabs>
