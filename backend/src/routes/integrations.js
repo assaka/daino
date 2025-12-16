@@ -1778,23 +1778,31 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
     } else if (source === 'shopify') {
       // Fetch from Shopify
       try {
+        console.log('📂 [SHOPIFY] Starting collection fetch for store:', storeId);
         const shopifyIntegration = require('../services/shopify-integration');
+
+        console.log('📂 [SHOPIFY] Getting access token...');
         const accessToken = await shopifyIntegration.getAccessToken(storeId);
+        console.log('📂 [SHOPIFY] Access token:', accessToken ? 'Found' : 'Not found');
+
+        console.log('📂 [SHOPIFY] Getting shop domain...');
         const shopDomain = await shopifyIntegration.getShopDomain(storeId);
+        console.log('📂 [SHOPIFY] Shop domain:', shopDomain);
 
         if (!accessToken || !shopDomain) {
+          console.log('❌ [SHOPIFY] Missing accessToken or shopDomain');
           return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
         }
 
-        console.log('📂 Connecting to Shopify:', shopDomain);
-
+        console.log('📂 [SHOPIFY] Creating ShopifyClient...');
         const ShopifyClient = require('../services/shopify-client');
         const client = new ShopifyClient(shopDomain, accessToken);
 
+        console.log('📂 [SHOPIFY] Calling getAllCollections...');
         const collectionsData = await client.getAllCollections();
         const allCollections = collectionsData?.all || [];
 
-        console.log(`📂 Raw Shopify collections count: ${allCollections.length}`);
+        console.log(`📂 [SHOPIFY] Raw collections count: ${allCollections.length}`);
 
         categories = allCollections.map(col => ({
           id: String(col.id),
@@ -1803,9 +1811,10 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
           parent_code: null // Shopify collections are flat
         }));
 
-        console.log(`✅ Fetched ${categories.length} collections from Shopify`);
+        console.log(`✅ [SHOPIFY] Fetched ${categories.length} collections`);
       } catch (shopifyError) {
-        console.error('❌ Shopify collection fetch error:', shopifyError.message);
+        console.error('❌ [SHOPIFY] Error:', shopifyError.message);
+        console.error('❌ [SHOPIFY] Stack:', shopifyError.stack);
         return res.status(500).json({ success: false, message: `Shopify error: ${shopifyError.message}` });
       }
 
