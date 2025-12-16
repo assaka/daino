@@ -421,40 +421,42 @@ class DemoDataProvisioningService {
 
   /**
    * Create demo products
+   * Note: price = regular price, compare_price = sale/discounted price (shown with strikethrough on regular)
    */
   async createDemoProducts() {
     const products = [
       // Electronics - use 'electronics' attribute set
-      { name: 'Premium Wireless Headphones', sku: 'DEMO-ELEC-001', price: 199.99, compare_price: 249.99, category: 'audio', attrSetCode: 'electronics', description: 'High-quality wireless headphones with active noise cancellation and 30-hour battery life.' },
-      { name: 'Bluetooth Speaker Pro', sku: 'DEMO-ELEC-002', price: 79.99, compare_price: 99.99, category: 'audio', attrSetCode: 'electronics', description: 'Portable waterproof speaker with deep bass and 360-degree sound.' },
-      { name: 'Smart Watch Series X', sku: 'DEMO-ELEC-003', price: 299.99, compare_price: 349.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Advanced smartwatch with health monitoring, GPS, and cellular connectivity.' },
+      // price = regular price, compare_price = sale price (discounted)
+      { name: 'Premium Wireless Headphones', sku: 'DEMO-ELEC-001', price: 249.99, compare_price: 199.99, category: 'audio', attrSetCode: 'electronics', description: 'High-quality wireless headphones with active noise cancellation and 30-hour battery life.' },
+      { name: 'Bluetooth Speaker Pro', sku: 'DEMO-ELEC-002', price: 99.99, compare_price: 79.99, category: 'audio', attrSetCode: 'electronics', description: 'Portable waterproof speaker with deep bass and 360-degree sound.' },
+      { name: 'Smart Watch Series X', sku: 'DEMO-ELEC-003', price: 349.99, compare_price: 299.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Advanced smartwatch with health monitoring, GPS, and cellular connectivity.' },
       { name: 'USB-C Hub 7-in-1', sku: 'DEMO-ELEC-004', price: 49.99, compare_price: null, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Multi-port adapter with HDMI, USB 3.0, SD card reader, and PD charging.' },
-      { name: 'Wireless Charging Pad', sku: 'DEMO-ELEC-005', price: 29.99, compare_price: 39.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Fast wireless charger compatible with all Qi-enabled devices.' },
-      { name: 'Noise Cancelling Earbuds', sku: 'DEMO-ELEC-006', price: 149.99, compare_price: 179.99, category: 'audio', attrSetCode: 'electronics', description: 'True wireless earbuds with premium sound and ANC technology.' },
+      { name: 'Wireless Charging Pad', sku: 'DEMO-ELEC-005', price: 39.99, compare_price: 29.99, category: 'electronics-accessories', attrSetCode: 'electronics', description: 'Fast wireless charger compatible with all Qi-enabled devices.' },
+      { name: 'Noise Cancelling Earbuds', sku: 'DEMO-ELEC-006', price: 179.99, compare_price: 149.99, category: 'audio', attrSetCode: 'electronics', description: 'True wireless earbuds with premium sound and ANC technology.' },
 
       // Clothing - use 'clothing' attribute set
       { name: 'Classic Cotton T-Shirt', sku: 'DEMO-CLTH-001', price: 24.99, compare_price: null, category: 'mens-wear', attrSetCode: 'clothing', description: 'Comfortable 100% cotton t-shirt in various colors. Perfect for everyday wear.' },
-      { name: 'Slim Fit Jeans', sku: 'DEMO-CLTH-002', price: 59.99, compare_price: 79.99, category: 'mens-wear', attrSetCode: 'clothing', description: 'Modern slim fit jeans with stretch comfort and durable construction.' },
-      { name: 'Summer Floral Dress', sku: 'DEMO-CLTH-003', price: 49.99, compare_price: 69.99, category: 'womens-wear', attrSetCode: 'clothing', description: 'Light and breezy floral print dress perfect for summer occasions.' },
+      { name: 'Slim Fit Jeans', sku: 'DEMO-CLTH-002', price: 79.99, compare_price: 59.99, category: 'mens-wear', attrSetCode: 'clothing', description: 'Modern slim fit jeans with stretch comfort and durable construction.' },
+      { name: 'Summer Floral Dress', sku: 'DEMO-CLTH-003', price: 69.99, compare_price: 49.99, category: 'womens-wear', attrSetCode: 'clothing', description: 'Light and breezy floral print dress perfect for summer occasions.' },
       { name: 'Leather Belt', sku: 'DEMO-CLTH-004', price: 34.99, compare_price: null, category: 'mens-wear', attrSetCode: 'clothing', description: 'Genuine leather belt with classic buckle design.' },
-      { name: 'Running Shoes Pro', sku: 'DEMO-CLTH-005', price: 129.99, compare_price: 159.99, category: 'footwear', attrSetCode: 'clothing', description: 'Lightweight running shoes with responsive cushioning and breathable mesh.' },
+      { name: 'Running Shoes Pro', sku: 'DEMO-CLTH-005', price: 159.99, compare_price: 129.99, category: 'footwear', attrSetCode: 'clothing', description: 'Lightweight running shoes with responsive cushioning and breathable mesh.' },
       { name: 'Kids Hoodie', sku: 'DEMO-CLTH-006', price: 29.99, compare_price: null, category: 'kids-clothing', attrSetCode: 'clothing', description: 'Cozy pullover hoodie for kids with fun designs.' },
 
       // Home & Living - use 'home-living' attribute set
-      { name: 'Modern Coffee Table', sku: 'DEMO-HOME-001', price: 199.99, compare_price: 249.99, category: 'furniture', attrSetCode: 'home-living', description: 'Sleek modern coffee table with tempered glass top and wooden legs.' },
+      { name: 'Modern Coffee Table', sku: 'DEMO-HOME-001', price: 249.99, compare_price: 199.99, category: 'furniture', attrSetCode: 'home-living', description: 'Sleek modern coffee table with tempered glass top and wooden legs.' },
       { name: 'Ceramic Dinner Set', sku: 'DEMO-HOME-002', price: 89.99, compare_price: null, category: 'kitchen', attrSetCode: 'home-living', description: '16-piece ceramic dinner set for 4, dishwasher safe.' },
-      { name: 'Decorative Wall Art', sku: 'DEMO-HOME-003', price: 59.99, compare_price: 79.99, category: 'decor', attrSetCode: 'home-living', description: 'Canvas wall art set of 3 panels with abstract design.' },
+      { name: 'Decorative Wall Art', sku: 'DEMO-HOME-003', price: 79.99, compare_price: 59.99, category: 'decor', attrSetCode: 'home-living', description: 'Canvas wall art set of 3 panels with abstract design.' },
       { name: 'Memory Foam Pillow', sku: 'DEMO-HOME-004', price: 44.99, compare_price: null, category: 'bedding', attrSetCode: 'home-living', description: 'Ergonomic memory foam pillow for optimal neck support.' },
-      { name: 'LED Desk Lamp', sku: 'DEMO-HOME-005', price: 39.99, compare_price: 49.99, category: 'decor', attrSetCode: 'home-living', description: 'Adjustable LED desk lamp with touch control and USB charging port.' },
-      { name: 'Cotton Bed Sheet Set', sku: 'DEMO-HOME-006', price: 69.99, compare_price: 89.99, category: 'bedding', attrSetCode: 'home-living', description: '400 thread count Egyptian cotton sheet set, queen size.' },
+      { name: 'LED Desk Lamp', sku: 'DEMO-HOME-005', price: 49.99, compare_price: 39.99, category: 'decor', attrSetCode: 'home-living', description: 'Adjustable LED desk lamp with touch control and USB charging port.' },
+      { name: 'Cotton Bed Sheet Set', sku: 'DEMO-HOME-006', price: 89.99, compare_price: 69.99, category: 'bedding', attrSetCode: 'home-living', description: '400 thread count Egyptian cotton sheet set, queen size.' },
 
       // Sports - use 'sports' attribute set
       { name: 'Yoga Mat Premium', sku: 'DEMO-SPRT-001', price: 49.99, compare_price: null, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Extra thick non-slip yoga mat with carrying strap.' },
-      { name: 'Adjustable Dumbbells', sku: 'DEMO-SPRT-002', price: 199.99, compare_price: 249.99, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Space-saving adjustable dumbbells from 5-52.5 lbs per hand.' },
-      { name: 'Camping Tent 4-Person', sku: 'DEMO-SPRT-003', price: 149.99, compare_price: 189.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Waterproof dome tent with easy setup and ventilation.' },
+      { name: 'Adjustable Dumbbells', sku: 'DEMO-SPRT-002', price: 249.99, compare_price: 199.99, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Space-saving adjustable dumbbells from 5-52.5 lbs per hand.' },
+      { name: 'Camping Tent 4-Person', sku: 'DEMO-SPRT-003', price: 189.99, compare_price: 149.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Waterproof dome tent with easy setup and ventilation.' },
       { name: 'Sports Water Bottle', sku: 'DEMO-SPRT-004', price: 24.99, compare_price: null, category: 'fitness-equipment', attrSetCode: 'sports', description: 'Insulated stainless steel bottle keeps drinks cold for 24 hours.' },
       { name: 'Athletic Shorts', sku: 'DEMO-SPRT-005', price: 34.99, compare_price: null, category: 'sports-apparel', attrSetCode: 'sports', description: 'Quick-dry athletic shorts with zip pockets.' },
-      { name: 'Hiking Backpack 40L', sku: 'DEMO-SPRT-006', price: 89.99, compare_price: 109.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Durable hiking backpack with rain cover and hydration compatible.' }
+      { name: 'Hiking Backpack 40L', sku: 'DEMO-SPRT-006', price: 109.99, compare_price: 89.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Durable hiking backpack with rain cover and hydration compatible.' }
     ];
 
     for (let i = 0; i < products.length; i++) {
@@ -484,11 +486,6 @@ class DemoDataProvisioningService {
           sku: prod.sku,
           price: prod.price,
           compare_price: prod.compare_price,
-          images: [
-            { url: `https://picsum.photos/seed/${prod.sku}-1/600/600`, alt: prod.name },
-            { url: `https://picsum.photos/seed/${prod.sku}-2/600/600`, alt: `${prod.name} - View 2` },
-            { url: `https://picsum.photos/seed/${prod.sku}-3/600/600`, alt: `${prod.name} - View 3` }
-          ],
           type: 'simple',
           status: 'active',
           visibility: 'visible',
@@ -506,6 +503,34 @@ class DemoDataProvisioningService {
       }
 
       this.createdIds.products.push(productId);
+
+      // Create product images in product_files table
+      const imageFiles = [
+        { url: `https://picsum.photos/seed/${prod.sku}-1/600/600`, alt: prod.name, position: 0, isPrimary: true },
+        { url: `https://picsum.photos/seed/${prod.sku}-2/600/600`, alt: `${prod.name} - View 2`, position: 1, isPrimary: false },
+        { url: `https://picsum.photos/seed/${prod.sku}-3/600/600`, alt: `${prod.name} - View 3`, position: 2, isPrimary: false }
+      ];
+
+      for (const img of imageFiles) {
+        const { error: imgError } = await this.tenantDb
+          .from('product_files')
+          .insert({
+            id: uuidv4(),
+            product_id: productId,
+            store_id: this.storeId,
+            file_url: img.url,
+            file_type: 'image',
+            position: img.position,
+            is_primary: img.isPrimary,
+            alt_text: img.alt,
+            mime_type: 'image/jpeg',
+            demo: true
+          });
+
+        if (imgError) {
+          console.error(`[DemoData] Error creating product image for ${prod.name}:`, imgError);
+        }
+      }
 
       // Create product translation
       await this.tenantDb

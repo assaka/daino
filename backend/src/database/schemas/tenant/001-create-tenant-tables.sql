@@ -2639,7 +2639,8 @@ CREATE TABLE IF NOT EXISTS product_files (
   metadata JSONB DEFAULT '{}', -- Extra data: width, height, duration, shopify_id, akeneo_code, thumbnail_url, etc.
   store_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS product_variants (

@@ -39,6 +39,7 @@ class DemoDataRestorationService {
     'customers',
 
     // Product-related (order matters for FKs)
+    'product_files',
     'product_attribute_values',
     'product_translations',
     'products',
