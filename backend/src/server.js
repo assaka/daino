@@ -184,22 +184,25 @@ app.options('/api/*', async (req, res, next) => {
   // Get origin from request
   const origin = req.headers.origin;
 
-  // Check if origin is allowed (simplified check for OPTIONS)
-  // const isVercelApp = origin && origin.endsWith('.vercel.app');
-  // const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-  // const isRenderApp = origin && origin.endsWith('.onrender.com');
-  //
-  // // Quick check for known origins
-  // if (isVercelApp || isLocalhost || isRenderApp) {
-  //   res.setHeader('Access-Control-Allow-Origin', origin);
-  //   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-  //   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
-  //   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  //   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-  //   res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
-  //   res.setHeader('Vary', 'Origin'); // Important for caching
-  //   return res.sendStatus(204);
-  // }
+  // Check if origin is allowed using centralized domain config (fast path - no DB lookup)
+  if (origin) {
+    const { isAllowedDomain } = require('./utils/domainConfig');
+    try {
+      const hostname = new URL(origin).hostname;
+      if (isAllowedDomain(hostname)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers,x-skip-transform,X-Skip-Transform');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
+        res.setHeader('Vary', 'Origin'); // Important for caching
+        return res.sendStatus(204);
+      }
+    } catch (e) {
+      console.warn('⚠️ OPTIONS origin parse error:', e.message);
+    }
+  }
 
   // Check for custom domains (async lookup to master DB)
   if (origin) {
