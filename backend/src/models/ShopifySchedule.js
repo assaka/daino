@@ -174,8 +174,7 @@ const ShopifySchedule = {
       .from(this.tableName)
       .delete()
       .eq('id', id)
-      .eq('source_type', this.sourceType)
-      .eq('source_name', this.sourceName);
+      .eq('job_type', 'shopify_import');
 
     if (error) {
       console.error('Error deleting schedule:', error);
@@ -202,9 +201,8 @@ const ShopifySchedule = {
     let query = tenantDb
       .from(this.tableName)
       .select('*')
-      .eq('source_type', this.sourceType)
-      .eq('source_name', this.sourceName)
-      .eq('store_id', store_id);
+      .eq('store_id', store_id)
+      .eq('job_type', 'shopify_import');
 
     Object.keys(otherFilters).forEach(key => {
       if (key === 'id') {
@@ -239,13 +237,13 @@ const ShopifySchedule = {
 
     const tenantDb = await ConnectionManager.getConnection(store_id);
 
-    // Query for Shopify schedules - match by source OR job_type
-    // This ensures we find schedules regardless of how they were created
+    // Query for Shopify schedules - match by job_type
+    // This ensures we find all Shopify import schedules
     let query = tenantDb
       .from(this.tableName)
       .select('*')
       .eq('store_id', store_id)
-      .or(`source_name.eq.${this.sourceName},job_type.eq.shopify_import`);
+      .eq('job_type', 'shopify_import');
 
     Object.keys(otherFilters).forEach(key => {
       if (key === 'is_active') {
@@ -287,8 +285,7 @@ const ShopifySchedule = {
       .from(this.tableName)
       .select('*')
       .eq('id', id)
-      .eq('source_type', this.sourceType)
-      .eq('source_name', this.sourceName)
+      .eq('job_type', 'shopify_import')
       .single();
 
     if (fetchError || !current) {
@@ -341,8 +338,7 @@ const ShopifySchedule = {
       .from(this.tableName)
       .update(updates)
       .eq('id', id)
-      .eq('source_type', this.sourceType)
-      .eq('source_name', this.sourceName)
+      .eq('job_type', 'shopify_import')
       .select()
       .single();
 
