@@ -2904,208 +2904,85 @@ const AkeneoIntegration = () => {
         <TabsContent value="categories" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Import Categories</span>
-                {lastImportDates.categories && (
-                  <div className="flex items-center gap-2 text-sm font-normal text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    <span>Last import: {formatLastImportDate(lastImportDates.categories)}</span>
-                  </div>
-                )}
-              </CardTitle>
+              <CardTitle>Akeneo Categories</CardTitle>
               <CardDescription>
-                Import category data from Akeneo PIM
+                Fetch categories from Akeneo and manage mappings to your store categories
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Categories will be imported with their hierarchical structure. Parent categories are created first.
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="root-categories">Root Categories to Import (Optional)</Label>
-                  <div className="mt-2">
-                    {loadingCategories ? (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Loading categories...
-                      </div>
-                    ) : availableCategories.length > 0 ? (
-                      <div className="space-y-2">
-                        <MultiSelect
-                          options={availableCategories.map(category => ({
-                            value: category.code,
-                            label: `${category.labels?.en_US || category.labels?.en || category.code} (${category.code})`
-                          }))}
-                          value={selectedRootCategories}
-                          onChange={setSelectedRootCategories}
-                          placeholder="Select categories to import (at least 1 required)..."
-                          className={selectedRootCategories.length === 0 ? "border-red-300" : ""}
-                        />
+              {/* Root Category Filter */}
+              <div>
+                <Label htmlFor="root-categories">Filter by Root Categories (Optional)</Label>
+                <div className="mt-2">
+                  {loadingCategories ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Loading categories...
+                    </div>
+                  ) : availableCategories.length > 0 ? (
+                    <div className="space-y-2">
+                      <MultiSelect
+                        options={availableCategories.map(category => ({
+                          value: category.code,
+                          label: `${category.labels?.en_US || category.labels?.en || category.code} (${category.code})`
+                        }))}
+                        value={selectedRootCategories}
+                        onChange={setSelectedRootCategories}
+                        placeholder="All categories (or select specific ones)..."
+                      />
+                      {selectedRootCategories.length > 0 && (
                         <div className="flex items-center justify-between">
-                          <p className={`text-xs ${selectedRootCategories.length === 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                            {selectedRootCategories.length === 0 
-                              ? '⚠️ Please select at least 1 category to import' 
-                              : `${selectedRootCategories.length} categories selected`
-                            }
+                          <p className="text-xs text-gray-500">
+                            {selectedRootCategories.length} root categories selected
                           </p>
-                          {selectedRootCategories.length > 0 && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => setSelectedRootCategories([])}
-                            >
-                              Clear Selection
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedRootCategories([])}
+                          >
+                            Clear
+                          </Button>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-500 p-3 border rounded-md space-y-2">
-                        <p>No root categories available. Make sure:</p>
-                        <ul className="text-xs ml-4 list-disc space-y-1">
-                          <li>Connection has been tested successfully</li>
-                          <li>Akeneo configuration is saved</li>
-                          <li>Your Akeneo user has category read permissions</li>
-                        </ul>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={loadAvailableCategories}
-                          disabled={loadingCategories || !connectionStatus?.success}
-                          className="mt-2"
-                        >
-                          {loadingCategories ? (
-                            <>
-                              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                              Loading...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Try Loading Categories
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="categories-dry-run" 
-                    checked={dryRun} 
-                    onCheckedChange={handleDryRunChange}
-                  />
-                  <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                      id="prevent-category-url-override"
-                      checked={categorySettings.preventUrlKeyOverride}
-                      onCheckedChange={(checked) =>
-                          setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
-                      }
-                  />
-                  <div>
-                    <Label htmlFor="prevent-category-url-override">Prevent URL key override</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Keep existing category URL slugs unchanged during import
-                    </p>
-                  </div>
-                </div>
-
-                {!categorySettings.preventUrlKeyOverride && (
-                  <div className="space-y-2">
-                    <Label htmlFor="category-akeneo-url-field">Akeneo URL field name</Label>
-                    <Input
-                      id="category-akeneo-url-field"
-                      placeholder="e.g., url_key, slug, seo_url"
-                      value={categorySettings.akeneoUrlField}
-                      onChange={(e) => 
-                        setCategorySettings(prev => ({ ...prev, akeneoUrlField: e.target.value }))
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Akeneo field to use for generating category URLs (leave empty to use category name)
-                    </p>
-                  </div>
-                )}
-
-                {/* Advanced Category Settings */}
-                <Card className="bg-gray-50">
-                  <CardHeader>
-                    <CardTitle className="text-sm">Advanced Category Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="hide-from-menu"
-                        checked={categorySettings.hideFromMenu}
-                        onCheckedChange={(checked) => 
-                          setCategorySettings(prev => ({ ...prev, hideFromMenu: checked }))
-                        }
-                      />
-                      <Label htmlFor="hide-from-menu">Hide from menu</Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="set-new-active"
-                        checked={categorySettings.setNewActive}
-                        onCheckedChange={(checked) => 
-                          setCategorySettings(prev => ({ ...prev, setNewActive: checked }))
-                        }
-                      />
-                      <Label htmlFor="set-new-active">Set new categories as active</Label>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={handleFetchCategories}
-                    disabled={fetchingCategories || !connectionStatus?.success}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Download className={`h-4 w-4 ${fetchingCategories ? 'animate-pulse' : ''}`} />
-                    {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
-                  </Button>
-
-                  {categoryMappingStats.unmapped > 0 && (
-                    <Button
-                      onClick={handleImportFromMappings}
-                      disabled={importing || !connectionStatus?.success}
-                      className="flex items-center gap-2"
-                    >
-                      {importing ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4" />
                       )}
-                      {importing ? 'Importing...' : `Import ${categoryMappingStats.unmapped} Categories`}
-                    </Button>
-                  )}
-
-                  {availableCategories.length > 0 && !loadingCategories && (
+                    </div>
+                  ) : (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={loadAvailableCategories}
-                      className="flex items-center gap-2"
+                      disabled={loadingCategories || !connectionStatus?.success}
                     >
-                      <RefreshCw className="h-3 w-3" />
-                      Refresh
+                      <RefreshCw className={`h-3 w-3 mr-1 ${loadingCategories ? 'animate-spin' : ''}`} />
+                      Load Available Categories
                     </Button>
                   )}
                 </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleFetchCategories}
+                  disabled={fetchingCategories || !connectionStatus?.success}
+                  variant="outline"
+                >
+                  <Download className={`h-4 w-4 mr-2 ${fetchingCategories ? 'animate-pulse' : ''}`} />
+                  {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
+                </Button>
+
+                {categoryMappingStats.unmapped > 0 && (
+                  <Button
+                    onClick={handleImportFromMappings}
+                    disabled={importing || !connectionStatus?.success}
+                  >
+                    {importing ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    {importing ? 'Importing...' : `Import ${categoryMappingStats.unmapped} Categories`}
+                  </Button>
+                )}
               </div>
 
               {showCategoryImportResult && renderTabImportResults('categories')}
