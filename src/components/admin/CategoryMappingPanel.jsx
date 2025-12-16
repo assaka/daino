@@ -99,7 +99,7 @@ const CategoryMappingPanel = ({
       }
 
       if (!categories || categories.length === 0) {
-        alert('No external categories found to sync');
+        setFlashMessage({ type: 'error', message: 'No external categories found to sync' });
         return;
       }
 
