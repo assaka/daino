@@ -1305,7 +1305,7 @@ export default function Products() {
                                   </span>
                                 </td>
                                 <td className="py-4 px-4">
-                                  {product.visibility === 'hidden' ? (
+                                  {product.visibility === 'not_visible' ? (
                                     <Badge variant="outline" className={`${statusColors.hidden} flex items-center gap-1`}>
                                       <EyeOff className="w-3 h-3" />
                                       hidden
