@@ -2515,6 +2515,27 @@ const AkeneoIntegration = () => {
                               <span>Locale: {schedule.options?.locale || 'en_US'}</span>
                               {schedule.options?.dryRun && <span> • Dry Run</span>}
                             </div>
+                            {/* Execution Status */}
+                            <div className="text-xs text-gray-400 mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                              {schedule.last_run && (
+                                <span>Last run: {new Date(schedule.last_run).toLocaleString()}</span>
+                              )}
+                              {schedule.next_run && schedule.is_active && (
+                                <span>Next run: {new Date(schedule.next_run).toLocaleString()}</span>
+                              )}
+                              {(schedule._run_count > 0 || schedule._success_count > 0 || schedule._failure_count > 0) && (
+                                <span>
+                                  Runs: {schedule._run_count || 0}
+                                  {schedule._success_count > 0 && <span className="text-green-600 ml-1">({schedule._success_count} ok)</span>}
+                                  {schedule._failure_count > 0 && <span className="text-red-600 ml-1">({schedule._failure_count} failed)</span>}
+                                </span>
+                              )}
+                              {schedule.last_result && (
+                                <span className={schedule.last_result === 'success' ? 'text-green-600' : schedule.last_result === 'failed' ? 'text-red-600' : ''}>
+                                  Last result: {schedule.last_result}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Switch

@@ -781,4 +781,123 @@ router.get('/shop-info', storeAuth, async (req, res) => {
   }
 });
 
+// ==========================================
+// SCHEDULED IMPORTS
+// ==========================================
+
+/**
+ * Get all Shopify schedules for a store
+ * GET /api/shopify/schedules
+ */
+router.get('/schedules', storeAuth, async (req, res) => {
+  try {
+    const ShopifySchedule = require('../models/ShopifySchedule');
+    const schedules = await ShopifySchedule.findAll({
+      where: { store_id: req.storeId }
+    });
+
+    res.json({
+      success: true,
+      schedules
+    });
+  } catch (error) {
+    console.error('Error getting schedules:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Create or update a Shopify schedule
+ * POST /api/shopify/schedules
+ */
+router.post('/schedules', storeAuth, async (req, res) => {
+  try {
+    const ShopifySchedule = require('../models/ShopifySchedule');
+    const storeId = req.storeId;
+
+    const scheduleData = {
+      ...req.body,
+      store_id: storeId
+    };
+
+    // Convert schedule_date if provided
+    if (scheduleData.schedule_date && scheduleData.schedule_date !== '') {
+      try {
+        const date = new Date(scheduleData.schedule_date);
+        if (isNaN(date.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid schedule date format.'
+          });
+        }
+        scheduleData.schedule_date = date.toISOString();
+      } catch (dateError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid schedule date format.'
+        });
+      }
+    } else {
+      scheduleData.schedule_date = null;
+    }
+
+    // Validate schedule type requirements
+    if (scheduleData.schedule_type === 'once' && !scheduleData.schedule_date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Schedule date is required for one-time schedules.'
+      });
+    }
+
+    if (req.body.id) {
+      // Update existing schedule
+      const updatedSchedule = await ShopifySchedule.update(req.body.id, scheduleData, storeId);
+      res.json({
+        success: true,
+        message: 'Schedule updated successfully',
+        schedule: updatedSchedule
+      });
+    } else {
+      // Create new schedule
+      const schedule = await ShopifySchedule.create(scheduleData);
+      res.json({
+        success: true,
+        message: 'Schedule created successfully',
+        schedule
+      });
+    }
+  } catch (error) {
+    console.error('Error saving schedule:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Delete a Shopify schedule
+ * DELETE /api/shopify/schedules/:id
+ */
+router.delete('/schedules/:id', storeAuth, async (req, res) => {
+  try {
+    const ShopifySchedule = require('../models/ShopifySchedule');
+    await ShopifySchedule.destroy(req.params.id, req.storeId);
+
+    res.json({
+      success: true,
+      message: 'Schedule deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
