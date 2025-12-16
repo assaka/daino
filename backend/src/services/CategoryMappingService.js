@@ -21,6 +21,7 @@ class CategoryMappingService {
 
   /**
    * Get all category mappings for this store/integration
+   * Note: category names come from category_translations table, not categories
    */
   async getMappings() {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
