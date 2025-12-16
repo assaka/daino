@@ -496,7 +496,7 @@ DO $$ BEGIN
     'text',
     'description',
     'attributes',
-    'attribute_sets'
+    'attribute_set'
 );
 EXCEPTION
     WHEN duplicate_object THEN null;
