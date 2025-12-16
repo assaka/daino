@@ -1696,7 +1696,12 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
     const storeId = req.store?.id || req.body.store_id;
     const { filters = {} } = req.body;
 
+    console.log(`📂 [SYNC START] source=${source}, storeId=${storeId}`);
+    console.log(`📂 [SYNC] req.store:`, req.store?.id);
+    console.log(`📂 [SYNC] req.body:`, JSON.stringify(req.body));
+
     if (!storeId) {
+      console.log(`❌ [SYNC] No storeId found`);
       return res.status(400).json({ success: false, message: 'Store ID required' });
     }
 
@@ -1817,15 +1822,20 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
     }
 
     const mappingService = new CategoryMappingService(storeId, source);
+    console.log(`📂 [SYNC] Calling syncExternalCategories with ${categories.length} categories...`);
     const results = await mappingService.syncExternalCategories(categories);
+    console.log(`📂 [SYNC] Results:`, JSON.stringify(results));
 
-    res.json({
+    const response = {
       success: true,
       message: `Synced ${results.created + results.updated} categories (${results.created} new, ${results.updated} updated)`,
       results
-    });
+    };
+    console.log(`📂 [SYNC] Sending response:`, JSON.stringify(response));
+    res.json(response);
   } catch (error) {
-    console.error('Error syncing category mappings:', error);
+    console.error('❌ [SYNC] Error syncing category mappings:', error);
+    console.error('❌ [SYNC] Stack:', error.stack);
     res.status(500).json({ success: false, message: error.message });
   }
 });
