@@ -255,6 +255,10 @@ export default function Products() {
       }
 
       // Final state update - ensure fresh array reference
+      // Debug: Log first product's images to check if they're being loaded
+      if (allProducts.length > 0) {
+        console.log('🖼️ First product images:', allProducts[0].sku, allProducts[0].images);
+      }
       setProducts([...allProducts]); // Force React re-render with new array reference
       setTotalItems(totalProductsInStore);
       setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
