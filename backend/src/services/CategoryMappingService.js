@@ -497,24 +497,15 @@ class CategoryMappingService {
   }
 
   /**
-   * Get auto-creation settings from integration config
+   * Get auto-creation settings
+   * Auto-creation during import is disabled by default.
+   * Users should use "Create Categories" button to explicitly create categories.
    */
   async getAutoCreateSettings() {
-    const IntegrationConfig = require('../models/IntegrationConfig');
-    const config = await IntegrationConfig.findByStoreAndType(this.storeId, this.integrationSource);
-
-    const defaults = {
+    return {
       enabled: false,
       defaultIsActive: true,
       defaultHideInMenu: true
-    };
-
-    if (!config || !config.config_data) return defaults;
-
-    return {
-      enabled: config.config_data.categoryAutoCreate?.enabled ?? false,
-      defaultIsActive: config.config_data.categoryAutoCreate?.defaultIsActive ?? true,
-      defaultHideInMenu: config.config_data.categoryAutoCreate?.defaultHideInMenu ?? true
     };
   }
 
@@ -532,7 +523,10 @@ class CategoryMappingService {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
     try {
-      const settings = await this.getAutoCreateSettings();
+      // Default settings for new categories
+      // is_active: true (visible), hide_in_menu: true (hidden from navigation for review)
+      const defaultIsActive = true;
+      const defaultHideInMenu = true;
       const now = new Date().toISOString();
 
       // Generate slug from name or code
@@ -597,8 +591,8 @@ class CategoryMappingService {
           parent_id: parentId,
           level: level,
           path: path,
-          is_active: settings.defaultIsActive,
-          hide_in_menu: settings.defaultHideInMenu,
+          is_active: defaultIsActive,
+          hide_in_menu: defaultHideInMenu,
           sort_order: 0,
           created_at: now,
           updated_at: now
@@ -639,7 +633,7 @@ class CategoryMappingService {
       });
 
       console.log(`✅ Auto-created category: "${categoryName}" (${slug}) → ${categoryId}`);
-      console.log(`   Settings: is_active=${settings.defaultIsActive}, hide_in_menu=${settings.defaultHideInMenu}`);
+      console.log(`   Settings: is_active=${defaultIsActive}, hide_in_menu=${defaultHideInMenu}`);
 
       return categoryId;
 
