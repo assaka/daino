@@ -39,7 +39,12 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     const mappedTabs = tabsToRender.map((tab, index) => {
       // Backend returns translated name/content in base fields (based on X-Language header)
       const translatedTitle = tab.name || 'No Tab Name';
-      const translatedContent = tab.content || '';
+      let translatedContent = tab.content || '';
+
+      // For description tab_type, use product.description if no content is set
+      if (tab.tab_type === 'description' && !translatedContent && product?.description) {
+        translatedContent = product.description;
+      }
 
       return {
         ...tab,
