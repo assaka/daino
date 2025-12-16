@@ -1706,55 +1706,73 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
 
       if (source === 'akeneo') {
         // Fetch from Akeneo
-        const config = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
-        if (!config || !config.config_data) {
-          return res.status(400).json({ success: false, message: 'Akeneo integration not configured' });
+        try {
+          const config = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+          if (!config || !config.config_data) {
+            return res.status(400).json({ success: false, message: 'Akeneo integration not configured' });
+          }
+
+          console.log('📂 Connecting to Akeneo:', config.config_data.baseUrl);
+
+          const AkeneoClient = require('../services/akeneo-client');
+          const client = new AkeneoClient(
+            config.config_data.baseUrl,
+            config.config_data.clientId,
+            config.config_data.clientSecret,
+            config.config_data.username,
+            config.config_data.password,
+            config.config_data.version || '7'
+          );
+
+          const akeneoCategories = await client.getAllCategories();
+          console.log(`📂 Raw Akeneo categories count: ${akeneoCategories?.length || 0}`);
+
+          categories = (akeneoCategories || []).map(cat => ({
+            id: cat.code,
+            code: cat.code,
+            name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code,
+            parent_code: cat.parent || null
+          }));
+
+          console.log(`✅ Fetched ${categories.length} categories from Akeneo`);
+        } catch (akeneoError) {
+          console.error('❌ Akeneo category fetch error:', akeneoError.message);
+          return res.status(500).json({ success: false, message: `Akeneo error: ${akeneoError.message}` });
         }
-
-        const AkeneoClient = require('../services/akeneo-client');
-        const client = new AkeneoClient(
-          config.config_data.baseUrl,
-          config.config_data.clientId,
-          config.config_data.clientSecret,
-          config.config_data.username,
-          config.config_data.password,
-          config.config_data.version || '7'
-        );
-
-        const akeneoCategories = await client.getAllCategories();
-        categories = akeneoCategories.map(cat => ({
-          id: cat.code,
-          code: cat.code,
-          name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code,
-          parent_code: cat.parent
-        }));
-
-        console.log(`✅ Fetched ${categories.length} categories from Akeneo`);
 
       } else if (source === 'shopify') {
         // Fetch from Shopify
-        const shopifyIntegration = require('../services/shopify-integration');
-        const accessToken = await shopifyIntegration.getAccessToken(storeId);
-        const shopDomain = await shopifyIntegration.getShopDomain(storeId);
+        try {
+          const shopifyIntegration = require('../services/shopify-integration');
+          const accessToken = await shopifyIntegration.getAccessToken(storeId);
+          const shopDomain = await shopifyIntegration.getShopDomain(storeId);
 
-        if (!accessToken || !shopDomain) {
-          return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
+          if (!accessToken || !shopDomain) {
+            return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
+          }
+
+          console.log('📂 Connecting to Shopify:', shopDomain);
+
+          const ShopifyClient = require('../services/shopify-client');
+          const client = new ShopifyClient(shopDomain, accessToken);
+
+          const collectionsData = await client.getAllCollections();
+          const allCollections = collectionsData?.all || [];
+
+          console.log(`📂 Raw Shopify collections count: ${allCollections.length}`);
+
+          categories = allCollections.map(col => ({
+            id: String(col.id),
+            code: String(col.id),
+            name: col.title || `Collection ${col.id}`,
+            parent_code: null // Shopify collections are flat
+          }));
+
+          console.log(`✅ Fetched ${categories.length} collections from Shopify`);
+        } catch (shopifyError) {
+          console.error('❌ Shopify collection fetch error:', shopifyError.message);
+          return res.status(500).json({ success: false, message: `Shopify error: ${shopifyError.message}` });
         }
-
-        const ShopifyClient = require('../services/shopify-client');
-        const client = new ShopifyClient(shopDomain, accessToken);
-
-        const collectionsData = await client.getAllCollections();
-        const allCollections = collectionsData.all || [];
-
-        categories = allCollections.map(col => ({
-          id: col.id.toString(),
-          code: col.id.toString(),
-          name: col.title,
-          parent_code: null // Shopify collections are flat
-        }));
-
-        console.log(`✅ Fetched ${categories.length} collections from Shopify`);
 
       } else {
         return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });

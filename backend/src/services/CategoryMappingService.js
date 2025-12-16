@@ -86,15 +86,30 @@ class CategoryMappingService {
 
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-    // 1. Check for explicit mapping
-    const { data: existingMapping } = await tenantDb
+    // 1. Check for explicit mapping - handle null values properly
+    let query = tenantDb
       .from('integration_category_mappings')
       .select('internal_category_id')
       .eq('store_id', this.storeId)
       .eq('integration_source', this.integrationSource)
-      .or(`external_category_id.eq.${externalId},external_category_code.eq.${externalCode}`)
-      .eq('is_active', true)
-      .maybeSingle();
+      .eq('is_active', true);
+
+    // Build OR filter only for non-null values
+    const orConditions = [];
+    if (externalId) {
+      orConditions.push(`external_category_id.eq.${externalId}`);
+    }
+    if (externalCode) {
+      orConditions.push(`external_category_code.eq.${externalCode}`);
+    }
+
+    let existingMapping = null;
+    if (orConditions.length > 0) {
+      const { data } = await query
+        .or(orConditions.join(','))
+        .maybeSingle();
+      existingMapping = data;
+    }
 
     if (existingMapping?.internal_category_id) {
       return existingMapping.internal_category_id;
@@ -200,13 +215,29 @@ class CategoryMappingService {
       updated_at: new Date().toISOString()
     };
 
-    // Check if mapping exists
-    const { data: existing } = await tenantDb
+    // Check if mapping exists - handle null values properly
+    let query = tenantDb
       .from('integration_category_mappings')
       .select('id')
       .eq('store_id', this.storeId)
-      .eq('integration_source', this.integrationSource)
-      .or(`external_category_id.eq.${mappingData.external_category_id},external_category_code.eq.${mappingData.external_category_code}`)
+      .eq('integration_source', this.integrationSource);
+
+    // Build OR filter only for non-null values
+    const orConditions = [];
+    if (mappingData.external_category_id) {
+      orConditions.push(`external_category_id.eq.${mappingData.external_category_id}`);
+    }
+    if (mappingData.external_category_code) {
+      orConditions.push(`external_category_code.eq.${mappingData.external_category_code}`);
+    }
+
+    if (orConditions.length === 0) {
+      // No valid identifiers - can't look up existing
+      return null;
+    }
+
+    const { data: existing } = await query
+      .or(orConditions.join(','))
       .maybeSingle();
 
     if (existing) {
