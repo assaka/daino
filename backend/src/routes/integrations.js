@@ -1656,7 +1656,7 @@ const CategoryMappingService = require('../services/CategoryMappingService');
  * GET /integrations/category-mappings/:source
  * Get all category mappings for a source (akeneo, shopify)
  */
-router.get('/category-mappings/:source', authMiddleware, storeResolver, async (req, res) => {
+router.get('/category-mappings/:source', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
@@ -1690,7 +1690,7 @@ router.get('/category-mappings/:source', authMiddleware, storeResolver, async (r
  * Sync external categories to the mappings table
  * Supports filters for root categories (same as import)
  */
-router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, async (req, res) => {
+router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
@@ -1853,7 +1853,7 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
  * POST /integrations/category-mappings/:source/create-from-unmapped
  * Create store categories from unmapped external categories
  */
-router.post('/category-mappings/:source/create-from-unmapped', authMiddleware, storeResolver, async (req, res) => {
+router.post('/category-mappings/:source/create-from-unmapped', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
@@ -1918,7 +1918,7 @@ router.post('/category-mappings/:source/create-from-unmapped', authMiddleware, s
  * POST /integrations/category-mappings/:source/auto-match
  * Auto-match all unmapped categories
  */
-router.post('/category-mappings/:source/auto-match', authMiddleware, storeResolver, async (req, res) => {
+router.post('/category-mappings/:source/auto-match', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
@@ -1945,7 +1945,7 @@ router.post('/category-mappings/:source/auto-match', authMiddleware, storeResolv
  * PUT /integrations/category-mappings/:source/:externalCode
  * Update a single category mapping
  */
-router.put('/category-mappings/:source/:externalCode', authMiddleware, storeResolver, async (req, res) => {
+router.put('/category-mappings/:source/:externalCode', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source, externalCode } = req.params;
     const storeId = req.store?.id || req.body.store_id;
@@ -1977,7 +1977,7 @@ router.put('/category-mappings/:source/:externalCode', authMiddleware, storeReso
  * POST /integrations/category-mappings/:source/bulk-update
  * Bulk update multiple category mappings
  */
-router.post('/category-mappings/:source/bulk-update', authMiddleware, storeResolver, async (req, res) => {
+router.post('/category-mappings/:source/bulk-update', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
