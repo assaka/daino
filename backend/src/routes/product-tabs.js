@@ -121,7 +121,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
 router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
+  body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_set']).withMessage('Invalid tab type'),
   body('content').optional().isString(),
   body('attribute_ids').optional().isArray().withMessage('Attribute IDs must be an array'),
   body('attribute_set_ids').optional().isArray().withMessage('Attribute set IDs must be an array'),
