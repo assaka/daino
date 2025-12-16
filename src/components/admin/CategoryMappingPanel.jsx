@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp, Settings, Sparkles } from 'lucide-react';
+import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp, Settings, Plus } from 'lucide-react';
 import apiClient from '../../utils/api';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
@@ -9,8 +9,6 @@ import FlashMessage from '@/components/storefront/FlashMessage';
  */
 const CategoryMappingPanel = ({
   integrationSource, // 'akeneo' or 'shopify'
-  onFetchExternalCategories, // Function to fetch categories from external source
-  externalCategories = null, // Pre-fetched external categories (optional)
   title = 'Category Mapping'
 }) => {
   const [mappings, setMappings] = useState([]);
@@ -19,12 +17,14 @@ const CategoryMappingPanel = ({
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [autoMatching, setAutoMatching] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all', 'mapped', 'unmapped', 'auto_created'
   const [searchTerm, setSearchTerm] = useState('');
   const [savingMapping, setSavingMapping] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
-  // Auto-create settings state
+  // Settings state
   const [autoCreateSettings, setAutoCreateSettings] = useState({
     enabled: false,
     defaultIsActive: true,
@@ -32,7 +32,9 @@ const CategoryMappingPanel = ({
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [flashMessage, setFlashMessage] = useState(null);
+
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Fetch mappings from API
   const fetchMappings = useCallback(async () => {
@@ -46,6 +48,7 @@ const CategoryMappingPanel = ({
       }
     } catch (error) {
       console.error('Error fetching category mappings:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to load mappings' });
     } finally {
       setLoading(false);
     }
@@ -72,11 +75,11 @@ const CategoryMappingPanel = ({
         autoCreateSettings
       );
       if (response.data.success) {
-        alert('Auto-create settings saved successfully');
+        setFlashMessage({ type: 'success', message: 'Settings saved successfully' });
       }
     } catch (error) {
       console.error('Error saving auto-create settings:', error);
-      alert('Failed to save settings: ' + (error.response?.data?.message || error.message));
+      setFlashMessage({ type: 'error', message: 'Failed to save settings' });
     } finally {
       setSavingSettings(false);
     }
@@ -87,41 +90,27 @@ const CategoryMappingPanel = ({
     fetchAutoCreateSettings();
   }, [fetchMappings, fetchAutoCreateSettings]);
 
-  // Sync external categories to mappings table
+  // Sync external categories directly from integration (backend fetches them)
   const handleSync = async () => {
     setSyncing(true);
+    setFlashMessage(null);
     try {
-      let categories = externalCategories;
-
-      // Fetch from external source if not provided
-      if (!categories && onFetchExternalCategories) {
-        categories = await onFetchExternalCategories();
-      }
-
-      if (!categories || categories.length === 0) {
-        setFlashMessage({ type: 'error', message: 'No external categories found to sync' });
-        return;
-      }
-
-      // Transform to expected format
-      const formattedCategories = categories.map(cat => ({
-        id: cat.id || cat.code,
-        code: cat.code || cat.id,
-        name: cat.name || cat.label || cat.title,
-        parent_code: cat.parent || cat.parent_code || cat.parent_id
-      }));
-
-      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, {
-        categories: formattedCategories
-      });
+      // Call sync endpoint without categories - backend will fetch them
+      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, {});
 
       if (response.data.success) {
         await fetchMappings();
-        alert(`Synced ${response.data.results.created} new, ${response.data.results.updated} updated`);
+        setFlashMessage({
+          type: 'success',
+          message: response.data.message || `Synced ${response.data.results?.created || 0} new, ${response.data.results?.updated || 0} updated`
+        });
       }
     } catch (error) {
       console.error('Error syncing categories:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to sync categories: ' + error.message });
+      setFlashMessage({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to sync categories'
+      });
     } finally {
       setSyncing(false);
     }
@@ -130,17 +119,43 @@ const CategoryMappingPanel = ({
   // Auto-match unmapped categories
   const handleAutoMatch = async () => {
     setAutoMatching(true);
+    setFlashMessage(null);
     try {
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/auto-match`);
       if (response.data.success) {
         await fetchMappings();
-        alert(`Auto-matched ${response.data.results.matched} categories, ${response.data.results.unmatched} remain unmapped`);
+        setFlashMessage({
+          type: 'success',
+          message: `Auto-matched ${response.data.results?.matched || 0} categories`
+        });
       }
     } catch (error) {
       console.error('Error auto-matching:', error);
-      alert('Failed to auto-match: ' + error.message);
+      setFlashMessage({ type: 'error', message: 'Failed to auto-match categories' });
     } finally {
       setAutoMatching(false);
+    }
+  };
+
+  // Create categories from unmapped
+  const handleCreateFromUnmapped = async () => {
+    setCreating(true);
+    setShowConfirmModal(false);
+    setFlashMessage(null);
+    try {
+      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-from-unmapped`);
+      if (response.data.success) {
+        await fetchMappings();
+        setFlashMessage({
+          type: 'success',
+          message: response.data.message || `Created ${response.data.results?.created || 0} categories`
+        });
+      }
+    } catch (error) {
+      console.error('Error creating categories:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to create categories' });
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -172,7 +187,7 @@ const CategoryMappingPanel = ({
       }
     } catch (error) {
       console.error('Error updating mapping:', error);
-      alert('Failed to update mapping: ' + error.message);
+      setFlashMessage({ type: 'error', message: 'Failed to update mapping' });
     } finally {
       setSavingMapping(null);
     }
@@ -221,10 +236,43 @@ const CategoryMappingPanel = ({
   });
 
   const categoryOptions = buildCategoryOptions();
+  const sourceLabel = integrationSource === 'akeneo' ? 'Akeneo' : 'Shopify';
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Categories</h3>
+            <p className="text-gray-600 mb-4">
+              You are about to create <span className="font-bold text-indigo-600">{stats.unmapped}</span> new categories from unmapped {sourceLabel} categories.
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              New categories will be created with:
+              <br />- Active: <span className="font-medium">{autoCreateSettings.defaultIsActive ? 'Yes' : 'No'}</span>
+              <br />- Hide in Menu: <span className="font-medium">{autoCreateSettings.defaultHideInMenu ? 'Yes' : 'No'}</span>
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFromUnmapped}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              >
+                Create {stats.unmapped} Categories
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div
         className="px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer"
@@ -249,98 +297,71 @@ const CategoryMappingPanel = ({
 
       {expanded && (
         <div className="p-4">
-          {/* Auto-Create Settings Section */}
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          {/* Settings Section - Collapsed by default */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
             <div
               className="flex items-center justify-between cursor-pointer"
               onClick={() => setShowSettings(!showSettings)}
             >
               <div className="flex items-center gap-2">
                 <Settings className="h-4 w-4 text-gray-600" />
-                <h4 className="font-medium text-gray-900">Auto-Create Settings</h4>
-                {autoCreateSettings.enabled && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Enabled
-                  </span>
-                )}
+                <span className="font-medium text-gray-900 text-sm">New Category Defaults</span>
               </div>
               {showSettings ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
             </div>
 
             {showSettings && (
-              <div className="mt-4 space-y-4">
-                <p className="text-sm text-gray-600">
-                  When enabled, categories that don't have a mapping will be automatically created during product import.
+              <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+                <p className="text-xs text-gray-600">
+                  Configure default values for newly created categories.
                 </p>
 
-                {/* Enable Auto-Create Toggle */}
-                <div className="flex items-center justify-between py-2 border-b border-gray-200">
+                {/* Default Active Status */}
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="font-medium text-gray-800">Enable Auto-Creation</label>
-                    <p className="text-xs text-gray-500">Automatically create categories when not mapped</p>
+                    <label className="text-sm font-medium text-gray-800">Active</label>
+                    <p className="text-xs text-gray-500">Visible to customers</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={autoCreateSettings.enabled}
-                      onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                      checked={autoCreateSettings.defaultIsActive}
+                      onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, defaultIsActive: e.target.checked }))}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
                 </div>
 
-                {autoCreateSettings.enabled && (
-                  <>
-                    {/* Default Active Status */}
-                    <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                      <div>
-                        <label className="font-medium text-gray-800">Default: Active</label>
-                        <p className="text-xs text-gray-500">New categories will be active (visible to customers)</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={autoCreateSettings.defaultIsActive}
-                          onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, defaultIsActive: e.target.checked }))}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-
-                    {/* Default Hide in Menu */}
-                    <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                      <div>
-                        <label className="font-medium text-gray-800">Default: Hide in Menu</label>
-                        <p className="text-xs text-gray-500">New categories will be hidden from navigation menu</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={autoCreateSettings.defaultHideInMenu}
-                          onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, defaultHideInMenu: e.target.checked }))}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-                  </>
-                )}
+                {/* Default Hide in Menu */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-gray-800">Hide in Menu</label>
+                    <p className="text-xs text-gray-500">Hidden from navigation</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoCreateSettings.defaultHideInMenu}
+                      onChange={(e) => setAutoCreateSettings(prev => ({ ...prev, defaultHideInMenu: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
 
                 <button
                   onClick={handleSaveAutoCreateSettings}
                   disabled={savingSettings}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {savingSettings ? (
                     <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      <RefreshCw className="h-3 w-3 mr-1.5 animate-spin" />
                       Saving...
                     </>
                   ) : (
-                    'Save Settings'
+                    'Save Defaults'
                   )}
                 </button>
               </div>
@@ -355,7 +376,7 @@ const CategoryMappingPanel = ({
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync Categories'}
+              {syncing ? 'Syncing...' : `Sync from ${sourceLabel}`}
             </button>
 
             <button
@@ -366,6 +387,17 @@ const CategoryMappingPanel = ({
               <Wand2 className={`h-4 w-4 mr-1.5 ${autoMatching ? 'animate-pulse' : ''}`} />
               {autoMatching ? 'Matching...' : 'Auto-Match'}
             </button>
+
+            {stats.unmapped > 0 && (
+              <button
+                onClick={() => setShowConfirmModal(true)}
+                disabled={creating}
+                className="inline-flex items-center px-3 py-1.5 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50"
+              >
+                <Plus className={`h-4 w-4 mr-1.5 ${creating ? 'animate-spin' : ''}`} />
+                {creating ? 'Creating...' : `Create ${stats.unmapped} Categories`}
+              </button>
+            )}
 
             <div className="flex-1" />
 
@@ -402,7 +434,7 @@ const CategoryMappingPanel = ({
                 <div>
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p>No category mappings yet.</p>
-                  <p className="text-sm">Click "Sync Categories" to import from {integrationSource}.</p>
+                  <p className="text-sm">Click "Sync from {sourceLabel}" to import categories.</p>
                 </div>
               ) : (
                 <p>No mappings match your filter.</p>
@@ -414,7 +446,7 @@ const CategoryMappingPanel = ({
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      External Category
+                      {sourceLabel} Category
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Code
@@ -433,7 +465,7 @@ const CategoryMappingPanel = ({
                       <td className="px-4 py-2 text-sm text-gray-900">
                         {mapping.external_category_name || mapping.external_category_code}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-500 font-mono">
+                      <td className="px-4 py-2 text-sm text-gray-500 font-mono text-xs">
                         {mapping.external_category_code}
                       </td>
                       <td className="px-4 py-2">
@@ -477,9 +509,7 @@ const CategoryMappingPanel = ({
 
           {/* Info text */}
           <p className="mt-4 text-xs text-gray-500">
-            Map external {integrationSource} categories to your store categories.
-            Products will be assigned to the mapped store category during import.
-            Use "Auto-Match" to automatically match by name/slug.
+            Map {sourceLabel} categories to your store categories. Products will be assigned to the mapped category during import.
           </p>
         </div>
       )}

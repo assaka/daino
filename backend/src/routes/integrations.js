@@ -1688,19 +1688,84 @@ router.get('/category-mappings/:source', authMiddleware, storeResolver, async (r
 /**
  * POST /integrations/category-mappings/:source/sync
  * Sync external categories to the mappings table
+ * Can receive categories in body, or fetch directly from integration
  */
 router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
-    const { categories } = req.body;
+    let { categories } = req.body;
 
     if (!storeId) {
       return res.status(400).json({ success: false, message: 'Store ID required' });
     }
 
-    if (!categories || !Array.isArray(categories)) {
-      return res.status(400).json({ success: false, message: 'Categories array required' });
+    // If no categories provided, fetch directly from integration
+    if (!categories || categories.length === 0) {
+      console.log(`📂 Fetching categories directly from ${source}...`);
+
+      if (source === 'akeneo') {
+        // Fetch from Akeneo
+        const config = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+        if (!config || !config.config_data) {
+          return res.status(400).json({ success: false, message: 'Akeneo integration not configured' });
+        }
+
+        const AkeneoClient = require('../services/akeneo-client');
+        const client = new AkeneoClient(
+          config.config_data.baseUrl,
+          config.config_data.clientId,
+          config.config_data.clientSecret,
+          config.config_data.username,
+          config.config_data.password,
+          config.config_data.version || '7'
+        );
+
+        const akeneoCategories = await client.getAllCategories();
+        categories = akeneoCategories.map(cat => ({
+          id: cat.code,
+          code: cat.code,
+          name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code,
+          parent_code: cat.parent
+        }));
+
+        console.log(`✅ Fetched ${categories.length} categories from Akeneo`);
+
+      } else if (source === 'shopify') {
+        // Fetch from Shopify
+        const shopifyIntegration = require('../services/shopify-integration');
+        const credentials = await shopifyIntegration.getShopifyCredentials(storeId);
+
+        if (!credentials) {
+          return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
+        }
+
+        const ShopifyClient = require('../services/shopify-client');
+        const client = new ShopifyClient(credentials.shopDomain, credentials.accessToken);
+
+        const collectionsData = await client.getAllCollections();
+        const allCollections = collectionsData.all || [];
+
+        categories = allCollections.map(col => ({
+          id: col.id.toString(),
+          code: col.id.toString(),
+          name: col.title,
+          parent_code: null // Shopify collections are flat
+        }));
+
+        console.log(`✅ Fetched ${categories.length} collections from Shopify`);
+
+      } else {
+        return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
+      }
+    }
+
+    if (!categories || categories.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No categories found in external system',
+        results: { created: 0, updated: 0 }
+      });
     }
 
     const mappingService = new CategoryMappingService(storeId, source);
@@ -1708,11 +1773,76 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver, as
 
     res.json({
       success: true,
-      message: `Synced ${results.created + results.updated} categories`,
+      message: `Synced ${results.created + results.updated} categories (${results.created} new, ${results.updated} updated)`,
       results
     });
   } catch (error) {
     console.error('Error syncing category mappings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /integrations/category-mappings/:source/create-from-unmapped
+ * Create store categories from unmapped external categories
+ */
+router.post('/category-mappings/:source/create-from-unmapped', authMiddleware, storeResolver, async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+
+    // Get all unmapped categories
+    const mappings = await mappingService.getMappings();
+    const unmapped = mappings.filter(m => !m.internal_category_id);
+
+    if (unmapped.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No unmapped categories to create',
+        results: { created: 0, failed: 0 }
+      });
+    }
+
+    console.log(`🔄 Creating ${unmapped.length} categories from unmapped mappings...`);
+
+    const results = { created: 0, failed: 0, errors: [] };
+
+    for (const mapping of unmapped) {
+      try {
+        const newCategoryId = await mappingService.autoCreateCategory({
+          id: mapping.external_category_id,
+          code: mapping.external_category_code,
+          name: mapping.external_category_name || mapping.external_category_code,
+          parent_code: mapping.external_parent_code
+        });
+
+        if (newCategoryId) {
+          results.created++;
+        } else {
+          results.failed++;
+          results.errors.push({ code: mapping.external_category_code, error: 'Failed to create category' });
+        }
+      } catch (err) {
+        results.failed++;
+        results.errors.push({ code: mapping.external_category_code, error: err.message });
+      }
+    }
+
+    console.log(`✅ Created ${results.created} categories, ${results.failed} failed`);
+
+    res.json({
+      success: true,
+      message: `Created ${results.created} categories${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
+      results
+    });
+  } catch (error) {
+    console.error('Error creating categories from unmapped:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
