@@ -3852,12 +3852,6 @@ CREATE TRIGGER update_heatmap_sessions_timestamp
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
-DROP TRIGGER IF EXISTS update_jobs_updated_at ON jobs;
-CREATE TRIGGER update_jobs_updated_at
-  BEFORE UPDATE ON jobs
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
 DROP TRIGGER IF EXISTS update_pdf_template_translations_updated_at ON pdf_template_translations;
 CREATE TRIGGER update_pdf_template_translations_updated_at
   BEFORE UPDATE ON pdf_template_translations
