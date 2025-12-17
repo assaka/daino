@@ -461,6 +461,7 @@ const categoryConfig = {
         backgroundColor: 'transparent',
         padding: '1rem',
         paddingLeft: 0,
+        paddingTop: 0,
         borderRadius: '0.5rem'
       },
       parentId: null,
