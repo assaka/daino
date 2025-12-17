@@ -81,13 +81,8 @@ export default function HeatmapAnalytics() {
                 <div>
                   <h3 className="font-semibold text-amber-800 mb-1">Alpha Preliminary Version</h3>
                   <p className="text-sm text-amber-700 mb-2">
-                    This heatmap analytics dashboard is currently in alpha development and may contain incomplete features,
-                    inaccurate data, or experimental functionality.
+                    This heatmap analytics dashboard is currently in alpha development.
                   </p>
-                  <div className="flex items-center space-x-4 text-xs text-amber-600">
-                    <span>• Use for testing and development only</span>
-                    <span>• Data may be simulated or incomplete</span>
-                  </div>
                 </div>
               </div>
             </CardContent>
