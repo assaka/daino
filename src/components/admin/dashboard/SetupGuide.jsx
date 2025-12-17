@@ -221,7 +221,7 @@ export const SetupGuide = ({ store }) => {
                         <Button
                             variant={emailConfigured ? "secondary" : "default"}
                             size="sm"
-                            onClick={() => navigate(createPageUrl('settings/email'))}
+                            onClick={() => navigate(createPageUrl('email'))}
                             disabled={loadingEmail}
                         >
                             {loadingEmail ? (
