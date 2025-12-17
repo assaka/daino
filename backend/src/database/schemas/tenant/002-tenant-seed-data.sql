@@ -139,14 +139,9 @@ INSERT INTO category_translations (category_id, language_code, name, description
 SELECT id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()
 FROM categories WHERE slug = 'root-catalog';
 
-INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
-SELECT id, 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW()
-FROM categories WHERE slug = 'root-catalog';
-
 -- cms_pages (3 rows)
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)
 VALUES
-  ('f04fac32-51e5-4162-a35e-5d496dd2410a', 'yryryryr', true, '', '', '', 'index, follow', '{{STORE_ID}}', '["4df411ea-a896-4a3c-9f83-53640886b9ea","01c89d04-b9e0-43c4-aa75-f1b743b5eaa3"]'::jsonb, NULL, 0, '2025-10-23T08:56:11.639Z', '2025-10-23T13:12:55.382Z', false, '{}'::jsonb),
   ('bbb26804-4ff2-4e8b-ba2b-e8c203704176', '404-page-not-found', true, '404 - Page Not Found | {{store_name}}', 'Sorry, we couldn''t find the page you''re looking for. Browse our products or contact us for assistance.', '404, page not found, error, help', 'noindex, nofollow', '{{STORE_ID}}', '[]'::jsonb, NULL, 0, '2025-08-03T13:25:59.349Z', '2025-10-23T14:32:28.325Z', true, '{}'::jsonb),
   ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'privacy-policy', true, 'Privacy Policy | {{store_name}}', 'Learn how {{store_name}} collects, uses, and protects your personal information. Read our privacy policy for details on data protection and your rights.', 'privacy policy, data protection, personal information, privacy rights, GDPR', 'index, follow', '{{STORE_ID}}', '[]'::jsonb, NULL, 9998, '2025-10-23T15:34:30.823Z', '2025-10-23T15:34:30.823Z', true, '{}'::jsonb)
 ON CONFLICT DO NOTHING;
