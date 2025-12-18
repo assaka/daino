@@ -20,9 +20,7 @@ const masterEmailHeader = (options = {}) => {
   const {
     title = '',
     subtitle = '',
-    logoUrl = PLATFORM_LOGO_URL,
-    primaryColor = '#6366f1', // Indigo (used for accent elements)
-    secondaryColor = '#8b5cf6' // Purple (unused - keeping for API compatibility)
+    logoUrl = PLATFORM_LOGO_URL
   } = options;
 
   return `
@@ -31,10 +29,10 @@ const masterEmailHeader = (options = {}) => {
       <tr>
         <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
         <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #eab308;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #22c55e;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #3b82f6;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #8b5cf6;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
       </tr>
     </table>
     <!-- Email Header - Clean white background -->
@@ -257,7 +255,7 @@ const creditsPurchaseEmail = (data) => {
     ${header}
 
     <!-- Email Body -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fff">
       <tr>
         <td class="email-content" style="padding: 40px;">
           <!-- Greeting -->
@@ -386,7 +384,7 @@ const creditsLowBalanceEmail = (data) => {
     ${header}
 
     <!-- Email Body -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #FFF;">
       <tr>
         <td class="email-content" style="padding: 40px;">
           <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
@@ -465,7 +463,7 @@ const welcomeEmail = (data) => {
     ${header}
 
     <!-- Email Body -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #FFF;">
       <tr>
         <td class="email-content" style="padding: 40px;">
           <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
@@ -566,7 +564,7 @@ const passwordResetEmail = (data) => {
     ${header}
 
     <!-- Email Body -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #FFF;">
       <tr>
         <td class="email-content" style="padding: 40px;">
           <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
@@ -651,18 +649,27 @@ const teamInvitationEmail = (data) => {
     }
   };
 
+  const header = masterEmailHeader({
+    title: 'You are Invited!',
+    subtitle: 'Join the team and start collaborating',
+    primaryColor: '#ef4444', // Red
+    secondaryColor: '#dc2626'
+  });
+
   const footer = masterEmailFooter();
 
   const content = `
+    ${header}
+
     <!-- Colorful Top Border - Rainbow gradient effect using segments -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 12px 12px 0 0; overflow: hidden;">
       <tr>
         <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
         <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #eab308;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #22c55e;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #3b82f6;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #8b5cf6;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
+        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
       </tr>
     </table>
     <!-- Team Invitation Header -->
