@@ -781,7 +781,7 @@ const teamInvitationEmail = (data) => {
                   By accepting, you agree to Daino's Terms of Service and Privacy Policy
                 </p>
                 <p style="margin: 0; color: #d1d5db; font-size: 12px;">
-                  Powered by <span style="color: #9ca3af; font-weight: 500;">Daino</span> — E-commerce made simple
+                  Powered by <span style="color: #9ca3af; font-weight: 500;">DainoStore</span> — E-commerce made simple
                 </p>
               </td>
             </tr>
