@@ -25,8 +25,9 @@ const captureScreenshot = async (url, options = {}) => {
         viewportWidth: options.viewportWidth || 1920,
         viewportHeight: options.viewportHeight || 1080,
         fullPage: options.fullPage !== false,
-        format: options.format || 'png',
-        waitTime: options.waitTime || 3000, // Wait 3 seconds after page load for rendering
+        format: options.format || 'jpeg',
+        quality: options.quality || 80, // JPEG quality (faster than PNG)
+        waitTime: options.waitTime || 1000, // Wait 1 second after images load
         deviceScaleFactor: options.deviceScaleFactor || 1
       }
     }, {

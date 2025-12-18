@@ -116,7 +116,7 @@ app.post('/capture-screenshot', async (req, res) => {
     console.log(`📸 [${requestId}] URL: ${url}`);
     console.log(`📸 [${requestId}] Options:`, options);
 
-    // Launch browser
+    // Launch browser with performance optimizations
     console.log(`🚀 [${requestId}] Launching Chromium...`);
     const browser = await puppeteer.launch({
       headless: true,
@@ -126,13 +126,39 @@ app.post('/capture-screenshot', async (req, res) => {
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-software-rasterizer',
-        '--disable-extensions'
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-translate',
+        '--metrics-recording-only',
+        '--mute-audio',
+        '--no-first-run',
+        '--safebrowsing-disable-auto-update',
+        '--ignore-certificate-errors',
+        '--ignore-ssl-errors',
+        '--disable-features=TranslateUI',
+        '--disable-renderer-backgrounding',
+        '--enable-features=NetworkService,NetworkServiceInProcess',
+        '--force-color-profile=srgb'
       ],
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
     });
 
     try {
       const page = await browser.newPage();
+
+      // Block unnecessary resources for faster loading
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const resourceType = request.resourceType();
+        // Block fonts, media, and other non-essential resources
+        if (['media', 'font', 'websocket', 'manifest', 'other'].includes(resourceType)) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
 
       // Set viewport size
       await page.setViewport({
@@ -143,27 +169,51 @@ app.post('/capture-screenshot', async (req, res) => {
 
       console.log(`📸 [${requestId}] Navigating to URL...`);
 
-      // Navigate to the page - use networkidle2 for faster detection (allows 2 connections)
+      // Navigate to the page - use domcontentloaded for fastest response
       await page.goto(url, {
-        waitUntil: ['load', 'domcontentloaded', 'networkidle2'],
-        timeout: 60000 // 60 second navigation timeout
+        waitUntil: 'domcontentloaded',
+        timeout: 30000 // 30 second navigation timeout
       });
 
-      console.log(`📸 [${requestId}] Page loaded, waiting for stability...`);
+      console.log(`📸 [${requestId}] DOM loaded, waiting for images...`);
 
-      // Wait for additional time to ensure images/fonts/animations are rendered
-      const waitTime = options.waitTime || 3000; // Default to 3 seconds
+      // Wait for images to load (with timeout)
+      try {
+        await page.evaluate(() => {
+          return Promise.all(
+            Array.from(document.images)
+              .filter(img => !img.complete)
+              .map(img => new Promise((resolve) => {
+                img.onload = img.onerror = resolve;
+                setTimeout(resolve, 5000); // Max 5s per image
+              }))
+          );
+        });
+      } catch (e) {
+        console.log(`📸 [${requestId}] Some images may not have loaded`);
+      }
+
+      // Short additional wait for any final rendering
+      const waitTime = options.waitTime || 1000; // Default to 1 second
       await new Promise(resolve => setTimeout(resolve, waitTime));
-      console.log(`📸 [${requestId}] Waited ${waitTime}ms for page to fully render`)
+      console.log(`📸 [${requestId}] Waited ${waitTime}ms for final render`)
 
       console.log(`📸 [${requestId}] Capturing screenshot...`);
 
-      // Take screenshot
-      const screenshotBuffer = await page.screenshot({
-        type: options.format || 'png',
+      // Take screenshot (JPEG is faster than PNG)
+      const format = options.format || 'jpeg';
+      const screenshotOptions = {
+        type: format,
         fullPage: options.fullPage !== false, // Default to true
         encoding: 'binary'
-      });
+      };
+
+      // Add quality for JPEG
+      if (format === 'jpeg') {
+        screenshotOptions.quality = options.quality || 80;
+      }
+
+      const screenshotBuffer = await page.screenshot(screenshotOptions);
 
       console.log(`✅ [${requestId}] Screenshot captured! Size: ${screenshotBuffer.length} bytes`);
 
@@ -192,7 +242,7 @@ app.post('/capture-screenshot', async (req, res) => {
     // Provide more specific error messages
     let errorMessage = error.message;
     if (error.message.includes('timeout')) {
-      errorMessage = `Page load timeout: The page took too long to load (>60s)`;
+      errorMessage = `Page load timeout: The page took too long to load (>30s)`;
     } else if (error.message.includes('net::ERR')) {
       errorMessage = `Network error: Unable to reach the URL - ${error.message}`;
     } else if (error.message.includes('Navigation failed')) {

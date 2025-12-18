@@ -1307,7 +1307,7 @@ class DemoDataProvisioningService {
         title: 'Promo Banner',
         placement: ['homepage_above_hero'],
         content: `
-          <div class="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-600 text-white py-3 px-4">
+          <div class="bg-rose-600 text-white py-3 px-4">
             <div class="flex items-center justify-center gap-3 text-sm md:text-base font-medium">
               <span class="animate-pulse">🔥</span>
               <span>LIMITED TIME: Free shipping on orders over $100!</span>
@@ -1323,7 +1323,7 @@ class DemoDataProvisioningService {
         title: 'Homepage Features',
         placement: ['homepage_below_hero'],
         content: `
-          <div class="py-12 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          <div class="py-12 bg-indigo-600">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto px-4">
               <div class="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:bg-white/10 transition-all duration-300">
                 <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/25">
@@ -1387,7 +1387,7 @@ class DemoDataProvisioningService {
         title: 'Product Page Promo',
         placement: ['product_above'],
         content: `
-          <div class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 rounded-xl p-4 mb-6">
+          <div class="relative overflow-hidden bg-orange-500 rounded-xl p-4 mb-6">
             <div class="absolute -right-8 -top-8 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
             <div class="relative flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -1436,7 +1436,7 @@ class DemoDataProvisioningService {
         title: 'Product Shipping Info',
         placement: ['product_below'],
         content: `
-          <div class="mt-8 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 rounded-2xl p-6">
+          <div class="mt-8 bg-indigo-600 rounded-2xl p-6">
             <h4 class="font-bold text-white mb-4 flex items-center gap-2">
               <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               Shipping & Returns
@@ -1494,7 +1494,7 @@ class DemoDataProvisioningService {
         title: 'Checkout Guarantee',
         placement: ['checkout_above_payment'],
         content: `
-          <div class="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-600 rounded-xl p-5 mb-6">
+          <div class="bg-emerald-600 rounded-xl p-5 mb-6">
             <div class="flex items-start gap-4">
               <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -1516,7 +1516,7 @@ class DemoDataProvisioningService {
         title: 'Checkout Security Notice',
         placement: ['checkout_below_payment'],
         content: `
-          <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl py-5 px-6 mt-4">
+          <div class="bg-slate-700 rounded-xl py-5 px-6 mt-4">
             <div class="flex flex-col items-center justify-center gap-3">
               <div class="flex items-center gap-6 text-white/60">
                 <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M8.5 3.5h-7A1.5 1.5 0 000 5v10a1.5 1.5 0 001.5 1.5h7A1.5 1.5 0 0010 15V5A1.5 1.5 0 008.5 3.5zM5 14.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"></path></svg>
@@ -1537,7 +1537,7 @@ class DemoDataProvisioningService {
         title: 'Order Success Message',
         placement: ['success_below_content'],
         content: `
-          <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-8 text-center mt-8">
+          <div class="bg-blue-600 rounded-2xl p-8 text-center mt-8">
             <div class="w-16 h-16 mx-auto mb-4 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
@@ -1580,7 +1580,7 @@ class DemoDataProvisioningService {
         title: 'Category Filter Tip',
         placement: ['category_above_products'],
         content: `
-          <div class="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 mb-6">
+          <div class="flex items-center gap-3 bg-amber-500 rounded-xl p-4 mb-6">
             <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
             </div>
@@ -1611,7 +1611,7 @@ class DemoDataProvisioningService {
         title: 'Category Help Banner',
         placement: ['category_below'],
         content: `
-          <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 mt-8">
+          <div class="bg-indigo-700 rounded-2xl p-6 mt-8">
             <div class="flex flex-col md:flex-row items-center justify-center gap-4">
               <div class="flex items-center gap-3 text-white">
                 <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
@@ -1660,7 +1660,7 @@ class DemoDataProvisioningService {
         title: 'Cart Promo Items',
         placement: ['cart_above_items'],
         content: `
-          <div class="flex items-center gap-4 bg-gradient-to-r from-fuchsia-600 to-pink-600 rounded-xl p-4 mb-6">
+          <div class="flex items-center gap-4 bg-fuchsia-600 rounded-xl p-4 mb-6">
             <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
               <span class="text-xl">💡</span>
             </div>
@@ -1680,7 +1680,7 @@ class DemoDataProvisioningService {
         placement: ['cart_below_items'],
         content: `
           <div class="flex items-center justify-center py-6 mt-4">
-            <a href="/products" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg">
+            <a href="/products" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
               Continue Shopping
             </a>
@@ -1692,7 +1692,7 @@ class DemoDataProvisioningService {
         title: 'Cart Coupon Reminder',
         placement: ['cart_above_total'],
         content: `
-          <div class="bg-gradient-to-br from-violet-600 to-purple-600 rounded-xl p-4 mb-4">
+          <div class="bg-violet-600 rounded-xl p-4 mb-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
                 <span class="text-xl">🎟️</span>
@@ -1710,7 +1710,7 @@ class DemoDataProvisioningService {
         title: 'Cart Payment Methods',
         placement: ['cart_below_total'],
         content: `
-          <div class="bg-gradient-to-r from-slate-700 to-slate-800 rounded-xl py-4 px-6 mt-4">
+          <div class="bg-slate-700 rounded-xl py-4 px-6 mt-4">
             <p class="text-xs text-white/70 text-center mb-3">Secure payment methods</p>
             <div class="flex items-center justify-center gap-3">
               <div class="w-12 h-8 bg-white/10 rounded flex items-center justify-center">
@@ -1734,7 +1734,7 @@ class DemoDataProvisioningService {
         title: 'Cart Trust Badges',
         placement: ['cart_below'],
         content: `
-          <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 mt-6">
+          <div class="bg-slate-700 rounded-xl p-6 mt-6">
             <div class="flex flex-col md:flex-row items-center justify-center gap-6 text-sm">
               <div class="flex items-center gap-2 text-white">
                 <div class="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
