@@ -160,23 +160,26 @@ export default function Homepage() {
           <>
             {!searchQuery && <CmsBlockRenderer position="homepage_above_featured" />}
 
-            <div className="flex justify-between items-center my-8">
-              <h2 className="text-3xl font-bold">
-                {searchQuery ? (
-                  <>
-                    <SearchIcon className="inline-block w-8 h-8 mr-2 mb-1" />
-                    {t('common.search_results_for', 'Search Results for')} "{searchQuery}"
-                  </>
-                ) : (
-                  'Featured Products'
+            {/* Hide featured products section header when empty and store is published */}
+            {(filteredProducts.length > 0 || searchQuery || !store?.published) && (
+              <div className="flex justify-between items-center my-8">
+                <h2 className="text-3xl font-bold">
+                  {searchQuery ? (
+                    <>
+                      <SearchIcon className="inline-block w-8 h-8 mr-2 mb-1" />
+                      {t('common.search_results_for', 'Search Results for')} "{searchQuery}"
+                    </>
+                  ) : (
+                    'Featured Products'
+                  )}
+                </h2>
+                {!searchQuery && categories && categories.length > 0 && (
+                  <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
+                    <Button variant="outline">View All Products</Button>
+                  </Link>
                 )}
-              </h2>
-              {!searchQuery && categories && categories.length > 0 && (
-                <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
-                  <Button variant="outline">View All Products</Button>
-                </Link>
-              )}
-            </div>
+              </div>
+            )}
 
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -195,24 +198,22 @@ export default function Homepage() {
                   />
                 ))}
               </div>
-            ) : (
+            ) : searchQuery ? (
+              // Show empty state only for search results
               <div className="text-center py-16">
-                {searchQuery ? (
-                  <>
-                    <SearchIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">No products found</h3>
-                    <p className="text-gray-600">No products match your search for "{searchQuery}".</p>
-                    <p className="text-gray-600 mt-2">Try different keywords or browse all products.</p>
-                  </>
-                ) : (
-                  <>
-                    <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Featured Products</h3>
-                    <p className="text-gray-600">Mark some products as featured to display them here.</p>
-                  </>
-                )}
+                <SearchIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No products found</h3>
+                <p className="text-gray-600">No products match your search for "{searchQuery}".</p>
+                <p className="text-gray-600 mt-2">Try different keywords or browse all products.</p>
               </div>
-            )}
+            ) : !store?.published ? (
+              // Show empty featured products message only for unpublished stores (admin preview)
+              <div className="text-center py-16">
+                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No Featured Products</h3>
+                <p className="text-gray-600">Mark some products as featured to display them here.</p>
+              </div>
+            ) : null}
 
             {!searchQuery && (
               <>
