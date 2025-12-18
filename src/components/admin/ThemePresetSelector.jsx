@@ -20,9 +20,37 @@ export function ThemePresetSelector({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Scroll state for cards variant - must be declared before any returns
+  const scrollContainerRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScrollButtons = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1);
+    }
+  };
+
   useEffect(() => {
     fetchPresets();
   }, []);
+
+  useEffect(() => {
+    if (variant === 'cards' && !loading && presets.length > 0) {
+      checkScrollButtons();
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.addEventListener('scroll', checkScrollButtons);
+        window.addEventListener('resize', checkScrollButtons);
+        return () => {
+          container.removeEventListener('scroll', checkScrollButtons);
+          window.removeEventListener('resize', checkScrollButtons);
+        };
+      }
+    }
+  }, [presets, loading, variant]);
 
   const fetchPresets = async () => {
     try {
@@ -86,30 +114,6 @@ export function ThemePresetSelector({
   }
 
   // Cards variant - full visual selection with horizontal scrolling
-  const scrollContainerRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const checkScrollButtons = () => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      setCanScrollLeft(container.scrollLeft > 0);
-      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1);
-    }
-  };
-
-  useEffect(() => {
-    checkScrollButtons();
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScrollButtons);
-      window.addEventListener('resize', checkScrollButtons);
-      return () => {
-        container.removeEventListener('scroll', checkScrollButtons);
-        window.removeEventListener('resize', checkScrollButtons);
-      };
-    }
-  }, [presets]);
 
   const scroll = (direction) => {
     const container = scrollContainerRef.current;
