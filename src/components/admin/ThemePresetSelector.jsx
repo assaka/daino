@@ -127,24 +127,28 @@ export function ThemePresetSelector({
   };
 
   return (
-    <div className={cn("relative", className)}>
-      {/* Left Arrow */}
-      {canScrollLeft && (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md hover:bg-gray-50 w-8 h-8 rounded-full"
-          onClick={() => scroll('left')}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-      )}
+    <div className={cn("relative group", className)}>
+      {/* Left Arrow - Always visible, disabled when can't scroll */}
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className={cn(
+          "absolute -left-3 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:bg-gray-50 w-10 h-10 rounded-full border-2 transition-all",
+          canScrollLeft
+            ? "border-gray-300 hover:border-gray-400 opacity-100"
+            : "border-gray-200 opacity-50 cursor-not-allowed"
+        )}
+        onClick={() => scroll('left')}
+        disabled={!canScrollLeft}
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </Button>
 
       {/* Scrollable Container */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-1 py-1"
+        className="flex gap-3 overflow-x-auto scrollbar-hide px-8 py-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {presets.map((preset) => {
@@ -214,18 +218,22 @@ export function ThemePresetSelector({
         })}
       </div>
 
-      {/* Right Arrow */}
-      {canScrollRight && (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md hover:bg-gray-50 w-8 h-8 rounded-full"
-          onClick={() => scroll('right')}
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      )}
+      {/* Right Arrow - Always visible, disabled when can't scroll */}
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className={cn(
+          "absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:bg-gray-50 w-10 h-10 rounded-full border-2 transition-all",
+          canScrollRight
+            ? "border-gray-300 hover:border-gray-400 opacity-100"
+            : "border-gray-200 opacity-50 cursor-not-allowed"
+        )}
+        onClick={() => scroll('right')}
+        disabled={!canScrollRight}
+      >
+        <ChevronRight className="w-5 h-5" />
+      </Button>
     </div>
   );
 }

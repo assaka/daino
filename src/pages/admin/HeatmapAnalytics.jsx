@@ -160,63 +160,11 @@ export default function HeatmapAnalytics() {
               </TabsContent>
 
               <TabsContent value="scroll" className="space-y-6">
-                {/* Page URL Input for Scroll Analytics */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <Label htmlFor="scroll-page-url" className="text-sm font-medium mb-2 block">
-                          Page URL
-                        </Label>
-                        <input
-                          id="scroll-page-url"
-                          type="text"
-                          value={selectedPageUrl}
-                          onChange={(e) => setSelectedPageUrl(e.target.value)}
-                          placeholder="Enter page URL to analyze"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Scroll Analytics */}
-                {selectedPageUrl && (
-                  <div className="space-y-6">
-                    {/* Scroll Depth Overlay Visualization */}
-                    <ScrollDepthOverlay
-                      storeId={selectedStore.id}
-                      pageUrl={selectedPageUrl}
-                      dateRange={dateRange}
-                    />
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <ScrollDepthMap
-                        storeId={selectedStore.id}
-                        pageUrl={selectedPageUrl}
-                        dateRange={dateRange}
-                      />
-                      <TimeOnPageMap
-                        storeId={selectedStore.id}
-                        pageUrl={selectedPageUrl}
-                        dateRange={dateRange}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {!selectedPageUrl && (
-                  <Card>
-                    <CardContent className="py-12">
-                      <div className="text-center text-gray-500">
-                        <ArrowDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p>Enter a page URL above to see scroll and engagement analytics</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                {/* Scroll Depth Map - has its own URL search dropdown */}
+                <ScrollDepthMap
+                  storeId={selectedStore.id}
+                  dateRange={dateRange}
+                />
               </TabsContent>
 
               <TabsContent value="sessions">
