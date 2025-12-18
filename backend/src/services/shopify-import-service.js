@@ -361,6 +361,22 @@ class ShopifyImportService {
         })));
       }
 
+      // Debug: Show what mappings exist in the database for Shopify
+      const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+      const { data: existingMappings } = await tenantDb
+        .from('integration_category_mappings')
+        .select('external_category_id, external_category_name, internal_category_id')
+        .eq('store_id', this.storeId)
+        .eq('integration_source', 'shopify');
+      console.log(`📂 Existing Shopify category mappings in DB: ${existingMappings?.length || 0}`);
+      if (existingMappings && existingMappings.length > 0) {
+        console.log('📂 Mappings sample:', existingMappings.slice(0, 5).map(m => ({
+          external_id: m.external_category_id,
+          name: m.external_category_name,
+          internal_id: m.internal_category_id ? 'mapped' : 'unmapped'
+        })));
+      }
+
       // Process products
       for (const product of productsToImport) {
         try {
