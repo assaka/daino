@@ -1419,32 +1419,68 @@ class AkeneoIntegration {
 
   /**
    * Build mapping from Akeneo category codes to DainoStore category IDs
-   * Uses dedicated akeneo_mappings table for flexible mapping
+   * Priority: integration_category_mappings > akeneo_mappings > auto-generated
    */
   async buildCategoryMapping(storeId) {
     const AkeneoMapping = require('../models/AkeneoMapping');
-    
-    // First, try to get explicit mappings from the mapping table
-    const explicitMapping = await AkeneoMapping.buildCategoryMapping(storeId);
-    
-    // If no explicit mappings exist, auto-create them from existing categories
-    if (Object.keys(explicitMapping).length === 0) {
-      console.log('📋 No explicit Akeneo mappings found. Auto-generating from existing categories...');
-      await AkeneoMapping.autoCreateCategoryMappings(storeId);
-      
-      // Rebuild mapping after auto-creation
-      const autoMapping = await AkeneoMapping.buildCategoryMapping(storeId);
-      console.log(`✅ Auto-created ${Object.keys(autoMapping).length} category mappings`);
-      return autoMapping;
-    }
-    
-    console.log(`📋 Category mapping loaded: ${Object.keys(explicitMapping).length} explicit mappings from akeneo_mappings table`);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Sample mappings:', Object.keys(explicitMapping).slice(0, 10).join(', '), '...');
+    const CategoryMappingService = require('./CategoryMappingService');
+
+    const categoryMapping = {};
+
+    // 1. First, get mappings from integration_category_mappings (new system)
+    try {
+      const mappingService = new CategoryMappingService(storeId, 'akeneo');
+      const integrationMappings = await mappingService.getMappings();
+
+      // Build mapping from external_category_code -> internal_category_id
+      let integrationMappingCount = 0;
+      for (const m of integrationMappings) {
+        if (m.internal_category_id && m.external_category_code) {
+          categoryMapping[m.external_category_code] = m.internal_category_id;
+          integrationMappingCount++;
+        }
+      }
+
+      if (integrationMappingCount > 0) {
+        console.log(`📋 Loaded ${integrationMappingCount} category mappings from integration_category_mappings`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load integration_category_mappings:', error.message);
     }
 
-    return explicitMapping;
+    // 2. Fall back to akeneo_mappings for any codes not already mapped
+    const explicitMapping = await AkeneoMapping.buildCategoryMapping(storeId);
+    let legacyMappingCount = 0;
+    for (const [code, id] of Object.entries(explicitMapping)) {
+      if (!categoryMapping[code]) {
+        categoryMapping[code] = id;
+        legacyMappingCount++;
+      }
+    }
+
+    if (legacyMappingCount > 0) {
+      console.log(`📋 Added ${legacyMappingCount} additional mappings from akeneo_mappings table`);
+    }
+
+    // 3. If still no mappings, try auto-generation from existing categories
+    if (Object.keys(categoryMapping).length === 0) {
+      console.log('📋 No mappings found. Auto-generating from existing categories...');
+      await AkeneoMapping.autoCreateCategoryMappings(storeId);
+
+      const autoMapping = await AkeneoMapping.buildCategoryMapping(storeId);
+      for (const [code, id] of Object.entries(autoMapping)) {
+        categoryMapping[code] = id;
+      }
+      console.log(`✅ Auto-created ${Object.keys(autoMapping).length} category mappings`);
+    }
+
+    console.log(`📋 Total category mapping: ${Object.keys(categoryMapping).length} entries`);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Sample mappings:', Object.keys(categoryMapping).slice(0, 10).join(', '), '...');
+    }
+
+    return categoryMapping;
   }
 
   /**
