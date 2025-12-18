@@ -373,8 +373,10 @@ router.put('/:id',
     body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
     body('sku').optional().notEmpty().withMessage('SKU cannot be empty'),
     body('price').optional().isDecimal().withMessage('Price must be a valid decimal')
-  ], 
+  ],
   async (req, res) => {
+  console.log('📊 [Admin PUT] Route hit for product:', req.params.id);
+  console.log('📊 [Admin PUT] Request body keys:', Object.keys(req.body));
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
