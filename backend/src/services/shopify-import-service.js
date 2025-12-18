@@ -305,23 +305,45 @@ class ShopifyImportService {
 
       // Build collection ID to name map for auto-creation (fetch from Shopify)
       this.shopifyCollectionMap = {};
-      if (this.autoCreateSettings.enabled) {
-        console.log('📂 Fetching Shopify collections for auto-creation lookup...');
-        try {
-          const collectionsData = await this.client.getAllCollections();
-          const allCollections = collectionsData.all || [];
-          allCollections.forEach(col => {
-            this.shopifyCollectionMap[col.id.toString()] = {
-              id: col.id.toString(),
-              code: col.id.toString(),
-              name: col.title,
-              handle: col.handle
-            };
-          });
-          console.log(`✅ Loaded ${allCollections.length} Shopify collections for lookup`);
-        } catch (colError) {
-          console.warn('⚠️ Could not fetch Shopify collections for auto-creation:', colError.message);
-        }
+      console.log('📂 Fetching Shopify collections for category mapping...');
+      try {
+        const collectionsData = await this.client.getAllCollections();
+        const allCollections = collectionsData.all || [];
+        allCollections.forEach(col => {
+          this.shopifyCollectionMap[col.id.toString()] = {
+            id: col.id.toString(),
+            code: col.id.toString(),
+            name: col.title,
+            handle: col.handle
+          };
+        });
+        console.log(`✅ Loaded ${allCollections.length} Shopify collections for lookup`);
+      } catch (colError) {
+        console.warn('⚠️ Could not fetch Shopify collections:', colError.message);
+      }
+
+      // Build product-collection map using collects API
+      // Shopify products don't include collection IDs directly - we need the collects API
+      let productCollectionsMap = {};
+      console.log('📂 Building product-collection relationships...');
+      try {
+        productCollectionsMap = await this.client.buildProductCollectionsMap((progress) => {
+          if (progressCallback) {
+            progressCallback({
+              stage: 'fetching_collections',
+              ...progress
+            });
+          }
+        });
+        console.log(`✅ Built collection map for ${Object.keys(productCollectionsMap).length} products`);
+      } catch (collectsError) {
+        console.warn('⚠️ Could not build product-collections map:', collectsError.message);
+      }
+
+      // Enrich products with their collection IDs
+      for (const product of productsToImport) {
+        const productIdStr = product.id.toString();
+        product.collections = productCollectionsMap[productIdStr] || [];
       }
 
       // Process products

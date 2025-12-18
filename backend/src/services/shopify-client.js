@@ -198,6 +198,74 @@ class ShopifyClient {
   }
 
   /**
+   * Get collects (product-collection relationships) for a collection
+   */
+  async getCollects(params = {}) {
+    const defaultParams = {
+      limit: 250,
+      ...params
+    };
+
+    const response = await this.makeRequest('/collects.json', 'GET', null, defaultParams);
+    return response.collects || [];
+  }
+
+  /**
+   * Get all collects with pagination
+   */
+  async getAllCollects(progressCallback = null) {
+    const allCollects = [];
+    let params = { limit: 250 };
+    let page = 1;
+
+    while (true) {
+      const collects = await this.getCollects(params);
+
+      if (!collects || collects.length === 0) break;
+
+      allCollects.push(...collects);
+
+      if (progressCallback) {
+        progressCallback({ type: 'collects', count: allCollects.length, page });
+      }
+
+      if (collects.length < 250) break;
+
+      const lastCollect = collects[collects.length - 1];
+      params.since_id = lastCollect.id;
+      page++;
+
+      await this.delay(this.rateLimitDelay);
+    }
+
+    return allCollects;
+  }
+
+  /**
+   * Build product to collections map
+   */
+  async buildProductCollectionsMap(progressCallback = null) {
+    console.log('📂 Building product-collections map...');
+    const collects = await this.getAllCollects(progressCallback);
+    console.log(`📂 Found ${collects.length} product-collection relationships`);
+
+    // Build map: productId -> [collectionId1, collectionId2, ...]
+    const productCollectionsMap = {};
+    for (const collect of collects) {
+      const productId = String(collect.product_id);
+      const collectionId = String(collect.collection_id);
+
+      if (!productCollectionsMap[productId]) {
+        productCollectionsMap[productId] = [];
+      }
+      productCollectionsMap[productId].push(collectionId);
+    }
+
+    console.log(`📂 Built map for ${Object.keys(productCollectionsMap).length} products`);
+    return productCollectionsMap;
+  }
+
+  /**
    * Get all custom collections with pagination
    */
   async getAllCustomCollections(progressCallback = null) {
