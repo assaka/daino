@@ -388,6 +388,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);
                   const product = cartProducts[productKey];
+                  console.log('🛒 MiniCart render: item.product_id:', item.product_id, 'productKey:', productKey, 'found:', !!product, 'cartProducts keys:', Object.keys(cartProducts));
                   if (!product) {
                     // Show placeholder for missing product instead of hiding completely
                     return (
