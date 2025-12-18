@@ -217,6 +217,7 @@ export function ThemePresetSelector({
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* Right Arrow - Always visible, disabled when can't scroll */}
