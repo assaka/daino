@@ -9,9 +9,10 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
-  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X
+  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info
 } from 'lucide-react';
 import apiClient from '@/utils/api';
 import { User, Store as StoreEntity } from '@/api/entities';
@@ -540,7 +541,32 @@ export default function StoreOnboarding() {
                     Provision demo data
                   </Label>
                   <p className="text-sm text-gray-500 mt-1">
-                    Include sample products, categories, and content to help you get started quickly.
+                    Include sample products, categories, and content to help you get started quickly. You can remove the demo data later without losing any data you've manually added.{' '}
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="inline-flex items-center text-amber-700 hover:text-amber-800 underline underline-offset-2">
+                            What's included?
+                            <Info className="w-3 h-3 ml-1" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs bg-gray-900 text-white p-3">
+                          <p className="font-semibold mb-2">Demo data includes:</p>
+                          <ul className="text-xs space-y-1 list-disc list-inside">
+                            <li>4 categories with subcategories</li>
+                            <li>25+ demo products with images</li>
+                            <li>Attribute sets and attributes</li>
+                            <li>20 demo customers</li>
+                            <li>50 demo orders</li>
+                            <li>CMS pages and blocks</li>
+                            <li>Product tabs and product labels</li>
+                            <li>Tax configuration and coupons</li>
+                            <li>Custom options rule</li>
+                            <li>SEO templates</li>
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </p>
                 </div>
               </div>
