@@ -203,6 +203,11 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   // All cart updates now trigger immediate refresh
 
   const loadCart = async () => {
+    // CRITICAL: Don't load cart without store context - backend requires store_id
+    if (!store?.id) {
+      return { success: false, items: [] };
+    }
+
     // Prevent concurrent loadCart calls
     if (loadCartRef.current) {
       return loadCartRef.current;
@@ -216,7 +221,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
         // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
         // CRITICAL: Always bust cache (true) to get fresh data from database
-        const cartResult = await cartService.getCart(true, store?.id);
+        const cartResult = await cartService.getCart(true, store.id);
 
         if (cartResult.success && cartResult.items) {
           setCartItems(cartResult.items);
