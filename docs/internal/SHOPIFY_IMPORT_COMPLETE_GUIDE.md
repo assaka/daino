@@ -486,5 +486,5 @@ For issues or questions:
 
 ## Related Documentation
 
-- [SHOPIFY_INTEGRATION.md](./SHOPIFY_INTEGRATION.md) - Technical implementation
-- [SHOPIFY_SETUP_GUIDE.md](./SHOPIFY_SETUP_GUIDE.md) - Initial setup
+- [SHOPIFY_INTEGRATION.md](SHOPIFY_INTEGRATION.md) - Technical implementation
+- [SHOPIFY_SETUP_GUIDE.md](SHOPIFY_SETUP_GUIDE.md) - Initial setup

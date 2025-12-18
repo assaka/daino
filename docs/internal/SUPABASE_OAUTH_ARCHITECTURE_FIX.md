@@ -261,53 +261,53 @@ const { encrypt, decrypt } = require('../utils/encryption');
 
 ```javascript
 // migrate-oauth-to-tenant.js
-const { masterSequelize } = require('./backend/src/database/masterConnection');
-const ConnectionManager = require('./backend/src/services/database/ConnectionManager');
-const { encrypt } = require('./backend/src/utils/encryption');
+const {masterSequelize} = require('./masterConnection');
+const ConnectionManager = require('./ConnectionManager');
+const {encrypt} = require('./encryption');
 
 async function migrateOAuthTokens() {
-  // Get all OAuth tokens from master DB
-  const [tokens] = await masterSequelize.query(
-    'SELECT * FROM supabase_oauth_tokens'
-  );
+    // Get all OAuth tokens from master DB
+    const [tokens] = await masterSequelize.query(
+        'SELECT * FROM supabase_oauth_tokens'
+    );
 
-  for (const token of tokens) {
-    try {
-      const tenantDb = await ConnectionManager.getStoreConnection(token.store_id);
+    for (const token of tokens) {
+        try {
+            const tenantDb = await ConnectionManager.getStoreConnection(token.store_id);
 
-      // Insert into integration_configs
-      await tenantDb
-        .from('integration_configs')
-        .insert({
-          store_id: token.store_id,
-          integration_type: 'supabase',
-          is_active: true,
-          config_data: {
-            access_token: encrypt(token.access_token),
-            refresh_token: encrypt(token.refresh_token),
-            expires_at: token.expires_at,
-            project_url: token.project_url,
-            service_role_key: token.service_role_key
-              ? encrypt(token.service_role_key)
-              : null,
-            connected: true,
-            migratedFrom: 'master_db',
-            migratedAt: new Date()
-          },
-          connection_status: 'success',
-          created_at: token.created_at || new Date(),
-          updated_at: new Date()
-        })
-        .onConflict(['store_id', 'integration_type'])
-        .merge();
+            // Insert into integration_configs
+            await tenantDb
+                .from('integration_configs')
+                .insert({
+                    store_id: token.store_id,
+                    integration_type: 'supabase',
+                    is_active: true,
+                    config_data: {
+                        access_token: encrypt(token.access_token),
+                        refresh_token: encrypt(token.refresh_token),
+                        expires_at: token.expires_at,
+                        project_url: token.project_url,
+                        service_role_key: token.service_role_key
+                            ? encrypt(token.service_role_key)
+                            : null,
+                        connected: true,
+                        migratedFrom: 'master_db',
+                        migratedAt: new Date()
+                    },
+                    connection_status: 'success',
+                    created_at: token.created_at || new Date(),
+                    updated_at: new Date()
+                })
+                .onConflict(['store_id', 'integration_type'])
+                .merge();
 
-      console.log(`✅ Migrated OAuth token for store ${token.store_id}`);
-    } catch (error) {
-      console.error(`❌ Failed to migrate store ${token.store_id}:`, error.message);
+            console.log(`✅ Migrated OAuth token for store ${token.store_id}`);
+        } catch (error) {
+            console.error(`❌ Failed to migrate store ${token.store_id}:`, error.message);
+        }
     }
-  }
 
-  console.log('Migration complete!');
+    console.log('Migration complete!');
 }
 
 migrateOAuthTokens().catch(console.error);

@@ -266,7 +266,7 @@ WHERE tablename = 'categories';
 Use the built-in cache stats:
 
 ```javascript
-const { getCacheStats } = require('./src/utils/storeCache');
+const {getCacheStats} = require('./storeCache');
 console.log(getCacheStats());
 ```
 

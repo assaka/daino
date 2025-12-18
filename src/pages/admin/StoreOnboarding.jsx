@@ -84,16 +84,11 @@ export default function StoreOnboarding() {
     const checkExistingStores = async () => {
       try {
         const stores = await StoreEntity.findAll();
-        console.log('🔍 Checking existing stores:', stores);
         if (Array.isArray(stores) && stores.length > 0) {
-          console.log('✅ User has existing stores, showing cancel button');
           setHasExistingStores(true);
-        } else {
-          console.log('❌ No existing stores found');
         }
       } catch (err) {
         // Ignore errors - just means we can't check for existing stores
-        console.log('Could not check for existing stores:', err.message);
       }
     };
     checkExistingStores();
@@ -123,7 +118,6 @@ export default function StoreOnboarding() {
         });
       }
     } catch (err) {
-      console.error('Error checking slug:', err);
       setSlugStatus({ checking: false, available: null, message: '' });
     }
   };
@@ -160,28 +154,23 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      console.log('Creating store with name:', storeData.name, 'theme:', selectedThemePreset);
       // Theme preset is passed to connect-database later, not stored in master DB
       const response = await apiClient.post('/stores', {
         name: storeData.name
       });
-      console.log('Store creation response:', response);
 
       // Handle response from POST /api/stores
       if (response && response.success && response.data) {
         // Response format: { success: true, data: { store: {...} } }
         const storeData = response.data.store || response.data;
-        console.log('Store created successfully, ID:', storeData.id);
         setStoreId(storeData.id);
         setCompletedSteps([1]);
         setCurrentStep(2);
         setSuccess(response.message || 'Store created successfully');
       } else {
-        console.error('Unexpected response format:', response);
         setError(response?.error || response?.message || 'Failed to create store');
       }
     } catch (err) {
-      console.error('Store creation error:', err);
       setError(err.message || 'Failed to create store');
     } finally {
       setLoading(false);
@@ -196,7 +185,6 @@ export default function StoreOnboarding() {
 
     try {
       // Step 1: Initiate OAuth flow
-      console.log('Initiating Supabase OAuth...');
       const oauthResponse = await apiClient.post(`/supabase/connect?storeId=${storeId}`);
 
       if (!oauthResponse.success || !oauthResponse.authUrl) {
@@ -222,21 +210,16 @@ export default function StoreOnboarding() {
       // Step 3: Listen for OAuth error messages from popup
       let oauthError = null;
       const messageHandler = (event) => {
-        console.log('📨 Message received from popup:', event.data);
         if (event.data && event.data.type === 'supabase-oauth-error') {
-          console.error('❌ OAuth error received:', event.data.error);
           oauthError = event.data.error;
         }
       };
-      console.log('👂 Adding message listener for OAuth errors');
       window.addEventListener('message', messageHandler);
 
       // Step 4: Wait for popup to close, then verify OAuth via API
       const checkClosed = setInterval(async () => {
         if (popup.closed) {
           clearInterval(checkClosed);
-          console.log('🔍 Popup closed detected');
-          console.log('   oauthError:', oauthError);
 
           // Wait longer for any pending messages to arrive
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -249,51 +232,41 @@ export default function StoreOnboarding() {
             try {
               const storedError = sessionStorage.getItem('supabase_oauth_error');
               if (storedError) {
-                console.log('✅ Found error in sessionStorage:', storedError);
                 oauthError = storedError;
                 sessionStorage.removeItem('supabase_oauth_error'); // Clean up
               }
             } catch (e) {
-              console.error('❌ Failed to check sessionStorage:', e);
             }
           }
 
           // If we received an error message, show it immediately
           if (oauthError) {
-            console.error('❌ OAuth failed with error:', oauthError);
             setError(oauthError);
             setLoading(false);
             return;
           }
 
-          console.log('🔍 No error received, checking OAuth status via API...');
-
           // Verify OAuth succeeded by checking database/memory state
           try {
             const statusResponse = await apiClient.get(`/supabase/oauth-status?storeId=${storeId}`);
-            console.log('OAuth status response:', statusResponse);
 
             // Check if there's an error in the response
             if (statusResponse.error) {
-              console.error('❌ OAuth error from API:', statusResponse.error);
               setError(statusResponse.error);
               setLoading(false);
               return;
             }
 
             if (statusResponse.success && statusResponse.connected) {
-              console.log('✅ OAuth verified via API - tokens found');
               setOauthCompleted(true);
               setNeedsServiceKey(true);
               setSuccess('Supabase connected! Please provide your Service Role Key to complete setup.');
               setLoading(false);
             } else {
-              console.log('❌ OAuth not found via API - this likely means an error occurred');
               // Instead of generic message, suggest checking for duplicates
               setError('OAuth connection failed. This database may already be in use by another store.');
             }
           } catch (apiError) {
-            console.error('Error checking OAuth status:', apiError);
             setError(apiError.message || 'Failed to verify OAuth connection. Please try again.');
           }
 
@@ -312,7 +285,6 @@ export default function StoreOnboarding() {
       }, 300000);
 
     } catch (err) {
-      console.error('OAuth error:', err);
       setError(err.message || 'Failed to connect database');
       setLoading(false);
     }
@@ -361,18 +333,6 @@ export default function StoreOnboarding() {
     }
   };
 
-  const handleSetupStripe = async (e) => {
-    e.preventDefault();
-    setCompletedSteps([...completedSteps, 3]);
-    setCurrentStep(4);
-  };
-
-  const handlePurchaseCredits = async (e) => {
-    e.preventDefault();
-    setCompletedSteps([...completedSteps, 4]);
-    setCurrentStep(5);
-  };
-
   const handleCompleteProfile = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -385,9 +345,7 @@ export default function StoreOnboarding() {
           phone: profileData.phone,
           company_name: profileData.companyName
         });
-        console.log('✅ Profile updated');
       } catch (updateError) {
-        console.warn('⚠️ Profile update failed (non-blocking):', updateError.message);
         // Continue anyway - user can update profile later from settings
       }
 
@@ -395,7 +353,6 @@ export default function StoreOnboarding() {
       localStorage.removeItem('selectedStoreId');
       localStorage.removeItem('selectedStoreName');
       localStorage.removeItem('selectedStoreSlug');
-      console.log('🧹 Cleared old store selection from localStorage');
 
       setSuccess('🎉 Store created successfully! Redirecting to dashboard...');
       setTimeout(() => window.location.href = '/admin/dashboard', 2000);
