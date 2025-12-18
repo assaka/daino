@@ -28,7 +28,7 @@ export default function CmsBlocks() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalBlocks, setTotalBlocks] = useState(0);
-  const itemsPerPage = 12;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (selectedStore) {
