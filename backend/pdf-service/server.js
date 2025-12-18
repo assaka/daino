@@ -189,10 +189,10 @@ app.post('/capture-screenshot', async (req, res) => {
         );
       });
 
-      // Short additional wait for any CSS animations/transitions
-      const waitTime = options.waitTime || 500;
+      // Wait for CSS animations/transitions and lazy-loaded content
+      const waitTime = options.waitTime || 2000;
       await new Promise(resolve => setTimeout(resolve, waitTime));
-      console.log(`📸 [${requestId}] Page ready for screenshot`)
+      console.log(`📸 [${requestId}] Waited ${waitTime}ms, page ready for screenshot`)
 
       console.log(`📸 [${requestId}] Capturing screenshot...`);
 
