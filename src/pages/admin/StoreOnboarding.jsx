@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { PageLoader } from '@/components/ui/page-loader';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
   CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X
@@ -45,6 +46,7 @@ export default function StoreOnboarding() {
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
   const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
   const [hasExistingStores, setHasExistingStores] = useState(false);
+  const [provisionDemoData, setProvisionDemoData] = useState(true);
   const slugCheckTimeoutRef = React.useRef(null);
 
   // Auth check - redirect to login if not authenticated
@@ -309,7 +311,8 @@ export default function StoreOnboarding() {
         useOAuth: true,
         autoProvision: true,
         serviceRoleKey: dbData.serviceRoleKey,
-        themePreset: selectedThemePreset  // Pass selected theme to tenant provisioning
+        themePreset: selectedThemePreset,  // Pass selected theme to tenant provisioning
+        provisionDemoData: provisionDemoData  // Pass demo data flag
       });
 
       if (provisionResponse.success) {
@@ -513,7 +516,7 @@ export default function StoreOnboarding() {
 
               {/* Theme Preset Selection */}
               <div>
-                <Label className="mb-3 block">Choose Your Store Theme</Label>
+                <Label className="mb-3 block font-bold">Choose Your Store Theme</Label>
                 <p className="text-sm text-gray-500 mb-3">
                   Select a color theme for your store. You can customize it later.
                 </p>
@@ -522,6 +525,24 @@ export default function StoreOnboarding() {
                   onChange={setSelectedThemePreset}
                   variant="cards"
                 />
+              </div>
+
+              {/* Demo Data Provisioning */}
+              <div className="flex items-start space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <Checkbox
+                  id="provisionDemoData"
+                  checked={provisionDemoData}
+                  onCheckedChange={setProvisionDemoData}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="provisionDemoData" className="font-medium cursor-pointer">
+                    Provision demo data
+                  </Label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Include sample products, categories, and content to help you get started quickly.
+                  </p>
+                </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading || !storeData.name || slugStatus.available === false || slugStatus.checking}>

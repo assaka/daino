@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Check, Palette, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check, Palette, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 /**
  * ThemePresetSelector - Displays available theme presets for selection
@@ -84,74 +85,143 @@ export function ThemePresetSelector({
     );
   }
 
-  // Cards variant - full visual selection
+  // Cards variant - full visual selection with horizontal scrolling
+  const scrollContainerRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScrollButtons = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollButtons();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScrollButtons);
+      window.addEventListener('resize', checkScrollButtons);
+      return () => {
+        container.removeEventListener('scroll', checkScrollButtons);
+        window.removeEventListener('resize', checkScrollButtons);
+      };
+    }
+  }, [presets]);
+
+  const scroll = (direction) => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const scrollAmount = 220; // Approximate card width + gap
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
-    <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3", className)}>
-      {presets.map((preset) => {
-        const theme = preset.theme_settings || {};
-        const isSelected = value === preset.preset_name || (!value && preset.is_system_default);
+    <div className={cn("relative", className)}>
+      {/* Left Arrow */}
+      {canScrollLeft && (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md hover:bg-gray-50 w-8 h-8 rounded-full"
+          onClick={() => scroll('left')}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+      )}
 
-        return (
-          <button
-            key={preset.id}
-            type="button"
-            onClick={() => onChange?.(preset.preset_name)}
-            className={cn(
-              "relative p-4 rounded-lg border-2 transition-all text-left",
-              isSelected
-                ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
-                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-            )}
-          >
-            {/* Selection indicator */}
-            {isSelected && (
-              <div className="absolute top-2 right-2">
-                <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" />
-                </div>
-              </div>
-            )}
+      {/* Scrollable Container */}
+      <div
+        ref={scrollContainerRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide px-1 py-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {presets.map((preset) => {
+          const theme = preset.theme_settings || {};
+          const isSelected = value === preset.preset_name || (!value && preset.is_system_default);
 
-            {/* Theme name */}
-            <div className="flex items-center gap-2 mb-3">
-              <Palette className="w-4 h-4 text-gray-500" />
-              <span className="font-medium text-gray-900">{preset.display_name}</span>
-              {preset.is_system_default && (
-                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">Default</span>
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onChange?.(preset.preset_name)}
+              className={cn(
+                "relative p-4 rounded-lg border-2 transition-all text-left flex-shrink-0 w-[200px]",
+                isSelected
+                  ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
               )}
-            </div>
+            >
+              {/* Selection indicator */}
+              {isSelected && (
+                <div className="absolute top-2 right-2">
+                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+              )}
 
-            {/* Color preview */}
-            <div className="flex gap-2 mb-2">
-              <div
-                className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
-                style={{ backgroundColor: theme.primary_button_color || '#007bff' }}
-                title="Primary Button"
-              />
-              <div
-                className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
-                style={{ backgroundColor: theme.add_to_cart_button_color || '#28a745' }}
-                title="Add to Cart"
-              />
-              <div
-                className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
-                style={{ backgroundColor: theme.checkout_button_color || '#007bff' }}
-                title="Checkout"
-              />
-              <div
-                className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
-                style={{ backgroundColor: theme.secondary_button_color || '#6c757d' }}
-                title="Secondary"
-              />
-            </div>
+              {/* Theme name */}
+              <div className="flex items-center gap-2 mb-3">
+                <Palette className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-900 truncate">{preset.display_name}</span>
+                {preset.is_system_default && (
+                  <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded flex-shrink-0">Default</span>
+                )}
+              </div>
 
-            {/* Description */}
-            {preset.description && (
-              <p className="text-xs text-gray-500 line-clamp-2">{preset.description}</p>
-            )}
-          </button>
-        );
-      })}
+              {/* Color preview */}
+              <div className="flex gap-2 mb-2">
+                <div
+                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  style={{ backgroundColor: theme.primary_button_color || '#007bff' }}
+                  title="Primary Button"
+                />
+                <div
+                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  style={{ backgroundColor: theme.add_to_cart_button_color || '#28a745' }}
+                  title="Add to Cart"
+                />
+                <div
+                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  style={{ backgroundColor: theme.checkout_button_color || '#007bff' }}
+                  title="Checkout"
+                />
+                <div
+                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  style={{ backgroundColor: theme.secondary_button_color || '#6c757d' }}
+                  title="Secondary"
+                />
+              </div>
+
+              {/* Description */}
+              {preset.description && (
+                <p className="text-xs text-gray-500 line-clamp-2">{preset.description}</p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Right Arrow */}
+      {canScrollRight && (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md hover:bg-gray-50 w-8 h-8 rounded-full"
+          onClick={() => scroll('right')}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      )}
     </div>
   );
 }
