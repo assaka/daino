@@ -401,18 +401,34 @@ class CategoryMappingService {
   /**
    * Sync external categories to the mappings table
    * This creates mapping records for all external categories (without auto-matching)
+   * Also removes mappings for categories that no longer exist in external source
    * Optimized with batch operations to avoid N+1 queries
    */
   async syncExternalCategories(externalCategories) {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
-    const results = { created: 0, updated: 0, errors: [] };
+    const results = { created: 0, updated: 0, deleted: 0, errors: [] };
     const now = new Date().toISOString();
 
     console.log(`📁 syncExternalCategories called with ${externalCategories?.length || 0} categories`);
     console.log(`📁 Store ID: ${this.storeId}, Source: ${this.integrationSource}`);
 
+    // If no categories fetched, clear all mappings for this source
     if (!externalCategories || externalCategories.length === 0) {
-      console.log('📁 No categories to sync');
+      console.log('📁 No categories fetched - clearing all mappings for this source');
+      const { data: deleted, error: deleteError } = await tenantDb
+        .from('integration_category_mappings')
+        .delete()
+        .eq('store_id', this.storeId)
+        .eq('integration_source', this.integrationSource)
+        .select('id');
+
+      if (deleteError) {
+        console.error('❌ Error clearing mappings:', deleteError.message);
+        results.errors.push({ error: `Delete error: ${deleteError.message}` });
+      } else {
+        results.deleted = deleted?.length || 0;
+        console.log(`📁 Cleared ${results.deleted} mappings`);
+      }
       return results;
     }
 
@@ -475,7 +491,16 @@ class CategoryMappingService {
         }
       }
 
-      console.log(`📁 To insert: ${toInsert.length}, To update: ${toUpdate.length}`);
+      // 2b. Find mappings to delete (exist in DB but not in fetched categories)
+      const fetchedCodes = new Set(externalCategories.map(c => c.code).filter(Boolean));
+      const fetchedIds = new Set(externalCategories.map(c => c.id).filter(Boolean));
+      const toDelete = (existingMappings || []).filter(m => {
+        const codeMatch = m.external_category_code && fetchedCodes.has(m.external_category_code);
+        const idMatch = m.external_category_id && fetchedIds.has(m.external_category_id);
+        return !codeMatch && !idMatch;
+      });
+
+      console.log(`📁 To insert: ${toInsert.length}, To update: ${toUpdate.length}, To delete: ${toDelete.length}`);
 
       // 3. Batch insert new mappings (max 100 at a time for Supabase)
       const BATCH_SIZE = 100;
@@ -531,12 +556,33 @@ class CategoryMappingService {
         }
       }
 
+      // 5. Delete mappings for categories no longer in external source
+      if (toDelete.length > 0) {
+        const deleteIds = toDelete.map(m => m.id);
+        console.log(`📁 Deleting ${deleteIds.length} obsolete mappings...`);
+
+        for (let i = 0; i < deleteIds.length; i += BATCH_SIZE) {
+          const batch = deleteIds.slice(i, i + BATCH_SIZE);
+          const { error: deleteError } = await tenantDb
+            .from('integration_category_mappings')
+            .delete()
+            .in('id', batch);
+
+          if (deleteError) {
+            console.error('❌ Batch delete error:', deleteError.message);
+            results.errors.push({ error: `Delete error: ${deleteError.message}` });
+          } else {
+            results.deleted += batch.length;
+          }
+        }
+      }
+
     } catch (err) {
       console.error('Error in batch sync:', err.message);
       results.errors.push({ error: err.message });
     }
 
-    console.log(`📁 Synced ${this.integrationSource} categories: ${results.created} created, ${results.updated} updated`);
+    console.log(`📁 Synced ${this.integrationSource} categories: ${results.created} created, ${results.updated} updated, ${results.deleted} deleted`);
     return results;
   }
 
