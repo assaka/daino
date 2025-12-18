@@ -104,14 +104,22 @@ const ImportJobProgress = ({
       // Filter jobs by source (shopify or akeneo)
       const sourcePrefix = source === 'shopify' ? 'shopify:import' : 'akeneo:import';
 
+      // Check if job matches this integration source
+      const matchesSource = (job) => {
+        if (job.type?.startsWith(sourcePrefix)) return true;
+        // Also include integration:create:categories jobs for this source
+        if (job.type === 'integration:create:categories' && job.payload?.integrationSource === source) return true;
+        return false;
+      };
+
       const allJobs = data.jobs || [];
       const active = allJobs.filter(job =>
-        job.type?.startsWith(sourcePrefix) &&
+        matchesSource(job) &&
         (job.status === JOB_STATUS.PENDING || job.status === JOB_STATUS.RUNNING || job.status === JOB_STATUS.CANCELLING)
       );
 
       const recent = allJobs.filter(job =>
-        job.type?.startsWith(sourcePrefix) &&
+        matchesSource(job) &&
         (job.status === JOB_STATUS.COMPLETED || job.status === JOB_STATUS.FAILED || job.status === JOB_STATUS.CANCELLED)
       ).slice(0, maxHistoryItems);
 
@@ -206,6 +214,10 @@ const ImportJobProgress = ({
   // Format job type for display
   const formatJobType = (type) => {
     if (!type) return 'Unknown';
+    // Handle special job types
+    if (type === 'integration:create:categories') {
+      return 'Create Categories';
+    }
     // Convert 'shopify:import:products' to 'Products Import'
     const parts = type.split(':');
     const action = parts[parts.length - 1];
