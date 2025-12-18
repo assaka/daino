@@ -2141,10 +2141,10 @@ router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
       .eq('id', storeId)
       .maybeSingle();
 
-    if (storeError || !store || store.status !== 'active' || !store.is_active) {
-      return res.status(400).json({
+    if (storeError || !store) {
+      return res.status(404).json({
         success: false,
-        error: 'Store is not operational'
+        error: 'Store not found'
       });
     }
 

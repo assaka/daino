@@ -148,13 +148,19 @@ router.get('/:id', authAdmin, async (req, res) => {
     // Load attributes from product_attribute_values table
     const productWithAttributes = productsWithTranslations[0];
     try {
-      console.log(`📊 [Admin] Loading attributes for product ${product.id}`);
+      console.log(`📊 [Admin GET] Loading attributes for product ${product.id}`);
       const { data: pavs, error: pavError } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .eq('product_id', product.id);
 
-      console.log(`📊 [Admin] Found ${pavs?.length || 0} product_attribute_values records`, pavError ? `Error: ${pavError.message}` : '');
+      console.log(`📊 [Admin GET] Found ${pavs?.length || 0} product_attribute_values records`);
+      if (pavError) {
+        console.error(`📊 [Admin GET] Error querying product_attribute_values:`, pavError);
+      }
+      if (pavs && pavs.length > 0) {
+        console.log(`📊 [Admin GET] Raw PAV records:`, JSON.stringify(pavs, null, 2));
+      }
 
       if (pavs && pavs.length > 0) {
         const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
@@ -185,7 +191,7 @@ router.get('/:id', authAdmin, async (req, res) => {
             productWithAttributes.attributes[attr.code] = value;
           }
         }
-        console.log(`📊 [Admin] Built attributes object:`, productWithAttributes.attributes);
+        console.log(`📊 [Admin GET] Built attributes object:`, JSON.stringify(productWithAttributes.attributes));
       } else {
         productWithAttributes.attributes = {};
         console.log(`📊 [Admin] No attribute values found, returning empty object`);
@@ -413,6 +419,9 @@ router.put('/:id',
 
     // Extract translations from request body
     const { translations, ...productData } = req.body;
+
+    console.log('📊 [Admin PUT] Received attributes in request:', productData.attributes);
+    console.log('📊 [Admin PUT] productData keys:', Object.keys(productData));
 
     // Update product data (excluding translations)
     const updatedProduct = await updateProduct(store_id, req.params.id, productData);
