@@ -166,13 +166,41 @@ router.get('/:id', authAdmin, async (req, res) => {
         const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
         const valueIds = pavs.filter(p => p.value_id).map(p => p.value_id);
 
-        const [attrsData, valsData] = await Promise.all([
-          attributeIds.length > 0 ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => r.data || []) : [],
-          valueIds.length > 0 ? tenantDb.from('attribute_values').select('id, code').in('id', valueIds).then(r => r.data || []) : []
-        ]);
+        console.log(`📊 [Admin GET] Looking up ${attributeIds.length} attribute IDs:`, attributeIds);
+        console.log(`📊 [Admin GET] Looking up ${valueIds.length} value IDs:`, valueIds);
 
-        const attrMap = new Map(attrsData.map(a => [a.id, a]));
-        const valMap = new Map(valsData.map(v => [v.id, v.code]));
+        // Fetch attributes and attribute_values with proper error handling
+        let attrsData = [];
+        let valsData = [];
+
+        if (attributeIds.length > 0) {
+          const { data: attrs, error: attrsErr } = await tenantDb
+            .from('attributes')
+            .select('id, code, type')
+            .in('id', attributeIds);
+          if (attrsErr) {
+            console.error('📊 [Admin GET] Error fetching attributes:', attrsErr);
+          } else {
+            attrsData = attrs || [];
+          }
+        }
+
+        if (valueIds.length > 0) {
+          const { data: vals, error: valsErr } = await tenantDb
+            .from('attribute_values')
+            .select('id, code')
+            .in('id', valueIds);
+          if (valsErr) {
+            console.error('📊 [Admin GET] Error fetching attribute_values:', valsErr);
+          } else {
+            valsData = vals || [];
+          }
+        }
+
+        console.log(`📊 [Admin GET] Found ${attrsData.length} attributes, ${valsData.length} attribute values`);
+
+        const attrMap = new Map((attrsData || []).map(a => [a.id, a]));
+        const valMap = new Map((valsData || []).map(v => [v.id, v.code]));
 
         // Build attributes object {code: value} for admin form compatibility
         productWithAttributes.attributes = {};
