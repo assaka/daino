@@ -48,8 +48,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
   // Helper function to load product details for cart items
   const loadProductDetails = useCallback(async (cartItems, storeId) => {
-    console.log('🛒 MiniCart.loadProductDetails: Called with', cartItems.length, 'items, storeId:', storeId);
-
     if (cartItems.length === 0) {
       setCartProducts({});
       return;
@@ -62,8 +60,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
         item.product_id;
       return productId;
     }).filter(id => id !== null))];
-
-    console.log('🛒 MiniCart.loadProductDetails: Product IDs to fetch:', productIds);
 
     if (productIds.length === 0) {
       setCartProducts({});
@@ -91,17 +87,11 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       if (!productsArray.length) {
         if (window.__productFetching[cacheKey]) {
           // Already fetching - wait for it
-          console.log('🛒 MiniCart.loadProductDetails: Waiting for existing fetch');
           productsArray = await window.__productFetching[cacheKey];
         } else {
           // Start fetching - explicitly pass store_id to ensure correct store filtering
-          console.log('🛒 MiniCart.loadProductDetails: Fetching products with store_id:', storeId);
           const fetchPromise = StorefrontProduct.filter({ ids: productIds, store_id: storeId }).then(result => {
             const products = result || [];
-            console.log('🛒 MiniCart.loadProductDetails: Fetched', products.length, 'products');
-            if (products.length > 0) {
-              console.log('🛒 MiniCart.loadProductDetails: First product images:', products[0]?.images?.length || 0);
-            }
             window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
             delete window.__productFetching[cacheKey];
             return products;
@@ -109,8 +99,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           window.__productFetching[cacheKey] = fetchPromise;
           productsArray = await fetchPromise;
         }
-      } else {
-        console.log('🛒 MiniCart.loadProductDetails: Using cached products:', productsArray.length);
       }
 
       // Build product details map - ensure string keys for consistency
@@ -120,7 +108,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           productDetails[String(product.id)] = product;
         }
       });
-      console.log('🛒 MiniCart.loadProductDetails: Set cartProducts with', Object.keys(productDetails).length, 'products');
       setCartProducts(productDetails);
     } catch (error) {
       console.error('❌ MiniCart: Failed to fetch products:', error);
@@ -218,15 +205,11 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   const loadCart = async () => {
     // CRITICAL: Don't load cart without store context - backend requires store_id
     if (!store?.id) {
-      console.log('🛒 MiniCart.loadCart: Skipping - no store.id available yet');
       return { success: false, items: [] };
     }
 
-    console.log('🛒 MiniCart.loadCart: Starting with store.id:', store.id);
-
     // Prevent concurrent loadCart calls
     if (loadCartRef.current) {
-      console.log('🛒 MiniCart.loadCart: Returning existing promise (concurrent call prevention)');
       return loadCartRef.current;
     }
 
@@ -238,9 +221,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
         // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
         // CRITICAL: Always bust cache (true) to get fresh data from database
-        console.log('🛒 MiniCart.loadCart: Calling cartService.getCart with store.id:', store.id);
         const cartResult = await cartService.getCart(true, store.id);
-        console.log('🛒 MiniCart.loadCart: Got cart result:', cartResult?.success, 'items:', cartResult?.items?.length);
 
         if (cartResult.success && cartResult.items) {
           setCartItems(cartResult.items);
@@ -388,7 +369,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);
                   const product = cartProducts[productKey];
-                  console.log('🛒 MiniCart render: item.product_id:', item.product_id, 'productKey:', productKey, 'found:', !!product, 'cartProducts keys:', Object.keys(cartProducts));
                   if (!product) {
                     // Show placeholder for missing product instead of hiding completely
                     return (
