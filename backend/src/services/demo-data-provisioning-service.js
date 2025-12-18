@@ -1378,7 +1378,7 @@ class DemoDataProvisioningService {
         identifier: 'newsletter-signup',
         title: 'Newsletter Signup',
         placement: ['footer'],
-        content: `footer
+        content: `
           <div class="relative overflow-hidden rounded-2xl my-8 mx-4 bg-gray-900">
             <div class="grid md:grid-cols-2">
               <div class="relative z-10 p-8 md:p-12 flex flex-col justify-center">
