@@ -16,7 +16,9 @@ import {
   Tablet,
   ChevronRight,
   Play,
-  Filter
+  Filter,
+  Search,
+  X
 } from 'lucide-react';
 import apiClient from '@/api/client';
 
@@ -30,11 +32,73 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 20;
 
+  // URL Search state
+  const [urlSearchQuery, setUrlSearchQuery] = useState('');
+  const [urlsWithEvents, setUrlsWithEvents] = useState([]);
+  const [loadingUrls, setLoadingUrls] = useState(false);
+  const [showUrlDropdown, setShowUrlDropdown] = useState(false);
+
   useEffect(() => {
     if (storeId) {
       loadSessions();
     }
-  }, [storeId, dateRange, deviceFilter, interactionTypeFilter, currentPage]);
+  }, [storeId, dateRange, deviceFilter, interactionTypeFilter, pageFilter, currentPage]);
+
+  // Load URLs with events when store changes
+  useEffect(() => {
+    if (storeId) {
+      loadUrlsWithEvents();
+    }
+  }, [storeId]);
+
+  // Helper function to convert full URL to relative path
+  const toRelativeUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname + urlObj.search + urlObj.hash;
+    } catch {
+      return url;
+    }
+  };
+
+  const loadUrlsWithEvents = async () => {
+    if (!storeId) return;
+
+    setLoadingUrls(true);
+    try {
+      const response = await apiClient.get(`heatmap/summary/${storeId}?group_by=page_url`);
+      if (response.data && Array.isArray(response.data)) {
+        const urlMap = new Map();
+        response.data.forEach(item => {
+          const url = item.page_url;
+          if (url) {
+            const existing = urlMap.get(url) || { url, count: 0 };
+            existing.count += item.interaction_count || 0;
+            urlMap.set(url, existing);
+          }
+        });
+        const urls = Array.from(urlMap.values()).sort((a, b) => b.count - a.count);
+        setUrlsWithEvents(urls);
+      }
+    } catch (err) {
+      console.warn('Error loading URLs with events:', err);
+      setUrlsWithEvents([]);
+    } finally {
+      setLoadingUrls(false);
+    }
+  };
+
+  // Filter URLs (exclude admin, show relative)
+  const filteredUrls = urlsWithEvents
+    .filter(item => {
+      const relativeUrl = toRelativeUrl(item.url);
+      if (relativeUrl.includes('/admin')) return false;
+      return relativeUrl.toLowerCase().includes(urlSearchQuery.toLowerCase());
+    })
+    .map(item => ({
+      ...item,
+      displayUrl: toRelativeUrl(item.url)
+    }));
 
   const loadSessions = async () => {
     setLoading(true);
@@ -183,14 +247,93 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
             </Select>
           </div>
 
-          <div>
+          <div className="relative">
             <Label htmlFor="page-filter">Filter by Page</Label>
-            <Input
-              id="page-filter"
-              value={pageFilter}
-              onChange={(e) => setPageFilter(e.target.value)}
-              placeholder="Enter page URL"
-            />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <Input
+                id="page-filter"
+                value={urlSearchQuery}
+                onChange={(e) => {
+                  setUrlSearchQuery(e.target.value);
+                  setShowUrlDropdown(true);
+                }}
+                onFocus={() => setShowUrlDropdown(true)}
+                placeholder={pageFilter ? toRelativeUrl(pageFilter) : "Search URLs..."}
+                className="w-full pl-9 pr-8"
+              />
+              {(pageFilter || urlSearchQuery) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPageFilter('');
+                    setUrlSearchQuery('');
+                    setShowUrlDropdown(false);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {/* URL Search Dropdown */}
+            {showUrlDropdown && (
+              <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto min-w-[500px]">
+                {loadingUrls ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Loading URLs with events...
+                  </div>
+                ) : filteredUrls.length > 0 ? (
+                  <>
+                    <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
+                      URLs with recorded events ({filteredUrls.length})
+                    </div>
+                    {filteredUrls.slice(0, 20).map((item, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setPageFilter(item.url);
+                          setUrlSearchQuery('');
+                          setShowUrlDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-blue-50 flex items-center justify-between group"
+                      >
+                        <span className="text-sm text-gray-700 truncate flex-1 mr-2" title={item.displayUrl}>
+                          {item.displayUrl}
+                        </span>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {item.count.toLocaleString()} events
+                        </Badge>
+                      </button>
+                    ))}
+                    {filteredUrls.length > 20 && (
+                      <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
+                        Showing 20 of {filteredUrls.length} URLs
+                      </div>
+                    )}
+                  </>
+                ) : urlsWithEvents.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No URLs with recorded events yet
+                  </div>
+                ) : (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No matching URLs found
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Click outside to close dropdown */}
+            {showUrlDropdown && (
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowUrlDropdown(false)}
+              />
+            )}
           </div>
         </div>
 
