@@ -84,7 +84,7 @@ const checkStoreAccess = async (storeId, userId, userRole) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, search } = req.query;
+    const { page = 1, limit = 12, search } = req.query;
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
     if (!store_id) {
