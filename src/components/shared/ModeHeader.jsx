@@ -82,6 +82,9 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 }`}
               >
                 Plugins
+                <span className="ml-1 px-1 py-0.5 text-[9px] font-semibold bg-amber-100 text-amber-700 rounded">
+                  Experimental
+                </span>
               </Button>
               <Button
                 variant="ghost"
@@ -236,6 +239,9 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 }`}
               >
                 Plugins
+                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 rounded">
+                  Experimental
+                </span>
               </Button>
               <Button
                 variant="ghost"

@@ -69,11 +69,7 @@ const ShopifyIntegration = () => {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
 
   // Category mapping state
-  const [fetchingCategories, setFetchingCategories] = useState(false);
-  const [showCollectionImportResult, setShowCollectionImportResult] = useState(true);
   const [categoryMappingKey, setCategoryMappingKey] = useState(0); // To force refresh
-  const [categoryMappingStats, setCategoryMappingStats] = useState({ total: 0, mapped: 0, unmapped: 0 });
-  const [importingFromMappings, setImportingFromMappings] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger to refresh ImportJobProgress
 
   // Scheduled imports state
@@ -401,84 +397,6 @@ const ShopifyIntegration = () => {
       text: `Import failed: ${job.error || 'Unknown error'}`
     });
   }, []);
-
-  // Fetch category mapping stats
-  const fetchCategoryMappingStats = async () => {
-    try {
-      const response = await apiClient.get('/integrations/category-mappings/shopify');
-      if (response.success) {
-        setCategoryMappingStats(response.stats || { total: 0, mapped: 0, unmapped: 0 });
-      }
-    } catch (error) {
-      console.error('Error fetching category mapping stats:', error);
-    }
-  };
-
-  // Fetch mapping stats when store changes
-  useEffect(() => {
-    if (storeId && storeId !== 'undefined') {
-      fetchCategoryMappingStats();
-    }
-  }, [storeId]);
-
-  // Fetch categories from Shopify to category mappings
-  const handleFetchCategories = async () => {
-    setFetchingCategories(true);
-    setShowCollectionImportResult(false); // Hide import result
-    try {
-      const response = await apiClient.post('/integrations/category-mappings/shopify/sync', {});
-      if (response.success) {
-        // Force refresh the CategoryMappingPanel by changing its key
-        setCategoryMappingKey(prev => prev + 1);
-        // Refresh mapping stats
-        await fetchCategoryMappingStats();
-        setFlashMessage({
-          type: 'success',
-          text: response.message || 'Collections fetched successfully'
-        });
-      } else {
-        setFlashMessage({
-          type: 'error',
-          text: response.message || 'Failed to fetch collections'
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching collections:', error);
-      setFlashMessage({
-        type: 'error',
-        text: error.message || 'Failed to fetch collections'
-      });
-    } finally {
-      setFetchingCategories(false);
-    }
-  };
-
-  // Import categories from integration_category_mappings to categories table (via background job)
-  const handleImportFromMappings = async () => {
-    setImportingFromMappings(true);
-    try {
-      // Schedule a background job for category creation
-      const response = await apiClient.post('/integrations/category-mappings/shopify/create-categories-job', {});
-
-      if (response.success) {
-        toast.success('Collection category creation job started! Track progress below.');
-        // Trigger refresh of ImportJobProgress to show the new job
-        setRefreshTrigger(prev => prev + 1);
-        // Refresh mapping stats after job is scheduled (with delay to let job start)
-        setTimeout(() => {
-          fetchCategoryMappingStats();
-          setCategoryMappingKey(prev => prev + 1);
-        }, 2000);
-      } else {
-        toast.error(response.message || 'Failed to schedule category creation job');
-      }
-    } catch (error) {
-      console.error('Error scheduling category creation job:', error);
-      toast.error(error.message || 'Failed to schedule category creation job');
-    } finally {
-      setImportingFromMappings(false);
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Never';
@@ -1322,25 +1240,12 @@ const ShopifyIntegration = () => {
               </CardContent>
             </Card>
           ) : (
-            <>
-              {/* Action Buttons */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Shopify Collections</CardTitle>
-                  <CardDescription>
-                    Fetch collections from Shopify and map them to store categories
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              {/* Category Mapping Panel */}
-              <CategoryMappingPanel
-                key={categoryMappingKey}
-                integrationSource="shopify"
-                title="Shopify Collection Mapping"
-                onJobScheduled={() => setRefreshTrigger(prev => prev + 1)}
-              />
-            </>
+            <CategoryMappingPanel
+              key={categoryMappingKey}
+              integrationSource="shopify"
+              title="Shopify Collection Mapping"
+              onJobScheduled={() => setRefreshTrigger(prev => prev + 1)}
+            />
           )}
         </TabsContent>
       </Tabs>
