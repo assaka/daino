@@ -152,8 +152,8 @@ app.post('/capture-screenshot', async (req, res) => {
       await page.setRequestInterception(true);
       page.on('request', (request) => {
         const resourceType = request.resourceType();
-        // Block fonts, media, and other non-essential resources
-        if (['media', 'font', 'websocket', 'manifest', 'other'].includes(resourceType)) {
+        // Block media, websockets and other non-essential resources (keep fonts for proper rendering)
+        if (['media', 'websocket', 'manifest', 'other'].includes(resourceType)) {
           request.abort();
         } else {
           request.continue();
@@ -169,34 +169,30 @@ app.post('/capture-screenshot', async (req, res) => {
 
       console.log(`📸 [${requestId}] Navigating to URL...`);
 
-      // Navigate to the page - use domcontentloaded for fastest response
+      // Navigate to the page - wait for full page load
       await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000 // 30 second navigation timeout
+        waitUntil: ['load', 'networkidle2'],
+        timeout: 45000 // 45 second navigation timeout
       });
 
-      console.log(`📸 [${requestId}] DOM loaded, waiting for images...`);
+      console.log(`📸 [${requestId}] Page fully loaded, ensuring all images are ready...`);
 
-      // Wait for images to load (with timeout)
-      try {
-        await page.evaluate(() => {
-          return Promise.all(
-            Array.from(document.images)
-              .filter(img => !img.complete)
-              .map(img => new Promise((resolve) => {
-                img.onload = img.onerror = resolve;
-                setTimeout(resolve, 5000); // Max 5s per image
-              }))
-          );
-        });
-      } catch (e) {
-        console.log(`📸 [${requestId}] Some images may not have loaded`);
-      }
+      // Wait for all images to be fully loaded
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images)
+            .filter(img => !img.complete || img.naturalHeight === 0)
+            .map(img => new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            }))
+        );
+      });
 
-      // Short additional wait for any final rendering
-      const waitTime = options.waitTime || 1000; // Default to 1 second
+      // Short additional wait for any CSS animations/transitions
+      const waitTime = options.waitTime || 500;
       await new Promise(resolve => setTimeout(resolve, waitTime));
-      console.log(`📸 [${requestId}] Waited ${waitTime}ms for final render`)
+      console.log(`📸 [${requestId}] Page ready for screenshot`)
 
       console.log(`📸 [${requestId}] Capturing screenshot...`);
 
@@ -242,7 +238,7 @@ app.post('/capture-screenshot', async (req, res) => {
     // Provide more specific error messages
     let errorMessage = error.message;
     if (error.message.includes('timeout')) {
-      errorMessage = `Page load timeout: The page took too long to load (>30s)`;
+      errorMessage = `Page load timeout: The page took too long to load (>45s)`;
     } else if (error.message.includes('net::ERR')) {
       errorMessage = `Network error: Unable to reach the URL - ${error.message}`;
     } else if (error.message.includes('Navigation failed')) {

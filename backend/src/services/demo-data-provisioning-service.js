@@ -1281,10 +1281,7 @@ class DemoDataProvisioningService {
         title: 'Homepage Hero Banner',
         placement: ['homepage_hero'],
         content: `
-          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white">
-            <div class="absolute inset-0 bg-black/10"></div>
-            <div class="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div class="relative overflow-hidden rounded-2xl bg-indigo-600 text-white">
             <div class="relative px-8 py-16 md:py-24 text-center">
               <span class="inline-block px-4 py-1 mb-4 text-sm font-medium bg-white/20 rounded-full backdrop-blur-sm">New Season Collection</span>
               <h1 class="text-4xl md:text-6xl font-bold mb-6 tracking-tight">Discover Your Style</h1>
@@ -1325,33 +1322,33 @@ class DemoDataProvisioningService {
         content: `
           <div class="py-12 bg-indigo-600">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto px-4">
-              <div class="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/25">
+              <div class="group text-center p-6 rounded-2xl bg-indigo-700 hover:bg-indigo-800 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                 </div>
                 <h3 class="font-bold text-white mb-2">Free Shipping</h3>
-                <p class="text-slate-400 text-sm">On all orders over $100. Fast & reliable delivery.</p>
+                <p class="text-indigo-200 text-sm">On all orders over $100. Fast & reliable delivery.</p>
               </div>
-              <div class="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/25">
+              <div class="group text-center p-6 rounded-2xl bg-indigo-700 hover:bg-indigo-800 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 bg-emerald-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </div>
                 <h3 class="font-bold text-white mb-2">Easy Returns</h3>
-                <p class="text-slate-400 text-sm">30-day hassle-free return policy. No questions asked.</p>
+                <p class="text-indigo-200 text-sm">30-day hassle-free return policy. No questions asked.</p>
               </div>
-              <div class="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-400 to-purple-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/25">
+              <div class="group text-center p-6 rounded-2xl bg-indigo-700 hover:bg-indigo-800 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 bg-violet-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
                 <h3 class="font-bold text-white mb-2">Secure Payment</h3>
-                <p class="text-slate-400 text-sm">256-bit SSL encryption. Your data is always safe.</p>
+                <p class="text-indigo-200 text-sm">256-bit SSL encryption. Your data is always safe.</p>
               </div>
-              <div class="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-rose-400 to-pink-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg shadow-rose-500/25">
+              <div class="group text-center p-6 rounded-2xl bg-indigo-700 hover:bg-indigo-800 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 bg-rose-500 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
                   <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 </div>
                 <h3 class="font-bold text-white mb-2">24/7 Support</h3>
-                <p class="text-slate-400 text-sm">Expert assistance whenever you need it.</p>
+                <p class="text-indigo-200 text-sm">Expert assistance whenever you need it.</p>
               </div>
             </div>
           </div>
@@ -1362,17 +1359,16 @@ class DemoDataProvisioningService {
         title: 'Newsletter Signup',
         placement: ['homepage_below_content', 'footer'],
         content: `
-          <div class="relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-8 md:p-12 my-8">
-            <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M1.22676 0C1.91374 0 2.45351 0.539773 2.45351 1.22676C2.45351 1.91374 1.91374 2.45351 1.22676 2.45351C0.539773 2.45351 0 1.91374 0 1.22676C0 0.539773 0.539773 0 1.22676 0Z\" fill=\"rgba(255,255,255,0.05)\"%3E%3C/path%3E%3C/svg%3E')] opacity-50"></div>
-            <div class="relative text-center max-w-2xl mx-auto">
-              <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-emerald-400 bg-emerald-400/10 rounded-full uppercase">Newsletter</span>
+          <div class="bg-gray-900 rounded-2xl p-8 md:p-12 my-8">
+            <div class="text-center max-w-2xl mx-auto">
+              <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-emerald-300 bg-emerald-900 rounded-full uppercase">Newsletter</span>
               <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">Stay in the Loop</h3>
               <p class="text-gray-400 mb-6 text-lg">Subscribe for exclusive deals, early access to new arrivals, and insider tips delivered straight to your inbox.</p>
               <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
                 <div class="flex-1 relative">
                   <input type="email" placeholder="Enter your email" class="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                 </div>
-                <button class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all transform hover:scale-105 shadow-lg shadow-emerald-500/25">
+                <button class="px-8 py-4 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-all transform hover:scale-105 shadow-lg">
                   Subscribe
                 </button>
               </div>
@@ -1479,7 +1475,7 @@ class DemoDataProvisioningService {
         title: 'Site Announcement',
         placement: ['header'],
         content: `
-          <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white py-2.5 px-4">
+          <div class="bg-indigo-600 text-white py-2.5 px-4">
             <div class="flex items-center justify-center gap-2 text-sm font-medium">
               <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"></path></svg>
               <span>New arrivals every week!</span>
@@ -1556,9 +1552,8 @@ class DemoDataProvisioningService {
         title: 'Category Promo Banner',
         placement: ['category_above'],
         content: `
-          <div class="relative overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl p-6 mb-6">
-            <div class="absolute -right-12 -top-12 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-            <div class="relative flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="bg-violet-600 text-white rounded-2xl p-6 mb-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
               <div class="flex items-center gap-4">
                 <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
                   <span class="text-3xl">🏷️</span>
@@ -1596,11 +1591,11 @@ class DemoDataProvisioningService {
         title: 'Category Newsletter',
         placement: ['category_below_products'],
         content: `
-          <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 mt-12 text-center">
-            <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-cyan-400 bg-cyan-400/10 rounded-full uppercase">Stay Updated</span>
+          <div class="bg-slate-800 rounded-2xl p-8 mt-12 text-center">
+            <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-cyan-300 bg-cyan-900 rounded-full uppercase">Stay Updated</span>
             <h3 class="text-2xl font-bold text-white mb-2">Love This Category?</h3>
-            <p class="text-slate-400 mb-6 max-w-md mx-auto">Get notified when we add new products and exclusive deals to this collection.</p>
-            <button class="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/25">
+            <p class="text-slate-300 mb-6 max-w-md mx-auto">Get notified when we add new products and exclusive deals to this collection.</p>
+            <button class="px-8 py-3 bg-cyan-500 text-white font-semibold rounded-xl hover:bg-cyan-600 transition-all transform hover:scale-105 shadow-lg">
               Notify Me
             </button>
           </div>
@@ -1633,9 +1628,8 @@ class DemoDataProvisioningService {
         title: 'Cart Free Shipping Banner',
         placement: ['cart_above'],
         content: `
-          <div class="relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl p-5 mb-6">
-            <div class="absolute -right-8 top-1/2 -translate-y-1/2 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div class="relative flex items-center justify-between">
+          <div class="bg-emerald-500 text-white rounded-2xl p-5 mb-6">
+            <div class="flex items-center justify-between">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
@@ -1737,22 +1731,22 @@ class DemoDataProvisioningService {
           <div class="bg-slate-700 rounded-xl p-6 mt-6">
             <div class="flex flex-col md:flex-row items-center justify-center gap-6 text-sm">
               <div class="flex items-center gap-2 text-white">
-                <div class="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
                 </div>
-                <span class="text-white/90">Secure Checkout</span>
+                <span>Secure Checkout</span>
               </div>
               <div class="flex items-center gap-2 text-white">
-                <div class="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" clip-rule="evenodd"></path></svg>
+                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" clip-rule="evenodd"></path></svg>
                 </div>
-                <span class="text-white/90">30-Day Returns</span>
+                <span>30-Day Returns</span>
               </div>
               <div class="flex items-center gap-2 text-white">
-                <div class="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+                <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
                 </div>
-                <span class="text-white/90">24/7 Support</span>
+                <span>24/7 Support</span>
               </div>
             </div>
           </div>
