@@ -1324,7 +1324,7 @@ class DemoDataProvisioningService {
         title: 'Promo Banner',
         placement: ['homepage_above_hero'],
         content: `
-          <div class="text-white py-3 px-4" style="background-color: var(--theme-add-to-cart-button)">
+          <div class="text-white py-3 px-4 mb-2 rounded-lg" style="background-color: var(--theme-add-to-cart-button)">
             <div class="flex items-center justify-center gap-3 text-sm md:text-base font-medium">
               <span class="animate-pulse">🔥</span>
               <span>LIMITED TIME: Free shipping on orders over $100!</span>
@@ -1377,9 +1377,9 @@ class DemoDataProvisioningService {
       {
         identifier: 'newsletter-signup',
         title: 'Newsletter Signup',
-        placement: ['homepage_below_content', 'footer'],
-        content: `
-          <div class="relative overflow-hidden rounded-2xl my-8 bg-gray-900">
+        placement: ['footer'],
+        content: `footer
+          <div class="relative overflow-hidden rounded-2xl my-8 mx-4 bg-gray-900">
             <div class="grid md:grid-cols-2">
               <div class="relative z-10 p-8 md:p-12 flex flex-col justify-center">
                 <span class="inline-block w-fit px-3 py-1 mb-4 text-xs font-bold tracking-wider uppercase rounded-full text-white" style="background-color: var(--theme-add-to-cart-button)">Join the Club</span>

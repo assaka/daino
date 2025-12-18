@@ -180,10 +180,23 @@ app.post('/capture-screenshot', async (req, res) => {
       // Wait for common loaders/spinners to disappear
       try {
         await page.waitForFunction(() => {
-          // Common loader selectors
+          // Check for spinning elements (like Loader2 with animate-spin)
+          const spinningElements = document.querySelectorAll('.animate-spin, [class*="animate-spin"]');
+          for (const el of spinningElements) {
+            const style = window.getComputedStyle(el);
+            if (style.display !== 'none' && style.visibility !== 'hidden') {
+              // Check if it's a large centered loader (full page loader)
+              const parent = el.closest('.min-h-screen, .h-screen, [class*="h-screen"]');
+              if (parent) {
+                return false; // Full page loader still visible
+              }
+            }
+          }
+
+          // Check for common loader class patterns
           const loaderSelectors = [
             '.loader', '.loading', '.spinner', '.skeleton',
-            '[class*="loader"]', '[class*="loading"]', '[class*="spinner"]',
+            '[class*="page-loader"]', '[class*="PageLoader"]',
             '[data-loading="true"]', '[aria-busy="true"]',
             '.pace', '.pace-running', '.nprogress-busy'
           ];
@@ -192,14 +205,28 @@ app.post('/capture-screenshot', async (req, res) => {
             const elements = document.querySelectorAll(selector);
             for (const el of elements) {
               const style = window.getComputedStyle(el);
-              // Check if loader is visible
               if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
-                return false; // Loader still visible
+                // Check if it's taking up significant screen space (full page loader)
+                const rect = el.getBoundingClientRect();
+                if (rect.height > window.innerHeight * 0.5) {
+                  return false; // Large loader still visible
+                }
               }
             }
           }
+
+          // Check if body has minimal content (likely still loading)
+          const body = document.body;
+          const mainContent = document.querySelector('main, #root > div > div, .container, [class*="content"]');
+          if (mainContent) {
+            const childCount = mainContent.querySelectorAll('*').length;
+            if (childCount < 10) {
+              return false; // Very little content, probably still loading
+            }
+          }
+
           return true; // No visible loaders
-        }, { timeout: 10000 });
+        }, { timeout: 15000 });
         console.log(`📸 [${requestId}] Loaders disappeared`);
       } catch (e) {
         console.log(`📸 [${requestId}] Loader wait timed out, continuing anyway`);
