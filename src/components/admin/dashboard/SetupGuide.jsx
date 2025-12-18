@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, AlertCircle, CreditCard, Settings, Mail, Globe, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CheckCircle, AlertCircle, CreditCard, Settings, Mail, Globe, RefreshCw, Palette, Database, Beaker, Loader2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { checkStripeConnectStatus } from '@/api/functions';
 import brevoAPI from '@/api/brevo';
+import apiClient from '@/api/client';
+import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 
 export const SetupGuide = ({ store }) => {
     const navigate = useNavigate();
@@ -13,6 +16,15 @@ export const SetupGuide = ({ store }) => {
     const [loadingEmail, setLoadingEmail] = useState(true);
     const [stripeStatus, setStripeStatus] = useState(null);
     const [loadingStripe, setLoadingStripe] = useState(true);
+
+    // Theme preset modal state
+    const [showThemeModal, setShowThemeModal] = useState(false);
+    const [selectedPreset, setSelectedPreset] = useState(null);
+    const [applyingTheme, setApplyingTheme] = useState(false);
+
+    // Demo data modal state
+    const [showDemoModal, setShowDemoModal] = useState(false);
+    const [provisioningDemo, setProvisioningDemo] = useState(false);
 
     // Load Stripe Connect status
     useEffect(() => {
@@ -68,6 +80,59 @@ export const SetupGuide = ({ store }) => {
         loadEmailStatus();
     }, [store?.id]);
 
+    // Theme preset handler
+    const handleApplyThemePreset = async () => {
+        if (!store || !selectedPreset) return;
+
+        setApplyingTheme(true);
+        try {
+            const response = await apiClient.post(`/stores/${store.id}/apply-theme-preset`, {
+                presetName: selectedPreset
+            });
+
+            if (response.success) {
+                setShowThemeModal(false);
+                setSelectedPreset(null);
+                // Optionally reload the page to reflect changes
+                window.location.reload();
+            } else {
+                alert(response.error || 'Failed to apply theme preset');
+            }
+        } catch (error) {
+            console.error('Error applying theme preset:', error);
+            alert('Failed to apply theme preset. Please try again.');
+        } finally {
+            setApplyingTheme(false);
+        }
+    };
+
+    // Demo provisioning handler
+    const handleProvisionDemo = async () => {
+        if (!store) return;
+
+        setProvisioningDemo(true);
+        try {
+            const response = await apiClient.post(`stores/${store.id}/provision-demo`);
+            if (response.success) {
+                setShowDemoModal(false);
+                // Reload to reflect new demo status
+                window.location.reload();
+            } else {
+                alert(response.error || 'Failed to provision demo data');
+            }
+        } catch (error) {
+            console.error('Demo provisioning error:', error);
+            alert('Failed to provision demo data. Please try again.');
+        } finally {
+            setProvisioningDemo(false);
+        }
+    };
+
+    // Determine demo/theme status
+    const hasThemePreset = store?.theme_preset && store.theme_preset !== 'default';
+    const isDemoStore = store?.status === 'demo';
+    const canProvisionDemo = store?.status === 'active' && !store?.published;
+
     // Only hide the setup guide if domain, Stripe, and email are connected
     // Keep showing if any is incomplete, or if domains exist but no primary is set
     if (isDomainConnected && !needsPrimaryDomain && isStripeConnected && emailConfigured) {
@@ -114,6 +179,7 @@ export const SetupGuide = ({ store }) => {
     }
 
     return (
+        <>
         <Card className="mb-8 bg-blue-50 border-blue-200 material-elevation-1">
             <CardHeader>
                 <CardTitle className="text-blue-900">Finish Setting Up Your Store</CardTitle>
@@ -237,8 +303,227 @@ export const SetupGuide = ({ store }) => {
                             )}
                         </Button>
                     </li>
+                    {/* Theme Preset Item */}
+                    <li className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            {hasThemePreset ? (
+                                <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
+                            ) : (
+                                <Palette className="w-5 h-5 text-violet-600 mr-3" />
+                            )}
+                            <div>
+                                <p className="font-semibold text-gray-800">
+                                    {hasThemePreset ? 'Theme Selected' : 'Choose Theme Preset'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {hasThemePreset
+                                        ? `Using "${store.theme_preset}" theme preset.`
+                                        : 'Select a theme preset to customize your store appearance.'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant={hasThemePreset ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                                setSelectedPreset(store?.theme_preset || 'default');
+                                setShowThemeModal(true);
+                            }}
+                            className={!hasThemePreset ? "border-violet-200 text-violet-600 hover:bg-violet-50" : ""}
+                        >
+                            <Palette className="w-4 h-4 mr-1" />
+                            {hasThemePreset ? 'Change' : 'Select'}
+                        </Button>
+                    </li>
+                    {/* Demo Data Provisioning Item */}
+                    {(canProvisionDemo || isDemoStore) && (
+                        <li className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                {isDemoStore ? (
+                                    <Beaker className="w-5 h-5 text-purple-600 mr-3" />
+                                ) : (
+                                    <Database className="w-5 h-5 text-purple-600 mr-3" />
+                                )}
+                                <div>
+                                    <p className="font-semibold text-gray-800">
+                                        {isDemoStore ? 'Demo Mode Active' : 'Add Demo Data'}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        {isDemoStore
+                                            ? 'Store is loaded with demo content. Clear to go live.'
+                                            : 'Populate your store with sample products, orders, and customers.'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            {isDemoStore ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate('/admin/stores')}
+                                    className="border-amber-200 text-amber-600 hover:bg-amber-50"
+                                >
+                                    <RefreshCw className="w-4 h-4 mr-1" />
+                                    Clear Demo
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowDemoModal(true)}
+                                    className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                                >
+                                    <Database className="w-4 h-4 mr-1" />
+                                    Provision
+                                </Button>
+                            )}
+                        </li>
+                    )}
                 </ul>
             </CardContent>
         </Card>
+
+        {/* Theme Preset Modal */}
+        <Dialog open={showThemeModal} onOpenChange={(open) => {
+            if (!open) {
+                setShowThemeModal(false);
+                setSelectedPreset(null);
+            }
+        }}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Palette className="w-5 h-5 text-violet-600" />
+                        Select Theme Preset
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+                        <p className="text-sm text-violet-900 font-medium mb-1">
+                            Store: {store?.name}
+                        </p>
+                        <p className="text-sm text-violet-700">
+                            Select a theme preset to apply colors and styles to your store.
+                        </p>
+                    </div>
+
+                    <ThemePresetSelector
+                        value={selectedPreset}
+                        onChange={setSelectedPreset}
+                        variant="cards"
+                    />
+
+                    <div className="flex justify-between items-center pt-4 border-t">
+                        <Button
+                            variant="link"
+                            className="text-sm text-gray-500 p-0"
+                            onClick={() => {
+                                setShowThemeModal(false);
+                                navigate(`/admin/theme-layout?store=${store?.id}`);
+                            }}
+                        >
+                            Advanced Theme Settings →
+                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowThemeModal(false);
+                                    setSelectedPreset(null);
+                                }}
+                                disabled={applyingTheme}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="bg-violet-600 hover:bg-violet-700"
+                                onClick={handleApplyThemePreset}
+                                disabled={applyingTheme || !selectedPreset}
+                            >
+                                {applyingTheme ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Applying...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Palette className="w-4 h-4 mr-2" />
+                                        Apply Theme
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* Demo Data Provision Modal */}
+        <Dialog open={showDemoModal} onOpenChange={setShowDemoModal}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-purple-600">
+                        <Beaker className="w-5 h-5" />
+                        Provision Demo Data?
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900 font-medium mb-2">Your data is safe</p>
+                        <p className="text-sm text-blue-800">
+                            Demo content will be added to your store. You can revert this action later
+                            without losing any data you've manually added.
+                        </p>
+                    </div>
+
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <p className="text-sm text-purple-900 font-medium mb-2">Demo data includes:</p>
+                        <ul className="text-sm text-purple-800 space-y-1 list-disc list-inside">
+                            <li>4 categories with subcategories</li>
+                            <li>25+ demo products with images</li>
+                            <li>Attribute sets and attributes</li>
+                            <li>20 demo customers</li>
+                            <li>50 demo orders</li>
+                            <li>CMS pages and blocks</li>
+                            <li>Product tabs and product labels</li>
+                            <li>Tax configuration and coupons</li>
+                        </ul>
+                    </div>
+
+                    <p className="text-sm text-gray-600">
+                        Store: <strong>{store?.name}</strong>
+                    </p>
+
+                    <div className="flex justify-end space-x-2 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDemoModal(false)}
+                            disabled={provisioningDemo}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="bg-purple-600 hover:bg-purple-700"
+                            onClick={handleProvisionDemo}
+                            disabled={provisioningDemo}
+                        >
+                            {provisioningDemo ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Provisioning...
+                                </>
+                            ) : (
+                                <>
+                                    <Database className="w-4 h-4 mr-2" />
+                                    Provision Demo Data
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    </>
     );
 };
