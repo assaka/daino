@@ -115,6 +115,7 @@ export default function Products() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
   const [bulkDeleteInProgress, setBulkDeleteInProgress] = useState(false);
+  const [selectAllInStore, setSelectAllInStore] = useState(false); // When true, delete ALL products in store
 
   // Translation dialog state
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
@@ -377,69 +378,118 @@ export default function Products() {
     }
     setSelectedProducts(newSelected);
     setShowBulkActions(newSelected.size > 0);
+    setSelectAllInStore(false); // Reset "select all in store" when individual selection changes
   };
 
   const handleSelectAll = () => {
     if (selectedProducts.size === paginatedProducts.length) {
       setSelectedProducts(new Set());
       setShowBulkActions(false);
+      setSelectAllInStore(false);
     } else {
       const allIds = new Set(paginatedProducts.map(p => p.id));
       setSelectedProducts(allIds);
       setShowBulkActions(true);
+      setSelectAllInStore(false); // Reset - user needs to explicitly click "Select all X"
     }
   };
 
-  const handleBulkDelete = () => {
-    if (selectedProducts.size === 0) return;
+  const handleSelectAllInStore = () => {
+    setSelectAllInStore(true);
+  };
 
-    const count = selectedProducts.size;
+  const handleClearSelection = () => {
+    setSelectedProducts(new Set());
+    setShowBulkActions(false);
+    setSelectAllInStore(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedProducts.size === 0 && !selectAllInStore) return;
+
+    const count = selectAllInStore ? totalItems : selectedProducts.size;
     setConfirmModalTitle('Delete Products');
-    setConfirmModalMessage(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}? This action cannot be undone.`);
+    setConfirmModalMessage(
+      selectAllInStore
+        ? `Are you sure you want to delete ALL ${count} products in this store? This action cannot be undone.`
+        : `Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}? This action cannot be undone.`
+    );
     setConfirmModalAction(() => async () => {
       setShowConfirmModal(false);
       setBulkDeleteInProgress(true);
 
-      // Delete products one by one to handle individual errors
-      const results = { success: [], failed: [] };
+      try {
+        if (selectAllInStore) {
+          // Use the bulk delete API endpoint
+          const storeId = getSelectedStoreId();
+          const token = localStorage.getItem("token");
+          const response = await fetch(`/api/products/all?store_id=${storeId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'x-store-id': storeId
+            }
+          });
 
-      for (const id of Array.from(selectedProducts)) {
-        try {
-          await Product.delete(id);
-          results.success.push(id);
-        } catch (error) {
-          console.error(`Error deleting product ${id}:`, error);
-          results.failed.push({ id, error });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Failed to delete products');
+          }
+
+          // Clear selection and refresh
+          handleClearSelection();
+          await loadData();
+
+          setFlashMessage({
+            type: 'success',
+            message: `${data.data?.deleted || count} products deleted successfully`
+          });
+        } else {
+          // Delete products one by one to handle individual errors
+          const results = { success: [], failed: [] };
+
+          for (const id of Array.from(selectedProducts)) {
+            try {
+              await Product.delete(id);
+              results.success.push(id);
+            } catch (error) {
+              console.error(`Error deleting product ${id}:`, error);
+              results.failed.push({ id, error });
+            }
+          }
+
+          // Clear selection and refresh
+          handleClearSelection();
+          await loadData();
+
+          // Show appropriate message
+          if (results.failed.length === 0) {
+            setFlashMessage({
+              type: 'success',
+              message: `${results.success.length} product${results.success.length > 1 ? 's' : ''} deleted successfully`
+            });
+          } else if (results.success.length === 0) {
+            const firstError = results.failed[0].error;
+            setFlashMessage({
+              type: 'error',
+              message: firstError.message || 'Failed to delete products'
+            });
+          } else {
+            setFlashMessage({
+              type: 'warning',
+              message: `${results.success.length} product${results.success.length > 1 ? 's' : ''} deleted, ${results.failed.length} failed`
+            });
+          }
         }
-      }
-
-      // Clear selection and refresh
-      setSelectedProducts(new Set());
-      setShowBulkActions(false);
-      await loadData();
-
-      setBulkDeleteInProgress(false);
-
-      // Show appropriate message
-      if (results.failed.length === 0) {
-        // All succeeded
-        setFlashMessage({
-          type: 'success',
-          message: `${results.success.length} product${results.success.length > 1 ? 's' : ''} deleted successfully`
-        });
-      } else if (results.success.length === 0) {
-        // All failed
-        const firstError = results.failed[0].error;
+      } catch (error) {
+        console.error('Bulk delete error:', error);
         setFlashMessage({
           type: 'error',
-          message: firstError.message || 'Failed to delete products'
+          message: error.message || 'Failed to delete products'
         });
-      } else {
-        // Partial success
-        setFlashMessage({
-          type: 'warning',
-          message: `${results.success.length} product${results.success.length > 1 ? 's' : ''} deleted, ${results.failed.length} failed`
-        });
+      } finally {
+        setBulkDeleteInProgress(false);
       }
     });
     setShowConfirmModal(true);
@@ -1011,10 +1061,31 @@ export default function Products() {
                 {showBulkActions && (
                   <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded-r-lg">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-blue-800">
-                          {selectedProducts.size} product{selectedProducts.size > 1 ? 's' : ''} selected
+                          {selectAllInStore
+                            ? `All ${totalItems} products selected`
+                            : `${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} selected`
+                          }
                         </p>
+                        {/* Show "Select all X products" link when all on page are selected but not all in store */}
+                        {isAllSelected && !selectAllInStore && totalItems > paginatedProducts.length && (
+                          <button
+                            onClick={handleSelectAllInStore}
+                            className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+                          >
+                            Select all {totalItems} products
+                          </button>
+                        )}
+                        {/* Show "Clear selection" link when all in store are selected */}
+                        {selectAllInStore && (
+                          <button
+                            onClick={handleClearSelection}
+                            className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+                          >
+                            Clear selection
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2">
                         <DropdownMenu>
@@ -1095,13 +1166,10 @@ export default function Products() {
                           icon={<Trash2 className="w-4 h-4 mr-2" />}
                         />
                         
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                            setSelectedProducts(new Set());
-                            setShowBulkActions(false);
-                          }}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleClearSelection}
                         >
                           <X className="w-4 h-4" />
                         </Button>

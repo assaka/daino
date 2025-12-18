@@ -75,6 +75,10 @@ export default function Attributes() {
   // Translation dialog state
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
 
+  // Delete all state
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     if (selectedStore) {
       loadData();
@@ -273,6 +277,43 @@ export default function Attributes() {
     } catch (error) {
       console.error('Bulk translate error:', error);
       return { success: false, message: error.message };
+    }
+  };
+
+  const handleDeleteAllAttributes = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/attributes/all?store_id=${storeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-store-id': storeId
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete attributes');
+      }
+
+      toast.success(`${data.data?.deleted || 0} attributes deleted successfully`);
+      setShowDeleteAllConfirm(false);
+      await loadData();
+      // Clear cache
+      clearAttributesCache(storeId);
+    } catch (error) {
+      console.error('Delete all attributes error:', error);
+      toast.error(error.message || 'Failed to delete attributes');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -530,6 +571,15 @@ export default function Attributes() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowDeleteAllConfirm(true)}
+                  variant="outline"
+                  className="border-red-600 text-red-600 hover:bg-red-50"
+                  disabled={!selectedStore || attributesTotalItems === 0}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete All ({attributesTotalItems})
+                </Button>
                 <Button
                   onClick={() => setShowBulkTranslateDialog(true)}
                   variant="outline"
@@ -837,6 +887,48 @@ export default function Attributes() {
           entityName="Attributes"
           onTranslate={handleBulkTranslate}
         />
+
+        {/* Delete All Confirmation Dialog */}
+        <Dialog open={showDeleteAllConfirm} onOpenChange={setShowDeleteAllConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete All Attributes</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600">
+                Are you sure you want to delete <strong>all {attributesTotalItems} attributes</strong> in this store?
+                This will also delete all attribute values and remove them from products.
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAllConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAllAttributes}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete All
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

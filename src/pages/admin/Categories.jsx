@@ -82,6 +82,8 @@ export default function Categories() {
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [userCredits, setUserCredits] = useState(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load user credits for AI translation checks
   const loadUserCredits = async () => {
@@ -434,6 +436,50 @@ export default function Categories() {
       if (storeId) clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category visibility:", error);
+    }
+  };
+
+  const handleDeleteAllCategories = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+
+      const response = await fetch(`/api/categories/all?store_id=${storeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-store-id': storeId
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete categories');
+      }
+
+      toast.success(`${data.data?.deleted || 0} categories deleted successfully`);
+      setShowDeleteAllConfirm(false);
+      await loadCategories();
+      // Clear storefront cache
+      clearCategoriesCache(storeId);
+    } catch (error) {
+      console.error('Delete all categories error:', error);
+      toast.error(error.message || 'Failed to delete categories');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -924,6 +970,15 @@ export default function Categories() {
             )}
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={() => setShowDeleteAllConfirm(true)}
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-50"
+              disabled={!selectedStore || totalItems === 0}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete All ({totalItems})
+            </Button>
             <Button
               onClick={() => setShowBulkTranslateDialog(true)}
               variant="outline"
@@ -1574,6 +1629,47 @@ export default function Categories() {
                   )}
                 </Button>
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete All Confirmation Dialog */}
+        <Dialog open={showDeleteAllConfirm} onOpenChange={setShowDeleteAllConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete All Categories</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600">
+                Are you sure you want to delete <strong>all {totalItems} categories</strong> in this store?
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAllConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAllCategories}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete All
+                  </>
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
