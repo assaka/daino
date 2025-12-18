@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { createCategoryUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -6,7 +6,7 @@ import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import ProductItemCard from "@/components/storefront/ProductItemCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
-import { Package, Search as SearchIcon } from "lucide-react";
+import { Package, Search as SearchIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getProductName, getProductShortDescription, getCurrentLanguage } from "@/utils/translationUtils";
@@ -37,6 +37,11 @@ export default function Homepage() {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Scroll state for featured products carousel
+  const scrollContainerRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
   // Use featured products from page bootstrap (no API call!)
   const featuredProducts = pageBootstrap?.featuredProducts || [];
 
@@ -60,6 +65,47 @@ export default function Homepage() {
       }
     }
   }, [store?.id, storeLoading, searchQuery, pageBootstrapLoading]);
+
+  // Check if scroll arrows should be visible
+  const checkScrollButtons = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1);
+    }
+  };
+
+  // Track scroll state for featured products carousel
+  useEffect(() => {
+    if (!searchQuery && !loading && featuredProducts.length > 0) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(checkScrollButtons, 100);
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.addEventListener('scroll', checkScrollButtons);
+        window.addEventListener('resize', checkScrollButtons);
+      }
+      return () => {
+        clearTimeout(timer);
+        if (container) {
+          container.removeEventListener('scroll', checkScrollButtons);
+          window.removeEventListener('resize', checkScrollButtons);
+        }
+      };
+    }
+  }, [featuredProducts, loading, searchQuery]);
+
+  // Scroll the featured products carousel
+  const scroll = (direction) => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const scrollAmount = 300; // Approximate card width + gap
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const loadSearchResults = async (query) => {
     try {
