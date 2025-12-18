@@ -88,6 +88,7 @@ const masterEmailFooter = (options = {}) => {
       <tr>
         <td style="padding: 24px 40px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
           <!-- Footer Links -->
+          <!--
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
             <tr>
               <td style="text-align: center;">
@@ -103,7 +104,8 @@ const masterEmailFooter = (options = {}) => {
               </td>
             </tr>
           </table>
-
+          -->
+          
           ${showSocial ? `
           <!-- Social Links -->
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
@@ -238,9 +240,7 @@ const creditsPurchaseEmail = (data) => {
 
   const header = masterEmailHeader({
     title: 'Purchase Confirmed!',
-    subtitle: `+${creditsPurchased} Credits`,
-    primaryColor: '#6366f1', // Indigo (Daino brand)
-    secondaryColor: '#8b5cf6' // Purple
+    subtitle: `+${creditsPurchased} Credits`
   });
 
   const footer = masterEmailFooter();
@@ -367,9 +367,7 @@ const creditsLowBalanceEmail = (data) => {
 
   const header = masterEmailHeader({
     title: 'Low Credit Balance',
-    subtitle: `${currentBalance} credits remaining`,
-    primaryColor: '#f59e0b', // Amber
-    secondaryColor: '#d97706'
+    subtitle: `${currentBalance} credits remaining`
   });
 
   const footer = masterEmailFooter();
@@ -579,13 +577,14 @@ const passwordResetEmail = (data) => {
           <!-- Warning Box -->
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
-              <td style="padding: 16px; background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.5;">
+              <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid #6366f1; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
                   This link will expire in <strong>${expiresIn}</strong>. If you didn't request a password reset, you can safely ignore this email.
                 </p>
               </td>
             </tr>
           </table>
+
 
           <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
             If the button doesn't work, copy and paste this link:<br>
@@ -641,9 +640,7 @@ const teamInvitationEmail = (data) => {
 
   const header = masterEmailHeader({
     title: 'You are Invited!',
-    subtitle: 'Join the team and start collaborating',
-    primaryColor: '#ef4444', // Red
-    secondaryColor: '#dc2626'
+    subtitle: 'Join the team and start collaborating'
   });
 
   const footer = masterEmailFooter();
@@ -737,19 +734,12 @@ const teamInvitationEmail = (data) => {
           ` : ''}
 
           <!-- Expiration Warning -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
-              <td style="padding: 12px 16px; background-color: #fef3c7; border-radius: 8px;">
-                <table role="presentation" style="width: 100%;">
-                  <tr>
-                    <td style="width: 24px; vertical-align: middle;">
-                      <span style="font-size: 14px;">⏰</span>
-                    </td>
-                    <td style="vertical-align: middle; color: #92400e; font-size: 13px;">
-                      This invitation expires on <strong>${expiresDate}</strong>
-                    </td>
-                  </tr>
-                </table>
+              <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid #6366f1; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
+                  This invitation expires on <strong>${expiresDate}</strong>
+                </p>
               </td>
             </tr>
           </table>
