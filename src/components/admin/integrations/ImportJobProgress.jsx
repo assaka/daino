@@ -104,8 +104,11 @@ const ImportJobProgress = ({
       // Filter jobs by source (shopify or akeneo)
       const sourcePrefix = source === 'shopify' ? 'shopify:import' : 'akeneo:import';
 
-      // Check if job matches this integration source
+      // Check if job matches this integration source (excluding dry runs)
       const matchesSource = (job) => {
+        // Skip dry run jobs - they shouldn't appear in the import jobs list
+        if (job.payload?.dryRun === true) return false;
+
         if (job.type?.startsWith(sourcePrefix)) return true;
         // Also include integration:create:categories jobs for this source
         if (job.type === 'integration:create:categories' && job.payload?.integrationSource === source) return true;

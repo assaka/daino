@@ -205,11 +205,41 @@ export default function LayeredNavigation({
     const clearAllFilters = () => {
         setSelectedFilters({});
         setPriceRange([minPrice, maxPrice]);
+        // In controlled mode, ensure priceRange is also cleared
+        if (isControlledMode) {
+            const filtersToSend = {};
+            onFilterChange(filtersToSend);
+        }
+    };
+
+    // Clear only the price filter
+    const clearPriceFilter = () => {
+        setPriceRange([minPrice, maxPrice]);
+        // In controlled mode, we need to call onFilterChange directly
+        if (isControlledMode) {
+            const filtersToSend = { ...selectedFilters };
+            delete filtersToSend.priceRange;
+            onFilterChange(filtersToSend);
+        }
     };
 
     // Handle price range change with debugging
     const handlePriceRangeChange = (newRange) => {
         setPriceRange(newRange);
+
+        // In controlled mode, we need to call onFilterChange directly
+        // because the useEffect is skipped for controlled mode
+        if (isControlledMode) {
+            const filtersToSend = { ...selectedFilters };
+            // Only add price range if it's different from the full range
+            if (newRange[0] !== minPrice || newRange[1] !== maxPrice) {
+                filtersToSend.priceRange = newRange;
+            } else {
+                // Remove priceRange if it's back to the full range
+                delete filtersToSend.priceRange;
+            }
+            onFilterChange(filtersToSend);
+        }
     };
 
     // Check if any filters are active
@@ -380,9 +410,7 @@ export default function LayeredNavigation({
                                     >
                                         Price: ${min} - ${max}
                                         <button
-                                            onClick={isEditMode ? () => {} : () => {
-                                                setPriceRange([minPrice, maxPrice]);
-                                            }}
+                                            onClick={isEditMode ? () => {} : clearPriceFilter}
                                             disabled={isEditMode}
                                             className={`text-lg ml-2 text-green-600 hover:text-green-800 ${isEditMode ? "pointer-events-none" : ""}`}
                                         >
@@ -492,9 +520,7 @@ export default function LayeredNavigation({
                                         >
                                             Price: ${min} - ${max}
                                             <button
-                                                onClick={() => {
-                                                    setPriceRange([minPrice, maxPrice]);
-                                                }}
+                                                onClick={clearPriceFilter}
                                                 className="text-xl ml-2 text-green-600 hover:text-green-800"
                                             >
                                                 ×
