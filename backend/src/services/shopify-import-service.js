@@ -341,9 +341,24 @@ class ShopifyImportService {
       }
 
       // Enrich products with their collection IDs
+      let productsWithCollections = 0;
       for (const product of productsToImport) {
         const productIdStr = product.id.toString();
         product.collections = productCollectionsMap[productIdStr] || [];
+        if (product.collections.length > 0) {
+          productsWithCollections++;
+        }
+      }
+      console.log(`📂 ${productsWithCollections}/${productsToImport.length} products have collection assignments`);
+
+      // Log sample of products with collections for debugging
+      const sampleWithCollections = productsToImport.filter(p => p.collections.length > 0).slice(0, 3);
+      if (sampleWithCollections.length > 0) {
+        console.log('📂 Sample products with collections:', sampleWithCollections.map(p => ({
+          id: p.id,
+          title: p.title,
+          collections: p.collections
+        })));
       }
 
       // Process products
@@ -519,22 +534,31 @@ class ShopifyImportService {
       // Map collections to categories using integration_category_mappings
       const categoryIds = [];
       if (product.collections && product.collections.length > 0) {
+        console.log(`🔍 Product "${product.title}" has ${product.collections.length} collections: ${product.collections.join(', ')}`);
+
         for (const collectionId of product.collections) {
           const collectionIdStr = collectionId.toString();
           let foundCategoryId = null;
 
           // Check integration_category_mappings for mapping
-          const { data: mapping } = await tenantDb
+          const { data: mapping, error: mappingError } = await tenantDb
             .from('integration_category_mappings')
-            .select('internal_category_id')
+            .select('internal_category_id, external_category_id, external_category_name')
             .eq('store_id', this.storeId)
             .eq('integration_source', 'shopify')
             .eq('external_category_id', collectionIdStr)
             .not('internal_category_id', 'is', null)
             .maybeSingle();
 
+          if (mappingError) {
+            console.error(`❌ Error querying mapping for collection ${collectionIdStr}:`, mappingError);
+          }
+
           if (mapping?.internal_category_id) {
             foundCategoryId = mapping.internal_category_id;
+            console.log(`✅ Found mapping for collection ${collectionIdStr} -> category ${foundCategoryId}`);
+          } else {
+            console.log(`⚠️ No mapping found for collection ${collectionIdStr} (${this.shopifyCollectionMap?.[collectionIdStr]?.name || 'unknown'})`);
           }
 
           // Auto-create if enabled and no mapping found
@@ -562,6 +586,8 @@ class ShopifyImportService {
             categoryIds.push(foundCategoryId);
           }
         }
+
+        console.log(`📋 Product "${product.title}" will be assigned to ${categoryIds.length} categories: ${categoryIds.join(', ') || 'none'}`);
       }
 
       // Extract and process attributes using AttributeMappingService
