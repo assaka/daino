@@ -118,10 +118,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   // Cart data ONLY from database - no localStorage
   // Database is the single source of truth for critical cart data
 
-  // Load cart on mount
+  // Load cart when store context is available (store.id is required by backend)
   useEffect(() => {
-    loadCart();
-  }, []);
+    if (store?.id) {
+      loadCart();
+    }
+  }, [store?.id]);
 
   // Load product details when cartItems change
   useEffect(() => {
