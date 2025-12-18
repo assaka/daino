@@ -1169,6 +1169,7 @@ export default function ThemeLayout() {
                                 hoverBgColor: productTabsSettings.product_tabs_hover_bg || '#F3F4F6',
                                 borderColor: productTabsSettings.product_tabs_border_color || '#e0e0e0',
                                 contentBgColor: productTabsSettings.product_tabs_content_bg || '#ffffff',
+                                contentColor: productTabsSettings.product_tabs_content_color || '#374151',
                                 // Attribute label color
                                 attributeLabelColor: productTabsSettings.product_tabs_attribute_label_color || '#374151'
                             }
@@ -2423,6 +2424,16 @@ export default function ThemeLayout() {
                                                 type="color"
                                                 value={store.settings.theme.product_tabs_content_bg}
                                                 onChange={(e) => handleThemeChange('product_tabs_content_bg', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_content_color">Tab Content Text Color</Label>
+                                            <Input
+                                                id="product_tabs_content_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_content_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('product_tabs_content_color', e.target.value)}
                                             />
                                         </div>
 

@@ -268,8 +268,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
             data-tab-index="{{@index}}"
             data-tab-type="{{this.tab_type}}"
             data-tab-text-content="{{this.content}}">
-            <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6"
-                 style="background-color: {{settings.theme.product_tabs_content_bg}};">
+            <div class="prose max-w-none leading-relaxed tab-content-container p-6"
+                 style="background-color: {{settings.theme.product_tabs_content_bg}}; color: {{settings.theme.product_tabs_content_color}};">
               {{#if (eq this.tab_type "text")}}
                 <div>{{{this.content}}}</div>
               {{/if}}
@@ -349,8 +349,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
                  data-accordion-content="{{@index}}"
                  data-tab-type="{{this.tab_type}}"
                  data-tab-text-content="{{this.content}}">
-              <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6"
-                   style="background-color: {{settings.theme.product_tabs_content_bg}};">
+              <div class="prose max-w-none leading-relaxed tab-content-container p-6"
+                   style="background-color: {{settings.theme.product_tabs_content_bg}}; color: {{settings.theme.product_tabs_content_color}};">
                 {{#if (eq this.tab_type "text")}}
                   <div>{{{this.content}}}</div>
                 {{/if}}
@@ -404,6 +404,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     ...(slotStyles.hoverBgColor && { product_tabs_hover_bg: slotStyles.hoverBgColor }),
     ...(slotStyles.borderColor && { product_tabs_border_color: slotStyles.borderColor }),
     ...(slotStyles.contentBgColor && { product_tabs_content_bg: slotStyles.contentBgColor }),
+    ...(slotStyles.contentColor && { product_tabs_content_color: slotStyles.contentColor }),
     ...(slotStyles.attributeLabelColor && { product_tabs_attribute_label_color: slotStyles.attributeLabelColor }),
   };
 

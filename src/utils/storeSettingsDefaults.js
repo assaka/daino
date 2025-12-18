@@ -206,6 +206,7 @@ const HARDCODED_THEME_DEFAULTS = {
   product_tabs_title_color: '#DC2626',
   product_tabs_title_size: '1rem',
   product_tabs_content_bg: '#EFF6FF',
+  product_tabs_content_color: '#374151',
   product_tabs_attribute_label_color: '#16A34A',
   product_tabs_active_bg: 'transparent',
   product_tabs_inactive_color: '#6B7280',
