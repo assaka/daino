@@ -1,7 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
-const { applyProductTranslationsToMany } = require('../utils/productHelpers');
+const { applyProductTranslationsToMany, fetchProductImages } = require('../utils/productHelpers');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const router = express.Router();
 
@@ -190,14 +190,24 @@ router.get('/', cacheMiddleware({
             { data: featuredProducts },
             { data: cmsBlocks }
           ] = await Promise.all([
-            tenantDb.from('products').select('*').eq('store_id', store_id).eq('is_featured', true).eq('is_active', true).order('created_at', { ascending: false }).limit(12),
+            tenantDb.from('products').select('*').eq('store_id', store_id).eq('featured', true).eq('status', 'active').order('created_at', { ascending: false }).limit(12),
             tenantDb.from('cms_blocks').select('*').eq('store_id', store_id).eq('is_active', true).order('sort_order', { ascending: true })
           ]);
 
           // Apply translations if products exist
-          const translatedProducts = featuredProducts && featuredProducts.length > 0
+          let translatedProducts = featuredProducts && featuredProducts.length > 0
             ? await applyProductTranslationsToMany(featuredProducts, language, tenantDb)
             : [];
+
+          // Fetch and apply product images
+          if (translatedProducts.length > 0) {
+            const productIds = translatedProducts.map(p => p.id);
+            const imagesByProduct = await fetchProductImages(productIds, tenantDb);
+            translatedProducts = translatedProducts.map(product => ({
+              ...product,
+              images: imagesByProduct[product.id] || []
+            }));
+          }
 
           pageData = {
             featuredProducts: translatedProducts,
