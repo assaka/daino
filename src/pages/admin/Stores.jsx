@@ -773,14 +773,14 @@ export default function Stores() {
           setSelectedPreset(null);
         }
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Palette className="w-5 h-5 text-violet-600" />
               Change Theme Preset
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-hidden">
             <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
               <p className="text-sm text-violet-900 font-medium mb-1">
                 Store: {storeForTheme?.name}
@@ -790,13 +790,11 @@ export default function Stores() {
               </p>
             </div>
 
-            <div className="overflow-hidden">
-              <ThemePresetSelector
-                value={selectedPreset}
-                onChange={setSelectedPreset}
-                variant="cards"
-              />
-            </div>
+            <ThemePresetSelector
+              value={selectedPreset}
+              onChange={setSelectedPreset}
+              variant="cards"
+            />
 
             <div className="flex justify-between items-center pt-4 border-t">
               <Button

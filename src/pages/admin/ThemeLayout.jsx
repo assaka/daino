@@ -3268,27 +3268,25 @@ export default function ThemeLayout() {
                     setSelectedPresetInModal(null);
                 }
             }}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl overflow-hidden">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Palette className="w-5 h-5 text-violet-600" />
                             Select Theme Preset
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 overflow-hidden">
                         <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
                             <p className="text-sm text-violet-700">
                                 Select a theme preset to apply all colors at once. You can further customize colors after applying.
                             </p>
                         </div>
 
-                        <div className="overflow-hidden">
-                            <ThemePresetSelector
-                                value={selectedPresetInModal}
-                                onChange={setSelectedPresetInModal}
-                                variant="cards"
-                            />
-                        </div>
+                        <ThemePresetSelector
+                            value={selectedPresetInModal}
+                            onChange={setSelectedPresetInModal}
+                            variant="cards"
+                        />
 
                         <DialogFooter className="flex justify-end gap-2 pt-4 border-t">
                             <Button
