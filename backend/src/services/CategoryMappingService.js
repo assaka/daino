@@ -81,11 +81,42 @@ class CategoryMappingService {
       }
     }
 
-    // Attach category info to mappings
-    return mappings.map(m => ({
-      ...m,
-      internal_category: m.internal_category_id ? categoriesMap[m.internal_category_id] || null : null
-    }));
+    // Attach category info to mappings and clear orphaned references
+    const orphanedMappingIds = [];
+    const result = mappings.map(m => {
+      // Check if internal category exists
+      const categoryExists = m.internal_category_id && categoriesMap[m.internal_category_id];
+
+      // Track orphaned mappings (have internal_category_id but category doesn't exist)
+      if (m.internal_category_id && !categoryExists) {
+        orphanedMappingIds.push(m.id);
+      }
+
+      return {
+        ...m,
+        // Clear internal_category_id if category doesn't exist
+        internal_category_id: categoryExists ? m.internal_category_id : null,
+        internal_category: categoryExists ? categoriesMap[m.internal_category_id] : null
+      };
+    });
+
+    // Clear orphaned internal_category_id references in database (async, don't wait)
+    if (orphanedMappingIds.length > 0) {
+      console.log(`🧹 Clearing ${orphanedMappingIds.length} orphaned category references...`);
+      tenantDb
+        .from('integration_category_mappings')
+        .update({ internal_category_id: null, mapping_type: 'manual' })
+        .in('id', orphanedMappingIds)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error clearing orphaned references:', error.message);
+          } else {
+            console.log(`✅ Cleared ${orphanedMappingIds.length} orphaned references`);
+          }
+        });
+    }
+
+    return result;
   }
 
   /**
