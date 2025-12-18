@@ -127,17 +127,17 @@ export function ThemePresetSelector({
   };
 
   return (
-    <div className={cn("relative group", className)}>
+    <div className={cn("flex items-center gap-2", className)}>
       {/* Left Arrow - Always visible, disabled when can't scroll */}
       <Button
         type="button"
         variant="outline"
         size="icon"
         className={cn(
-          "absolute -left-3 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:bg-gray-50 w-10 h-10 rounded-full border-2 transition-all",
+          "flex-shrink-0 bg-white shadow-md hover:bg-gray-50 w-10 h-10 rounded-full border-2 transition-all",
           canScrollLeft
             ? "border-gray-300 hover:border-gray-400 opacity-100"
-            : "border-gray-200 opacity-50 cursor-not-allowed"
+            : "border-gray-200 opacity-40 cursor-not-allowed"
         )}
         onClick={() => scroll('left')}
         disabled={!canScrollLeft}
@@ -148,7 +148,7 @@ export function ThemePresetSelector({
       {/* Scrollable Container */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-8 py-1"
+        className="flex gap-3 overflow-x-auto scrollbar-hide py-2 flex-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {presets.map((preset) => {
@@ -224,10 +224,10 @@ export function ThemePresetSelector({
         variant="outline"
         size="icon"
         className={cn(
-          "absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:bg-gray-50 w-10 h-10 rounded-full border-2 transition-all",
+          "flex-shrink-0 bg-white shadow-md hover:bg-gray-50 w-10 h-10 rounded-full border-2 transition-all",
           canScrollRight
             ? "border-gray-300 hover:border-gray-400 opacity-100"
-            : "border-gray-200 opacity-50 cursor-not-allowed"
+            : "border-gray-200 opacity-40 cursor-not-allowed"
         )}
         onClick={() => scroll('right')}
         disabled={!canScrollRight}
