@@ -32,13 +32,6 @@ export default function ScrollDepthMap({ storeId, pageUrl: initialPageUrl, dateR
     }
   }, [storeId]);
 
-  // Sync with initial page URL prop
-  useEffect(() => {
-    if (initialPageUrl && initialPageUrl !== pageUrl) {
-      setPageUrl(initialPageUrl);
-    }
-  }, [initialPageUrl]);
-
   // Helper function to convert full URL to relative path
   const toRelativeUrl = (url) => {
     try {

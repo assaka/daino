@@ -228,22 +228,77 @@ export default function Homepage() {
             )}
 
             {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredProducts.slice(0, searchQuery ? filteredProducts.length : 8).map((product) => (
-                  <ProductItemCard
-                    key={product.id}
-                    product={product}
-                    settings={settings}
-                    store={store}
-                    taxes={taxes}
-                    selectedCountry={selectedCountry}
-                    productLabels={productLabels}
-                    className="hover:shadow-lg transition-shadow rounded-lg"
-                    viewMode="grid"
-                    slotConfig={{}}
-                  />
-                ))}
-              </div>
+              searchQuery ? (
+                // Grid layout for search results
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {filteredProducts.map((product) => (
+                    <ProductItemCard
+                      key={product.id}
+                      product={product}
+                      settings={settings}
+                      store={store}
+                      taxes={taxes}
+                      selectedCountry={selectedCountry}
+                      productLabels={productLabels}
+                      className="hover:shadow-lg transition-shadow rounded-lg"
+                      viewMode="grid"
+                      slotConfig={{}}
+                    />
+                  ))}
+                </div>
+              ) : (
+                // Scrollable carousel for featured products
+                <div className="relative">
+                  {/* Left Arrow */}
+                  {canScrollLeft && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:bg-gray-50 w-10 h-10 rounded-full border-gray-200"
+                      onClick={() => scroll('left')}
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </Button>
+                  )}
+
+                  {/* Scrollable Container */}
+                  <div
+                    ref={scrollContainerRef}
+                    className="flex gap-6 overflow-x-auto scrollbar-hide px-1 py-2"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {filteredProducts.slice(0, 12).map((product) => (
+                      <div key={product.id} className="flex-shrink-0 w-[280px]">
+                        <ProductItemCard
+                          product={product}
+                          settings={settings}
+                          store={store}
+                          taxes={taxes}
+                          selectedCountry={selectedCountry}
+                          productLabels={productLabels}
+                          className="hover:shadow-lg transition-shadow rounded-lg h-full"
+                          viewMode="grid"
+                          slotConfig={{}}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Right Arrow */}
+                  {canScrollRight && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:bg-gray-50 w-10 h-10 rounded-full border-gray-200"
+                      onClick={() => scroll('right')}
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </Button>
+                  )}
+                </div>
+              )
             ) : searchQuery ? (
               // Show empty state only for search results
               <div className="text-center py-16">
