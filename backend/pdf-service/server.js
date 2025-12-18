@@ -175,7 +175,37 @@ app.post('/capture-screenshot', async (req, res) => {
         timeout: 45000 // 45 second navigation timeout
       });
 
-      console.log(`📸 [${requestId}] Page fully loaded, ensuring all images are ready...`);
+      console.log(`📸 [${requestId}] Page loaded, waiting for loaders to disappear...`);
+
+      // Wait for common loaders/spinners to disappear
+      try {
+        await page.waitForFunction(() => {
+          // Common loader selectors
+          const loaderSelectors = [
+            '.loader', '.loading', '.spinner', '.skeleton',
+            '[class*="loader"]', '[class*="loading"]', '[class*="spinner"]',
+            '[data-loading="true"]', '[aria-busy="true"]',
+            '.pace', '.pace-running', '.nprogress-busy'
+          ];
+
+          for (const selector of loaderSelectors) {
+            const elements = document.querySelectorAll(selector);
+            for (const el of elements) {
+              const style = window.getComputedStyle(el);
+              // Check if loader is visible
+              if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+                return false; // Loader still visible
+              }
+            }
+          }
+          return true; // No visible loaders
+        }, { timeout: 10000 });
+        console.log(`📸 [${requestId}] Loaders disappeared`);
+      } catch (e) {
+        console.log(`📸 [${requestId}] Loader wait timed out, continuing anyway`);
+      }
+
+      console.log(`📸 [${requestId}] Ensuring all images are ready...`);
 
       // Wait for all images to be fully loaded
       await page.evaluate(() => {
@@ -189,8 +219,8 @@ app.post('/capture-screenshot', async (req, res) => {
         );
       });
 
-      // Wait for CSS animations/transitions and lazy-loaded content
-      const waitTime = options.waitTime || 2000;
+      // Additional wait for any remaining rendering
+      const waitTime = options.waitTime || 3000;
       await new Promise(resolve => setTimeout(resolve, waitTime));
       console.log(`📸 [${requestId}] Waited ${waitTime}ms, page ready for screenshot`)
 
