@@ -9,7 +9,8 @@ import FlashMessage from '@/components/storefront/FlashMessage';
  */
 const CategoryMappingPanel = ({
   integrationSource, // 'akeneo' or 'shopify'
-  title = 'Category Mapping'
+  title = 'Category Mapping',
+  onJobScheduled = null // Callback when a job is scheduled (to refresh ImportJobProgress)
 }) => {
   const [mappings, setMappings] = useState([]);
   const [storeCategories, setStoreCategories] = useState([]);
@@ -54,9 +55,7 @@ const CategoryMappingPanel = ({
     setFetching(true);
     setFlashMessage(null);
     try {
-      // Call sync endpoint without categories - backend will fetch them
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, {});
-
       if (response.success) {
         await fetchMappings();
         setFlashMessage({
@@ -101,23 +100,30 @@ const CategoryMappingPanel = ({
     }
   };
 
-  // Create categories from unmapped
+  // Create categories from unmapped (via background job)
   const handleCreateFromUnmapped = async () => {
     setCreating(true);
     setShowConfirmModal(false);
     setFlashMessage(null);
     try {
-      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-from-unmapped`);
+      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-categories-job`, {});
       if (response.success) {
-        await fetchMappings();
         setFlashMessage({
           type: 'success',
-          message: response.message || `Created ${response.results?.created || 0} categories`
+          message: 'Category creation job started! Track progress in Import Jobs.'
         });
+        // Notify parent to refresh ImportJobProgress
+        if (onJobScheduled) {
+          onJobScheduled(response.jobId);
+        }
+        // Refresh mappings after a delay to let the job start
+        setTimeout(() => fetchMappings(), 3000);
+      } else {
+        setFlashMessage({ type: 'error', message: response.message || 'Failed to schedule job' });
       }
     } catch (error) {
-      console.error('Error creating categories:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to create categories' });
+      console.error('Error scheduling category creation job:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to schedule category creation job' });
     } finally {
       setCreating(false);
     }
@@ -267,7 +273,7 @@ const CategoryMappingPanel = ({
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
             >
               <Download className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-pulse' : ''}`} />
-              {fetching ? 'Fetching...' : `Fetch Categories`}
+              {fetching ? 'Fetching...' : 'Fetch Categories'}
             </button>
 
             {stats.unmapped > 0 && (
@@ -277,7 +283,7 @@ const CategoryMappingPanel = ({
                 className="inline-flex items-center px-3 py-1.5 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50"
               >
                 <Plus className={`h-4 w-4 mr-1.5 ${creating ? 'animate-spin' : ''}`} />
-                {creating ? 'Creating...' : `Create Categories`}
+                {creating ? 'Scheduling...' : `Create ${stats.unmapped} Categories`}
               </button>
             )}
 

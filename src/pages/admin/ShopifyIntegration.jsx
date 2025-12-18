@@ -1331,44 +1331,6 @@ const ShopifyIntegration = () => {
                     Fetch collections from Shopify and map them to store categories
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Action Buttons Row */}
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      onClick={handleFetchCategories}
-                      disabled={fetchingCategories}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className={`w-4 h-4 ${fetchingCategories ? 'animate-pulse' : ''}`} />
-                      {fetchingCategories ? 'Fetching...' : 'Fetch Collections'}
-                    </Button>
-
-                    {categoryMappingStats.unmapped > 0 && (
-                      <Button
-                        onClick={handleImportFromMappings}
-                        disabled={importingFromMappings}
-                        className="flex items-center gap-2"
-                      >
-                        <Package className={`w-4 h-4 ${importingFromMappings ? 'animate-spin' : ''}`} />
-                        {importingFromMappings ? 'Importing...' : `Import ${categoryMappingStats.unmapped} Collections`}
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Import Result - Only show after import */}
-                  {showCollectionImportResult && importStats?.collections && (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-green-700">
-                        <Package className="w-4 h-4" />
-                        <span className="font-medium text-sm">Last Import</span>
-                      </div>
-                      <p className="text-sm text-green-600 mt-1">
-                        {importStats.collections.imported || importStats.collections.successful_imports || 0} imported, {importStats.collections.failed || importStats.collections.failed_imports || 0} failed
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
               </Card>
 
               {/* Category Mapping Panel */}
@@ -1376,6 +1338,7 @@ const ShopifyIntegration = () => {
                 key={categoryMappingKey}
                 integrationSource="shopify"
                 title="Shopify Collection Mapping"
+                onJobScheduled={() => setRefreshTrigger(prev => prev + 1)}
               />
             </>
           )}

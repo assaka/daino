@@ -3002,31 +3002,6 @@ const AkeneoIntegration = () => {
                 </CardContent>
               </Card>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={handleFetchCategories}
-                  disabled={fetchingCategories || !connectionStatus?.success}
-                  variant="outline"
-                >
-                  <Download className={`h-4 w-4 mr-2 ${fetchingCategories ? 'animate-pulse' : ''}`} />
-                  {fetchingCategories ? 'Fetching...' : 'Fetch Categories'}
-                </Button>
-
-                {categoryMappingStats.unmapped > 0 && (
-                  <Button
-                    onClick={handleImportFromMappings}
-                    disabled={importing || !connectionStatus?.success}
-                  >
-                    {importing ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4 mr-2" />
-                    )}
-                    {importing ? 'Scheduling...' : `Create ${categoryMappingStats.unmapped} Categories`}
-                  </Button>
-                )}
-              </div>
             </CardContent>
           </Card>
 
@@ -3035,6 +3010,7 @@ const AkeneoIntegration = () => {
             key={categoryMappingKey}
             integrationSource="akeneo"
             title="Akeneo Category Mapping"
+            onJobScheduled={() => setRefreshTrigger(prev => prev + 1)}
           />
         </TabsContent>
 
