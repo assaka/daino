@@ -145,12 +145,13 @@ export function ThemePresetSelector({
         <ChevronLeft className="w-5 h-5" />
       </Button>
 
-      {/* Scrollable Container */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide py-2 flex-1"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
+      {/* Scrollable Container with overflow hidden wrapper */}
+      <div className="flex-1 overflow-hidden">
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-3 overflow-x-auto scrollbar-hide py-2"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
         {presets.map((preset) => {
           const theme = preset.theme_settings || {};
           const isSelected = value === preset.preset_name || (!value && preset.is_system_default);

@@ -26,11 +26,11 @@ const captureScreenshot = async (url, options = {}) => {
         viewportHeight: options.viewportHeight || 1080,
         fullPage: options.fullPage !== false,
         format: options.format || 'png',
-        waitTime: options.waitTime || 15000, // Wait 15 seconds after page load for full rendering
+        waitTime: options.waitTime || 3000, // Wait 3 seconds after page load for rendering
         deviceScaleFactor: options.deviceScaleFactor || 1
       }
     }, {
-      timeout: 45000 // 45 second timeout (longer than page navigation timeout)
+      timeout: 120000 // 2 minute timeout to handle slow pages
     });
 
     const duration = Date.now() - startTime;

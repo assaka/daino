@@ -143,16 +143,16 @@ app.post('/capture-screenshot', async (req, res) => {
 
       console.log(`📸 [${requestId}] Navigating to URL...`);
 
-      // Navigate to the page and wait for it to be fully loaded
+      // Navigate to the page - use networkidle2 for faster detection (allows 2 connections)
       await page.goto(url, {
-        waitUntil: ['load', 'domcontentloaded', 'networkidle0'], // Wait for complete page load
-        timeout: 45000 // Increased to 45 seconds
+        waitUntil: ['load', 'domcontentloaded', 'networkidle2'],
+        timeout: 60000 // 60 second navigation timeout
       });
 
       console.log(`📸 [${requestId}] Page loaded, waiting for stability...`);
 
-      // Always wait for additional time to ensure images/fonts/animations are rendered
-      const waitTime = options.waitTime || 15000; // Default to 15 seconds
+      // Wait for additional time to ensure images/fonts/animations are rendered
+      const waitTime = options.waitTime || 3000; // Default to 3 seconds
       await new Promise(resolve => setTimeout(resolve, waitTime));
       console.log(`📸 [${requestId}] Waited ${waitTime}ms for page to fully render`)
 
@@ -192,7 +192,7 @@ app.post('/capture-screenshot', async (req, res) => {
     // Provide more specific error messages
     let errorMessage = error.message;
     if (error.message.includes('timeout')) {
-      errorMessage = `Page load timeout: The page took too long to load (>45s)`;
+      errorMessage = `Page load timeout: The page took too long to load (>60s)`;
     } else if (error.message.includes('net::ERR')) {
       errorMessage = `Network error: Unable to reach the URL - ${error.message}`;
     } else if (error.message.includes('Navigation failed')) {
