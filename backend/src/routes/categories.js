@@ -280,6 +280,91 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
   }
 });
 
+// @route   DELETE /api/categories/all
+// @desc    Delete ALL categories for a store
+// @access  Private (Admin/Store Owner)
+router.delete('/all', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get count before deletion
+    const { count: categoryCount } = await tenantDb
+      .from('categories')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', store_id);
+
+    if (categoryCount === 0) {
+      return res.json({
+        success: true,
+        message: 'No categories to delete',
+        data: { deleted: 0 }
+      });
+    }
+
+    // Get all category IDs for this store
+    const { data: categories } = await tenantDb
+      .from('categories')
+      .select('id')
+      .eq('store_id', store_id);
+
+    const categoryIds = categories.map(c => c.id);
+
+    // Delete in order: category_translations -> categories
+    // 1. Delete category_translations
+    const { error: ctError } = await tenantDb
+      .from('category_translations')
+      .delete()
+      .in('category_id', categoryIds);
+
+    if (ctError) console.warn('Warning deleting category_translations:', ctError.message);
+
+    // 2. Delete categories
+    const { error: deleteError } = await tenantDb
+      .from('categories')
+      .delete()
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    console.log(`🗑️ Deleted ${categoryCount} categories for store ${store_id}`);
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${categoryCount} categories`,
+      data: { deleted: categoryCount }
+    });
+  } catch (error) {
+    console.error('Delete all categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   DELETE /api/categories/:id
 // @desc    Delete category
 // @access  Private

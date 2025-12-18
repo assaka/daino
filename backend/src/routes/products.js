@@ -449,6 +449,107 @@ router.put('/:id',
   }
 });
 
+// @route   DELETE /api/products/all
+// @desc    Delete ALL products for a store
+// @access  Private (Admin/Store Owner)
+router.delete('/all', authAdmin, async (req, res) => {
+  try {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get count before deletion
+    const { count: productCount } = await tenantDb
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', store_id);
+
+    if (productCount === 0) {
+      return res.json({
+        success: true,
+        message: 'No products to delete',
+        data: { deleted: 0 }
+      });
+    }
+
+    // Get all product IDs for this store
+    const { data: products } = await tenantDb
+      .from('products')
+      .select('id')
+      .eq('store_id', store_id);
+
+    const productIds = products.map(p => p.id);
+
+    // Delete in order: product_attribute_values -> product_translations -> product_files -> products
+    // 1. Delete product_attribute_values
+    const { error: pavError } = await tenantDb
+      .from('product_attribute_values')
+      .delete()
+      .in('product_id', productIds);
+
+    if (pavError) console.warn('Warning deleting product_attribute_values:', pavError.message);
+
+    // 2. Delete product_translations
+    const { error: ptError } = await tenantDb
+      .from('product_translations')
+      .delete()
+      .in('product_id', productIds);
+
+    if (ptError) console.warn('Warning deleting product_translations:', ptError.message);
+
+    // 3. Delete product_files
+    const { error: pfError } = await tenantDb
+      .from('product_files')
+      .delete()
+      .in('product_id', productIds);
+
+    if (pfError) console.warn('Warning deleting product_files:', pfError.message);
+
+    // 4. Delete products
+    const { error: deleteError } = await tenantDb
+      .from('products')
+      .delete()
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    console.log(`🗑️ Deleted ${productCount} products for store ${store_id}`);
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${productCount} products`,
+      data: { deleted: productCount }
+    });
+  } catch (error) {
+    console.error('Delete all products error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   DELETE /api/products/:id
 // @desc    Delete product
 // @access  Private

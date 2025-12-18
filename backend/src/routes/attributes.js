@@ -391,6 +391,125 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
   }
 });
 
+// @route   DELETE /api/attributes/all
+// @desc    Delete ALL attributes for a store
+// @access  Private (Admin/Store Owner)
+router.delete('/all', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get count before deletion
+    const { count: attributeCount } = await tenantDb
+      .from('attributes')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', store_id);
+
+    if (attributeCount === 0) {
+      return res.json({
+        success: true,
+        message: 'No attributes to delete',
+        data: { deleted: 0 }
+      });
+    }
+
+    // Get all attribute IDs for this store
+    const { data: attributes } = await tenantDb
+      .from('attributes')
+      .select('id')
+      .eq('store_id', store_id);
+
+    const attributeIds = attributes.map(a => a.id);
+
+    // Get all attribute value IDs
+    const { data: values } = await tenantDb
+      .from('attribute_values')
+      .select('id')
+      .in('attribute_id', attributeIds);
+
+    const valueIds = values ? values.map(v => v.id) : [];
+
+    // Delete in order: product_attribute_values -> attribute_value_translations -> attribute_values -> attribute_translations -> attributes
+    // 1. Delete product_attribute_values (references to these attributes)
+    const { error: pavError } = await tenantDb
+      .from('product_attribute_values')
+      .delete()
+      .in('attribute_id', attributeIds);
+
+    if (pavError) console.warn('Warning deleting product_attribute_values:', pavError.message);
+
+    // 2. Delete attribute_value_translations
+    if (valueIds.length > 0) {
+      const { error: avtError } = await tenantDb
+        .from('attribute_value_translations')
+        .delete()
+        .in('attribute_value_id', valueIds);
+
+      if (avtError) console.warn('Warning deleting attribute_value_translations:', avtError.message);
+    }
+
+    // 3. Delete attribute_values
+    const { error: avError } = await tenantDb
+      .from('attribute_values')
+      .delete()
+      .in('attribute_id', attributeIds);
+
+    if (avError) console.warn('Warning deleting attribute_values:', avError.message);
+
+    // 4. Delete attribute_translations
+    const { error: atError } = await tenantDb
+      .from('attribute_translations')
+      .delete()
+      .in('attribute_id', attributeIds);
+
+    if (atError) console.warn('Warning deleting attribute_translations:', atError.message);
+
+    // 5. Delete attributes
+    const { error: deleteError } = await tenantDb
+      .from('attributes')
+      .delete()
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    console.log(`🗑️ Deleted ${attributeCount} attributes for store ${store_id}`);
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${attributeCount} attributes`,
+      data: { deleted: attributeCount }
+    });
+  } catch (error) {
+    console.error('Delete all attributes error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
