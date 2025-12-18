@@ -334,9 +334,16 @@ export default function CmsBlocks() {
                     </div>
 
                     <div className="flex justify-between items-center pt-2">
-                      <Badge variant={block.is_active ? "default" : "secondary"}>
-                        {block.is_active ? "Active" : "Inactive"}
-                      </Badge>
+                      <div className="flex gap-2">
+                        <Badge variant={block.is_active ? "default" : "secondary"}>
+                          {block.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                        {block.demo && (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                            Demo
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleEdit(block)}>
                           <Edit className="h-4 w-4" />

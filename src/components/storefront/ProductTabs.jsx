@@ -291,8 +291,12 @@ export default function ProductTabs({ productTabs = [], product = null, settings
                 <div id="attributes-placeholder" data-attributes-container></div>
               {{/if}}
 
+              {{#if (eq this.tab_type "attribute_set")}}
+                <div id="attributes-placeholder" data-attributes-container></div>
+              {{/if}}
+
               {{#if (eq this.tab_type "attribute_sets")}}
-                <div id="attributes-placeholder" data-attributes-container data-attribute-set-ids="{{this.attribute_set_ids}}"></div>
+                <div id="attributes-placeholder" data-attributes-container></div>
               {{/if}}
             </div>
           </div>
@@ -368,8 +372,12 @@ export default function ProductTabs({ productTabs = [], product = null, settings
                   <div id="attributes-placeholder-mobile" data-attributes-container></div>
                 {{/if}}
 
+                {{#if (eq this.tab_type "attribute_set")}}
+                  <div id="attributes-placeholder-mobile" data-attributes-container></div>
+                {{/if}}
+
                 {{#if (eq this.tab_type "attribute_sets")}}
-                  <div id="attributes-placeholder-mobile" data-attributes-container data-attribute-set-ids="{{this.attribute_set_ids}}"></div>
+                  <div id="attributes-placeholder-mobile" data-attributes-container></div>
                 {{/if}}
               </div>
             </div>

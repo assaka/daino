@@ -487,15 +487,44 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
         const attributeIds = [...new Set(pavs.map(pav => pav.attribute_id))];
         const attributeValueIds = [...new Set(pavs.filter(pav => pav.value_id).map(pav => pav.value_id))];
 
-        const [attributesData, attributeValuesListData, attributeTranslations, valueTranslations] = await Promise.all([
-          attributeIds.length > 0 ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => r.data || []) : [],
-          attributeValueIds.length > 0 ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || []) : [],
-          attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }) : [],
-          attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) : []
-        ]);
+        console.log(`📊 [Storefront] Looking up ${attributeIds.length} attribute IDs, ${attributeValueIds.length} value IDs`);
 
-        const attrMap = new Map(attributesData.map(a => [a.id, a]));
-        const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+        // Fetch attributes with proper error handling
+        let attributesData = [];
+        let attributeValuesListData = [];
+        let attributeTranslations = [];
+        let valueTranslations = [];
+
+        if (attributeIds.length > 0) {
+          const { data: attrs, error: attrsErr } = await tenantDb
+            .from('attributes')
+            .select('id, code, type')
+            .in('id', attributeIds);
+          if (attrsErr) {
+            console.error('📊 [Storefront] Error fetching attributes:', attrsErr);
+          } else {
+            attributesData = attrs || [];
+          }
+          attributeTranslations = await getAttributesWithTranslations(tenantDb, { id: attributeIds }) || [];
+        }
+
+        if (attributeValueIds.length > 0) {
+          const { data: vals, error: valsErr } = await tenantDb
+            .from('attribute_values')
+            .select('id, code, metadata')
+            .in('id', attributeValueIds);
+          if (valsErr) {
+            console.error('📊 [Storefront] Error fetching attribute_values:', valsErr);
+          } else {
+            attributeValuesListData = vals || [];
+          }
+          valueTranslations = await getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) || [];
+        }
+
+        console.log(`📊 [Storefront] Found ${attributesData.length} attributes, ${attributeValuesListData.length} attribute values`);
+
+        const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
+        const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
         const attrTransMap = new Map((attributeTranslations || []).map(attr => [attr.id, attr.translations]));
         const valTransMap = new Map((valueTranslations || []).map(val => [val.id, val.translations]));
 
