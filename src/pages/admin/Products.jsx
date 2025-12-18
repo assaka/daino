@@ -422,7 +422,13 @@ export default function Products() {
         if (selectAllInStore) {
           // Use the bulk delete API endpoint
           const storeId = getSelectedStoreId();
-          const token = localStorage.getItem("token");
+          const token = localStorage.getItem('store_owner_auth_token') ||
+                       localStorage.getItem('customer_auth_token') ||
+                       localStorage.getItem('auth_token') ||
+                       localStorage.getItem('token') ||
+                       localStorage.getItem('authToken') ||
+                       sessionStorage.getItem('token') ||
+                       sessionStorage.getItem('authToken');
           const response = await fetch(`/api/products/all?store_id=${storeId}`, {
             method: 'DELETE',
             headers: {
