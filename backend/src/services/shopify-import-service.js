@@ -494,45 +494,28 @@ class ShopifyImportService {
 
       const existingProduct = existingProducts && existingProducts.length > 0 ? existingProducts[0] : null;
 
-      // Map collections to categories with mapping support
-      // Priority: integration_category_mappings > categories.external_id > auto-create
+      // Map collections to categories using integration_category_mappings
       const categoryIds = [];
       if (product.collections && product.collections.length > 0) {
         for (const collectionId of product.collections) {
           const collectionIdStr = collectionId.toString();
           let foundCategoryId = null;
 
-          // 1. First check integration_category_mappings for explicit mapping
-          if (this.categoryMappingService) {
-            const { data: mapping } = await tenantDb
-              .from('integration_category_mappings')
-              .select('internal_category_id')
-              .eq('store_id', this.storeId)
-              .eq('integration_source', 'shopify')
-              .eq('external_category_id', collectionIdStr)
-              .not('internal_category_id', 'is', null)
-              .maybeSingle();
+          // Check integration_category_mappings for mapping
+          const { data: mapping } = await tenantDb
+            .from('integration_category_mappings')
+            .select('internal_category_id')
+            .eq('store_id', this.storeId)
+            .eq('integration_source', 'shopify')
+            .eq('external_category_id', collectionIdStr)
+            .not('internal_category_id', 'is', null)
+            .maybeSingle();
 
-            if (mapping?.internal_category_id) {
-              foundCategoryId = mapping.internal_category_id;
-            }
+          if (mapping?.internal_category_id) {
+            foundCategoryId = mapping.internal_category_id;
           }
 
-          // 2. Fall back to categories.external_id lookup
-          if (!foundCategoryId) {
-            const { data: category } = await tenantDb
-              .from('categories')
-              .select('id')
-              .eq('store_id', this.storeId)
-              .eq('external_id', collectionIdStr)
-              .maybeSingle();
-
-            if (category) {
-              foundCategoryId = category.id;
-            }
-          }
-
-          // 3. Auto-create if enabled and still not found
+          // Auto-create if enabled and no mapping found
           if (!foundCategoryId && this.autoCreateSettings?.enabled && this.categoryMappingService) {
             const collectionInfo = this.shopifyCollectionMap?.[collectionIdStr] || {
               id: collectionIdStr,
@@ -550,12 +533,6 @@ class ShopifyImportService {
 
             if (newCategoryId) {
               foundCategoryId = newCategoryId;
-
-              // Also update the category with the external_id for future lookups
-              await tenantDb
-                .from('categories')
-                .update({ external_id: collectionIdStr, external_source: 'shopify' })
-                .eq('id', newCategoryId);
             }
           }
 
