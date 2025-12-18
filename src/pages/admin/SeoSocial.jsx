@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Share2, Facebook, Twitter, Plus, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { SeoSetting } from '@/api/entities';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function SeoSocial() {
-  const { store } = useStore();
+  const { selectedStore: store } = useStoreSelection();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);

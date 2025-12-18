@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getProductName, getProductShortDescription, getCurrentLanguage } from '@/utils/translationUtils';
+import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
@@ -199,7 +200,7 @@ export default function HeaderSearch({ styles = {} }) {
                       className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                     >
                       <img
-                        src={product.images?.[0] || 'https://placehold.co/40x40?text=No+Image'}
+                        src={getPrimaryImageUrl(product.images) || 'https://placehold.co/40x40?text=No+Image'}
                         alt={displayName}
                         className="w-10 h-10 object-cover rounded-md mr-3"
                       />

@@ -503,7 +503,7 @@ export default function Stores() {
                       <Settings className="w-4 h-4 mr-1" />
                       Manage
                     </Button>
-                    {store.status === 'active' && (
+                    {(store.status === 'active' || !store.published) && (
                       <Button
                         size="sm"
                         variant="outline"

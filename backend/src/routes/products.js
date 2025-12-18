@@ -145,9 +145,54 @@ router.get('/:id', authAdmin, async (req, res) => {
     // Apply all translations from product_translations table
     const productsWithTranslations = await applyAllProductTranslations(productsWithImages, tenantDb);
 
+    // Load attributes from product_attribute_values table
+    const productWithAttributes = productsWithTranslations[0];
+    try {
+      const { data: pavs } = await tenantDb
+        .from('product_attribute_values')
+        .select('*')
+        .eq('product_id', product.id);
+
+      if (pavs && pavs.length > 0) {
+        const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
+        const valueIds = pavs.filter(p => p.value_id).map(p => p.value_id);
+
+        const [attrsData, valsData] = await Promise.all([
+          attributeIds.length > 0 ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => r.data || []) : [],
+          valueIds.length > 0 ? tenantDb.from('attribute_values').select('id, code').in('id', valueIds).then(r => r.data || []) : []
+        ]);
+
+        const attrMap = new Map(attrsData.map(a => [a.id, a]));
+        const valMap = new Map(valsData.map(v => [v.id, v.code]));
+
+        // Build attributes object {code: value} for admin form compatibility
+        productWithAttributes.attributes = {};
+        for (const pav of pavs) {
+          const attr = attrMap.get(pav.attribute_id);
+          if (!attr) continue;
+
+          let value;
+          if (pav.value_id) {
+            value = valMap.get(pav.value_id);
+          } else {
+            value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+          }
+
+          if (value !== undefined) {
+            productWithAttributes.attributes[attr.code] = value;
+          }
+        }
+      } else {
+        productWithAttributes.attributes = {};
+      }
+    } catch (attrErr) {
+      console.error('Error loading product attributes:', attrErr);
+      productWithAttributes.attributes = {};
+    }
+
     res.json({
       success: true,
-      data: productsWithTranslations[0]
+      data: productWithAttributes
     });
   } catch (error) {
     console.error('Get product error:', error);
