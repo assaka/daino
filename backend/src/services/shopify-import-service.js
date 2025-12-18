@@ -564,8 +564,8 @@ class ShopifyImportService {
         external_id: product.id.toString(),
         external_source: 'shopify',
         store_id: this.storeId,
-        attribute_set_id: this.shopifyAttributeSetId, // Assign Shopify attribute set
-        attributes: processedAttributes // Use processed attributes with deduplication
+        attribute_set_id: this.shopifyAttributeSetId // Assign Shopify attribute set
+        // Note: attributes are synced to product_attribute_values table separately
       };
 
       // Add optional fields if they have values

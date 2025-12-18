@@ -97,8 +97,9 @@ async function getProductById(storeId, productId) {
 async function createProduct(storeId, productData, locale = 'en_US') {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Extract translation fields and images to sync separately
-  const { name, description, short_description, images, ...productFields } = productData;
+  // Extract translation fields, images, and attributes to sync separately
+  // Note: attributes column was removed from products table - now stored in product_attribute_values
+  const { name, description, short_description, images, attributes, ...productFields } = productData;
 
   const { data: product, error } = await tenantDb
     .from('products')
@@ -119,8 +120,8 @@ async function createProduct(storeId, productData, locale = 'en_US') {
   }
 
   // Sync attributes to product_attribute_values table for storefront filtering
-  if (productData.attributes && typeof productData.attributes === 'object') {
-    await syncProductAttributeValues(tenantDb, storeId, product.id, productData.attributes);
+  if (attributes && typeof attributes === 'object') {
+    await syncProductAttributeValues(tenantDb, storeId, product.id, attributes);
   }
 
   // Sync images to product_files table
