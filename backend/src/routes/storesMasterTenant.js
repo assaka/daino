@@ -2171,7 +2171,7 @@ router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
     // Get current store data from tenant DB
     const { data: currentStore, error: fetchError } = await tenantDb
       .from('stores')
-      .select('settings')
+      .select('settings, published')
       .eq('id', storeId)
       .single();
 
@@ -2179,8 +2179,9 @@ router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
       throw new Error(fetchError.message);
     }
 
-    // Merge preset theme settings into store settings
+    // Merge preset theme settings into both settings and published
     const currentSettings = currentStore.settings || {};
+    const currentPublished = currentStore.published || {};
     const themeSettings = preset.theme_settings || {};
 
     // Extract pagination settings from theme_settings if present
@@ -2208,10 +2209,25 @@ router.post('/:id/apply-theme-preset', authMiddleware, async (req, res) => {
       })
     };
 
-    // Update in tenant DB
+    const updatedPublished = {
+      ...currentPublished,
+      theme: {
+        ...(currentPublished.theme || {}),
+        ...themeSettings  // Apply all preset colors
+      },
+      // Apply pagination settings if present in preset
+      ...(themeSettings.pagination_active_bg_color && {
+        pagination: {
+          ...(currentPublished.pagination || {}),
+          ...paginationSettings
+        }
+      })
+    };
+
+    // Update both settings and published in tenant DB
     const { data: updatedStore, error: updateError } = await tenantDb
       .from('stores')
-      .update({ settings: updatedSettings })
+      .update({ settings: updatedSettings, published: updatedPublished })
       .eq('id', storeId)
       .select()
       .single();
