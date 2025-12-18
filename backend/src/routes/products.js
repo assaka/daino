@@ -180,7 +180,7 @@ router.post('/',
       });
     }
 
-    const { store_id, translations, formData_translations, name, description, ...productData } = req.body;
+    const { store_id, translations, formData_translations, name, description, attributes, ...productData } = req.body;
 
     console.log('🔍 Product creation - Full request body:', JSON.stringify(req.body, null, 2));
     console.log('🔍 Product creation - separating fields:', {
@@ -258,6 +258,17 @@ router.post('/',
       }
     } else {
       console.log('⚠️ No translations to save');
+    }
+
+    // Sync attributes to product_attribute_values table if provided
+    if (attributes && typeof attributes === 'object' && Object.keys(attributes).length > 0) {
+      const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
+      try {
+        await syncProductAttributeValues(tenantDb, store_id, product.id, attributes);
+        console.log('✅ Synced attributes for product:', product.id);
+      } catch (attrError) {
+        console.warn('⚠️ Failed to sync attributes:', attrError.message);
+      }
     }
 
     res.status(201).json({
