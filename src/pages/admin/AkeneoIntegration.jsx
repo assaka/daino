@@ -223,7 +223,6 @@ const AkeneoIntegration = () => {
 
   // Category mapping state
   const [fetchingCategories, setFetchingCategories] = useState(false);
-  const [showCategoryImportResult, setShowCategoryImportResult] = useState(true);
   const [categoryMappingKey, setCategoryMappingKey] = useState(0);
   const [categoryMappingStats, setCategoryMappingStats] = useState({ total: 0, mapped: 0, unmapped: 0 });
 
@@ -3028,12 +3027,10 @@ const AkeneoIntegration = () => {
                     ) : (
                       <Download className="h-4 w-4 mr-2" />
                     )}
-                    {importing ? 'Scheduling...' : `Import ${categoryMappingStats.unmapped} Categories`}
+                    {importing ? 'Scheduling...' : `Create ${categoryMappingStats.unmapped} Categories`}
                   </Button>
                 )}
               </div>
-
-              {showCategoryImportResult && renderTabImportResults('categories')}
             </CardContent>
           </Card>
 
