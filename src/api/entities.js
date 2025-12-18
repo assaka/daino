@@ -1017,6 +1017,11 @@ class CmsBlockService extends BaseEntity {
 
       // Handle paginated admin response: {success: true, data: {blocks: [...], pagination: {...}}}
       if (response && response.success && response.data) {
+        // Return full data object with blocks and pagination
+        if (response.data.blocks && response.data.pagination) {
+          return response.data;
+        }
+        // Fallback: return blocks array if no pagination
         if (Array.isArray(response.data.blocks)) {
           return response.data.blocks;
         } else if (Array.isArray(response.data)) {
