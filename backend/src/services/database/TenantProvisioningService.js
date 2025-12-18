@@ -277,6 +277,11 @@ class TenantProvisioningService {
       let processedSeedSQL = seedSQL.replace(/\{\{STORE_ID\}\}/g, storeId);
       console.log('✅ Replaced {{STORE_ID}} templates with actual storeId:', storeId);
 
+      // Replace {{STORE_SLUG}} template with actual store slug in seed SQL
+      const storeSlug = options.storeSlug || this.generateSlug(options.storeName);
+      processedSeedSQL = processedSeedSQL.replace(/\{\{STORE_SLUG\}\}/g, storeSlug);
+      console.log('✅ Replaced {{STORE_SLUG}} templates with actual storeSlug:', storeSlug);
+
       // Check if we have OAuth access_token (use Supabase Management API)
       if (options.oauthAccessToken && options.projectId) {
         console.log('Using Supabase Management API for migrations (OAuth mode)...');
