@@ -25,6 +25,7 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [deviceFilter, setDeviceFilter] = useState('all');
+  const [interactionTypeFilter, setInteractionTypeFilter] = useState('all');
   const [pageFilter, setPageFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 20;
@@ -33,7 +34,7 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
     if (storeId) {
       loadSessions();
     }
-  }, [storeId, dateRange, deviceFilter, currentPage]);
+  }, [storeId, dateRange, deviceFilter, interactionTypeFilter, currentPage]);
 
   const loadSessions = async () => {
     setLoading(true);
@@ -47,6 +48,10 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
 
       if (deviceFilter && deviceFilter !== 'all') {
         params.append('device_type', deviceFilter);
+      }
+
+      if (interactionTypeFilter && interactionTypeFilter !== 'all') {
+        params.append('interaction_type', interactionTypeFilter);
       }
 
       if (pageFilter) {
@@ -147,7 +152,7 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
       </CardHeader>
       <CardContent>
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
             <Label htmlFor="device-filter">Device Type</Label>
             <Select value={deviceFilter} onValueChange={setDeviceFilter}>
@@ -159,6 +164,21 @@ export default function SessionList({ storeId, dateRange, onSessionSelect }) {
                 <SelectItem value="desktop">Desktop</SelectItem>
                 <SelectItem value="tablet">Tablet</SelectItem>
                 <SelectItem value="mobile">Mobile</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="interaction-type-filter">Interaction Type</Label>
+            <Select value={interactionTypeFilter} onValueChange={setInteractionTypeFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Interactions</SelectItem>
+                <SelectItem value="click">Clicks</SelectItem>
+                <SelectItem value="hover">Hovers</SelectItem>
+                <SelectItem value="scroll">Scrolling</SelectItem>
               </SelectContent>
             </Select>
           </div>

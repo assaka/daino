@@ -690,17 +690,16 @@ export default function HeatmapVisualization({
                 </div>
                 <Input
                   id="page-url"
-                  value={pageUrl}
+                  value={urlSearchQuery}
                   onChange={(e) => {
-                    setPageUrl(e.target.value);
                     setUrlSearchQuery(e.target.value);
                     setShowUrlDropdown(true);
                   }}
                   onFocus={() => setShowUrlDropdown(true)}
-                  placeholder="Search or enter URL..."
+                  placeholder={pageUrl ? toRelativeUrl(pageUrl) : "Search URLs..."}
                   className="w-full pl-9 pr-8"
                 />
-                {pageUrl && (
+                {(pageUrl || urlSearchQuery) && (
                   <button
                     type="button"
                     onClick={() => {

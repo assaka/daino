@@ -1,19 +1,92 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ArrowDown, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, ArrowDown, Users, Search, X } from 'lucide-react';
 import apiClient from '@/api/client';
 
-export default function ScrollDepthMap({ storeId, pageUrl, dateRange }) {
+export default function ScrollDepthMap({ storeId, pageUrl: initialPageUrl, dateRange }) {
   const [scrollData, setScrollData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // URL Search state
+  const [pageUrl, setPageUrl] = useState(initialPageUrl || '');
+  const [urlSearchQuery, setUrlSearchQuery] = useState('');
+  const [urlsWithEvents, setUrlsWithEvents] = useState([]);
+  const [loadingUrls, setLoadingUrls] = useState(false);
+  const [showUrlDropdown, setShowUrlDropdown] = useState(false);
 
   useEffect(() => {
     if (storeId && pageUrl) {
       loadScrollData();
     }
   }, [storeId, pageUrl, dateRange]);
+
+  // Load URLs with events when store changes
+  useEffect(() => {
+    if (storeId) {
+      loadUrlsWithEvents();
+    }
+  }, [storeId]);
+
+  // Sync with initial page URL prop
+  useEffect(() => {
+    if (initialPageUrl && initialPageUrl !== pageUrl) {
+      setPageUrl(initialPageUrl);
+    }
+  }, [initialPageUrl]);
+
+  // Helper function to convert full URL to relative path
+  const toRelativeUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname + urlObj.search + urlObj.hash;
+    } catch {
+      return url;
+    }
+  };
+
+  const loadUrlsWithEvents = async () => {
+    if (!storeId) return;
+
+    setLoadingUrls(true);
+    try {
+      const response = await apiClient.get(`heatmap/summary/${storeId}?group_by=page_url`);
+      if (response.data && Array.isArray(response.data)) {
+        const urlMap = new Map();
+        response.data.forEach(item => {
+          const url = item.page_url;
+          if (url) {
+            const existing = urlMap.get(url) || { url, count: 0 };
+            existing.count += item.interaction_count || 0;
+            urlMap.set(url, existing);
+          }
+        });
+        const urls = Array.from(urlMap.values()).sort((a, b) => b.count - a.count);
+        setUrlsWithEvents(urls);
+      }
+    } catch (err) {
+      console.warn('Error loading URLs with events:', err);
+      setUrlsWithEvents([]);
+    } finally {
+      setLoadingUrls(false);
+    }
+  };
+
+  // Filter URLs (exclude admin, show relative)
+  const filteredUrls = urlsWithEvents
+    .filter(item => {
+      const relativeUrl = toRelativeUrl(item.url);
+      if (relativeUrl.includes('/admin')) return false;
+      return relativeUrl.toLowerCase().includes(urlSearchQuery.toLowerCase());
+    })
+    .map(item => ({
+      ...item,
+      displayUrl: toRelativeUrl(item.url)
+    }));
 
   const loadScrollData = async () => {
     if (!storeId || !pageUrl) return;
@@ -74,19 +147,6 @@ export default function ScrollDepthMap({ storeId, pageUrl, dateRange }) {
     return 'text-red-700';
   };
 
-  if (!pageUrl) {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-gray-500">
-            <ArrowDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>Enter a page URL to see scroll depth analytics</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -99,13 +159,109 @@ export default function ScrollDepthMap({ storeId, pageUrl, dateRange }) {
             variant="outline"
             size="sm"
             onClick={loadScrollData}
-            disabled={loading}
+            disabled={loading || !pageUrl}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* URL Search */}
+        <div className="relative mb-6">
+          <Label htmlFor="scroll-page-url">Page URL</Label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <Search className="w-4 h-4" />
+            </div>
+            <Input
+              id="scroll-page-url"
+              value={urlSearchQuery}
+              onChange={(e) => {
+                setUrlSearchQuery(e.target.value);
+                setShowUrlDropdown(true);
+              }}
+              onFocus={() => setShowUrlDropdown(true)}
+              placeholder={pageUrl ? toRelativeUrl(pageUrl) : "Search URLs..."}
+              className="w-full pl-9 pr-8"
+            />
+            {(pageUrl || urlSearchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPageUrl('');
+                  setUrlSearchQuery('');
+                  setShowUrlDropdown(false);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {/* URL Search Dropdown */}
+          {showUrlDropdown && (
+            <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto min-w-[500px]">
+              {loadingUrls ? (
+                <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Loading URLs with events...
+                </div>
+              ) : filteredUrls.length > 0 ? (
+                <>
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
+                    URLs with recorded events ({filteredUrls.length})
+                  </div>
+                  {filteredUrls.slice(0, 20).map((item, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        setPageUrl(item.url);
+                        setUrlSearchQuery('');
+                        setShowUrlDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-blue-50 flex items-center justify-between group"
+                    >
+                      <span className="text-sm text-gray-700 truncate flex-1 mr-2" title={item.displayUrl}>
+                        {item.displayUrl}
+                      </span>
+                      <Badge variant="secondary" className="text-xs shrink-0">
+                        {item.count.toLocaleString()} events
+                      </Badge>
+                    </button>
+                  ))}
+                  {filteredUrls.length > 20 && (
+                    <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
+                      Showing 20 of {filteredUrls.length} URLs
+                    </div>
+                  )}
+                </>
+              ) : urlsWithEvents.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-gray-500">
+                  No URLs with recorded events yet
+                </div>
+              ) : (
+                <div className="px-4 py-3 text-sm text-gray-500">
+                  No matching URLs found
+                </div>
+              )}
+            </div>
+          )}
+          {/* Click outside to close dropdown */}
+          {showUrlDropdown && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowUrlDropdown(false)}
+            />
+          )}
+        </div>
+
+        {!pageUrl && (
+          <div className="text-center py-8 text-gray-500">
+            <ArrowDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Select a page URL to see scroll depth analytics</p>
+          </div>
+        )}
         {error && (
           <div className="text-center py-4 text-red-600">
             <p>Error loading scroll data: {error}</p>
