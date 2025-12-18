@@ -38,7 +38,7 @@ const masterEmailHeader = (options = {}) => {
     <!-- Email Header - Clean white background -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 20px 20px 16px; text-align: center;">
+        <td style="padding: 20px 20px 5px; text-align: center;">
           ${logoUrl ? `
           <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto;" />
           ` : `
@@ -53,11 +53,12 @@ const masterEmailHeader = (options = {}) => {
         </td>
       </tr>
     </table>
+    
     <!-- Title Section (if provided) -->
     ${title || subtitle ? `
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 0 20px 16px; text-align: left;">
+        <td style="padding: 0 20px 5px; text-align: center;">
           ${title ? `
           <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
             ${title}
@@ -453,8 +454,6 @@ const welcomeEmail = (data) => {
   const header = masterEmailHeader({
     title: `Welcome to ${PLATFORM_NAME}!`,
     subtitle: 'Your e-commerce journey starts here',
-    primaryColor: '#6366f1',
-    secondaryColor: '#8b5cf6'
   });
 
   const footer = masterEmailFooter();
@@ -554,8 +553,6 @@ const passwordResetEmail = (data) => {
   const header = masterEmailHeader({
     title: 'Reset Your Password',
     subtitle: 'Follow the link below to reset',
-    primaryColor: '#ef4444', // Red
-    secondaryColor: '#dc2626'
   });
 
   const footer = masterEmailFooter();
@@ -660,31 +657,6 @@ const teamInvitationEmail = (data) => {
 
   const content = `
     ${header}
-
-    <!-- Colorful Top Border - Rainbow gradient effect using segments -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 12px 12px 0 0; overflow: hidden;">
-      <tr>
-        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
-        <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
-      </tr>
-    </table>
-    <!-- Team Invitation Header -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
-      <tr>
-        <td style="padding: 20px 20px 16px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-          <!-- Logo -->
-          <img src="${PLATFORM_LOGO_URL}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto; margin-bottom: 12px;" />
-
-          <!-- Title -->
-          <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 20px; font-weight: 600;">You're Invited!</h1>
-          <p style="margin: 0; color: #6b7280; font-size: 14px;">Join the team and start collaborating</p>
-        </td>
-      </tr>
-    </table>
 
     <!-- Email Body -->
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
