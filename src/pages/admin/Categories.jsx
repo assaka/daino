@@ -410,8 +410,9 @@ export default function Categories() {
   const handleToggleStatus = async (category) => {
     const storeId = getSelectedStoreId();
     try {
+      // Only send the fields that need to be updated, not the entire category object
+      // (category may have frontend-only properties like 'children' from tree building)
       await Category.update(category.id, {
-        ...category,
         is_active: !category.is_active,
         store_id: storeId
       });
@@ -426,8 +427,9 @@ export default function Categories() {
   const handleToggleMenuVisibility = async (category) => {
     const storeId = getSelectedStoreId();
     try {
+      // Only send the fields that need to be updated, not the entire category object
+      // (category may have frontend-only properties like 'children' from tree building)
       await Category.update(category.id, {
-        ...category,
         hide_in_menu: !category.hide_in_menu,
         store_id: storeId
       });

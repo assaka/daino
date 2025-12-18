@@ -79,9 +79,11 @@ const ImportJobProgress = ({
   const [recentJobs, setRecentJobs] = useState([]);
   const [expanded, setExpanded] = useState(true);
   const [showRecentJobs, setShowRecentJobs] = useState(false);
+  const [jobJustScheduled, setJobJustScheduled] = useState(false); // Show panel when job is scheduled
   const pollingRef = useRef(null);
   const mountedRef = useRef(true);
   const previousActiveJobIdsRef = useRef(new Set()); // Track previously active job IDs
+  const previousRefreshTriggerRef = useRef(refreshTrigger);
 
   // Fetch active jobs for this integration source
   const fetchJobs = useCallback(async () => {
@@ -153,6 +155,23 @@ const ImportJobProgress = ({
     }
   }, [storeId, source, maxHistoryItems, onJobComplete, onJobFailed]);
 
+  // Detect when a job is scheduled (refreshTrigger changes)
+  useEffect(() => {
+    if (refreshTrigger > previousRefreshTriggerRef.current) {
+      // A job was just scheduled - show the panel and expand it
+      setJobJustScheduled(true);
+      setExpanded(true);
+    }
+    previousRefreshTriggerRef.current = refreshTrigger;
+  }, [refreshTrigger]);
+
+  // Clear jobJustScheduled when active jobs are detected
+  useEffect(() => {
+    if (activeJobs.length > 0) {
+      setJobJustScheduled(false);
+    }
+  }, [activeJobs.length]);
+
   // Initial fetch and fetch when refreshTrigger changes (after scheduling a job)
   useEffect(() => {
     mountedRef.current = true;
@@ -167,7 +186,7 @@ const ImportJobProgress = ({
     };
   }, [fetchJobs, refreshTrigger]);
 
-  // Start/stop polling based on active jobs
+  // Start/stop polling based on active jobs or job just scheduled
   useEffect(() => {
     const startPolling = () => {
       if (pollingRef.current) return;
@@ -175,7 +194,7 @@ const ImportJobProgress = ({
         if (mountedRef.current) {
           fetchJobs();
         }
-      }, 5000); // Poll every 5 seconds (only when active jobs exist)
+      }, jobJustScheduled ? 1000 : 5000); // Poll faster when waiting for job to appear
     };
 
     const stopPolling = () => {
@@ -185,15 +204,15 @@ const ImportJobProgress = ({
       }
     };
 
-    // Only poll when there are active jobs
-    if (activeJobs.length > 0) {
+    // Poll when there are active jobs OR when a job was just scheduled
+    if (activeJobs.length > 0 || jobJustScheduled) {
       startPolling();
     } else {
       stopPolling();
     }
 
     return () => stopPolling();
-  }, [activeJobs.length, fetchJobs]);
+  }, [activeJobs.length, jobJustScheduled, fetchJobs]);
 
   // Cancel a job
   const cancelJob = async (jobId) => {
@@ -350,8 +369,8 @@ const ImportJobProgress = ({
     );
   };
 
-  // Don't render if no jobs and not showing history
-  if (activeJobs.length === 0 && recentJobs.length === 0) {
+  // Don't render if no jobs, no history, and no job just scheduled
+  if (activeJobs.length === 0 && recentJobs.length === 0 && !jobJustScheduled) {
     return null;
   }
 
@@ -361,15 +380,17 @@ const ImportJobProgress = ({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-lg">
-              {activeJobs.length > 0 && (
+              {(activeJobs.length > 0 || jobJustScheduled) && (
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
               )}
               Import Jobs
             </CardTitle>
             <CardDescription>
-              {activeJobs.length > 0
-                ? `${activeJobs.length} active import${activeJobs.length > 1 ? 's' : ''} in progress`
-                : 'No active imports'
+              {jobJustScheduled && activeJobs.length === 0
+                ? 'Starting import...'
+                : activeJobs.length > 0
+                  ? `${activeJobs.length} active import${activeJobs.length > 1 ? 's' : ''} in progress`
+                  : 'No active imports'
               }
             </CardDescription>
           </div>
