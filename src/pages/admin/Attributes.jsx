@@ -289,7 +289,13 @@ export default function Attributes() {
 
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
       const response = await fetch(`/api/attributes/all?store_id=${storeId}`, {
         method: 'DELETE',
         headers: {
@@ -644,9 +650,6 @@ export default function Attributes() {
                         <Badge className={getAttributeTypeColor(attribute.type)}>
                           {attribute.type}
                         </Badge>
-                        {attribute.demo && (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">Demo</Badge>
-                        )}
                         {attribute.is_required && (
                           <Badge variant="outline" className="text-red-600">Required</Badge>
                         )}
@@ -655,6 +658,9 @@ export default function Attributes() {
                         )}
                         {attribute.is_searchable && (
                           <Badge variant="outline" className="text-green-600">Searchable</Badge>
+                        )}
+                        {attribute.demo && (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">Demo</Badge>
                         )}
                       </div>
 
