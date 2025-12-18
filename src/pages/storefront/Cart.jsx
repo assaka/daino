@@ -397,7 +397,7 @@ export default function Cart() {
             // Batch Product Fetching with request deduplication
             let products = [];
             try {
-                const cacheKey = `products:${productIds.sort().join(',')}`;
+                const cacheKey = `products:${store?.id}:${productIds.sort().join(',')}`;
 
                 // Initialize global cache if needed
                 if (!window.__productBatchCache) window.__productBatchCache = {};
@@ -417,8 +417,8 @@ export default function Cart() {
                         // Wait for the in-flight request
                         products = await window.__productFetching[cacheKey];
                     } else {
-                        // Start fetching
-                        const fetchPromise = StorefrontProduct.filter({ ids: productIds }).then(result => {
+                        // Start fetching - explicitly pass store_id to ensure correct store filtering
+                        const fetchPromise = StorefrontProduct.filter({ ids: productIds, store_id: store?.id }).then(result => {
                             const productsResult = result || [];
                             window.__productBatchCache[cacheKey] = { data: productsResult, timestamp: Date.now() };
                             delete window.__productFetching[cacheKey];

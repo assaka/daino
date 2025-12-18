@@ -47,7 +47,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   const loadCartRef = useRef(null);
 
   // Helper function to load product details for cart items
-  const loadProductDetails = useCallback(async (cartItems) => {
+  const loadProductDetails = useCallback(async (cartItems, storeId) => {
     if (cartItems.length === 0) {
       setCartProducts({});
       return;
@@ -67,7 +67,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     }
 
     try {
-      const cacheKey = `products:${productIds.sort().join(',')}`;
+      const cacheKey = `products:${storeId}:${productIds.sort().join(',')}`;
 
       // Initialize global caches
       if (!window.__productBatchCache) window.__productBatchCache = {};
@@ -89,8 +89,8 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           // Already fetching - wait for it
           productsArray = await window.__productFetching[cacheKey];
         } else {
-          // Start fetching
-          const fetchPromise = StorefrontProduct.filter({ ids: productIds }).then(result => {
+          // Start fetching - explicitly pass store_id to ensure correct store filtering
+          const fetchPromise = StorefrontProduct.filter({ ids: productIds, store_id: storeId }).then(result => {
             const products = result || [];
             window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
             delete window.__productFetching[cacheKey];
@@ -125,12 +125,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
   // Load product details when cartItems change
   useEffect(() => {
-    if (cartItems.length > 0) {
-      loadProductDetails(cartItems);
-    } else {
+    if (cartItems.length > 0 && store?.id) {
+      loadProductDetails(cartItems, store.id);
+    } else if (cartItems.length === 0) {
       setCartProducts({});
     }
-  }, [cartItems]);
+  }, [cartItems, store?.id]);
 
   // Production-ready event handling with race condition prevention
   useEffect(() => {
