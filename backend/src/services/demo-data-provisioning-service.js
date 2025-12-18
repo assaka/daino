@@ -1285,11 +1285,11 @@ class DemoDataProvisioningService {
                 <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">Elevate Your <span style="color: var(--theme-primary-button)">Everyday</span> Style</h1>
                 <p class="text-lg text-gray-300 mb-8 max-w-lg">Discover curated collections designed for the modern lifestyle. Premium quality meets exceptional value.</p>
                 <div class="flex flex-col sm:flex-row gap-4">
-                  <a href="/products" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white rounded-xl transition-all transform hover:scale-105 hover:shadow-xl shadow-lg" style="background-color: var(--theme-primary-button)">
+                  <a href="#" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white rounded-xl transition-all transform hover:scale-105 hover:shadow-xl shadow-lg" style="background-color: var(--theme-primary-button)">
                     Shop Now
                     <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                   </a>
-                  <a href="/categories" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white border-2 border-gray-600 rounded-xl hover:bg-gray-800 transition-all">
+                  <a href="#" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white border-2 border-gray-600 rounded-xl hover:bg-gray-800 transition-all">
                     View Lookbook
                   </a>
                 </div>
@@ -1506,7 +1506,7 @@ class DemoDataProvisioningService {
             <div class="flex items-center justify-center gap-2 text-sm font-medium">
               <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"></path></svg>
               <span>New arrivals every week!</span>
-              <a href="/products" class="underline decoration-2 underline-offset-2 hover:text-white/80 transition-colors">Shop now →</a>
+              <a href="#" class="underline decoration-2 underline-offset-2 hover:text-white/80 transition-colors">Shop now →</a>
             </div>
           </div>
         `
@@ -1587,7 +1587,7 @@ class DemoDataProvisioningService {
                 <h3 class="font-bold text-2xl md:text-3xl text-white mb-2">Up to 30% Off This Collection</h3>
                 <p class="text-gray-300">Shop now and save on your favorite items. Offer ends soon!</p>
               </div>
-              <a href="#products" class="px-8 py-4 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg whitespace-nowrap" style="background-color: var(--theme-primary-button)">
+              <a href="#" class="px-8 py-4 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg whitespace-nowrap" style="background-color: var(--theme-primary-button)">
                 Shop the Sale
               </a>
             </div>
@@ -1705,7 +1705,7 @@ class DemoDataProvisioningService {
               <p class="font-medium text-white">Complete your order!</p>
               <p class="text-sm text-white/80">Customers who bought these items also loved our accessories collection.</p>
             </div>
-            <a href="/products" class="hidden md:block px-4 py-2 text-sm font-medium bg-white rounded-lg hover:bg-gray-100 transition-colors shadow" style="color: var(--theme-view-cart-button)">
+            <a href="#" class="hidden md:block px-4 py-2 text-sm font-medium bg-white rounded-lg hover:bg-gray-100 transition-colors shadow" style="color: var(--theme-view-cart-button)">
               Browse
             </a>
           </div>
@@ -1717,7 +1717,7 @@ class DemoDataProvisioningService {
         placement: ['cart_below_items'],
         content: `
           <div class="flex items-center justify-center py-6 mt-4">
-            <a href="/products" class="inline-flex items-center gap-2 px-6 py-3 text-white font-medium rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg" style="background-color: var(--theme-primary-button)">
+            <a href="#" class="inline-flex items-center gap-2 px-6 py-3 text-white font-medium rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg" style="background-color: var(--theme-primary-button)">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
               Continue Shopping
             </a>
