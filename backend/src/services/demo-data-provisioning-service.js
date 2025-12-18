@@ -1278,19 +1278,42 @@ class DemoDataProvisioningService {
         title: 'Homepage Hero Banner',
         placement: ['homepage_hero'],
         content: `
-          <div class="relative overflow-hidden rounded-2xl text-white" style="background-color: var(--theme-primary-button)">
-            <div class="relative px-8 py-16 md:py-24 text-center">
-              <span class="inline-block px-4 py-1 mb-4 text-sm font-medium bg-white/20 rounded-full">New Season Collection</span>
-              <h1 class="text-4xl md:text-6xl font-bold mb-6 tracking-tight">Discover Your Style</h1>
-              <p class="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl mx-auto">Curated collections that define modern elegance. Premium quality, exceptional value.</p>
-              <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/products" class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-white rounded-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg" style="color: var(--theme-primary-button)">
-                  Shop Collection
-                  <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                </a>
-                <a href="/categories" class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold border-2 border-white/50 text-white rounded-xl hover:bg-white/10 transition-all">
-                  Browse Categories
-                </a>
+          <div class="relative overflow-hidden rounded-2xl bg-gray-900">
+            <div class="grid md:grid-cols-2 items-center">
+              <div class="relative z-10 px-8 py-12 md:py-20 md:px-12">
+                <span class="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-wider uppercase rounded-full text-white" style="background-color: var(--theme-add-to-cart-button)">New Season 2025</span>
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">Elevate Your <span style="color: var(--theme-primary-button)">Everyday</span> Style</h1>
+                <p class="text-lg text-gray-300 mb-8 max-w-lg">Discover curated collections designed for the modern lifestyle. Premium quality meets exceptional value.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                  <a href="/products" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white rounded-xl transition-all transform hover:scale-105 hover:shadow-xl shadow-lg" style="background-color: var(--theme-primary-button)">
+                    Shop Now
+                    <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                  </a>
+                  <a href="/categories" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white border-2 border-gray-600 rounded-xl hover:bg-gray-800 transition-all">
+                    View Lookbook
+                  </a>
+                </div>
+                <div class="mt-10 flex items-center gap-8">
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-white">50K+</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-wider">Happy Customers</div>
+                  </div>
+                  <div class="w-px h-10 bg-gray-700"></div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-white">4.9</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-wider">Rating</div>
+                  </div>
+                  <div class="w-px h-10 bg-gray-700"></div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-white">500+</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-wider">Products</div>
+                  </div>
+                </div>
+              </div>
+              <div class="relative h-64 md:h-full md:min-h-[500px]">
+                <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80" alt="Shop collection" class="absolute inset-0 w-full h-full object-cover"/>
+                <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/50 to-transparent md:block hidden"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent md:hidden"></div>
               </div>
             </div>
           </div>
@@ -1317,35 +1340,35 @@ class DemoDataProvisioningService {
         title: 'Homepage Features',
         placement: ['homepage_below_hero'],
         content: `
-          <div class="py-12" style="background-color: var(--theme-primary-button)">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto px-4">
-              <div class="group text-center p-6 rounded-2xl bg-black/10 hover:bg-black/20 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+          <div class="py-16 bg-gray-50 rounded-2xl my-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-6xl mx-auto px-6">
+              <div class="group text-center">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform" style="background-color: var(--theme-primary-button)">
+                  <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                 </div>
-                <h3 class="font-bold text-white mb-2">Free Shipping</h3>
-                <p class="text-white/80 text-sm">On all orders over $100. Fast & reliable delivery.</p>
+                <h3 class="font-semibold text-gray-900 mb-1">Free Shipping</h3>
+                <p class="text-gray-500 text-sm">Orders over $100</p>
               </div>
-              <div class="group text-center p-6 rounded-2xl bg-black/10 hover:bg-black/20 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <div class="group text-center">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform" style="background-color: var(--theme-secondary-button)">
+                  <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </div>
-                <h3 class="font-bold text-white mb-2">Easy Returns</h3>
-                <p class="text-white/80 text-sm">30-day hassle-free return policy. No questions asked.</p>
+                <h3 class="font-semibold text-gray-900 mb-1">Easy Returns</h3>
+                <p class="text-gray-500 text-sm">30-day guarantee</p>
               </div>
-              <div class="group text-center p-6 rounded-2xl bg-black/10 hover:bg-black/20 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              <div class="group text-center">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform" style="background-color: var(--theme-add-to-cart-button)">
+                  <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
-                <h3 class="font-bold text-white mb-2">Secure Payment</h3>
-                <p class="text-white/80 text-sm">256-bit SSL encryption. Your data is always safe.</p>
+                <h3 class="font-semibold text-gray-900 mb-1">Secure Payment</h3>
+                <p class="text-gray-500 text-sm">256-bit SSL</p>
               </div>
-              <div class="group text-center p-6 rounded-2xl bg-black/10 hover:bg-black/20 transition-all duration-300">
-                <div class="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-lg">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+              <div class="group text-center">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform" style="background-color: var(--theme-checkout-button)">
+                  <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 </div>
-                <h3 class="font-bold text-white mb-2">24/7 Support</h3>
-                <p class="text-white/80 text-sm">Expert assistance whenever you need it.</p>
+                <h3 class="font-semibold text-gray-900 mb-1">24/7 Support</h3>
+                <p class="text-gray-500 text-sm">Always here to help</p>
               </div>
             </div>
           </div>
@@ -1356,20 +1379,24 @@ class DemoDataProvisioningService {
         title: 'Newsletter Signup',
         placement: ['homepage_below_content', 'footer'],
         content: `
-          <div class="rounded-2xl p-8 md:p-12 my-8" style="background-color: var(--theme-secondary-button)">
-            <div class="text-center max-w-2xl mx-auto">
-              <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-white bg-white/20 rounded-full uppercase">Newsletter</span>
-              <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">Stay in the Loop</h3>
-              <p class="text-white/70 mb-6 text-lg">Subscribe for exclusive deals, early access to new arrivals, and insider tips delivered straight to your inbox.</p>
-              <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <div class="flex-1 relative">
-                  <input type="email" placeholder="Enter your email" class="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent">
+          <div class="relative overflow-hidden rounded-2xl my-8 bg-gray-900">
+            <div class="grid md:grid-cols-2">
+              <div class="relative z-10 p-8 md:p-12 flex flex-col justify-center">
+                <span class="inline-block w-fit px-3 py-1 mb-4 text-xs font-bold tracking-wider uppercase rounded-full text-white" style="background-color: var(--theme-add-to-cart-button)">Join the Club</span>
+                <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">Get 15% Off Your First Order</h3>
+                <p class="text-gray-400 mb-6">Plus early access to new arrivals, exclusive sales, and personalized recommendations.</p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <input type="email" placeholder="Enter your email" class="flex-1 px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent" style="--tw-ring-color: var(--theme-primary-button)">
+                  <button class="px-6 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-all" style="background-color: var(--theme-primary-button)">
+                    Subscribe
+                  </button>
                 </div>
-                <button class="px-8 py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg" style="background-color: var(--theme-add-to-cart-button)">
-                  Subscribe
-                </button>
+                <p class="text-gray-500 text-xs mt-3">By subscribing, you agree to our Privacy Policy. Unsubscribe anytime.</p>
               </div>
-              <p class="text-white/50 text-sm mt-4">No spam, unsubscribe anytime. We respect your privacy.</p>
+              <div class="relative h-48 md:h-auto">
+                <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80" alt="Newsletter" class="absolute inset-0 w-full h-full object-cover"/>
+                <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent"></div>
+              </div>
             </div>
           </div>
         `
@@ -1380,18 +1407,20 @@ class DemoDataProvisioningService {
         title: 'Product Page Promo',
         placement: ['product_above'],
         content: `
-          <div class="rounded-xl p-4 mb-6 text-white" style="background-color: var(--theme-add-to-cart-button)">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <span class="text-xl">🎁</span>
+          <div class="rounded-xl mb-6 bg-gray-900 shadow-lg overflow-hidden">
+            <div class="flex items-center">
+              <div class="flex-1 p-5 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: var(--theme-add-to-cart-button)">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
                 </div>
                 <div>
-                  <p class="font-semibold text-white">Bundle & Save!</p>
-                  <p class="text-sm text-white/80">Buy 2+ items and get 10% off automatically</p>
+                  <p class="font-bold text-white text-lg">Bundle & Save 10%</p>
+                  <p class="text-sm text-gray-400">Automatically applied when you buy 2+ items</p>
                 </div>
               </div>
-              <span class="hidden md:block px-3 py-1 bg-white/20 text-white text-sm font-bold rounded-lg">AUTO-APPLIED</span>
+              <div class="hidden md:flex items-center px-6 py-5 border-l border-gray-800">
+                <span class="px-4 py-2 text-xs font-bold tracking-wider uppercase rounded-full text-white" style="background-color: var(--theme-primary-button)">Auto-Applied</span>
+              </div>
             </div>
           </div>
         `
@@ -1428,37 +1457,39 @@ class DemoDataProvisioningService {
         title: 'Product Shipping Info',
         placement: ['product_below'],
         content: `
-          <div class="mt-8 rounded-2xl p-6 text-white" style="background-color: var(--theme-primary-button)">
-            <h4 class="font-bold text-white mb-4 flex items-center gap-2">
-              <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Shipping & Returns
-            </h4>
-            <div class="grid md:grid-cols-3 gap-4">
-              <div class="flex items-start gap-3 p-4 bg-white/10 rounded-xl">
-                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+          <div class="mt-8 rounded-2xl bg-gray-50 border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-white">
+              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Shipping & Returns
+              </h4>
+            </div>
+            <div class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+              <div class="flex items-center gap-4 p-5">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: var(--theme-primary-button)">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                 </div>
                 <div>
-                  <p class="font-medium text-white">Free Shipping</p>
-                  <p class="text-sm text-white/70">On orders over $100</p>
+                  <p class="font-semibold text-gray-900">Free Shipping</p>
+                  <p class="text-sm text-gray-500">On orders over $100</p>
                 </div>
               </div>
-              <div class="flex items-start gap-3 p-4 bg-white/10 rounded-xl">
-                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <div class="flex items-center gap-4 p-5">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: var(--theme-secondary-button)">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <div>
-                  <p class="font-medium text-white">Fast Delivery</p>
-                  <p class="text-sm text-white/70">Ships in 1-2 days</p>
+                  <p class="font-semibold text-gray-900">Fast Delivery</p>
+                  <p class="text-sm text-gray-500">Ships in 1-2 days</p>
                 </div>
               </div>
-              <div class="flex items-start gap-3 p-4 bg-white/10 rounded-xl">
-                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <div class="flex items-center gap-4 p-5">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: var(--theme-add-to-cart-button)">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </div>
                 <div>
-                  <p class="font-medium text-white">Easy Returns</p>
-                  <p class="text-sm text-white/70">30-day guarantee</p>
+                  <p class="font-semibold text-gray-900">Easy Returns</p>
+                  <p class="text-sm text-gray-500">30-day guarantee</p>
                 </div>
               </div>
             </div>
@@ -1548,19 +1579,16 @@ class DemoDataProvisioningService {
         title: 'Category Promo Banner',
         placement: ['category_above'],
         content: `
-          <div class="text-white rounded-2xl p-6 mb-6" style="background-color: var(--theme-primary-button)">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                  <span class="text-3xl">🏷️</span>
-                </div>
-                <div>
-                  <h3 class="font-bold text-xl">Category Sale!</h3>
-                  <p class="text-white/80">Save up to 30% on select items in this collection</p>
-                </div>
+          <div class="relative overflow-hidden rounded-2xl mb-6 bg-gray-900">
+            <img src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&q=80" alt="Sale banner" class="absolute inset-0 w-full h-full object-cover opacity-40"/>
+            <div class="relative z-10 px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <span class="inline-block px-3 py-1 mb-3 text-xs font-bold tracking-wider uppercase rounded-full text-white" style="background-color: var(--theme-add-to-cart-button)">Limited Time</span>
+                <h3 class="font-bold text-2xl md:text-3xl text-white mb-2">Up to 30% Off This Collection</h3>
+                <p class="text-gray-300">Shop now and save on your favorite items. Offer ends soon!</p>
               </div>
-              <a href="#products" class="px-6 py-3 bg-white font-semibold rounded-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap" style="color: var(--theme-primary-button)">
-                View Deals
+              <a href="#products" class="px-8 py-4 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg whitespace-nowrap" style="background-color: var(--theme-primary-button)">
+                Shop the Sale
               </a>
             </div>
           </div>
@@ -1587,13 +1615,23 @@ class DemoDataProvisioningService {
         title: 'Category Newsletter',
         placement: ['category_below_products'],
         content: `
-          <div class="rounded-2xl p-8 mt-12 text-center text-white" style="background-color: var(--theme-secondary-button)">
-            <span class="inline-block px-4 py-1 mb-4 text-xs font-semibold tracking-wider text-white bg-white/20 rounded-full uppercase">Stay Updated</span>
-            <h3 class="text-2xl font-bold text-white mb-2">Love This Category?</h3>
-            <p class="text-white/70 mb-6 max-w-md mx-auto">Get notified when we add new products and exclusive deals to this collection.</p>
-            <button class="px-8 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg" style="background-color: var(--theme-primary-button)">
-              Notify Me
-            </button>
+          <div class="rounded-2xl mt-12 bg-gray-100 overflow-hidden">
+            <div class="grid md:grid-cols-5 items-center">
+              <div class="md:col-span-3 p-8 md:p-10">
+                <span class="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-wider uppercase rounded-full text-white" style="background-color: var(--theme-primary-button)">Stay Updated</span>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Love This Collection?</h3>
+                <p class="text-gray-600 mb-6">Get notified when we add new products and exclusive deals.</p>
+                <div class="flex flex-col sm:flex-row gap-3 max-w-md">
+                  <input type="email" placeholder="Your email" class="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2" style="--tw-ring-color: var(--theme-primary-button)">
+                  <button class="px-6 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-all" style="background-color: var(--theme-primary-button)">
+                    Notify Me
+                  </button>
+                </div>
+              </div>
+              <div class="md:col-span-2 h-48 md:h-full relative">
+                <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=80" alt="Newsletter" class="absolute inset-0 w-full h-full object-cover"/>
+              </div>
+            </div>
           </div>
         `
       },
@@ -1602,18 +1640,27 @@ class DemoDataProvisioningService {
         title: 'Category Help Banner',
         placement: ['category_below'],
         content: `
-          <div class="rounded-2xl p-6 mt-8 text-white" style="background-color: var(--theme-primary-button)">
-            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
-              <div class="flex items-center gap-3 text-white">
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div class="rounded-2xl p-6 mt-8 bg-gray-900 shadow-xl">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center" style="background-color: var(--theme-primary-button)">
+                  <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
-                <span class="text-white/90">Need help choosing the right product?</span>
+                <div>
+                  <h4 class="font-semibold text-white">Need help choosing?</h4>
+                  <p class="text-gray-400 text-sm">Our experts are ready to assist you</p>
+                </div>
               </div>
-              <a href="/contact" class="inline-flex items-center gap-2 px-6 py-2.5 bg-white font-medium rounded-xl hover:bg-gray-100 transition-colors" style="color: var(--theme-primary-button)">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                Chat with Expert
-              </a>
+              <div class="flex items-center gap-3">
+                <a href="/contact" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  Email Us
+                </a>
+                <a href="/contact" class="inline-flex items-center gap-2 px-5 py-2.5 text-white font-medium rounded-lg hover:opacity-90 transition-colors" style="background-color: var(--theme-primary-button)">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                  Live Chat
+                </a>
+              </div>
             </div>
           </div>
         `
