@@ -162,7 +162,7 @@ export function ThemePresetSelector({
               type="button"
               onClick={() => onChange?.(preset.preset_name)}
               className={cn(
-                "relative p-4 rounded-lg border-2 transition-all text-left flex-shrink-0 w-[200px]",
+                "relative p-4 rounded-lg border-2 transition-all text-left flex-shrink-0 w-[165px]",
                 isSelected
                   ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
                   : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
