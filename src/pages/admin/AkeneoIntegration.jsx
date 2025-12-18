@@ -1706,7 +1706,6 @@ const AkeneoIntegration = () => {
   // Fetch categories from Akeneo to category mappings (with filters)
   const handleFetchCategories = async () => {
     setFetchingCategories(true);
-    setShowCategoryImportResult(false); // Hide import result
     try {
       // Pass selected root categories as filters
       const filters = selectedRootCategories.length > 0
@@ -2152,84 +2151,6 @@ const AkeneoIntegration = () => {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="clientId" className={validationErrors.clientId ? 'text-red-500' : ''}>Client ID</Label>
-                      <Input
-                        id="clientId"
-                        placeholder="Your client ID"
-                        value={config.clientId}
-                        onChange={(e) => handleConfigChange('clientId', e.target.value)}
-                        className={validationErrors.clientId ? 'border-red-500 focus:ring-red-500' : ''}
-                      />
-                      {validationErrors.clientId && (
-                        <p className="text-sm text-red-500">{validationErrors.clientId}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="clientSecret" className={validationErrors.clientSecret ? 'text-red-500' : ''}>Client Secret</Label>
-                      <Input
-                        id="clientSecret"
-                        type="password"
-                        placeholder="Your client secret"
-                        value={config.clientSecret}
-                        onChange={(e) => handleConfigChange('clientSecret', e.target.value)}
-                        className={validationErrors.clientSecret ? 'border-red-500 focus:ring-red-500' : ''}
-                      />
-                      {validationErrors.clientSecret && (
-                        <p className="text-sm text-red-500">{validationErrors.clientSecret}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="username" className={validationErrors.username ? 'text-red-500' : ''}>Username</Label>
-                      <Input
-                        id="username"
-                        placeholder="API username"
-                        value={config.username}
-                        onChange={(e) => handleConfigChange('username', e.target.value)}
-                        className={validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}
-                      />
-                      {validationErrors.username && (
-                        <p className="text-sm text-red-500">{validationErrors.username}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className={validationErrors.password ? 'text-red-500' : ''}>Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="API password"
-                        value={config.password}
-                        onChange={(e) => handleConfigChange('password', e.target.value)}
-                        className={validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}
-                      />
-                      {validationErrors.password && (
-                        <p className="text-sm text-red-500">{validationErrors.password}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="locale">Locale</Label>
-                      <Select value={config.locale} onValueChange={(value) => handleConfigChange('locale', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select locale" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locales.map((locale) => (
-                            <SelectItem key={locale.code} value={locale.code}>
-                              {locale.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
                       <Label htmlFor="version">Akeneo Version</Label>
                       <Select value={config.version || '7'} onValueChange={(value) => handleConfigChange('version', value)}>
                         <SelectTrigger>
@@ -2246,6 +2167,81 @@ const AkeneoIntegration = () => {
                       <p className="text-xs text-muted-foreground">
                         Select your Akeneo PIM version. Versions 6+ use UUID-based product endpoints.
                       </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="clientId" className={validationErrors.clientId ? 'text-red-500' : ''}>Client ID</Label>
+                      <Input
+                        id="clientId"
+                        placeholder="Your client ID"
+                        value={config.clientId}
+                        onChange={(e) => handleConfigChange('clientId', e.target.value)}
+                        className={validationErrors.clientId ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.clientId && (
+                        <p className="text-sm text-red-500">{validationErrors.clientId}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientSecret" className={validationErrors.clientSecret ? 'text-red-500' : ''}>Client Secret</Label>
+                      <Input
+                        id="clientSecret"
+                        type="password"
+                        placeholder="Your client secret"
+                        value={config.clientSecret}
+                        onChange={(e) => handleConfigChange('clientSecret', e.target.value)}
+                        className={validationErrors.clientSecret ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.clientSecret && (
+                        <p className="text-sm text-red-500">{validationErrors.clientSecret}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username" className={validationErrors.username ? 'text-red-500' : ''}>Username</Label>
+                      <Input
+                        id="username"
+                        placeholder="API username"
+                        value={config.username}
+                        onChange={(e) => handleConfigChange('username', e.target.value)}
+                        className={validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.username && (
+                        <p className="text-sm text-red-500">{validationErrors.username}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className={validationErrors.password ? 'text-red-500' : ''}>Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="API password"
+                        value={config.password}
+                        onChange={(e) => handleConfigChange('password', e.target.value)}
+                        className={validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                      {validationErrors.password && (
+                        <p className="text-sm text-red-500">{validationErrors.password}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="locale">Locale</Label>
+                      <Select value={config.locale} onValueChange={(value) => handleConfigChange('locale', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select locale" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locales.map((locale) => (
+                            <SelectItem key={locale.code} value={locale.code}>
+                              {locale.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
