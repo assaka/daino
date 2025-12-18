@@ -25,6 +25,8 @@ export const SetupGuide = ({ store }) => {
     // Demo data modal state
     const [showDemoModal, setShowDemoModal] = useState(false);
     const [provisioningDemo, setProvisioningDemo] = useState(false);
+    const [showRestoreModal, setShowRestoreModal] = useState(false);
+    const [restoringDemo, setRestoringDemo] = useState(false);
 
     // Load Stripe Connect status
     useEffect(() => {
@@ -125,6 +127,28 @@ export const SetupGuide = ({ store }) => {
             alert('Failed to provision demo data. Please try again.');
         } finally {
             setProvisioningDemo(false);
+        }
+    };
+
+    // Demo restore handler
+    const handleRestoreDemo = async () => {
+        if (!store) return;
+
+        setRestoringDemo(true);
+        try {
+            const response = await apiClient.post(`stores/${store.id}/restore-demo`);
+            if (response.success) {
+                setShowRestoreModal(false);
+                // Reload to reflect restored status
+                window.location.reload();
+            } else {
+                alert(response.error || 'Failed to restore store');
+            }
+        } catch (error) {
+            console.error('Demo restoration error:', error);
+            alert('Failed to restore store. Please try again.');
+        } finally {
+            setRestoringDemo(false);
         }
     };
 
@@ -361,7 +385,7 @@ export const SetupGuide = ({ store }) => {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => navigate('/admin/stores')}
+                                    onClick={() => setShowRestoreModal(true)}
                                     className="border-amber-200 text-amber-600 hover:bg-amber-50"
                                 >
                                     <RefreshCw className="w-4 h-4 mr-1" />
@@ -517,6 +541,60 @@ export const SetupGuide = ({ store }) => {
                                 <>
                                     <Database className="w-4 h-4 mr-2" />
                                     Provision Demo Data
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* Demo Data Restore Modal */}
+        <Dialog open={showRestoreModal} onOpenChange={setShowRestoreModal}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-amber-600">
+                        <RefreshCw className="w-5 h-5" />
+                        Restore Store?
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900 font-medium mb-2">What this does:</p>
+                        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                            <li>Removes all demo data (products, orders, customers)</li>
+                            <li>Keeps any data you added manually</li>
+                            <li>Sets store to Active + Paused state</li>
+                            <li>You can then run the store or add your own data</li>
+                        </ul>
+                    </div>
+
+                    <p className="text-sm text-gray-600">
+                        Store: <strong>{store?.name}</strong>
+                    </p>
+
+                    <div className="flex justify-end space-x-2 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowRestoreModal(false)}
+                            disabled={restoringDemo}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="bg-amber-600 hover:bg-amber-700"
+                            onClick={handleRestoreDemo}
+                            disabled={restoringDemo}
+                        >
+                            {restoringDemo ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Restoring...
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Restore Store
                                 </>
                             )}
                         </Button>
