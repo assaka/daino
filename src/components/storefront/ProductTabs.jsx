@@ -44,7 +44,6 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       // For description tab_type, use product.description if no content is set
       if (tab.tab_type === 'description' && !translatedContent) {
         translatedContent = product?.description || '';
-        console.log('📝 Description tab - product.description:', product?.description ? 'HAS VALUE' : 'EMPTY', 'content set to:', translatedContent ? 'HAS VALUE' : 'EMPTY');
       }
 
       return {
@@ -99,13 +98,9 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
     // For "attribute_set" tab type, show all product attributes (uses product's attribute set)
     // Also support legacy "attribute_sets" for backward compatibility
-    if (activeTab?.tab_type === 'attribute_set' || activeTab?.tab_type === 'attribute_sets') {
-      // Simply show all attributes the product has - no filtering needed
-      console.log('📊 Attribute set tab - showing all product attributes:', attributesArray.length);
-    }
+    // No filtering needed - just show all attributes
 
     if (!attributesArray || attributesArray.length === 0) {
-      console.log('📊 No attributes to display');
       attributesContainers.forEach(container => {
         container.innerHTML = '<p class="text-gray-500">No specifications available for this product.</p>';
       });

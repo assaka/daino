@@ -1387,6 +1387,11 @@ export default function Products() {
                                     <Badge variant="outline" className={statusColors[product.status]}>
                                       {product.status}
                                     </Badge>
+                                    {product.demo && (
+                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                                        Demo
+                                      </Badge>
+                                    )}
                                     {product.visibility === 'not_visible' && (
                                       <EyeOff className="w-4 h-4 text-gray-500" />
                                     )}

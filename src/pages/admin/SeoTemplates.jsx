@@ -227,9 +227,16 @@ export default function SeoTemplates() {
                   </div>
 
                   <div className="flex justify-between items-center pt-2">
-                    <Badge variant="secondary" className="capitalize">
-                      {template.type?.replace('_', ' ')}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="capitalize">
+                        {template.type?.replace('_', ' ')}
+                      </Badge>
+                      {template.demo && (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                          Demo
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(template)}>
                         <Edit className="h-4 w-4" />

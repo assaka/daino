@@ -644,6 +644,9 @@ export default function Attributes() {
                         <Badge className={getAttributeTypeColor(attribute.type)}>
                           {attribute.type}
                         </Badge>
+                        {attribute.demo && (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">Demo</Badge>
+                        )}
                         {attribute.is_required && (
                           <Badge variant="outline" className="text-red-600">Required</Badge>
                         )}
@@ -780,6 +783,9 @@ export default function Attributes() {
                       <div className="flex flex-wrap gap-2">
                         {attributeSet.is_default && (
                           <Badge className="bg-green-100 text-green-700">Default</Badge>
+                        )}
+                        {attributeSet.demo && (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">Demo</Badge>
                         )}
                         <Badge variant="outline">
                           {attributeSet.attribute_ids?.length || 0} attributes

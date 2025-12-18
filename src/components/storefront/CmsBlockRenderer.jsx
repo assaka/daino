@@ -266,9 +266,15 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
         return (
           <div
             key={block.id}
-            className="cms-block"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
+            className="cms-block relative"
+          >
+            {block.demo && (
+              <div className="absolute top-2 right-2 z-10 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300 rounded-md opacity-75">
+                Demo Content
+              </div>
+            )}
+            <div dangerouslySetInnerHTML={{ __html: content }} />
+          </div>
         );
       })}
     </div>

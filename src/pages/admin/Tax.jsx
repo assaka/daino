@@ -357,11 +357,18 @@ export default function TaxPage() {
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          {tax.is_default && (
-                            <Badge className="bg-green-100 text-green-700">
-                              Default
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {tax.is_default && (
+                              <Badge className="bg-green-100 text-green-700">
+                                Default
+                              </Badge>
+                            )}
+                            {tax.demo && (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                                Demo
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-2">

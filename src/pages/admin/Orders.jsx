@@ -633,9 +633,16 @@ export default function Orders() {
                                   {safeFormatPrice(order.total_amount)}
                                 </TableCell>
                                 <TableCell>
-                                  <Badge className={getStatusBadge(order.status)}>
-                                    {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge className={getStatusBadge(order.status)}>
+                                      {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
+                                    </Badge>
+                                    {order.demo && (
+                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                                        Demo
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell onClick={(e) => e.stopPropagation()}>
                                   <DropdownMenu>

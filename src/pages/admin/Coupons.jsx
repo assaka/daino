@@ -336,7 +336,12 @@ export default function CouponsPage() {
                     <Badge variant={coupon.is_active ? "default" : "secondary"}>
                       {coupon.is_active ? "Active" : "Inactive"}
                     </Badge>
-                    
+                    {coupon.demo && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                        Demo
+                      </Badge>
+                    )}
+
                     {isExpired(coupon) && (
                       <Badge variant="destructive">Expired</Badge>
                     )}

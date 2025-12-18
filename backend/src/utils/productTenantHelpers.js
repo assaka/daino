@@ -166,14 +166,8 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
   }
 
   // Sync attributes to product_attribute_values table for storefront filtering
-  console.log('📊 [updateProduct] Received attributes:', attributes);
-  console.log('📊 [updateProduct] Attributes type:', typeof attributes, 'Keys:', attributes ? Object.keys(attributes) : 'null');
   if (attributes && typeof attributes === 'object' && Object.keys(attributes).length > 0) {
-    console.log('📊 [updateProduct] Syncing attributes to product_attribute_values...');
     await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
-    console.log('📊 [updateProduct] Attributes synced successfully');
-  } else {
-    console.log('📊 [updateProduct] No attributes to sync (empty or not an object)');
   }
 
   // Sync images to product_files table
@@ -346,35 +340,19 @@ async function syncProductTranslations(tenantDb, productId, translations, locale
  */
 async function syncProductAttributeValues(tenantDb, storeId, productId, attributes) {
   try {
-    console.log(`📊 [syncProductAttributeValues] Starting sync for product ${productId}`);
-    console.log(`📊 [syncProductAttributeValues] Received attributes:`, JSON.stringify(attributes, null, 2));
-    console.log(`📊 [syncProductAttributeValues] Attribute keys:`, Object.keys(attributes));
-
     // Delete existing attribute values for this product
-    const { error: deleteError } = await tenantDb
+    await tenantDb
       .from('product_attribute_values')
       .delete()
       .eq('product_id', productId);
 
-    if (deleteError) {
-      console.error('📊 [syncProductAttributeValues] Error deleting existing values:', deleteError);
-    } else {
-      console.log('📊 [syncProductAttributeValues] Deleted existing attribute values');
-    }
-
     // Get all attributes for this store to map codes to IDs
-    const { data: storeAttributes, error: attrError } = await tenantDb
+    const { data: storeAttributes } = await tenantDb
       .from('attributes')
       .select('id, code, type')
       .eq('store_id', storeId);
 
-    console.log(`📊 [syncProductAttributeValues] Found ${storeAttributes?.length || 0} store attributes`);
-    if (storeAttributes) {
-      console.log(`📊 [syncProductAttributeValues] Store attribute codes:`, storeAttributes.map(a => a.code));
-    }
-
     if (!storeAttributes || storeAttributes.length === 0) {
-      console.log('📊 [syncProductAttributeValues] No store attributes found, returning early');
       return;
     }
 
@@ -397,18 +375,10 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
     const insertRecords = [];
 
     for (const [attrCode, rawValue] of Object.entries(attributes)) {
-      if (rawValue === null || rawValue === undefined || rawValue === '') {
-        console.log(`📊 [syncProductAttributeValues] Skipping ${attrCode}: empty value`);
-        continue;
-      }
+      if (rawValue === null || rawValue === undefined || rawValue === '') continue;
 
       const attrInfo = attrCodeToId.get(attrCode);
-      if (!attrInfo) {
-        console.log(`📊 [syncProductAttributeValues] Skipping ${attrCode}: not found in store attributes`);
-        continue; // Skip unknown attributes
-      }
-
-      console.log(`📊 [syncProductAttributeValues] Processing ${attrCode} (type: ${attrInfo.type}): value =`, rawValue);
+      if (!attrInfo) continue; // Skip unknown attributes
 
       const record = {
         product_id: productId,
@@ -460,23 +430,13 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
     }
 
     // Insert new attribute values
-    console.log(`📊 [syncProductAttributeValues] Built ${insertRecords.length} records to insert`);
     if (insertRecords.length > 0) {
-      console.log(`📊 [syncProductAttributeValues] Insert records:`, JSON.stringify(insertRecords, null, 2));
-      const { error: insertError } = await tenantDb
+      await tenantDb
         .from('product_attribute_values')
         .insert(insertRecords);
-
-      if (insertError) {
-        console.error('📊 [syncProductAttributeValues] Insert error:', insertError);
-      } else {
-        console.log(`📊 [syncProductAttributeValues] Successfully inserted ${insertRecords.length} attribute values`);
-      }
-    } else {
-      console.log('📊 [syncProductAttributeValues] No records to insert (all attribute codes unmatched or values empty)');
     }
   } catch (err) {
-    console.error('📊 [syncProductAttributeValues] Error:', err);
+    console.error('Error in syncProductAttributeValues:', err);
   }
 }
 

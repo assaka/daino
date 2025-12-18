@@ -480,13 +480,20 @@ export default function Customers() {
                                             <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
                                             <td className="py-3 px-4">{customer.email}</td>
                                             <td className="py-3 px-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    isGuest
-                                                        ? 'bg-gray-100 text-gray-700'
-                                                        : 'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                    {isGuest ? 'Guest' : 'Registered'}
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        isGuest
+                                                            ? 'bg-gray-100 text-gray-700'
+                                                            : 'bg-blue-100 text-blue-700'
+                                                    }`}>
+                                                        {isGuest ? 'Guest' : 'Registered'}
+                                                    </span>
+                                                    {customer.demo && (
+                                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-300">
+                                                            Demo
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="py-3 px-4">
                                                 {customer.is_blacklisted ? (

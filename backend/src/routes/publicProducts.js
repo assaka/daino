@@ -472,56 +472,37 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     // Load product attributes - skip if fails to not break product page
     productData.attributes = [];
     try {
-      console.log(`📊 [ProductDetail] Loading attributes for product ${product.id}`);
       const { data: pavs, error: pavError } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .eq('product_id', product.id);
 
-      console.log(`📊 [ProductDetail] Found ${pavs?.length || 0} product_attribute_values`);
-      if (pavError) {
-        console.error(`📊 [ProductDetail] Error loading pavs:`, pavError);
-      }
-
-      if (pavs && pavs.length > 0) {
+      if (pavs && pavs.length > 0 && !pavError) {
         const attributeIds = [...new Set(pavs.map(pav => pav.attribute_id))];
         const attributeValueIds = [...new Set(pavs.filter(pav => pav.value_id).map(pav => pav.value_id))];
 
-        console.log(`📊 [Storefront] Looking up ${attributeIds.length} attribute IDs, ${attributeValueIds.length} value IDs`);
-
-        // Fetch attributes with proper error handling
         let attributesData = [];
         let attributeValuesListData = [];
         let attributeTranslations = [];
         let valueTranslations = [];
 
         if (attributeIds.length > 0) {
-          const { data: attrs, error: attrsErr } = await tenantDb
+          const { data: attrs } = await tenantDb
             .from('attributes')
             .select('id, code, type')
             .in('id', attributeIds);
-          if (attrsErr) {
-            console.error('📊 [Storefront] Error fetching attributes:', attrsErr);
-          } else {
-            attributesData = attrs || [];
-          }
+          attributesData = attrs || [];
           attributeTranslations = await getAttributesWithTranslations(tenantDb, { id: attributeIds }) || [];
         }
 
         if (attributeValueIds.length > 0) {
-          const { data: vals, error: valsErr } = await tenantDb
+          const { data: vals } = await tenantDb
             .from('attribute_values')
             .select('id, code, metadata')
             .in('id', attributeValueIds);
-          if (valsErr) {
-            console.error('📊 [Storefront] Error fetching attribute_values:', valsErr);
-          } else {
-            attributeValuesListData = vals || [];
-          }
+          attributeValuesListData = vals || [];
           valueTranslations = await getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) || [];
         }
-
-        console.log(`📊 [Storefront] Found ${attributesData.length} attributes, ${attributeValuesListData.length} attribute values`);
 
         const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
         const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
@@ -551,12 +532,9 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
 
           return { id: attr.id, code: attr.code, label: attrLabel, value: valueLabel, rawValue: value, type: attr.type, metadata };
         }).filter(Boolean);
-        console.log(`📊 [Storefront] Built ${productData.attributes.length} attributes:`, productData.attributes.map(a => `${a.code}=${a.value}`).join(', '));
-      } else {
-        console.log(`📊 [Storefront] No product_attribute_values found for product ${product.id}`);
       }
     } catch (attrErr) {
-      console.error('📊 [Storefront] Error loading product attributes:', attrErr);
+      console.error('Error loading product attributes:', attrErr);
     }
 
     // 2. Load product tabs

@@ -386,6 +386,11 @@ export default function ProductTabs() {
                       onCheckedChange={() => handleToggleStatus(tab)}
                     />
                     <span className="text-sm font-medium">Active</span>
+                    {tab.demo && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                        Demo
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm" onClick={() => handleEdit(tab)}>

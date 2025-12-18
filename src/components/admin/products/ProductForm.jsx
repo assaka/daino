@@ -761,16 +761,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         payload.id = product.id;
       }
 
-      // Debug: Log what we're sending
-      console.log('🔍 ProductForm: Submitting payload:', {
-        name: payload.name,
-        translations: payload.translations,
-        formData_translations: formData.translations,
-        attributes: payload.attributes,
-        attributeKeys: Object.keys(payload.attributes || {})
-      });
-      console.log('📊 [Frontend] Full attributes being sent:', JSON.stringify(payload.attributes, null, 2));
-
       // Always create redirect if URL key changed (essential for SEO)
       if (product && originalUrlKey && formData.seo.url_key !== originalUrlKey) {
         await createRedirectForSlugChange();

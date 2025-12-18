@@ -264,6 +264,11 @@ export default function CmsPages() {
                         System
                       </Badge>
                     )}
+                    {page.demo && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                        Demo
+                      </Badge>
+                    )}
                     <Badge variant={page.is_active ? "default" : "secondary"}>
                       {page.is_active ? "Active" : "Inactive"}
                     </Badge>

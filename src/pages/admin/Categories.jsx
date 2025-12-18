@@ -716,6 +716,9 @@ export default function Categories() {
                   >
                     {category.is_active ? "Active" : "Inactive"}
                   </Badge>
+                  {category.demo && (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-amber-50 text-amber-700 border-amber-300">Demo</Badge>
+                  )}
                   {category.hide_in_menu && (
                     <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5">Hidden</Badge>
                   )}
@@ -1414,6 +1417,11 @@ export default function Categories() {
                       <Badge variant={category.is_active ? "default" : "secondary"}>
                         {category.is_active ? "Active" : "Inactive"}
                       </Badge>
+                      {category.demo && (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                          Demo
+                        </Badge>
+                      )}
                       {category.hide_in_menu && (
                         <Badge variant="outline">Hidden from Menu</Badge>
                       )}

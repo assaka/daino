@@ -148,56 +148,33 @@ router.get('/:id', authAdmin, async (req, res) => {
     // Load attributes from product_attribute_values table
     const productWithAttributes = productsWithTranslations[0];
     try {
-      console.log(`📊 [Admin GET] Loading attributes for product ${product.id}`);
       const { data: pavs, error: pavError } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .eq('product_id', product.id);
 
-      console.log(`📊 [Admin GET] Found ${pavs?.length || 0} product_attribute_values records`);
-      if (pavError) {
-        console.error(`📊 [Admin GET] Error querying product_attribute_values:`, pavError);
-      }
-      if (pavs && pavs.length > 0) {
-        console.log(`📊 [Admin GET] Raw PAV records:`, JSON.stringify(pavs, null, 2));
-      }
-
-      if (pavs && pavs.length > 0) {
+      if (pavs && pavs.length > 0 && !pavError) {
         const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
         const valueIds = pavs.filter(p => p.value_id).map(p => p.value_id);
 
-        console.log(`📊 [Admin GET] Looking up ${attributeIds.length} attribute IDs:`, attributeIds);
-        console.log(`📊 [Admin GET] Looking up ${valueIds.length} value IDs:`, valueIds);
-
-        // Fetch attributes and attribute_values with proper error handling
         let attrsData = [];
         let valsData = [];
 
         if (attributeIds.length > 0) {
-          const { data: attrs, error: attrsErr } = await tenantDb
+          const { data: attrs } = await tenantDb
             .from('attributes')
             .select('id, code, type')
             .in('id', attributeIds);
-          if (attrsErr) {
-            console.error('📊 [Admin GET] Error fetching attributes:', attrsErr);
-          } else {
-            attrsData = attrs || [];
-          }
+          attrsData = attrs || [];
         }
 
         if (valueIds.length > 0) {
-          const { data: vals, error: valsErr } = await tenantDb
+          const { data: vals } = await tenantDb
             .from('attribute_values')
             .select('id, code')
             .in('id', valueIds);
-          if (valsErr) {
-            console.error('📊 [Admin GET] Error fetching attribute_values:', valsErr);
-          } else {
-            valsData = vals || [];
-          }
+          valsData = vals || [];
         }
-
-        console.log(`📊 [Admin GET] Found ${attrsData.length} attributes, ${valsData.length} attribute values`);
 
         const attrMap = new Map((attrsData || []).map(a => [a.id, a]));
         const valMap = new Map((valsData || []).map(v => [v.id, v.code]));
@@ -219,13 +196,11 @@ router.get('/:id', authAdmin, async (req, res) => {
             productWithAttributes.attributes[attr.code] = value;
           }
         }
-        console.log(`📊 [Admin GET] Built attributes object:`, JSON.stringify(productWithAttributes.attributes));
       } else {
         productWithAttributes.attributes = {};
-        console.log(`📊 [Admin] No attribute values found, returning empty object`);
       }
     } catch (attrErr) {
-      console.error('📊 [Admin] Error loading product attributes:', attrErr);
+      console.error('Error loading product attributes:', attrErr);
       productWithAttributes.attributes = {};
     }
 
@@ -403,8 +378,6 @@ router.put('/:id',
     body('price').optional().isDecimal().withMessage('Price must be a valid decimal')
   ],
   async (req, res) => {
-  console.log('📊 [Admin PUT] Route hit for product:', req.params.id);
-  console.log('📊 [Admin PUT] Request body keys:', Object.keys(req.body));
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -449,9 +422,6 @@ router.put('/:id',
 
     // Extract translations from request body
     const { translations, ...productData } = req.body;
-
-    console.log('📊 [Admin PUT] Received attributes in request:', productData.attributes);
-    console.log('📊 [Admin PUT] productData keys:', Object.keys(productData));
 
     // Update product data (excluding translations)
     const updatedProduct = await updateProduct(store_id, req.params.id, productData);
