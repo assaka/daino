@@ -38,18 +38,11 @@ const masterEmailHeader = (options = {}) => {
     <!-- Email Header - Clean white background -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 20px 20px 5px; text-align: center;">
-          ${logoUrl ? `
-          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto;" />
-          ` : `
-          <table role="presentation" style="margin: 0 auto;">
-            <tr>
-              <td style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
-                ${PLATFORM_NAME}
-              </td>
-            </tr>
-          </table>
-          `}
+        <td style="padding: 5px; text-align: center;">
+          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto;" /><br/>
+          <h1 style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
+            DainoStore
+          </h1>
         </td>
       </tr>
     </table>
