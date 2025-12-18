@@ -647,8 +647,8 @@ export default function StoreOnboarding() {
                   To complete the setup, we need your Supabase Service Role Key.
                 </p>
                 <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
-                  <li>Go to your Supabase Dashboard → Settings → API</li>
-                  <li>Find the "service_role" key under "Project API keys"</li>
+                  <li>Go to your Supabase Dashboard → Project Settings → API Keys</li>
+                  <li>Find the "service_role" key under "Legacy anon, service_role API keys"</li>
                   <li>Copy the service_role key (starts with "eyJh...")</li>
                   <li>Paste it in the field below</li>
                 </ol>
