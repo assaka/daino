@@ -395,10 +395,30 @@ export default function HeatmapVisualization({
     }
   };
 
-  // Filter URLs based on search query
-  const filteredUrls = urlsWithEvents.filter(item =>
-    item.url.toLowerCase().includes(urlSearchQuery.toLowerCase())
-  );
+  // Helper function to convert full URL to relative path
+  const toRelativeUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname + urlObj.search + urlObj.hash;
+    } catch {
+      // If it's already a relative URL or invalid, return as-is
+      return url;
+    }
+  };
+
+  // Filter URLs based on search query (exclude admin URLs)
+  const filteredUrls = urlsWithEvents
+    .filter(item => {
+      const relativeUrl = toRelativeUrl(item.url);
+      // Exclude admin URLs
+      if (relativeUrl.includes('/admin')) return false;
+      // Match search query
+      return relativeUrl.toLowerCase().includes(urlSearchQuery.toLowerCase());
+    })
+    .map(item => ({
+      ...item,
+      displayUrl: toRelativeUrl(item.url)
+    }));
 
   const loadHeatmapData = async () => {
     if (!storeId || !pageUrl) return;
@@ -696,7 +716,7 @@ export default function HeatmapVisualization({
               </div>
               {/* URL Search Dropdown */}
               {showUrlDropdown && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto min-w-[500px]">
                   {loadingUrls ? (
                     <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -718,8 +738,8 @@ export default function HeatmapVisualization({
                           }}
                           className="w-full px-4 py-2 text-left hover:bg-blue-50 flex items-center justify-between group"
                         >
-                          <span className="text-sm text-gray-700 truncate flex-1 mr-2">
-                            {item.url}
+                          <span className="text-sm text-gray-700 truncate flex-1 mr-2" title={item.displayUrl}>
+                            {item.displayUrl}
                           </span>
                           <Badge variant="secondary" className="text-xs shrink-0">
                             {item.count.toLocaleString()} events
