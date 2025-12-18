@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { RefreshCw, ArrowDown, Users, Search, X } from 'lucide-react';
 import apiClient from '@/api/client';
 
-export default function ScrollDepthMap({ storeId, pageUrl: initialPageUrl, dateRange }) {
+export default function ScrollDepthMap({ storeId, pageUrl: initialPageUrl, dateRange, onPageUrlChange }) {
   const [scrollData, setScrollData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,6 +24,13 @@ export default function ScrollDepthMap({ storeId, pageUrl: initialPageUrl, dateR
       loadScrollData();
     }
   }, [storeId, pageUrl, dateRange]);
+
+  // Notify parent when pageUrl changes
+  useEffect(() => {
+    if (onPageUrlChange) {
+      onPageUrlChange(pageUrl);
+    }
+  }, [pageUrl, onPageUrlChange]);
 
   // Load URLs with events when store changes
   useEffect(() => {

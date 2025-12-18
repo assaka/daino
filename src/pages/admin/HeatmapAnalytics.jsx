@@ -18,6 +18,7 @@ import {
 import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import ScrollDepthMap from '@/components/admin/heatmap/ScrollDepthMap';
+import ScrollDepthOverlay from '@/components/admin/heatmap/ScrollDepthOverlay';
 import ElementClickRanking from '@/components/admin/heatmap/ElementClickRanking';
 import SessionList from '@/components/admin/heatmap/SessionList';
 import SessionReplay from '@/components/admin/heatmap/SessionReplay';
@@ -26,6 +27,7 @@ export default function HeatmapAnalytics() {
   const { selectedStore } = useStoreSelection();
   const [loading, setLoading] = useState(false);
   const [selectedPageUrl, setSelectedPageUrl] = useState('');
+  const [scrollPageUrl, setScrollPageUrl] = useState('');
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState('7d');
   const [selectedSession, setSelectedSession] = useState(null);
@@ -161,7 +163,17 @@ export default function HeatmapAnalytics() {
                 <ScrollDepthMap
                   storeId={selectedStore.id}
                   dateRange={dateRange}
+                  onPageUrlChange={setScrollPageUrl}
                 />
+
+                {/* Scroll Depth Overlay with screenshot - shows when URL is selected */}
+                {scrollPageUrl && (
+                  <ScrollDepthOverlay
+                    storeId={selectedStore.id}
+                    pageUrl={scrollPageUrl}
+                    dateRange={dateRange}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="sessions">
