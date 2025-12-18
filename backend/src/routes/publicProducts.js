@@ -522,9 +522,12 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
 
           return { id: attr.id, code: attr.code, label: attrLabel, value: valueLabel, rawValue: value, type: attr.type, metadata };
         }).filter(Boolean);
+        console.log(`📊 [Storefront] Built ${productData.attributes.length} attributes:`, productData.attributes.map(a => `${a.code}=${a.value}`).join(', '));
+      } else {
+        console.log(`📊 [Storefront] No product_attribute_values found for product ${product.id}`);
       }
     } catch (attrErr) {
-      console.error('Error loading product attributes:', attrErr);
+      console.error('📊 [Storefront] Error loading product attributes:', attrErr);
     }
 
     // 2. Load product tabs

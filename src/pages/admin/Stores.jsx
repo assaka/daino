@@ -503,20 +503,18 @@ export default function Stores() {
                       <Settings className="w-4 h-4 mr-1" />
                       Manage
                     </Button>
-                    {(store.status === 'active' || !store.published) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setStoreForTheme(store);
-                          setSelectedPreset(store.theme_preset || 'default');
-                          setShowThemeModal(true);
-                        }}
-                        title="Change theme preset"
-                      >
-                        <Palette className="w-4 h-4" />
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setStoreForTheme(store);
+                        setSelectedPreset(store.theme_preset || 'default');
+                        setShowThemeModal(true);
+                      }}
+                      title="Change theme preset"
+                    >
+                      <Palette className="w-4 h-4" />
+                    </Button>
                     {/* Provision Demo Data Button - for active, paused stores */}
                     {store.status === 'active' && !store.published && (
                       <Button

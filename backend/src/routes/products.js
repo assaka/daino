@@ -148,10 +148,13 @@ router.get('/:id', authAdmin, async (req, res) => {
     // Load attributes from product_attribute_values table
     const productWithAttributes = productsWithTranslations[0];
     try {
-      const { data: pavs } = await tenantDb
+      console.log(`📊 [Admin] Loading attributes for product ${product.id}`);
+      const { data: pavs, error: pavError } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .eq('product_id', product.id);
+
+      console.log(`📊 [Admin] Found ${pavs?.length || 0} product_attribute_values records`, pavError ? `Error: ${pavError.message}` : '');
 
       if (pavs && pavs.length > 0) {
         const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
@@ -182,11 +185,13 @@ router.get('/:id', authAdmin, async (req, res) => {
             productWithAttributes.attributes[attr.code] = value;
           }
         }
+        console.log(`📊 [Admin] Built attributes object:`, productWithAttributes.attributes);
       } else {
         productWithAttributes.attributes = {};
+        console.log(`📊 [Admin] No attribute values found, returning empty object`);
       }
     } catch (attrErr) {
-      console.error('Error loading product attributes:', attrErr);
+      console.error('📊 [Admin] Error loading product attributes:', attrErr);
       productWithAttributes.attributes = {};
     }
 
