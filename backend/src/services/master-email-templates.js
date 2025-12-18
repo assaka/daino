@@ -201,9 +201,9 @@ const masterEmailBase = (content, options = {}) => {
   <!-- Email wrapper -->
   <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: ${backgroundColor};">
     <tr>
-      <td align="center" style="padding: 32px 16px;">
+      <td align="center" style="padding: 5px">
         <!-- Email container -->
-        <table role="presentation" class="email-container" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden;">
+        <table role="presentation" class="email-container" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td>
               ${content}
