@@ -521,11 +521,13 @@ export default function StoreOnboarding() {
                 <p className="text-sm text-gray-500 mb-3">
                   Select a color theme for your store. You can customize it later.
                 </p>
-                <ThemePresetSelector
-                  value={selectedThemePreset}
-                  onChange={setSelectedThemePreset}
-                  variant="cards"
-                />
+                <div className="overflow-hidden">
+                  <ThemePresetSelector
+                    value={selectedThemePreset}
+                    onChange={setSelectedThemePreset}
+                    variant="cards"
+                  />
+                </div>
               </div>
 
               {/* Demo Data Provisioning */}

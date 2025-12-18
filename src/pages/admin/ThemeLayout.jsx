@@ -3282,11 +3282,13 @@ export default function ThemeLayout() {
                             </p>
                         </div>
 
-                        <ThemePresetSelector
-                            value={selectedPresetInModal}
-                            onChange={setSelectedPresetInModal}
-                            variant="cards"
-                        />
+                        <div className="overflow-hidden">
+                            <ThemePresetSelector
+                                value={selectedPresetInModal}
+                                onChange={setSelectedPresetInModal}
+                                variant="cards"
+                            />
+                        </div>
 
                         <DialogFooter className="flex justify-end gap-2 pt-4 border-t">
                             <Button

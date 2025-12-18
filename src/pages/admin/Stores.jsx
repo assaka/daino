@@ -790,11 +790,13 @@ export default function Stores() {
               </p>
             </div>
 
-            <ThemePresetSelector
-              value={selectedPreset}
-              onChange={setSelectedPreset}
-              variant="cards"
-            />
+            <div className="overflow-hidden">
+              <ThemePresetSelector
+                value={selectedPreset}
+                onChange={setSelectedPreset}
+                variant="cards"
+              />
+            </div>
 
             <div className="flex justify-between items-center pt-4 border-t">
               <Button
