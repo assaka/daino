@@ -5,6 +5,7 @@ const StorageManager = require('./storage-manager');
 const ConnectionManager = require('./database/ConnectionManager');
 const AttributeMappingService = require('./AttributeMappingService');
 const CategoryMappingService = require('./CategoryMappingService');
+const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
 const axios = require('axios');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -610,6 +611,16 @@ class ShopifyImportService {
         if (error) throw error;
         savedProduct = data;
         console.log(`Created product: ${product.title}`);
+      }
+
+      // Sync attributes to product_attribute_values table for storefront display
+      if (processedAttributes && Object.keys(processedAttributes).length > 0) {
+        try {
+          await syncProductAttributeValues(tenantDb, this.storeId, savedProduct.id, processedAttributes);
+          console.log(`✅ Synced ${Object.keys(processedAttributes).length} attributes for product: ${product.title}`);
+        } catch (attrError) {
+          console.warn(`⚠️ Failed to sync attributes for product ${savedProduct.id}:`, attrError.message);
+        }
       }
 
       // Ensure 'en' language exists before saving translations
