@@ -750,12 +750,9 @@ class DemoDataProvisioningService {
    * Create demo product tabs
    */
   async createDemoProductTabs() {
-    // Get all attribute set IDs for Specifications tab
-    const attributeSetIds = this.createdIds.attributeSets.map(as => as.id);
-
     const tabs = [
       { name: 'Description', slug: 'description', tab_type: 'description', sort_order: 0 },
-      { name: 'Specifications', slug: 'specifications', tab_type: 'attribute_sets', sort_order: 1, attribute_set_ids: attributeSetIds },
+      { name: 'Specifications', slug: 'specifications', tab_type: 'attribute_set', sort_order: 1 },
       { name: 'Reviews', slug: 'reviews', tab_type: 'text', content: '<p>Customer reviews will appear here.</p>', sort_order: 2 }
     ];
 
@@ -1673,7 +1670,7 @@ class DemoDataProvisioningService {
         placement: ['cart_below_items'],
         content: `
           <div class="flex items-center justify-center py-6 mt-4">
-            <a href="/products" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg">
+            <a href="/products" class="inline-flex items-center gap-2 px-6 py-3 text-white font-medium rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg" style="background-color: var(--theme-primary-button)">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
               Continue Shopping
             </a>
@@ -1685,14 +1682,17 @@ class DemoDataProvisioningService {
         title: 'Cart Coupon Reminder',
         placement: ['cart_above_total'],
         content: `
-          <div class="bg-violet-600 rounded-xl p-4 mb-4">
+          <div class="rounded-xl p-4 mb-4 shadow-md border-l-4 border-white/30" style="background-color: var(--theme-secondary-button)">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+              <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 shadow-inner">
                 <span class="text-xl">🎟️</span>
               </div>
               <div>
-                <p class="font-medium text-white">Have a promo code?</p>
-                <p class="text-sm text-white/80">Enter it at checkout to unlock savings!</p>
+                <p class="font-semibold text-white tracking-wide">Have a promo code?</p>
+                <p class="text-sm text-white/90">Enter it at checkout to unlock savings!</p>
+              </div>
+              <div class="ml-auto">
+                <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
               </div>
             </div>
           </div>
@@ -1703,20 +1703,23 @@ class DemoDataProvisioningService {
         title: 'Cart Payment Methods',
         placement: ['cart_below_total'],
         content: `
-          <div class="bg-slate-700 rounded-xl py-4 px-6 mt-4">
-            <p class="text-xs text-white/70 text-center mb-3">Secure payment methods</p>
+          <div class="rounded-xl py-4 px-6 mt-4 shadow-lg" style="background-color: var(--theme-checkout-button)">
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <svg class="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+              <p class="text-xs text-white/90 font-medium uppercase tracking-wider">Secure payment methods</p>
+            </div>
             <div class="flex items-center justify-center gap-3">
-              <div class="w-12 h-8 bg-white/10 rounded flex items-center justify-center">
-                <span class="text-xs font-bold text-white">VISA</span>
+              <div class="w-12 h-8 bg-white rounded shadow-sm flex items-center justify-center transform hover:scale-105 transition-transform">
+                <span class="text-xs font-bold text-blue-600">VISA</span>
               </div>
-              <div class="w-12 h-8 bg-white/10 rounded flex items-center justify-center">
-                <span class="text-xs font-bold text-white">MC</span>
+              <div class="w-12 h-8 bg-white rounded shadow-sm flex items-center justify-center transform hover:scale-105 transition-transform">
+                <span class="text-xs font-bold text-orange-500">MC</span>
               </div>
-              <div class="w-12 h-8 bg-white/10 rounded flex items-center justify-center">
-                <span class="text-xs font-bold text-blue-300">Pay</span>
+              <div class="w-12 h-8 bg-white rounded shadow-sm flex items-center justify-center transform hover:scale-105 transition-transform">
+                <span class="text-xs font-bold text-blue-500">Pay</span>
               </div>
-              <div class="w-12 h-8 bg-white/10 rounded flex items-center justify-center">
-                <span class="text-xs font-bold text-white">AMEX</span>
+              <div class="w-12 h-8 bg-white rounded shadow-sm flex items-center justify-center transform hover:scale-105 transition-transform">
+                <span class="text-xs font-bold text-blue-700">AMEX</span>
               </div>
             </div>
           </div>
@@ -1727,25 +1730,27 @@ class DemoDataProvisioningService {
         title: 'Cart Trust Badges',
         placement: ['cart_below'],
         content: `
-          <div class="bg-slate-700 rounded-xl p-6 mt-6">
-            <div class="flex flex-col md:flex-row items-center justify-center gap-6 text-sm">
-              <div class="flex items-center gap-2 text-white">
-                <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+          <div class="rounded-2xl p-6 mt-6 shadow-lg border border-white/10" style="background-color: var(--theme-primary-button)">
+            <div class="flex flex-col md:flex-row items-center justify-center gap-8 text-sm">
+              <div class="flex flex-col items-center gap-2 text-white group">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-inner transform group-hover:scale-110 transition-transform">
+                  <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
                 </div>
-                <span>Secure Checkout</span>
+                <span class="font-medium">Secure Checkout</span>
               </div>
-              <div class="flex items-center gap-2 text-white">
-                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" clip-rule="evenodd"></path></svg>
+              <div class="hidden md:block w-px h-12 bg-white/20"></div>
+              <div class="flex flex-col items-center gap-2 text-white group">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-inner transform group-hover:scale-110 transition-transform">
+                  <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path></svg>
                 </div>
-                <span>30-Day Returns</span>
+                <span class="font-medium">30-Day Returns</span>
               </div>
-              <div class="flex items-center gap-2 text-white">
-                <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+              <div class="hidden md:block w-px h-12 bg-white/20"></div>
+              <div class="flex flex-col items-center gap-2 text-white group">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-inner transform group-hover:scale-110 transition-transform">
+                  <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
                 </div>
-                <span>24/7 Support</span>
+                <span class="font-medium">24/7 Support</span>
               </div>
             </div>
           </div>
