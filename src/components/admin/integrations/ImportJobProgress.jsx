@@ -324,7 +324,7 @@ const ImportJobProgress = ({
           <div className="text-sm bg-green-50 p-2 rounded">
             {job.result.stats && (
               <div className="flex gap-4">
-                <span>Imported: <strong className="text-green-600">{job.result.stats.imported || 0}</strong></span>
+                <span>{job.type === 'integration:create:categories' ? 'Created' : 'Imported'}: <strong className="text-green-600">{job.result.stats.imported || job.result.stats.created || 0}</strong></span>
                 <span>Skipped: <strong className="text-yellow-600">{job.result.stats.skipped || 0}</strong></span>
                 <span>Failed: <strong className="text-red-600">{job.result.stats.failed || 0}</strong></span>
               </div>
@@ -336,7 +336,7 @@ const ImportJobProgress = ({
         {job.status === JOB_STATUS.CANCELLED && job.result?.stats && (
           <div className="text-sm bg-gray-50 p-2 rounded">
             <div className="flex gap-4">
-              <span>Imported before cancel: <strong className="text-blue-600">{job.result.stats.imported || 0}</strong></span>
+              <span>{job.type === 'integration:create:categories' ? 'Created' : 'Imported'} before cancel: <strong className="text-blue-600">{job.result.stats.imported || job.result.stats.created || 0}</strong></span>
               {job.result.stats.total > 0 && (
                 <span>of <strong>{job.result.stats.total}</strong> total</span>
               )}
