@@ -865,11 +865,23 @@ export default function HeatmapVisualization({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Heatmap Visualization</h3>
-              <p className="text-sm text-gray-600">
-                {pageUrl || 'Enter a page URL to see customer interactions'}
-              </p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h3 className="text-lg font-semibold">Heatmap Visualization</h3>
+                <p className="text-sm text-gray-600">
+                  {pageUrl || 'Enter a page URL to see customer interactions'}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={loadHeatmapData}
+                disabled={loading || !pageUrl}
+                title="Reload heatmap data"
+                className="h-8 w-8"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
             {heatmapData.length > 0 && (
               <div className="text-right">
