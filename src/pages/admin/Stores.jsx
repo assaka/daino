@@ -473,25 +473,27 @@ export default function Stores() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const storeCode = store.slug || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                        if (store.published) {
-                          // Store is running - open directly without version param
-                          const baseUrl = getStoreBaseUrl(store);
-                          const storeUrl = getExternalStoreUrl(storeCode, '', baseUrl);
-                          window.open(storeUrl, '_blank');
-                        } else {
-                          // Store is paused - add version=published to bypass pause modal
-                          window.open(`/public/${storeCode}?version=published`, '_blank');
-                        }
-                      }}
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      View
-                    </Button>
+                    {store.status !== 'pending_database' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const storeCode = store.slug || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                          if (store.published) {
+                            // Store is running - open directly without version param
+                            const baseUrl = getStoreBaseUrl(store);
+                            const storeUrl = getExternalStoreUrl(storeCode, '', baseUrl);
+                            window.open(storeUrl, '_blank');
+                          } else {
+                            // Store is paused - add version=published to bypass pause modal
+                            window.open(`/public/${storeCode}?version=published`, '_blank');
+                          }
+                        }}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={() => {
@@ -503,18 +505,20 @@ export default function Stores() {
                       <Settings className="w-4 h-4 mr-1" />
                       Manage
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setStoreForTheme(store);
-                        setSelectedPreset(store.theme_preset || 'default');
-                        setShowThemeModal(true);
-                      }}
-                      title="Change theme preset"
-                    >
-                      <Palette className="w-4 h-4" />
-                    </Button>
+                    {store.status !== 'pending_database' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setStoreForTheme(store);
+                          setSelectedPreset(store.theme_preset || 'default');
+                          setShowThemeModal(true);
+                        }}
+                        title="Change theme preset"
+                      >
+                        <Palette className="w-4 h-4" />
+                      </Button>
+                    )}
                     {/* Provision Demo Data Button - for active, paused stores */}
                     {store.status === 'active' && !store.published && (
                       <Button
