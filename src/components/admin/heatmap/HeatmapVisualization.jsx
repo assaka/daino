@@ -7,18 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Eye, 
-  MousePointer, 
-  Scroll, 
-  Smartphone, 
-  Monitor, 
+import {
+  Eye,
+  MousePointer,
+  Scroll,
+  Smartphone,
+  Monitor,
   Tablet,
   RefreshCw,
   Download,
   Zap,
   BarChart3,
-  Filter
+  Filter,
+  Search,
+  X
 } from 'lucide-react';
 
 class HeatmapRenderer {
@@ -287,6 +289,12 @@ export default function HeatmapVisualization({
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 1920, height: 1080 });
 
+  // URL Search
+  const [urlSearchQuery, setUrlSearchQuery] = useState('');
+  const [urlsWithEvents, setUrlsWithEvents] = useState([]);
+  const [loadingUrls, setLoadingUrls] = useState(false);
+  const [showUrlDropdown, setShowUrlDropdown] = useState(false);
+
   // Notify parent of state changes
   useEffect(() => {
     if (onPageUrlChange) {
@@ -350,6 +358,47 @@ export default function HeatmapVisualization({
       loadScreenshot();
     }
   }, [storeId, pageUrl, interactionType, deviceType, dateRange, viewportSize.width, viewportSize.height]);
+
+  // Load URLs with events when store changes
+  useEffect(() => {
+    if (storeId) {
+      loadUrlsWithEvents();
+    }
+  }, [storeId]);
+
+  const loadUrlsWithEvents = async () => {
+    if (!storeId) return;
+
+    setLoadingUrls(true);
+    try {
+      const response = await apiClient.get(`heatmap/summary/${storeId}?group_by=page_url`);
+      if (response.data && Array.isArray(response.data)) {
+        // Extract unique page URLs with their interaction counts
+        const urlMap = new Map();
+        response.data.forEach(item => {
+          const url = item.page_url;
+          if (url) {
+            const existing = urlMap.get(url) || { url, count: 0 };
+            existing.count += item.interaction_count || 0;
+            urlMap.set(url, existing);
+          }
+        });
+        // Sort by interaction count descending
+        const urls = Array.from(urlMap.values()).sort((a, b) => b.count - a.count);
+        setUrlsWithEvents(urls);
+      }
+    } catch (err) {
+      console.warn('Error loading URLs with events:', err);
+      setUrlsWithEvents([]);
+    } finally {
+      setLoadingUrls(false);
+    }
+  };
+
+  // Filter URLs based on search query
+  const filteredUrls = urlsWithEvents.filter(item =>
+    item.url.toLowerCase().includes(urlSearchQuery.toLowerCase())
+  );
 
   const loadHeatmapData = async () => {
     if (!storeId || !pageUrl) return;
@@ -613,15 +662,94 @@ export default function HeatmapVisualization({
         <CardContent className="space-y-4">
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
+            <div className="relative">
               <Label htmlFor="page-url">Page URL</Label>
-              <Input
-                id="page-url"
-                value={pageUrl}
-                onChange={(e) => setPageUrl(e.target.value)}
-                placeholder="Enter page URL to analyze"
-                className="w-full"
-              />
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search className="w-4 h-4" />
+                </div>
+                <Input
+                  id="page-url"
+                  value={pageUrl}
+                  onChange={(e) => {
+                    setPageUrl(e.target.value);
+                    setUrlSearchQuery(e.target.value);
+                    setShowUrlDropdown(true);
+                  }}
+                  onFocus={() => setShowUrlDropdown(true)}
+                  placeholder="Search or enter URL..."
+                  className="w-full pl-9 pr-8"
+                />
+                {pageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPageUrl('');
+                      setUrlSearchQuery('');
+                      setShowUrlDropdown(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {/* URL Search Dropdown */}
+              {showUrlDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  {loadingUrls ? (
+                    <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Loading URLs with events...
+                    </div>
+                  ) : filteredUrls.length > 0 ? (
+                    <>
+                      <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
+                        URLs with recorded events ({filteredUrls.length})
+                      </div>
+                      {filteredUrls.slice(0, 20).map((item, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setPageUrl(item.url);
+                            setUrlSearchQuery('');
+                            setShowUrlDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 flex items-center justify-between group"
+                        >
+                          <span className="text-sm text-gray-700 truncate flex-1 mr-2">
+                            {item.url}
+                          </span>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {item.count.toLocaleString()} events
+                          </Badge>
+                        </button>
+                      ))}
+                      {filteredUrls.length > 20 && (
+                        <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
+                          Showing 20 of {filteredUrls.length} URLs
+                        </div>
+                      )}
+                    </>
+                  ) : urlsWithEvents.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      No URLs with recorded events yet
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      No matching URLs found
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Click outside to close dropdown */}
+              {showUrlDropdown && (
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowUrlDropdown(false)}
+                />
+              )}
             </div>
 
             <div>
