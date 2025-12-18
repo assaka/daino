@@ -317,7 +317,7 @@ router.get('/store/:storeId', checkStoreOwnership, async (req, res) => {
     // Query job_queue in master database, filtered by store_id
     let query = masterDbClient
       .from('job_queue')
-      .select('id, job_type, priority, status, progress, progress_message, scheduled_at, started_at, completed_at, failed_at, cancelled_at, retry_count, max_retries, last_error, result, created_at, updated_at')
+      .select('id, job_type, payload, priority, status, progress, progress_message, scheduled_at, started_at, completed_at, failed_at, cancelled_at, retry_count, max_retries, last_error, result, created_at, updated_at')
       .eq('store_id', storeId)
       .order('created_at', { ascending: false })
       .limit(parseInt(limit));
