@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { AlertTriangle, Database, Trash2, Loader2 } from 'lucide-react';
+import { AlertTriangle, Database, Trash2, Loader2, Store as StoreIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,8 @@ export default function StoreHealthGuard({ children, pageName }) {
     selectedStore,
     loading,
     deleteStorePermanently,
+    availableStores,
+    selectStore,
   } = useStoreSelection();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -141,14 +144,45 @@ export default function StoreHealthGuard({ children, pageName }) {
               Delete Store from Platform
             </Button>
 
-            <Button
-              variant="ghost"
-              className="w-full"
-              onClick={() => window.location.href = '/admin/stores'}
-              disabled={isDeleting}
-            >
-              Switch to Another Store
-            </Button>
+            {availableStores.length > 1 && (
+              <div className="pt-2 border-t">
+                <p className="text-sm text-gray-500 mb-2">Switch to another store:</p>
+                <Select
+                  value={selectedStore?.id || ''}
+                  onValueChange={(storeId) => {
+                    const store = availableStores.find(s => s.id === storeId);
+                    if (store) {
+                      selectStore(store);
+                      window.location.reload();
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select store...">
+                      <div className="flex items-center gap-2">
+                        <StoreIcon className="w-4 h-4" />
+                        <span>{selectedStore?.name || 'Select store...'}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableStores.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            store.status === 'pending_database' ? 'bg-yellow-500' : 'bg-green-500'
+                          }`} />
+                          <span>{store.name}</span>
+                          {store.status === 'pending_database' && (
+                            <span className="text-xs text-yellow-600">(Pending DB)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
       </div>
