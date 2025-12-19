@@ -141,12 +141,13 @@ function cacheCategories(ttl = 600) {
     prefix: 'categories',
     ttl,
     keyGenerator: (req) => {
-      const storeId = req.query.store_id || req.headers['x-store-id'] || req.params.store_id || 'default';
-      const language = req.query.language || req.headers['x-language'] || 'en';
-      const slug = req.params.slug || req.params.id || '';
-      const page = req.query.page || '1';
-      const limit = req.query.limit || '100';
-      return generateKey('categories', storeId, { language, slug, page, limit });
+      // Use consistent parameter extraction - prefer query params over headers
+      const storeId = req.query.store_id || req.headers['x-store-id'] || 'default';
+      // Normalize language to lowercase for consistency
+      const language = (req.headers['x-language'] || req.query.language || 'en').toLowerCase();
+      const slug = req.params.slug || req.params.id || 'list';
+      // Simple key with only essential params
+      return `cat:${storeId}:${slug}:${language}`;
     },
   });
 }
