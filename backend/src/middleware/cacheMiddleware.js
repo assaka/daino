@@ -45,14 +45,17 @@ function cacheMiddleware(options = {}) {
 
       // Try to get cached response
       const cacheStart = Date.now();
+      console.log(`[CACHE] Key: ${cacheKey} | Path: ${req.path}`);
       const cached = await get(cacheKey);
       if (cached) {
         // Set cache hit header for debugging
+        console.log(`[CACHE] HIT: ${cacheKey} (${Date.now() - cacheStart}ms)`);
         res.setHeader('X-Cache', 'HIT');
         res.setHeader('X-Cache-Key', cacheKey);
         res.setHeader('X-Response-Time', `${Date.now() - cacheStart}ms`);
         return res.json(cached);
       }
+      console.log(`[CACHE] MISS: ${cacheKey}`);
 
       // Cache miss - intercept res.json to cache the response
       const originalJson = res.json.bind(res);
