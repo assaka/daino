@@ -193,9 +193,14 @@ router.get('/by-slug/:slug/full', cacheCategories(300), async (req, res) => {
     }
 
     // Filter products that have this category in their category_ids array
-    const products = (allProducts || []).filter(p =>
-      p.category_ids && Array.isArray(p.category_ids) && p.category_ids.includes(category.id)
-    ).slice(0, 100);
+    // Use string comparison to handle UUID type mismatches
+    const categoryIdStr = String(category.id);
+    const products = (allProducts || []).filter(p => {
+      if (!p.category_ids || !Array.isArray(p.category_ids)) return false;
+      // Check both exact match and string comparison for type safety
+      return p.category_ids.includes(category.id) ||
+             p.category_ids.map(String).includes(categoryIdStr);
+    }).slice(0, 100);
 
     // Load product translations
     const productIds = (products || []).map(p => p.id);
