@@ -154,15 +154,28 @@ class ShopifyImportService {
       }
 
       // Save import statistics
-      await ImportStatistic.saveImportResults(this.storeId, 'collections', {
-        totalProcessed: this.importStats.collections.total,
-        successfulImports: this.importStats.collections.imported,
-        failedImports: this.importStats.collections.failed,
-        skippedImports: this.importStats.collections.skipped,
-        errorDetails: JSON.stringify(this.importStats.errors.filter(e => e.type === 'collection')),
-        importMethod: 'manual',
-        importSource: 'shopify'
-      });
+      try {
+        console.log(`📊 [ShopifyImport] Saving collection stats for store ${this.storeId}:`, {
+          total: this.importStats.collections.total,
+          imported: this.importStats.collections.imported,
+          failed: this.importStats.collections.failed
+        });
+
+        await ImportStatistic.saveImportResults(this.storeId, 'collections', {
+          totalProcessed: this.importStats.collections.total,
+          successfulImports: this.importStats.collections.imported,
+          failedImports: this.importStats.collections.failed,
+          skippedImports: this.importStats.collections.skipped,
+          errorDetails: JSON.stringify(this.importStats.errors.filter(e => e.type === 'collection')),
+          importMethod: 'manual',
+          importSource: 'shopify'
+        });
+
+        console.log(`📊 [ShopifyImport] Collection stats saved successfully`);
+      } catch (statsError) {
+        console.error(`📊 [ShopifyImport] Failed to save collection stats:`, statsError);
+        // Don't fail the import if stats saving fails
+      }
 
       return {
         success: true,

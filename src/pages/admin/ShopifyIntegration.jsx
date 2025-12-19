@@ -410,10 +410,8 @@ const ShopifyIntegration = () => {
     setLoadingSchedules(true);
     try {
       const response = await apiClient.get('/shopify/schedules');
-      console.log('[loadSchedules] Response:', response);
       // Handle both response.data.schedules and response.schedules
       const scheduleData = response.data?.schedules || response.schedules || [];
-      console.log('[loadSchedules] Found schedules:', scheduleData.length);
       setSchedules(scheduleData);
     } catch (error) {
       console.error('Failed to load schedules:', error);
