@@ -1382,7 +1382,7 @@ export default function Checkout() {
   const checkoutSectionTextColor = settings?.checkout_section_text_color || getThemeDefaults().checkout_section_text_color;
 
   // Get step settings
-  const stepsCount = settings?.checkout_steps_count || 3;
+  const stepsCount = settings?.checkout_steps_count || 2;
   const stepIndicatorStyle = settings?.checkout_step_indicator_style || 'circles';
   const stepActiveColor = settings?.checkout_step_indicator_active_color || getThemeDefaults().checkout_step_indicator_active_color;
   const stepInactiveColor = settings?.checkout_step_indicator_inactive_color || getThemeDefaults().checkout_step_indicator_inactive_color;

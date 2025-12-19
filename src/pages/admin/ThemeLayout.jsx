@@ -402,7 +402,7 @@ export default function ThemeLayout() {
                 vertical_gallery_position: fullStore?.settings?.vertical_gallery_position || 'left',
                 mobile_gallery_layout: fullStore?.settings?.mobile_gallery_layout || 'below',
                 // Checkout Page defaults
-                checkout_steps_count: fullStore?.settings?.checkout_steps_count ?? 3,
+                checkout_steps_count: fullStore?.settings?.checkout_steps_count ?? 2,
                 // Step names for 2-step checkout
                 checkout_2step_step1_name: fullStore?.settings?.checkout_2step_step1_name || 'Information',
                 checkout_2step_step2_name: fullStore?.settings?.checkout_2step_step2_name || 'Payment',
@@ -2530,7 +2530,7 @@ export default function ThemeLayout() {
                         <CardContent className="space-y-6">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-sm text-blue-800">
-                                    <strong>How it works:</strong> Based on your selected step count below ({store.settings?.checkout_steps_count || 3} step{(store.settings?.checkout_steps_count || 3) > 1 ? 's' : ''}), configure the layout further down.
+                                    <strong>How it works:</strong> Based on your selected step count below ({store.settings?.checkout_steps_count || 2} step{(store.settings?.checkout_steps_count || 2) > 1 ? 's' : ''}), configure the layout further down.
                                     Available sections: Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
                                 </p>
                             </div>
@@ -2542,7 +2542,7 @@ export default function ThemeLayout() {
                                     <p className="text-sm text-gray-500">Choose how many steps to display in the checkout process.</p>
                                 </div>
                                 <Select
-                                    value={String(store.settings?.checkout_steps_count || 3)}
+                                    value={String(store.settings?.checkout_steps_count || 2)}
                                     onValueChange={(value) => handleSettingsChange('checkout_steps_count', parseInt(value))}
                                 >
                                     <SelectTrigger className="w-48">

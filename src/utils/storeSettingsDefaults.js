@@ -229,6 +229,7 @@ const HARDCODED_THEME_DEFAULTS = {
   breadcrumb_font_weight: '400',
 
   // Checkout defaults
+  checkout_steps_count: 2,
   checkout_step_indicator_active_color: '#007bff',
   checkout_step_indicator_inactive_color: '#D1D5DB',
   checkout_step_indicator_completed_color: '#10B981',
