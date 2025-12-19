@@ -366,7 +366,8 @@ const ShopifyIntegration = () => {
           type: 'success',
           text: `Import job started! ${dryRun ? '(Dry run mode)' : ''} You can track progress below.`
         });
-        // The ImportJobProgress component will handle showing the job status
+        // Trigger ImportJobProgress to refresh and show the new job
+        setRefreshTrigger(prev => prev + 1);
       } else {
         setMessage({ type: 'error', text: data.message || `Failed to start ${type} import` });
       }
