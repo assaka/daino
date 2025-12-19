@@ -463,7 +463,7 @@ function LayoutInner({ children, currentPageName }) {
   const pendingDbAllowedKeys = ['dashboard', 'stores', 'database_integrations'];
   const isPendingDatabase = selectedStore?.status === 'pending_database';
 
-  const navigationGroups = React.useMemo(() => {
+  const navigationGroups = (() => {
     const groups = dynamicNavItems || [];
     if (!isPendingDatabase) return groups;
 
@@ -474,7 +474,7 @@ function LayoutInner({ children, currentPageName }) {
         items: group.items.filter(item => pendingDbAllowedKeys.includes(item.key))
       }))
       .filter(group => group.items.length > 0);
-  }, [dynamicNavItems, isPendingDatabase]);
+  })();
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));

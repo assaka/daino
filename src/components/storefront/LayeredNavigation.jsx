@@ -217,28 +217,32 @@ export default function LayeredNavigation({
         setPriceRange([minPrice, maxPrice]);
         // In controlled mode, we need to call onFilterChange directly
         if (isControlledMode) {
-            const filtersToSend = { ...selectedFilters };
-            delete filtersToSend.priceRange;
-            onFilterChange(filtersToSend);
+            // Remove priceRange from current filters
+            const { priceRange: _, ...restFilters } = selectedFilters;
+            onFilterChange(restFilters);
         }
     };
 
     // Handle price range change with debugging
     const handlePriceRangeChange = (newRange) => {
+        // Guard against unnecessary updates
+        if (newRange[0] === priceRange[0] && newRange[1] === priceRange[1]) {
+            return;
+        }
+
         setPriceRange(newRange);
 
         // In controlled mode, we need to call onFilterChange directly
         // because the useEffect is skipped for controlled mode
         if (isControlledMode) {
-            const filtersToSend = { ...selectedFilters };
+            // Remove existing priceRange and add new one if needed
+            const { priceRange: _, ...restFilters } = selectedFilters;
             // Only add price range if it's different from the full range
             if (newRange[0] !== minPrice || newRange[1] !== maxPrice) {
-                filtersToSend.priceRange = newRange;
+                onFilterChange({ ...restFilters, priceRange: newRange });
             } else {
-                // Remove priceRange if it's back to the full range
-                delete filtersToSend.priceRange;
+                onFilterChange(restFilters);
             }
-            onFilterChange(filtersToSend);
         }
     };
 
