@@ -322,12 +322,13 @@ class ShopifyImportService {
         console.warn('⚠️ Could not fetch Shopify collections:', colError.message);
       }
 
-      // Build product-collection map using collects API
-      // Shopify products don't include collection IDs directly - we need the collects API
+      // Build product-collection map using collects API + smart collections
+      // Shopify products don't include collection IDs directly - we need to fetch them
+      // buildFullProductCollectionsMap handles both custom collections (via collects API) and smart collections
       let productCollectionsMap = {};
-      console.log('📂 Building product-collection relationships...');
+      console.log('📂 Building product-collection relationships (including smart collections)...');
       try {
-        productCollectionsMap = await this.client.buildProductCollectionsMap((progress) => {
+        productCollectionsMap = await this.client.buildFullProductCollectionsMap((progress) => {
           if (progressCallback) {
             progressCallback({
               stage: 'fetching_collections',
@@ -603,7 +604,21 @@ class ShopifyImportService {
           }
         }
 
-        console.log(`📋 Product "${product.title}" will be assigned to ${categoryIds.length} categories: ${categoryIds.join(', ') || 'none'}`);
+        console.log(`📋 Product "${product.title}" direct categories: ${categoryIds.length}`);
+      }
+
+      // Expand categories to include all parent categories (up to root)
+      let expandedCategoryIds = categoryIds;
+      if (categoryIds.length > 0 && this.categoryMappingService) {
+        try {
+          expandedCategoryIds = await this.categoryMappingService.expandCategoriesWithParents(categoryIds);
+          if (expandedCategoryIds.length > categoryIds.length) {
+            console.log(`📋 Product "${product.title}" expanded to ${expandedCategoryIds.length} categories (including parents): ${expandedCategoryIds.join(', ')}`);
+          }
+        } catch (expandError) {
+          console.warn(`⚠️ Could not expand categories for "${product.title}":`, expandError.message);
+          expandedCategoryIds = categoryIds;
+        }
       }
 
       // Extract and process attributes using AttributeMappingService
@@ -627,7 +642,7 @@ class ShopifyImportService {
         manage_stock: product.variants?.[0]?.inventory_management === 'shopify',
         stock_quantity: product.variants?.reduce((total, variant) => total + (variant.inventory_quantity || 0), 0) || 0,
         allow_backorders: product.variants?.[0]?.inventory_policy === 'continue',
-        category_ids: categoryIds,
+        category_ids: expandedCategoryIds,
         external_id: product.id.toString(),
         external_source: 'shopify',
         store_id: this.storeId,
@@ -650,7 +665,7 @@ class ShopifyImportService {
 
       let savedProduct;
       if (existingProduct) {
-        console.log(`📝 Updating product "${product.title}" with category_ids:`, categoryIds);
+        console.log(`📝 Updating product "${product.title}" with category_ids:`, expandedCategoryIds);
         const { data, error } = await tenantDb
           .from('products')
           .update({
@@ -665,7 +680,7 @@ class ShopifyImportService {
         savedProduct = data;
         console.log(`✅ Updated product: ${product.title}, saved category_ids:`, savedProduct.category_ids);
       } else {
-        console.log(`📝 Creating product "${product.title}" with category_ids:`, categoryIds);
+        console.log(`📝 Creating product "${product.title}" with category_ids:`, expandedCategoryIds);
         const { data, error } = await tenantDb
           .from('products')
           .insert({

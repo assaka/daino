@@ -261,7 +261,79 @@ class ShopifyClient {
       productCollectionsMap[productId].push(collectionId);
     }
 
-    console.log(`📂 Built map for ${Object.keys(productCollectionsMap).length} products`);
+    console.log(`📂 Built map for ${Object.keys(productCollectionsMap).length} products from collects API`);
+    return productCollectionsMap;
+  }
+
+  /**
+   * Get products for a specific collection
+   * Works for both custom and smart collections
+   */
+  async getCollectionProducts(collectionId, params = {}) {
+    const defaultParams = {
+      limit: 250,
+      ...params
+    };
+
+    const response = await this.makeRequest(`/collections/${collectionId}/products.json`, 'GET', null, defaultParams);
+    return response.products || [];
+  }
+
+  /**
+   * Build product-collection map including smart collections
+   * Smart collections are rule-based and don't appear in the collects API
+   */
+  async buildFullProductCollectionsMap(progressCallback = null) {
+    console.log('📂 Building full product-collections map (including smart collections)...');
+
+    // Start with custom collections from collects API
+    const productCollectionsMap = await this.buildProductCollectionsMap(progressCallback);
+
+    // Now add smart collections by querying each one
+    try {
+      const smartCollections = await this.getAllSmartCollections(progressCallback);
+      console.log(`📂 Found ${smartCollections.length} smart collections to process`);
+
+      for (let i = 0; i < smartCollections.length; i++) {
+        const collection = smartCollections[i];
+        const collectionId = String(collection.id);
+
+        try {
+          // Get products for this smart collection
+          const products = await this.getCollectionProducts(collection.id);
+
+          // Add to map
+          for (const product of products) {
+            const productId = String(product.id);
+            if (!productCollectionsMap[productId]) {
+              productCollectionsMap[productId] = [];
+            }
+            if (!productCollectionsMap[productId].includes(collectionId)) {
+              productCollectionsMap[productId].push(collectionId);
+            }
+          }
+
+          if (progressCallback) {
+            progressCallback({
+              type: 'smart_collection_products',
+              current: i + 1,
+              total: smartCollections.length,
+              collectionTitle: collection.title,
+              productsFound: products.length
+            });
+          }
+
+          // Respect rate limits
+          await this.delay(this.rateLimitDelay);
+        } catch (colError) {
+          console.warn(`⚠️ Could not get products for smart collection ${collection.title}:`, colError.message);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not process smart collections:', error.message);
+    }
+
+    console.log(`📂 Final map: ${Object.keys(productCollectionsMap).length} products with collection assignments`);
     return productCollectionsMap;
   }
 

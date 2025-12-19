@@ -537,10 +537,23 @@ class AkeneoIntegration {
 
             dainoProduct.category_ids = mappedCategoryIds;
 
+            // Expand categories to include all parent categories (up to root)
+            if (dainoProduct.category_ids.length > 0) {
+              try {
+                const expandedCategoryIds = await categoryMappingService.expandCategoriesWithParents(dainoProduct.category_ids);
+                if (expandedCategoryIds.length > dainoProduct.category_ids.length) {
+                  console.log(`📋 Product ${dainoProduct.sku}: Expanded to ${expandedCategoryIds.length} categories (including parents)`);
+                }
+                dainoProduct.category_ids = expandedCategoryIds;
+              } catch (expandError) {
+                console.warn(`⚠️ Could not expand categories for ${dainoProduct.sku}:`, expandError.message);
+              }
+            }
+
             if (originalCategoryIds.length > 0 && dainoProduct.category_ids.length === 0) {
               console.warn(`⚠️ Product ${dainoProduct.sku}: No valid category mappings found for ${originalCategoryIds.join(', ')}`);
             }
-            
+
             // Map family to attribute set
             if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
               dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
@@ -1942,6 +1955,19 @@ class AkeneoIntegration {
               }
               dainoProduct.category_ids = mappedCategoryIds1;
 
+              // Expand categories to include all parent categories (up to root)
+              if (dainoProduct.category_ids.length > 0) {
+                try {
+                  const expandedCategoryIds = await categoryMappingService.expandCategoriesWithParents(dainoProduct.category_ids);
+                  if (expandedCategoryIds.length > dainoProduct.category_ids.length) {
+                    console.log(`📋 Product ${dainoProduct.sku}: Expanded to ${expandedCategoryIds.length} categories (including parents)`);
+                  }
+                  dainoProduct.category_ids = expandedCategoryIds;
+                } catch (expandError) {
+                  console.warn(`⚠️ Could not expand categories for ${dainoProduct.sku}:`, expandError.message);
+                }
+              }
+
               if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
                 dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
               }
@@ -2049,6 +2075,19 @@ class AkeneoIntegration {
               }
               dainoProduct.category_ids = mappedCategoryIds2;
 
+              // Expand categories to include all parent categories (up to root)
+              if (dainoProduct.category_ids.length > 0) {
+                try {
+                  const expandedCategoryIds = await categoryMappingService.expandCategoriesWithParents(dainoProduct.category_ids);
+                  if (expandedCategoryIds.length > dainoProduct.category_ids.length) {
+                    console.log(`📋 Product ${dainoProduct.sku}: Expanded to ${expandedCategoryIds.length} categories (including parents)`);
+                  }
+                  dainoProduct.category_ids = expandedCategoryIds;
+                } catch (expandError) {
+                  console.warn(`⚠️ Could not expand categories for ${dainoProduct.sku}:`, expandError.message);
+                }
+              }
+
               if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
                 dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
               }
@@ -2153,6 +2192,19 @@ class AkeneoIntegration {
                 }
               }
               configurableProduct.category_ids = mappedCategoryIds3;
+
+              // Expand categories to include all parent categories (up to root)
+              if (configurableProduct.category_ids.length > 0) {
+                try {
+                  const expandedCategoryIds = await categoryMappingService.expandCategoriesWithParents(configurableProduct.category_ids);
+                  if (expandedCategoryIds.length > configurableProduct.category_ids.length) {
+                    console.log(`📋 Configurable ${configurableProduct.sku}: Expanded to ${expandedCategoryIds.length} categories (including parents)`);
+                  }
+                  configurableProduct.category_ids = expandedCategoryIds;
+                } catch (expandError) {
+                  console.warn(`⚠️ Could not expand categories for ${configurableProduct.sku}:`, expandError.message);
+                }
+              }
 
               if (akeneoProductModel.family && familyMapping[akeneoProductModel.family]) {
                 configurableProduct.attribute_set_id = familyMapping[akeneoProductModel.family];

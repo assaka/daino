@@ -689,6 +689,63 @@ class CategoryMappingService {
   }
 
   /**
+   * Get all parent category IDs for a given category (including ancestors up to root)
+   * This is used to assign products to all parent categories in the hierarchy
+   * @param {string} categoryId - The category ID to get parents for
+   * @returns {string[]} - Array of parent category IDs (including the original category)
+   */
+  async getCategoryWithParents(categoryId) {
+    if (!categoryId) return [];
+
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+    const categoryIds = [categoryId];
+
+    // Traverse up the hierarchy
+    let currentId = categoryId;
+    const maxDepth = 10; // Safety limit
+    let depth = 0;
+
+    while (currentId && depth < maxDepth) {
+      const { data: category } = await tenantDb
+        .from('categories')
+        .select('parent_id')
+        .eq('id', currentId)
+        .maybeSingle();
+
+      if (!category || !category.parent_id) {
+        break;
+      }
+
+      // Add parent to the list
+      if (!categoryIds.includes(category.parent_id)) {
+        categoryIds.push(category.parent_id);
+      }
+      currentId = category.parent_id;
+      depth++;
+    }
+
+    return categoryIds;
+  }
+
+  /**
+   * Expand a list of category IDs to include all parent categories
+   * @param {string[]} categoryIds - Array of category IDs
+   * @returns {string[]} - Array of category IDs including all parents (deduplicated)
+   */
+  async expandCategoriesWithParents(categoryIds) {
+    if (!categoryIds || categoryIds.length === 0) return [];
+
+    const allCategoryIds = new Set();
+
+    for (const categoryId of categoryIds) {
+      const withParents = await this.getCategoryWithParents(categoryId);
+      withParents.forEach(id => allCategoryIds.add(id));
+    }
+
+    return Array.from(allCategoryIds);
+  }
+
+  /**
    * Get auto-creation settings
    * Auto-creation during import is disabled by default.
    * Users should use "Create Categories" button to explicitly create categories.
