@@ -32,6 +32,10 @@ export default function StoreHealthGuard({ children, pageName }) {
   const skipPages = [
     'Auth',
     'StoreOnboarding',
+    // Admin pages that should work without a healthy database
+    'Stores',              // Allow switching to another store
+    'DatabaseIntegrations', // Allow configuring database
+    'Dashboard',           // Show dashboard even with pending database
     // Public/Storefront pages - don't block customers
     'Storefront',
     'Category',

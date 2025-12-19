@@ -17,7 +17,7 @@ import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
 import brevoAPI from '@/api/brevo';
-import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
+import { ThemePresetSelector, ThemePresetBadge } from '@/components/admin/ThemePresetSelector';
 
 export default function Stores() {
   const navigate = useNavigate();
@@ -462,9 +462,8 @@ export default function Stores() {
                     )}
                     {/* Theme Preset Badge - show for all stores with non-default preset */}
                     {store.theme_preset && store.theme_preset !== 'default' && (
-                      <Badge className="bg-violet-100 text-violet-800 border-violet-200" variant="outline">
-                        <Palette className="w-3 h-3 mr-1" />
-                        {store.theme_preset.charAt(0).toUpperCase() + store.theme_preset.slice(1)}
+                      <Badge className="bg-violet-100 text-violet-800 border-violet-200 px-2 py-1" variant="outline">
+                        <ThemePresetBadge presetName={store.theme_preset} showName={true} size="sm" />
                       </Badge>
                     )}
                   </div>
