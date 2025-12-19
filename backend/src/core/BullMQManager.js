@@ -360,34 +360,22 @@ class BullMQManager {
             // Check for cancellation directly from database on every progress update
             if (jobRecordId && masterDbClient) {
               try {
-                console.log(`[CANCEL-CHECK] Checking status for job ${jobRecordId}...`);
                 const { data: jobStatus, error: statusError } = await masterDbClient
                   .from('job_queue')
                   .select('status')
                   .eq('id', jobRecordId)
                   .single();
 
-                if (statusError) {
-                  console.warn(`[CANCEL-CHECK] Error fetching status: ${statusError.message}`);
-                } else {
-                  console.log(`[CANCEL-CHECK] Job ${jobRecordId} status: ${jobStatus?.status}`);
-                }
-
                 if (jobStatus && (jobStatus.status === 'cancelling' || jobStatus.status === 'cancelled')) {
-                  console.log(`[CANCEL-CHECK] Job ${jobRecordId} CANCELLATION DETECTED! Throwing error...`);
                   throw new Error('Job was cancelled by user');
                 }
               } catch (err) {
                 if (err.message === 'Job was cancelled by user') {
                   throw err;
                 }
-                console.warn('[CANCEL-CHECK] Error checking cancellation status:', err.message);
               }
-            } else {
-              console.warn(`[CANCEL-CHECK] Cannot check - jobRecordId=${jobRecordId}, masterDbClient=${!!masterDbClient}`);
             }
 
-            console.log(`BullMQ: Updating progress for job ${jobRecordId}: ${progress}% - ${message}`);
             await job.updateProgress(progress);
 
             // Also update the job_queue table in master DB
@@ -402,16 +390,9 @@ class BullMQManager {
                   })
                   .eq('id', jobRecordId);
 
-                if (error) {
-                  console.error('DB error updating progress:', error);
-                } else {
-                  console.log(`BullMQ: Progress saved to DB for job ${jobRecordId}`);
-                }
               } catch (err) {
-                console.error('Failed to update job progress in DB:', err.message);
               }
             } else {
-              console.warn(`BullMQ: Cannot save progress - jobRecordId=${jobRecordId}, masterDbClient=${!!masterDbClient}`);
             }
           };
 
@@ -430,7 +411,6 @@ class BullMQManager {
                 .single();
 
               if (currentJob?.status === 'cancelling' || currentJob?.status === 'cancelled') {
-                console.log(`BullMQ: Job ${jobRecordId} was cancelled while running - marking as cancelled`);
                 await masterDbClient
                   .from('job_queue')
                   .update({

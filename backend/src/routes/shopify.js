@@ -719,16 +719,11 @@ router.get('/import/stats', storeAuth, async (req, res) => {
     const ImportStatistic = require('../models/ImportStatistic');
     const stats = await ImportStatistic.getLatestStats(req.storeId, 'shopify');
 
-    console.log(`📊 [Shopify Stats] storeId: ${req.storeId}`);
-    console.log(`📊 [Shopify Stats] Raw stats from DB:`, JSON.stringify(stats, null, 2));
-
     // Return Shopify-specific stats
     const shopifyStats = {
       collections: stats.collections,
       products: stats.products
     };
-
-    console.log(`📊 [Shopify Stats] Returning:`, JSON.stringify(shopifyStats, null, 2));
 
     res.json({
       success: true,
