@@ -21,8 +21,9 @@ export const StoreSelectionProvider = ({ children }) => {
     const savedStoreName = localStorage.getItem('selectedStoreName');
     const savedStoreSlug = localStorage.getItem('selectedStoreSlug');
     const savedStoreStatus = localStorage.getItem('selectedStoreStatus');
+    const savedThemePreset = localStorage.getItem('selectedStoreThemePreset');
     if (savedStoreId && savedStoreName) {
-      return { id: savedStoreId, name: savedStoreName, slug: savedStoreSlug, status: savedStoreStatus };
+      return { id: savedStoreId, name: savedStoreName, slug: savedStoreSlug, status: savedStoreStatus, theme_preset: savedThemePreset || null };
     }
     return null;
   });
@@ -129,12 +130,14 @@ export const StoreSelectionProvider = ({ children }) => {
             localStorage.setItem('selectedStoreName', savedStore.name);
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
             localStorage.setItem('selectedStoreStatus', savedStore.status || '');
+            localStorage.setItem('selectedStoreThemePreset', savedStore.theme_preset || '');
           } else {
             // Saved store is not active and not pending_database - clear it and select first active store
             localStorage.removeItem('selectedStoreId');
             localStorage.removeItem('selectedStoreName');
             localStorage.removeItem('selectedStoreSlug');
             localStorage.removeItem('selectedStoreStatus');
+            localStorage.removeItem('selectedStoreThemePreset');
 
             const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
@@ -145,6 +148,7 @@ export const StoreSelectionProvider = ({ children }) => {
               localStorage.setItem('selectedStoreName', firstActiveStore.name);
               localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
               localStorage.setItem('selectedStoreStatus', firstActiveStore.status || '');
+              localStorage.setItem('selectedStoreThemePreset', firstActiveStore.theme_preset || '');
             } else {
               // No active stores at all - clear auth and redirect to login
               localStorage.removeItem('store_owner_auth_token');
@@ -160,6 +164,7 @@ export const StoreSelectionProvider = ({ children }) => {
           localStorage.removeItem('selectedStoreName');
           localStorage.removeItem('selectedStoreSlug');
           localStorage.removeItem('selectedStoreStatus');
+          localStorage.removeItem('selectedStoreThemePreset');
 
           const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
@@ -170,6 +175,7 @@ export const StoreSelectionProvider = ({ children }) => {
             localStorage.setItem('selectedStoreName', firstActiveStore.name);
             localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
             localStorage.setItem('selectedStoreStatus', firstActiveStore.status || '');
+            localStorage.setItem('selectedStoreThemePreset', firstActiveStore.theme_preset || '');
           } else {
             console.error('❌ StoreSelection: No stores available!');
           }
@@ -314,6 +320,7 @@ export const StoreSelectionProvider = ({ children }) => {
         localStorage.removeItem('selectedStoreName');
         localStorage.removeItem('selectedStoreSlug');
         localStorage.removeItem('selectedStoreStatus');
+        localStorage.removeItem('selectedStoreThemePreset');
         setSelectedStore(null);
         setStoreHealth(null);
         healthCheckedRef.current = null;
@@ -334,6 +341,7 @@ export const StoreSelectionProvider = ({ children }) => {
     localStorage.setItem('selectedStoreName', store.name);
     localStorage.setItem('selectedStoreSlug', store.slug);
     localStorage.setItem('selectedStoreStatus', store.status || '');
+    localStorage.setItem('selectedStoreThemePreset', store.theme_preset || '');
 
     // Dispatch custom event to notify components of store change
     window.dispatchEvent(new CustomEvent('storeSelectionChanged', {
