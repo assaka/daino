@@ -26,6 +26,11 @@ const CategoryMappingPanel = ({
   const [flashMessage, setFlashMessage] = useState(null);
   const [targetRootCategoryId, setTargetRootCategoryId] = useState('');
 
+  // External root category filter (for filtering which categories to fetch/create)
+  const [externalRootCategories, setExternalRootCategories] = useState([]);
+  const [selectedExternalRootFilter, setSelectedExternalRootFilter] = useState('');
+  const [loadingExternalRoots, setLoadingExternalRoots] = useState(false);
+
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -54,17 +59,57 @@ const CategoryMappingPanel = ({
     fetchMappings();
   }, [fetchMappings]);
 
+  // Fetch external root categories (for Akeneo filtering)
+  const fetchExternalRootCategories = useCallback(async () => {
+    if (integrationSource !== 'akeneo') {
+      // Shopify collections are flat, no root filtering needed
+      return;
+    }
+
+    setLoadingExternalRoots(true);
+    try {
+      const response = await apiClient.get(`/integrations/akeneo/categories`);
+      if (response.success && response.categories) {
+        // Get root categories (categories with no parent)
+        const roots = response.categories.filter(cat => !cat.parent);
+        setExternalRootCategories(roots.map(cat => ({
+          code: cat.code,
+          name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching external root categories:', error);
+      // Don't show error - this is optional functionality
+    } finally {
+      setLoadingExternalRoots(false);
+    }
+  }, [integrationSource]);
+
+  // Fetch external root categories when component mounts (for Akeneo only)
+  useEffect(() => {
+    if (integrationSource === 'akeneo') {
+      fetchExternalRootCategories();
+    }
+  }, [integrationSource, fetchExternalRootCategories]);
+
   // Fetch categories from external integration
   const handleFetchCategories = async () => {
     setFetching(true);
     setFlashMessage(null);
     try {
-      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, {});
+      // Build filters object
+      const filters = {};
+      if (selectedExternalRootFilter && integrationSource === 'akeneo') {
+        filters.rootCategories = [selectedExternalRootFilter];
+      }
+
+      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, { filters });
       if (response.success) {
         await fetchMappings();
+        const filterMsg = selectedExternalRootFilter ? ` (filtered by root: ${selectedExternalRootFilter})` : '';
         setFlashMessage({
           type: 'success',
-          message: response.message || `Fetched ${response.results?.created || 0} new, ${response.results?.updated || 0} updated`
+          message: (response.message || `Fetched ${response.results?.created || 0} new, ${response.results?.updated || 0} updated`) + filterMsg
         });
       } else {
         setFlashMessage({
@@ -115,8 +160,15 @@ const CategoryMappingPanel = ({
     setShowConfirmModal(false);
     setFlashMessage(null);
     try {
+      // Build filters object for external root category filtering
+      const filters = {};
+      if (selectedExternalRootFilter && integrationSource === 'akeneo') {
+        filters.rootCategories = [selectedExternalRootFilter];
+      }
+
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-categories-job`, {
-        targetRootCategoryId
+        targetRootCategoryId,
+        filters
       });
       if (response.success) {
         setFlashMessage({
@@ -230,6 +282,11 @@ const CategoryMappingPanel = ({
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Categories</h3>
             <p className="text-gray-600 mb-4">
               You are about to create <span className="font-bold text-indigo-600">{stats.unmapped}</span> new categories from unmapped {sourceLabel} {integrationSource === 'shopify' ? 'collections' : 'categories'}.
+              {selectedExternalRootFilter && (
+                <span className="block mt-2 text-sm text-indigo-600">
+                  Filtered by root: <span className="font-medium">{externalRootCategories.find(r => r.code === selectedExternalRootFilter)?.name || selectedExternalRootFilter}</span>
+                </span>
+              )}
             </p>
 
             {/* Root Category Selector */}
@@ -307,6 +364,26 @@ const CategoryMappingPanel = ({
         <div className="p-4">
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* External Root Category Filter (Akeneo only) */}
+            {integrationSource === 'akeneo' && externalRootCategories.length > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 whitespace-nowrap">Filter by Root:</label>
+                <select
+                  value={selectedExternalRootFilter}
+                  onChange={(e) => setSelectedExternalRootFilter(e.target.value)}
+                  disabled={loadingExternalRoots || fetching}
+                  className={`px-2 py-1.5 text-sm border rounded-md ${
+                    selectedExternalRootFilter ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">All Categories</option>
+                  {externalRootCategories.map(root => (
+                    <option key={root.code} value={root.code}>{root.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={handleFetchCategories}
               disabled={fetching}

@@ -1935,7 +1935,7 @@ router.post('/category-mappings/:source/create-categories-job', authMiddleware, 
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
     const userId = req.user?.id;
-    const { settings = {}, targetRootCategoryId } = req.body;
+    const { settings = {}, targetRootCategoryId, filters = {} } = req.body;
 
     if (!storeId) {
       return res.status(400).json({ success: false, message: 'Store ID required' });
@@ -1961,17 +1961,18 @@ router.post('/category-mappings/:source/create-categories-job', authMiddleware, 
         storeId,
         integrationSource: source,
         settings,
-        targetRootCategoryId
+        targetRootCategoryId,
+        filters // Pass root category filter to job
       },
       priority: 'normal',
       storeId,
       userId,
       metadata: {
-        description: `Create categories from ${source} mappings`
+        description: `Create categories from ${source} mappings${filters.rootCategories?.length ? ` (filtered by: ${filters.rootCategories.join(', ')})` : ''}`
       }
     });
 
-    console.log(`📋 Scheduled create categories job for ${source}: ${job.id} (root: ${targetRootCategoryId})`);
+    console.log(`📋 Scheduled create categories job for ${source}: ${job.id} (root: ${targetRootCategoryId}, filter: ${filters.rootCategories?.join(', ') || 'none'})`);
 
     res.json({
       success: true,
