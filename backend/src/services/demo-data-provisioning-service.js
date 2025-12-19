@@ -43,9 +43,6 @@ class DemoDataProvisioningService {
     console.log(`[DemoData] Starting provisioning for store: ${this.storeId}`);
 
     try {
-      // First, ensure demo column exists on all tables
-      await this.ensureDemoColumns();
-
       // Create demo data in order of dependencies
       console.log('[DemoData] Creating categories...');
       await this.createDemoCategories();
@@ -106,28 +103,6 @@ class DemoDataProvisioningService {
   /**
    * Ensure demo column exists on all tables
    */
-  async ensureDemoColumns() {
-    const tables = tenantMigration.TABLES_WITH_DEMO_COLUMN;
-
-    for (const table of tables) {
-      try {
-        // Try to add the column - will fail silently if exists
-        const { error } = await this.tenantDb.rpc('exec_sql', {
-          sql: `
-            ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS demo BOOLEAN DEFAULT false;
-            CREATE INDEX IF NOT EXISTS idx_${table}_demo ON ${table}(demo) WHERE demo = true;
-          `
-        });
-
-        if (error) {
-          console.log(`[DemoData] Note: Could not add demo column to ${table} via RPC, assuming it exists`);
-        }
-      } catch (err) {
-        // Column might already exist, continue
-        console.log(`[DemoData] Demo column check for ${table}: ${err.message}`);
-      }
-    }
-  }
 
   /**
    * Create demo categories with subcategories
