@@ -442,22 +442,21 @@ const ShopifyIntegration = () => {
         return;
       }
 
-      const response = await apiClient.post('/shopify/schedules', scheduleForm);
+      const isEditing = !!editingSchedule;
+      await apiClient.post('/shopify/schedules', scheduleForm);
 
-      if (response.data?.success) {
-        setFlashMessage({ type: 'success', text: editingSchedule ? 'Schedule updated successfully' : 'Schedule created successfully' });
-        setShowScheduleForm(false);
-        setEditingSchedule(null);
-        setScheduleForm({
-          import_type: 'products',
-          schedule_type: 'once',
-          schedule_time: '',
-          schedule_date: '',
-          is_active: true,
-          options: { dryRun: false }
-        });
-        await loadSchedules();
-      }
+      setShowScheduleForm(false);
+      setEditingSchedule(null);
+      setScheduleForm({
+        import_type: 'products',
+        schedule_type: 'once',
+        schedule_time: '',
+        schedule_date: '',
+        is_active: true,
+        options: { dryRun: false }
+      });
+      await loadSchedules();
+      setFlashMessage({ type: 'success', text: isEditing ? 'Schedule updated successfully' : 'Schedule created successfully' });
     } catch (error) {
       console.error('Failed to save schedule:', error);
       setFlashMessage({ type: 'error', text: 'Failed to save schedule' });
@@ -469,12 +468,9 @@ const ShopifyIntegration = () => {
     try {
       if (!storeId) return;
 
-      const response = await apiClient.delete(`/shopify/schedules/${scheduleId}`);
-
-      if (response.data?.success) {
-        setFlashMessage({ type: 'success', text: 'Schedule deleted successfully' });
-        await loadSchedules();
-      }
+      await apiClient.delete(`/shopify/schedules/${scheduleId}`);
+      await loadSchedules();
+      setFlashMessage({ type: 'success', text: 'Schedule deleted successfully' });
     } catch (error) {
       console.error('Failed to delete schedule:', error);
       setFlashMessage({ type: 'error', text: 'Failed to delete schedule' });
@@ -487,16 +483,13 @@ const ShopifyIntegration = () => {
       if (!storeId) return;
 
       const newStatus = !schedule.is_active;
-      const response = await apiClient.post('/shopify/schedules', {
+      await apiClient.post('/shopify/schedules', {
         id: schedule.id,
         is_active: newStatus,
         status: newStatus ? 'scheduled' : 'paused'
       });
-
-      if (response.data?.success) {
-        setFlashMessage({ type: 'success', text: newStatus ? 'Schedule activated' : 'Schedule paused' });
-        await loadSchedules();
-      }
+      await loadSchedules();
+      setFlashMessage({ type: 'success', text: newStatus ? 'Schedule activated' : 'Schedule paused' });
     } catch (error) {
       console.error('Failed to toggle schedule:', error);
       setFlashMessage({ type: 'error', text: 'Failed to update schedule' });

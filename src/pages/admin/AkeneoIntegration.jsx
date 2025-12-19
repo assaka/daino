@@ -735,24 +735,23 @@ const AkeneoIntegration = () => {
         return;
       }
 
-      const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm);
+      const isEditing = !!editingSchedule;
+      await apiClient.post('/integrations/akeneo/schedules', scheduleForm);
 
-      if (response.data?.success || response.success) {
-        setFlashMessage({ type: 'success', message: editingSchedule ? 'Schedule updated successfully' : 'Schedule created successfully' });
-        setShowScheduleForm(false);
-        setEditingSchedule(null);
-        setScheduleForm({
-          import_type: 'attributes',
-          schedule_type: 'once',
-          schedule_time: '',
-          schedule_date: '',
-          is_active: true,
-          filters: { channels: [], families: [], categoryIds: [], attributes: {} },
-          options: { locale: 'en_US', dryRun: false, batchSize: 50 }
-        });
-        setScheduleValidationErrors({});
-        await loadSchedules();
-      }
+      setShowScheduleForm(false);
+      setEditingSchedule(null);
+      setScheduleForm({
+        import_type: 'attributes',
+        schedule_type: 'once',
+        schedule_time: '',
+        schedule_date: '',
+        is_active: true,
+        filters: { channels: [], families: [], categoryIds: [], attributes: {} },
+        options: { locale: 'en_US', dryRun: false, batchSize: 50 }
+      });
+      setScheduleValidationErrors({});
+      await loadSchedules();
+      setFlashMessage({ type: 'success', message: isEditing ? 'Schedule updated successfully' : 'Schedule created successfully' });
     } catch (error) {
       console.error('Failed to save schedule:', error);
       setFlashMessage({ type: 'error', message: 'Failed to save schedule' });
@@ -765,12 +764,9 @@ const AkeneoIntegration = () => {
       const storeId = selectedStore?.id;
       if (!storeId) return;
 
-      const response = await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`);
-
-      if (response.data?.success || response.success) {
-        setFlashMessage({ type: 'success', message: 'Schedule deleted successfully' });
-        await loadSchedules();
-      }
+      await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`);
+      await loadSchedules();
+      setFlashMessage({ type: 'success', message: 'Schedule deleted successfully' });
     } catch (error) {
       console.error('Failed to delete schedule:', error);
       setFlashMessage({ type: 'error', message: 'Failed to delete schedule' });
@@ -784,16 +780,13 @@ const AkeneoIntegration = () => {
       if (!storeId) return;
 
       const newStatus = !schedule.is_active;
-      const response = await apiClient.post('/integrations/akeneo/schedules', {
+      await apiClient.post('/integrations/akeneo/schedules', {
         id: schedule.id,
         is_active: newStatus,
         status: newStatus ? 'scheduled' : 'paused'
       });
-
-      if (response.data?.success || response.success) {
-        setFlashMessage({ type: 'success', message: newStatus ? 'Schedule activated' : 'Schedule paused' });
-        await loadSchedules();
-      }
+      await loadSchedules();
+      setFlashMessage({ type: 'success', message: newStatus ? 'Schedule activated' : 'Schedule paused' });
     } catch (error) {
       console.error('Failed to toggle schedule:', error);
       setFlashMessage({ type: 'error', message: 'Failed to update schedule' });
