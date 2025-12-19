@@ -177,20 +177,25 @@ router.get('/by-slug/:slug/full', cacheCategories(300), async (req, res) => {
       description: reqLang?.description || enLang?.description || null
     };
 
-    // 2. Load products for this category using database-level JSONB contains query
-    const { data: products, error: prodsError } = await tenantDb
+    // 2. Load products for this category
+    // Note: JSONB contains query has compatibility issues with some Supabase versions,
+    // so we fetch active/visible products and filter by category in JavaScript
+    const { data: allProducts, error: prodsError } = await tenantDb
       .from('products')
       .select('*')
       .eq('store_id', store_id)
       .eq('status', 'active')
       .eq('visibility', 'visible')
-      .contains('category_ids', [category.id])
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false });
 
     if (prodsError) {
       console.error('Error loading category products:', prodsError.message);
     }
+
+    // Filter products that have this category in their category_ids array
+    const products = (allProducts || []).filter(p =>
+      p.category_ids && Array.isArray(p.category_ids) && p.category_ids.includes(category.id)
+    ).slice(0, 100);
 
     // Load product translations
     const productIds = (products || []).map(p => p.id);
