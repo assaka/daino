@@ -47,6 +47,10 @@ export default function Header() {
                     {/* Logo */}
                     <div className="flex items-center gap-2">
                         <img src="/dainostore_logo.png" alt="DainoStore" className="h-8" />
+                        <img src="/logo_brown.svg" alt="DainoStore" className="h-8" />
+                        <img src="/logo_darkred.svg" alt="DainoStore" className="h-8" />
+                        <img src="/logo_darkgreen.svg" alt="DainoStore" className="h-8" />
+                        <img src="/logo_orange.svg" alt="DainoStore" className="h-8" />
                     </div>
 
                     {/* Navigation - Centered */}

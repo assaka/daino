@@ -14,7 +14,7 @@ const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@dainostore.com';
  * Clean, modern design inspired by Payoneer
  * Features: White background, centered logo, colorful top border
  */
-const PLATFORM_LOGO_URL = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/dainostore_logo.png` : 'https://www.dainostore.com/dainostore_logo.png';
+const PLATFORM_LOGO_URL = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/logo_darkred` : 'https://www.dainostore.com/logo_darkred';
 
 const masterEmailHeader = (options = {}) => {
   const {
@@ -39,7 +39,7 @@ const masterEmailHeader = (options = {}) => {
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
         <td style="padding: 5px; text-align: center;">
-          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 120px; height: auto;" /><br/>
+          <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 50px; height: auto;" /><br/>
           <h1 style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
             DainoStore
           </h1>
@@ -768,7 +768,7 @@ const teamInvitationEmail = (data) => {
             <tr>
               <td style="padding-top: 24px; text-align: center;">
                 <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 12px;">
-                  By accepting, you agree to Daino's Terms of Service and Privacy Policy
+                  By accepting, you agree to DainoStore's Terms of Service and Privacy Policy
                 </p>
                 <p style="margin: 0; color: #d1d5db; font-size: 12px;">
                   Powered by <span style="color: #9ca3af; font-weight: 500;">DainoStore</span> — E-commerce made simple

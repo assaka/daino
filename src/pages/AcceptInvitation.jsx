@@ -510,10 +510,10 @@ export default function AcceptInvitation() {
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-400">
-              By accepting, you agree to Daino's Terms of Service and Privacy Policy
+              By accepting, you agree to DainoStore's Terms of Service and Privacy Policy
             </p>
             <p className="text-xs text-gray-300 mt-2">
-              Powered by <span className="font-medium text-gray-400">Daino</span> — E-commerce made simple
+              Powered by <span className="font-medium text-gray-400">DainoStore</span> — E-commerce made simple
             </p>
           </div>
         </CardContent>
