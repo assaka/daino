@@ -40,62 +40,31 @@ class DemoDataProvisioningService {
    */
   async provisionDemoData() {
     await this.initialize();
-    console.log(`[DemoData] Starting provisioning for store: ${this.storeId}`);
 
     try {
       // Create demo data in order of dependencies
-      console.log('[DemoData] Creating categories...');
       await this.createDemoCategories();
-
-      console.log('[DemoData] Creating attribute sets...');
       await this.createDemoAttributeSets();
-
-      console.log('[DemoData] Creating attributes...');
       await this.createDemoAttributes();
-
-      console.log('[DemoData] Creating products...');
       await this.createDemoProducts();
-
-      console.log('[DemoData] Creating custom option rules...');
       await this.createDemoCustomOptionRules();
-
-      console.log('[DemoData] Creating product tabs...');
       await this.createDemoProductTabs();
-
-      console.log('[DemoData] Creating product labels...');
       await this.createDemoProductLabels();
-
-      console.log('[DemoData] Creating customers...');
       await this.createDemoCustomers();
-
-      console.log('[DemoData] Creating orders...');
       await this.createDemoOrders();
-
-      console.log('[DemoData] Creating CMS content...');
       await this.createDemoCMSContent();
-
-      console.log('[DemoData] Creating tax configuration...');
       await this.createDemoTaxConfiguration();
-
-      console.log('[DemoData] Creating coupons...');
       await this.createDemoCoupons();
-
-      console.log('[DemoData] Creating SEO templates...');
       await this.createDemoSEOTemplates();
-
-      // Update store status to 'demo'
-      console.log('[DemoData] Updating store status to demo...');
       await this.updateStoreStatus('demo');
 
       const summary = this.getProvisioningSummary();
-      console.log('[DemoData] Provisioning complete:', summary);
 
       return {
         success: true,
         summary
       };
     } catch (error) {
-      console.error('[DemoData] Provisioning failed:', error);
       throw error;
     }
   }
@@ -188,7 +157,6 @@ class DemoDataProvisioningService {
         });
 
       if (catError) {
-        console.error(`[DemoData] Error creating category ${cat.name}:`, catError);
         continue;
       }
 
@@ -266,8 +234,6 @@ class DemoDataProvisioningService {
 
       if (!error) {
         this.createdIds.attributeSets.push({ id, code: attrSet.code, name: attrSet.name });
-      } else {
-        console.error(`[DemoData] Error creating attribute set ${attrSet.name}:`, error);
       }
     }
   }
@@ -341,7 +307,6 @@ class DemoDataProvisioningService {
         });
 
       if (attrError) {
-        console.error(`[DemoData] Error creating attribute ${attr.name}:`, attrError);
         continue;
       }
 
@@ -401,9 +366,6 @@ class DemoDataProvisioningService {
           .update({ attribute_ids: attributeIds })
           .eq('id', attrSet.id);
 
-        if (updateError) {
-          console.error(`[DemoData] Error updating attribute set ${attrSet.name}:`, updateError);
-        }
       }
     }
   }
@@ -546,7 +508,6 @@ class DemoDataProvisioningService {
         });
 
       if (prodError) {
-        console.error(`[DemoData] Error creating product ${prod.name}:`, prodError);
         continue;
       }
 
@@ -570,9 +531,6 @@ class DemoDataProvisioningService {
             demo: true
           });
 
-        if (imgError) {
-          console.error(`[DemoData] Error creating product image for ${prod.name}:`, imgError);
-        }
       }
 
       // Create product translation
@@ -601,7 +559,6 @@ class DemoDataProvisioningService {
   async setRandomFeaturedProducts() {
     const productIds = this.createdIds.products.map(p => p.id);
     if (productIds.length === 0) {
-      console.log('[DemoData] No products to mark as featured');
       return;
     }
 
@@ -612,8 +569,6 @@ class DemoDataProvisioningService {
     const shuffled = [...productIds].sort(() => Math.random() - 0.5);
     const featuredIds = shuffled.slice(0, numFeatured);
 
-    console.log(`[DemoData] Marking ${featuredIds.length} random products as featured`);
-
     // Update products to be featured
     for (const productId of featuredIds) {
       const { error } = await this.tenantDb
@@ -622,20 +577,14 @@ class DemoDataProvisioningService {
         .eq('id', productId)
         .eq('store_id', this.storeId);
 
-      if (error) {
-        console.error(`[DemoData] Error marking product ${productId} as featured:`, error);
-      }
     }
 
-    console.log(`[DemoData] Successfully marked ${featuredIds.length} products as featured`);
   }
 
   /**
    * Create attribute values for a product based on its attribute set
    */
   async createProductAttributeValues(productId, attrSetCode) {
-    console.log(`[DemoData] createProductAttributeValues called for product ${productId}, attrSetCode: ${attrSetCode}`);
-    console.log(`[DemoData] Available attributes: ${this.createdIds.attributes.length}, values: ${this.createdIds.attributeValues.length}`);
 
     // Get random attribute values to assign
     const brandAttr = this.createdIds.attributes.find(a => a.code === 'brand');
@@ -644,16 +593,12 @@ class DemoDataProvisioningService {
     const materialAttr = this.createdIds.attributes.find(a => a.code === 'material');
     const warrantyAttr = this.createdIds.attributes.find(a => a.code === 'warranty');
 
-    console.log(`[DemoData] Found attrs - brand: ${!!brandAttr}, color: ${!!colorAttr}, size: ${!!sizeAttr}, material: ${!!materialAttr}, warranty: ${!!warrantyAttr}`);
-
     // Get random values for each attribute
     const brandValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'brand');
     const colorValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'color');
     const sizeValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'size');
     const materialValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'material');
     const warrantyValues = this.createdIds.attributeValues.filter(v => v.attrCode === 'warranty');
-
-    console.log(`[DemoData] Found values - brand: ${brandValues.length}, color: ${colorValues.length}, size: ${sizeValues.length}, material: ${materialValues.length}, warranty: ${warrantyValues.length}`);
 
     const attributesToAssign = [];
 
@@ -717,19 +662,12 @@ class DemoDataProvisioningService {
     }
 
     // Insert all attribute values
-    console.log(`[DemoData] Inserting ${attributesToAssign.length} attribute values for product ${productId}`);
-
     for (const attrValue of attributesToAssign) {
       const { error } = await this.tenantDb
         .from('product_attribute_values')
         .insert(attrValue);
 
-      if (error) {
-        console.error(`[DemoData] Error creating product attribute value:`, error);
-      }
     }
-
-    console.log(`[DemoData] Successfully created ${attributesToAssign.length} attribute values for product ${productId}`);
   }
 
   /**
@@ -758,9 +696,6 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      if (error) {
-        console.error(`[DemoData] Error creating product tab ${tab.name}:`, error);
-      }
     }
   }
 
@@ -823,7 +758,6 @@ class DemoDataProvisioningService {
         });
 
       if (custError) {
-        console.error(`[DemoData] Error creating customer:`, custError);
         continue;
       }
 
@@ -917,7 +851,6 @@ class DemoDataProvisioningService {
         });
 
       if (orderError) {
-        console.error(`[DemoData] Error creating order:`, orderError);
         continue;
       }
 
@@ -999,7 +932,6 @@ class DemoDataProvisioningService {
         .single();
 
       if (prodError) {
-        console.error(`[DemoData] Error creating custom option product ${prod.name}:`, prodError);
         continue;
       }
 
@@ -1054,10 +986,6 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      if (rule1Error) {
-        console.error('[DemoData] Error creating gift wrapping rule:', rule1Error);
-      }
-
       // Rule 2: Extended Warranty for Electronics
       if (customOptionProductIds.length > 1) {
         const { error: rule2Error } = await this.tenantDb
@@ -1076,9 +1004,6 @@ class DemoDataProvisioningService {
             demo: true
           });
 
-        if (rule2Error) {
-          console.error('[DemoData] Error creating extended warranty rule:', rule2Error);
-        }
       }
 
       // Rule 3: Priority Shipping for all products (multiple options example)
@@ -1099,9 +1024,6 @@ class DemoDataProvisioningService {
             demo: true
           });
 
-        if (rule3Error) {
-          console.error('[DemoData] Error creating shipping upgrade rule:', rule3Error);
-        }
       }
     }
 
@@ -1198,7 +1120,6 @@ class DemoDataProvisioningService {
       }
     ];
 
-    console.log(`[DemoData] Creating ${pages.length} CMS pages...`);
     let pagesCreated = 0;
 
     for (let i = 0; i < pages.length; i++) {
@@ -1214,7 +1135,6 @@ class DemoDataProvisioningService {
         .maybeSingle();
 
       if (existingPage) {
-        console.log(`[DemoData] CMS page ${page.slug} already exists, skipping...`);
         continue;
       }
 
@@ -1231,7 +1151,6 @@ class DemoDataProvisioningService {
         });
 
       if (pageError) {
-        console.error(`[DemoData] Error creating CMS page ${page.slug}:`, pageError);
         continue;
       }
 
@@ -1245,15 +1164,10 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      if (transError) {
-        console.error(`[DemoData] Error creating CMS page translation ${page.slug}:`, transError);
-      } else {
+      if (!transError) {
         pagesCreated++;
-        console.log(`[DemoData] Created CMS page: ${page.slug}`);
       }
     }
-
-    console.log(`[DemoData] CMS pages created: ${pagesCreated}/${pages.length}`);
 
     // Create CMS blocks for various placement locations
     // Placements must match actual slot cmsPosition values from config files
@@ -1791,7 +1705,6 @@ class DemoDataProvisioningService {
       }
     ];
 
-    console.log(`[DemoData] Creating ${blocks.length} CMS blocks...`);
     let blocksCreated = 0;
 
     for (const block of blocks) {
@@ -1806,7 +1719,6 @@ class DemoDataProvisioningService {
         .maybeSingle();
 
       if (existingBlock) {
-        console.log(`[DemoData] CMS block ${block.identifier} already exists, skipping...`);
         continue;
       }
 
@@ -1825,17 +1737,12 @@ class DemoDataProvisioningService {
         .single();
 
       if (blockError) {
-        console.error(`[DemoData] Error creating CMS block ${block.identifier}:`, blockError);
-        console.error(`[DemoData] Block insert payload:`, { blockId, storeId: this.storeId, identifier: block.identifier });
         continue;
       }
 
       if (!blockData) {
-        console.error(`[DemoData] CMS block ${block.identifier} was not created (no data returned)`);
         continue;
       }
-
-      console.log(`[DemoData] Created CMS block: ${block.identifier} with ID: ${blockData.id}`);
 
       const { data: transData, error: transError } = await this.tenantDb
         .from('cms_block_translations')
@@ -1849,15 +1756,11 @@ class DemoDataProvisioningService {
         .select('cms_block_id')
         .single();
 
-      if (transError) {
-        console.error(`[DemoData] Error creating CMS block translation ${block.identifier}:`, transError);
-      } else {
+      if (!transError) {
         blocksCreated++;
-        console.log(`[DemoData] Created CMS block translation for: ${block.identifier}`);
       }
     }
 
-    console.log(`[DemoData] CMS blocks created: ${blocksCreated}/${blocks.length}`);
   }
 
   /**
@@ -1902,9 +1805,6 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      if (error) {
-        console.error(`[DemoData] Error creating tax ${tax.name}:`, error);
-      }
     }
   }
 
@@ -2020,9 +1920,6 @@ class DemoDataProvisioningService {
           demo: true
         });
 
-      if (error) {
-        console.error(`[DemoData] Error creating SEO template ${tpl.name}:`, error);
-      }
     }
   }
 
