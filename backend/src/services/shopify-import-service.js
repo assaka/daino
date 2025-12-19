@@ -650,6 +650,7 @@ class ShopifyImportService {
 
       let savedProduct;
       if (existingProduct) {
+        console.log(`📝 Updating product "${product.title}" with category_ids:`, categoryIds);
         const { data, error } = await tenantDb
           .from('products')
           .update({
@@ -662,8 +663,9 @@ class ShopifyImportService {
 
         if (error) throw error;
         savedProduct = data;
-        console.log(`Updated product: ${product.title}`);
+        console.log(`✅ Updated product: ${product.title}, saved category_ids:`, savedProduct.category_ids);
       } else {
+        console.log(`📝 Creating product "${product.title}" with category_ids:`, categoryIds);
         const { data, error } = await tenantDb
           .from('products')
           .insert({
@@ -677,7 +679,7 @@ class ShopifyImportService {
 
         if (error) throw error;
         savedProduct = data;
-        console.log(`Created product: ${product.title}`);
+        console.log(`✅ Created product: ${product.title}, saved category_ids:`, savedProduct.category_ids);
       }
 
       // Sync attributes to product_attribute_values table for storefront display

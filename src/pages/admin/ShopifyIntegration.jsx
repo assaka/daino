@@ -364,7 +364,7 @@ const ShopifyIntegration = () => {
       if (data.success) {
         setFlashMessage({
           type: 'success',
-          text: `Import job started! ${dryRun ? '(Dry run mode)' : ''} You can track progress below.`
+          text: `Import job started! ${dryRun ? '(Dry run mode)' : ''}`
         });
         // Trigger ImportJobProgress to refresh and show the new job
         setRefreshTrigger(prev => prev + 1);

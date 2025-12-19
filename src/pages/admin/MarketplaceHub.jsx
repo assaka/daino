@@ -224,7 +224,7 @@ const MarketplaceHub = () => {
       if (data.success) {
         setFlashMessage({
           type: 'success',
-          message: `Amazon export job scheduled! Job ID: ${data.jobId}. You can track progress below.`
+          message: `Amazon export job scheduled! Job ID: ${data.jobId}.`
         });
         loadActiveJobs(); // Refresh jobs list
       } else {
