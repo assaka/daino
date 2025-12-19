@@ -44,10 +44,13 @@ function cacheMiddleware(options = {}) {
       }
 
       // Try to get cached response
+      const cacheStart = Date.now();
       const cached = await get(cacheKey);
       if (cached) {
         // Set cache hit header for debugging
         res.setHeader('X-Cache', 'HIT');
+        res.setHeader('X-Cache-Key', cacheKey);
+        res.setHeader('X-Response-Time', `${Date.now() - cacheStart}ms`);
         return res.json(cached);
       }
 
@@ -66,6 +69,8 @@ function cacheMiddleware(options = {}) {
 
         // Set cache miss header for debugging
         res.setHeader('X-Cache', 'MISS');
+        res.setHeader('X-Cache-Key', cacheKey);
+        res.setHeader('X-Response-Time', `${Date.now() - cacheStart}ms`);
         return originalJson(data);
       };
 

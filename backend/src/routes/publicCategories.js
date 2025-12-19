@@ -118,8 +118,8 @@ router.get('/', cacheCategories(600), async (req, res) => {
 // @route   GET /api/public/categories/by-slug/:slug/full
 // @desc    Get complete category data with products in one request
 // @access  Public
-// @cache   TEMPORARILY DISABLED for debugging
-router.get('/by-slug/:slug/full', async (req, res) => {
+// @cache   5 minutes (Redis/in-memory)
+router.get('/by-slug/:slug/full', cacheCategories(300), async (req, res) => {
   try {
     const { slug } = req.params;
     const store_id = req.headers['x-store-id'] || req.query.store_id;
