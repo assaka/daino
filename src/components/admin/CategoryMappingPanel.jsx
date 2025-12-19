@@ -93,6 +93,18 @@ const CategoryMappingPanel = ({
     }
   }, [integrationSource, fetchExternalRootCategories]);
 
+  // Auto-fetch categories when root filter changes
+  const prevSelectedRootsRef = React.useRef(selectedExternalRoots);
+  useEffect(() => {
+    // Only auto-fetch if filter actually changed (not on initial mount)
+    if (prevSelectedRootsRef.current !== selectedExternalRoots &&
+        externalRootCategories.length > 0 &&
+        !fetching) {
+      handleFetchCategories();
+    }
+    prevSelectedRootsRef.current = selectedExternalRoots;
+  }, [selectedExternalRoots]);
+
   // Fetch categories from external integration
   const handleFetchCategories = async () => {
     setFetching(true);
@@ -383,18 +395,18 @@ const CategoryMappingPanel = ({
               </div>
 
               {/* Selected badges */}
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-wrap gap-1 mb-2">
                 {selectedExternalRoots.map(code => {
                   const root = externalRootCategories.find(r => r.code === code);
                   return (
                     <span
                       key={code}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
+                      className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs font-semibold transition-colors border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 mr-1"
                     >
                       {root?.name || code}
                       <button
                         onClick={() => setSelectedExternalRoots(prev => prev.filter(c => c !== code))}
-                        className="hover:bg-indigo-200 rounded-full p-0.5"
+                        className="ml-1"
                       >
                         <X className="h-3 w-3" />
                       </button>
