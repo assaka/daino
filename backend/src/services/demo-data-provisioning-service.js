@@ -133,6 +133,16 @@ class DemoDataProvisioningService {
    * Create demo categories with subcategories
    */
   async createDemoCategories() {
+    // Get the root-catalog category to use as parent for demo categories
+    const { data: rootCategory } = await this.tenantDb
+      .from('categories')
+      .select('id')
+      .eq('store_id', this.storeId)
+      .eq('slug', 'root-catalog')
+      .single();
+
+    const rootCategoryId = rootCategory?.id;
+
     const categories = [
       {
         name: 'Electronics',
@@ -186,7 +196,7 @@ class DemoDataProvisioningService {
     for (const cat of categories) {
       const parentId = uuidv4();
 
-      // Insert parent category
+      // Insert parent category (as child of root-catalog if it exists)
       const { error: catError } = await this.tenantDb
         .from('categories')
         .insert({
@@ -194,10 +204,11 @@ class DemoDataProvisioningService {
           store_id: this.storeId,
           slug: cat.slug,
           image_url: cat.image_url,
+          parent_id: rootCategoryId || null,
           sort_order: categories.indexOf(cat),
           is_active: true,
-          level: 0,
-          path: parentId,
+          level: rootCategoryId ? 1 : 0,
+          path: rootCategoryId ? `${rootCategoryId}/${parentId}` : parentId,
           demo: true
         });
 
@@ -233,8 +244,8 @@ class DemoDataProvisioningService {
             parent_id: parentId,
             sort_order: i,
             is_active: true,
-            level: 1,
-            path: `${parentId}/${subId}`,
+            level: rootCategoryId ? 2 : 1,
+            path: rootCategoryId ? `${rootCategoryId}/${parentId}/${subId}` : `${parentId}/${subId}`,
             demo: true
           });
 
