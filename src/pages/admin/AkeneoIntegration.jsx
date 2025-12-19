@@ -731,14 +731,14 @@ const AkeneoIntegration = () => {
 
       // Validation
       if (!validateScheduleForm()) {
-        toast.error('Please fix the validation errors before saving');
+        setFlashMessage({ type: 'error', message: 'Please fix the validation errors before saving' });
         return;
       }
 
       const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm);
 
       if (response.data?.success || response.success) {
-        toast.success('Schedule saved successfully');
+        setFlashMessage({ type: 'success', message: editingSchedule ? 'Schedule updated successfully' : 'Schedule created successfully' });
         setShowScheduleForm(false);
         setEditingSchedule(null);
         setScheduleForm({
@@ -755,7 +755,7 @@ const AkeneoIntegration = () => {
       }
     } catch (error) {
       console.error('Failed to save schedule:', error);
-      toast.error('Failed to save schedule');
+      setFlashMessage({ type: 'error', message: 'Failed to save schedule' });
     }
   };
 
@@ -768,12 +768,12 @@ const AkeneoIntegration = () => {
       const response = await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`);
 
       if (response.data?.success || response.success) {
-        toast.success('Schedule deleted successfully');
+        setFlashMessage({ type: 'success', message: 'Schedule deleted successfully' });
         await loadSchedules();
       }
     } catch (error) {
       console.error('Failed to delete schedule:', error);
-      toast.error('Failed to delete schedule');
+      setFlashMessage({ type: 'error', message: 'Failed to delete schedule' });
     }
   };
 
@@ -791,12 +791,12 @@ const AkeneoIntegration = () => {
       });
 
       if (response.data?.success || response.success) {
-        toast.success(newStatus ? 'Schedule activated' : 'Schedule paused');
+        setFlashMessage({ type: 'success', message: newStatus ? 'Schedule activated' : 'Schedule paused' });
         await loadSchedules();
       }
     } catch (error) {
       console.error('Failed to toggle schedule:', error);
-      toast.error('Failed to update schedule');
+      setFlashMessage({ type: 'error', message: 'Failed to update schedule' });
     }
   };
 

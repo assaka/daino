@@ -434,18 +434,18 @@ const ShopifyIntegration = () => {
 
       // Validate form
       if (scheduleForm.schedule_type === 'once' && !scheduleForm.schedule_date) {
-        toast.error('Schedule date is required for one-time schedules');
+        setFlashMessage({ type: 'error', text: 'Schedule date is required for one-time schedules' });
         return;
       }
       if (scheduleForm.schedule_type !== 'once' && !scheduleForm.schedule_time) {
-        toast.error('Schedule time is required for recurring schedules');
+        setFlashMessage({ type: 'error', text: 'Schedule time is required for recurring schedules' });
         return;
       }
 
       const response = await apiClient.post('/shopify/schedules', scheduleForm);
 
       if (response.data?.success) {
-        toast.success('Schedule saved successfully');
+        setFlashMessage({ type: 'success', text: editingSchedule ? 'Schedule updated successfully' : 'Schedule created successfully' });
         setShowScheduleForm(false);
         setEditingSchedule(null);
         setScheduleForm({
@@ -460,7 +460,7 @@ const ShopifyIntegration = () => {
       }
     } catch (error) {
       console.error('Failed to save schedule:', error);
-      toast.error('Failed to save schedule');
+      setFlashMessage({ type: 'error', text: 'Failed to save schedule' });
     }
   };
 
@@ -472,12 +472,12 @@ const ShopifyIntegration = () => {
       const response = await apiClient.delete(`/shopify/schedules/${scheduleId}`);
 
       if (response.data?.success) {
-        toast.success('Schedule deleted successfully');
+        setFlashMessage({ type: 'success', text: 'Schedule deleted successfully' });
         await loadSchedules();
       }
     } catch (error) {
       console.error('Failed to delete schedule:', error);
-      toast.error('Failed to delete schedule');
+      setFlashMessage({ type: 'error', text: 'Failed to delete schedule' });
     }
   };
 
@@ -494,12 +494,12 @@ const ShopifyIntegration = () => {
       });
 
       if (response.data?.success) {
-        toast.success(newStatus ? 'Schedule activated' : 'Schedule paused');
+        setFlashMessage({ type: 'success', text: newStatus ? 'Schedule activated' : 'Schedule paused' });
         await loadSchedules();
       }
     } catch (error) {
       console.error('Failed to toggle schedule:', error);
-      toast.error('Failed to update schedule');
+      setFlashMessage({ type: 'error', text: 'Failed to update schedule' });
     }
   };
 
