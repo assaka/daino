@@ -77,6 +77,18 @@ class SupabaseQueryBuilder {
     return this;
   }
 
+  // JSONB contains (for array fields like category_ids)
+  contains(column, value) {
+    this.query = this.query.contains(column, value);
+    return this;
+  }
+
+  // JSONB containedBy
+  containedBy(column, value) {
+    this.query = this.query.containedBy(column, value);
+    return this;
+  }
+
   // COMPATIBILITY: Support Knex-style where() method
   where(conditions) {
     // Convert { col1: val1, col2: val2 } to chained .eq() calls
