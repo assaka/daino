@@ -490,7 +490,13 @@ export default function Categories() {
         throw new Error(data.message || 'Failed to delete categories');
       }
 
-      toast.success(`${data.data?.deleted || 0} categories deleted successfully`);
+      const deleted = data.data?.deleted || 0;
+      const skippedRoot = data.data?.skippedRootCategories || 0;
+      if (skippedRoot > 0) {
+        toast.success(`${deleted} categories deleted (${skippedRoot} root ${skippedRoot === 1 ? 'category' : 'categories'} preserved)`);
+      } else {
+        toast.success(`${deleted} categories deleted successfully`);
+      }
       setShowDeleteAllConfirm(false);
       await loadCategories();
       // Clear storefront cache
@@ -1669,8 +1675,11 @@ export default function Categories() {
             </DialogHeader>
             <div className="py-4">
               <p className="text-gray-600">
-                Are you sure you want to delete <strong>all {totalItems} categories</strong> in this store?
+                Are you sure you want to delete categories in this store?
                 This action cannot be undone.
+              </p>
+              <p className="text-sm text-blue-600 mt-2">
+                Note: Root categories (top-level categories without a parent) will be preserved.
               </p>
             </div>
             <div className="flex justify-end gap-2">

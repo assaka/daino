@@ -308,30 +308,36 @@ router.delete('/all', authMiddleware, authorize(['admin', 'store_owner']), async
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Get count before deletion
-    const { count: categoryCount } = await tenantDb
+    // Get all categories for this store (excluding root categories - those with no parent_id)
+    const { data: allCategories } = await tenantDb
       .from('categories')
-      .select('*', { count: 'exact', head: true })
+      .select('id, parent_id')
       .eq('store_id', store_id);
 
-    if (categoryCount === 0) {
+    if (!allCategories || allCategories.length === 0) {
       return res.json({
         success: true,
         message: 'No categories to delete',
-        data: { deleted: 0 }
+        data: { deleted: 0, skippedRootCategories: 0 }
       });
     }
 
-    // Get all category IDs for this store
-    const { data: categories } = await tenantDb
-      .from('categories')
-      .select('id')
-      .eq('store_id', store_id);
+    // Separate root categories (no parent_id) from child categories
+    const rootCategories = allCategories.filter(c => !c.parent_id);
+    const categoriesToDelete = allCategories.filter(c => c.parent_id);
 
-    const categoryIds = categories.map(c => c.id);
+    if (categoriesToDelete.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No categories to delete (only root categories exist, which are protected)',
+        data: { deleted: 0, skippedRootCategories: rootCategories.length }
+      });
+    }
+
+    const categoryIds = categoriesToDelete.map(c => c.id);
 
     // Delete in order: category_translations -> categories
-    // 1. Delete category_translations
+    // 1. Delete category_translations for non-root categories
     const { error: ctError } = await tenantDb
       .from('category_translations')
       .delete()
@@ -339,22 +345,22 @@ router.delete('/all', authMiddleware, authorize(['admin', 'store_owner']), async
 
     if (ctError) console.warn('Warning deleting category_translations:', ctError.message);
 
-    // 2. Delete categories
+    // 2. Delete non-root categories only
     const { error: deleteError } = await tenantDb
       .from('categories')
       .delete()
-      .eq('store_id', store_id);
+      .in('id', categoryIds);
 
     if (deleteError) {
       throw deleteError;
     }
 
-    console.log(`🗑️ Deleted ${categoryCount} categories for store ${store_id}`);
+    console.log(`🗑️ Deleted ${categoriesToDelete.length} categories for store ${store_id} (${rootCategories.length} root categories preserved)`);
 
     res.json({
       success: true,
-      message: `Successfully deleted ${categoryCount} categories`,
-      data: { deleted: categoryCount }
+      message: `Successfully deleted ${categoriesToDelete.length} categories (${rootCategories.length} root categories preserved)`,
+      data: { deleted: categoriesToDelete.length, skippedRootCategories: rootCategories.length }
     });
   } catch (error) {
     console.error('Delete all categories error:', error);

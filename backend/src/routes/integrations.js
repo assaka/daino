@@ -1846,6 +1846,23 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
     const results = await mappingService.syncExternalCategories(categories);
     console.log(`📂 [SYNC] Results:`, JSON.stringify(results));
 
+    // Save import statistics for the category sync
+    try {
+      const ImportStatistic = require('../models/ImportStatistic');
+      await ImportStatistic.saveImportResults(storeId, 'collections', {
+        totalProcessed: categories.length,
+        successfulImports: results.created + results.updated,
+        failedImports: 0,
+        skippedImports: 0,
+        importMethod: 'manual',
+        importSource: source // 'shopify' or 'akeneo'
+      });
+      console.log(`📊 [SYNC] Saved import statistics for ${source} collections`);
+    } catch (statsError) {
+      console.error(`📊 [SYNC] Failed to save import statistics:`, statsError);
+      // Don't fail the sync if stats saving fails
+    }
+
     const response = {
       success: true,
       message: `Synced ${results.created + results.updated} categories (${results.created} new, ${results.updated} updated)`,

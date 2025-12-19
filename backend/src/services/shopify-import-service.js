@@ -87,11 +87,14 @@ class ShopifyImportService {
    */
   async importCollections(options = {}) {
     const { dryRun = false, progressCallback = null } = options;
-    
+
+    console.log(`📊 [ShopifyImport.importCollections] CALLED with options:`, { dryRun, hasProgressCallback: !!progressCallback });
+
     try {
       if (!this.client) {
         const initResult = await this.initialize();
         if (!initResult.success) {
+          console.log(`📊 [ShopifyImport.importCollections] Initialize failed:`, initResult);
           return initResult;
         }
       }
@@ -114,6 +117,7 @@ class ShopifyImportService {
       console.log(`Found ${allCollections.length} collections to import`);
 
       if (dryRun) {
+        console.log(`📊 [ShopifyImport.importCollections] DRY RUN - returning early, no stats saved`);
         return {
           success: true,
           dryRun: true,
