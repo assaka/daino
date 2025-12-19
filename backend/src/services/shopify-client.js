@@ -190,6 +190,8 @@ class ShopifyClient {
       this.getAllSmartCollections(progressCallback)
     ]);
 
+    console.log(`📂 getAllCollections: ${customCollections.length} custom, ${smartCollections.length} smart`);
+
     return {
       custom: customCollections,
       smart: smartCollections,
@@ -288,11 +290,15 @@ class ShopifyClient {
 
     // Start with custom collections from collects API
     const productCollectionsMap = await this.buildProductCollectionsMap(progressCallback);
+    console.log(`📂 After collects API: ${Object.keys(productCollectionsMap).length} products have collection assignments`);
 
     // Now add smart collections by querying each one
     try {
       const smartCollections = await this.getAllSmartCollections(progressCallback);
       console.log(`📂 Found ${smartCollections.length} smart collections to process`);
+      if (smartCollections.length > 0) {
+        console.log(`📂 Smart collections: ${smartCollections.map(c => c.title).join(', ')}`);
+      }
 
       for (let i = 0; i < smartCollections.length; i++) {
         const collection = smartCollections[i];
