@@ -459,7 +459,22 @@ function LayoutInner({ children, currentPageName }) {
   }
 
   // Navigation groups are now loaded dynamically from database using parent_key hierarchy
-  const navigationGroups = dynamicNavItems || [];
+  // For pending_database stores, only show Dashboard, Stores, and Database
+  const pendingDbAllowedKeys = ['dashboard', 'stores', 'database_integrations'];
+  const isPendingDatabase = selectedStore?.status === 'pending_database';
+
+  const navigationGroups = React.useMemo(() => {
+    const groups = dynamicNavItems || [];
+    if (!isPendingDatabase) return groups;
+
+    // Filter groups and their items for pending_database status
+    return groups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item => pendingDbAllowedKeys.includes(item.key))
+      }))
+      .filter(group => group.items.length > 0);
+  }, [dynamicNavItems, isPendingDatabase]);
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
@@ -622,43 +637,49 @@ function LayoutInner({ children, currentPageName }) {
             <DropdownMenuContent className="w-56">
                 <DropdownMenuLabel>{user?.first_name || user?.name || user?.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={async () => {
-                    try {
-                        if (!selectedStore?.id) return;
+                {!isPendingDatabase && (
+                  <DropdownMenuItem onClick={async () => {
+                      try {
+                          if (!selectedStore?.id) return;
 
-                        // Fetch complete store data to ensure we have the slug
-                        const fullStoreData = await Store.findById(selectedStore.id);
-                        // Extract store from nested response structure
-                        const storeData = fullStoreData?.data?.store || fullStoreData?.store || fullStoreData;
-                        const fullStore = Array.isArray(storeData) ? storeData[0] : storeData;
+                          // Fetch complete store data to ensure we have the slug
+                          const fullStoreData = await Store.findById(selectedStore.id);
+                          // Extract store from nested response structure
+                          const storeData = fullStoreData?.data?.store || fullStoreData?.store || fullStoreData;
+                          const fullStore = Array.isArray(storeData) ? storeData[0] : storeData;
 
-                        const storeSlug = fullStore?.slug || selectedStore?.slug;
+                          const storeSlug = fullStore?.slug || selectedStore?.slug;
 
-                        if (storeSlug) {
-                            if (fullStore?.published) {
-                                // Store is running - open directly without version param
-                                const baseUrl = getStoreBaseUrl(fullStore);
-                                const storeUrl = getExternalStoreUrl(storeSlug, '', baseUrl);
-                                window.open(storeUrl, '_blank');
-                            } else {
-                                // Store is paused - add version=published to bypass pause modal
-                                window.open(`/public/${storeSlug}?version=published`, '_blank');
-                            }
-                        }
-                    } catch (error) {
-                    }
-                }}>
-                    <ShoppingBag className="mr-2 h-4 w-4" />
-                    <span>View Storefront</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(createPageUrl("Billing"))}>
-                    <Wallet className="mr-2 h-4 w-4" />
-                    <span>Billing</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/admin/team")}>
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>Team</span>
-                </DropdownMenuItem>
+                          if (storeSlug) {
+                              if (fullStore?.published) {
+                                  // Store is running - open directly without version param
+                                  const baseUrl = getStoreBaseUrl(fullStore);
+                                  const storeUrl = getExternalStoreUrl(storeSlug, '', baseUrl);
+                                  window.open(storeUrl, '_blank');
+                              } else {
+                                  // Store is paused - add version=published to bypass pause modal
+                                  window.open(`/public/${storeSlug}?version=published`, '_blank');
+                              }
+                          }
+                      } catch (error) {
+                      }
+                  }}>
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      <span>View Storefront</span>
+                  </DropdownMenuItem>
+                )}
+                {!isPendingDatabase && (
+                  <DropdownMenuItem onClick={() => navigate(createPageUrl("Billing"))}>
+                      <Wallet className="mr-2 h-4 w-4" />
+                      <span>Billing</span>
+                  </DropdownMenuItem>
+                )}
+                {!isPendingDatabase && (
+                  <DropdownMenuItem onClick={() => navigate("/admin/team")}>
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Team</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/admin/stores")}>
                     <StoreIcon className="mr-2 h-4 w-4" />
                     <span>Stores</span>
@@ -738,20 +759,22 @@ function LayoutInner({ children, currentPageName }) {
             </Link>
 
 
-            {/* Manage Navigation Meta-Tool */}
-            <Link
-              to="/admin/navigation-manager"
-              className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-6 ${
-                location.pathname === '/admin/navigation-manager'
-                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <LayoutList className="w-5 h-5" />
-              <span className="flex-1">Manage Navigation</span>
-              {location.pathname === '/admin/navigation-manager' && <ChevronRight className="w-4 h-4 ml-auto" />}
-            </Link>
+            {/* Manage Navigation Meta-Tool - hidden for pending_database stores */}
+            {!isPendingDatabase && (
+              <Link
+                to="/admin/navigation-manager"
+                className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-6 ${
+                  location.pathname === '/admin/navigation-manager'
+                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <LayoutList className="w-5 h-5" />
+                <span className="flex-1">Manage Navigation</span>
+                {location.pathname === '/admin/navigation-manager' && <ChevronRight className="w-4 h-4 ml-auto" />}
+              </Link>
+            )}
 
             {navigationGroups.map((group) => (
               <Collapsible key={group.name} open={openGroups[group.name]} onOpenChange={() => toggleGroup(group.name)}>
