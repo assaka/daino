@@ -130,9 +130,12 @@ function cacheCategories(ttl = 600) {
     prefix: 'categories',
     ttl,
     keyGenerator: (req) => {
-      const storeId = req.query.store_id || req.params.store_id || 'default';
-      const language = req.query.language || 'en';
-      return generateKey('categories', storeId, { language });
+      const storeId = req.query.store_id || req.headers['x-store-id'] || req.params.store_id || 'default';
+      const language = req.query.language || req.headers['x-language'] || 'en';
+      const slug = req.params.slug || req.params.id || '';
+      const page = req.query.page || '1';
+      const limit = req.query.limit || '100';
+      return generateKey('categories', storeId, { language, slug, page, limit });
     },
   });
 }
