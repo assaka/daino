@@ -88,15 +88,17 @@ function cacheProducts(ttl = 180) {
     prefix: 'products',
     ttl,
     keyGenerator: (req) => {
-      const storeId = req.query.store_id || req.params.store_id || 'default';
+      const storeId = req.query.store_id || req.headers['x-store-id'] || req.params.store_id || 'default';
+      const language = req.query.language || req.headers['x-language'] || 'en';
       const params = {
+        language,
         page: req.query.page || 1,
         limit: req.query.limit || 20,
-        category: req.query.category || '',
+        category: req.query.category_id || req.query.category || '',
         search: req.query.search || '',
         sort: req.query.sort || '',
-        minPrice: req.query.minPrice || '',
-        maxPrice: req.query.maxPrice || '',
+        featured: req.query.featured || '',
+        ids: req.query.ids || '',
       };
       return generateKey('products', storeId, params);
     },
@@ -113,9 +115,10 @@ function cacheProduct(ttl = 300) {
     prefix: 'product',
     ttl,
     keyGenerator: (req) => {
-      const productId = req.params.id || req.params.slug;
-      const language = req.query.language || 'en';
-      return generateKey('product', productId, { language });
+      const storeId = req.query.store_id || req.headers['x-store-id'] || 'default';
+      const productId = req.params.id || req.params.slug || '';
+      const language = req.query.language || req.headers['x-language'] || 'en';
+      return generateKey('product', storeId, { productId, language });
     },
   });
 }
