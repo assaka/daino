@@ -27,10 +27,10 @@ import {
   AlertCircle,
   Loader2,
   Shield,
+  Info,
   ExternalLink,
   ChevronDown,
   ChevronUp,
-  Info,
   Unlink,
   Database,
   AlertTriangle,
@@ -813,6 +813,260 @@ const ShopifyIntegration = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Import Scheduler - Same as Akeneo */}
+          {connectionStatus?.connected && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Import Scheduler
+                </CardTitle>
+                <CardDescription>
+                  Configure automated imports for different data types with filtering options.
+                </CardDescription>
+              </CardHeader>
+
+              {/* Credit Information */}
+              <div className="mx-6 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-1">Credit Usage Information</h4>
+                    <p className="text-sm text-blue-800">
+                      Currently free. Future billing (<strong>0.1 credits per run</strong>) will only begin after advance notification.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Scheduled Imports</h3>
+                  <Button
+                    onClick={() => {
+                      setEditingSchedule(null);
+                      setScheduleForm({
+                        import_type: 'products',
+                        schedule_type: 'once',
+                        schedule_time: '',
+                        schedule_date: '',
+                        is_active: true,
+                        options: { dryRun: false }
+                      });
+                      setShowScheduleForm(true);
+                    }}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Schedule
+                  </Button>
+                </div>
+
+                {/* Schedule Form */}
+                {showScheduleForm && (
+                  <Card className="mb-4 border-2 border-blue-200 bg-blue-50/30">
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Import Type</Label>
+                          <Select
+                            value={scheduleForm.import_type}
+                            onValueChange={(value) => setScheduleForm(prev => ({ ...prev, import_type: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select import type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="products">Products</SelectItem>
+                              <SelectItem value="collections">Collections</SelectItem>
+                              <SelectItem value="full">Full Import (Collections + Products)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Schedule Type</Label>
+                          <Select
+                            value={scheduleForm.schedule_type}
+                            onValueChange={(value) => setScheduleForm(prev => ({ ...prev, schedule_type: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select schedule type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="once">Once</SelectItem>
+                              <SelectItem value="hourly">Hourly</SelectItem>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {scheduleForm.schedule_type === 'once' ? (
+                        <div className="mt-4 space-y-2">
+                          <Label>Schedule Date & Time</Label>
+                          <Input
+                            type="datetime-local"
+                            value={scheduleForm.schedule_date}
+                            onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_date: e.target.value }))}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-4 space-y-2">
+                          <Label>
+                            Time
+                            <span className="font-normal text-gray-600 ml-1">
+                              {scheduleForm.schedule_type === 'hourly' && '(e.g., :00, :30)'}
+                              {scheduleForm.schedule_type === 'daily' && '(e.g., 09:00)'}
+                              {scheduleForm.schedule_type === 'weekly' && '(e.g., MON-09:00)'}
+                              {scheduleForm.schedule_type === 'monthly' && '(e.g., 1-09:00)'}
+                            </span>
+                          </Label>
+                          <Input
+                            placeholder={
+                              scheduleForm.schedule_type === 'hourly' ? ':MM' :
+                              scheduleForm.schedule_type === 'daily' ? 'HH:MM' :
+                              scheduleForm.schedule_type === 'weekly' ? 'DAY-HH:MM' :
+                              'DD-HH:MM'
+                            }
+                            value={scheduleForm.schedule_time}
+                            onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_time: e.target.value }))}
+                          />
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex items-center space-x-2">
+                        <Switch
+                          id="schedule-dry-run"
+                          checked={scheduleForm.options.dryRun}
+                          onCheckedChange={(checked) => setScheduleForm(prev => ({
+                            ...prev,
+                            options: { ...prev.options, dryRun: checked }
+                          }))}
+                        />
+                        <Label htmlFor="schedule-dry-run">Dry Run (Preview only)</Label>
+                      </div>
+
+                      <div className="mt-4 flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowScheduleForm(false);
+                            setEditingSchedule(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={saveSchedule}>
+                          {editingSchedule ? 'Update Schedule' : 'Create Schedule'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Schedules List */}
+                <div className="space-y-2">
+                  {loadingSchedules ? (
+                    <div className="text-center py-4">
+                      <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
+                      <span className="text-sm text-gray-500 ml-2">Loading schedules...</span>
+                    </div>
+                  ) : schedules.length > 0 ? (
+                    schedules.map((schedule) => (
+                      <Card key={schedule.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={schedule.is_active ? "default" : "secondary"}>
+                                {schedule.import_type}
+                              </Badge>
+                              <span className="text-sm text-gray-600">
+                                {schedule.schedule_type === 'once'
+                                  ? new Date(schedule.schedule_date).toLocaleString()
+                                  : `${schedule.schedule_type} at ${schedule.schedule_time}`
+                                }
+                              </span>
+                              {!schedule.is_active && (
+                                <Badge variant="outline">Paused</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {schedule.options?.dryRun && <span>Dry Run • </span>}
+                              <span>Created: {new Date(schedule.created_at).toLocaleDateString()}</span>
+                            </div>
+                            {/* Execution Status */}
+                            <div className="text-xs text-gray-400 mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                              {schedule.last_run && (
+                                <span>Last run: {new Date(schedule.last_run).toLocaleString()}</span>
+                              )}
+                              {schedule.next_run && schedule.is_active && (
+                                <span>Next run: {new Date(schedule.next_run).toLocaleString()}</span>
+                              )}
+                              {(schedule._run_count > 0 || schedule._success_count > 0 || schedule._failure_count > 0) && (
+                                <span>
+                                  Runs: {schedule._run_count || 0}
+                                  {schedule._success_count > 0 && <span className="text-green-600 ml-1">({schedule._success_count} ok)</span>}
+                                  {schedule._failure_count > 0 && <span className="text-red-600 ml-1">({schedule._failure_count} failed)</span>}
+                                </span>
+                              )}
+                              {schedule.last_result && (
+                                <span className={schedule.last_result === 'success' ? 'text-green-600' : schedule.last_result === 'failed' ? 'text-red-600' : ''}>
+                                  Last result: {schedule.last_result}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={schedule.is_active}
+                              onCheckedChange={() => toggleSchedule(schedule)}
+                              title={schedule.is_active ? 'Pause schedule' : 'Activate schedule'}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingSchedule(schedule);
+                                setScheduleForm({
+                                  id: schedule.id,
+                                  import_type: schedule.import_type,
+                                  schedule_type: schedule.schedule_type,
+                                  schedule_time: schedule.schedule_time || '',
+                                  schedule_date: schedule.schedule_date || '',
+                                  is_active: schedule.is_active,
+                                  options: schedule.options || { dryRun: false }
+                                });
+                                setShowScheduleForm(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteSchedule(schedule.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No scheduled imports configured</p>
+                      <p className="text-sm">Click "Add Schedule" to create your first automated import</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Products Tab */}
@@ -972,244 +1226,6 @@ const ShopifyIntegration = () => {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Scheduled Imports */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Clock className="h-5 w-5" />
-                        Scheduled Imports
-                      </CardTitle>
-                      <CardDescription>
-                        Automate your Shopify imports on a schedule
-                      </CardDescription>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setEditingSchedule(null);
-                        setScheduleForm({
-                          import_type: 'products',
-                          schedule_type: 'once',
-                          schedule_time: '',
-                          schedule_date: '',
-                          is_active: true,
-                          options: { dryRun: false }
-                        });
-                        setShowScheduleForm(true);
-                      }}
-                      size="sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Schedule
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Schedule Form */}
-                  {showScheduleForm && (
-                    <Card className="mb-4 border-2 border-blue-200 bg-blue-50/30">
-                      <CardContent className="pt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Import Type</Label>
-                            <Select
-                              value={scheduleForm.import_type}
-                              onValueChange={(value) => setScheduleForm(prev => ({ ...prev, import_type: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select import type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="products">Products</SelectItem>
-                                <SelectItem value="collections">Collections</SelectItem>
-                                <SelectItem value="full">Full Import (Collections + Products)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Schedule Type</Label>
-                            <Select
-                              value={scheduleForm.schedule_type}
-                              onValueChange={(value) => setScheduleForm(prev => ({ ...prev, schedule_type: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select schedule type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="once">Once</SelectItem>
-                                <SelectItem value="hourly">Hourly</SelectItem>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {scheduleForm.schedule_type === 'once' ? (
-                          <div className="mt-4 space-y-2">
-                            <Label>Schedule Date & Time</Label>
-                            <Input
-                              type="datetime-local"
-                              value={scheduleForm.schedule_date}
-                              onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_date: e.target.value }))}
-                            />
-                          </div>
-                        ) : (
-                          <div className="mt-4 space-y-2">
-                            <Label>
-                              Time
-                              <span className="font-normal text-gray-600 ml-1">
-                                {scheduleForm.schedule_type === 'hourly' && '(e.g., :00, :30)'}
-                                {scheduleForm.schedule_type === 'daily' && '(e.g., 09:00)'}
-                                {scheduleForm.schedule_type === 'weekly' && '(e.g., MON-09:00)'}
-                                {scheduleForm.schedule_type === 'monthly' && '(e.g., 1-09:00)'}
-                              </span>
-                            </Label>
-                            <Input
-                              placeholder={
-                                scheduleForm.schedule_type === 'hourly' ? ':MM' :
-                                scheduleForm.schedule_type === 'daily' ? 'HH:MM' :
-                                scheduleForm.schedule_type === 'weekly' ? 'DAY-HH:MM' :
-                                'DD-HH:MM'
-                              }
-                              value={scheduleForm.schedule_time}
-                              onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_time: e.target.value }))}
-                            />
-                          </div>
-                        )}
-
-                        <div className="mt-4 flex items-center space-x-2">
-                          <Switch
-                            id="schedule-dry-run"
-                            checked={scheduleForm.options.dryRun}
-                            onCheckedChange={(checked) => setScheduleForm(prev => ({
-                              ...prev,
-                              options: { ...prev.options, dryRun: checked }
-                            }))}
-                          />
-                          <Label htmlFor="schedule-dry-run">Dry Run (Preview only)</Label>
-                        </div>
-
-                        <div className="mt-4 flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setShowScheduleForm(false);
-                              setEditingSchedule(null);
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button onClick={saveSchedule}>
-                            {editingSchedule ? 'Update Schedule' : 'Create Schedule'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Schedules List */}
-                  <div className="space-y-2">
-                    {loadingSchedules ? (
-                      <div className="text-center py-4">
-                        <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
-                        <span className="text-sm text-gray-500 ml-2">Loading schedules...</span>
-                      </div>
-                    ) : schedules.length > 0 ? (
-                      schedules.map((schedule) => (
-                        <Card key={schedule.id} className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <Badge variant={schedule.is_active ? "default" : "secondary"}>
-                                  {schedule.import_type}
-                                </Badge>
-                                <span className="text-sm text-gray-600">
-                                  {schedule.schedule_type === 'once'
-                                    ? new Date(schedule.schedule_date).toLocaleString()
-                                    : `${schedule.schedule_type} at ${schedule.schedule_time}`
-                                  }
-                                </span>
-                                {!schedule.is_active && (
-                                  <Badge variant="outline">Paused</Badge>
-                                )}
-                              </div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                {schedule.options?.dryRun && <span>Dry Run • </span>}
-                                <span>Created: {new Date(schedule.created_at).toLocaleDateString()}</span>
-                              </div>
-                              {/* Execution Status */}
-                              <div className="text-xs text-gray-400 mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                                {schedule.last_run && (
-                                  <span>Last run: {new Date(schedule.last_run).toLocaleString()}</span>
-                                )}
-                                {schedule.next_run && schedule.is_active && (
-                                  <span>Next run: {new Date(schedule.next_run).toLocaleString()}</span>
-                                )}
-                                {(schedule._run_count > 0 || schedule._success_count > 0 || schedule._failure_count > 0) && (
-                                  <span>
-                                    Runs: {schedule._run_count || 0}
-                                    {schedule._success_count > 0 && <span className="text-green-600 ml-1">({schedule._success_count} ok)</span>}
-                                    {schedule._failure_count > 0 && <span className="text-red-600 ml-1">({schedule._failure_count} failed)</span>}
-                                  </span>
-                                )}
-                                {schedule.last_result && (
-                                  <span className={schedule.last_result === 'success' ? 'text-green-600' : schedule.last_result === 'failed' ? 'text-red-600' : ''}>
-                                    Last result: {schedule.last_result}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={schedule.is_active}
-                                onCheckedChange={() => toggleSchedule(schedule)}
-                                title={schedule.is_active ? 'Pause schedule' : 'Activate schedule'}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingSchedule(schedule);
-                                  setScheduleForm({
-                                    id: schedule.id,
-                                    import_type: schedule.import_type,
-                                    schedule_type: schedule.schedule_type,
-                                    schedule_time: schedule.schedule_time || '',
-                                    schedule_date: schedule.schedule_date || '',
-                                    is_active: schedule.is_active,
-                                    options: schedule.options || { dryRun: false }
-                                  });
-                                  setShowScheduleForm(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteSchedule(schedule.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </Card>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No scheduled imports configured</p>
-                        <p className="text-sm">Click "Add Schedule" to create your first automated import</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
 
             </>
           )}

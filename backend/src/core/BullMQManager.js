@@ -114,14 +114,6 @@ class BullMQManager {
           };
           console.log(`BullMQ: Non-TLS config - host: ${url.hostname}, port: ${url.port}`);
         }
-      } else if (process.env.REDIS_HOST) {
-        this.connectionConfig = {
-          host: process.env.REDIS_HOST,
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
-          db: parseInt(process.env.REDIS_DB || '0', 10),
-          password: process.env.REDIS_PASSWORD || undefined,
-          ...bullMQOptions,
-        };
       } else {
         console.warn('BullMQ: Redis not configured, falling back to database queue');
         return false;
@@ -168,17 +160,6 @@ class BullMQManager {
         ...bullMQOptions,
         // Parse the URL and merge with BullMQ options
         url: process.env.REDIS_URL,
-      };
-    }
-
-    // Build config from individual parameters
-    if (process.env.REDIS_HOST) {
-      return {
-        host: process.env.REDIS_HOST,
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-        db: parseInt(process.env.REDIS_DB || '0', 10),
-        password: process.env.REDIS_PASSWORD || undefined,
-        ...bullMQOptions,
       };
     }
 
@@ -306,9 +287,7 @@ class BullMQManager {
     const worker = new Worker(
       queueName,
       async (job) => {
-        console.log(`BullMQ: Processing job ${job.id} of type ${jobType}`);
-        console.log(`BullMQ: Attempt ${job.attemptsMade + 1} of ${job.opts?.attempts || 3}`);
-        console.log(`BullMQ: Job data:`, JSON.stringify(job.data, null, 2).substring(0, 500));
+
         const jobRecordId = job.data.jobRecord?.id;
         console.log(`BullMQ: jobRecordId = ${jobRecordId}`);
 
