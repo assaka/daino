@@ -5,16 +5,22 @@
  * to avoid repeated database queries. Integrates with cacheUtils.
  * Cache expires after 5 minutes or can be manually invalidated.
  *
- * Note: Store settings are fetched from Master DB as they're configuration data
+ * Fetches settings from tenant DB for accurate cache configuration.
  */
 
-const { masterDbClient } = require('../database/masterConnection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 // In-memory cache: { store_id: { settings: {...}, cacheConfig: {...}, timestamp: Date } }
 const storeCache = new Map();
 
 // Cache TTL: 5 minutes
 const CACHE_TTL = 5 * 60 * 1000;
+
+// Default cache config used when fetching fails
+const DEFAULT_CACHE_CONFIG = {
+  enabled: true,
+  duration: 60 // 1 minute default
+};
 
 /**
  * Get complete store data with caching (settings + cache config)
@@ -23,7 +29,7 @@ const CACHE_TTL = 5 * 60 * 1000;
  * @returns {Promise<Object>} { settings, cacheConfig }
  */
 async function getStoreData(storeId) {
-  if (!storeId) return { settings: {}, cacheConfig: { enabled: true, duration: 60 } };
+  if (!storeId) return { settings: {}, cacheConfig: DEFAULT_CACHE_CONFIG };
 
   const now = Date.now();
   const cached = storeCache.get(storeId);
@@ -33,21 +39,51 @@ async function getStoreData(storeId) {
     return { settings: cached.settings, cacheConfig: cached.cacheConfig };
   }
 
-  // Use default cache config (settings column is in tenant DB, not master DB)
-  // Master DB only has basic routing info (id, slug, name, user_id, is_active)
-  const cacheConfig = {
-    enabled: true,
-    duration: 60 // 1 minute default
-  };
+  // Fetch settings from tenant DB
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const { data: store, error } = await tenantDb
+      .from('stores')
+      .select('settings')
+      .eq('id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
 
-  // Cache the result
-  storeCache.set(storeId, {
-    settings: {},
-    cacheConfig,
-    timestamp: now
-  });
+    if (error) {
+      console.warn('Error fetching store settings:', error.message);
+      // Cache default to prevent repeated failed fetches
+      storeCache.set(storeId, {
+        settings: {},
+        cacheConfig: DEFAULT_CACHE_CONFIG,
+        timestamp: now
+      });
+      return { settings: {}, cacheConfig: DEFAULT_CACHE_CONFIG };
+    }
 
-  return { settings: {}, cacheConfig };
+    const settings = store?.settings || {};
+    const cacheConfig = {
+      enabled: settings.cache_enabled !== false,
+      duration: settings.cache_duration || 60
+    };
+
+    // Cache the result
+    storeCache.set(storeId, {
+      settings,
+      cacheConfig,
+      timestamp: now
+    });
+
+    return { settings, cacheConfig };
+  } catch (error) {
+    console.warn('Failed to fetch store settings:', error.message);
+    // Cache default to prevent repeated failed fetches
+    storeCache.set(storeId, {
+      settings: {},
+      cacheConfig: DEFAULT_CACHE_CONFIG,
+      timestamp: now
+    });
+    return { settings: {}, cacheConfig: DEFAULT_CACHE_CONFIG };
+  }
 }
 
 /**

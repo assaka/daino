@@ -5,6 +5,8 @@
  * from normalized tables while maintaining the same JSON format the frontend expects.
  */
 
+const { wrap, generateKey } = require('./cacheManager');
+
 /**
  * Get attributes with translations from normalized tables
  * Returns same format as before: { id, name, code, translations: {en: {name, description}, nl: {...}} }
@@ -383,9 +385,49 @@ async function saveAttributeValueTranslations(tenantDb, valueId, translations) {
   }
 }
 
+/**
+ * Cached wrapper for getAttributesWithTranslations
+ * Caches attribute data for 10 minutes to reduce database load
+ *
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {object} where - WHERE clause conditions
+ * @param {string} storeId - Store ID for cache key
+ * @returns {Promise<Array>} Attributes with translations (cached)
+ */
+async function getAttributesWithTranslationsCached(tenantDb, where = {}, storeId) {
+  // Generate cache key based on attribute IDs
+  const ids = where.id
+    ? (Array.isArray(where.id) ? where.id.sort().join(',') : String(where.id))
+    : 'all';
+  const cacheKey = generateKey('attr_trans', storeId, { ids });
+
+  return wrap(cacheKey, () => getAttributesWithTranslations(tenantDb, where), 600);
+}
+
+/**
+ * Cached wrapper for getAttributeValuesWithTranslations
+ * Caches attribute value data for 10 minutes to reduce database load
+ *
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {object} where - WHERE clause conditions
+ * @param {string} storeId - Store ID for cache key
+ * @returns {Promise<Array>} Attribute values with translations (cached)
+ */
+async function getAttributeValuesWithTranslationsCached(tenantDb, where = {}, storeId) {
+  // Generate cache key based on value IDs
+  const ids = where.id
+    ? (Array.isArray(where.id) ? where.id.sort().join(',') : String(where.id))
+    : 'all';
+  const cacheKey = generateKey('attr_val_trans', storeId, { ids });
+
+  return wrap(cacheKey, () => getAttributeValuesWithTranslations(tenantDb, where), 600);
+}
+
 module.exports = {
   getAttributesWithTranslations,
   getAttributeValuesWithTranslations,
+  getAttributesWithTranslationsCached,
+  getAttributeValuesWithTranslationsCached,
   getAttributeWithValues,
   getAttributesWithValuesForStore,
   saveAttributeTranslations,

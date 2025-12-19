@@ -3,12 +3,15 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { fetchProductImages } = require('../utils/productHelpers');
+const { batchFetchProductAttributes } = require('../utils/productAttributeBatcher');
+const { cacheCategories } = require('../middleware/cacheMiddleware');
 const router = express.Router();
 
 // @route   GET /api/public/categories
 // @desc    Get all active categories (no authentication required)
 // @access  Public
-router.get('/', async (req, res) => {
+// @cache   10 minutes (Redis/in-memory)
+router.get('/', cacheCategories(600), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -115,7 +118,8 @@ router.get('/', async (req, res) => {
 // @route   GET /api/public/categories/by-slug/:slug/full
 // @desc    Get complete category data with products in one request
 // @access  Public
-router.get('/by-slug/:slug/full', async (req, res) => {
+// @cache   5 minutes (Redis/in-memory)
+router.get('/by-slug/:slug/full', cacheCategories(300), async (req, res) => {
   try {
     const { slug } = req.params;
     const store_id = req.headers['x-store-id'] || req.query.store_id;
@@ -173,20 +177,16 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       description: reqLang?.description || enLang?.description || null
     };
 
-    // 2. Load products for this category
-    // Fetch all products and filter in JavaScript since JSONB array queries are complex
-    const { data: allProducts, error: prodsError } = await tenantDb
+    // 2. Load products for this category using database-level JSONB contains query
+    const { data: products, error: prodsError } = await tenantDb
       .from('products')
       .select('*')
       .eq('store_id', store_id)
       .eq('status', 'active')
       .eq('visibility', 'visible')
-      .order('created_at', { ascending: false });
-
-    // Filter products that have this category in their category_ids array
-    const products = (allProducts || []).filter(p =>
-      p.category_ids && Array.isArray(p.category_ids) && p.category_ids.includes(category.id)
-    ).slice(0, 100);
+      .contains('category_ids', [category.id])
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (prodsError) {
       console.error('Error loading category products:', prodsError.message);
@@ -213,83 +213,11 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       prodTransMap[t.product_id][t.language_code] = t;
     });
 
-    // Fetch images from product_files table
-    const imagesByProduct = await fetchProductImages(productIds, tenantDb);
-
-    // Load product attribute values for layered navigation
-    let attributeValuesData = [];
-    if (productIds.length > 0) {
-      const { data: pavs } = await tenantDb
-        .from('product_attribute_values')
-        .select('*')
-        .in('product_id', productIds);
-      attributeValuesData = pavs || [];
-    }
-
-    // Load attributes and attribute values referenced
-    const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
-    const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
-
-    // Load attributes
-    let attributesData = [];
-    if (attributeIds.length > 0) {
-      const { data: attrs } = await tenantDb
-        .from('attributes')
-        .select('id, code, type, is_filterable')
-        .in('id', attributeIds);
-      attributesData = attrs || [];
-    }
-
-    // Load attribute values
-    let attributeValuesListData = [];
-    if (attributeValueIds.length > 0) {
-      const { data: attrVals } = await tenantDb
-        .from('attribute_values')
-        .select('id, code, metadata')
-        .in('id', attributeValueIds);
-      attributeValuesListData = attrVals || [];
-    }
-
-    // Create lookup maps
-    const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
-    const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
-
-    // Load attribute translations
-    let attributeTranslations = [];
-    let valueTranslations = [];
-    if (attributeIds.length > 0) {
-      const { data: attrTrans } = await tenantDb
-        .from('attribute_translations')
-        .select('*')
-        .in('attribute_id', attributeIds);
-      attributeTranslations = attrTrans || [];
-    }
-    if (attributeValueIds.length > 0) {
-      const { data: valTrans } = await tenantDb
-        .from('attribute_value_translations')
-        .select('*')
-        .in('attribute_value_id', attributeValueIds);
-      valueTranslations = valTrans || [];
-    }
-
-    // Build translation maps
-    const attrTransMap = {};
-    attributeTranslations.forEach(t => {
-      if (!attrTransMap[t.attribute_id]) attrTransMap[t.attribute_id] = {};
-      attrTransMap[t.attribute_id][t.language_code] = t;
-    });
-    const valTransMap = {};
-    valueTranslations.forEach(t => {
-      if (!valTransMap[t.attribute_value_id]) valTransMap[t.attribute_value_id] = {};
-      valTransMap[t.attribute_value_id][t.language_code] = t;
-    });
-
-    // Group attribute values by product
-    const pavByProduct = {};
-    attributeValuesData.forEach(pav => {
-      if (!pavByProduct[pav.product_id]) pavByProduct[pav.product_id] = [];
-      pavByProduct[pav.product_id].push(pav);
-    });
+    // Batch fetch images and attributes in parallel (optimized)
+    const [imagesByProduct, batchData] = await Promise.all([
+      fetchProductImages(productIds, tenantDb),
+      batchFetchProductAttributes(productIds, lang, tenantDb)
+    ]);
 
     // Apply translations, images, and attributes to products
     const productsWithTrans = (products || []).map(p => {
@@ -297,23 +225,23 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       const reqLang = trans?.[lang];
       const enLang = trans?.['en'];
 
-      // Transform product attribute values to array format
-      const productPavs = pavByProduct[p.id] || [];
+      // Transform product attribute values to array format using batched data
+      const productPavs = batchData.pavByProduct[p.id] || [];
       const attributes = productPavs.map(pav => {
-        const attr = attrMap.get(pav.attribute_id);
+        const attr = batchData.attrMap.get(pav.attribute_id);
         if (!attr) return null;
 
-        const attrTrans = attrTransMap[attr.id] || {};
+        const attrTrans = batchData.attrTransMap.get(attr.id) || {};
         const attrLabel = attrTrans[lang]?.label || attrTrans.en?.label || attr.code;
 
         let value, valueLabel, metadata = null;
 
         if (pav.value_id) {
-          const val = valMap.get(pav.value_id);
+          const val = batchData.valMap.get(pav.value_id);
           if (val) {
             value = val.code;
-            const valTrans = valTransMap[val.id] || {};
-            valueLabel = valTrans[lang]?.label || valTrans.en?.label || val.code;
+            const valTrans = batchData.valTransMap.get(val.id) || {};
+            valueLabel = valTrans[lang]?.value || valTrans.en?.value || val.code;
             metadata = val.metadata;
           }
         } else {
@@ -360,7 +288,8 @@ router.get('/by-slug/:slug/full', async (req, res) => {
 // @route   GET /api/public/categories/:id
 // @desc    Get single category by ID (no authentication required)
 // @access  Public
-router.get('/:id', async (req, res) => {
+// @cache   10 minutes (Redis/in-memory)
+router.get('/:id', cacheCategories(600), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 

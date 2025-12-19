@@ -102,8 +102,8 @@ export const useWishlist = (storeId, options = {}) => {
       }
     },
     enabled: !!storeId,
-    staleTime: 60000, // Increased to 1 minute (from 30s)
-    gcTime: 120000, // 2 minutes cache (from 1 min)
+    staleTime: 120000, // 2 minutes - reduces unnecessary refetches
+    gcTime: 300000, // 5 minutes cache
     retry: 1,
     refetchOnMount: false, // CRITICAL: Prevent duplicate calls
     refetchOnWindowFocus: false, // CRITICAL: Prevent duplicate calls
@@ -215,8 +215,8 @@ export const useCategories = (storeId, options = {}) => {
       return categories || [];
     },
     enabled: !!storeId,
-    staleTime: 300000, // 5 minutes
-    gcTime: 600000, // 10 minutes cache
+    staleTime: 600000, // 10 minutes - categories rarely change
+    gcTime: 1800000, // 30 minutes cache
     retry: 2,
     ...options
   });
@@ -269,8 +269,8 @@ export const useAttributes = (storeId, options = {}) => {
       return attributes || [];
     },
     enabled: !!storeId,
-    staleTime: 300000, // 5 minutes
-    gcTime: 600000, // 10 minutes cache
+    staleTime: 600000, // 10 minutes - attributes rarely change
+    gcTime: 1800000, // 30 minutes cache
     retry: 2,
     ...options
   });

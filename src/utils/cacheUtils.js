@@ -70,9 +70,9 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export async function cachedApiCall(key, apiCall, ttl = CACHE_DURATION_LONG) {
   const now = Date.now();
 
-  // Force fresh calls for critical APIs (removed featured-products - can be cached!)
-  const isCriticalCall = key.includes('products-category') ||
-                         key.includes('categories-');
+  // Force fresh calls for critical APIs
+  // Note: categories removed from critical calls - now properly cached at backend level
+  const isCriticalCall = key.includes('products-category');
 
   // Check cache first (unless critical)
   if (apiCache.has(key) && !isCriticalCall) {
