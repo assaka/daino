@@ -1800,9 +1800,20 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
 
         console.log('📂 [SHOPIFY] Calling getAllCollections...');
         const collectionsData = await client.getAllCollections();
+        const customCollections = collectionsData?.custom || [];
+        const smartCollections = collectionsData?.smart || [];
         const allCollections = collectionsData?.all || [];
 
-        console.log(`📂 [SHOPIFY] Raw collections count: ${allCollections.length}`);
+        console.log(`📂 [SHOPIFY] Custom collections: ${customCollections.length}`);
+        console.log(`📂 [SHOPIFY] Smart collections: ${smartCollections.length}`);
+        console.log(`📂 [SHOPIFY] Total collections: ${allCollections.length}`);
+
+        if (smartCollections.length > 0) {
+          console.log(`📂 [SHOPIFY] Smart collection names: ${smartCollections.map(c => c.title).join(', ')}`);
+        }
+        if (customCollections.length > 0) {
+          console.log(`📂 [SHOPIFY] Custom collection names: ${customCollections.map(c => c.title).join(', ')}`);
+        }
 
         categories = allCollections.map(col => ({
           id: String(col.id),
