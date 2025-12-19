@@ -607,7 +607,7 @@ const ShopifyIntegration = () => {
                       </button>
                     </>
                   ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span className="whitespace-nowrap inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       Not Connected
                     </span>
                   )}
