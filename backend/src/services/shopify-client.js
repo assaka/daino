@@ -305,8 +305,15 @@ class ShopifyClient {
         const collectionId = String(collection.id);
 
         try {
+          console.log(`📂 Fetching products for smart collection "${collection.title}" (${collectionId})...`);
+
           // Get products for this smart collection
           const products = await this.getCollectionProducts(collection.id);
+
+          console.log(`📂 Smart collection "${collection.title}" has ${products.length} products`);
+          if (products.length > 0) {
+            console.log(`📂 Product IDs in "${collection.title}": ${products.map(p => p.id).join(', ')}`);
+          }
 
           // Add to map
           for (const product of products) {
@@ -332,7 +339,8 @@ class ShopifyClient {
           // Respect rate limits
           await this.delay(this.rateLimitDelay);
         } catch (colError) {
-          console.warn(`⚠️ Could not get products for smart collection ${collection.title}:`, colError.message);
+          console.error(`❌ Could not get products for smart collection ${collection.title}:`, colError.message);
+          console.error(`❌ Error details:`, colError.response?.data || colError);
         }
       }
     } catch (error) {
