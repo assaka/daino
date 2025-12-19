@@ -986,25 +986,17 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     }
 
     // 2. Get stores where user is a team member (from store_teams in master DB)
-    console.log('[Dropdown] Checking store_teams for user:', userId);
     const { data: teamMemberships, error: teamError } = await masterDbClient
       .from('store_teams')
       .select('store_id, role, status')
       .eq('user_id', userId)
       .eq('status', 'active');
 
-    if (teamError) {
-      console.warn('[Dropdown] Error fetching team memberships:', teamError.message);
-    }
-    console.log('[Dropdown] Team memberships found:', teamMemberships?.length || 0, teamMemberships);
-
     // Get the store IDs where user is a team member (excluding owned stores)
     const ownedStoreIds = new Set((ownedStores || []).map(s => s.id));
     const teamStoreIds = (teamMemberships || [])
       .filter(m => !ownedStoreIds.has(m.store_id))
       .map(m => m.store_id);
-
-    console.log('[Dropdown] Team store IDs (excluding owned):', teamStoreIds);
 
     // 3. Fetch team member stores details
     let teamStores = [];
@@ -1014,12 +1006,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
         .in('id', teamStoreIds);
 
-      console.log('[Dropdown] Team stores query result:', teamStoreData, 'error:', teamStoreError);
-
       if (!teamStoreError && teamStoreData) {
         // Filter to only active stores
         teamStores = teamStoreData.filter(s => s.is_active && s.status === 'active');
-        console.log('[Dropdown] Active team stores:', teamStores.length);
       }
     }
 
@@ -1144,8 +1133,6 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         theme_preset: store.theme_preset || 'default'
       };
     });
-
-    console.log(`[Dropdown] Returning ${enrichedStores.length} stores for user ${userId} (owned: ${(ownedStores || []).length}, team: ${teamStores.length})`);
 
     res.json({
       success: true,

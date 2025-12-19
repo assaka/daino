@@ -113,7 +113,6 @@ IntegrationConfig.encryptSensitiveData = (configData, integrationType) => {
         const encryptedValue = encryptLegacy(encrypted[field], key);
         encrypted[field] = `encrypted:${encryptedValue}`;
       } catch (error) {
-        console.error(`Failed to encrypt field ${field}:`, error.message);
       }
     }
   });
@@ -124,17 +123,10 @@ IntegrationConfig.encryptSensitiveData = (configData, integrationType) => {
 IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
   // Handle case where config_data is stored as a JSON string
   let parsedData = configData;
-  console.log('🔍 decryptSensitiveData input:', {
-    integrationType,
-    configDataType: typeof configData,
-    configDataSample: typeof configData === 'string' ? configData.substring(0, 100) : configData
-  });
   if (typeof configData === 'string') {
     try {
       parsedData = JSON.parse(configData);
-      console.log('🔍 decryptSensitiveData parsed:', { parsedData });
     } catch (e) {
-      console.warn('Failed to parse config_data as JSON string:', e.message);
       return configData;
     }
   }
@@ -200,13 +192,11 @@ IntegrationConfig.updateSyncStatus = async function(configId, storeId, status, e
       .eq('id', configId);
 
     if (updateError) {
-      console.error('Error updating sync status:', updateError);
       throw updateError;
     }
 
     return updateData;
   } catch (err) {
-    console.error('IntegrationConfig.updateSyncStatus error:', err);
     throw err;
   }
 };
@@ -231,13 +221,11 @@ IntegrationConfig.updateConnectionStatus = async function(configId, storeId, sta
       .eq('id', configId);
 
     if (updateError) {
-      console.error('Error updating connection status:', updateError);
       throw updateError;
     }
 
     return updateData;
   } catch (err) {
-    console.error('IntegrationConfig.updateConnectionStatus error:', err);
     throw err;
   }
 };
@@ -259,12 +247,10 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching integration config:', error);
       return null;
     }
 
     if (!data) {
-      console.log('🔍 findByStoreAndType: No data found for', { storeId, integrationType });
       return null;
     }
 
@@ -284,7 +270,6 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
     // Create a simplified plain object (remove backward compatibility with Sequelize)
     return decryptedData;
   } catch (error) {
-    console.error('IntegrationConfig.findByStoreAndType error:', error);
     throw error;
   }
 };
@@ -306,7 +291,6 @@ IntegrationConfig.findByStoreAndTypes = async function(storeId, integrationTypes
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching integration config by types:', error);
       return null;
     }
 
@@ -322,7 +306,6 @@ IntegrationConfig.findByStoreAndTypes = async function(storeId, integrationTypes
 
     return decryptedData;
   } catch (error) {
-    console.error('IntegrationConfig.findByStoreAndTypes error:', error);
     throw error;
   }
 };
@@ -387,7 +370,6 @@ IntegrationConfig.createOrUpdate = async function(storeId, integrationType, conf
         .single();
 
       if (createError) {
-        console.error('IntegrationConfig.create failed:', createError);
         throw createError;
       }
 
@@ -397,7 +379,6 @@ IntegrationConfig.createOrUpdate = async function(storeId, integrationType, conf
       };
     }
   } catch (error) {
-    console.error('IntegrationConfig.createOrUpdate error:', error);
     throw error;
   }
 };
@@ -424,7 +405,6 @@ IntegrationConfig.getActiveConfigs = async function(storeId) {
       config_data: IntegrationConfig.decryptSensitiveData(config.config_data, config.integration_type)
     }));
   } catch (error) {
-    console.error('IntegrationConfig.getActiveConfigs error:', error);
     throw error;
   }
 };
@@ -443,13 +423,11 @@ IntegrationConfig.deleteByStoreAndType = async function(storeId, integrationType
       .select();
 
     if (error) {
-      console.error('Error deleting integration config:', error);
       throw error;
     }
 
     return data && data.length > 0;
   } catch (error) {
-    console.error('IntegrationConfig.deleteByStoreAndType error:', error);
     throw error;
   }
 };
@@ -511,7 +489,6 @@ IntegrationConfig.updateTokens = async function(storeId, integrationType, tokenD
 
     return { success: true };
   } catch (error) {
-    console.error('IntegrationConfig.updateTokens error:', error);
     throw error;
   }
 };
@@ -539,7 +516,6 @@ IntegrationConfig.getPrimaryStorage = async function(storeId) {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching primary storage:', error);
       return null;
     }
 
@@ -552,7 +528,6 @@ IntegrationConfig.getPrimaryStorage = async function(storeId) {
       config_data: this.decryptSensitiveData(data.config_data, data.integration_type)
     };
   } catch (error) {
-    console.error('IntegrationConfig.getPrimaryStorage error:', error);
     throw error;
   }
 };
@@ -583,7 +558,6 @@ IntegrationConfig.getAllStorageConfigs = async function(storeId) {
       config_data: this.decryptSensitiveData(config.config_data, config.integration_type)
     }));
   } catch (error) {
-    console.error('IntegrationConfig.getAllStorageConfigs error:', error);
     throw error;
   }
 };
@@ -617,7 +591,6 @@ IntegrationConfig.setPrimaryStorage = async function(storeId, configId) {
 
     return { success: true };
   } catch (error) {
-    console.error('IntegrationConfig.setPrimaryStorage error:', error);
     throw error;
   }
 };
@@ -645,7 +618,6 @@ IntegrationConfig.findByStoreTypeAndKey = async function(storeId, integrationTyp
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching integration config by key:', error);
       return null;
     }
 
@@ -658,7 +630,6 @@ IntegrationConfig.findByStoreTypeAndKey = async function(storeId, integrationTyp
       config_data: this.decryptSensitiveData(data.config_data, integrationType)
     };
   } catch (error) {
-    console.error('IntegrationConfig.findByStoreTypeAndKey error:', error);
     throw error;
   }
 };
@@ -736,7 +707,6 @@ IntegrationConfig.createOrUpdateWithKey = async function(storeId, integrationTyp
         .single();
 
       if (createError) {
-        console.error('IntegrationConfig.createOrUpdateWithKey failed:', createError);
         throw createError;
       }
 
@@ -746,7 +716,6 @@ IntegrationConfig.createOrUpdateWithKey = async function(storeId, integrationTyp
       };
     }
   } catch (error) {
-    console.error('IntegrationConfig.createOrUpdateWithKey error:', error);
     throw error;
   }
 };
@@ -778,7 +747,6 @@ IntegrationConfig.updateStorageStats = async function(configId, storeId, stats) 
 
     return { success: true };
   } catch (error) {
-    console.error('IntegrationConfig.updateStorageStats error:', error);
     throw error;
   }
 };
@@ -809,7 +777,6 @@ IntegrationConfig.deactivate = async function(storeId, integrationType, configKe
 
     return { success: true };
   } catch (error) {
-    console.error('IntegrationConfig.deactivate error:', error);
     throw error;
   }
 };
