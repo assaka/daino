@@ -156,7 +156,8 @@ const LayeredNavigation = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots, onElementClick }) => {
     // Use the actual LayeredNavigation component for both editor and storefront
     // This ensures identical behavior and appearance
-    const products = categoryContext?.products || variableContext?.products || [];
+    // IMPORTANT: Use allProducts (unfiltered) for LayeredNavigation so filter options remain visible after filtering
+    const products = categoryContext?.allProducts || variableContext?.allProducts || categoryContext?.products || variableContext?.products || [];
     const filterableAttributes = categoryContext?.filterableAttributes || variableContext?.filterableAttributes || [];
     const settings = categoryContext?.settings || variableContext?.settings || {};
     const selectedFilters = categoryContext?.selectedFilters || {};

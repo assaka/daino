@@ -56,11 +56,6 @@ export function saveCacheToStorage() {
 }
 
 /**
- * Delay utility for background refresh
- */
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
  * Ultra-aggressive caching - return stale data immediately, refresh in background
  * @param {string} key - Cache key
  * @param {Function} apiCall - Function that returns a Promise with the data
@@ -90,7 +85,6 @@ export async function cachedApiCall(key, apiCall, ttl = CACHE_DURATION_LONG) {
       // Return stale data, refresh in background
       setTimeout(async () => {
         try {
-          await delay(Math.random() * 5000 + 2000); // 2-7 seconds
           const freshData = await apiCall();
           apiCache.set(key, { data: freshData, timestamp: now });
           saveCacheToStorage();
@@ -105,7 +99,6 @@ export async function cachedApiCall(key, apiCall, ttl = CACHE_DURATION_LONG) {
 
   // No cache - fetch fresh
   try {
-    await delay(Math.random() * 3000 + 1000); // 1-4 seconds
     const result = await apiCall();
     apiCache.set(key, { data: result, timestamp: now });
     saveCacheToStorage();
