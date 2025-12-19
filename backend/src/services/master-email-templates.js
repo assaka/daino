@@ -14,7 +14,7 @@ const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@dainostore.com';
  * Clean, modern design inspired by Payoneer
  * Features: White background, centered logo, colorful top border
  */
-const PLATFORM_LOGO_URL = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/logo_darkred` : 'https://www.dainostore.com/logo_darkred';
+const PLATFORM_LOGO_URL = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/logo_red.svg` : 'https://www.dainostore.com/logo_red.svg';
 
 const masterEmailHeader = (options = {}) => {
   const {
