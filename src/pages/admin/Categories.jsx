@@ -36,12 +36,22 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -84,6 +94,7 @@ export default function Categories() {
   const [userCredits, setUserCredits] = useState(null);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
 
   // Load user credits for AI translation checks
   const loadUserCredits = async () => {
@@ -393,17 +404,24 @@ export default function Categories() {
     }
   };
 
-  const handleDeleteCategory = async (categoryId) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
-      try {
-        await Category.delete(categoryId);
-        await loadCategories(); // Updated function name
-        // Clear storefront cache for instant updates
-        const storeId = getSelectedStoreId();
-        if (storeId) clearCategoriesCache(storeId);
-      } catch (error) {
-        console.error("Error deleting category:", error);
-      }
+  const handleDeleteCategory = async (category) => {
+    setCategoryToDelete(category);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    try {
+      await Category.delete(categoryToDelete.id);
+      await loadCategories();
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearCategoriesCache(storeId);
+      toast.success('Category deleted successfully');
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      toast.error('Failed to delete category');
+    } finally {
+      setCategoryToDelete(null);
     }
   };
 
@@ -815,7 +833,7 @@ export default function Categories() {
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
-                      onClick={() => handleDeleteCategory(category.id)}
+                      onClick={() => handleDeleteCategory(category)}
                       className="text-red-600"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
@@ -827,7 +845,7 @@ export default function Categories() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Render children if expanded */}
         {category.children && 
          category.children.length > 0 && 
@@ -1401,7 +1419,7 @@ export default function Categories() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() => handleDeleteCategory(category.id)}
+                            onClick={() => handleDeleteCategory(category)}
                             className="text-red-600"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -1683,6 +1701,34 @@ export default function Categories() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Single Category Confirmation Dialog */}
+        <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <AlertDialogTitle>Delete Category</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="pt-2">
+                Are you sure you want to delete <strong>"{categoryToDelete ? getCategoryName(categoryToDelete) : ''}"</strong>?
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteCategory}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
