@@ -3,7 +3,6 @@
 const { v4: uuidv4 } = require('uuid');
 const ConnectionManager = require('./database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
-const tenantMigration = require('../../migrations/20251215000002-add-demo-column-to-tenant-tables');
 
 /**
  * Demo Data Provisioning Service
