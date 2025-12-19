@@ -28,8 +28,9 @@ const CategoryMappingPanel = ({
 
   // External root category filter (for filtering which categories to fetch/create)
   const [externalRootCategories, setExternalRootCategories] = useState([]);
-  const [selectedExternalRootFilter, setSelectedExternalRootFilter] = useState('');
+  const [selectedExternalRoots, setSelectedExternalRoots] = useState([]); // Multi-select array
   const [loadingExternalRoots, setLoadingExternalRoots] = useState(false);
+  const [showRootDropdown, setShowRootDropdown] = useState(false);
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -99,14 +100,16 @@ const CategoryMappingPanel = ({
     try {
       // Build filters object
       const filters = {};
-      if (selectedExternalRootFilter && integrationSource === 'akeneo') {
-        filters.rootCategories = [selectedExternalRootFilter];
+      if (selectedExternalRoots.length > 0 && integrationSource === 'akeneo') {
+        filters.rootCategories = selectedExternalRoots;
       }
 
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/sync`, { filters });
       if (response.success) {
         await fetchMappings();
-        const filterMsg = selectedExternalRootFilter ? ` (filtered by root: ${selectedExternalRootFilter})` : '';
+        const filterMsg = selectedExternalRoots.length > 0
+          ? ` (filtered by: ${selectedExternalRoots.map(code => externalRootCategories.find(r => r.code === code)?.name || code).join(', ')})`
+          : '';
         setFlashMessage({
           type: 'success',
           message: (response.message || `Fetched ${response.results?.created || 0} new, ${response.results?.updated || 0} updated`) + filterMsg
@@ -162,8 +165,8 @@ const CategoryMappingPanel = ({
     try {
       // Build filters object for external root category filtering
       const filters = {};
-      if (selectedExternalRootFilter && integrationSource === 'akeneo') {
-        filters.rootCategories = [selectedExternalRootFilter];
+      if (selectedExternalRoots.length > 0 && integrationSource === 'akeneo') {
+        filters.rootCategories = selectedExternalRoots;
       }
 
       const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-categories-job`, {
@@ -282,9 +285,9 @@ const CategoryMappingPanel = ({
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Categories</h3>
             <p className="text-gray-600 mb-4">
               You are about to create <span className="font-bold text-indigo-600">{stats.unmapped}</span> new categories from unmapped {sourceLabel} {integrationSource === 'shopify' ? 'collections' : 'categories'}.
-              {selectedExternalRootFilter && (
+              {selectedExternalRoots.length > 0 && (
                 <span className="block mt-2 text-sm text-indigo-600">
-                  Filtered by root: <span className="font-medium">{externalRootCategories.find(r => r.code === selectedExternalRootFilter)?.name || selectedExternalRootFilter}</span>
+                  Filtered by: <span className="font-medium">{selectedExternalRoots.map(code => externalRootCategories.find(r => r.code === code)?.name || code).join(', ')}</span>
                 </span>
               )}
             </p>
@@ -362,28 +365,73 @@ const CategoryMappingPanel = ({
 
       {expanded && (
         <div className="p-4">
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            {/* External Root Category Filter (Akeneo only) */}
-            {integrationSource === 'akeneo' && externalRootCategories.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 whitespace-nowrap">Filter by Root:</label>
+          {/* External Root Category Filter (Akeneo only) */}
+          {integrationSource === 'akeneo' && externalRootCategories.length > 0 && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Filter by Root Categories <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
+                {selectedExternalRoots.length > 0 && (
+                  <button
+                    onClick={() => setSelectedExternalRoots([])}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+
+              {/* Selected badges */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedExternalRoots.map(code => {
+                  const root = externalRootCategories.find(r => r.code === code);
+                  return (
+                    <span
+                      key={code}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
+                    >
+                      {root?.name || code}
+                      <button
+                        onClick={() => setSelectedExternalRoots(prev => prev.filter(c => c !== code))}
+                        className="hover:bg-indigo-200 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+                {selectedExternalRoots.length === 0 && (
+                  <span className="text-sm text-gray-500 italic">No filter applied - all categories will be included</span>
+                )}
+              </div>
+
+              {/* Dropdown to add more */}
+              <div className="relative">
                 <select
-                  value={selectedExternalRootFilter}
-                  onChange={(e) => setSelectedExternalRootFilter(e.target.value)}
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !selectedExternalRoots.includes(e.target.value)) {
+                      setSelectedExternalRoots(prev => [...prev, e.target.value]);
+                    }
+                  }}
                   disabled={loadingExternalRoots || fetching}
-                  className={`px-2 py-1.5 text-sm border rounded-md ${
-                    selectedExternalRootFilter ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
-                  }`}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white"
                 >
-                  <option value="">All Categories</option>
-                  {externalRootCategories.map(root => (
-                    <option key={root.code} value={root.code}>{root.name}</option>
-                  ))}
+                  <option value="">+ Add root category filter...</option>
+                  {externalRootCategories
+                    .filter(root => !selectedExternalRoots.includes(root.code))
+                    .map(root => (
+                      <option key={root.code} value={root.code}>{root.name}</option>
+                    ))
+                  }
                 </select>
               </div>
-            )}
+            </div>
+          )}
 
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <button
               onClick={handleFetchCategories}
               disabled={fetching}
