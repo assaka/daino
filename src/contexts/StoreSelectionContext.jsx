@@ -114,16 +114,21 @@ export const StoreSelectionProvider = ({ children }) => {
         let savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
 
         if (savedStore) {
-          // Found the saved store - but check if it's actually active
-          if (savedStore.is_active && savedStore.status !== 'pending_database') {
-            // Do quick health check for active stores
-            const isHealthy = await quickHealthCheck(savedStore.id);
-            setSelectedStore({ ...savedStore, database_healthy: isHealthy });
+          // Found the saved store - allow pending_database stores to be selected (for database setup)
+          if (savedStore.is_active || savedStore.status === 'pending_database') {
+            // Skip health check for pending_database stores (they don't have a DB yet)
+            if (savedStore.status === 'pending_database') {
+              setSelectedStore({ ...savedStore, database_healthy: false });
+            } else {
+              // Do quick health check for active stores
+              const isHealthy = await quickHealthCheck(savedStore.id);
+              setSelectedStore({ ...savedStore, database_healthy: isHealthy });
+            }
             localStorage.setItem('selectedStoreId', savedStore.id);
             localStorage.setItem('selectedStoreName', savedStore.name);
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
           } else {
-            // Saved store is not active or pending - clear it and select first active store
+            // Saved store is not active and not pending_database - clear it and select first active store
             localStorage.removeItem('selectedStoreId');
             localStorage.removeItem('selectedStoreName');
             localStorage.removeItem('selectedStoreSlug');
