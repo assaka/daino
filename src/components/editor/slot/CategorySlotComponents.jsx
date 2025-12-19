@@ -684,11 +684,6 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
-    // DEBUG: Log allSlots colSpan values for product card children
-    console.log('[ProductItemsGrid] allSlots keys:', Object.keys(allSlots || {}));
-    console.log('[ProductItemsGrid] product_card_name colSpan:', allSlots?.product_card_name?.colSpan);
-    console.log('[ProductItemsGrid] onGridResize:', typeof onGridResize);
-
     // No products at all - let parent handle
     if (products.length === 0) {
       return null;
@@ -759,7 +754,6 @@ const ProductItemsGrid = createSlotComponent({
               : finalStyles;
 
             const finalColSpan = savedSlotConfig?.colSpan ?? slotConfig.colSpan;
-            console.log('[ProductItemsGrid] Slot', slotId, 'savedSlotConfig.colSpan:', savedSlotConfig?.colSpan, 'slotConfig.colSpan:', slotConfig.colSpan, 'using:', finalColSpan);
 
             productSlots[slotId] = {
               ...slotConfig,
