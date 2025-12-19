@@ -865,19 +865,18 @@ const ShopifyIntegration = () => {
                   </div>
 
                   {/* Import Products Button */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <Button
                       onClick={() => importData('products')}
                       disabled={loading}
-                      className="h-auto py-4 flex-col"
+                      className="flex items-center gap-2"
                     >
-                      <ShoppingBag className="w-6 h-6 mb-2" />
-                      <span>Import Products</span>
-                      {importStats?.products && (
-                        <span className="text-xs text-gray-300 mt-1">
-                          Last: {importStats.products.successful_imports || 0} imported
-                        </span>
+                      {loading ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ShoppingBag className="h-4 w-4" />
                       )}
+                      {loading ? 'Importing...' : 'Import Products'}
                     </Button>
                   </div>
 
