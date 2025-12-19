@@ -203,12 +203,12 @@ export default function LayeredNavigation({
 
     // Clear all filters function
     const clearAllFilters = () => {
-        setSelectedFilters({});
         setPriceRange([minPrice, maxPrice]);
-        // In controlled mode, ensure priceRange is also cleared
         if (isControlledMode) {
-            const filtersToSend = {};
-            onFilterChange(filtersToSend);
+            // In controlled mode, call onFilterChange once with empty filters
+            onFilterChange({});
+        } else {
+            setSelectedFilters({});
         }
     };
 
@@ -223,7 +223,7 @@ export default function LayeredNavigation({
         }
     };
 
-    // Handle price range change with debugging
+    // Handle price range change
     const handlePriceRangeChange = (newRange) => {
         // Guard against unnecessary updates
         if (newRange[0] === priceRange[0] && newRange[1] === priceRange[1]) {
