@@ -382,7 +382,7 @@ const CategoryMappingPanel = ({
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Filter by Root Categories <span className="text-gray-400 font-normal">(Optional)</span>
+                  Filter by Akeneo Root Categories <span className="text-gray-400 font-normal">(Optional)</span>
                 </label>
                 {selectedExternalRoots.length > 0 && (
                   <button

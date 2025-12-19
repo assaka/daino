@@ -2895,55 +2895,6 @@ const AkeneoIntegration = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Root Category Filter */}
-              <div>
-                <Label htmlFor="root-categories">Filter by Root Categories (Optional)</Label>
-                <div className="mt-2">
-                  {loadingCategories ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Loading categories...
-                    </div>
-                  ) : availableCategories.length > 0 ? (
-                    <div className="space-y-2">
-                      <MultiSelect
-                        options={availableCategories.map(category => ({
-                          value: category.code,
-                          label: `${category.labels?.en_US || category.labels?.en || category.code} (${category.code})`
-                        }))}
-                        value={selectedRootCategories}
-                        onChange={setSelectedRootCategories}
-                        placeholder="All categories (or select specific ones)..."
-                      />
-                      {selectedRootCategories.length > 0 && (
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-gray-500">
-                            {selectedRootCategories.length} root categories selected
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedRootCategories([])}
-                          >
-                            Clear
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadAvailableCategories}
-                      disabled={loadingCategories || !connectionStatus?.success}
-                    >
-                      <RefreshCw className={`h-3 w-3 mr-1 ${loadingCategories ? 'animate-spin' : ''}`} />
-                      Load Available Categories
-                    </Button>
-                  )}
-                </div>
-              </div>
-
               {/* Category Settings */}
               <Card className="bg-gray-50">
                 <CardHeader className="py-3">
