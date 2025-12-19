@@ -410,11 +410,11 @@ export default function Categories() {
 
   const confirmDeleteCategory = async () => {
     if (!categoryToDelete) return;
+    const storeId = getSelectedStoreId();
     try {
-      await Category.delete(categoryToDelete.id);
+      await Category.delete(categoryToDelete.id, { store_id: storeId });
       await loadCategories();
       // Clear storefront cache for instant updates
-      const storeId = getSelectedStoreId();
       if (storeId) clearCategoriesCache(storeId);
       toast.success('Category deleted successfully');
     } catch (error) {
