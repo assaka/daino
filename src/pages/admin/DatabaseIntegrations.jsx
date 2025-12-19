@@ -13,17 +13,21 @@ import { toast } from 'sonner';
 import { getCurrentUser } from '@/utils/auth';
 
 const DatabaseIntegrations = () => {
-  const { selectedStore } = useStoreSelection();
-  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  const { selectedStore, loading } = useStoreSelection();
+  // No fallbacks - only use the selected store from context
+  const storeId = selectedStore?.id;
   const [defaultProvider, setDefaultProvider] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
-  
+
   const currentUser = getCurrentUser();
   const isStoreOwner = currentUser?.role === 'store_owner' || currentUser?.role === 'admin';
 
   useEffect(() => {
     if (storeId) {
       fetchDefaultProvider();
+    } else {
+      // Reset when no store selected
+      setDefaultProvider(null);
     }
   }, [storeId]);
 
@@ -102,6 +106,34 @@ const DatabaseIntegrations = () => {
                 Database integrations manage critical store data including products, orders, and customer information. Only authorized store owners can configure these connections.
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while store context is loading
+  if (loading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // No store selected - show message
+  if (!storeId) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
+            <Database className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">No Store Selected</h1>
+            <p className="text-gray-600">
+              Please select a store from the store selector to configure database integrations.
+            </p>
           </div>
         </div>
       </div>

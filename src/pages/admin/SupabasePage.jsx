@@ -13,7 +13,8 @@ const SupabasePage = () => {
   const [isDefaultDatabase, setIsDefaultDatabase] = useState(false);
   const [settingDefaultDatabase, setSettingDefaultDatabase] = useState(false);
   
-  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  // No fallbacks - only use the selected store from context
+  const storeId = selectedStore?.id;
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {

@@ -21,6 +21,7 @@ export const SetupGuide = ({ store }) => {
     const [showThemeModal, setShowThemeModal] = useState(false);
     const [selectedPreset, setSelectedPreset] = useState(null);
     const [applyingTheme, setApplyingTheme] = useState(false);
+    const [themeDisplayName, setThemeDisplayName] = useState(null);
 
     // Demo data modal state
     const [showDemoModal, setShowDemoModal] = useState(false);
@@ -81,6 +82,26 @@ export const SetupGuide = ({ store }) => {
 
         loadEmailStatus();
     }, [store?.id]);
+
+    // Fetch theme preset display name
+    useEffect(() => {
+        const fetchThemeDisplayName = async () => {
+            if (!store?.theme_preset || store.theme_preset === 'default') {
+                setThemeDisplayName(null);
+                return;
+            }
+            try {
+                const response = await fetch(`/api/public/theme-defaults/preset/${store.theme_preset}`);
+                const data = await response.json();
+                if (data.success && data.data?.display_name) {
+                    setThemeDisplayName(data.data.display_name);
+                }
+            } catch (error) {
+                console.error('Error fetching theme display name:', error);
+            }
+        };
+        fetchThemeDisplayName();
+    }, [store?.theme_preset]);
 
     // Theme preset handler
     const handleApplyThemePreset = async () => {
@@ -341,7 +362,7 @@ export const SetupGuide = ({ store }) => {
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     {hasThemePreset
-                                        ? `Using "${store.theme_preset}" theme preset.`
+                                        ? `Using "${themeDisplayName || store.theme_preset}" theme preset.`
                                         : 'Select a theme preset to customize your store appearance.'
                                     }
                                 </p>
