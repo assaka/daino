@@ -250,19 +250,19 @@ git commit -m "Test pre-commit validation"
 Add to your `backend/src/server.js`:
 
 ```javascript
-const DashboardServer = require('../testing/monitoring/dashboard-server');
+const DashboardServer = require('.//monitoring/dashboard-server');
 
 // Add after other middleware
 if (process.env.MONITORING_ENABLED === 'true') {
-  const dashboardServer = new DashboardServer();
-  
-  // Start monitoring dashboard
-  dashboardServer.start().then(() => {
-    console.log('📊 Monitoring dashboard started');
-  });
+    const dashboardServer = new DashboardServer();
 
-  // Add monitoring middleware to Express app
-  app.use(dashboardServer.createMiddleware());
+    // Start monitoring dashboard
+    dashboardServer.start().then(() => {
+        console.log('📊 Monitoring dashboard started');
+    });
+
+    // Add monitoring middleware to Express app
+    app.use(dashboardServer.createMiddleware());
 }
 ```
 

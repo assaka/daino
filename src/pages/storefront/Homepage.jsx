@@ -35,7 +35,7 @@ export default function Homepage() {
   );
 
   const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Scroll state for featured products carousel
   const scrollContainerRef = useRef(null);
@@ -45,16 +45,14 @@ export default function Homepage() {
   // Use featured products from page bootstrap (no API call!)
   const featuredProducts = pageBootstrap?.featuredProducts || [];
 
-  useEffect(() => {
-    if (!storeLoading && store?.id) {
-      if (searchQuery) {
-        loadSearchResults(searchQuery);
-      } else {
-        // Featured products come from page bootstrap, just stop loading
-        setLoading(pageBootstrapLoading);
-      }
+  // Combined loading state - wait for BOTH store and page bootstrap
+  const isLoading = storeLoading || (!searchQuery && pageBootstrapLoading);
 
-      // Track homepage view
+  // Track page view once data is loaded
+  const hasTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!isLoading && store?.id && !hasTrackedRef.current) {
+      hasTrackedRef.current = true;
       if (typeof window !== 'undefined' && window.daino?.trackEvent) {
         window.daino.trackEvent('page_view', {
           page_type: searchQuery ? 'search_results' : 'homepage',
@@ -64,7 +62,14 @@ export default function Homepage() {
         });
       }
     }
-  }, [store?.id, storeLoading, searchQuery, pageBootstrapLoading]);
+  }, [isLoading, store?.id, searchQuery]);
+
+  // Handle search separately
+  useEffect(() => {
+    if (!storeLoading && store?.id && searchQuery) {
+      loadSearchResults(searchQuery);
+    }
+  }, [store?.id, storeLoading, searchQuery]);
 
   // Check if scroll arrows should be visible
   const checkScrollButtons = () => {
@@ -77,7 +82,7 @@ export default function Homepage() {
 
   // Track scroll state for featured products carousel
   useEffect(() => {
-    if (!searchQuery && !loading && featuredProducts.length > 0) {
+    if (!searchQuery && !isLoading && featuredProducts.length > 0) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(checkScrollButtons, 100);
       const container = scrollContainerRef.current;
@@ -93,7 +98,7 @@ export default function Homepage() {
         }
       };
     }
-  }, [featuredProducts, loading, searchQuery]);
+  }, [featuredProducts, isLoading, searchQuery]);
 
   // Scroll the featured products carousel
   const scroll = (direction) => {
@@ -109,7 +114,7 @@ export default function Homepage() {
 
   const loadSearchResults = async (query) => {
     try {
-      setLoading(true);
+      setSearchLoading(true);
       if (!store) return;
 
       // Get products from backend
@@ -141,7 +146,7 @@ export default function Homepage() {
       console.error("Homepage: Error searching products:", error);
       setSearchResults([]);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
 
@@ -189,7 +194,7 @@ export default function Homepage() {
           </>
         )}
 
-        {loading ? (
+        {(isLoading || searchLoading) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <Card key={i} className="animate-pulse">

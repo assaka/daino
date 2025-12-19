@@ -625,7 +625,7 @@ export default function Category() {
               preprocessedData={preprocessSlotData('category', {
                 category: currentCategory,
                 products: paginatedProducts,
-                allProducts: sortedProducts,
+                allProducts: products,
                 filters: buildFilters(),
                 filterableAttributes,
                 breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings),

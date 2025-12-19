@@ -2,10 +2,10 @@ node_modules
 npm-debug.log
 .env
 .env.local
-.env.example
+scripts_deprecated/.env.example
 .git
 .gitignore
-README.md
+scripts_deprecated/README.md
 Dockerfile
 .dockerignore
 coverage

@@ -3,7 +3,7 @@
  * Run with: node src/database/migrations/create-ab-testing-tables.js
  */
 
-const sequelize = require('../../config/database');
+const sequelize = require('../src/config/database');
 
 async function runMigration() {
   try {

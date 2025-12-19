@@ -13,7 +13,7 @@
  * Users receive email notifications when jobs complete.
  *
  * Usage:
- * - Scheduled via Render cron: "*/5 * * * *" (every 5 minutes)
+ * - Scheduled via Render cron: (every 5 minutes)
  * - Processes multiple jobs if time permits
  */
 

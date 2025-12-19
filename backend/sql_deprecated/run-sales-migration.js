@@ -8,7 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { sequelize } = require('../database/connection');
+const { sequelize } = require('../src/database/connection');
 
 async function runMigration() {
   console.log('🚀 Starting sales tables migration...\n');

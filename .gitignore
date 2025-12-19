@@ -37,5 +37,5 @@ test-results/
 monitoring-reports/
 playwright-report/
 test-automated-*.js
-backend/src/database/migrations/database.sqlite
+backend/sql_deprecated/database.sqlite
 .env.local.backup

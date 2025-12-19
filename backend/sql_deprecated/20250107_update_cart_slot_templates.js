@@ -8,7 +8,7 @@
  * to not render items, summary, and coupon sections.
  */
 
-const { cartConfig } = require('../configs/slot/cart-config.js');
+const { cartConfig } = require('../src/configs/slot/cart-config.js');
 
 const MIGRATION_NAME = '20250107_update_cart_slot_templates';
 

@@ -1498,7 +1498,7 @@ const startServer = async () => {
 
     // Run all pending database migrations automatically
     try {
-      const { runPendingMigrations } = require('./database/migrations/migration-tracker');
+      const { runPendingMigrations } = require('../sql_deprecated/migration-tracker');
       const migrationResult = await runPendingMigrations();
 
       if (!migrationResult.success && migrationResult.error) {

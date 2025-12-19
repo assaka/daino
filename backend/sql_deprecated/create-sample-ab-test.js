@@ -3,7 +3,7 @@
  * This test changes the product title to "Hamid Title"
  */
 
-const { sequelize } = require('../../database/connection');
+const { sequelize } = require('../src/database/connection');
 
 async function createSampleTest() {
   try {

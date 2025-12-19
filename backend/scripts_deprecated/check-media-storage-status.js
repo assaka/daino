@@ -8,8 +8,8 @@
  */
 
 require('dotenv').config();
-const { masterDbClient } = require('./src/database/masterConnection');
-const supabaseIntegration = require('./src/services/supabase-integration');
+const { masterDbClient } = require('../src/database/masterConnection');
+const supabaseIntegration = require('../src/services/supabase-integration');
 
 async function checkMediaStorageStatus() {
   console.log('='.repeat(80));

@@ -48,7 +48,7 @@ async function runMigration() {
       console.log('🔧 Adding user_id column to stores table...');
       
       // Run the migration
-      const migration = require('../src/migrations/add-user-id-to-stores');
+      const migration = require('../sql_deprecated/add-user-id-to-stores');
       await migration.up(queryInterface, sequelize.Sequelize);
       
       console.log('✅ Migration completed successfully');

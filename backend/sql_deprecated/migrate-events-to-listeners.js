@@ -1,7 +1,7 @@
 // Migrate data from plugin_events to plugin_event_listeners
 // This converts old filename-based events to flexible junction table
 
-const { sequelize } = require('./connection');
+const { sequelize } = require('../src/database/connection');
 
 async function migrateEventsToListeners() {
   try {

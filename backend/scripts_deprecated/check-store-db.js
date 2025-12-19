@@ -3,7 +3,7 @@
  * Run with: node check-store-db.js
  */
 
-const { masterDbClient } = require('./src/database/masterConnection');
+const { masterDbClient } = require('../src/database/masterConnection');
 
 const storeId = 'f48974ce-d153-4dc4-a99b-b15c27e45cd2';
 
@@ -84,7 +84,7 @@ async function checkStoreDatabase() {
 
     // Test connection
     console.log('\n4️⃣ Testing connection...');
-    const ConnectionManager = require('./src/services/database/ConnectionManager');
+    const ConnectionManager = require('../src/services/database/ConnectionManager');
 
     try {
       const connection = await ConnectionManager.getStoreConnection(storeId, false);

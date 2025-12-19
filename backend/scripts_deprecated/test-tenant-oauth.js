@@ -4,7 +4,7 @@
  */
 
 require('dotenv').config();
-const ConnectionManager = require('./src/services/database/ConnectionManager');
+const ConnectionManager = require('../src/services/database/ConnectionManager');
 
 async function checkTenantOAuth() {
   const storeId = process.argv[2];

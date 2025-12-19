@@ -5,7 +5,7 @@
  */
 
 const { Sequelize } = require('sequelize');
-const { getDatabaseConfig } = require('../../config/database');
+const { getDatabaseConfig } = require('../src/config/database');
 
 const sequelize = new Sequelize(getDatabaseConfig());
 

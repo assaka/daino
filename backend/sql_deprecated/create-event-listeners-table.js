@@ -1,7 +1,7 @@
 // Create plugin_event_listeners junction table
 // This table maps files to events they listen to (M:N relationship)
 
-const { sequelize } = require('./connection');
+const { sequelize } = require('../src/database/connection');
 
 async function createEventListenersTable() {
   try {
