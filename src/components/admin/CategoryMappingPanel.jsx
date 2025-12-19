@@ -24,9 +24,13 @@ const CategoryMappingPanel = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [savingMapping, setSavingMapping] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [targetRootCategoryId, setTargetRootCategoryId] = useState('');
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Get root categories (level 0 or no parent)
+  const rootCategories = storeCategories.filter(cat => cat.level === 0 || !cat.parent_id);
 
   // Fetch mappings from API
   const fetchMappings = useCallback(async () => {
@@ -102,11 +106,18 @@ const CategoryMappingPanel = ({
 
   // Create categories from unmapped (via background job)
   const handleCreateFromUnmapped = async () => {
+    if (!targetRootCategoryId) {
+      setFlashMessage({ type: 'error', message: 'Please select a root category first' });
+      return;
+    }
+
     setCreating(true);
     setShowConfirmModal(false);
     setFlashMessage(null);
     try {
-      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-categories-job`, {});
+      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/create-categories-job`, {
+        targetRootCategoryId
+      });
       if (response.success) {
         setFlashMessage({
           type: 'success',
@@ -123,7 +134,7 @@ const CategoryMappingPanel = ({
       }
     } catch (error) {
       console.error('Error scheduling category creation job:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to schedule category creation job' });
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to schedule category creation job' });
     } finally {
       setCreating(false);
     }
@@ -220,9 +231,37 @@ const CategoryMappingPanel = ({
             <p className="text-gray-600 mb-4">
               You are about to create <span className="font-bold text-indigo-600">{stats.unmapped}</span> new categories from unmapped {sourceLabel} {integrationSource === 'shopify' ? 'collections' : 'categories'}.
             </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Categories will be created with default settings. You can modify them later in the Categories section.
-            </p>
+
+            {/* Root Category Selector */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Target Root Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={targetRootCategoryId}
+                onChange={(e) => setTargetRootCategoryId(e.target.value)}
+                className={`w-full px-3 py-2 text-sm border rounded-md ${
+                  targetRootCategoryId ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                }`}
+              >
+                <option value="">-- Select Root Category --</option>
+                {rootCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                All imported categories will be placed under this root category.
+              </p>
+            </div>
+
+            {rootCategories.length === 0 && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  No root categories found. Please create at least one root category in the Categories section first.
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
@@ -232,7 +271,8 @@ const CategoryMappingPanel = ({
               </button>
               <button
                 onClick={handleCreateFromUnmapped}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                disabled={!targetRootCategoryId || rootCategories.length === 0}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create {stats.unmapped} Categories
               </button>

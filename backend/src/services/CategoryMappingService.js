@@ -708,9 +708,12 @@ class CategoryMappingService {
    * @param {string} externalCategory.code - External code
    * @param {string} externalCategory.name - Category name
    * @param {string} externalCategory.parent_code - Parent category code
+   * @param {Object} options - Creation options
+   * @param {string} options.targetRootCategoryId - Root category to place new categories under
    * @returns {string|null} - Created category UUID or null on failure
    */
-  async autoCreateCategory(externalCategory) {
+  async autoCreateCategory(externalCategory, options = {}) {
+    const { targetRootCategoryId } = options;
     const { v4: uuidv4 } = require('uuid');
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
@@ -750,24 +753,33 @@ class CategoryMappingService {
         return existing.id;
       }
 
-      // Resolve parent category if exists
+      // Resolve parent category
+      // Priority: 1. External parent mapping, 2. Target root category, 3. No parent (root level)
       let parentId = null;
       let level = 0;
       let path = slug;
 
+      // First, try to resolve external parent code to internal category
       if (externalCategory.parent_code) {
         parentId = await this.getInternalCategoryId(externalCategory.parent_code);
-        if (parentId) {
-          const { data: parent } = await tenantDb
-            .from('categories')
-            .select('level, path')
-            .eq('id', parentId)
-            .single();
+      }
 
-          if (parent) {
-            level = (parent.level || 0) + 1;
-            path = parent.path ? `${parent.path}/${slug}` : slug;
-          }
+      // If no mapped parent found and we have a target root category, use that
+      if (!parentId && targetRootCategoryId) {
+        parentId = targetRootCategoryId;
+      }
+
+      // Calculate level and path based on resolved parent
+      if (parentId) {
+        const { data: parent } = await tenantDb
+          .from('categories')
+          .select('level, path')
+          .eq('id', parentId)
+          .single();
+
+        if (parent) {
+          level = (parent.level || 0) + 1;
+          path = parent.path ? `${parent.path}/${slug}` : slug;
         }
       }
 

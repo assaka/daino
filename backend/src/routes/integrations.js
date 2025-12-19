@@ -1917,13 +1917,14 @@ router.post('/category-mappings/:source/create-from-unmapped', authMiddleware, s
 /**
  * POST /integrations/category-mappings/:source/create-categories-job
  * Schedule a background job to create store categories from unmapped external categories
+ * Requires targetRootCategoryId - all categories will be created under this root category
  */
 router.post('/category-mappings/:source/create-categories-job', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { source } = req.params;
     const storeId = req.store?.id || req.body.store_id;
     const userId = req.user?.id;
-    const { settings = {} } = req.body;
+    const { settings = {}, targetRootCategoryId } = req.body;
 
     if (!storeId) {
       return res.status(400).json({ success: false, message: 'Store ID required' });
@@ -1931,6 +1932,13 @@ router.post('/category-mappings/:source/create-categories-job', authMiddleware, 
 
     if (!['akeneo', 'shopify'].includes(source)) {
       return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
+    }
+
+    if (!targetRootCategoryId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a root category for imported categories'
+      });
     }
 
     // Schedule the job
@@ -1941,7 +1949,8 @@ router.post('/category-mappings/:source/create-categories-job', authMiddleware, 
       payload: {
         storeId,
         integrationSource: source,
-        settings
+        settings,
+        targetRootCategoryId
       },
       priority: 'normal',
       storeId,
@@ -1951,7 +1960,7 @@ router.post('/category-mappings/:source/create-categories-job', authMiddleware, 
       }
     });
 
-    console.log(`📋 Scheduled create categories job for ${source}: ${job.id}`);
+    console.log(`📋 Scheduled create categories job for ${source}: ${job.id} (root: ${targetRootCategoryId})`);
 
     res.json({
       success: true,

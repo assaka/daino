@@ -13,7 +13,8 @@ class IntegrationCreateCategoriesJob extends BaseJobHandler {
     const {
       storeId,
       integrationSource, // 'akeneo' or 'shopify'
-      settings = {}
+      settings = {},
+      targetRootCategoryId // Required: root category to place new categories under
     } = payload;
 
     if (!storeId) {
@@ -22,6 +23,10 @@ class IntegrationCreateCategoriesJob extends BaseJobHandler {
 
     if (!integrationSource) {
       throw new Error('integrationSource is required in job payload');
+    }
+
+    if (!targetRootCategoryId) {
+      throw new Error('targetRootCategoryId is required. Please select a root category for imported categories.');
     }
 
     const stats = {
@@ -64,12 +69,15 @@ class IntegrationCreateCategoriesJob extends BaseJobHandler {
         const categoryName = mapping.external_category_name || mapping.external_category_code;
 
         try {
-          const newCategoryId = await mappingService.autoCreateCategory({
-            id: mapping.external_category_id,
-            code: mapping.external_category_code,
-            name: categoryName,
-            parent_code: mapping.external_parent_code
-          });
+          const newCategoryId = await mappingService.autoCreateCategory(
+            {
+              id: mapping.external_category_id,
+              code: mapping.external_category_code,
+              name: categoryName,
+              parent_code: mapping.external_parent_code
+            },
+            { targetRootCategoryId }
+          );
 
           if (newCategoryId) {
             stats.created++;
