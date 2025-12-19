@@ -90,13 +90,6 @@ export default function LayeredNavigation({
         filter_option_styles = { styles: {} }
     } = slotConfig;
 
-    // Debug: Log received slot config
-    console.log('🎨 [LayeredNavigation] Received slotConfig:', {
-        filter_by_label,
-        filter_option_styles,
-        filter_attribute_titles
-    });
-
     // Extract custom styling for filter options
     const optionStyles = filter_option_styles.styles || {};
     const {
@@ -108,16 +101,6 @@ export default function LayeredNavigation({
         activeFilterBgColor = '#DBEAFE',
         activeFilterTextColor = '#1E40AF'
     } = optionStyles;
-
-    // Debug: Log extracted styles
-    console.log('🎨 [LayeredNavigation] Applied styles:', {
-        optionTextColor,
-        optionHoverColor,
-        optionCountColor,
-        checkboxColor,
-        activeFilterBgColor,
-        activeFilterTextColor
-    });
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
