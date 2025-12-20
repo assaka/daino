@@ -292,15 +292,16 @@ export default function Category() {
         // Standard attribute value filtering (multiselect/select)
         const productAttributes = product.attributes || [];
 
-        // Attributes is an array of {code, label, value, ...}
+        // Attributes is an array of {code, label, value, rawValue, ...}
         if (!Array.isArray(productAttributes)) return false;
 
         const matchingAttr = productAttributes.find(pAttr => pAttr.code === key);
-        if (!matchingAttr || !matchingAttr.value) {
+        if (!matchingAttr || (!matchingAttr.rawValue && !matchingAttr.value)) {
           return false;
         }
 
-        const productValue = String(matchingAttr.value);
+        // Use rawValue (code) for comparison - this matches how LayeredNavigation stores filter values
+        const productValue = String(matchingAttr.rawValue || matchingAttr.value);
         const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
 
         if (!hasMatch) {
