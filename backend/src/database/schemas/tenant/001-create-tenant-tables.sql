@@ -3710,6 +3710,41 @@ CREATE UNIQUE INDEX IF NOT EXISTS usage_metrics_store_id_metric_date_metric_hour
 
 CREATE UNIQUE INDEX IF NOT EXISTS wishlists_session_id_product_id ON wishlists USING btree (session_id, product_id);
 
+-- Sales Orders - for order lookups and filtering
+CREATE INDEX IF NOT EXISTS idx_sales_orders_store_id ON sales_orders USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_customer_id ON sales_orders USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_status ON sales_orders USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_payment_status ON sales_orders USING btree (payment_status);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_created_at ON sales_orders USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_order_number ON sales_orders USING btree (order_number);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_customer_email ON sales_orders USING btree (customer_email);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_store_status ON sales_orders USING btree (store_id, status);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_store_created ON sales_orders USING btree (store_id, created_at DESC);
+
+-- Sales Order Items - for order detail lookups
+CREATE INDEX IF NOT EXISTS idx_sales_order_items_order_id ON sales_order_items USING btree (order_id);
+CREATE INDEX IF NOT EXISTS idx_sales_order_items_product_id ON sales_order_items USING btree (product_id);
+
+-- Carts - for session and user lookups
+CREATE INDEX IF NOT EXISTS idx_carts_session_id ON carts USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_carts_store_id ON carts USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_carts_user_id ON carts USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_carts_expires_at ON carts USING btree (expires_at);
+
+-- Wishlists - for session and user lookups
+CREATE INDEX IF NOT EXISTS idx_wishlists_session_id ON wishlists USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_wishlists_store_id ON wishlists USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_wishlists_user_id ON wishlists USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlists_product_id ON wishlists USING btree (product_id);
+
+-- Sales Shipments
+CREATE INDEX IF NOT EXISTS idx_sales_shipments_order_id ON sales_shipments USING btree (order_id);
+CREATE INDEX IF NOT EXISTS idx_sales_shipments_store_id ON sales_shipments USING btree (store_id);
+
+-- Sales Invoices
+CREATE INDEX IF NOT EXISTS idx_sales_invoices_order_id ON sales_invoices USING btree (order_id);
+CREATE INDEX IF NOT EXISTS idx_sales_invoices_store_id ON sales_invoices USING btree (store_id);
+
 -- ============================================
 -- SECTION 5: CREATE TRIGGERS
 -- ============================================
