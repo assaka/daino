@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 
@@ -24,7 +25,16 @@ router.get('/health', async (req, res) => {
 });
 
 // Get all custom option rules
-router.get('/', async (req, res) => {
+// Cache for 10 minutes - these rarely change
+router.get('/', cacheMiddleware({
+  prefix: 'custom-option-rules',
+  ttl: 600,
+  keyGenerator: (req) => {
+    const storeId = req.query.store_id || req.headers['x-store-id'] || 'default';
+    const isActive = req.query.is_active || 'all';
+    return `cor:${storeId}:${isActive}`;
+  }
+}), async (req, res) => {
   try {
     const { store_id, order_by = '-created_at', limit, offset, is_active } = req.query;
 
