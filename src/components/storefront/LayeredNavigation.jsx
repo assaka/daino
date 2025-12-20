@@ -349,6 +349,19 @@ export default function LayeredNavigation({
                         {(() => {
                             const activeFilterElements = [];
 
+                            // Helper to get translated attribute label
+                            const getAttrLabel = (attrCode) => {
+                                const attr = attributes?.find(a => a.code === attrCode);
+                                return attr?.label || filterOptions[attrCode]?.name || attrCode;
+                            };
+
+                            // Helper to get translated value label
+                            const getValueLabel = (attrCode, valueCode) => {
+                                const attrOption = filterOptions[attrCode];
+                                const valueObj = attrOption?.values?.find(v => v.code === valueCode);
+                                return valueObj?.label || valueCode;
+                            };
+
                             // Add active attribute filters
                             Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
                                 if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
@@ -362,7 +375,7 @@ export default function LayeredNavigation({
                                                     color: activeFilterTextColor
                                                 }}
                                             >
-                                                {filterKey}: {value}
+                                                {getAttrLabel(filterKey)}: {getValueLabel(filterKey, value)}
                                                 <button
                                                     onClick={isEditMode ? () => {} : () => {
                                                         const newValues = filterValues.filter(v => v !== value);
@@ -396,7 +409,7 @@ export default function LayeredNavigation({
                                         key="mobile-price-range"
                                         className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800"
                                     >
-                                        Price: ${min} - ${max}
+                                        {t('common.price', 'Price')}: ${min} - ${max}
                                         <button
                                             onClick={isEditMode ? () => {} : clearPriceFilter}
                                             disabled={isEditMode}
@@ -460,6 +473,19 @@ export default function LayeredNavigation({
                             {(() => {
                                 const activeFilterElements = [];
 
+                                // Helper to get translated attribute label
+                                const getAttrLabel = (attrCode) => {
+                                    const attr = attributes?.find(a => a.code === attrCode);
+                                    return attr?.label || filterOptions[attrCode]?.name || attrCode;
+                                };
+
+                                // Helper to get translated value label
+                                const getValueLabel = (attrCode, valueCode) => {
+                                    const attrOption = filterOptions[attrCode];
+                                    const valueObj = attrOption?.values?.find(v => v.code === valueCode);
+                                    return valueObj?.label || valueCode;
+                                };
+
                                 // Add active attribute filters
                                 Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
                                     if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
@@ -473,7 +499,7 @@ export default function LayeredNavigation({
                                                         color: activeFilterTextColor
                                                     }}
                                                 >
-                                                    {filterKey}: {value}
+                                                    {getAttrLabel(filterKey)}: {getValueLabel(filterKey, value)}
                                                     <button
                                                         onClick={() => {
                                                             const newValues = filterValues.filter(v => v !== value);
@@ -506,7 +532,7 @@ export default function LayeredNavigation({
                                             key="price-range"
                                             className="inline-flex items-center px-2 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
                                         >
-                                            Price: ${min} - ${max}
+                                            {t('common.price', 'Price')}: ${min} - ${max}
                                             <button
                                                 onClick={clearPriceFilter}
                                                 className="text-xl ml-2 text-green-600 hover:text-green-800"
