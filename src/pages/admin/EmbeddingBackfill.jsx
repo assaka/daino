@@ -130,10 +130,9 @@ const EmbeddingBackfill = () => {
 
     const poll = async () => {
       try {
-        const res = await fetch(`/api/admin/backfill-embeddings/job/${jobId}`, {
+        const res = await fetch(`/api/admin/embedding-job/${jobId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'X-Cron-Secret': 'polling' // This won't work, but job endpoint might not need it
+            'Authorization': `Bearer ${token}`
           }
         });
 

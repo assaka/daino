@@ -581,6 +581,30 @@ router.get('/embedding-status', authMiddleware, requireRole('admin', 'store_owne
 });
 
 /**
+ * GET /api/admin/embedding-job/:jobId
+ *
+ * Store owner accessible endpoint to check job status.
+ * Requires JWT authentication with admin or store_owner role.
+ */
+router.get('/embedding-job/:jobId', authMiddleware, requireRole('admin', 'store_owner'), async (req, res) => {
+  const { jobId } = req.params;
+  const job = backgroundJobs.get(jobId);
+
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      error: 'Job not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    jobId,
+    ...job
+  });
+});
+
+/**
  * GET /api/admin/backfill-embeddings/status
  *
  * Check how many records need embeddings (cron secret version)
