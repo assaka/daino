@@ -71,12 +71,12 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                 </p>
                 <div className="pt-4 border-t border-gray-200">
                     <a
-                        href="/Landing"
+                        href="https://www.dainostore.com"
                         className="text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        Powered by <span className="font-semibold ml-1">DAINO</span>
+                        Powered by <span className="font-semibold ml-1">DainoStore</span>
                     </a>
                 </div>
             </div>
