@@ -75,10 +75,10 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
       let productsArray = [];
 
-      // Check cache first
+      // Check cache first - use 5 minute cache to reduce API calls
       if (window.__productBatchCache[cacheKey]) {
         const cached = window.__productBatchCache[cacheKey];
-        if (Date.now() - cached.timestamp < 30000) { // 30s cache
+        if (Date.now() - cached.timestamp < 300000) { // 5 min cache
           productsArray = cached.data;
         }
       }
@@ -87,15 +87,26 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       if (!productsArray.length) {
         if (window.__productFetching[cacheKey]) {
           // Already fetching - wait for it
-          productsArray = await window.__productFetching[cacheKey];
+          try {
+            productsArray = await window.__productFetching[cacheKey];
+          } catch {
+            // Silently handle if pending fetch fails
+            productsArray = [];
+          }
         } else {
           // Start fetching - explicitly pass store_id to ensure correct store filtering
-          const fetchPromise = StorefrontProduct.filter({ ids: productIds, store_id: storeId }).then(result => {
-            const products = result || [];
-            window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
-            delete window.__productFetching[cacheKey];
-            return products;
-          });
+          const fetchPromise = StorefrontProduct.filter({ ids: productIds, store_id: storeId })
+            .then(result => {
+              const products = result || [];
+              window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
+              delete window.__productFetching[cacheKey];
+              return products;
+            })
+            .catch(err => {
+              // Silently handle network errors - cart still works without product details
+              delete window.__productFetching[cacheKey];
+              return [];
+            });
           window.__productFetching[cacheKey] = fetchPromise;
           productsArray = await fetchPromise;
         }
@@ -110,7 +121,10 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       });
       setCartProducts(productDetails);
     } catch (error) {
-      console.error('❌ MiniCart: Failed to fetch products:', error);
+      // Silently handle errors - cart still works without product images/names
+      if (error.name !== 'AbortError' && !error.message?.includes('NetworkError')) {
+        console.warn('MiniCart: Could not load product details:', error.message);
+      }
       setCartProducts({});
     }
   }, []); // Removed cartProducts dependency to prevent excessive calls
