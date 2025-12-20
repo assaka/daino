@@ -84,7 +84,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     );
 }
 
-const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000, defaultValueOnError = []) => {
+const retryApiCall = async (apiCall, maxRetries = 2, baseDelay = 1000, defaultValueOnError = []) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await apiCall();
@@ -94,13 +94,12 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000, defaultVa
                          error.message?.includes('429');
 
       if (isRateLimit && i < maxRetries - 1) {
-        const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
-        console.warn(`StorefrontLayout: Rate limit hit, retrying in ${delayTime}ms...`);
+        const delayTime = baseDelay * Math.pow(2, i);
+        console.warn(`StorefrontLayout: Rate limit hit, retrying...`);
         await delay(delayTime);
         continue;
       }
       if (isRateLimit) {
-          console.error("StorefrontLayout: Rate limit error after all retries. Returning default value.", error);
           return defaultValueOnError;
       }
       throw error;
@@ -264,13 +263,11 @@ export default function StorefrontLayout({ children }) {
                 }
 
                 try {
-                    await delay(200 + Math.random() * 300);
-
                     // Only attempt to fetch user data if authenticated with a token
                     if (CustomerAuth.isAuthenticated()) {
                         const userData = await retryApiCall(async () => {
                             return await CustomerAuth.me();
-                        }, 5, 3000, null);
+                        }, 2, 1000, null);
 
                         // Only show user as logged in if they are a customer in storefront context
                         if (userData && userData.role === 'customer') {

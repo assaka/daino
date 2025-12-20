@@ -32,10 +32,9 @@ const pendingRequests = new Map();
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
+const retryApiCall = async (apiCall, maxRetries = 2, baseDelay = 1000) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
-      await delay(Math.random() * 1000); // Random delay to spread requests
       return await apiCall();
     } catch (error) {
       const isRateLimit = error.response?.status === 429 ||
@@ -43,17 +42,16 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
                          error.message?.includes('429');
 
       if (isRateLimit && i < maxRetries - 1) {
-        const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
-        console.warn(`CmsBlockRenderer: Rate limit hit, retrying in ${delayTime}ms... (Attempt ${i + 1}/${maxRetries})`);
+        const delayTime = baseDelay * Math.pow(2, i);
+        console.warn(`CmsBlockRenderer: Rate limit hit, retrying... (Attempt ${i + 1}/${maxRetries})`);
         await delay(delayTime);
         continue;
       }
-      
+
       if (isRateLimit) {
-        console.error("CmsBlockRenderer: Rate limit exceeded, returning empty blocks");
         return [];
       }
-      
+
       throw error;
     }
   }

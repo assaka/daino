@@ -153,10 +153,6 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
             }
             
             try {
-                // Add minimal delay (reduced from 3-5 seconds since we're caching)
-                const randomDelay = 500 + Math.random() * 1000; // 0.5-1.5 seconds
-                await delay(randomDelay);
-                
                 let cartItems = [];
                 let cartProductIds = [];
                 let productsToFilter = [];
