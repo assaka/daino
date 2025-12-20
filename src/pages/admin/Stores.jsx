@@ -47,10 +47,25 @@ export default function Stores() {
   const [storeForDemo, setStoreForDemo] = useState(null);
   const [provisioningDemo, setProvisioningDemo] = useState(false);
   const [restoringDemo, setRestoringDemo] = useState(false);
+  // Publishing cost from service_credit_costs
+  const [publishingCost, setPublishingCost] = useState(1); // Default to 1 credit
 
   useEffect(() => {
     loadData();
+    loadPublishingCost();
   }, []);
+
+  const loadPublishingCost = async () => {
+    try {
+      const response = await apiClient.get('service-credit-costs/key/store_daily_publishing');
+      if (response?.success && response?.service?.cost_per_unit) {
+        setPublishingCost(response.service.cost_per_unit);
+      }
+    } catch (error) {
+      console.error('Error loading publishing cost:', error);
+      // Keep default value of 1
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -611,7 +626,7 @@ export default function Stores() {
                 Store: {storeToPublish?.name}
               </p>
               <p className="text-sm text-blue-800">
-                Running this store will cost <strong>1 credit per day</strong>.
+                Running this store will cost <strong>{publishingCost} {publishingCost === 1 ? 'credit' : 'credits'} per day</strong>.
               </p>
             </div>
 
@@ -620,7 +635,7 @@ export default function Stores() {
                 Daily Billing Information:
               </p>
               <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
-                <li>1 credit will be deducted every day at midnight UTC</li>
+                <li>{publishingCost} {publishingCost === 1 ? 'credit' : 'credits'} will be deducted every day at midnight UTC</li>
                 <li>Your current balance: <strong>{user?.credits || 0} credits</strong></li>
                 <li>You can pause the store anytime to stop charges</li>
               </ul>
