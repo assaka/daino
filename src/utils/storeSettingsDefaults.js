@@ -177,7 +177,6 @@ let cachedThemeDefaults = null;
 export function setThemeDefaultsFromBootstrap(themeDefaults) {
   if (themeDefaults && typeof themeDefaults === 'object') {
     cachedThemeDefaults = themeDefaults;
-    console.log('✅ Theme defaults set from bootstrap');
   }
 }
 

@@ -198,10 +198,11 @@ class StorefrontApiClient {
       return result;
     } catch (error) {
       clearTimeout(timeoutId);
-      // Don't log abort errors as errors (they're expected on timeout)
-      if (error.name !== 'AbortError') {
-        console.error(`Storefront public API request failed: ${method} ${url}`, error);
+      // Don't log or throw abort errors - they're expected when requests are cancelled
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return null; // Return null for aborted requests - entities will handle gracefully
       }
+      console.error(`Storefront public API request failed: ${method} ${url}`, error);
       throw error;
     }
   }
@@ -279,10 +280,11 @@ class StorefrontApiClient {
       return result;
     } catch (error) {
       clearTimeout(timeoutId);
-      // Don't log abort errors as errors (they're expected on timeout)
-      if (error.name !== 'AbortError') {
-        console.error(`Storefront customer API request failed: ${method} ${url}`, error);
+      // Don't log or throw abort errors - they're expected when requests are cancelled
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return null; // Return null for aborted requests - entities will handle gracefully
       }
+      console.error(`Storefront customer API request failed: ${method} ${url}`, error);
       throw error;
     }
   }
