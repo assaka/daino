@@ -1,5 +1,10 @@
 import storefrontApiClient from './storefront-client';
 
+// Helper to check if error is an AbortError (request cancelled)
+const isAbortError = (error) => {
+  return error.name === 'AbortError' || error.message?.includes('aborted');
+};
+
 // Base Entity class for storefront operations (public by default)
 class StorefrontBaseEntity {
   constructor(endpoint) {
@@ -23,8 +28,10 @@ class StorefrontBaseEntity {
       // Handle direct array response (backwards compatibility)
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error(`❌ Storefront ${this.endpoint}.findAll() error:`, error.message);
-      console.error(`❌ Full error:`, error);
+      // Don't log AbortErrors - they're expected when requests are cancelled
+      if (!isAbortError(error)) {
+        console.error(`❌ Storefront ${this.endpoint}.findAll() error:`, error.message);
+      }
       return []; // Return empty array instead of throwing for public APIs
     }
   }
@@ -35,7 +42,9 @@ class StorefrontBaseEntity {
       const response = await this.client.getPublic(`${this.endpoint}/${id}`);
       return Array.isArray(response) ? response[0] : response;
     } catch (error) {
-      console.error(`Storefront ${this.endpoint}.findById() error:`, error.message);
+      if (!isAbortError(error)) {
+        console.error(`Storefront ${this.endpoint}.findById() error:`, error.message);
+      }
       return null;
     }
   }
@@ -94,6 +103,10 @@ class CustomerBaseEntity {
       // Handle direct array response
       return Array.isArray(response) ? response : [];
     } catch (error) {
+      // Don't log or throw AbortErrors - they're expected when requests are cancelled
+      if (isAbortError(error)) {
+        return [];
+      }
       console.error(`Customer ${this.endpoint}.findAll() error:`, error.message);
       throw error; // Throw errors for customer operations
     }
@@ -324,7 +337,9 @@ class StorefrontStoreService extends StorefrontBaseEntity {
       
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error(`StorefrontStore.filter() error:`, error.message);
+      if (!isAbortError(error)) {
+        console.error(`StorefrontStore.filter() error:`, error.message);
+      }
       return [];
     }
   }
@@ -363,8 +378,9 @@ class StorefrontProductService extends StorefrontBaseEntity {
       // Handle direct array response (backwards compatibility)
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error(`❌ Storefront ${this.endpoint}.findAll() error:`, error.message);
-      console.error(`❌ Full error:`, error);
+      if (!isAbortError(error)) {
+        console.error(`❌ Storefront ${this.endpoint}.findAll() error:`, error.message);
+      }
       return []; // Return empty array instead of throwing for public APIs
     }
   }
@@ -516,7 +532,9 @@ class StorefrontWishlistService {
       
       return items;
     } catch (error) {
-      console.error(`Wishlist ${this.endpoint}.getItems() error:`, error.message);
+      if (!isAbortError(error)) {
+        console.error(`Wishlist ${this.endpoint}.getItems() error:`, error.message);
+      }
       return []; // Return empty array instead of throwing for guest users
     }
   }

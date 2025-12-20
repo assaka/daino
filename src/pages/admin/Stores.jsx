@@ -109,12 +109,12 @@ export default function Stores() {
     const newStatus = !currentStatus;
     const store = stores.find(s => s.id === storeId);
 
-    // If store is in demo status, show modal explaining they need to delete demo data first
-    if (store?.status === 'demo') {
-      setStoreForDemo(store);
-      setShowDemoCannotRunModal(true);
-      return;
-    }
+    // TODO: Re-enable after testing - Demo stores should not be allowed to run
+    // if (store?.status === 'demo') {
+    //   setStoreForDemo(store);
+    //   setShowDemoCannotRunModal(true);
+    //   return;
+    // }
 
     // If publishing (paused -> running), validate email and payment configuration first
     if (!currentStatus) {
