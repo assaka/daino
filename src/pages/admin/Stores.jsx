@@ -520,17 +520,6 @@ export default function Stores() {
                         View
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        // Set this store as selected and navigate to settings
-                        // This ensures the settings page loads with the correct store context
-                        window.location.href = `/admin/settings?store=${store.id}`;
-                      }}
-                    >
-                      <Settings className="w-4 h-4 mr-1" />
-                      Manage
-                    </Button>
                     {store.status !== 'pending_database' && (
                       <Button
                         size="sm"
