@@ -62,7 +62,10 @@ const EmbeddingBackfill = () => {
       if (res.ok) {
         const result = await res.json();
         if (result.success) {
-          setStatus(result.pending);
+          setStatus({
+            ...result.pending,
+            totals: result.totals
+          });
         }
       } else {
         const error = await res.json();
@@ -210,47 +213,78 @@ const EmbeddingBackfill = () => {
       {/* Pending Status */}
       <Card>
         <CardHeader>
-          <CardTitle>Pending Embeddings</CardTitle>
+          <CardTitle>Embedding Status</CardTitle>
           <CardDescription>Records that need vector embeddings generated</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {statusLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
           ) : status ? (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <StatusCard
-                title="Documents"
-                icon={FileText}
-                count={status.documents}
-                color="bg-blue-50 border-blue-200 text-blue-700"
-              />
-              <StatusCard
-                title="Examples"
-                icon={Code}
-                count={status.examples}
-                color="bg-purple-50 border-purple-200 text-purple-700"
-              />
-              <StatusCard
-                title="Entities"
-                icon={Brain}
-                count={status.entities}
-                color="bg-green-50 border-green-200 text-green-700"
-              />
-              <StatusCard
-                title="Training"
-                icon={BookOpen}
-                count={status.training}
-                color="bg-orange-50 border-orange-200 text-orange-700"
-              />
-              <StatusCard
-                title="Total"
-                icon={Database}
-                count={status.total}
-                color="bg-gray-50 border-gray-300 text-gray-700"
-              />
-            </div>
+            <>
+              {/* Pending Embeddings */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Pending (need embeddings)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <StatusCard
+                    title="Documents"
+                    icon={FileText}
+                    count={status.documents}
+                    color="bg-blue-50 border-blue-200 text-blue-700"
+                  />
+                  <StatusCard
+                    title="Examples"
+                    icon={Code}
+                    count={status.examples}
+                    color="bg-purple-50 border-purple-200 text-purple-700"
+                  />
+                  <StatusCard
+                    title="Entities"
+                    icon={Brain}
+                    count={status.entities}
+                    color="bg-green-50 border-green-200 text-green-700"
+                  />
+                  <StatusCard
+                    title="Training"
+                    icon={BookOpen}
+                    count={status.training}
+                    color="bg-orange-50 border-orange-200 text-orange-700"
+                  />
+                  <StatusCard
+                    title="Total Pending"
+                    icon={Database}
+                    count={status.total}
+                    color="bg-gray-50 border-gray-300 text-gray-700"
+                  />
+                </div>
+              </div>
+
+              {/* Total Records */}
+              {status.totals && (
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">Total Records in Database</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-2xl font-bold text-gray-800">{status.totals.documents}</p>
+                      <p className="text-sm text-gray-500">Documents</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-2xl font-bold text-gray-800">{status.totals.examples}</p>
+                      <p className="text-sm text-gray-500">Examples</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-2xl font-bold text-gray-800">{status.totals.entities}</p>
+                      <p className="text-sm text-gray-500">Entities</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-2xl font-bold text-gray-800">{status.totals.training}</p>
+                      <p className="text-sm text-gray-500">Training</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-gray-500">Unable to load status</p>
           )}

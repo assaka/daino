@@ -536,6 +536,7 @@ router.get('/embedding-status', authMiddleware, requireRole('admin', 'store_owne
   try {
     const { masterDbClient } = require('../database/masterConnection');
 
+    // Get pending (no embedding) counts
     const [documents, examples, entities, training] = await Promise.all([
       masterDbClient
         .from('ai_context_documents')
@@ -559,6 +560,14 @@ router.get('/embedding-status', authMiddleware, requireRole('admin', 'store_owne
         .in('training_status', ['approved', 'promoted'])
     ]);
 
+    // Get total counts (for diagnostic)
+    const [totalDocs, totalExamples, totalEntities, totalTraining] = await Promise.all([
+      masterDbClient.from('ai_context_documents').select('id', { count: 'exact', head: true }),
+      masterDbClient.from('ai_plugin_examples').select('id', { count: 'exact', head: true }),
+      masterDbClient.from('ai_entity_definitions').select('id', { count: 'exact', head: true }),
+      masterDbClient.from('ai_training_candidates').select('id', { count: 'exact', head: true })
+    ]);
+
     res.json({
       success: true,
       pending: {
@@ -568,6 +577,12 @@ router.get('/embedding-status', authMiddleware, requireRole('admin', 'store_owne
         training: training.count || 0,
         total: (documents.count || 0) + (examples.count || 0) +
                (entities.count || 0) + (training.count || 0)
+      },
+      totals: {
+        documents: totalDocs.count || 0,
+        examples: totalExamples.count || 0,
+        entities: totalEntities.count || 0,
+        training: totalTraining.count || 0
       }
     });
 
