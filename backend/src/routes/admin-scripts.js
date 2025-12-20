@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
 
 // Middleware to verify cron/admin secret
 const verifyCronSecret = (req, res, next) => {
@@ -316,9 +317,273 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
 });
 
 /**
+ * POST /api/admin/run-backfill-embeddings
+ *
+ * Store owner accessible endpoint to run embedding backfill.
+ * Requires JWT authentication with admin or store_owner role.
+ *
+ * Body params (all optional, defaults to all):
+ *   - documents: boolean
+ *   - examples: boolean
+ *   - entities: boolean
+ *   - training: boolean
+ *   - async: boolean (run in background)
+ */
+router.post('/run-backfill-embeddings', authMiddleware, requireRole('admin', 'store_owner'), async (req, res) => {
+  const startTime = Date.now();
+  const jobId = `backfill-${Date.now()}`;
+
+  // Check for OpenAI key
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({
+      success: false,
+      error: 'OPENAI_API_KEY environment variable is required'
+    });
+  }
+
+  // Parse options from request body
+  const {
+    documents = true,
+    examples = true,
+    entities = true,
+    training = true,
+    async: runAsync = false
+  } = req.body || {};
+
+  console.log(`🚀 [${req.user.email}] Triggered embedding backfill (async: ${runAsync})`);
+
+  // If async mode, start the job in background and return immediately
+  if (runAsync) {
+    backgroundJobs.set(jobId, { status: 'running', startTime, stats: null, triggeredBy: req.user.email });
+
+    // Run in background
+    runBackfillJob(jobId, { documents, examples, entities, training, markdown: false });
+
+    return res.json({
+      success: true,
+      message: 'Backfill job started in background',
+      jobId,
+      checkStatusUrl: `/api/admin/backfill-embeddings/job/${jobId}`
+    });
+  }
+
+  try {
+    const embeddingService = require('../services/embeddingService');
+    const { masterDbClient } = require('../database/masterConnection');
+
+    const stats = {
+      documents: { total: 0, success: 0, failed: 0, errors: [] },
+      examples: { total: 0, success: 0, failed: 0, errors: [] },
+      entities: { total: 0, success: 0, failed: 0, errors: [] },
+      training: { total: 0, success: 0, failed: 0, errors: [] }
+    };
+
+    console.log('🚀 Starting embedding backfill...');
+    console.log('Model:', process.env.EMBEDDING_MODEL || 'text-embedding-3-small');
+
+    // Backfill ai_context_documents
+    if (documents) {
+      console.log('\n=== Backfilling ai_context_documents ===');
+      const { data: docs, error } = await masterDbClient
+        .from('ai_context_documents')
+        .select('id, title')
+        .is('embedding', null)
+        .eq('is_active', true);
+
+      if (!error && docs) {
+        stats.documents.total = docs.length;
+        console.log(`Found ${docs.length} documents to embed`);
+
+        for (const doc of docs) {
+          try {
+            await embeddingService.embedContextDocument(doc.id);
+            stats.documents.success++;
+            console.log(`  [${stats.documents.success}/${docs.length}] Embedded: ${doc.title}`);
+          } catch (err) {
+            stats.documents.failed++;
+            stats.documents.errors.push({ id: doc.id, title: doc.title, error: err.message });
+            console.error(`  FAILED: ${doc.title} - ${err.message}`);
+          }
+        }
+      }
+    }
+
+    // Backfill ai_plugin_examples
+    if (examples) {
+      console.log('\n=== Backfilling ai_plugin_examples ===');
+      const { data: exampleList, error } = await masterDbClient
+        .from('ai_plugin_examples')
+        .select('id, name')
+        .is('embedding', null)
+        .eq('is_active', true);
+
+      if (!error && exampleList) {
+        stats.examples.total = exampleList.length;
+        console.log(`Found ${exampleList.length} examples to embed`);
+
+        for (const example of exampleList) {
+          try {
+            await embeddingService.embedPluginExample(example.id);
+            stats.examples.success++;
+            console.log(`  [${stats.examples.success}/${exampleList.length}] Embedded: ${example.name}`);
+          } catch (err) {
+            stats.examples.failed++;
+            stats.examples.errors.push({ id: example.id, name: example.name, error: err.message });
+            console.error(`  FAILED: ${example.name} - ${err.message}`);
+          }
+        }
+      }
+    }
+
+    // Backfill ai_entity_definitions
+    if (entities) {
+      console.log('\n=== Backfilling ai_entity_definitions ===');
+      const { data: entityList, error } = await masterDbClient
+        .from('ai_entity_definitions')
+        .select('id, entity_name')
+        .is('embedding', null)
+        .eq('is_active', true);
+
+      if (!error && entityList) {
+        stats.entities.total = entityList.length;
+        console.log(`Found ${entityList.length} entities to embed`);
+
+        for (const entity of entityList) {
+          try {
+            await embeddingService.embedEntityDefinition(entity.id);
+            stats.entities.success++;
+            console.log(`  [${stats.entities.success}/${entityList.length}] Embedded: ${entity.entity_name}`);
+          } catch (err) {
+            stats.entities.failed++;
+            stats.entities.errors.push({ id: entity.id, name: entity.entity_name, error: err.message });
+            console.error(`  FAILED: ${entity.entity_name} - ${err.message}`);
+          }
+        }
+      }
+    }
+
+    // Backfill ai_training_candidates
+    if (training) {
+      console.log('\n=== Backfilling ai_training_candidates ===');
+      const { data: candidates, error } = await masterDbClient
+        .from('ai_training_candidates')
+        .select('id, user_prompt')
+        .is('embedding', null)
+        .in('training_status', ['approved', 'promoted']);
+
+      if (!error && candidates) {
+        stats.training.total = candidates.length;
+        console.log(`Found ${candidates.length} training candidates to embed`);
+
+        for (const candidate of candidates) {
+          try {
+            await embeddingService.embedTrainingCandidate(candidate.id);
+            stats.training.success++;
+            const preview = candidate.user_prompt.substring(0, 50) + '...';
+            console.log(`  [${stats.training.success}/${candidates.length}] Embedded: ${preview}`);
+          } catch (err) {
+            stats.training.failed++;
+            stats.training.errors.push({ id: candidate.id, error: err.message });
+            console.error(`  FAILED: ${candidate.id} - ${err.message}`);
+          }
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    const totalSuccess = stats.documents.success + stats.examples.success +
+      stats.entities.success + stats.training.success;
+    const totalFailed = stats.documents.failed + stats.examples.failed +
+      stats.entities.failed + stats.training.failed;
+
+    console.log('\n===========================================');
+    console.log('           BACKFILL COMPLETE');
+    console.log('===========================================');
+    console.log(`Total: ${totalSuccess} succeeded, ${totalFailed} failed`);
+    console.log(`Duration: ${(duration / 1000).toFixed(2)}s`);
+
+    // Limit errors to first 5 per category for response size
+    const limitedStats = {
+      documents: { ...stats.documents, errors: stats.documents.errors.slice(0, 5) },
+      examples: { ...stats.examples, errors: stats.examples.errors.slice(0, 5) },
+      entities: { ...stats.entities, errors: stats.entities.errors.slice(0, 5) },
+      training: { ...stats.training, errors: stats.training.errors.slice(0, 5) }
+    };
+
+    res.json({
+      success: true,
+      message: `Backfill complete: ${totalSuccess} succeeded, ${totalFailed} failed`,
+      duration: `${(duration / 1000).toFixed(2)}s`,
+      stats: limitedStats
+    });
+
+  } catch (error) {
+    console.error('❌ Backfill error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/embedding-status
+ *
+ * Store owner accessible endpoint to check pending embeddings.
+ * Requires JWT authentication with admin or store_owner role.
+ */
+router.get('/embedding-status', authMiddleware, requireRole('admin', 'store_owner'), async (req, res) => {
+  try {
+    const { masterDbClient } = require('../database/masterConnection');
+
+    const [documents, examples, entities, training] = await Promise.all([
+      masterDbClient
+        .from('ai_context_documents')
+        .select('id', { count: 'exact', head: true })
+        .is('embedding', null)
+        .eq('is_active', true),
+      masterDbClient
+        .from('ai_plugin_examples')
+        .select('id', { count: 'exact', head: true })
+        .is('embedding', null)
+        .eq('is_active', true),
+      masterDbClient
+        .from('ai_entity_definitions')
+        .select('id', { count: 'exact', head: true })
+        .is('embedding', null)
+        .eq('is_active', true),
+      masterDbClient
+        .from('ai_training_candidates')
+        .select('id', { count: 'exact', head: true })
+        .is('embedding', null)
+        .in('training_status', ['approved', 'promoted'])
+    ]);
+
+    res.json({
+      success: true,
+      pending: {
+        documents: documents.count || 0,
+        examples: examples.count || 0,
+        entities: entities.count || 0,
+        training: training.count || 0,
+        total: (documents.count || 0) + (examples.count || 0) +
+               (entities.count || 0) + (training.count || 0)
+      }
+    });
+
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/admin/backfill-embeddings/status
  *
- * Check how many records need embeddings
+ * Check how many records need embeddings (cron secret version)
  */
 router.get('/backfill-embeddings/status', verifyCronSecret, async (req, res) => {
   try {

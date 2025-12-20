@@ -39,6 +39,7 @@ export { default as MarketplaceHub } from './admin/MarketplaceHub';
 export { default as BackgroundJobs } from './admin/BackgroundJobs';
 export { default as JobScheduler } from './admin/JobScheduler';
 export { default as ImportExportJobs } from './admin/ImportExportJobs';
+export { default as EmbeddingBackfill } from './admin/EmbeddingBackfill';
 export { default as SeoSettings } from './admin/SeoSettings';
 export { default as SeoTemplates } from './admin/SeoTemplates';
 export { default as SeoRedirects } from './admin/SeoRedirects';
