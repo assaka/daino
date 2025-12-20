@@ -161,11 +161,15 @@ class StorefrontApiClient {
     const url = this.buildPublicUrl(endpoint);
     const headers = this.getPublicHeaders(customHeaders);
 
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
     const config = {
       method,
       headers,
-      credentials: 'include'
+      credentials: 'include',
+      signal: controller.signal
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -174,6 +178,7 @@ class StorefrontApiClient {
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -192,7 +197,11 @@ class StorefrontApiClient {
       // Return result as-is, let entities handle unwrapping
       return result;
     } catch (error) {
-      console.error(`Storefront public API request failed: ${method} ${url}`, error);
+      clearTimeout(timeoutId);
+      // Don't log abort errors as errors (they're expected on timeout)
+      if (error.name !== 'AbortError') {
+        console.error(`Storefront public API request failed: ${method} ${url}`, error);
+      }
       throw error;
     }
   }
@@ -219,10 +228,15 @@ class StorefrontApiClient {
     const url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
 
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     const config = {
       method,
       headers,
-      credentials: 'include'
+      credentials: 'include',
+      signal: controller.signal
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -239,6 +253,7 @@ class StorefrontApiClient {
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -263,7 +278,11 @@ class StorefrontApiClient {
 
       return result;
     } catch (error) {
-      console.error(`Storefront customer API request failed: ${method} ${url}`, error);
+      clearTimeout(timeoutId);
+      // Don't log abort errors as errors (they're expected on timeout)
+      if (error.name !== 'AbortError') {
+        console.error(`Storefront customer API request failed: ${method} ${url}`, error);
+      }
       throw error;
     }
   }
