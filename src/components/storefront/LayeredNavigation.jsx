@@ -240,13 +240,12 @@ export default function LayeredNavigation({
             return {};
         }
 
-        const currentLang = getCurrentLanguage();
         const options = {};
         attributes.forEach(attr => {
             if (attr.is_filterable) {
-                const values = new Set();
+                const valueCodes = new Set();
 
-                // Add values from products
+                // Add value codes from products
                 products.forEach(p => {
                     const productAttributes = p.attributes;
 
@@ -257,49 +256,51 @@ export default function LayeredNavigation({
                         );
 
                         if (matchingAttr) {
-                            // Use rawValue (code) if available, otherwise fall back to value (translated label)
-                            // This matches the logic in Category.jsx buildFilters()
+                            // Use rawValue (code) if available, otherwise fall back to value
                             const productValue = matchingAttr.rawValue || matchingAttr.value;
                             if (productValue) {
-                                values.add(String(productValue));
+                                valueCodes.add(String(productValue));
                             }
                         }
                     }
                 });
 
                 // Only include attributes that have values with products
-                if (values.size > 0) {
-                    const sortedValues = Array.from(values).sort();
+                if (valueCodes.size > 0) {
+                    // Get translated values from attr.values (from publicAttributes API)
+                    // attr.values contains: { code, value (translated label), sort_order }
+                    const attrValues = attr.values || [];
 
-                    // Filter out values that have no products
-                    const valuesWithProducts = sortedValues.filter(value => {
-                        const productCount = products.filter(p => {
-                            const productAttributes = p.attributes;
+                    // Build value objects with code, label, and count
+                    const valuesWithProducts = Array.from(valueCodes)
+                        .map(code => {
+                            // Find translated label from attribute values
+                            const attrValue = attrValues.find(av => av.code === code);
+                            const label = attrValue?.value || code; // Use translated value, fallback to code
+                            const sortOrder = attrValue?.sort_order || 999;
 
-                            // Handle normalized format (array of objects)
-                            if (Array.isArray(productAttributes)) {
-                                const matchingAttr = productAttributes.find(pAttr =>
-                                    pAttr.code === attr.code
-                                );
-                                // Use rawValue (code) if available, otherwise fall back to value (translated label)
-                                // This matches the logic in Category.jsx buildFilters()
+                            // Count products with this value
+                            const count = products.filter(p => {
+                                const productAttributes = p.attributes;
+                                if (!Array.isArray(productAttributes)) return false;
+
+                                const matchingAttr = productAttributes.find(pAttr => pAttr.code === attr.code);
                                 const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
-                                return matchingAttr && productValue === String(value);
-                            }
-                            return false;
-                        }).length;
+                                return matchingAttr && productValue === code;
+                            }).length;
 
-                        return productCount > 0;
-                    });
+                            return { code, label, count, sortOrder };
+                        })
+                        .filter(v => v.count > 0)
+                        .sort((a, b) => a.sortOrder - b.sortOrder);
 
                     // Only include this attribute if it has values with products
                     if (valuesWithProducts.length > 0) {
                         // Use attr.label - already translated by backend (publicAttributes.js)
-                        // Backend returns: label: requestedLang?.label || englishLang?.label || attr.code
                         options[attr.code] = {
                             name: attr.label || attr.code,
-                            values: valuesWithProducts,
-                            filterType: attr.filter_type || 'multiselect' // Default to multiselect (checkboxes)
+                            values: valuesWithProducts, // Now array of { code, label, count, sortOrder }
+                            filterType: attr.filter_type || 'multiselect'
                         };
                     }
                 }
@@ -631,23 +632,11 @@ export default function LayeredNavigation({
                                         return (
                                             <>
                                                 <div className={hasMoreValues && !isExpanded ? "max-h-48 overflow-hidden" : "max-h-48 overflow-y-auto"}>
-                                                    {visibleValues.map(value => {
-                                        // Count products that have this attribute value
-                                        const productCount = products.filter(p => {
-                                            const productAttributes = p.attributes;
-
-                                            // Handle normalized format (array of objects)
-                                            if (Array.isArray(productAttributes)) {
-                                                const matchingAttr = productAttributes.find(pAttr =>
-                                                    pAttr.code === code
-                                                );
-                                                // Use rawValue (code) if available, otherwise fall back to value (translated label)
-                                                // This matches the logic in Category.jsx buildFilters()
-                                                const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
-                                                return matchingAttr && productValue === String(value);
-                                            }
-                                            return false;
-                                        }).length;
+                                                    {visibleValues.map(valueObj => {
+                                        // valueObj is { code, label, count, sortOrder }
+                                        const valueCode = valueObj.code;
+                                        const valueLabel = valueObj.label;
+                                        const productCount = valueObj.count;
 
                                         // Only render if there are products with this attribute value
                                         if (productCount === 0) {
@@ -656,7 +645,7 @@ export default function LayeredNavigation({
 
                                         return (
                                             <div
-                                                key={value}
+                                                key={valueCode}
                                                 className="flex items-center justify-between"
                                             >
                                                 <div className="flex items-center space-x-2">
@@ -670,9 +659,9 @@ export default function LayeredNavigation({
                                                             {isRadioFilter ? (
                                                                 <input
                                                                     type="radio"
-                                                                    id={`attr-${code}-${value}`}
+                                                                    id={`attr-${code}-${valueCode}`}
                                                                     name={`attr-${code}`}
-                                                                    checked={selectedFilters[code]?.includes(value) || false}
+                                                                    checked={selectedFilters[code]?.includes(valueCode) || false}
                                                                     onChange={() => {}}
                                                                     disabled={true}
                                                                     className="pointer-events-none h-4 w-4"
@@ -682,8 +671,8 @@ export default function LayeredNavigation({
                                                                 />
                                                             ) : (
                                                                 <Checkbox
-                                                                    id={`attr-${code}-${value}`}
-                                                                    checked={selectedFilters[code]?.includes(value) || false}
+                                                                    id={`attr-${code}-${valueCode}`}
+                                                                    checked={selectedFilters[code]?.includes(valueCode) || false}
                                                                     onCheckedChange={() => {}}
                                                                     disabled={true}
                                                                     className="pointer-events-none"
@@ -697,10 +686,10 @@ export default function LayeredNavigation({
                                                         isRadioFilter ? (
                                                             <input
                                                                 type="radio"
-                                                                id={`attr-${code}-${value}`}
+                                                                id={`attr-${code}-${valueCode}`}
                                                                 name={`attr-${code}`}
-                                                                checked={selectedFilters[code]?.includes(value) || false}
-                                                                onChange={(e) => handleAttributeChange(code, value, e.target.checked, filterType)}
+                                                                checked={selectedFilters[code]?.includes(valueCode) || false}
+                                                                onChange={(e) => handleAttributeChange(code, valueCode, e.target.checked, filterType)}
                                                                 className="h-4 w-4 cursor-pointer"
                                                                 style={{
                                                                     accentColor: checkboxColor
@@ -708,9 +697,9 @@ export default function LayeredNavigation({
                                                             />
                                                         ) : (
                                                             <Checkbox
-                                                                id={`attr-${code}-${value}`}
-                                                                checked={selectedFilters[code]?.includes(value) || false}
-                                                                onCheckedChange={(checked) => handleAttributeChange(code, value, checked, filterType)}
+                                                                id={`attr-${code}-${valueCode}`}
+                                                                checked={selectedFilters[code]?.includes(valueCode) || false}
+                                                                onCheckedChange={(checked) => handleAttributeChange(code, valueCode, checked, filterType)}
                                                                 disabled={false}
                                                                 className=""
                                                                 style={{
@@ -720,7 +709,7 @@ export default function LayeredNavigation({
                                                         )
                                                     )}
                                                     <Label
-                                                        htmlFor={`attr-${code}-${value}`}
+                                                        htmlFor={`attr-${code}-${valueCode}`}
                                                         className="text-sm cursor-pointer hover:opacity-80 transition-opacity"
                                                         style={{
                                                             color: optionTextColor
@@ -732,7 +721,7 @@ export default function LayeredNavigation({
                                                             e.target.style.color = optionTextColor;
                                                         }}
                                                     >
-                                                        {value}
+                                                        {valueLabel}
                                                     </Label>
                                                 </div>
                                                 <span
