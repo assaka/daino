@@ -643,6 +643,7 @@ export function UnifiedSlotRenderer({
   const variableContext = {
     product: formattedProduct,
     products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available
+    allProducts: preprocessedData?.allProducts || categorySource?.allProducts || [], // Unfiltered products for LayeredNavigation
     category: categorySource?.category || categoryData,
     cart: cartData,
     settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
