@@ -43,6 +43,7 @@ export default function Stores() {
   // Demo data modal state
   const [showDemoProvisionModal, setShowDemoProvisionModal] = useState(false);
   const [showDemoRestoreModal, setShowDemoRestoreModal] = useState(false);
+  const [showDemoCannotRunModal, setShowDemoCannotRunModal] = useState(false);
   const [storeForDemo, setStoreForDemo] = useState(null);
   const [provisioningDemo, setProvisioningDemo] = useState(false);
   const [restoringDemo, setRestoringDemo] = useState(false);
@@ -106,10 +107,17 @@ export default function Stores() {
 
   const handleTogglePublished = async (storeId, currentStatus) => {
     const newStatus = !currentStatus;
+    const store = stores.find(s => s.id === storeId);
+
+    // If store is in demo status, show modal explaining they need to delete demo data first
+    if (store?.status === 'demo') {
+      setStoreForDemo(store);
+      setShowDemoCannotRunModal(true);
+      return;
+    }
 
     // If publishing (paused -> running), validate email and payment configuration first
     if (!currentStatus) {
-      const store = stores.find(s => s.id === storeId);
       setValidatingStore({ id: storeId, name: store?.name });
 
       try {
@@ -549,10 +557,7 @@ export default function Stores() {
                       variant="ghost"
                       onClick={() => handleTogglePublished(store.id, store.published)}
                       className={store.published ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                      disabled={store.status === 'demo'}
-                      title={store.status === 'demo'
-                        ? "Demo stores cannot run. Clear demo data first."
-                        : (store.published ? "Pause store (stop daily charges)" : "Run store (start daily charges)")}
+                      title={store.published ? "Pause store (stop daily charges)" : "Run store (start daily charges)"}
                     >
                       {store.published ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </Button>
@@ -967,6 +972,60 @@ export default function Stores() {
                     Restore Store
                   </>
                 )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Demo Store Cannot Run Modal */}
+      <Dialog open={showDemoCannotRunModal} onOpenChange={setShowDemoCannotRunModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="w-5 h-5" />
+              Cannot Run Demo Store
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-900 font-medium mb-2">
+                Store: {storeForDemo?.name}
+              </p>
+              <p className="text-sm text-amber-800">
+                Stores with demo data cannot be published. Demo data is meant for testing and exploration only.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900 font-medium mb-2">To run this store:</p>
+              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                <li>Click the <RefreshCw className="w-3 h-3 inline" /> restore button to clear demo data</li>
+                <li>This will remove all demo products, orders, and customers</li>
+                <li>Any data you added manually will be kept</li>
+                <li>Then you can run your store with real data</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDemoCannotRunModal(false);
+                  setStoreForDemo(null);
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                className="bg-amber-600 hover:bg-amber-700"
+                onClick={() => {
+                  setShowDemoCannotRunModal(false);
+                  setShowDemoRestoreModal(true);
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Clear Demo Data
               </Button>
             </div>
           </div>
