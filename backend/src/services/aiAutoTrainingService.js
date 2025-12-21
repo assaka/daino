@@ -424,8 +424,7 @@ class AIAutoTrainingService {
       const { data: candidates, error } = await masterDbClient
         .from('ai_training_candidates')
         .select('*')
-        .eq('training_status', 'pending')
-        .gte('quality_score', 0.7) // Auto-promote high quality
+        .in('training_status', ['pending', 'candidate'])
         .is('embedding', null);
 
       if (error) throw error;
@@ -435,8 +434,9 @@ class AIAutoTrainingService {
 
       for (const candidate of (candidates || [])) {
         try {
-          // Auto-approve if quality score is high enough
-          if (candidate.quality_score >= 0.8) {
+          // Auto-approve if confidence score is high enough
+          const score = candidate.confidence_score || 0;
+          if (score >= 0.8) {
             await masterDbClient
               .from('ai_training_candidates')
               .update({
@@ -544,12 +544,12 @@ class AIAutoTrainingService {
         .insert({
           user_prompt: userMessage,
           ai_response: aiResponse,
-          intent_detected: intent,
-          entity_type: entity,
-          operation_type: operation,
-          was_successful: wasSuccessful,
-          quality_score: qualityScore,
-          training_status: qualityScore >= 0.8 ? 'approved' : 'pending',
+          detected_intent: intent,
+          detected_entity: entity,
+          detected_operation: operation,
+          outcome_status: wasSuccessful ? 'success' : 'pending',
+          confidence_score: qualityScore,
+          training_status: qualityScore >= 0.8 ? 'approved' : 'candidate',
           store_id: storeId,
           user_id: userId,
           metadata: {
