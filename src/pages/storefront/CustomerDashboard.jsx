@@ -58,13 +58,11 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
 
           if (isRateLimit && i < maxRetries - 1) {
             const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 1000;
-            console.warn(`CustomerDashboard: Rate limit hit, retrying in ${delayTime.toFixed(0)}ms... (Attempt ${i + 1}/${maxRetries})`);
             await delay(delayTime);
             continue;
           }
 
           if (isRateLimit) {
-            console.error("CustomerDashboard: Rate limit error after all retries. Returning empty.", error);
             return resolve([]);
           }
           
@@ -124,7 +122,6 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfi
         onStatusUpdate(orderId, newStatus);
       }
     } catch (error) {
-      console.error('Failed to update order status:', error);
       showError(`Failed to ${newStatus} order: ${error.message}`);
     } finally {
       setUpdatingStatus(prev => {
@@ -873,8 +870,6 @@ export default function CustomerDashboard() {
         }
         setOrders(userOrders || []);
     } catch (error) {
-        console.error("❌ CustomerDashboard: Error loading orders:", error);
-        console.error("❌ CustomerDashboard: Error details:", error.response?.data || error.message);
         setOrders([]);
         setFlashMessage({ type: 'error', message: 'Failed to load orders. Please try again.' });
     }
@@ -920,7 +915,6 @@ export default function CustomerDashboard() {
         setAddresses([]);
       }
     } catch (error) {
-      console.error('🔍 Error loading addresses without user_id:', error);
       
       // Fallback: try with customer_id if needed
       try {
@@ -932,7 +926,6 @@ export default function CustomerDashboard() {
           setAddresses([]);
         }
       } catch (fallbackError) {
-        console.error('🔍 Fallback also failed:', fallbackError);
         setAddresses([]);
         setFlashMessage({
           type: 'error',
@@ -957,7 +950,6 @@ export default function CustomerDashboard() {
             setWishlistProducts([]);
         }
       } catch (error) {
-          console.error("Failed to load wishlist:", error);
           setWishlistProducts([]);
           setFlashMessage({ type: 'error', message: 'Failed to load wishlist. Please try again.' });
       }
@@ -965,7 +957,6 @@ export default function CustomerDashboard() {
 
   const handleAddressSubmit = async (e) => {
     if (!user || !user.id) {
-      console.error("5. ERROR: No user or user.id found");
       setFlashMessage({ type: 'error', message: 'Authentication error. Please log in again.' });
       return;
     }
@@ -997,7 +988,6 @@ export default function CustomerDashboard() {
     const missingFields = requiredFields.filter(field => !dataToSave[field]);
     
     if (missingFields.length > 0) {
-      console.error("9. ERROR: Missing required fields:", missingFields);
       setFlashMessage({ type: 'error', message: `Missing required fields: ${missingFields.join(', ')}` });
       setSaving(false);
       return;
@@ -1012,13 +1002,10 @@ export default function CustomerDashboard() {
           const result = await retryApiCall(() => CustomerAddress.create(dataToSave));
           setFlashMessage({ type: 'success', message: 'Address added successfully!' });
         } catch (customerAddressError) {
-          console.error('🔍 CustomerAddress.create failed:', customerAddressError);
-          console.error('🔍 Error response:', customerAddressError.response?.data);
           
           // If user_id is required, we should be using customer_id instead
           if (customerAddressError.response?.data?.message?.includes('user_id is required') ||
               customerAddressError.message?.includes('user_id is required')) {
-            console.error('🔍 Backend requires user_id but we are using customer_id instead');
             setFlashMessage({ type: 'error', message: 'Address field mismatch detected. Please contact support.' });
             throw customerAddressError;
           }
@@ -1036,8 +1023,6 @@ export default function CustomerDashboard() {
               const result = await retryApiCall(() => CustomerAddress.create(fallbackData));
               setFlashMessage({ type: 'success', message: 'Address added successfully!' });
             } catch (fallbackError) {
-              console.error('🔍 Fallback also failed:', fallbackError);
-
               setFlashMessage({ 
                 type: 'error', 
                 message: 'Unable to save address. This is a known issue with customer accounts. Please contact support.' 
@@ -1056,13 +1041,6 @@ export default function CustomerDashboard() {
       await loadAddresses(user.id);
       
     } catch (error) {
-      console.error('15. ERROR during address save:', error);
-      console.error('🔍 Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        name: error.name
-      });
       setFlashMessage({ type: 'error', message: `Failed to save address: ${error.message}` });
     } finally {
       setSaving(false);
@@ -1104,7 +1082,6 @@ export default function CustomerDashboard() {
           setAddresses(prev => prev.filter(addr => addr.id !== addressId));
           setFlashMessage({ type: 'success', message: 'Address deleted successfully!' });
       } catch (error) {
-          console.error("Failed to delete address:", error);
           setFlashMessage({
             type: 'error',
             message: `Failed to delete address: ${error.message || 'Unknown error'}`
@@ -1119,43 +1096,30 @@ export default function CustomerDashboard() {
     const checkAuthStatus = async () => {
       // Wait for store to be loaded before checking authentication
       if (storeLoading || !store) {
-        console.log('⏳ CustomerDashboard: Waiting for store to load...', { storeLoading, store: !!store });
         return;
       }
 
-      console.log('🔍 CustomerDashboard: Starting auth check', { storeSlug: store?.slug });
       setLoading(true);
       try {
         // Check if customer token exists
         const isAuth = CustomerAuth.isAuthenticated();
-        console.log('🔑 CustomerDashboard: isAuthenticated =', isAuth);
 
         if (!isAuth) {
           throw new Error("Not authenticated");
         }
 
-        console.log('📞 CustomerDashboard: Calling CustomerAuth.me()...');
         const userData = await retryApiCall(() => CustomerAuth.me());
-        console.log('👤 CustomerDashboard: User data received:', {
-          id: userData?.id,
-          email: userData?.email,
-          role: userData?.role,
-          email_verified: userData?.email_verified
-        });
-
         if (!userData || !userData.id || userData.role !== 'customer') {
           throw new Error("Not a customer or not authenticated");
         }
 
         // Email verification is required - redirect to verification page if not verified
         if (!userData.email_verified) {
-          console.log('📧 CustomerDashboard: Email not verified - redirecting to verification page');
           const storeSlug = store?.slug || store?.code || 'default';
           navigate(`/public/${storeSlug}/verify-email?email=${encodeURIComponent(userData.email)}`);
           return;
         }
 
-        console.log('✅ CustomerDashboard: Auth successful, loading user data...');
         setUser(userData);
         setIsGuest(false);
 
@@ -1167,8 +1131,6 @@ export default function CustomerDashboard() {
         ]);
 
       } catch (error) {
-        console.error('❌ CustomerDashboard: Auth check failed:', error.message);
-        console.error('❌ Full error:', error);
         setUser(null);
         setIsGuest(true);
         // Clear any user-specific data from previous sessions if error occurs
@@ -1228,7 +1190,6 @@ export default function CustomerDashboard() {
       const loginUrl = createPublicUrl(storeSlug, 'CUSTOMER_AUTH');
       navigate(loginUrl);
     } catch (error) {
-      console.error('❌ Customer logout error:', error);
       // Still clear local data even if API call fails
       localStorage.removeItem('customer_auth_token');
       localStorage.removeItem('customer_auth_store_code');
