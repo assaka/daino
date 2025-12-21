@@ -1684,21 +1684,19 @@ router.get('/:id', authMiddleware, async (req, res) => {
       console.warn('Could not fetch user credits:', err.message);
     }
 
-    // Get tenant data if store is active
+    // Get tenant data
     let tenantStoreData = null;
-    if (store.status === 'active' && store.is_active) {
-      try {
-        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-        const { data } = await tenantDb
-          .from('stores')
-          .select('*')
-          .limit(1)
-          .single();
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const { data } = await tenantDb
+        .from('stores')
+        .select('*')
+        .limit(1)
+        .single();
 
-        tenantStoreData = data;
-      } catch (error) {
-        console.warn('Failed to get tenant store data:', error.message);
-      }
+      tenantStoreData = data;
+    } catch (error) {
+      console.warn('Failed to get tenant store data:', error.message);
     }
 
     res.json({

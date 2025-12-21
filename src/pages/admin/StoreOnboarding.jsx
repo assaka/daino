@@ -228,7 +228,6 @@ export default function StoreOnboarding() {
           await new Promise(resolve => setTimeout(resolve, 500));
 
           window.removeEventListener('message', messageHandler);
-          console.log('🔍 After 500ms wait, oauthError is:', oauthError);
 
           // Check sessionStorage as fallback if postMessage didn't work
           if (!oauthError) {
