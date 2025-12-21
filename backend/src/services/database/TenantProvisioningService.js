@@ -664,6 +664,7 @@ VALUES (
       // Build initial settings with theme defaults
       const initialSettings = {
         ...(options.settings || {}),
+        store_email: options.userEmail || null,  // Default to store owner's email
         theme: {
           ...themeDefaults,
           ...(options.settings?.theme || {})
@@ -798,6 +799,7 @@ VALUES (
       // Build initial settings with theme defaults
       const initialSettings = {
         ...(options.settings || {}),
+        store_email: options.userEmail || null,  // Default to store owner's email
         theme: {
           ...themeDefaults,
           ...(options.settings?.theme || {})

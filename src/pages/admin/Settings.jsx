@@ -151,7 +151,7 @@ export default function Settings() {
         // NOTE: root_category_id is NOT a column in the stores table
         // It's stored in settings.rootCategoryId
         contact_details: {
-          email: storeData.contact_email || '', // Map from flat structure
+          email: storeData.contact_email || storeData.settings?.store_email || '', // Map from flat structure or settings
           phone: storeData.contact_phone || '',
           address: storeData.address_line1 || '',
           address_line2: storeData.address_line2 || '',
@@ -318,6 +318,8 @@ export default function Settings() {
       
       // Create a more explicit payload to ensure all boolean fields are included
       const settingsPayload = {
+        // Store email - saved in settings for CMS templates
+        store_email: store.contact_details?.email || store.contact_email || store.settings?.store_email || '',
         enable_inventory: store.settings.enable_inventory,
         enable_reviews: store.settings.enable_reviews,
         hide_currency_category: store.settings.hide_currency_category,
