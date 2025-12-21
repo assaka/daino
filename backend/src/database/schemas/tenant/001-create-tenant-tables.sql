@@ -889,7 +889,6 @@ CREATE TABLE IF NOT EXISTS stores (
   timezone VARCHAR(255) DEFAULT 'UTC'::character varying,
   is_active BOOLEAN DEFAULT true,
   settings JSON DEFAULT '{}'::json,
-  contact_email VARCHAR(255),
   contact_phone VARCHAR(255),
   address_line1 VARCHAR(255),
   address_line2 VARCHAR(255),

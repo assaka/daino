@@ -683,7 +683,6 @@ VALUES (
         timezone: options.timezone || 'UTC',
         is_active: true,
         settings: initialSettings,
-        contact_email: options.userEmail || null,  // Default to store owner's email
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -809,7 +808,7 @@ VALUES (
       console.log(`📦 Creating store via API with theme preset: ${options.themePreset || 'default'}`);
 
       const insertSQL = `
-INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, contact_email, created_at, updated_at)
+INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, created_at, updated_at)
 VALUES (
   '${storeId}',
   '${options.userId}',
@@ -819,7 +818,6 @@ VALUES (
   '${options.timezone || 'UTC'}',
   true,
   '${JSON.stringify(initialSettings).replace(/'/g, "''")}'::jsonb,
-  ${options.userEmail ? `'${options.userEmail.replace(/'/g, "''")}'` : 'NULL'},
   NOW(),
   NOW()
 ) ON CONFLICT (id) DO NOTHING;

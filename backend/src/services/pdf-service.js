@@ -223,7 +223,7 @@ class PDFService {
       store_city: store.city || '',
       store_state: store.state || '',
       store_postal_code: store.postal_code || '',
-      store_email: store.contact_email || '',
+      store_email: store.settings?.store_email || '',
       store_phone: store.contact_phone || '',
       store_website: store.website_url || '',
       current_year: new Date().getFullYear()
@@ -271,7 +271,7 @@ class PDFService {
       store_city: store.city || '',
       store_state: store.state || '',
       store_postal_code: store.postal_code || '',
-      store_email: store.contact_email || '',
+      store_email: store.settings?.store_email || '',
       store_phone: store.contact_phone || '',
       store_website: store.website_url || '',
       current_year: new Date().getFullYear()

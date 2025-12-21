@@ -151,7 +151,7 @@ export default function Settings() {
         // NOTE: root_category_id is NOT a column in the stores table
         // It's stored in settings.rootCategoryId
         contact_details: {
-          email: storeData.contact_email || storeData.settings?.store_email || '', // Map from flat structure or settings
+          email: storeData.settings?.store_email || '', // From settings JSON
           phone: storeData.contact_phone || '',
           address: storeData.address_line1 || '',
           address_line2: storeData.address_line2 || '',
@@ -159,7 +159,7 @@ export default function Settings() {
           state: storeData.state || '',
           postal_code: storeData.postal_code || '',
           country: storeData.country || 'US', // Default to US
-          support_email: storeData.contact_email || '', // Use contact_email as support_email
+          support_email: storeData.settings?.store_email || '', // Use store_email as support_email
         },
         stripe_settings: {
           enabled: storeData.stripe_settings?.enabled || false,
@@ -319,7 +319,7 @@ export default function Settings() {
       // Create a more explicit payload to ensure all boolean fields are included
       const settingsPayload = {
         // Store email - saved in settings for CMS templates
-        store_email: store.contact_details?.email || store.contact_email || store.settings?.store_email || '',
+        store_email: store.contact_details?.email || '',
         enable_inventory: store.settings.enable_inventory,
         enable_reviews: store.settings.enable_reviews,
         hide_currency_category: store.settings.hide_currency_category,
@@ -386,7 +386,6 @@ export default function Settings() {
         name: store.name,
         description: store.description,
         logo_url: store.logo_url,
-        contact_email: store.contact_details?.email || store.contact_email,
         contact_phone: store.contact_details?.phone || store.contact_phone,
         address_line1: store.contact_details?.address || store.address_line1,
         address_line2: store.contact_details?.address_line2 || store.address_line2,

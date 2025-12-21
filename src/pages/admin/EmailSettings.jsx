@@ -44,11 +44,8 @@ export default function EmailSettings() {
     return <PageLoader size="lg" />;
   }
 
-  // Extract email from all possible locations
-  const storeEmail = fullStore?.contact_details?.email ||
-                     fullStore?.contact_email ||
-                     fullStore?.settings?.contact_details?.email ||
-                     '';
+  // Extract email from settings
+  const storeEmail = fullStore?.settings?.store_email || '';
   const storeName = fullStore?.name || selectedStore?.name || '';
 
   return (

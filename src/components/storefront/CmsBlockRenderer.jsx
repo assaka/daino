@@ -13,7 +13,7 @@ function processStoreVariables(content, store, settings) {
 
     const variables = {
         store_name: store?.name || '',
-        store_email: store?.contact_email || settings?.store_email || settings?.contact_email || '',
+        store_email: settings?.store_email || '',
         store_phone: store?.contact_phone || settings?.contact_phone || '',
         store_address: store?.address || settings?.store_address || '',
         store_city: store?.city || settings?.store_city || '',
