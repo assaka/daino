@@ -1147,11 +1147,12 @@ export default function CustomerDashboard() {
           throw new Error("Not a customer or not authenticated");
         }
 
-        // Email verification is optional for customers
-        // They can access their account without verifying email
-        // Verification can be done later if needed for certain features
+        // Email verification is required - redirect to verification page if not verified
         if (!userData.email_verified) {
-          console.log('📧 CustomerDashboard: Email not verified (optional - continuing to dashboard)');
+          console.log('📧 CustomerDashboard: Email not verified - redirecting to verification page');
+          const storeSlug = store?.slug || store?.code || 'default';
+          navigate(`/public/${storeSlug}/verify-email?email=${encodeURIComponent(userData.email)}`);
+          return;
         }
 
         console.log('✅ CustomerDashboard: Auth successful, loading user data...');
