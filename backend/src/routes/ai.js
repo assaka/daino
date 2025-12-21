@@ -62,43 +62,71 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
 
     const ConnectionManager = require('../services/database/ConnectionManager');
     const { masterDbClient } = require('../database/masterConnection');
+    const embeddingService = require('../services/embeddingService');
 
     // ═══════════════════════════════════════════════════════════════════
-    // STEP 1: Load RAG Knowledge Base (store-specific docs + global docs)
+    // STEP 1: SEMANTIC SEARCH - Find relevant context using embeddings
     // ═══════════════════════════════════════════════════════════════════
     let knowledgeBase = '';
-    try {
-      const { data: docs } = await masterDbClient
-        .from('ai_context_documents')
-        .select('title, content, category')
-        .eq('is_active', true)
-        .order('priority', { ascending: false })
-        .limit(5);
-
-      if (docs?.length) {
-        knowledgeBase = docs.map(d => `[${d.category}] ${d.title}: ${d.content?.substring(0, 500)}`).join('\n');
-      }
-    } catch (e) { console.error('RAG load failed:', e); }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // STEP 2: Load Learned Examples (approved successful prompts)
-    // ═══════════════════════════════════════════════════════════════════
     let learnedExamples = '';
-    try {
-      const { data: examples } = await masterDbClient
-        .from('ai_training_candidates')
-        .select('user_prompt, ai_response, detected_entity, success_count')
-        .in('training_status', ['approved', 'promoted'])
-        .gt('success_count', 0)
-        .order('success_count', { ascending: false })
-        .limit(5);
 
-      if (examples?.length) {
-        learnedExamples = '\nLEARNED FROM PAST SUCCESS:\n' + examples.map(e =>
-          `Q: "${e.user_prompt?.substring(0, 100)}"\nStyle: ${e.detected_entity || 'general'} (worked ${e.success_count}x)`
-        ).join('\n');
+    try {
+      // Generate embedding for user's message
+      const queryEmbedding = await embeddingService.generateEmbedding(message);
+
+      if (queryEmbedding) {
+        // Use vector search to find semantically similar content
+        const { data: semanticResults, error } = await masterDbClient.rpc('ai_search_all_context', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.5, // Lower threshold to get more results
+          docs_limit: 5,
+          examples_limit: 3,
+          patterns_limit: 3
+        });
+
+        if (!error && semanticResults?.length) {
+          console.log(`🔍 Semantic search found ${semanticResults.length} relevant results`);
+
+          // Separate by source type
+          const docs = semanticResults.filter(r => r.source_type === 'document');
+          const examples = semanticResults.filter(r => r.source_type === 'example');
+          const patterns = semanticResults.filter(r => r.source_type === 'pattern');
+
+          if (docs.length) {
+            knowledgeBase = docs.map(d =>
+              `[${d.title}] (${(d.similarity * 100).toFixed(0)}% match): ${d.content?.substring(0, 800)}`
+            ).join('\n\n');
+          }
+
+          if (examples.length || patterns.length) {
+            learnedExamples = '\nRELEVANT EXAMPLES:\n' + [...examples, ...patterns].map(e =>
+              `• ${e.title} (${(e.similarity * 100).toFixed(0)}% match): ${e.content?.substring(0, 200)}`
+            ).join('\n');
+          }
+        } else if (error) {
+          console.error('Semantic search error:', error.message);
+        }
       }
-    } catch (e) { console.error('Examples load failed:', e); }
+    } catch (e) {
+      console.error('Semantic search failed:', e.message);
+    }
+
+    // Fallback to priority-based if semantic search found nothing
+    if (!knowledgeBase) {
+      try {
+        const { data: docs } = await masterDbClient
+          .from('ai_context_documents')
+          .select('title, content, category')
+          .eq('is_active', true)
+          .order('priority', { ascending: false })
+          .limit(5);
+
+        if (docs?.length) {
+          knowledgeBase = docs.map(d => `[${d.category}] ${d.title}: ${d.content?.substring(0, 500)}`).join('\n');
+          console.log('📚 Using fallback priority-based context');
+        }
+      } catch (e) { console.error('RAG fallback failed:', e); }
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // STEP 2.5: Load Recent Chat History from Database (for context)

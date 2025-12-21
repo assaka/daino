@@ -205,7 +205,7 @@ $$ LANGUAGE plpgsql;
 -- 6. COMBINED RAG SEARCH
 -- ============================================
 -- Search across all AI tables for the most relevant context
-CREATE OR REPLACE FUNCTION search_all_ai_context(
+CREATE OR REPLACE FUNCTION ai_search_all_context(
   query_embedding vector(1536),
   match_threshold float DEFAULT 0.7,
   docs_limit int DEFAULT 3,
@@ -276,7 +276,7 @@ GRANT EXECUTE ON FUNCTION search_ai_examples_by_embedding TO authenticated;
 GRANT EXECUTE ON FUNCTION search_ai_entities_by_embedding TO authenticated;
 GRANT EXECUTE ON FUNCTION search_training_patterns_by_embedding TO authenticated;
 GRANT EXECUTE ON FUNCTION search_similar_training_candidates TO authenticated;
-GRANT EXECUTE ON FUNCTION search_all_ai_context TO authenticated;
+GRANT EXECUTE ON FUNCTION ai_search_all_context TO authenticated;
 
 -- Also grant to service_role for backend usage
 GRANT EXECUTE ON FUNCTION search_ai_documents_by_embedding TO service_role;
@@ -284,4 +284,4 @@ GRANT EXECUTE ON FUNCTION search_ai_examples_by_embedding TO service_role;
 GRANT EXECUTE ON FUNCTION search_ai_entities_by_embedding TO service_role;
 GRANT EXECUTE ON FUNCTION search_training_patterns_by_embedding TO service_role;
 GRANT EXECUTE ON FUNCTION search_similar_training_candidates TO service_role;
-GRANT EXECUTE ON FUNCTION search_all_ai_context TO service_role;
+GRANT EXECUTE ON FUNCTION ai_search_all_context TO service_role;
