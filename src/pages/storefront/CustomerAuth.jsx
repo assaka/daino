@@ -198,25 +198,25 @@ export default function CustomerAuth() {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      console.error('Auth error.data:', error.data);
-      console.error('Auth error.message:', error.message);
 
       // Use backend error message if available
       const defaultMessage = isLogin ? t('common.login_failed') : t('customer_auth.error.registration_failed');
 
       // Handle different error formats from the API
+      // Backend may return: { message: '...' } or { error: '...' } or { errors: [...] }
       let errorMessage = defaultMessage;
 
-      // Check error.data first (set by our API client)
       if (error.data) {
         if (error.data.message) {
           errorMessage = error.data.message;
+        } else if (error.data.error) {
+          // Some endpoints return 'error' instead of 'message'
+          errorMessage = error.data.error;
         } else if (error.data.errors && Array.isArray(error.data.errors) && error.data.errors.length > 0) {
           // Validation errors from express-validator
           errorMessage = error.data.errors[0].msg || error.data.errors[0].message || defaultMessage;
         }
       } else if (error.message && !error.message.startsWith('HTTP error!')) {
-        // Fallback to error.message if it's not the generic HTTP error
         errorMessage = error.message;
       }
 

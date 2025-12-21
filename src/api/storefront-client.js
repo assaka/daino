@@ -188,7 +188,9 @@ class StorefrontApiClient {
       const result = await response.json();
 
       if (!response.ok) {
-        const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+        // Backend may return 'message' or 'error' field
+        const errorMsg = result.message || result.error || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMsg);
         error.status = response.status;
         error.data = result;
         throw error;
