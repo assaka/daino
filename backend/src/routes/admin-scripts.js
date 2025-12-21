@@ -596,6 +596,55 @@ router.get('/embedding-status', authMiddleware, requireRole('admin', 'store_owne
 });
 
 /**
+ * POST /api/admin/auto-train
+ *
+ * Run automatic AI training from markdown docs and chat history.
+ * Requires JWT authentication with admin or store_owner role.
+ *
+ * Body params (all optional, defaults to all):
+ *   - markdown: boolean (import markdown docs)
+ *   - chat: boolean (process training candidates)
+ *   - embeddings: boolean (generate embeddings)
+ */
+router.post('/auto-train', authMiddleware, requireRole('admin', 'store_owner'), async (req, res) => {
+  const startTime = Date.now();
+
+  // Check for OpenAI key (needed for embeddings)
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({
+      success: false,
+      error: 'OPENAI_API_KEY environment variable is required for embeddings'
+    });
+  }
+
+  const options = {
+    markdown: req.body.markdown !== false,
+    code: req.body.code !== false,
+    chat: req.body.chat !== false,
+    embeddings: req.body.embeddings !== false
+  };
+
+  console.log(`🤖 [${req.user.email}] Triggered auto-training`);
+
+  try {
+    const aiAutoTrainingService = require('../services/aiAutoTrainingService');
+    const result = await aiAutoTrainingService.runAutoTraining(options);
+
+    res.json({
+      success: result.success,
+      message: result.success ? 'Auto-training completed' : 'Auto-training failed',
+      ...result
+    });
+  } catch (error) {
+    console.error('❌ Auto-training error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/admin/embedding-job/:jobId
  *
  * Store owner accessible endpoint to check job status.

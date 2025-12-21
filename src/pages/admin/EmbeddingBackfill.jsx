@@ -17,15 +17,20 @@ import {
   FileText,
   Code,
   Brain,
-  BookOpen
+  BookOpen,
+  Zap,
+  FolderOpen,
+  MessageSquare
 } from 'lucide-react';
 
 const EmbeddingBackfill = () => {
   const [flashMessage, setFlashMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [autoTrainLoading, setAutoTrainLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [jobResult, setJobResult] = useState(null);
+  const [autoTrainResult, setAutoTrainResult] = useState(null);
   const [runningJob, setRunningJob] = useState(null);
 
   // Options for what to backfill
@@ -35,6 +40,14 @@ const EmbeddingBackfill = () => {
     entities: true,
     training: true,
     async: false
+  });
+
+  // Auto-training options
+  const [autoTrainOptions, setAutoTrainOptions] = useState({
+    markdown: true,
+    code: true,
+    chat: true,
+    embeddings: true
   });
 
   useEffect(() => {
@@ -175,6 +188,43 @@ const EmbeddingBackfill = () => {
     poll();
   };
 
+  const runAutoTrain = async () => {
+    try {
+      setAutoTrainLoading(true);
+      setAutoTrainResult(null);
+      const token = getAuthToken();
+
+      if (!token) {
+        setFlashMessage({ type: 'error', message: 'Not authenticated. Please log in.' });
+        return;
+      }
+
+      const res = await fetch('/api/admin/auto-train', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(autoTrainOptions)
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        setAutoTrainResult(result.stats);
+        setFlashMessage({ type: 'success', message: 'Auto-training completed!' });
+        loadStatus(); // Refresh status
+      } else {
+        setFlashMessage({ type: 'error', message: result.error || 'Auto-training failed' });
+      }
+    } catch (error) {
+      console.error('Auto-train error:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to run auto-training' });
+    } finally {
+      setAutoTrainLoading(false);
+    }
+  };
+
   const StatusCard = ({ title, icon: Icon, count, color }) => (
     <div className={`flex items-center gap-3 p-4 rounded-lg border ${color}`}>
       <Icon className="w-8 h-8" />
@@ -291,10 +341,149 @@ const EmbeddingBackfill = () => {
         </CardContent>
       </Card>
 
+      {/* Auto-Training */}
+      <Card className="border-purple-200 bg-purple-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-purple-600" />
+            Auto-Training
+          </CardTitle>
+          <CardDescription>
+            Automatically import training data from markdown docs, chat history, and generate embeddings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Options */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+              <Switch
+                id="markdown"
+                checked={autoTrainOptions.markdown}
+                onCheckedChange={(checked) => setAutoTrainOptions({ ...autoTrainOptions, markdown: checked })}
+                disabled={autoTrainLoading}
+              />
+              <div>
+                <Label htmlFor="markdown" className="flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4" />
+                  Markdown Docs
+                </Label>
+                <p className="text-xs text-gray-500">Import from docs/ folder</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+              <Switch
+                id="code"
+                checked={autoTrainOptions.code}
+                onCheckedChange={(checked) => setAutoTrainOptions({ ...autoTrainOptions, code: checked })}
+                disabled={autoTrainLoading}
+              />
+              <div>
+                <Label htmlFor="code" className="flex items-center gap-2">
+                  <Code className="w-4 h-4" />
+                  Code Patterns
+                </Label>
+                <p className="text-xs text-gray-500">Extract JSDoc, routes, services</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+              <Switch
+                id="chat"
+                checked={autoTrainOptions.chat}
+                onCheckedChange={(checked) => setAutoTrainOptions({ ...autoTrainOptions, chat: checked })}
+                disabled={autoTrainLoading}
+              />
+              <div>
+                <Label htmlFor="chat" className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Chat History
+                </Label>
+                <p className="text-xs text-gray-500">Process AI conversations</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+              <Switch
+                id="autoEmbeddings"
+                checked={autoTrainOptions.embeddings}
+                onCheckedChange={(checked) => setAutoTrainOptions({ ...autoTrainOptions, embeddings: checked })}
+                disabled={autoTrainLoading}
+              />
+              <div>
+                <Label htmlFor="autoEmbeddings" className="flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  Embeddings
+                </Label>
+                <p className="text-xs text-gray-500">Generate vectors</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Run Button */}
+          <Button
+            onClick={runAutoTrain}
+            disabled={autoTrainLoading || (!autoTrainOptions.markdown && !autoTrainOptions.code && !autoTrainOptions.chat && !autoTrainOptions.embeddings)}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            {autoTrainLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Running Auto-Training...
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 mr-2" />
+                Run Auto-Training
+              </>
+            )}
+          </Button>
+
+          {/* Results */}
+          {autoTrainResult && (
+            <div className="mt-4 p-4 bg-white rounded-lg border">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                Auto-Training Results
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Markdown</p>
+                  <p className="font-medium">
+                    {autoTrainResult.markdown?.imported || 0} new,
+                    {autoTrainResult.markdown?.updated || 0} updated
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Code</p>
+                  <p className="font-medium">
+                    {autoTrainResult.code?.scanned || 0} scanned,
+                    {autoTrainResult.code?.extracted || 0} extracted
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Chat</p>
+                  <p className="font-medium">
+                    {autoTrainResult.chat?.processed || 0} processed,
+                    {autoTrainResult.chat?.promoted || 0} promoted
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Embeddings</p>
+                  <p className="font-medium">
+                    {autoTrainResult.embeddings?.generated || 0} generated
+                  </p>
+                </div>
+              </div>
+              {autoTrainResult.duration && (
+                <p className="text-xs text-gray-400 mt-2">Completed in {autoTrainResult.duration}</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Run Backfill */}
       <Card>
         <CardHeader>
-          <CardTitle>Run Backfill</CardTitle>
+          <CardTitle>Manual Backfill</CardTitle>
           <CardDescription>Select which data types to generate embeddings for</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
