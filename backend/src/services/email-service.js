@@ -283,6 +283,12 @@ class EmailService {
         break;
     }
 
+    // Ensure store_name is set from data.store.name if not already present
+    if (!variables.store_name && data.store?.name) {
+      variables.store_name = data.store.name;
+      console.log(`📧 [EMAIL] Added store_name to variables: ${variables.store_name}`);
+    }
+
     // Include orderId in variables for email log metadata (for duplicate detection)
     if (data.orderId) {
       variables.orderId = data.orderId;
