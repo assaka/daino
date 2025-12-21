@@ -470,6 +470,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             
             // For store owners, check if they have active stores and redirect accordingly
 
+            // Check if backend flagged this user as needing email verification
+            const requiresVerification = actualResponse.data?.requiresVerification;
+            const userEmail = actualResponse.data?.user?.email || formData.email;
+
+            if (requiresVerification) {
+              navigate(`/admin/verify-email?email=${encodeURIComponent(userEmail)}`);
+              return;
+            }
+
             // Check if backend flagged this user as needing onboarding
             const requiresOnboarding = actualResponse.data?.requiresOnboarding;
 
@@ -529,7 +538,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                     if (selectedStore) {
                       // Set all store context in localStorage
                       localStorage.setItem('selectedStoreId', selectedStore.id);
-                      localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code);
+                      localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code || '');
                       localStorage.setItem('selectedStoreName', selectedStore.name);
 
                       // CRITICAL: Wait a tick to ensure localStorage is fully written
@@ -637,16 +646,25 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               const accountUrl = await getCustomerAccountUrl();
               navigate(accountUrl);
             } else {
-              setSuccess(t('auth.success.user_created'));
-              setTimeout(() => {
-                // Check for redirect parameter (e.g., from invitation acceptance flow)
-                const redirectUrl = searchParams.get('redirect');
-                if (redirectUrl) {
-                  navigate(decodeURIComponent(redirectUrl));
-                } else {
-                  navigate(createAdminUrl("DASHBOARD"));
-                }
-              }, 1500);
+              // Check if email verification is required
+              const requiresVerification = actualRegResponse.data?.requiresVerification;
+              const userEmail = actualRegResponse.data?.user?.email || formData.email;
+
+              if (requiresVerification) {
+                // Redirect to email verification page
+                navigate(`/admin/verify-email?email=${encodeURIComponent(userEmail)}`);
+              } else {
+                setSuccess(t('auth.success.user_created'));
+                setTimeout(() => {
+                  // Check for redirect parameter (e.g., from invitation acceptance flow)
+                  const redirectUrl = searchParams.get('redirect');
+                  if (redirectUrl) {
+                    navigate(decodeURIComponent(redirectUrl));
+                  } else {
+                    navigate(createAdminUrl("DASHBOARD"));
+                  }
+                }, 1500);
+              }
             }
           }
         }

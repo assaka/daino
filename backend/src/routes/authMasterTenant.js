@@ -19,6 +19,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const masterEmailService = require('../services/master-email-service');
 
 /**
  * POST /api/auth/register
@@ -61,6 +62,10 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
     // Create user in master DB (using Supabase client)
     const userId = uuidv4();
     const { data: user, error: userError } = await masterDbClient
@@ -75,6 +80,8 @@ router.post('/register', async (req, res) => {
         role: 'store_owner',
         is_active: true,
         email_verified: false,
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -104,6 +111,20 @@ router.post('/register', async (req, res) => {
       throw new Error(`Failed to create store: ${storeError.message}`);
     }
 
+    // Send verification email
+    try {
+      await masterEmailService.sendStoreOwnerVerificationEmail({
+        recipientEmail: email,
+        customerName: `${firstName} ${lastName}`,
+        customerFirstName: firstName,
+        verificationCode,
+        expiresIn: '15 minutes'
+      });
+      console.log('📧 Verification email sent to:', email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send verification email:', emailError.message);
+      // Continue - user was created, they can request a new code
+    }
 
     // Generate JWT tokens
     const tokens = generateTokenPair(user, storeId);
@@ -115,14 +136,15 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please connect a database to activate your store.',
+      message: 'User registered successfully. Please verify your email to continue.',
       data: {
         user,
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresIn: '7 days',
         sessionRole: user.role,
-        sessionContext: 'dashboard'
+        sessionContext: 'dashboard',
+        requiresVerification: true
       }
     });
   } catch (error) {
@@ -248,6 +270,69 @@ router.post('/login', async (req, res) => {
           success: false,
           error: 'User account is inactive',
           code: 'USER_INACTIVE'
+        });
+      }
+
+      // Check if email is verified for store owners
+      if (!user.email_verified && user.role === 'store_owner') {
+        console.log('📧 Store owner email not verified, sending verification code...');
+
+        // Generate verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        // Update user with verification code
+        await masterDbClient
+          .from('users')
+          .update({
+            email_verification_token: verificationCode,
+            password_reset_expires: verificationExpiry.toISOString()
+          })
+          .eq('id', user.id);
+
+        // Send verification email
+        try {
+          await masterEmailService.sendStoreOwnerVerificationEmail({
+            recipientEmail: email,
+            customerName: `${user.first_name} ${user.last_name}`,
+            customerFirstName: user.first_name,
+            verificationCode,
+            expiresIn: '15 minutes'
+          });
+          console.log('📧 Verification email sent to:', email);
+        } catch (emailError) {
+          console.error('⚠️ Failed to send verification email:', emailError.message);
+        }
+
+        // Get user's store for token
+        const { data: userStores } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        const userStoreId = userStores?.[0]?.id || null;
+
+        // Generate token for partial access
+        const tokens = generateTokenPair(user, userStoreId);
+
+        return res.json({
+          success: true,
+          message: 'Please verify your email to continue',
+          data: {
+            user: {
+              id: user.id,
+              email: user.email,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              role: user.role
+            },
+            token: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            sessionRole: user.role,
+            sessionContext: 'dashboard',
+            requiresVerification: true
+          }
         });
       }
 
@@ -1480,6 +1565,207 @@ router.get('/me', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get user info'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/store-owner/verify-email
+ * Verify store owner email with code
+ */
+router.post('/store-owner/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and verification code are required'
+      });
+    }
+
+    // Find user by email
+    const { data: user, error: findError } = await masterDbClient
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (findError || !user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Check if already verified
+    if (user.email_verified) {
+      return res.json({
+        success: true,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Verify the code
+    if (user.email_verification_token !== code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid verification code'
+      });
+    }
+
+    // Check if code expired
+    if (user.password_reset_expires && new Date(user.password_reset_expires) < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Verification code has expired. Please request a new one.'
+      });
+    }
+
+    // Update user as verified
+    const { data: updatedUser, error: updateError } = await masterDbClient
+      .from('users')
+      .update({
+        email_verified: true,
+        email_verification_token: null,
+        password_reset_expires: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // Get user's store
+    const { data: stores } = await masterDbClient
+      .from('stores')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1);
+
+    const storeId = stores?.[0]?.id || null;
+
+    // Generate fresh tokens
+    const tokens = generateTokenPair(updatedUser, storeId);
+
+    // Remove sensitive fields
+    delete updatedUser.password;
+    delete updatedUser.email_verification_token;
+    delete updatedUser.password_reset_token;
+
+    // Send welcome email
+    try {
+      await masterEmailService.sendWelcomeEmail({
+        recipientEmail: email,
+        customerName: `${updatedUser.first_name} ${updatedUser.last_name}`,
+        customerFirstName: updatedUser.first_name
+      });
+      console.log('📧 Welcome email sent to:', email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send welcome email:', emailError.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully!',
+      data: {
+        user: updatedUser,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        sessionRole: updatedUser.role,
+        sessionContext: 'dashboard'
+      }
+    });
+  } catch (error) {
+    console.error('Store owner verify email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Verification failed'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/store-owner/resend-verification
+ * Resend verification code to store owner
+ */
+router.post('/store-owner/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
+      });
+    }
+
+    // Find user by email
+    const { data: user, error: findError } = await masterDbClient
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (findError || !user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Check if already verified
+    if (user.email_verified) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update user with new code
+    await masterDbClient
+      .from('users')
+      .update({
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    // Send verification email
+    try {
+      await masterEmailService.sendStoreOwnerVerificationEmail({
+        recipientEmail: email,
+        customerName: `${user.first_name} ${user.last_name}`,
+        customerFirstName: user.first_name,
+        verificationCode,
+        expiresIn: '15 minutes'
+      });
+      console.log('📧 Verification email resent to:', email);
+    } catch (emailError) {
+      console.error('Failed to resend verification email:', emailError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to send verification email'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification code sent! Please check your email.'
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to resend verification code'
     });
   }
 });

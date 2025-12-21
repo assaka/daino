@@ -1919,7 +1919,201 @@ router.post('/debug/fix-customer-stores', async (req, res) => {
   });
 });
 
+// ========================================
+// STORE OWNER PASSWORD RESET ENDPOINTS
+// ========================================
+
+// @route   POST /api/auth/store-owner/forgot-password
+// @desc    Send password reset email to store owner
+// @access  Public (no authentication required)
+// @note    MASTER DB - store owners are in master database
+router.post('/store-owner/forgot-password', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+  console.log('[STORE-OWNER-FORGOT-PASSWORD] Route hit! Path:', req.path);
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+
+    // Get master database connection
+    const { masterDbClient } = require('../database/masterConnection');
+
+    // Find store owner by email in master DB
+    const { data: user, error } = await masterDbClient
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .in('role', ['store_owner', 'admin'])
+      .maybeSingle();
+
+    if (error) {
+      console.error('[STORE-OWNER-FORGOT-PASSWORD] Database error:', error);
+    }
+
+    // Always return success to prevent email enumeration attacks
+    if (!user) {
+      console.log('[STORE-OWNER-FORGOT-PASSWORD] No user found for email:', email);
+      return res.json({
+        success: true,
+        message: 'If an account with this email exists, a password reset link has been sent.'
+      });
+    }
+
+    // Generate reset token (random 32 character string)
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save reset token to user record in master DB
+    const { error: updateError } = await masterDbClient
+      .from('users')
+      .update({
+        password_reset_token: resetToken,
+        password_reset_expires: resetExpiry.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('[STORE-OWNER-FORGOT-PASSWORD] Failed to save reset token:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to process password reset request.'
+      });
+    }
+
+    // Build reset URL for admin
+    const baseUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+    const resetUrl = `${baseUrl}/admin/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    // Send password reset email using master email service
+    try {
+      const masterEmailService = require('../services/master-email-service');
+      await masterEmailService.sendPasswordResetEmail({
+        recipientEmail: email,
+        customerName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Store Owner',
+        customerFirstName: user.first_name || 'there',
+        resetLink: resetUrl,
+        expiresIn: '1 hour'
+      });
+      console.log('[STORE-OWNER-FORGOT-PASSWORD] Reset email sent to:', email);
+    } catch (emailError) {
+      console.error('[STORE-OWNER-FORGOT-PASSWORD] Email send error:', emailError);
+      // Don't fail the request if email fails - token is saved
+    }
+
+    res.json({
+      success: true,
+      message: 'If an account with this email exists, a password reset link has been sent.'
+    });
+  } catch (error) {
+    console.error('[STORE-OWNER-FORGOT-PASSWORD] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error. Please try again later.'
+    });
+  }
+});
+
+// @route   POST /api/auth/store-owner/reset-password
+// @desc    Reset store owner password with token
+// @access  Public
+// @note    MASTER DB - store owners are in master database
+router.post('/store-owner/reset-password', [
+  body('token').trim().notEmpty().withMessage('Reset token is required'),
+  body('password').custom(value => {
+    const error = validatePasswordStrength(value);
+    if (error) throw new Error(error);
+    return true;
+  })
+], async (req, res) => {
+  console.log('[STORE-OWNER-RESET-PASSWORD] Route hit! Path:', req.path);
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { token, password } = req.body;
+
+    // Get master database connection
+    const { masterDbClient } = require('../database/masterConnection');
+
+    // Find user by reset token in master DB
+    const { data: user, error } = await masterDbClient
+      .from('users')
+      .select('*')
+      .eq('password_reset_token', token)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[STORE-OWNER-RESET-PASSWORD] Database error:', error);
+    }
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Check if token has expired
+    if (user.password_reset_expires && new Date() > new Date(user.password_reset_expires)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token has expired. Please request a new password reset.'
+      });
+    }
+
+    // Hash new password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update password and clear reset token in master DB
+    const { error: updateError } = await masterDbClient
+      .from('users')
+      .update({
+        password: hashedPassword,
+        password_reset_token: null,
+        password_reset_expires: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('[STORE-OWNER-RESET-PASSWORD] Failed to update password:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to reset password.'
+      });
+    }
+
+    console.log('[STORE-OWNER-RESET-PASSWORD] Password reset successful for:', user.email);
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
+    });
+  } catch (error) {
+    console.error('[STORE-OWNER-RESET-PASSWORD] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error. Please try again later.'
+    });
+  }
+});
+
 // Log registered routes on module load
-console.log(`[AUTH ROUTES] Registered ${router.stack.length} routes including: customer/login, customer/register, customer/forgot-password, customer/reset-password`);
+console.log(`[AUTH ROUTES] Registered ${router.stack.length} routes including: customer/login, customer/register, customer/forgot-password, customer/reset-password, store-owner/forgot-password, store-owner/reset-password`);
 
 module.exports = router;

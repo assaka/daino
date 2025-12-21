@@ -12,6 +12,7 @@ const {
   creditsLowBalanceEmail,
   welcomeEmail,
   passwordResetEmail,
+  storeOwnerVerificationEmail,
   PLATFORM_NAME
 } = require('./master-email-templates');
 
@@ -243,6 +244,33 @@ class MasterEmailService {
     });
 
     const subject = `Reset Your ${PLATFORM_NAME} Password`;
+
+    return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send email verification code to store owner
+   * @param {Object} data - Verification data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendStoreOwnerVerificationEmail(data) {
+    const {
+      recipientEmail,
+      customerName,
+      customerFirstName,
+      verificationCode,
+      expiresIn = '15 minutes'
+    } = data;
+
+    const htmlContent = storeOwnerVerificationEmail({
+      customerName,
+      customerFirstName: customerFirstName || customerName?.split(' ')[0] || 'there',
+      customerEmail: recipientEmail,
+      verificationCode,
+      expiresIn
+    });
+
+    const subject = `Verify Your Email - ${PLATFORM_NAME}`;
 
     return await this.sendEmail(recipientEmail, subject, htmlContent);
   }

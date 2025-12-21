@@ -339,7 +339,7 @@ export const StoreSelectionProvider = ({ children }) => {
     setSelectedStore(store);
     localStorage.setItem('selectedStoreId', store.id);
     localStorage.setItem('selectedStoreName', store.name);
-    localStorage.setItem('selectedStoreSlug', store.slug);
+    localStorage.setItem('selectedStoreSlug', store.slug || store.code || '');
     localStorage.setItem('selectedStoreStatus', store.status || '');
     localStorage.setItem('selectedStoreThemePreset', store.theme_preset || '');
 

@@ -150,7 +150,7 @@ export function determineStoreSlug(location) {
 
   // Fallback to localStorage
   const savedSlug = localStorage.getItem('selectedStoreSlug');
-  if (savedSlug) {
+  if (savedSlug && savedSlug !== 'undefined' && savedSlug !== 'null') {
     return savedSlug;
   }
 

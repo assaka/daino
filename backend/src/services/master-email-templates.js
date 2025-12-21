@@ -788,6 +788,87 @@ const teamInvitationEmail = (data) => {
   });
 };
 
+/**
+ * Store Owner Email Verification Template
+ * Sent when a store owner registers to verify their email
+ */
+const storeOwnerVerificationEmail = (data) => {
+  const {
+    customerName,
+    customerFirstName,
+    customerEmail,
+    verificationCode,
+    expiresIn = '15 minutes'
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Verify Your Email',
+    subtitle: 'One more step to get started'
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi <strong>${customerFirstName || customerName}</strong>,
+          </p>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Thanks for signing up! Please use the verification code below to confirm your email address and complete your registration.
+          </p>
+
+          <!-- Verification Code Box -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" style="border-collapse: collapse; background-color: #f3f4f6; border-radius: 12px;">
+                  <tr>
+                    <td style="padding: 24px 48px;">
+                      <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                        Your Verification Code
+                      </p>
+                      <p style="margin: 0; color: #111827; font-size: 36px; font-weight: 700; letter-spacing: 8px; font-family: monospace;">
+                        ${verificationCode}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Info Box -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid #6366f1; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
+                  This code will expire in <strong>${expiresIn}</strong>. If you didn't create an account, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+            Enter this code on the verification page to continue.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Your ${PLATFORM_NAME} verification code is ${verificationCode}`
+  });
+};
+
 module.exports = {
   // Components
   masterEmailHeader,
@@ -800,6 +881,7 @@ module.exports = {
   welcomeEmail,
   passwordResetEmail,
   teamInvitationEmail,
+  storeOwnerVerificationEmail,
 
   // Constants
   PLATFORM_NAME,
