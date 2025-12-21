@@ -26,6 +26,23 @@ import { PageLoader } from '@/components/ui/page-loader';
 import StoreLogoUpload from '@/components/admin/StoreLogoUpload';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
+// Country to currency mapping for auto-setting currency when country changes
+const COUNTRY_TO_CURRENCY = {
+  // Europe - Euro zone
+  DE: 'EUR', AT: 'EUR', BE: 'EUR', CY: 'EUR', EE: 'EUR', ES: 'EUR', FI: 'EUR',
+  FR: 'EUR', GR: 'EUR', IE: 'EUR', IT: 'EUR', LT: 'EUR', LU: 'EUR', LV: 'EUR',
+  MT: 'EUR', NL: 'EUR', PT: 'EUR', SI: 'EUR', SK: 'EUR',
+  // Europe - Non-Euro
+  GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', CZ: 'CZK',
+  HU: 'HUF', RO: 'RON', BG: 'BGN', HR: 'EUR',
+  // Americas
+  US: 'USD', CA: 'CAD', MX: 'MXN', BR: 'BRL',
+  // Asia-Pacific
+  JP: 'JPY', CN: 'CNY', KR: 'KRW', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD',
+  IN: 'INR', TH: 'THB', MY: 'MYR', ID: 'IDR', PH: 'PHP', VN: 'VND',
+  // Middle East & Africa
+  AE: 'AED', SA: 'SAR', IL: 'ILS', ZA: 'ZAR', TR: 'TRY', RU: 'RUB',
+};
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -237,13 +254,26 @@ export default function Settings() {
   };
 
   const handleContactChange = (field, value) => {
-    setStore(prev => ({
-      ...prev,
-      contact_details: {
-        ...prev.contact_details,
-        [field]: value
+    setStore(prev => {
+      const updates = {
+        ...prev,
+        contact_details: {
+          ...prev.contact_details,
+          [field]: value
+        }
+      };
+
+      // Auto-set currency when country changes (only for supported currencies in dropdown)
+      if (field === 'country' && value) {
+        const suggestedCurrency = COUNTRY_TO_CURRENCY[value];
+        const supportedCurrencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'CNY', 'SEK', 'NOK', 'DKK', 'PLN', 'INR', 'KRW', 'SGD', 'HKD', 'MXN', 'BRL', 'ZAR', 'TRY'];
+        if (suggestedCurrency && supportedCurrencies.includes(suggestedCurrency)) {
+          updates.currency = suggestedCurrency;
+        }
       }
-    }));
+
+      return updates;
+    });
   };
   
   const handleStripeChange = (field, value) => {
@@ -554,12 +584,26 @@ export default function Settings() {
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                        <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-                        <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
-                        <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                        <SelectItem value="USD">USD - US Dollar ($)</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro (€)</SelectItem>
+                        <SelectItem value="GBP">GBP - British Pound (£)</SelectItem>
+                        <SelectItem value="CAD">CAD - Canadian Dollar (C$)</SelectItem>
+                        <SelectItem value="AUD">AUD - Australian Dollar (A$)</SelectItem>
+                        <SelectItem value="JPY">JPY - Japanese Yen (¥)</SelectItem>
+                        <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
+                        <SelectItem value="CNY">CNY - Chinese Yuan (¥)</SelectItem>
+                        <SelectItem value="SEK">SEK - Swedish Krona (kr)</SelectItem>
+                        <SelectItem value="NOK">NOK - Norwegian Krone (kr)</SelectItem>
+                        <SelectItem value="DKK">DKK - Danish Krone (kr)</SelectItem>
+                        <SelectItem value="PLN">PLN - Polish Zloty (zł)</SelectItem>
+                        <SelectItem value="INR">INR - Indian Rupee (₹)</SelectItem>
+                        <SelectItem value="KRW">KRW - South Korean Won (₩)</SelectItem>
+                        <SelectItem value="SGD">SGD - Singapore Dollar (S$)</SelectItem>
+                        <SelectItem value="HKD">HKD - Hong Kong Dollar (HK$)</SelectItem>
+                        <SelectItem value="MXN">MXN - Mexican Peso ($)</SelectItem>
+                        <SelectItem value="BRL">BRL - Brazilian Real (R$)</SelectItem>
+                        <SelectItem value="ZAR">ZAR - South African Rand (R)</SelectItem>
+                        <SelectItem value="TRY">TRY - Turkish Lira (₺)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
