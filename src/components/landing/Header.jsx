@@ -49,21 +49,22 @@ export default function Header() {
                         {/*<img src="/logo_brown.svg" alt="DainoStore" className="h-12" />*/}
                         <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
                         {/*<img src="/logo_blue.svg" alt="DainoStore" className="h-12" />*/}
-                        <img src="/logo_darkgreen.svg" alt="DainoStore" className="h-12" />
-                        <img src="/logo_darkgreen_red.svg" alt="DainoStore" className="h-12" />
-                        <img src="/logo_green.svg" alt="DainoStore" className="h-12" />
-                        <img src="/logo_orange.svg" alt="DainoStore" className="h-12" />
+                        {/*<img src="/logo_darkgreen.svg" alt="DainoStore" className="h-12" />*/}
+                        {/*<img src="/logo_darkgreen_red.svg" alt="DainoStore" className="h-12" />*/}
+                        {/*<img src="/logo_green.svg" alt="DainoStore" className="h-12" />*/}
+                        {/*<img src="/logo_orange.svg" alt="DainoStore" className="h-12" />*/}
+                        <span className="text-xl font-bold">DainoStore</span>
                     </div>
 
                     {/* Navigation - Centered */}
-                    <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-                        <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">
+                    <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2 font-semibold text-lg">
+                        <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
                             Discord
                         </a>
-                        <a href="#pricing" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">
+                        <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
                             Pricing
                         </a>
-                        <a href="#resources" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">
+                        <a href="#resources" className="text-slate-600 hover:text-indigo-600 transition-colors">
                             Resources
                         </a>
                     </nav>
