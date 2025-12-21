@@ -758,9 +758,9 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
       <Dialog open={showEmailNotConfiguredModal} onOpenChange={setShowEmailNotConfiguredModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('preview.email_not_configured_title', 'Email Not Configured')}</DialogTitle>
+            <DialogTitle>{t('account.email_not_configured_title', 'Email Not Configured')}</DialogTitle>
             <DialogDescription>
-              {t('preview.email_not_configured_description', 'Registration is not available in preview mode because email verification cannot be sent. Please configure an email provider in your store settings to enable customer registration.')}
+              {t('account.email_not_configured_description', 'Registration is not available in preview mode because email verification cannot be sent. Please configure an email provider in your store settings to enable customer registration.')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end pt-4">
