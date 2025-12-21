@@ -641,30 +641,35 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             apiClient.setToken(token);
             
             if (role === 'customer') {
-              localStorage.removeItem('customer_auth_store_id');
-              localStorage.removeItem('customer_auth_store_code');
-              const accountUrl = await getCustomerAccountUrl();
-              navigate(accountUrl);
-            } else {
-              // Check if email verification is required
+              // Check if email verification is required for customer
               const requiresVerification = actualRegResponse.data?.requiresVerification;
               const userEmail = actualRegResponse.data?.user?.email || formData.email;
 
               if (requiresVerification) {
+                // Clear token - customer needs to verify first then login
+                localStorage.removeItem('customer_auth_token');
+                localStorage.removeItem('customer_auth_store_id');
+                localStorage.removeItem('customer_auth_store_code');
                 // Redirect to email verification page
-                navigate(`/admin/verify-email?email=${encodeURIComponent(userEmail)}`);
+                const storeCode = localStorage.getItem('selectedStoreSlug') || '';
+                navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(userEmail)}`);
               } else {
-                setSuccess(t('auth.success.user_created'));
-                setTimeout(() => {
-                  // Check for redirect parameter (e.g., from invitation acceptance flow)
-                  const redirectUrl = searchParams.get('redirect');
-                  if (redirectUrl) {
-                    navigate(decodeURIComponent(redirectUrl));
-                  } else {
-                    navigate(createAdminUrl("DASHBOARD"));
-                  }
-                }, 1500);
+                localStorage.removeItem('customer_auth_store_id');
+                localStorage.removeItem('customer_auth_store_code');
+                const accountUrl = await getCustomerAccountUrl();
+                navigate(accountUrl);
               }
+            } else {
+              setSuccess(t('auth.success.user_created'));
+              setTimeout(() => {
+                // Check for redirect parameter (e.g., from invitation acceptance flow)
+                const redirectUrl = searchParams.get('redirect');
+                if (redirectUrl) {
+                  navigate(decodeURIComponent(redirectUrl));
+                } else {
+                  navigate(createAdminUrl("DASHBOARD"));
+                }
+              }, 1500);
             }
           }
         }

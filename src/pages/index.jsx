@@ -65,6 +65,8 @@ export { default as Translations } from './admin/Translations';
 export { default as Plugins } from './admin/Plugins';
 export { default as CookieConsent } from './admin/CookieConsent';
 export { default as NavigationManager } from './admin/NavigationManager';
+export { default as AdminForgotPassword } from './admin/AdminForgotPassword';
+export { default as AdminResetPassword } from './admin/AdminResetPassword';
 
 // Editor Pages
 export { default as AIContextWindow } from './editor/EditorWrapper';
