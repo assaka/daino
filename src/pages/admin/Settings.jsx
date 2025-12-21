@@ -133,9 +133,11 @@ export default function Settings() {
       }
 
       const storeData = freshStoreData || selectedStore;
-      
+      console.log('📦 Loaded storeData:', JSON.stringify(storeData, null, 2));
+
       const settings = storeData.settings || {};
-      
+      console.log('⚙️ Loaded settings:', JSON.stringify(settings, null, 2));
+
       setStore({
         id: storeData.id,
         name: storeData.name || '',
@@ -420,10 +422,13 @@ export default function Settings() {
       }
       
       // Use the specific settings endpoint for updating store settings
+      console.log('📤 Sending payload to API:', JSON.stringify(payload, null, 2));
       const apiResult = await retryApiCall(() => Store.updateSettings(store.id, payload));
-      
+      console.log('📥 API response:', JSON.stringify(apiResult, null, 2));
+
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
+      console.log('📋 Parsed result:', result);
 
       // Update our local store state with the response data
       if (result && result.settings) {
