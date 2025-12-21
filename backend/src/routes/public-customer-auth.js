@@ -85,10 +85,15 @@ router.post('/customer/forgot-password', [
       .maybeSingle();
 
     // Build reset URL
+    // For custom domains: use domain directly with /reset-password
+    // For platform domains: use /public/{storeCode}/reset-password
     const baseUrl = store?.domain
       ? `https://${store.domain}`
       : (process.env.CORS_ORIGIN || 'https://www.dainostore.com');
-    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const resetPath = store?.domain
+      ? '/reset-password'
+      : `/public/${store?.slug || store?.code}/reset-password`;
+    const resetUrl = `${baseUrl}${resetPath}?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     // Send password reset email
     try {
