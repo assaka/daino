@@ -228,29 +228,32 @@ class EmailService {
     console.log(`📧 [EMAIL] sendTransactionalEmail called - storeId: ${storeId}, template: ${templateIdentifier}`);
     console.log(`📧 [EMAIL] Initial data.store:`, data.store ? { name: data.store.name, domain: data.store.domain } : 'undefined');
 
-    // Ensure store name is available - fetch from master DB if missing or store not provided
+    // Ensure store name is available - fetch from tenant DB if missing or store not provided
     if (!data.store || !data.store.name) {
-      console.log(`📧 [EMAIL] Store name missing, fetching from master DB...`);
+      console.log(`📧 [EMAIL] Store name missing, fetching from tenant DB...`);
       try {
-        const { data: masterStore, error: masterError } = await masterDbClient
+        const ConnectionManager = require('./database/ConnectionManager');
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+        const { data: tenantStore, error: tenantError } = await tenantDb
           .from('stores')
-          .select('name, domain, logo_url')
+          .select('name, domain, logo_url, settings')
           .eq('id', storeId)
           .maybeSingle();
 
-        console.log(`📧 [EMAIL] Master DB query result:`, masterStore ? { name: masterStore.name, domain: masterStore.domain } : 'null', 'error:', masterError?.message || 'none');
+        console.log(`📧 [EMAIL] Tenant DB query result:`, tenantStore ? { name: tenantStore.name, domain: tenantStore.domain } : 'null', 'error:', tenantError?.message || 'none');
 
-        if (masterStore) {
+        if (tenantStore) {
           data.store = {
             ...(data.store || {}),
-            name: masterStore.name || data.store?.name,
-            domain: masterStore.domain || data.store?.domain,
-            logo_url: masterStore.logo_url || data.store?.logo_url
+            name: tenantStore.name || data.store?.name,
+            domain: tenantStore.domain || data.store?.domain,
+            logo_url: tenantStore.logo_url || data.store?.logo_url
           };
-          console.log(`📧 [EMAIL] Store data after master fetch:`, { name: data.store.name, domain: data.store.domain });
+          console.log(`📧 [EMAIL] Store data after tenant fetch:`, { name: data.store.name, domain: data.store.domain });
         }
       } catch (err) {
-        console.warn('[EMAIL SERVICE] Failed to fetch store from master DB:', err.message);
+        console.warn('[EMAIL SERVICE] Failed to fetch store from tenant DB:', err.message);
       }
     }
 

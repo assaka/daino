@@ -397,17 +397,9 @@ END $$;`;
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
           console.log('📤 Pass 2.5: Creating store record before seed data...');
 
-          // Fetch store name from master DB if not provided in options
-          let storeName = options.storeName;
-          if (!storeName) {
-            const { data: masterStore } = await masterDbClient
-              .from('stores')
-              .select('name')
-              .eq('id', storeId)
-              .maybeSingle();
-            storeName = masterStore?.name || 'My Store';
-            console.log(`📦 Fetched store name from master DB: ${storeName}`);
-          }
+          // Store name must be provided in options (master DB doesn't have store name)
+          const storeName = options.storeName || 'My Store';
+          console.log(`📦 Creating store with name: ${storeName}`);
 
           // Fetch theme defaults and merge with options.settings
           const themeDefaults = await this.getThemeDefaults(options.themePreset);
@@ -646,17 +638,9 @@ VALUES (
    */
   async createStoreRecord(tenantDb, storeId, options, result) {
     try {
-      // Fetch store name from master DB if not provided in options
-      let storeName = options.storeName;
-      if (!storeName) {
-        const { data: masterStore } = await masterDbClient
-          .from('stores')
-          .select('name')
-          .eq('id', storeId)
-          .maybeSingle();
-        storeName = masterStore?.name || 'My Store';
-        console.log(`📦 Fetched store name from master DB: ${storeName}`);
-      }
+      // Store name must be provided in options (master DB doesn't have store name)
+      const storeName = options.storeName || 'My Store';
+      console.log(`📦 Creating store with name: ${storeName}`);
 
       // Fetch theme defaults from master DB (use preset if specified)
       const themeDefaults = await this.getThemeDefaults(options.themePreset);
@@ -780,17 +764,9 @@ VALUES (
     try {
       const axios = require('axios');
 
-      // Fetch store name from master DB if not provided in options
-      let storeName = options.storeName;
-      if (!storeName) {
-        const { data: masterStore } = await masterDbClient
-          .from('stores')
-          .select('name')
-          .eq('id', storeId)
-          .maybeSingle();
-        storeName = masterStore?.name || 'My Store';
-        console.log(`📦 Fetched store name from master DB: ${storeName}`);
-      }
+      // Store name must be provided in options (master DB doesn't have store name)
+      const storeName = options.storeName || 'My Store';
+      console.log(`📦 Creating store via API with name: ${storeName}`);
 
       // Fetch theme defaults from master DB (use preset if specified)
       const themeDefaults = await this.getThemeDefaults(options.themePreset);
@@ -1525,36 +1501,22 @@ VALUES (
   }
 
   /**
-   * Sync store name from master DB to tenant DB
+   * Update store name in tenant DB
    * Used to fix existing stores with missing/incorrect names
    *
    * @param {string} storeId - Store UUID
-   * @returns {Promise<Object>} Sync result
+   * @param {string} storeName - New store name
+   * @returns {Promise<Object>} Update result
    */
-  async syncStoreNameFromMaster(storeId) {
+  async updateStoreName(storeId, storeName) {
     const ConnectionManager = require('./ConnectionManager');
 
     try {
-      // Get store name from master DB
-      const { data: masterStore, error: masterError } = await masterDbClient
-        .from('stores')
-        .select('name, slug')
-        .eq('id', storeId)
-        .maybeSingle();
-
-      if (masterError || !masterStore) {
+      if (!storeName) {
         return {
           success: false,
           storeId,
-          message: 'Store not found in master database'
-        };
-      }
-
-      if (!masterStore.name) {
-        return {
-          success: false,
-          storeId,
-          message: 'Store name is empty in master database'
+          message: 'Store name is required'
         };
       }
 
@@ -1565,7 +1527,7 @@ VALUES (
       const { data: updatedStore, error: updateError } = await tenantDb
         .from('stores')
         .update({
-          name: masterStore.name,
+          name: storeName,
           updated_at: new Date().toISOString()
         })
         .eq('id', storeId)
@@ -1580,19 +1542,19 @@ VALUES (
         };
       }
 
-      console.log(`✅ Synced store name from master to tenant: ${masterStore.name}`);
+      console.log(`✅ Updated store name in tenant DB: ${storeName}`);
 
       return {
         success: true,
         storeId,
-        storeName: masterStore.name,
-        message: `Store name synced successfully: ${masterStore.name}`
+        storeName: storeName,
+        message: `Store name updated successfully: ${storeName}`
       };
     } catch (error) {
       return {
         success: false,
         storeId,
-        message: `Sync failed: ${error.message}`,
+        message: `Update failed: ${error.message}`,
         error: error.message
       };
     }

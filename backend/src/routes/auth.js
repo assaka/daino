@@ -154,33 +154,18 @@ const createCustomerAddresses = async (tenantDb, userId, firstName, lastName, ph
 // Helper: Send welcome email
 const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
   try {
-    // Get the first active store from tenant database (storeId is tenant identifier, not store UUID)
+    // Get store from tenant database by storeId
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('is_active', true)
-      .limit(1)
+      .eq('id', storeId)
       .maybeSingle();
 
-    // If store name is missing, fetch from master database as fallback
-    let storeName = store?.name;
-    if (!storeName) {
-      const { masterDbClient } = require('../database/masterConnection');
-      const { data: masterStore } = await masterDbClient
-        .from('stores')
-        .select('name')
-        .eq('id', storeId)
-        .maybeSingle();
-      storeName = masterStore?.name;
-    }
-
-    // Ensure store object has the name
-    const storeWithName = store ? { ...store, name: storeName || store?.name } : { name: storeName };
-
+    // email-service will fetch store from tenant DB if store is missing or has no name
     emailService.sendTransactionalEmail(storeId, 'signup_email', {
       recipientEmail: email,
       customer: customer,
-      store: storeWithName,
+      store: store,
       languageCode: 'en'
     }).catch(err => {
       // Welcome email failed
@@ -193,25 +178,14 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
 // Helper: Send verification email with code
 const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode) => {
   try {
-    // Get the first active store from tenant database (storeId is tenant identifier, not store UUID)
+    // Get store from tenant database by storeId
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('is_active', true)
-      .limit(1)
+      .eq('id', storeId)
       .maybeSingle();
 
-    // If store name is missing, fetch from master database as fallback
-    let storeName = store?.name;
-    if (!storeName) {
-      const { masterDbClient } = require('../database/masterConnection');
-      const { data: masterStore } = await masterDbClient
-        .from('stores')
-        .select('name')
-        .eq('id', storeId)
-        .maybeSingle();
-      storeName = masterStore?.name || 'Our Store';
-    }
+    const storeName = store?.name || 'Our Store';
 
     // Try to send via email template if exists, otherwise send simple email
     emailService.sendEmail(storeId, 'email_verification', email, {
@@ -1609,21 +1583,10 @@ router.post('/customer/forgot-password', [
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('is_active', true)
-      .limit(1)
+      .eq('id', store_id)
       .maybeSingle();
 
-    // If store name is missing, fetch from master database as fallback
-    let storeName = store?.name;
-    if (!storeName) {
-      const { masterDbClient } = require('../database/masterConnection');
-      const { data: masterStore } = await masterDbClient
-        .from('stores')
-        .select('name')
-        .eq('id', store_id)
-        .maybeSingle();
-      storeName = masterStore?.name || 'Our Store';
-    }
+    const storeName = store?.name || 'Our Store';
 
     // Build reset URL
     const baseUrl = store?.domain
