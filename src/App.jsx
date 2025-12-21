@@ -516,10 +516,6 @@ function App() {
           <Route path="/robots.txt" element={<PageWrapper Component={Pages.RobotsPublic} pageName="RobotsPublic" />} />
           <Route path="/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="CookieConsent" />} />
 
-          {/* Password reset - available on all domains (for backward compatibility with old email links) */}
-          <Route path="/reset-password" element={<PageWrapper Component={Pages.ResetPassword} pageName="ResetPassword" />} />
-          <Route path="/verify-email" element={<PageWrapper Component={Pages.EmailVerification} pageName="EmailVerification" />} />
-
           {/* Auth route - redirect to admin auth */}
           <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
 
