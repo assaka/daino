@@ -18,6 +18,7 @@ const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware'); // Use same middleware as authMasterTenant
 const ConnectionManager = require('../services/database/ConnectionManager');
 const TenantProvisioningService = require('../services/database/TenantProvisioningService');
+const DemoDataProvisioningService = require('../services/demo-data-provisioning-service');
 const { encryptDatabaseCredentials } = require('../utils/encryption');
 
 // Master database models
@@ -307,7 +308,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       storeSlug,
       useOAuth,
       autoProvision,
-      themePreset  // Theme preset name to apply during provisioning
+      themePreset,  // Theme preset name to apply during provisioning
+      provisionDemoData  // Whether to provision demo data after setup
     } = req.body;
 
     console.log('🔍 Request body keys:', Object.keys(req.body));
@@ -930,6 +932,21 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     console.log('✅ Store activated successfully!');
 
+    // Provision demo data if requested
+    let demoDataResult = null;
+    if (provisionDemoData) {
+      console.log('📦 Provisioning demo data...');
+      try {
+        const demoService = new DemoDataProvisioningService(storeId);
+        demoDataResult = await demoService.provisionDemoData();
+        console.log('✅ Demo data provisioned successfully!');
+      } catch (demoError) {
+        console.error('⚠️ Demo data provisioning failed (non-critical):', demoError.message);
+        // Don't fail the whole request - demo data is optional
+        demoDataResult = { success: false, error: demoError.message };
+      }
+    }
+
     res.json({
       success: true,
       message: 'Database connected and store activated successfully!',
@@ -939,7 +956,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
           status: 'active',
           is_active: true
         },
-        provisioning: provisioningResult
+        provisioning: provisioningResult,
+        demoData: demoDataResult
       }
     });
   } catch (error) {
