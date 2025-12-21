@@ -46,10 +46,12 @@ export default function Header() {
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-2">
-                        <img src="/logo_brown.svg" alt="DainoStore" className="h-12" />
+                        {/*<img src="/logo_brown.svg" alt="DainoStore" className="h-12" />*/}
                         <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
-                        <img src="/logo_blue.svg" alt="DainoStore" className="h-12" />
+                        {/*<img src="/logo_blue.svg" alt="DainoStore" className="h-12" />*/}
                         <img src="/logo_darkgreen.svg" alt="DainoStore" className="h-12" />
+                        <img src="/logo_darkgreen_red.svg" alt="DainoStore" className="h-12" />
+                        <img src="/logo_green.svg" alt="DainoStore" className="h-12" />
                         <img src="/logo_orange.svg" alt="DainoStore" className="h-12" />
                     </div>
 
