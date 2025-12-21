@@ -22,9 +22,29 @@ import { shouldSkipStoreProvider } from '@/utils/domainConfig';
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
 import { fetchAdditionalStoreData, fetchCookieConsentSettings } from '@/hooks/useStoreData';
-import { mergeStoreSettings, setThemeDefaultsFromBootstrap } from '@/utils/storeSettingsDefaults';
+import { mergeStoreSettings, setThemeDefaultsFromBootstrap, getCurrencySymbol } from '@/utils/storeSettingsDefaults';
 import { clearCache, deleteCacheKey } from '@/utils/cacheUtils';
 import {PageLoader} from "@/components/ui/page-loader.jsx";
+
+// Country to currency mapping for customer-selected country
+const COUNTRY_TO_CURRENCY = {
+  // Europe - Euro zone
+  DE: 'EUR', AT: 'EUR', BE: 'EUR', CY: 'EUR', EE: 'EUR', ES: 'EUR', FI: 'EUR',
+  FR: 'EUR', GR: 'EUR', IE: 'EUR', IT: 'EUR', LT: 'EUR', LU: 'EUR', LV: 'EUR',
+  MT: 'EUR', NL: 'EUR', PT: 'EUR', SI: 'EUR', SK: 'EUR',
+  // Europe - Non-Euro
+  GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', CZ: 'CZK',
+  HU: 'HUF', RO: 'RON', BG: 'BGN', HR: 'EUR',
+  // Americas
+  US: 'USD', CA: 'CAD', MX: 'MXN', BR: 'BRL',
+  // Asia-Pacific
+  JP: 'JPY', CN: 'CNY', KR: 'KRW', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD',
+  IN: 'INR', TH: 'THB', MY: 'MYR', ID: 'IDR', PH: 'PHP', VN: 'VND',
+  // Middle East & Africa
+  AE: 'AED', SA: 'SAR', IL: 'ILS', ZA: 'ZAR', TR: 'TRY', RU: 'RUB',
+  // Africa
+  AO: 'AOA', NG: 'NGN', KE: 'KES', EG: 'EGP', MA: 'MAD', GH: 'GHS',
+};
 
 // Export StoreContext so it can be re-provided inside iframe portals (for editor context bridging)
 export const StoreContext = createContext(null);
@@ -256,9 +276,21 @@ export const StoreProvider = ({ children }) => {
   const urlParams = new URLSearchParams(window.location.search);
   const isPreviewMode = !!urlParams.get('storefront');
 
+  // Get customer's currency based on their selected country
+  const customerCurrencyCode = COUNTRY_TO_CURRENCY[selectedCountry];
+  const customerCurrencySymbol = customerCurrencyCode ? getCurrencySymbol(customerCurrencyCode) : null;
+
+  // Override settings with customer's currency if available
+  const baseSettings = storeData?.store?.settings || {};
+  const settings = customerCurrencySymbol ? {
+    ...baseSettings,
+    currency_code: customerCurrencyCode,
+    currency_symbol: customerCurrencySymbol,
+  } : baseSettings;
+
   const value = {
     store: storeData?.store,
-    settings: storeData?.store?.settings || {},
+    settings,
     loading,
 
     // Layer 1 - Global data from bootstrap

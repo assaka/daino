@@ -63,7 +63,23 @@ export function getCurrencySymbol(currencyCode) {
     'BGN': 'лв',
     'HRK': 'kn',
     'DKK': 'kr',
-    'TRY': '₺'
+    'TRY': '₺',
+    'NZD': 'NZ$',
+    'THB': '฿',
+    'MYR': 'RM',
+    'IDR': 'Rp',
+    'PHP': '₱',
+    'VND': '₫',
+    'AED': 'د.إ',
+    'SAR': '﷼',
+    'ILS': '₪',
+    // Africa
+    'AOA': 'Kz',
+    'NGN': '₦',
+    'KES': 'KSh',
+    'EGP': 'E£',
+    'MAD': 'د.م.',
+    'GHS': 'GH₵',
   };
   const normalizedCode = currencyCode?.toUpperCase?.() || '';
   return currencyMap[normalizedCode] || '$';
