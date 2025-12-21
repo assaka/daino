@@ -225,14 +225,21 @@ class EmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendTransactionalEmail(storeId, templateIdentifier, data) {
+    console.log(`📧 [EMAIL] sendTransactionalEmail called - storeId: ${storeId}, template: ${templateIdentifier}`);
+    console.log(`📧 [EMAIL] Initial data.store:`, data.store ? { name: data.store.name, domain: data.store.domain } : 'undefined');
+
     // Ensure store name is available - fetch from master DB if missing or store not provided
     if (!data.store || !data.store.name) {
+      console.log(`📧 [EMAIL] Store name missing, fetching from master DB...`);
       try {
-        const { data: masterStore } = await masterDbClient
+        const { data: masterStore, error: masterError } = await masterDbClient
           .from('stores')
           .select('name, domain, logo_url')
           .eq('id', storeId)
           .maybeSingle();
+
+        console.log(`📧 [EMAIL] Master DB query result:`, masterStore ? { name: masterStore.name, domain: masterStore.domain } : 'null', 'error:', masterError?.message || 'none');
+
         if (masterStore) {
           data.store = {
             ...(data.store || {}),
@@ -240,6 +247,7 @@ class EmailService {
             domain: masterStore.domain || data.store?.domain,
             logo_url: masterStore.logo_url || data.store?.logo_url
           };
+          console.log(`📧 [EMAIL] Store data after master fetch:`, { name: data.store.name, domain: data.store.domain });
         }
       } catch (err) {
         console.warn('[EMAIL SERVICE] Failed to fetch store from master DB:', err.message);
