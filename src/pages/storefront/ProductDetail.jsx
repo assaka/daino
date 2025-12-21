@@ -88,9 +88,9 @@ export default function ProductDetail() {
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
 
   // Check if user is store owner (for Edit button)
-  // Also show in AI Workspace (workspace=true param) since user is definitely authorized there
+  // Also show in AI Workspace (mode=workspace or workspace=true param) since user is definitely authorized there
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const isInWorkspace = urlParams?.get('workspace') === 'true';
+  const isInWorkspace = urlParams?.get('mode') === 'workspace' || urlParams?.get('workspace') === 'true';
   const isStoreOwner = isInWorkspace || (typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token'));
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
@@ -203,7 +203,8 @@ export default function ProductDetail() {
   // Check if we're viewing published version (version=published takes priority)
   const isViewingPublished = searchParams.get('version') === 'published';
   // Only load draft when in workspace mode AND NOT viewing published version
-  const shouldLoadDraft = !isViewingPublished && (searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true');
+  // Support both mode=workspace (from AI workspace iframe) and workspace=true (legacy)
+  const shouldLoadDraft = !isViewingPublished && (searchParams.get('preview') === 'draft' || searchParams.get('mode') === 'workspace' || searchParams.get('workspace') === 'true');
 
   // Load product layout configuration directly
   useEffect(() => {

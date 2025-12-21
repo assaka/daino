@@ -34,9 +34,9 @@ export default function Category() {
   const location = useLocation();
 
   // Check if user is store owner (for Edit button)
-  // Also show in AI Workspace (workspace=true param) since user is definitely authorized there
+  // Also show in AI Workspace (mode=workspace or workspace=true param) since user is definitely authorized there
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const isInWorkspace = urlParams?.get('workspace') === 'true';
+  const isInWorkspace = urlParams?.get('mode') === 'workspace' || urlParams?.get('workspace') === 'true';
   const isStoreOwner = isInWorkspace || (typeof window !== 'undefined' && localStorage.getItem('store_owner_auth_token'));
 
   // Extract category path from URL

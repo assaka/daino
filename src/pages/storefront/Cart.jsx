@@ -102,7 +102,8 @@ export default function Cart() {
     // Check if we're viewing published version (version=published takes priority)
     const isViewingPublished = searchParams.get('version') === 'published';
     // Only load draft when in workspace mode AND NOT viewing published version
-    const shouldLoadDraft = !isViewingPublished && (searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true');
+    // Support both mode=workspace (from AI workspace iframe) and workspace=true (legacy)
+    const shouldLoadDraft = !isViewingPublished && (searchParams.get('preview') === 'draft' || searchParams.get('mode') === 'workspace' || searchParams.get('workspace') === 'true');
 
     // Load cart layout configuration directly
     useEffect(() => {

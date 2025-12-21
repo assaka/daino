@@ -397,7 +397,8 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
   // Check URL params - version=published takes priority
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const isViewingPublished = urlParams?.get('version') === 'published' || isPublishedPreview;
-  const urlWorkspaceMode = urlParams?.get('preview') === 'draft' || urlParams?.get('workspace') === 'true';
+  // Support both mode=workspace (from AI workspace iframe) and workspace=true (legacy)
+  const urlWorkspaceMode = urlParams?.get('preview') === 'draft' || urlParams?.get('mode') === 'workspace' || urlParams?.get('workspace') === 'true';
 
   // Only load draft when in workspace mode AND NOT viewing published version
   const shouldLoadDraft = !isViewingPublished && (isWorkspaceMode || urlWorkspaceMode);
