@@ -26,7 +26,10 @@ const { v4: uuidv4 } = require('uuid');
  */
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, firstName, lastName, storeName } = req.body;
+    const { email, password, storeName } = req.body;
+    // Accept both camelCase and snake_case for name fields
+    const firstName = req.body.firstName || req.body.first_name;
+    const lastName = req.body.lastName || req.body.last_name;
 
     // Validate input
     if (!email || !password || !firstName || !lastName) {
