@@ -515,7 +515,7 @@ export default function StorefrontLayout({ children }) {
                                         {store?.logo_url ? (
                                             <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-8 w-8 object-contain" />
                                         ) : (
-                                            <ShoppingBag className="h-8 w-8 text-blue-600" />
+                                            <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
                                         )}
                                         <span className="text-xl font-bold text-gray-800">{store?.name || 'DainoStore'}</span>
                                     </Link>

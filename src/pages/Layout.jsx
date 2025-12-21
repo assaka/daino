@@ -629,7 +629,7 @@ function LayoutInner({ children, currentPageName }) {
             <DropdownMenuTrigger asChild>
               <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 transition-colors">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <StoreIcon className="w-5 h-5 text-white" />
+                  <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">DainoStore</span>
               </div>
