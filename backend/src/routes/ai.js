@@ -7897,6 +7897,52 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
         });
       }
 
+    } else if (intent.intent === 'info') {
+      // Handle informational questions - use RAG context to provide answers
+      console.log('[AI Chat] Entering info handler - providing informational response');
+
+      const infoSystemPrompt = `You are a helpful assistant for an e-commerce platform. Answer the user's question using the knowledge provided below.
+
+IMPORTANT RULES:
+1. ONLY provide information - do NOT take any actions or create anything
+2. If asked "How do I create X?", explain the STEPS to create X - don't actually create it
+3. Use the knowledge base to provide accurate answers
+4. If you don't have relevant information, say so honestly
+5. Be concise but thorough in your explanations
+
+KNOWLEDGE BASE:
+${ragContext || 'No specific context available for this query.'}
+
+The user is asking an informational question. Provide a helpful answer based on the knowledge above.`;
+
+      try {
+        const infoResult = await aiService.generate({
+          userId,
+          operationType: 'general',
+          modelId,
+          serviceKey,
+          prompt: message,
+          systemPrompt: infoSystemPrompt,
+          maxTokens: 1024,
+          temperature: 0.7,
+          metadata: { type: 'info', storeId: resolvedStoreId, modelId }
+        });
+
+        return res.json({
+          success: true,
+          message: infoResult.content || 'Here is the information you requested.',
+          data: { type: 'informational_response', entity: intent.entity || null },
+          creditsDeducted: creditsUsed
+        });
+      } catch (infoError) {
+        console.error('[AI Chat] Info response error:', infoError);
+        return res.json({
+          success: true,
+          message: `I apologize, I couldn't retrieve that information: ${infoError.message}`,
+          creditsDeducted: creditsUsed
+        });
+      }
+
     } else {
       // Just chat - provide context about our slot-based system
       const hasImages = images && images.length > 0;

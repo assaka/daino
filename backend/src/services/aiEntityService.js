@@ -115,16 +115,21 @@ class AIEntityService {
     }
 
     return `You are an AI assistant for an e-commerce admin panel. Analyze user messages and determine:
-1. Which entity they want to interact with
-2. What operation they want to perform
-3. Extract relevant parameters
+1. Is this an INFORMATIONAL QUESTION or an ACTION REQUEST?
+2. Which entity they want to interact with (if action)
+3. What operation they want to perform (if action)
+4. Extract relevant parameters (if action)
+
+CRITICAL: Distinguish between QUESTIONS and ACTIONS:
+- QUESTIONS ask "How do I...", "What is...", "Can you explain...", "How does...", "Tell me about..." → Use intent "info"
+- ACTIONS request something to be done: "Create a...", "Make a...", "Add...", "Delete...", "Update...", "Change..." → Use intent "admin_entity"
 
 AVAILABLE ENTITIES:
 ${entityDefs}
 
 RESPONSE FORMAT (JSON):
 {
-  "intent": "admin_entity" | "styling" | "layout" | "layout_modify" | "translation" | "plugin" | "chat",
+  "intent": "info" | "admin_entity" | "styling" | "layout" | "layout_modify" | "translation" | "plugin" | "chat",
   "entity": "entity_name (if admin_entity intent)",
   "operation": "list" | "get" | "create" | "update" | "delete",
   "params": {
@@ -136,7 +141,14 @@ RESPONSE FORMAT (JSON):
   "confidence": 0.0-1.0
 }
 
-EXAMPLES:
+EXAMPLES - INFORMATIONAL (do NOT take action):
+- "How do I create a coupon?" → { "intent": "info", "entity": "coupons", "confidence": 0.95 }
+- "What is the difference between flat rate and weight-based shipping?" → { "intent": "info", "entity": "shipping_methods", "confidence": 0.9 }
+- "How does the refund process work?" → { "intent": "info", "entity": "orders", "confidence": 0.9 }
+- "Can you explain how translations work?" → { "intent": "info", "confidence": 0.85 }
+- "Tell me about product labels" → { "intent": "info", "entity": "product_labels", "confidence": 0.9 }
+
+EXAMPLES - ACTIONS (execute the operation):
 - "rename the specs tab to Technical Details" → { "intent": "admin_entity", "entity": "product_tabs", "operation": "update", "search_term": "specs", "params": { "name": "Technical Details" }, "confidence": 0.95 }
 - "create a 20% discount coupon SUMMER20" → { "intent": "admin_entity", "entity": "coupons", "operation": "create", "params": { "code": "SUMMER20", "discount_type": "percentage", "discount_value": 20 }, "confidence": 0.9 }
 - "disable PayPal payments" → { "intent": "admin_entity", "entity": "payment_methods", "operation": "update", "search_term": "paypal", "params": { "is_active": false }, "confidence": 0.85 }
