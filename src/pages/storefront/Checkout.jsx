@@ -48,10 +48,12 @@ import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingM
 import { useTranslation } from '@/contexts/TranslationContext';
 import { useCheckoutPageBootstrap } from '@/hooks/usePageBootstrap';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
+  const { isPublishedPreview } = usePreviewMode();
 
   // Layer 2: Checkout page bootstrap (taxes, shipping, payment, delivery)
   const language = getCurrentLanguage();
@@ -2507,18 +2509,25 @@ export default function Checkout() {
               </div>
 
               {isSectionVisible('review') && (
-                <Button
-                  onClick={handleCheckout}
-                  disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false)}
-                  variant="themed"
-                  className="w-full h-12 text-lg"
-                  style={{
-                    backgroundColor: settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color,
-                    color: '#FFFFFF',
-                  }}
-                >
-                  {isProcessing ? t('checkout.processing', 'Processing...') : `${t('common.place_order', 'Place Order')} - ${formatPrice(getTotalAmount())}`}
-                </Button>
+                <>
+                  {isPublishedPreview && (
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md mb-3 text-sm">
+                      {t('preview.order_not_available', 'Placing orders is not available on a preview store. This is a demonstration only.')}
+                    </div>
+                  )}
+                  <Button
+                    onClick={handleCheckout}
+                    disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) || isPublishedPreview}
+                    variant="themed"
+                    className="w-full h-12 text-lg"
+                    style={{
+                      backgroundColor: isPublishedPreview ? '#9CA3AF' : (settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color),
+                      color: '#FFFFFF',
+                    }}
+                  >
+                    {isProcessing ? t('checkout.processing', 'Processing...') : `${t('common.place_order', 'Place Order')} - ${formatPrice(getTotalAmount())}`}
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>

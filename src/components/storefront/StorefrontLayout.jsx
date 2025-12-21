@@ -764,22 +764,28 @@ export default function StorefrontLayout({ children }) {
                                     let footerCategories = categories.filter(c => !c.hide_in_menu);
                                     
                                     // If store has a root category, filter to only show that category tree
-                                    if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
+                                    const rootCategoryId = store?.settings?.rootCategoryId;
+                                    const excludeRootFromMenu = store?.settings?.excludeRootFromMenu === true || store?.settings?.excludeRootFromMenu === 'true';
+
+                                    if (rootCategoryId && rootCategoryId !== 'none') {
+                                        const rootCategoryIdStr = String(rootCategoryId);
+
                                         const filterCategoryTree = (categoryId, allCategories) => {
-                                            const children = allCategories.filter(c => c.parent_id === categoryId);
+                                            const categoryIdStr = String(categoryId);
+                                            const children = allCategories.filter(c => String(c.parent_id) === categoryIdStr);
                                             let result = children.slice();
                                             children.forEach(child => {
                                                 result = result.concat(filterCategoryTree(child.id, allCategories));
                                             });
                                             return result;
                                         };
-                                        
-                                        const rootCategory = footerCategories.find(c => c.id === store.settings.rootCategoryId);
+
+                                        const rootCategory = footerCategories.find(c => String(c.id) === rootCategoryIdStr);
                                         if (rootCategory) {
-                                            const descendants = filterCategoryTree(store.settings.rootCategoryId, footerCategories);
-                                            
+                                            const descendants = filterCategoryTree(rootCategoryId, footerCategories);
+
                                             // Check if we should exclude root category from menu
-                                            if (store.settings.excludeRootFromMenu) {
+                                            if (excludeRootFromMenu) {
                                                 footerCategories = descendants; // Only show descendants, not the root
                                             } else {
                                                 footerCategories = [rootCategory, ...descendants]; // Include root and descendants
@@ -788,17 +794,18 @@ export default function StorefrontLayout({ children }) {
                                             footerCategories = [];
                                         }
                                     }
-                                    
+
                                     // Only show root categories in footer (first level of visible categories)
                                     return footerCategories
                                         .filter(c => {
-                                            if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
+                                            if (rootCategoryId && rootCategoryId !== 'none') {
+                                                const rootCategoryIdStr = String(rootCategoryId);
                                                 // If excluding root from menu, show direct children of root category
-                                                if (store.settings.excludeRootFromMenu) {
-                                                    return c.parent_id === store.settings.rootCategoryId;
+                                                if (excludeRootFromMenu) {
+                                                    return String(c.parent_id) === rootCategoryIdStr;
                                                 } else {
                                                     // Show the root category itself or direct children of root category
-                                                    return c.parent_id === store.settings.rootCategoryId || c.id === store.settings.rootCategoryId;
+                                                    return String(c.parent_id) === rootCategoryIdStr || String(c.id) === rootCategoryIdStr;
                                                 }
                                             } else {
                                                 // Show all root categories when no root category is set

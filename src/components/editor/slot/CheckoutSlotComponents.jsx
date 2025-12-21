@@ -6,6 +6,8 @@
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import { formatPrice } from '@/utils/priceUtils';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * CheckoutStepsSlot - Checkout progress steps
@@ -115,53 +117,67 @@ const PaymentFormSlot = createSlotComponent({
 /**
  * OrderSummarySlot - Checkout order summary
  */
+const OrderSummarySlotComponent = ({ slot, context, variableContext }) => {
+  const { t } = useTranslation();
+  const { isPublishedPreview } = usePreviewMode();
+
+  const cartItems = variableContext?.cartItems || [];
+  const subtotal = variableContext?.subtotal || 0;
+  const tax = variableContext?.tax || 0;
+  const total = variableContext?.total || 0;
+  const taxDetails = variableContext?.taxDetails || null;
+
+  return (
+    <div className={slot.className} style={slot.styles}>
+      <div className="bg-white rounded-lg shadow p-6 sticky top-4">
+        <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+        <div className="space-y-3 mb-4">
+          <div className="flex justify-between text-sm">
+            <span>Subtotal</span>
+            <span>{formatPrice(subtotal)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Shipping</span>
+            <span>{formatPrice(0)}</span>
+          </div>
+          {tax > 0 && (
+            <div className="flex justify-between text-sm">
+              <span>
+                Tax
+                {taxDetails && taxDetails.country && taxDetails.effectiveRate > 0 && (
+                  <span className="text-gray-500 text-xs ml-1">
+                    ({taxDetails.country} {taxDetails.effectiveRate}%)
+                  </span>
+                )}
+              </span>
+              <span>{formatPrice(tax)}</span>
+            </div>
+          )}
+          <div className="border-t pt-3 flex justify-between font-bold">
+            <span>Total</span>
+            <span>{formatPrice(total)}</span>
+          </div>
+        </div>
+        {isPublishedPreview && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md mb-3 text-sm">
+            {t('preview.order_not_available', 'Placing orders is not available on a preview store. This is a demonstration only.')}
+          </div>
+        )}
+        <button
+          className="w-full btn-place-order text-white font-medium py-3 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isPublishedPreview}
+          style={isPublishedPreview ? { backgroundColor: '#9CA3AF' } : undefined}
+        >
+          Place Order
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const OrderSummarySlot = createSlotComponent({
   name: 'OrderSummarySlot',
-  render: ({ slot, context, variableContext }) => {
-    const cartItems = variableContext?.cartItems || [];
-    const subtotal = variableContext?.subtotal || 0;
-    const tax = variableContext?.tax || 0;
-    const total = variableContext?.total || 0;
-    const taxDetails = variableContext?.taxDetails || null;
-
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <div className="bg-white rounded-lg shadow p-6 sticky top-4">
-          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-          <div className="space-y-3 mb-4">
-            <div className="flex justify-between text-sm">
-              <span>Subtotal</span>
-              <span>{formatPrice(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Shipping</span>
-              <span>{formatPrice(0)}</span>
-            </div>
-            {tax > 0 && (
-              <div className="flex justify-between text-sm">
-                <span>
-                  Tax
-                  {taxDetails && taxDetails.country && taxDetails.effectiveRate > 0 && (
-                    <span className="text-gray-500 text-xs ml-1">
-                      ({taxDetails.country} {taxDetails.effectiveRate}%)
-                    </span>
-                  )}
-                </span>
-                <span>{formatPrice(tax)}</span>
-              </div>
-            )}
-            <div className="border-t pt-3 flex justify-between font-bold">
-              <span>Total</span>
-              <span>{formatPrice(total)}</span>
-            </div>
-          </div>
-          <button className="w-full btn-place-order text-white font-medium py-3 rounded-md">
-            Place Order
-          </button>
-        </div>
-      </div>
-    );
-  }
+  render: (props) => <OrderSummarySlotComponent {...props} />
 });
 
 // Register all components

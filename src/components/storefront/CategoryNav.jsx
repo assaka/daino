@@ -82,6 +82,23 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
         });
     };
 //
+    // Helper function to find a category by ID in a tree structure (recursive)
+    const findCategoryInTree = (cats, targetId) => {
+        if (!cats || !targetId) return null;
+        const targetIdStr = String(targetId);
+
+        for (const cat of cats) {
+            if (String(cat.id) === targetIdStr) {
+                return cat;
+            }
+            if (cat.children && cat.children.length > 0) {
+                const found = findCategoryInTree(cat.children, targetId);
+                if (found) return found;
+            }
+        }
+        return null;
+    };
+
     // Build hierarchical tree from flat category list OR use existing tree
     const buildCategoryTree = (categories) => {
         if (!categories || categories.length === 0) return [];
@@ -89,18 +106,29 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
         // Check if categories are already in tree format (have children property)
         const isAlreadyTree = categories.some(c => c.children && Array.isArray(c.children));
 
-        // If already a tree AND we need to exclude root, extract children
-        if (isAlreadyTree && store?.settings?.excludeRootFromMenu && store?.settings?.rootCategoryId) {
-            const rootCategory = categories.find(c => c.id === store.settings.rootCategoryId);
-            if (rootCategory && rootCategory.children) {
-                // Return children of root category (excludes the root itself)
-                return rootCategory.children.filter(c => !c.hide_in_menu);
+        // Get settings for easier access (handle both boolean and string values)
+        const rootCategoryId = store?.settings?.rootCategoryId;
+        const excludeRootFromMenu = store?.settings?.excludeRootFromMenu === true || store?.settings?.excludeRootFromMenu === 'true';
+
+        // If already a tree AND we have a root category selected
+        if (isAlreadyTree && rootCategoryId && rootCategoryId !== 'none') {
+            // Find the root category (search recursively in case it's nested)
+            const rootCategory = findCategoryInTree(categories, rootCategoryId);
+
+            if (rootCategory) {
+                if (excludeRootFromMenu) {
+                    // Return children of root category (excludes the root itself)
+                    return (rootCategory.children || []).filter(c => !c.hide_in_menu);
+                } else {
+                    // Include root category in the tree
+                    return [rootCategory].filter(c => !c.hide_in_menu);
+                }
             }
-            // If root not found, return all top-level categories
-            return categories.filter(c => !c.hide_in_menu);
+            // Root category not found - log warning and fall through to default behavior
+            console.warn('Root category not found in tree:', rootCategoryId);
         }
 
-        // If already a tree and NOT excluding root, filter hidden and return
+        // If already a tree (no root category filtering needed), filter hidden and return
         if (isAlreadyTree) {
             return categories.filter(c => !c.hide_in_menu);
         }
@@ -113,9 +141,12 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
         let visibleCategories = categories.filter(c => !c.hide_in_menu);
 
         // If store has a root category, filter to only show that category tree
-        if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
+        if (rootCategoryId && rootCategoryId !== 'none') {
+            const rootCategoryIdStr = String(rootCategoryId);
+
             const filterCategoryTree = (categoryId, allCategories) => {
-                const children = allCategories.filter(c => c.parent_id === categoryId);
+                const categoryIdStr = String(categoryId);
+                const children = allCategories.filter(c => String(c.parent_id) === categoryIdStr);
                 let result = children.slice(); // Copy array
 
                 children.forEach(child => {
@@ -126,19 +157,19 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
             };
 
             // Include the root category itself and all its descendants
-            const rootCategory = visibleCategories.find(c => c.id === store.settings.rootCategoryId);
+            const rootCategory = visibleCategories.find(c => String(c.id) === rootCategoryIdStr);
             if (rootCategory) {
-                const descendants = filterCategoryTree(store.settings.rootCategoryId, visibleCategories);
+                const descendants = filterCategoryTree(rootCategoryId, visibleCategories);
 
                 // Check if we should exclude root category from menu
-                if (store.settings.excludeRootFromMenu) {
+                if (excludeRootFromMenu) {
                     visibleCategories = descendants; // Only show descendants, not the root
                 } else {
                     visibleCategories = [rootCategory, ...descendants]; // Include root and descendants
                 }
             } else {
                 // If root category not found, show empty navigation
-                console.warn('Root category not found:', store.settings.rootCategoryId);
+                console.warn('Root category not found:', rootCategoryId);
                 visibleCategories = [];
             }
         }

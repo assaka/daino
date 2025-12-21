@@ -13,6 +13,8 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import brevoAPI from '@/api/brevo';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -480,6 +482,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
   const navigate = useNavigate();
   const { storeCode } = useParams();
   const { store, settings } = useStore();
+  const { isPublishedPreview } = usePreviewMode();
 
   // Local state
   const [formData, setFormData] = React.useState({
@@ -494,6 +497,26 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
   const [success, setSuccess] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  // Email configuration state for preview mode
+  const [isEmailConfigured, setIsEmailConfigured] = React.useState(null);
+  const [showEmailNotConfiguredModal, setShowEmailNotConfiguredModal] = React.useState(false);
+
+  // Check email configuration on mount when in preview mode
+  React.useEffect(() => {
+    const checkEmailConfig = async () => {
+      if (isPublishedPreview && store?.id) {
+        try {
+          const response = await brevoAPI.getConnectionStatus(store.id);
+          setIsEmailConfigured(response?.success && response?.data?.isConfigured);
+        } catch (error) {
+          console.error('Failed to check email configuration:', error);
+          setIsEmailConfigured(false);
+        }
+      }
+    };
+    checkEmailConfig();
+  }, [isPublishedPreview, store?.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -519,6 +542,13 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
     setLoading(true);
     setError('');
     setSuccess('');
+
+    // Check if in preview mode and email is not configured
+    if (isPublishedPreview && isEmailConfigured === false) {
+      setShowEmailNotConfiguredModal(true);
+      setLoading(false);
+      return;
+    }
 
     try {
       // Client-side password validation
@@ -723,6 +753,27 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           {loading ? t('common.creating', 'Creating...') : t('common.create_account', 'Create My Account')}
         </button>
       </form>
+
+      {/* Email Not Configured Modal - Shows in preview mode when email provider is not set up */}
+      <Dialog open={showEmailNotConfiguredModal} onOpenChange={setShowEmailNotConfiguredModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('preview.email_not_configured_title', 'Email Not Configured')}</DialogTitle>
+            <DialogDescription>
+              {t('preview.email_not_configured_description', 'Registration is not available in preview mode because email verification cannot be sent. Please configure an email provider in your store settings to enable customer registration.')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={() => setShowEmailNotConfiguredModal(false)}
+              className="btn-themed text-white font-medium py-2.5 px-6 rounded-md"
+              style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
+            >
+              {t('common.close', 'Close')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

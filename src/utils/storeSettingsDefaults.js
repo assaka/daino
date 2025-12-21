@@ -382,9 +382,14 @@ function getProductGalleryDefaults(settings) {
  * Get navigation defaults
  */
 function getNavigationDefaults(settings) {
+  // Handle both boolean and string values for boolean settings
+  const parseBoolean = (value) => value === true || value === 'true';
+
   return {
-    excludeRootFromMenu: settings?.excludeRootFromMenu === true,
-    expandAllMenuItems: settings?.expandAllMenuItems === true,
+    excludeRootFromMenu: parseBoolean(settings?.excludeRootFromMenu),
+    expandAllMenuItems: parseBoolean(settings?.expandAllMenuItems),
+    // Preserve rootCategoryId as-is (it's a string/null, not a boolean)
+    rootCategoryId: settings?.rootCategoryId || null,
   };
 }
 
