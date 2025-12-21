@@ -17,24 +17,20 @@ const documentChunker = require('../utils/documentChunker');
 
 class AIAutoTrainingService {
   constructor() {
-    // Directories to scan for markdown files
+    // Directories to scan for markdown files (relative to backend folder on Render)
     this.docDirectories = [
       { path: 'docs', category: 'documentation', priority: 80 },
       { path: 'docs/internal', category: 'architecture', priority: 90 },
-      { path: 'backend/src/services', category: 'services', priority: 70 },
-      { path: 'backend/src/database', category: 'database', priority: 75 },
-      { path: '.claude/agents', category: 'agents', priority: 85 }
+      { path: 'src/services', category: 'services', priority: 70 },
+      { path: 'src/database', category: 'database', priority: 75 }
     ];
 
-    // Directories to scan for code patterns
+    // Directories to scan for code patterns (relative to backend folder)
     this.codeDirectories = [
-      { path: 'backend/src/services', category: 'services', priority: 85 },
-      { path: 'backend/src/routes', category: 'api', priority: 90 },
-      { path: 'backend/src/middleware', category: 'middleware', priority: 75 },
-      { path: 'backend/src/utils', category: 'utilities', priority: 70 },
-      { path: 'src/components', category: 'components', priority: 65 },
-      { path: 'src/hooks', category: 'hooks', priority: 70 },
-      { path: 'src/contexts', category: 'contexts', priority: 70 }
+      { path: 'src/services', category: 'services', priority: 85 },
+      { path: 'src/routes', category: 'api', priority: 90 },
+      { path: 'src/middleware', category: 'middleware', priority: 75 },
+      { path: 'src/utils', category: 'utilities', priority: 70 }
     ];
 
     // File patterns to include
@@ -96,7 +92,9 @@ class AIAutoTrainingService {
   async importMarkdownDocs(stats) {
     console.log('\n📄 Scanning markdown documentation...');
 
-    const projectRoot = path.join(__dirname, '..', '..', '..');
+    // On Render, backend is deployed to root. Locally, we're in backend/src/services
+    const projectRoot = path.join(__dirname, '..', '..');
+    console.log('  Project root:', projectRoot);
 
     for (const dir of this.docDirectories) {
       const fullPath = path.join(projectRoot, dir.path);
@@ -224,7 +222,8 @@ class AIAutoTrainingService {
   async extractCodePatterns(stats) {
     console.log('\n💻 Extracting patterns from code...');
 
-    const projectRoot = path.join(__dirname, '..', '..', '..');
+    // On Render, backend is deployed to root
+    const projectRoot = path.join(__dirname, '..', '..');
 
     for (const dir of this.codeDirectories) {
       const fullPath = path.join(projectRoot, dir.path);
