@@ -2269,7 +2269,10 @@ VALUES
   ('7faa03f6-5a18-43be-9a60-2a0250cd85a2', 'error.blacklist.country', 'en', 'Orders from your location cannot be processed at this time. Please contact support for assistance.', 'error', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('074e7fa7-d66c-44d6-9fdd-a7afe1beed9a', 'checkout.step_3step_1', 'en', 'Information', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
   ('92597919-c7fd-4907-9bbb-51d9997f373c', 'account.forgot_password', 'en', 'Forgot password?', 'account', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
-  ('42ab27b9-1a5b-419d-94bb-efb5a21d44b5', 'checkout.enter_shipping_address', 'en', 'Enter shipping address', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}')
+  ('42ab27b9-1a5b-419d-94bb-efb5a21d44b5', 'checkout.enter_shipping_address', 'en', 'Enter shipping address', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000001', 'preview.email_not_configured_title', 'en', 'Email Not Configured', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000002', 'preview.email_not_configured_description', 'en', 'Registration is not available in preview mode because email verification cannot be sent. Please configure an email provider in your store settings to enable customer registration.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000003', 'preview.order_not_available', 'en', 'Placing orders is not available on a preview store. This is a demonstration only.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}')
 ON CONFLICT DO NOTHING;
 
 -- =============================================
