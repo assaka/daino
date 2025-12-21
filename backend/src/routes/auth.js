@@ -162,10 +162,25 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
       .limit(1)
       .maybeSingle();
 
+    // If store name is missing, fetch from master database as fallback
+    let storeName = store?.name;
+    if (!storeName) {
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data: masterStore } = await masterDbClient
+        .from('stores')
+        .select('name')
+        .eq('id', storeId)
+        .maybeSingle();
+      storeName = masterStore?.name;
+    }
+
+    // Ensure store object has the name
+    const storeWithName = store ? { ...store, name: storeName || store?.name } : { name: storeName };
+
     emailService.sendTransactionalEmail(storeId, 'signup_email', {
       recipientEmail: email,
       customer: customer,
-      store: store,
+      store: storeWithName,
       languageCode: 'en'
     }).catch(err => {
       // Welcome email failed
@@ -186,18 +201,30 @@ const sendVerificationEmail = async (tenantDb, storeId, email, customer, verific
       .limit(1)
       .maybeSingle();
 
+    // If store name is missing, fetch from master database as fallback
+    let storeName = store?.name;
+    if (!storeName) {
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data: masterStore } = await masterDbClient
+        .from('stores')
+        .select('name')
+        .eq('id', storeId)
+        .maybeSingle();
+      storeName = masterStore?.name || 'Our Store';
+    }
+
     // Try to send via email template if exists, otherwise send simple email
     emailService.sendEmail(storeId, 'email_verification', email, {
       customer_name: `${customer.first_name} ${customer.last_name}`,
       customer_first_name: customer.first_name,
       verification_code: verificationCode,
-      store_name: store?.name || 'Our Store',
+      store_name: storeName,
       store_url: store?.domain || process.env.CORS_ORIGIN,
       current_year: new Date().getFullYear()
     }, 'en').catch(templateError => {
       // Fallback: Send simple email with verification code
       emailService.sendViaBrevo(storeId, email,
-        `Verify your email - ${store?.name || 'Our Store'}`,
+        `Verify your email - ${storeName}`,
         `
           <h2>Verify Your Email</h2>
           <p>Hi ${customer.first_name},</p>
@@ -1586,6 +1613,18 @@ router.post('/customer/forgot-password', [
       .limit(1)
       .maybeSingle();
 
+    // If store name is missing, fetch from master database as fallback
+    let storeName = store?.name;
+    if (!storeName) {
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data: masterStore } = await masterDbClient
+        .from('stores')
+        .select('name')
+        .eq('id', store_id)
+        .maybeSingle();
+      storeName = masterStore?.name || 'Our Store';
+    }
+
     // Build reset URL
     const baseUrl = store?.domain
       ? `https://${store.domain}`
@@ -1600,14 +1639,14 @@ router.post('/customer/forgot-password', [
         customer_first_name: customer.first_name,
         reset_url: resetUrl,
         reset_link: resetUrl,
-        store_name: store?.name || 'Our Store',
+        store_name: storeName,
         store_url: baseUrl,
         current_year: new Date().getFullYear(),
         expiry_hours: 1
       }, 'en').catch(async (templateError) => {
         // Fallback: Send simple email
         await emailService.sendViaBrevo(store_id, email,
-          `Reset your password - ${store?.name || 'Our Store'}`,
+          `Reset your password - ${storeName}`,
           `
             <h2>Reset Your Password</h2>
             <p>Hi ${customer.first_name},</p>

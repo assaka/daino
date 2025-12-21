@@ -65,7 +65,8 @@ export function getCurrencySymbol(currencyCode) {
     'DKK': 'kr',
     'TRY': '₺'
   };
-  return currencyMap[currencyCode] || 'Currency not found';
+  const normalizedCode = currencyCode?.toUpperCase?.() || '';
+  return currencyMap[normalizedCode] || '$';
 }
 
 /**

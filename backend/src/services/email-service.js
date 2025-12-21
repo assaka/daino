@@ -225,6 +225,22 @@ class EmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendTransactionalEmail(storeId, templateIdentifier, data) {
+    // Ensure store name is available - fetch from master DB if missing
+    if (data.store && !data.store.name) {
+      try {
+        const { data: masterStore } = await masterDbClient
+          .from('stores')
+          .select('name')
+          .eq('id', storeId)
+          .maybeSingle();
+        if (masterStore?.name) {
+          data.store = { ...data.store, name: masterStore.name };
+        }
+      } catch (err) {
+        console.warn('[EMAIL SERVICE] Failed to fetch store name from master DB:', err.message);
+      }
+    }
+
     // Build variables based on template identifier
     let variables = {};
 
