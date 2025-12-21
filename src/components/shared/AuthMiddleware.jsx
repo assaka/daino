@@ -660,16 +660,25 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 navigate(accountUrl);
               }
             } else {
-              setSuccess(t('auth.success.user_created'));
-              setTimeout(() => {
-                // Check for redirect parameter (e.g., from invitation acceptance flow)
-                const redirectUrl = searchParams.get('redirect');
-                if (redirectUrl) {
-                  navigate(decodeURIComponent(redirectUrl));
-                } else {
-                  navigate(createAdminUrl("DASHBOARD"));
-                }
-              }, 1500);
+              // Check if email verification is required for store owner
+              const requiresVerification = actualRegResponse.data?.requiresVerification;
+              const userEmail = actualRegResponse.data?.user?.email || formData.email;
+
+              if (requiresVerification) {
+                // Redirect to email verification page
+                navigate(`/admin/verify-email?email=${encodeURIComponent(userEmail)}`);
+              } else {
+                setSuccess(t('auth.success.user_created'));
+                setTimeout(() => {
+                  // Check for redirect parameter (e.g., from invitation acceptance flow)
+                  const redirectUrl = searchParams.get('redirect');
+                  if (redirectUrl) {
+                    navigate(decodeURIComponent(redirectUrl));
+                  } else {
+                    navigate(createAdminUrl("DASHBOARD"));
+                  }
+                }, 1500);
+              }
             }
           }
         }
