@@ -1164,7 +1164,7 @@ router.post('/customer/register', [
     if (existingCustomer) {
       return res.status(400).json({
         success: false,
-        message: 'Customer with this email already exists'
+        message: 'An account with this email already exists. Please login instead.'
       });
     }
 

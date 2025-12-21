@@ -200,7 +200,23 @@ export default function CustomerAuth() {
       console.error('Auth error:', error);
       // Use backend error message if available
       const defaultMessage = isLogin ? t('common.login_failed') : t('customer_auth.error.registration_failed');
-      const errorMessage = error.response?.data?.message || error.data?.message || error.message || defaultMessage;
+
+      // Handle different error formats:
+      // 1. error.data.message - from our API client (fetch)
+      // 2. error.data.errors - validation errors array from express-validator
+      // 3. error.message - the Error object's message
+      let errorMessage = defaultMessage;
+
+      if (error.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error.data?.errors && Array.isArray(error.data.errors)) {
+        // Extract first validation error message
+        errorMessage = error.data.errors[0]?.msg || error.data.errors[0]?.message || defaultMessage;
+      } else if (error.message && !error.message.includes('HTTP error!')) {
+        // Use error.message only if it's not the generic HTTP error
+        errorMessage = error.message;
+      }
+
       setError(errorMessage);
     } finally {
       setAuthLoading(false);
