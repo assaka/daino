@@ -44,7 +44,7 @@ export default function StoreOnboarding() {
   const [needsServiceKey, setNeedsServiceKey] = useState(false);
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
-  const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
+  const [profileData, setProfileData] = useState({ phone: '', companyName: '', storeEmail: '' });
   const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
   const [hasExistingStores, setHasExistingStores] = useState(false);
   const [provisionDemoData, setProvisionDemoData] = useState(true);
@@ -347,7 +347,8 @@ export default function StoreOnboarding() {
       try {
         await User.updateProfile({
           phone: profileData.phone,
-          company_name: profileData.companyName
+          company_name: profileData.companyName,
+          store_email: profileData.storeEmail || undefined  // If empty, backend will use owner email
         });
       } catch (updateError) {
         // Continue anyway - user can update profile later from settings
@@ -720,6 +721,21 @@ export default function StoreOnboarding() {
                   onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                   className="mt-2"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="storeEmail">Store Email <span className="text-gray-400 text-sm">(optional)</span></Label>
+                <Input
+                  id="storeEmail"
+                  type="email"
+                  placeholder="store@example.com"
+                  value={profileData.storeEmail}
+                  onChange={(e) => setProfileData({ ...profileData, storeEmail: e.target.value })}
+                  className="mt-2"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Public contact email for your store. If empty, your account email will be used.
+                </p>
               </div>
 
               <div className="flex gap-3">
