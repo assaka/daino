@@ -397,6 +397,18 @@ END $$;`;
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
           console.log('📤 Pass 2.5: Creating store record before seed data...');
 
+          // Fetch store name from master DB if not provided in options
+          let storeName = options.storeName;
+          if (!storeName) {
+            const { data: masterStore } = await masterDbClient
+              .from('stores')
+              .select('name')
+              .eq('id', storeId)
+              .maybeSingle();
+            storeName = masterStore?.name || 'My Store';
+            console.log(`📦 Fetched store name from master DB: ${storeName}`);
+          }
+
           // Fetch theme defaults and merge with options.settings
           const themeDefaults = await this.getThemeDefaults(options.themePreset);
           const storeSettings = {
@@ -413,8 +425,8 @@ INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, sett
 VALUES (
   '${storeId}',
   '${options.userId}',
-  '${(options.storeName || 'My Store').replace(/'/g, "''")}',
-  '${this.generateSlug(options.storeName)}',
+  '${storeName.replace(/'/g, "''")}',
+  '${this.generateSlug(storeName)}',
   '${options.currency || 'USD'}',
   '${options.timezone || 'UTC'}',
   true,
@@ -634,6 +646,18 @@ VALUES (
    */
   async createStoreRecord(tenantDb, storeId, options, result) {
     try {
+      // Fetch store name from master DB if not provided in options
+      let storeName = options.storeName;
+      if (!storeName) {
+        const { data: masterStore } = await masterDbClient
+          .from('stores')
+          .select('name')
+          .eq('id', storeId)
+          .maybeSingle();
+        storeName = masterStore?.name || 'My Store';
+        console.log(`📦 Fetched store name from master DB: ${storeName}`);
+      }
+
       // Fetch theme defaults from master DB (use preset if specified)
       const themeDefaults = await this.getThemeDefaults(options.themePreset);
 
@@ -652,8 +676,8 @@ VALUES (
       const storeData = {
         id: storeId,
         user_id: options.userId,
-        name: options.storeName || 'My Store',
-        slug: options.storeSlug || this.generateSlug(options.storeName),
+        name: storeName,
+        slug: options.storeSlug || this.generateSlug(storeName),
         currency: options.currency || 'USD',
         timezone: options.timezone || 'UTC',
         is_active: true,
@@ -755,6 +779,18 @@ VALUES (
     try {
       const axios = require('axios');
 
+      // Fetch store name from master DB if not provided in options
+      let storeName = options.storeName;
+      if (!storeName) {
+        const { data: masterStore } = await masterDbClient
+          .from('stores')
+          .select('name')
+          .eq('id', storeId)
+          .maybeSingle();
+        storeName = masterStore?.name || 'My Store';
+        console.log(`📦 Fetched store name from master DB: ${storeName}`);
+      }
+
       // Fetch theme defaults from master DB (use preset if specified)
       const themeDefaults = await this.getThemeDefaults(options.themePreset);
 
@@ -774,8 +810,8 @@ INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, sett
 VALUES (
   '${storeId}',
   '${options.userId}',
-  '${(options.storeName || 'My Store').replace(/'/g, "''")}',
-  '${this.generateSlug(options.storeName)}',
+  '${storeName.replace(/'/g, "''")}',
+  '${this.generateSlug(storeName)}',
   '${options.currency || 'USD'}',
   '${options.timezone || 'UTC'}',
   true,
@@ -1481,6 +1517,80 @@ VALUES (
         success: false,
         storeId,
         message: `Re-provisioning failed: ${error.message}`,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Sync store name from master DB to tenant DB
+   * Used to fix existing stores with missing/incorrect names
+   *
+   * @param {string} storeId - Store UUID
+   * @returns {Promise<Object>} Sync result
+   */
+  async syncStoreNameFromMaster(storeId) {
+    const ConnectionManager = require('./ConnectionManager');
+
+    try {
+      // Get store name from master DB
+      const { data: masterStore, error: masterError } = await masterDbClient
+        .from('stores')
+        .select('name, slug')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      if (masterError || !masterStore) {
+        return {
+          success: false,
+          storeId,
+          message: 'Store not found in master database'
+        };
+      }
+
+      if (!masterStore.name) {
+        return {
+          success: false,
+          storeId,
+          message: 'Store name is empty in master database'
+        };
+      }
+
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId, false);
+
+      // Update store name in tenant DB
+      const { data: updatedStore, error: updateError } = await tenantDb
+        .from('stores')
+        .update({
+          name: masterStore.name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId)
+        .select()
+        .maybeSingle();
+
+      if (updateError) {
+        return {
+          success: false,
+          storeId,
+          message: `Failed to update tenant store: ${updateError.message}`
+        };
+      }
+
+      console.log(`✅ Synced store name from master to tenant: ${masterStore.name}`);
+
+      return {
+        success: true,
+        storeId,
+        storeName: masterStore.name,
+        message: `Store name synced successfully: ${masterStore.name}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        storeId,
+        message: `Sync failed: ${error.message}`,
         error: error.message
       };
     }
