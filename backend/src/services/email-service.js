@@ -237,20 +237,18 @@ class EmailService {
 
         const { data: tenantStore, error: tenantError } = await tenantDb
           .from('stores')
-          .select('name, domain, logo_url, settings')
+          .select('name, settings')
           .eq('id', storeId)
           .maybeSingle();
 
-        console.log(`📧 [EMAIL] Tenant DB query result:`, tenantStore ? { name: tenantStore.name, domain: tenantStore.domain } : 'null', 'error:', tenantError?.message || 'none');
+        console.log(`📧 [EMAIL] Tenant DB query result:`, tenantStore ? { name: tenantStore.name } : 'null', 'error:', tenantError?.message || 'none');
 
         if (tenantStore) {
           data.store = {
             ...(data.store || {}),
-            name: tenantStore.name || data.store?.name,
-            domain: tenantStore.domain || data.store?.domain,
-            logo_url: tenantStore.logo_url || data.store?.logo_url
+            name: tenantStore.name || data.store?.name
           };
-          console.log(`📧 [EMAIL] Store data after tenant fetch:`, { name: data.store.name, domain: data.store.domain });
+          console.log(`📧 [EMAIL] Store data after tenant fetch:`, { name: data.store.name });
         }
       } catch (err) {
         console.warn('[EMAIL SERVICE] Failed to fetch store from tenant DB:', err.message);
