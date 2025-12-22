@@ -185,6 +185,9 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     // Extract translations from request body
     const { translations, ...settingsData } = req.body;
 
+    console.log('Cookie consent POST - translations from request:', JSON.stringify(translations, null, 2));
+    console.log('Cookie consent POST - settingsData:', JSON.stringify(settingsData, null, 2));
+
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
