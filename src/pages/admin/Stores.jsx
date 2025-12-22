@@ -163,6 +163,18 @@ export default function Stores() {
           return;
         }
 
+        // Check if user has enough credits (minimum 10 required)
+        const userCredits = user?.credits || 0;
+        if (userCredits < 10) {
+          setInsufficientCreditsData({
+            currentBalance: userCredits,
+            requiredCredits: 10
+          });
+          setShowInsufficientCredits(true);
+          setValidatingStore(null);
+          return;
+        }
+
         // Validation passed - show publish confirmation
         setStoreToPublish({ id: storeId, name: store?.name });
         setShowPublishConfirm(true);
