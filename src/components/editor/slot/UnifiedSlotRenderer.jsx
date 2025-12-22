@@ -148,7 +148,8 @@ import cartService from '@/services/cartService';
 // Slot configurations come from database - renderConditions handled via slot metadata
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { formatPrice, formatPriceNumber } from '@/utils/priceUtils';
+import { formatPrice, formatPriceNumber, safeNumber } from '@/utils/priceUtils';
+import ProductLabelComponent from '@/components/storefront/ProductLabel';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 // Import component registry to ensure all components are registered
@@ -156,6 +157,96 @@ import '@/components/editor/slot/UnifiedSlotComponents';
 
 // Re-export registry functions for backward compatibility
 export { createSlotComponent, ComponentRegistry, registerSlotComponent } from './SlotComponentRegistry';
+
+/**
+ * Helper function to render product labels for a product
+ * Used for rendering labels on product card images in category pages
+ */
+const renderProductLabels = (product, productLabels = []) => {
+  if (!product || !productLabels || productLabels.length === 0) return null;
+
+  // Filter labels that match the product conditions
+  const matchingLabels = productLabels.filter((label) => {
+    let shouldShow = true;
+
+    if (label.conditions && Object.keys(label.conditions).length > 0) {
+      // Check product_ids condition
+      if (shouldShow && label.conditions.product_ids?.length > 0) {
+        if (!label.conditions.product_ids.includes(product.id)) {
+          shouldShow = false;
+        }
+      }
+
+      // Check category_ids condition
+      if (shouldShow && label.conditions.category_ids?.length > 0) {
+        if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
+          shouldShow = false;
+        }
+      }
+
+      // Check price conditions
+      if (shouldShow && label.conditions.price_conditions) {
+        const conditions = label.conditions.price_conditions;
+        if (conditions.has_sale_price) {
+          const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0;
+          const pricesAreDifferent = hasComparePrice && safeNumber(product.compare_price) !== safeNumber(product.price);
+          if (!pricesAreDifferent) {
+            shouldShow = false;
+          }
+        }
+        if (shouldShow && conditions.is_new && conditions.days_since_created) {
+          const productCreatedDate = new Date(product.created_date);
+          const now = new Date();
+          const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysSince > conditions.days_since_created) {
+            shouldShow = false;
+          }
+        }
+      }
+
+      // Check attribute conditions
+      if (shouldShow && label.conditions.attribute_conditions?.length > 0) {
+        const attributeMatch = label.conditions.attribute_conditions.every(cond => {
+          if (product.attributes && Array.isArray(product.attributes)) {
+            const attr = product.attributes.find(a => a.code === cond.attribute_code);
+            if (attr?.value) {
+              return String(attr.value).toLowerCase() === String(cond.attribute_value).toLowerCase();
+            }
+          }
+          return false;
+        });
+        if (!attributeMatch) {
+          shouldShow = false;
+        }
+      }
+    }
+    return shouldShow;
+  });
+
+  // Group labels by position and take highest priority for each
+  const labelsByPosition = matchingLabels.reduce((acc, label) => {
+    const position = label.position || 'top-right';
+    if (!acc[position]) acc[position] = [];
+    acc[position].push(label);
+    return acc;
+  }, {});
+
+  const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
+    const sorted = positionLabels.sort((a, b) => {
+      if ((a.sort_order || 0) !== (b.sort_order || 0)) {
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      }
+      return (b.priority || 0) - (a.priority || 0);
+    });
+    return sorted[0];
+  }).filter(Boolean);
+
+  if (labelsToShow.length === 0) return null;
+
+  return labelsToShow.map(label => (
+    <ProductLabelComponent key={label.id} label={label} />
+  ));
+};
 
 /**
  * CmsBlockSlot - Renders dynamic CMS block content from database
@@ -1204,14 +1295,19 @@ export function UnifiedSlotRenderer({
       if (context === 'storefront' && isProductCardImage && product?.slug && store?.slug) {
         const productUrl = createProductUrl(store.slug, product.slug);
 
+        // Get product labels for rendering on image
+        const productLabels = variableContext?.productLabels || [];
+        const labelsToRender = renderProductLabels(product, productLabels);
+
         return (
-          <Link to={productUrl} className="block">
+          <Link to={productUrl} className="block relative">
             <img
               src={imageSrc}
               alt={variableContext.product?.name || 'Image'}
               className={processedClassName}
               style={{ ...stylesWithoutWidth, width: '100%' }}
             />
+            {labelsToRender}
           </Link>
         );
       }
