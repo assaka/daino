@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { FileText, ExternalLink } from "lucide-react";
 import { SeoSetting } from '@/api/entities';
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function HtmlSitemap() {
-  const { store } = useStore();
+  const { selectedStore: store } = useStoreSelection();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);

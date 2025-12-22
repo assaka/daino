@@ -12,12 +12,12 @@ import { Product } from '@/api/entities';
 import { Category } from '@/api/entities';
 import { CmsPage } from '@/api/entities';
 import { SeoSetting } from '@/api/entities';
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 
 export default function XmlSitemap() {
-    const { store } = useStore();
+    const { selectedStore: store, getSelectedStoreId } = useStoreSelection();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
