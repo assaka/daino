@@ -536,6 +536,7 @@ export default function Category() {
     category: currentCategory,
     products: paginatedProducts,
     allProducts: products, // Use unfiltered products for filter counting
+    productLabels: productLabels || [], // Add product labels directly to context
     filteredProductsCount: sortedProducts.length, // Count of products after filtering
     filters: buildFilters(),
     filterableAttributes, // Pass database filterable attributes directly

@@ -27,6 +27,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/ui/save-button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -956,12 +957,15 @@ export default function Orders() {
             <Button variant="outline" onClick={() => setShipmentModalOpen(false)}>
               Cancel
             </Button>
-            <Button
+            <SaveButton
               onClick={handleSendShipmentSubmit}
-              disabled={actionLoading[`send-shipment-${selectedOrderForShipment?.id}`]}
-            >
-              {actionLoading[`send-shipment-${selectedOrderForShipment?.id}`] ? 'Sending...' : 'Send Shipment'}
-            </Button>
+              loading={actionLoading[`send-shipment-${selectedOrderForShipment?.id}`]}
+              success={actionSuccess[`send-shipment-${selectedOrderForShipment?.id}`]}
+              defaultText="Send Shipment"
+              loadingText="Sending..."
+              successText="Sent!"
+              icon={<Truck className="w-4 h-4 mr-2" />}
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>

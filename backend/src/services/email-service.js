@@ -269,6 +269,12 @@ class EmailService {
         break;
       case 'shipment_email':
         variables = await this.buildOrderSuccessVariables(data);
+        // Add shipment-specific variables
+        if (data.tracking_number) variables.tracking_number = data.tracking_number;
+        if (data.tracking_url) variables.tracking_url = data.tracking_url;
+        if (data.carrier) variables.carrier = data.carrier;
+        if (data.shipping_method) variables.shipping_method = data.shipping_method;
+        if (data.estimated_delivery_date) variables.estimated_delivery_date = data.estimated_delivery_date;
         break;
       default:
         // If no specific builder, use data as variables directly
