@@ -198,6 +198,8 @@ function preprocessCategoryData(rawData, baseContext, options) {
     selectedFilters,
     priceRange,
     categories,
+    // Product labels for rendering on product cards
+    productLabels,
     // Pagination - include countText for ProductCountInfo component
     pagination: {
       currentPage,
