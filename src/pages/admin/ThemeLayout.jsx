@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2 } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import SaveButton from '@/components/ui/save-button';
@@ -129,6 +129,7 @@ export default function ThemeLayout() {
     const [stepTranslations, setStepTranslations] = useState({});
     const [newFontName, setNewFontName] = useState('');
     const [newFontUrl, setNewFontUrl] = useState('');
+    const [fontSearch, setFontSearch] = useState('');
     const [showCreateThemeDialog, setShowCreateThemeDialog] = useState(false);
     const [newThemeName, setNewThemeName] = useState('');
     const [newThemeDescription, setNewThemeDescription] = useState('');
@@ -1272,23 +1273,89 @@ export default function ThemeLayout() {
                                         <Label htmlFor="font_family">Font Family</Label>
                                         <Select value={store.settings.theme.font_family} onValueChange={handleFontFamilyChange}>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                {/* Google Fonts */}
-                                                <SelectItem value="Inter">Inter (Sans-serif)</SelectItem>
-                                                <SelectItem value="Roboto">Roboto (Sans-serif)</SelectItem>
-                                                <SelectItem value="Open Sans">Open Sans (Sans-serif)</SelectItem>
-                                                <SelectItem value="Lato">Lato (Sans-serif)</SelectItem>
-                                                <SelectItem value="Merriweather">Merriweather (Serif)</SelectItem>
-                                                <SelectItem value="Playfair Display">Playfair Display (Serif)</SelectItem>
+                                            <SelectContent className="max-h-[400px]">
+                                                {/* Font Search */}
+                                                <div className="sticky top-0 bg-white z-10 p-2 border-b">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search fonts..."
+                                                            value={fontSearch}
+                                                            onChange={(e) => setFontSearch(e.target.value)}
+                                                            className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onKeyDown={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {/* Google Fonts - Sans-serif */}
+                                                {[
+                                                    { value: 'Inter', label: 'Inter (Sans-serif)' },
+                                                    { value: 'Roboto', label: 'Roboto (Sans-serif)' },
+                                                    { value: 'Open Sans', label: 'Open Sans (Sans-serif)' },
+                                                    { value: 'Lato', label: 'Lato (Sans-serif)' },
+                                                    { value: 'Poppins', label: 'Poppins (Sans-serif)' },
+                                                    { value: 'Montserrat', label: 'Montserrat (Sans-serif)' },
+                                                    { value: 'Raleway', label: 'Raleway (Sans-serif)' },
+                                                    { value: 'Source Sans 3', label: 'Source Sans 3 (Sans-serif)' },
+                                                    { value: 'Nunito', label: 'Nunito (Sans-serif)' },
+                                                    { value: 'Work Sans', label: 'Work Sans (Sans-serif)' },
+                                                    { value: 'Ubuntu', label: 'Ubuntu (Sans-serif)' },
+                                                    { value: 'Josefin Sans', label: 'Josefin Sans (Sans-serif)' },
+                                                    { value: 'Oswald', label: 'Oswald (Sans-serif)' },
+                                                    { value: 'Quicksand', label: 'Quicksand (Sans-serif)' },
+                                                    { value: 'Rubik', label: 'Rubik (Sans-serif)' },
+                                                    { value: 'Karla', label: 'Karla (Sans-serif)' },
+                                                    { value: 'Merriweather', label: 'Merriweather (Serif)' },
+                                                    { value: 'Playfair Display', label: 'Playfair Display (Serif)' },
+                                                    { value: 'Libre Baskerville', label: 'Libre Baskerville (Serif)' },
+                                                    { value: 'Crimson Text', label: 'Crimson Text (Serif)' },
+                                                    { value: 'Cormorant Garamond', label: 'Cormorant Garamond (Serif)' },
+                                                    { value: 'Lora', label: 'Lora (Serif)' },
+                                                    { value: 'EB Garamond', label: 'EB Garamond (Serif)' },
+                                                    { value: 'PT Serif', label: 'PT Serif (Serif)' },
+                                                    { value: 'Noto Serif', label: 'Noto Serif (Serif)' },
+                                                    { value: 'Bebas Neue', label: 'Bebas Neue (Display)' },
+                                                    { value: 'Abril Fatface', label: 'Abril Fatface (Display)' },
+                                                    { value: 'Pacifico', label: 'Pacifico (Handwriting)' },
+                                                ].filter(font =>
+                                                    fontSearch === '' ||
+                                                    font.value.toLowerCase().includes(fontSearch.toLowerCase()) ||
+                                                    font.label.toLowerCase().includes(fontSearch.toLowerCase())
+                                                ).map(font => (
+                                                    <SelectItem key={font.value} value={font.value}>{font.label}</SelectItem>
+                                                ))}
                                                 {/* Custom Fonts */}
-                                                {(store.settings.theme?.custom_fonts || []).length > 0 && (
+                                                {(store.settings.theme?.custom_fonts || []).filter(font =>
+                                                    fontSearch === '' || font.name.toLowerCase().includes(fontSearch.toLowerCase())
+                                                ).length > 0 && (
                                                     <>
                                                         <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1">Custom Fonts</div>
-                                                        {(store.settings.theme?.custom_fonts || []).map((font, idx) => (
+                                                        {(store.settings.theme?.custom_fonts || []).filter(font =>
+                                                            fontSearch === '' || font.name.toLowerCase().includes(fontSearch.toLowerCase())
+                                                        ).map((font, idx) => (
                                                             <SelectItem key={idx} value={font.name}>{font.name} (Custom)</SelectItem>
                                                         ))}
                                                     </>
                                                 )}
+                                                {/* No results message */}
+                                                {fontSearch !== '' &&
+                                                    [
+                                                        'Inter', 'Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat', 'Raleway',
+                                                        'Source Sans 3', 'Nunito', 'Work Sans', 'Ubuntu', 'Josefin Sans', 'Oswald',
+                                                        'Quicksand', 'Rubik', 'Karla', 'Merriweather', 'Playfair Display',
+                                                        'Libre Baskerville', 'Crimson Text', 'Cormorant Garamond', 'Lora',
+                                                        'EB Garamond', 'PT Serif', 'Noto Serif', 'Bebas Neue', 'Abril Fatface', 'Pacifico'
+                                                    ].filter(f => f.toLowerCase().includes(fontSearch.toLowerCase())).length === 0 &&
+                                                    (store.settings.theme?.custom_fonts || []).filter(f =>
+                                                        f.name.toLowerCase().includes(fontSearch.toLowerCase())
+                                                    ).length === 0 && (
+                                                        <div className="px-2 py-3 text-sm text-gray-500 text-center">
+                                                            No fonts found matching "{fontSearch}"
+                                                        </div>
+                                                    )
+                                                }
                                             </SelectContent>
                                         </Select>
                                     </div>
