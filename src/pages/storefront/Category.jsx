@@ -26,7 +26,7 @@ const ensureArray = (data) => {
 };
 
 export default function Category() {
-  const { store, settings, loading: storeLoading, categories, filterableAttributes } = useStore();
+  const { store, settings, loading: storeLoading, categories, filterableAttributes, productLabels } = useStore();
   const { showNotFound } = useNotFound();
   const { t } = useTranslation();
 
@@ -646,7 +646,7 @@ export default function Category() {
                 navigate: (url) => window.location.href = url,
                 formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
                 getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
-              }, store, settings, { translations: {}, productLabels: [] })}
+              }, store, settings, { translations: {}, productLabels: productLabels || [] })}
             />
           </div>
         )}

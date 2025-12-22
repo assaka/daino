@@ -56,9 +56,10 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
-import { formatPrice, formatPriceNumber } from '@/utils/priceUtils';
+import { formatPrice, formatPriceNumber, safeNumber } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import ProductLabelComponent from '@/components/storefront/ProductLabel';
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
@@ -569,6 +570,105 @@ const ProductCountInfo = createSlotComponent({
 });
 
 /**
+ * Helper function to render product labels for a product
+ * Matches the logic in ProductItemCard.jsx for consistency
+ */
+const renderProductLabelsForProduct = (product, productLabels = []) => {
+  // Filter labels that match the product conditions
+  const matchingLabels = productLabels?.filter((label) => {
+    let shouldShow = true; // Assume true, prove false (AND logic)
+
+    if (label.conditions && Object.keys(label.conditions).length > 0) {
+      // Check product_ids condition
+      if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
+        if (!label.conditions.product_ids.includes(product.id)) {
+          shouldShow = false;
+        }
+      }
+
+      // Check category_ids condition
+      if (shouldShow && label.conditions.category_ids && Array.isArray(label.conditions.category_ids) && label.conditions.category_ids.length > 0) {
+        if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
+          shouldShow = false;
+        }
+      }
+
+      // Check price conditions
+      if (shouldShow && label.conditions.price_conditions) {
+        const conditions = label.conditions.price_conditions;
+        if (conditions.has_sale_price) {
+          const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0;
+          const pricesAreDifferent = hasComparePrice && safeNumber(product.compare_price) !== safeNumber(product.price);
+          if (!pricesAreDifferent) {
+            shouldShow = false;
+          }
+        }
+        if (shouldShow && conditions.is_new && conditions.days_since_created) {
+          const productCreatedDate = new Date(product.created_date);
+          const now = new Date();
+          const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysSince > conditions.days_since_created) {
+            shouldShow = false;
+          }
+        }
+      }
+
+      // Check attribute conditions
+      if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
+        const attributeMatch = label.conditions.attribute_conditions.every(cond => {
+          if (product.attributes && Array.isArray(product.attributes)) {
+            const attr = product.attributes.find(a => a.code === cond.attribute_code);
+            if (attr?.value) {
+              const productAttributeValue = String(attr.value).toLowerCase();
+              const conditionValue = String(cond.attribute_value).toLowerCase();
+              return productAttributeValue === conditionValue;
+            }
+          }
+          return false;
+        });
+        if (!attributeMatch) {
+          shouldShow = false;
+        }
+      }
+    }
+    return shouldShow;
+  }) || [];
+
+  // Group labels by position and show one label per position
+  const labelsByPosition = matchingLabels.reduce((acc, label) => {
+    const position = label.position || 'top-right';
+    if (!acc[position]) {
+      acc[position] = [];
+    }
+    acc[position].push(label);
+    return acc;
+  }, {});
+
+  // For each position, sort by sort_order (ASC) then by priority (DESC) and take the first one
+  const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
+    const sortedLabels = positionLabels.sort((a, b) => {
+      const sortOrderA = a.sort_order || 0;
+      const sortOrderB = b.sort_order || 0;
+      if (sortOrderA !== sortOrderB) {
+        return sortOrderA - sortOrderB; // ASC
+      }
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      return priorityB - priorityA; // DESC
+    });
+    return sortedLabels[0]; // Return highest priority label for this position
+  }).filter(Boolean);
+
+  // Render all labels (one per position)
+  return labelsToShow.map(label => (
+    <ProductLabelComponent
+      key={label.id}
+      label={label}
+    />
+  ));
+};
+
+/**
  * ProductItemsGrid Component - Main Product Display Grid
  *
  * DUAL RENDERING PATHS:
@@ -777,6 +877,9 @@ const ProductItemsGrid = createSlotComponent({
             };
           });
 
+          // Get product labels from context
+          const productLabels = variableContext?.productLabels || categoryContext?.productLabels || [];
+
           // Render product card - same structure for both contexts
           const productCard = (
             <div
@@ -784,8 +887,10 @@ const ProductItemsGrid = createSlotComponent({
               data-slot-id="product_card_template"
               data-editable="true"
               className={productCardTemplate?.className || ''}
-              style={{ ...productCardTemplate?.styles, overflow: 'visible', width: '100%' }}
+              style={{ ...productCardTemplate?.styles, overflow: 'visible', width: '100%', position: 'relative' }}
             >
+              {/* Product labels - positioned absolutely over the image */}
+              {renderProductLabelsForProduct(product, productLabels)}
               <UnifiedSlotRenderer
                 slots={productSlots}
                 parentId="product_card_template"
