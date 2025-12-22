@@ -1772,6 +1772,13 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       }
     }
 
+    // Remove deprecated fields that are now stored in settings JSONB
+    const deprecatedFields = ['logo_url', 'contact_phone', 'address_line1', 'address_line2',
+      'city', 'state', 'postal_code', 'country', 'website_url', 'banner_url', 'theme_color', 'stripe_account_id'];
+    for (const field of deprecatedFields) {
+      delete tenantUpdates[field];
+    }
+
     // Check if trying to set store to running (published = true)
     // Require minimum credits to publish/run a store
     if (masterUpdates.published === true && !store.published) {
@@ -1900,6 +1907,13 @@ router.put('/:id', authMiddleware, async (req, res) => {
       } else {
         tenantUpdates[key] = value;
       }
+    }
+
+    // Remove deprecated fields that are now stored in settings JSONB
+    const deprecatedFields = ['logo_url', 'contact_phone', 'address_line1', 'address_line2',
+      'city', 'state', 'postal_code', 'country', 'website_url', 'banner_url', 'theme_color', 'stripe_account_id'];
+    for (const field of deprecatedFields) {
+      delete tenantUpdates[field];
     }
 
     // Check if trying to set store to running (published = true)
@@ -2091,6 +2105,19 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
     let finalUpdates = { ...updates };
     // Remove theme_preset from tenant updates - it's stored in master DB only
     delete finalUpdates.theme_preset;
+    // Remove deprecated root fields - these are now stored in settings
+    delete finalUpdates.logo_url;
+    delete finalUpdates.contact_phone;
+    delete finalUpdates.address_line1;
+    delete finalUpdates.address_line2;
+    delete finalUpdates.city;
+    delete finalUpdates.state;
+    delete finalUpdates.postal_code;
+    delete finalUpdates.country;
+    delete finalUpdates.website_url;
+    delete finalUpdates.banner_url;
+    delete finalUpdates.theme_color;
+    delete finalUpdates.stripe_account_id;
 
     if (updates.settings) {
       const currentSettings = currentStore.settings || {};
