@@ -405,6 +405,7 @@ END $$;`;
           const themeDefaults = await this.getThemeDefaults(options.themePreset);
           const storeSettings = {
             ...(options.settings || {}),
+            store_email: options.userEmail || null,  // Default to store owner's email
             theme: {
               ...themeDefaults,
               ...(options.settings?.theme || {})

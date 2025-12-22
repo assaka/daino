@@ -563,7 +563,7 @@ export default function StoreOnboarding() {
                     Provision demo data
                   </Label>
                   <p className="text-sm text-gray-500 mt-1">
-                    Include sample products, categories, and content to help you get started quickly. You can remove the demo data later without losing any data you've manually added.{' '}
+                    Include sample products, categories, and content to help you get started quickly. This adds 1-2 minutes to setup. You can remove the demo data later.{' '}
                     <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>

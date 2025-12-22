@@ -41,20 +41,33 @@ class DemoDataProvisioningService {
     await this.initialize();
 
     try {
-      // Create demo data in order of dependencies
-      await this.createDemoCategories();
-      await this.createDemoAttributeSets();
+      // Phase 1: Create independent data in parallel
+      // Categories, AttributeSets, Customers are needed by later phases
+      // CMS, Tax, Coupons, SEO, ProductTabs, ProductLabels are fully independent
+      await Promise.all([
+        this.createDemoCategories(),
+        this.createDemoAttributeSets(),
+        this.createDemoCustomers(),
+        this.createDemoCMSContent(),
+        this.createDemoTaxConfiguration(),
+        this.createDemoCoupons(),
+        this.createDemoSEOTemplates(),
+        this.createDemoProductTabs(),
+        this.createDemoProductLabels()
+      ]);
+
+      // Phase 2: Attributes depend on AttributeSets
       await this.createDemoAttributes();
+
+      // Phase 3: Products depend on Categories and Attributes
       await this.createDemoProducts();
-      await this.createDemoCustomOptionRules();
-      await this.createDemoProductTabs();
-      await this.createDemoProductLabels();
-      await this.createDemoCustomers();
-      await this.createDemoOrders();
-      await this.createDemoCMSContent();
-      await this.createDemoTaxConfiguration();
-      await this.createDemoCoupons();
-      await this.createDemoSEOTemplates();
+
+      // Phase 4: Orders and CustomOptionRules depend on Products/Customers
+      await Promise.all([
+        this.createDemoOrders(),
+        this.createDemoCustomOptionRules()
+      ]);
+
       await this.updateStoreStatus('demo');
 
       const summary = this.getProvisioningSummary();
