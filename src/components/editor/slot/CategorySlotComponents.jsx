@@ -895,13 +895,13 @@ const ProductItemsGrid = createSlotComponent({
                 slots={productSlots}
                 parentId="product_card_template"
                 context={context}
-                categoryData={{ ...categoryContext, product }}
+                categoryData={{ ...categoryContext, product, productLabels }}
                 productData={{
                   product,
                   store: categoryContext?.store,
-                  settings: variableContext?.settings
+                  settings: variableContext?.settings,
+                  productLabels
                 }}
-                variableContext={{ ...variableContext, this: product, product }}
                 viewMode={viewMode}
                 // Editor props - only passed when in editor context
                 {...(isEditor ? {
