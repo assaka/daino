@@ -971,7 +971,7 @@ const pauseAccessApprovedEmail = (data) => {
 
   const header = masterEmailHeader({
     title: 'Access Approved!',
-    subtitle: `You can now view ${storeName}`
+    subtitle: `You can now view the store ${storeName}`
   });
 
   const footer = masterEmailFooter();
