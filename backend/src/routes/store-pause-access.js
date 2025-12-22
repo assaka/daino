@@ -15,14 +15,14 @@ const router = express.Router();
 // - Admin routes use checkStoreOwnership middleware
 
 /**
- * Helper to get store info from master DB by store_id
+ * Helper to get store info from tenant DB by store_id
  */
-async function getStoreInfo(storeId) {
-  const { data: store, error } = await masterDbClient
+async function getStoreInfo(tenantDb, storeId) {
+  const { data: store, error } = await tenantDb
     .from('stores')
     .select('id, name, slug, user_id')
     .eq('id', storeId)
-    .single();
+    .maybeSingle();
 
   if (error || !store) {
     return null;
@@ -62,14 +62,17 @@ router.post('/request', [
 
     const { store_id, email, message } = req.body;
 
-    // Get store info
-    const store = await getStoreInfo(store_id);
-    if (!store) {
+    // Get tenant connection first
+    const tenantDb = await ConnectionManager.getConnection(store_id);
+    if (!tenantDb) {
       return res.status(404).json({ success: false, message: 'Store not found' });
     }
 
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    // Get store info from tenant DB
+    const store = await getStoreInfo(tenantDb, store_id);
+    if (!store) {
+      return res.status(404).json({ success: false, message: 'Store not found' });
+    }
 
     // Check if request already exists
     const { data: existing } = await tenantDb
@@ -213,14 +216,17 @@ router.post('/resend-link', [
 
     const { store_id, email } = req.body;
 
-    // Get store info
-    const store = await getStoreInfo(store_id);
-    if (!store) {
+    // Get tenant connection first
+    const tenantDb = await ConnectionManager.getConnection(store_id);
+    if (!tenantDb) {
       return res.status(404).json({ success: false, message: 'Store not found' });
     }
 
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    // Get store info from tenant DB
+    const store = await getStoreInfo(tenantDb, store_id);
+    if (!store) {
+      return res.status(404).json({ success: false, message: 'Store not found' });
+    }
 
     // Check if email has approved access
     const { data: access, error } = await tenantDb
@@ -410,7 +416,7 @@ router.put('/:store_id/:id/approve', authMiddleware, authorize(['admin', 'store_
 
     // Send approval email to requester
     try {
-      const store = await getStoreInfo(store_id);
+      const store = await getStoreInfo(tenantDb, store_id);
       if (store) {
         await masterEmailService.sendPauseAccessApprovedEmail({
           toEmail: request.email,
@@ -481,7 +487,7 @@ router.put('/:store_id/:id/reject', authMiddleware, authorize(['admin', 'store_o
 
     // Send rejection email to requester
     try {
-      const store = await getStoreInfo(store_id);
+      const store = await getStoreInfo(tenantDb, store_id);
       if (store) {
         const owner = await getStoreOwnerEmail(store.user_id);
         await masterEmailService.sendPauseAccessRejectedEmail({
