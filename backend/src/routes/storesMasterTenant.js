@@ -1827,12 +1827,15 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    // Update tenant DB if there are tenant fields AND store is operational
+    // Update tenant DB if there are tenant fields AND store has a provisioned database
+    // Note: Allow updates for paused stores (is_active=false) as long as DB is provisioned
     if (Object.keys(tenantUpdates).length > 0) {
-      if (store.status !== 'active' || !store.is_active) {
+      // Only block if store doesn't have a provisioned database
+      const nonOperationalStatuses = ['pending_database', 'provisioning', 'suspended'];
+      if (nonOperationalStatuses.includes(store.status)) {
         return res.status(400).json({
           success: false,
-          error: 'Store is not operational - cannot update tenant settings'
+          error: `Store is ${store.status} - cannot update tenant settings until database is provisioned`
         });
       }
 
@@ -1964,12 +1967,15 @@ router.put('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    // Update tenant DB if there are tenant fields AND store is operational
+    // Update tenant DB if there are tenant fields AND store has a provisioned database
+    // Note: Allow updates for paused stores (is_active=false) as long as DB is provisioned
     if (Object.keys(tenantUpdates).length > 0) {
-      if (store.status !== 'active' || !store.is_active) {
+      // Only block if store doesn't have a provisioned database
+      const nonOperationalStatuses = ['pending_database', 'provisioning', 'suspended'];
+      if (nonOperationalStatuses.includes(store.status)) {
         return res.status(400).json({
           success: false,
-          error: 'Store is not operational - cannot update tenant settings'
+          error: `Store is ${store.status} - cannot update tenant settings until database is provisioned`
         });
       }
 

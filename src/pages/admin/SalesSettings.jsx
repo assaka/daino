@@ -129,7 +129,7 @@ export default function SalesSettings() {
         }
       };
 
-      await retryApiCall(() => Store.update(store.id, payload));
+      await retryApiCall(() => Store.updateSettings(store.id, payload));
 
       setFlashMessage({ type: 'success', message: 'Sales settings saved successfully!' });
       setSaveSuccess(true);
