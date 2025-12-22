@@ -1297,7 +1297,9 @@ export function UnifiedSlotRenderer({
 
         // Get product labels for rendering on image
         const productLabels = variableContext?.productLabels || [];
+        console.log('[DEBUG] Product labels for category:', { productLabels, product: product?.name, productId: product?.id });
         const labelsToRender = renderProductLabels(product, productLabels);
+        console.log('[DEBUG] Labels to render:', labelsToRender);
 
         return (
           <Link to={productUrl} className="block relative">
