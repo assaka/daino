@@ -219,10 +219,10 @@ class PDFService {
       payment_status: order.payment_status ? order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1) : 'N/A',
       store_name: store.name || '',
       store_logo_url: store.logo_url || '',
-      store_address: store.address_line1 || '',
-      store_city: store.city || '',
-      store_state: store.state || '',
-      store_postal_code: store.postal_code || '',
+      store_address: store.settings?.store_address || '',
+      store_city: store.settings?.store_city || '',
+      store_state: store.settings?.store_state || '',
+      store_postal_code: store.settings?.store_postal_code || '',
       store_email: store.settings?.store_email || '',
       store_phone: store.settings?.store_phone || '',
       store_website: store.website_url || '',
@@ -267,10 +267,10 @@ class PDFService {
       items_count: orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0),
       store_name: store.name || '',
       store_logo_url: store.logo_url || '',
-      store_address: store.address_line1 || '',
-      store_city: store.city || '',
-      store_state: store.state || '',
-      store_postal_code: store.postal_code || '',
+      store_address: store.settings?.store_address || '',
+      store_city: store.settings?.store_city || '',
+      store_state: store.settings?.store_state || '',
+      store_postal_code: store.settings?.store_postal_code || '',
       store_email: store.settings?.store_email || '',
       store_phone: store.settings?.store_phone || '',
       store_website: store.website_url || '',
@@ -290,8 +290,8 @@ class PDFService {
         ${logoUrl ? `<img src="${logoUrl}" alt="${storeName}" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;">` : ''}
         <h1 style="color: #333; font-size: 28px; margin: 10px 0;">${storeName}</h1>
         <p style="color: #666; font-size: 14px; margin: 5px 0;">
-          ${store.address_line1 || ''} ${store.address_line2 || ''}<br>
-          ${store.city || ''}, ${store.state || ''} ${store.postal_code || ''}<br>
+          ${store.settings?.store_address || ''} ${store.settings?.store_address_line2 || ''}<br>
+          ${store.settings?.store_city || ''}, ${store.settings?.store_state || ''} ${store.settings?.store_postal_code || ''}<br>
           ${store.settings?.store_email || ''} | ${store.settings?.store_phone || ''}
         </p>
       </div>

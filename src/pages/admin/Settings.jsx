@@ -148,11 +148,11 @@ export default function Settings() {
         contact_details: {
           email: storeData.settings?.store_email || '', // From settings JSON
           phone: storeData.settings?.store_phone || '', // From settings JSON
-          address: storeData.address_line1 || '',
-          address_line2: storeData.address_line2 || '',
-          city: storeData.city || '',
-          state: storeData.state || '',
-          postal_code: storeData.postal_code || '',
+          address: storeData.settings?.store_address || '', // From settings JSON
+          address_line2: storeData.settings?.store_address_line2 || '', // From settings JSON
+          city: storeData.settings?.store_city || '', // From settings JSON
+          state: storeData.settings?.store_state || '', // From settings JSON
+          postal_code: storeData.settings?.store_postal_code || '', // From settings JSON
           country: storeData.settings?.store_country || 'US', // From settings JSON
           support_email: storeData.settings?.store_email || '', // Use store_email as support_email
         },
@@ -360,24 +360,23 @@ export default function Settings() {
       };
       
       // Also include other store fields that might need updating
-      // Map contact_details back to flat structure
+      // Map contact_details to settings
       const payload = {
         name: store.name,
         description: store.description,
         logo_url: store.logo_url,
-        address_line1: store.contact_details?.address || store.address_line1,
-        address_line2: store.contact_details?.address_line2 || store.address_line2,
-        city: store.contact_details?.city || store.city,
-        state: store.contact_details?.state || store.state,
-        postal_code: store.contact_details?.postal_code || store.postal_code,
         timezone: store.timezone,
         currency: store.currency,
-        // NOTE: root_category_id is NOT a column in stores table
-        // It's stored in settings.rootCategoryId (already included in settingsPayload)
-        // Phone and country are stored in settings as store_phone and store_country
+        // All contact details are stored in settings
         settings: {
           ...settingsPayload,
+          store_email: store.contact_details?.email || '',
           store_phone: store.contact_details?.phone || '',
+          store_address: store.contact_details?.address || '',
+          store_address_line2: store.contact_details?.address_line2 || '',
+          store_city: store.contact_details?.city || '',
+          store_state: store.contact_details?.state || '',
+          store_postal_code: store.contact_details?.postal_code || '',
           store_country: store.contact_details?.country || ''
         }
       };

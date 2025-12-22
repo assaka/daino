@@ -23,8 +23,10 @@ function processStoreVariables(content, store, settings) {
         store_name: store?.name || '',
         store_email: settings?.store_email || '',
         store_phone: settings?.store_phone || '',
-        store_address: store?.address || settings?.store_address || '',
-        store_city: store?.city || settings?.store_city || '',
+        store_address: settings?.store_address || '',
+        store_city: settings?.store_city || '',
+        store_state: settings?.store_state || '',
+        store_postal_code: settings?.store_postal_code || '',
         store_country: settings?.store_country || '',
         store_currency: settings?.currency_symbol || '$',
     };
