@@ -731,6 +731,11 @@ export function UnifiedSlotRenderer({
   // This ensures both editor and storefront use the same data format
   const categorySource = preprocessedData || categoryData;
 
+  // Debug: Log what preprocessedData contains
+  if (preprocessedData) {
+    console.log('[DEBUG] preprocessedData.productLabels:', preprocessedData?.productLabels);
+  }
+
   const variableContext = {
     product: formattedProduct,
     products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available

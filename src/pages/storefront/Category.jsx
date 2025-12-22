@@ -27,6 +27,7 @@ const ensureArray = (data) => {
 
 export default function Category() {
   const { store, settings, loading: storeLoading, categories, filterableAttributes, productLabels } = useStore();
+  console.log('[DEBUG] Category.jsx - productLabels from useStore:', productLabels);
   const { showNotFound } = useNotFound();
   const { t } = useTranslation();
 
