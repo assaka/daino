@@ -749,6 +749,12 @@ export function UnifiedSlotRenderer({
     settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
     translations: productData.translations || categorySource?.translations || null, // Translations from TranslationContext
     productLabels: productData.productLabels || categorySource?.productLabels,
+  };
+
+  console.log('[DEBUG] variableContext.productLabels after build:', variableContext.productLabels?.length);
+
+  // Continue with rest of variableContext
+  Object.assign(variableContext, {
     // Product-specific data
     customOptions: productData.customOptions || [],
     customOptionsLabel: productData.customOptionsLabel || 'Custom Options',
@@ -769,7 +775,7 @@ export function UnifiedSlotRenderer({
     clearFilters: categorySource?.clearFilters,
     // Login data for login page
     loginData: loginData
-  };
+  });
 
   /**
    * wrapWithResize - Wraps element with ResizeWrapper for visual resizing in editor
