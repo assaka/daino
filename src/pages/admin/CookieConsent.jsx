@@ -323,8 +323,15 @@ export default function CookieConsent() {
         store_id: currentStoreId  // This MUST match the selected store
       };
 
+      console.log('handleSave - settings state:', settings);
+      console.log('handleSave - settings.translations:', settings.translations);
+      console.log('handleSave - settingsToSave:', settingsToSave);
+
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settingsToSave);
+
+      console.log('handleSave - backendSettings:', backendSettings);
+      console.log('handleSave - backendSettings.translations:', backendSettings.translations);
 
       // Always use create endpoint - backend automatically handles upsert based on store_id
       // This prevents duplicate rows without needing separate create/update logic
