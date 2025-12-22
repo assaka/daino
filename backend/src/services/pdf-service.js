@@ -225,7 +225,7 @@ class PDFService {
       store_postal_code: store.settings?.store_postal_code || '',
       store_email: store.settings?.store_email || '',
       store_phone: store.settings?.store_phone || '',
-      store_website: store.website_url || '',
+      store_website: store.settings?.store_website || '',
       current_year: new Date().getFullYear()
     };
   }
@@ -273,7 +273,7 @@ class PDFService {
       store_postal_code: store.settings?.store_postal_code || '',
       store_email: store.settings?.store_email || '',
       store_phone: store.settings?.store_phone || '',
-      store_website: store.website_url || '',
+      store_website: store.settings?.store_website || '',
       current_year: new Date().getFullYear()
     };
   }
@@ -308,7 +308,7 @@ class PDFService {
       <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
         <p style="margin: 5px 0;">Thank you for your business!</p>
         <p style="margin: 5px 0;">
-          ${store.name || ''} | ${store.website_url || store.contact_email || ''}
+          ${store.name || ''} | ${store.settings?.store_website || store.settings?.store_email || ''}
         </p>
         <p style="margin: 5px 0;">© ${currentYear} ${store.name || ''}. All rights reserved.</p>
       </div>

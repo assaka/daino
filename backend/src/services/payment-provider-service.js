@@ -64,8 +64,8 @@ class PaymentProviderService {
     console.log('💳 Processing Stripe refund for order:', order.order_number);
 
     const stripeOptions = {};
-    if (store?.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
+    if (store?.settings?.stripe_account_id) {
+      stripeOptions.stripeAccount = store.settings.stripe_account_id;
     }
 
     const refundParams = {
