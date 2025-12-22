@@ -38,7 +38,7 @@ const masterEmailHeader = (options = {}) => {
     <!-- Email Header - Clean white background -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
-        <td style="padding: 5px; text-align: center;">
+        <td style="padding: 10px 5px 5px; text-align: center;">
           <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 50px; height: auto;" /><br/>
           <h1 style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">
             DainoStore
@@ -985,7 +985,7 @@ const pauseAccessApprovedEmail = (data) => {
         <td style="padding: 20px;">
 
           <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-            Great news! Your request to access <strong>${storeName}</strong> has been approved.
+            Great news! Your request to access <strong>${storeName}</strong> has (already) been approved.
           </p>
 
           ${expiresDate ? `
