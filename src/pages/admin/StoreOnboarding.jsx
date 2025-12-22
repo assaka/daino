@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CountrySelect } from '@/components/ui/country-select';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
   CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info, LogOut
@@ -45,7 +46,7 @@ export default function StoreOnboarding() {
   const [needsServiceKey, setNeedsServiceKey] = useState(false);
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
-  const [profileData, setProfileData] = useState({ phone: '', companyName: '', storeEmail: '' });
+  const [profileData, setProfileData] = useState({ phone: '', country: '', storeEmail: '' });
   const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
   const [hasExistingStores, setHasExistingStores] = useState(false);
   const [provisionDemoData, setProvisionDemoData] = useState(true);
@@ -353,16 +354,19 @@ export default function StoreOnboarding() {
         // Continue anyway - user can update profile later from settings
       }
 
-      // Update store settings (email and phone) if provided
-      const storeSettingsUpdate = {};
-      if (profileData.storeEmail) storeSettingsUpdate.store_email = profileData.storeEmail;
-      if (profileData.phone) storeSettingsUpdate.store_phone = profileData.phone;
-
-      if (Object.keys(storeSettingsUpdate).length > 0 && storeId) {
+      // Update store settings and fields if provided
+      if (storeId) {
         try {
-          await StoreEntity.updateSettings(storeId, {
-            settings: storeSettingsUpdate
-          });
+          const storeUpdate = {};
+          // Root-level store fields
+          if (profileData.phone) storeUpdate.contact_phone = profileData.phone;
+          if (profileData.country) storeUpdate.country = profileData.country;
+          // Settings nested object
+          if (profileData.storeEmail) storeUpdate.settings = { store_email: profileData.storeEmail };
+
+          if (Object.keys(storeUpdate).length > 0) {
+            await StoreEntity.updateSettings(storeId, storeUpdate);
+          }
         } catch (storeUpdateError) {
           // Continue anyway - user can update store settings later
         }
@@ -729,17 +733,16 @@ export default function StoreOnboarding() {
             <form onSubmit={handleCompleteProfile} className="space-y-6">
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <p className="text-sm text-gray-600">
-                  Complete your profile information to personalize your experience. All fields are optional.
+                  Complete your store information. Country is required for tax and shipping configuration.
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="companyName">Company / Business Name <span className="text-gray-400 text-sm">(optional)</span></Label>
-                <Input
-                  id="companyName"
-                  placeholder="Acme Inc."
-                  value={profileData.companyName}
-                  onChange={(e) => setProfileData({ ...profileData, companyName: e.target.value })}
+                <Label htmlFor="country">Country <span className="text-red-500">*</span></Label>
+                <CountrySelect
+                  id="country"
+                  value={profileData.country}
+                  onChange={(country) => setProfileData({ ...profileData, country })}
                   className="mt-2"
                 />
               </div>
@@ -775,7 +778,7 @@ export default function StoreOnboarding() {
                 <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading}>
+                <Button type="submit" className="flex-1" disabled={loading || !profileData.country}>
                   {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : <>Complete Setup <Sparkles className="w-4 h-4 ml-2" /></>}
                 </Button>
               </div>
