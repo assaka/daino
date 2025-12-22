@@ -251,12 +251,14 @@ const ProductGallery = createSlotComponent({
   name: 'ProductGallerySlot',
 
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
-    // Get settings from variableContext
-    const settings = variableContext?.settings || {};
+    // Get settings from productContext first (fresh from StoreProvider), then variableContext
+    const contextSettings = productContext?.settings || {};
+    const variableSettings = variableContext?.settings || {};
 
-    const galleryLayout = settings.product_gallery_layout || 'horizontal';
-    const verticalPosition = settings.vertical_gallery_position || 'left';
-    const mobileLayout = settings.mobile_gallery_layout || 'below';
+    // Priority: productContext.settings > variableContext.settings > defaults
+    const galleryLayout = contextSettings?.product_gallery_layout || variableSettings?.product_gallery_layout || 'horizontal';
+    const verticalPosition = contextSettings?.vertical_gallery_position || variableSettings?.vertical_gallery_position || 'left';
+    const mobileLayout = contextSettings?.mobile_gallery_layout || variableSettings?.mobile_gallery_layout || 'below';
     const isVertical = galleryLayout === 'vertical';
 
     // For storefront, get state from productContext
