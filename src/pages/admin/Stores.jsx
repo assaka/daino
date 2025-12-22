@@ -846,6 +846,15 @@ export default function Stores() {
                 Close
               </Button>
               <Button
+                variant="outline"
+                onClick={() => {
+                  setShowInsufficientCredits(false);
+                  navigate('/admin/billing');
+                }}
+              >
+                View Billing
+              </Button>
+              <Button
                 onClick={() => {
                   setShowInsufficientCredits(false);
                   navigate('/admin/credits');
