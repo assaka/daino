@@ -343,15 +343,25 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      // Try to update profile (optional - user might not exist in tenant DB yet)
+      // Try to update user profile (optional - user might not exist in tenant DB yet)
       try {
         await User.updateProfile({
           phone: profileData.phone,
-          company_name: profileData.companyName,
-          store_email: profileData.storeEmail || undefined  // If empty, backend will use owner email
+          company_name: profileData.companyName
         });
       } catch (updateError) {
         // Continue anyway - user can update profile later from settings
+      }
+
+      // Update store_email in store settings if provided
+      if (profileData.storeEmail && storeId) {
+        try {
+          await StoreEntity.updateSettings(storeId, {
+            settings: { store_email: profileData.storeEmail }
+          });
+        } catch (storeUpdateError) {
+          // Continue anyway - user can update store email later from settings
+        }
       }
 
       // Clear old store selection data before redirecting
