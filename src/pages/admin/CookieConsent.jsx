@@ -589,9 +589,14 @@ export default function CookieConsent() {
                         value={settings.banner_message}
                         onChange={(e) => {
                           const newValue = e.target.value;
-                          const updatedTranslations = { ...settings.translations };
-                          if (!updatedTranslations.en) updatedTranslations.en = {};
-                          updatedTranslations.en.banner_text = newValue;
+                          // Deep copy translations to ensure React detects changes
+                          const updatedTranslations = {
+                            ...settings.translations,
+                            en: {
+                              ...(settings.translations?.en || {}),
+                              banner_text: newValue
+                            }
+                          };
                           setSettings({
                             ...settings,
                             banner_message: newValue,
@@ -616,9 +621,13 @@ export default function CookieConsent() {
                               value={settings.accept_all_text}
                               onChange={(e) => {
                                 const newValue = e.target.value;
-                                const updatedTranslations = { ...settings.translations };
-                                if (!updatedTranslations.en) updatedTranslations.en = {};
-                                updatedTranslations.en.accept_button_text = newValue;
+                                const updatedTranslations = {
+                                  ...settings.translations,
+                                  en: {
+                                    ...(settings.translations?.en || {}),
+                                    accept_button_text: newValue
+                                  }
+                                };
                                 setSettings({
                                   ...settings,
                                   accept_all_text: newValue,
@@ -661,9 +670,13 @@ export default function CookieConsent() {
                               value={settings.reject_all_text}
                               onChange={(e) => {
                                 const newValue = e.target.value;
-                                const updatedTranslations = { ...settings.translations };
-                                if (!updatedTranslations.en) updatedTranslations.en = {};
-                                updatedTranslations.en.reject_button_text = newValue;
+                                const updatedTranslations = {
+                                  ...settings.translations,
+                                  en: {
+                                    ...(settings.translations?.en || {}),
+                                    reject_button_text: newValue
+                                  }
+                                };
                                 setSettings({
                                   ...settings,
                                   reject_all_text: newValue,
@@ -707,9 +720,13 @@ export default function CookieConsent() {
                             value={settings.manage_preferences_text}
                             onChange={(e) => {
                               const newValue = e.target.value;
-                              const updatedTranslations = { ...settings.translations };
-                              if (!updatedTranslations.en) updatedTranslations.en = {};
-                              updatedTranslations.en.settings_button_text = newValue;
+                              const updatedTranslations = {
+                                ...settings.translations,
+                                en: {
+                                  ...(settings.translations?.en || {}),
+                                  settings_button_text: newValue
+                                }
+                              };
                               setSettings({
                                 ...settings,
                                 manage_preferences_text: newValue,
@@ -725,9 +742,13 @@ export default function CookieConsent() {
                             value={settings.privacy_policy_text}
                             onChange={(e) => {
                               const newValue = e.target.value;
-                              const updatedTranslations = { ...settings.translations };
-                              if (!updatedTranslations.en) updatedTranslations.en = {};
-                              updatedTranslations.en.privacy_policy_text = newValue;
+                              const updatedTranslations = {
+                                ...settings.translations,
+                                en: {
+                                  ...(settings.translations?.en || {}),
+                                  privacy_policy_text: newValue
+                                }
+                              };
                               setSettings({
                                 ...settings,
                                 privacy_policy_text: newValue,
