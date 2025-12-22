@@ -26,6 +26,10 @@ const MasterStore = require('../models/master/MasterStore');
 const StoreDatabase = require('../models/master/StoreDatabase');
 const StoreHostname = require('../models/master/StoreHostname');
 const SupabaseIntegration = require('../services/supabase-integration');
+const creditService = require('../services/credit-service');
+
+// Minimum credits required to set a store to running (published)
+const MINIMUM_CREDITS_TO_RUN = 10;
 
 /**
  * Check if a database URL is already being used by another store
@@ -1768,6 +1772,18 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       }
     }
 
+    // Check if trying to set store to running (published = true)
+    // Require minimum credits to publish/run a store
+    if (masterUpdates.published === true && !store.published) {
+      const userCredits = await creditService.getBalance(store.user_id);
+      if (userCredits < MINIMUM_CREDITS_TO_RUN) {
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient credits to run store. Required: ${MINIMUM_CREDITS_TO_RUN}, Available: ${userCredits.toFixed(2)}`
+        });
+      }
+    }
+
     let masterResult = null;
     let tenantResult = null;
 
@@ -1880,6 +1896,18 @@ router.put('/:id', authMiddleware, async (req, res) => {
         masterUpdates[key] = value;
       } else {
         tenantUpdates[key] = value;
+      }
+    }
+
+    // Check if trying to set store to running (published = true)
+    // Require minimum credits to publish/run a store
+    if (masterUpdates.published === true && !store.published) {
+      const userCredits = await creditService.getBalance(store.user_id);
+      if (userCredits < MINIMUM_CREDITS_TO_RUN) {
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient credits to run store. Required: ${MINIMUM_CREDITS_TO_RUN}, Available: ${userCredits.toFixed(2)}`
+        });
       }
     }
 
