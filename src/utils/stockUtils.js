@@ -184,7 +184,10 @@
  */
 export function getStockLabel(product, settings = {}, lang = null, globalTranslations = null) {
   // Check if stock labels should be shown at all
-  const showStockLabel = settings?.stock_settings?.show_stock_label !== false;
+  // Check both top-level path (from ThemeLayout) and nested path (from StockSettings) for backwards compatibility
+  const showStockLabel = settings?.show_stock_label !== undefined
+    ? settings.show_stock_label
+    : (settings?.stock_settings?.show_stock_label !== false);
   if (!showStockLabel) return null;
 
   if (!product) return null;

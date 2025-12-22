@@ -651,6 +651,8 @@ export function UnifiedSlotRenderer({
 
   // Format products for category templates (same format as CategorySlotRenderer)
   const currencySymbol = categoryData?.settings?.currency_symbol || productData?.settings?.currency_symbol;
+  // Check if currency should be hidden on category page
+  const hideCurrencyCategory = categoryData?.settings?.hide_currency_category === true;
   const formattedProducts = (categoryData?.products || []).map(product => {
     const price = parseFloat(product.price || 0);
     const comparePrice = parseFloat(product.compare_price || 0);
@@ -659,18 +661,21 @@ export function UnifiedSlotRenderer({
     const lowestPrice = hasValidComparePrice ? Math.min(price, comparePrice) : price;
     const highestPrice = hasValidComparePrice ? Math.max(price, comparePrice) : price;
 
+    // When hide_currency_category is enabled, use price numbers without currency
+    const formatPriceForDisplay = hideCurrencyCategory ? formatPriceNumber : formatPrice;
+
     return {
       ...product,
-      // Formatted prices for template
-      price_formatted: hasValidComparePrice ? formatPrice(comparePrice) : formatPrice(price),
-      compare_price_formatted: hasValidComparePrice ? formatPrice(price) : '',
+      // Formatted prices for template (respects hide_currency_category setting)
+      price_formatted: hasValidComparePrice ? formatPriceForDisplay(comparePrice) : formatPriceForDisplay(price),
+      compare_price_formatted: hasValidComparePrice ? formatPriceForDisplay(price) : '',
       // Price numbers without currency (for conditional currency display)
       price_number: hasValidComparePrice ? formatPriceNumber(comparePrice) : formatPriceNumber(price),
       compare_price_number: hasValidComparePrice ? formatPriceNumber(price) : '',
-      lowest_price_formatted: formatPrice(lowestPrice),
-      highest_price_formatted: formatPrice(highestPrice),
-      formatted_price: formatPrice(price),
-      formatted_compare_price: hasValidComparePrice ? formatPrice(comparePrice) : null,
+      lowest_price_formatted: formatPriceForDisplay(lowestPrice),
+      highest_price_formatted: formatPriceForDisplay(highestPrice),
+      formatted_price: formatPriceForDisplay(price),
+      formatted_compare_price: hasValidComparePrice ? formatPriceForDisplay(comparePrice) : null,
       image_url: product.images?.[0]?.url || product.image_url || product.image || '',
       url: product.url || '#',
       in_stock: product.infinite_stock || product.stock_quantity > 0,
@@ -731,6 +736,8 @@ export function UnifiedSlotRenderer({
     settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
     translations: productData.translations || categorySource?.translations || null, // Translations from TranslationContext
     productLabels: productData.productLabels || categorySource?.productLabels,
+    // Wishlist state for button styling
+    isInWishlist: productData.isInWishlist || false,
     // Product-specific data
     customOptions: productData.customOptions || [],
     customOptionsLabel: productData.customOptionsLabel || 'Custom Options',
@@ -1121,6 +1128,16 @@ export function UnifiedSlotRenderer({
         // Clear the background color style for out-of-stock (uses class instead)
         buttonStyles = { ...processedStyles };
         delete buttonStyles.backgroundColor;
+      }
+
+      // Handle wishlist button state - change appearance when product is in wishlist
+      const isWishlistButton = id === 'wishlist_button';
+      const isInWishlist = variableContext?.isInWishlist || productData?.isInWishlist;
+      if (isWishlistButton && isInWishlist) {
+        // Change to filled heart and red color when in wishlist
+        buttonContent = '❤️';
+        buttonClassName = (buttonClassName || '') + ' text-red-500';
+        buttonStyles = { ...buttonStyles, color: '#ef4444' };
       }
 
       // Check if button content contains HTML

@@ -9,6 +9,7 @@ import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getPrimaryImageUrl } from '@/utils/imageUtils';
 // React Query hooks for optimized wishlist management
 import { useWishlist, useRemoveFromWishlist } from '@/hooks/useApiQueries';
 
@@ -16,13 +17,13 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
   const { t } = useTranslation();
   const { store, wishlist: bootstrapWishlist } = useStore();
 
-  // Use bootstrap wishlist if available (no API call!), otherwise use React Query
-  const shouldFetchWishlist = !bootstrapWishlist || bootstrapWishlist.length === 0;
-  const { data: fetchedWishlist = [], isLoading, refetch } = useWishlist(store?.id, { enabled: shouldFetchWishlist });
+  // Always fetch wishlist to stay in sync - React Query will deduplicate
+  const { data: fetchedWishlist = [], isLoading, refetch } = useWishlist(store?.id);
   const removeFromWishlist = useRemoveFromWishlist();
 
-  // Use bootstrap wishlist first, fallback to fetched
-  const wishlistData = bootstrapWishlist || fetchedWishlist;
+  // Use fetched data (React Query) as it stays in sync, fallback to bootstrap only on initial load
+  // fetchedWishlist is kept in sync by React Query cache invalidation
+  const wishlistData = fetchedWishlist.length > 0 ? fetchedWishlist : (bootstrapWishlist || []);
 
   const [wishlistItems, setWishlistItems] = useState([]);
 
@@ -138,7 +139,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
               {wishlistItems.map(item => (
                 <div key={item.id} className="flex items-center space-x-3 py-2 border-b border-gray-200">
                   <img
-                    src={item.product?.images?.[0] || 'https://placehold.co/50x50?text=No+Image'}
+                    src={getPrimaryImageUrl(item.product?.images) || 'https://placehold.co/50x50?text=No+Image'}
                     alt={item.product?.name}
                     className="w-12 h-12 object-cover rounded"
                   />
