@@ -398,6 +398,7 @@ app.use('/api/public/attribute-sets', attributeSetRoutes);
 app.use('/api/public/seo-templates', seoTemplateRoutes);
 app.use('/api/public/seo-settings', seoSettingsRoutes);
 app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
+app.use('/api/public/pause-access', storePauseAccessRoutes); // Public endpoints for pause access requests
 // Use dedicated working route for public CMS blocks
 app.use('/api/public/cms-blocks', publicCmsBlocksRoutes);
 app.use('/api/public/cms-pages', publicCmsPagesRoutes);
