@@ -11,6 +11,8 @@ import { useStore } from './StoreProvider';
 import { getCurrentLanguage } from '@/utils/translationUtils';
 import { createCmsPageUrl } from '@/utils/urlUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { getUserDataForRole } from '@/utils/auth';
 
 const getUserCountry = async () => {
   // Check cache first (24-hour localStorage cache)
@@ -50,7 +52,17 @@ const getSessionId = () => {
 export default function CookieConsentBanner() {
   const { store, settings } = useStore();
   const { t } = useTranslation();
+  const { isPreviewDraftMode } = usePreviewMode();
   const [showBanner, setShowBanner] = useState(false);
+
+  // Check if store is paused (same logic as PausedStoreOverlay)
+  const hasStoreOwnerToken = typeof window !== 'undefined' && !!localStorage.getItem('store_owner_auth_token');
+  const storeOwnerData = hasStoreOwnerToken ? (getUserDataForRole('store_owner') || getUserDataForRole('admin')) : null;
+  const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isInPreviewModeFromUrl = urlParams?.get('version') === 'published' || urlParams?.get('mode') === 'workspace';
+  const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
+  const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
   const [showPreferences, setShowPreferences] = useState(false);
   const [userCountry, setUserCountry] = useState('US');
   const [selectedCategories, setSelectedCategories] = useState({});
@@ -215,7 +227,8 @@ export default function CookieConsentBanner() {
     }));
   };
 
-  if (!showBanner || !settings?.cookie_consent?.enabled) {
+  // Hide banner when store is paused (pause modal is shown) or when not enabled
+  if (!showBanner || !settings?.cookie_consent?.enabled || isStorePaused) {
     return null;
   }
 

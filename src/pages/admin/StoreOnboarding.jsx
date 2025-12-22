@@ -12,8 +12,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
-  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info
+  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info, LogOut
 } from 'lucide-react';
+import { handleLogout } from '@/utils/auth';
 import apiClient from '@/utils/api';
 import { User, Store as StoreEntity } from '@/api/entities';
 import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
@@ -383,7 +384,26 @@ export default function StoreOnboarding() {
   const StepIcon = currentStepData.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center space-x-3">
+          <img src="/logo_red.svg" alt="DainoStore" className="h-8" />
+          <span className="text-xl font-bold text-gray-900">DainoStore</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="text-gray-600 hover:text-gray-900"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Logout
+        </Button>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-3xl shadow-2xl relative">
         {/* Cancel Button - always show for users who can go back to stores */}
         <Button
@@ -749,6 +769,7 @@ export default function StoreOnboarding() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

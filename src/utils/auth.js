@@ -187,6 +187,8 @@ export const clearRoleBasedAuthData = (role) => {
     localStorage.removeItem('admin_preferences');
     localStorage.removeItem('dashboard_state');
     localStorage.removeItem('store_management_cache');
+    // Clear preview mode state - prevents stale preview bypassing pause modal
+    localStorage.removeItem('daino_preview_mode');
   }
 };
 
