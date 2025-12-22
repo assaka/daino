@@ -403,7 +403,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       sortOrderType: typeof req.body.sort_order
     });
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
     if (!store_id) {
       return res.status(400).json({
