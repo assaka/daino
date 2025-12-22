@@ -149,7 +149,7 @@ import cartService from '@/services/cartService';
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice, formatPriceNumber, safeNumber } from '@/utils/priceUtils';
-import ProductLabelComponent from '@/components/storefront/ProductLabel';
+import ProductLabelComponent, { ProductLabelsContainer } from '@/components/storefront/ProductLabel';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 // Import component registry to ensure all components are registered
@@ -161,6 +161,7 @@ export { createSlotComponent, ComponentRegistry, registerSlotComponent } from '.
 /**
  * Helper function to render product labels for a product
  * Used for rendering labels on product card images in category pages
+ * All matching labels are shown in a flex container at top-left
  */
 const renderProductLabels = (product, productLabels = []) => {
   if (!product || !productLabels || productLabels.length === 0) return null;
@@ -171,14 +172,14 @@ const renderProductLabels = (product, productLabels = []) => {
 
     if (label.conditions && Object.keys(label.conditions).length > 0) {
       // Check product_ids condition
-      if (shouldShow && label.conditions.product_ids?.length > 0) {
+      if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
         if (!label.conditions.product_ids.includes(product.id)) {
           shouldShow = false;
         }
       }
 
       // Check category_ids condition
-      if (shouldShow && label.conditions.category_ids?.length > 0) {
+      if (shouldShow && label.conditions.category_ids && Array.isArray(label.conditions.category_ids) && label.conditions.category_ids.length > 0) {
         if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
           shouldShow = false;
         }
@@ -205,7 +206,7 @@ const renderProductLabels = (product, productLabels = []) => {
       }
 
       // Check attribute conditions
-      if (shouldShow && label.conditions.attribute_conditions?.length > 0) {
+      if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
         const attributeMatch = label.conditions.attribute_conditions.every(cond => {
           if (product.attributes && Array.isArray(product.attributes)) {
             const attr = product.attributes.find(a => a.code === cond.attribute_code);
@@ -223,29 +224,24 @@ const renderProductLabels = (product, productLabels = []) => {
     return shouldShow;
   });
 
-  // Group labels by position and take highest priority for each
-  const labelsByPosition = matchingLabels.reduce((acc, label) => {
-    const position = label.position || 'top-right';
-    if (!acc[position]) acc[position] = [];
-    acc[position].push(label);
-    return acc;
-  }, {});
+  if (matchingLabels.length === 0) return null;
 
-  const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
-    const sorted = positionLabels.sort((a, b) => {
-      if ((a.sort_order || 0) !== (b.sort_order || 0)) {
-        return (a.sort_order || 0) - (b.sort_order || 0);
-      }
-      return (b.priority || 0) - (a.priority || 0);
-    });
-    return sorted[0];
-  }).filter(Boolean);
+  // Sort by sort_order then priority
+  const sortedLabels = matchingLabels.sort((a, b) => {
+    if ((a.sort_order || 0) !== (b.sort_order || 0)) {
+      return (a.sort_order || 0) - (b.sort_order || 0);
+    }
+    return (b.priority || 0) - (a.priority || 0);
+  });
 
-  if (labelsToShow.length === 0) return null;
-
-  return labelsToShow.map(label => (
-    <ProductLabelComponent key={label.id} label={label} />
-  ));
+  // Render all labels in a flex container
+  return (
+    <ProductLabelsContainer position="top-left">
+      {sortedLabels.map(label => (
+        <ProductLabelComponent key={label.id} label={label} />
+      ))}
+    </ProductLabelsContainer>
+  );
 };
 
 /**
@@ -731,15 +727,6 @@ export function UnifiedSlotRenderer({
   // This ensures both editor and storefront use the same data format
   const categorySource = preprocessedData || categoryData;
 
-  // Debug: Log what data contains
-  console.log('[DEBUG] UnifiedSlotRenderer data:', {
-    hasPreprocessedData: !!preprocessedData,
-    preprocessedProductLabels: preprocessedData?.productLabels?.length,
-    productDataProductLabels: productData?.productLabels?.length,
-    categoryDataProductLabels: categoryData?.productLabels?.length,
-    categorySourceProductLabels: categorySource?.productLabels?.length
-  });
-
   const variableContext = {
     product: formattedProduct,
     products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available
@@ -749,12 +736,6 @@ export function UnifiedSlotRenderer({
     settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
     translations: productData.translations || categorySource?.translations || null, // Translations from TranslationContext
     productLabels: productData.productLabels || categorySource?.productLabels,
-  };
-
-  console.log('[DEBUG] variableContext.productLabels after build:', variableContext.productLabels?.length);
-
-  // Continue with rest of variableContext
-  Object.assign(variableContext, {
     // Product-specific data
     customOptions: productData.customOptions || [],
     customOptionsLabel: productData.customOptionsLabel || 'Custom Options',
@@ -775,7 +756,7 @@ export function UnifiedSlotRenderer({
     clearFilters: categorySource?.clearFilters,
     // Login data for login page
     loginData: loginData
-  });
+  };
 
   /**
    * wrapWithResize - Wraps element with ResizeWrapper for visual resizing in editor
@@ -1312,9 +1293,7 @@ export function UnifiedSlotRenderer({
 
         // Get product labels for rendering on image
         const productLabels = variableContext?.productLabels || [];
-        console.log('[DEBUG] Product labels for category:', { productLabels, product: product?.name, productId: product?.id });
         const labelsToRender = renderProductLabels(product, productLabels);
-        console.log('[DEBUG] Labels to render:', labelsToRender);
 
         return (
           <Link to={productUrl} className="block relative">
