@@ -127,15 +127,19 @@ export async function fetchCookieConsentSettings(storeId) {
       const cookieSettings = cookieConsentData[0];
 
       // Map backend cookie settings to frontend format
+      // DEPRECATED fields in main table: banner_text, accept_button_text, reject_button_text,
+      // settings_button_text, privacy_policy_text, translations (JSONB)
+      // All text fields now come from cookie_consent_settings_translations table only
+      const translations = cookieSettings.translations || {};
       return {
         enabled: cookieSettings.is_enabled || false,
         gdpr_mode: cookieSettings.gdpr_mode ?? true,
         auto_detect_country: cookieSettings.auto_detect_country ?? true,
-        banner_message: cookieSettings.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
-        accept_all_text: cookieSettings.accept_button_text || "Accept All",
-        reject_all_text: cookieSettings.reject_button_text || "Reject All",
-        manage_preferences_text: cookieSettings.settings_button_text || "Cookie Settings",
-        privacy_policy_text: cookieSettings.privacy_policy_text || "Privacy Policy",
+        banner_message: translations.en?.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+        accept_all_text: translations.en?.accept_button_text || "Accept All",
+        reject_all_text: translations.en?.reject_button_text || "Reject All",
+        manage_preferences_text: translations.en?.settings_button_text || "Cookie Settings",
+        privacy_policy_text: translations.en?.privacy_policy_text || "Privacy Policy",
         privacy_policy_url: cookieSettings.privacy_policy_url || "/privacy-policy",
         banner_position: cookieSettings.banner_position || "bottom",
         show_close_button: cookieSettings.show_close_button ?? true,
@@ -146,7 +150,7 @@ export async function fetchCookieConsentSettings(storeId) {
         reject_button_text_color: cookieSettings.reject_button_text_color || '#374151',
         save_preferences_button_bg_color: cookieSettings.save_preferences_button_bg_color || '#16a34a',
         save_preferences_button_text_color: cookieSettings.save_preferences_button_text_color || '#ffffff',
-        translations: cookieSettings.translations || {},
+        translations,
         categories: cookieSettings.categories || [
           {
             id: "necessary",

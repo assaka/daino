@@ -159,11 +159,9 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
         store_id: settingsData.store_id,
         is_enabled: settingsData.is_enabled !== false,
         banner_position: settingsData.banner_position || 'bottom',
-        banner_text: settingsData.banner_text || '',
+        // DEPRECATED: banner_text, accept_button_text, reject_button_text, settings_button_text,
+        // privacy_policy_text, translations - use cookie_consent_settings_translations table instead
         privacy_policy_url: settingsData.privacy_policy_url || '',
-        accept_button_text: settingsData.accept_button_text || 'Accept All',
-        reject_button_text: settingsData.reject_button_text || 'Reject All',
-        settings_button_text: settingsData.settings_button_text || 'Cookie Settings',
         necessary_cookies: settingsData.necessary_cookies !== false,
         analytics_cookies: settingsData.analytics_cookies || false,
         marketing_cookies: settingsData.marketing_cookies || false,
@@ -177,7 +175,6 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
         audit_enabled: settingsData.audit_enabled !== false,
         consent_expiry_days: settingsData.consent_expiry_days || 365,
         show_close_button: settingsData.show_close_button !== false,
-        privacy_policy_text: settingsData.privacy_policy_text || 'Privacy Policy',
         categories: settingsData.categories || {},
         gdpr_countries: settingsData.gdpr_countries || [],
         google_analytics_id: settingsData.google_analytics_id || null,
@@ -255,13 +252,14 @@ async function updateCookieConsentSettingsWithTranslations(storeId, id, settings
     // Build update object
     const updateData = {};
 
+    // DEPRECATED: banner_text, accept_button_text, reject_button_text, settings_button_text,
+    // privacy_policy_text, translations - use cookie_consent_settings_translations table instead
     const fields = [
-      'is_enabled', 'banner_position', 'banner_text', 'privacy_policy_url',
-      'accept_button_text', 'reject_button_text', 'settings_button_text',
+      'is_enabled', 'banner_position', 'privacy_policy_url',
       'necessary_cookies', 'analytics_cookies', 'marketing_cookies', 'functional_cookies',
       'theme', 'primary_color', 'background_color', 'text_color',
       'gdpr_mode', 'auto_detect_country', 'audit_enabled', 'consent_expiry_days',
-      'show_close_button', 'privacy_policy_text', 'categories', 'gdpr_countries',
+      'show_close_button', 'categories', 'gdpr_countries',
       'google_analytics_id', 'google_tag_manager_id', 'custom_css',
       'accept_button_bg_color', 'accept_button_text_color',
       'reject_button_bg_color', 'reject_button_text_color',

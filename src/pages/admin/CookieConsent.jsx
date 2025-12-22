@@ -57,8 +57,10 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 const mapBackendToFrontend = (backendSettings) => {
   if (!backendSettings) return null;
 
-  // Handle translations with backward compatibility
-  let translations = backendSettings.translations || {};
+  // All text fields come from cookie_consent_settings_translations table
+  // DEPRECATED fields in main table: banner_text, accept_button_text, reject_button_text,
+  // settings_button_text, privacy_policy_text, translations (JSONB)
+  const translations = backendSettings.translations || {};
 
   // Get categories for translation initialization
   const categories = backendSettings.categories || [
@@ -68,29 +70,27 @@ const mapBackendToFrontend = (backendSettings) => {
     { id: "functional", name: "Functional Cookies", description: "These cookies enable enhanced functionality and personalization." }
   ];
 
-  // Ensure English translation exists (backward compatibility)
-  if (!translations.en || (!translations.en.banner_text && backendSettings.banner_text)) {
+  // Initialize English translation with defaults if not present
+  if (!translations.en) {
     translations.en = {
-      banner_text: backendSettings.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
-      accept_button_text: backendSettings.accept_button_text || "Accept All",
-      reject_button_text: backendSettings.reject_button_text || "Reject All",
-      settings_button_text: backendSettings.settings_button_text || "Cookie Settings",
-      save_preferences_button_text: backendSettings.save_preferences_button_text || "Save Preferences",
-      privacy_policy_text: backendSettings.privacy_policy_text || "Privacy Policy"
+      banner_text: "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+      accept_button_text: "Accept All",
+      reject_button_text: "Reject All",
+      settings_button_text: "Cookie Settings",
+      save_preferences_button_text: "Save Preferences",
+      privacy_policy_text: "Privacy Policy"
     };
   }
 
-  // Ensure category translations exist in English (backward compatibility)
-  if (translations.en) {
-    categories.forEach(category => {
-      if (!translations.en[`${category.id}_name`]) {
-        translations.en[`${category.id}_name`] = category.name;
-      }
-      if (!translations.en[`${category.id}_description`]) {
-        translations.en[`${category.id}_description`] = category.description;
-      }
-    });
-  }
+  // Ensure category translations exist in English
+  categories.forEach(category => {
+    if (!translations.en[`${category.id}_name`]) {
+      translations.en[`${category.id}_name`] = category.name;
+    }
+    if (!translations.en[`${category.id}_description`]) {
+      translations.en[`${category.id}_description`] = category.description;
+    }
+  });
 
   return {
     id: backendSettings.id,
@@ -99,11 +99,12 @@ const mapBackendToFrontend = (backendSettings) => {
     gdpr_mode: backendSettings.gdpr_mode ?? true,
     auto_detect_country: backendSettings.auto_detect_country ?? true,
     audit_enabled: backendSettings.audit_enabled ?? true,
-    banner_message: backendSettings.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
-    accept_all_text: backendSettings.accept_button_text || "Accept All",
-    reject_all_text: backendSettings.reject_button_text || "Reject All",
-    manage_preferences_text: backendSettings.settings_button_text || "Cookie Settings",
-    privacy_policy_text: backendSettings.privacy_policy_text || "Privacy Policy",
+    // All text fields now come from translations only
+    banner_message: translations.en?.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+    accept_all_text: translations.en?.accept_button_text || "Accept All",
+    reject_all_text: translations.en?.reject_button_text || "Reject All",
+    manage_preferences_text: translations.en?.settings_button_text || "Cookie Settings",
+    privacy_policy_text: translations.en?.privacy_policy_text || "Privacy Policy",
     privacy_policy_url: backendSettings.privacy_policy_url || "/privacy-policy",
     banner_position: backendSettings.banner_position || "bottom",
     show_close_button: backendSettings.show_close_button ?? true,
@@ -168,12 +169,9 @@ const mapFrontendToBackend = (frontendSettings) => {
     id: frontendSettings.id,
     store_id: frontendSettings.store_id,
     is_enabled: frontendSettings.enabled || false,
-    banner_text: frontendSettings.banner_message,
-    accept_button_text: frontendSettings.accept_all_text,
-    reject_button_text: frontendSettings.reject_all_text,
-    settings_button_text: frontendSettings.manage_preferences_text,
+    // DEPRECATED: banner_text, accept_button_text, reject_button_text, settings_button_text,
+    // privacy_policy_text, translations (JSONB) - all text fields now in translations table only
     privacy_policy_url: frontendSettings.privacy_policy_url,
-    privacy_policy_text: frontendSettings.privacy_policy_text,
     banner_position: frontendSettings.banner_position,
     consent_expiry_days: frontendSettings.consent_expiry_days,
     show_close_button: frontendSettings.show_close_button,
