@@ -11,7 +11,32 @@ const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
 /**
- * Get product labels with translations from JSONB column
+ * Get translations for a product label from the translations table
+ */
+async function getLabelTranslations(tenantDb, labelId) {
+  const { data: translations, error } = await tenantDb
+    .from('product_label_translations')
+    .select('*')
+    .eq('product_label_id', labelId);
+
+  if (error) {
+    console.error('Error fetching label translations:', error);
+    return {};
+  }
+
+  // Convert array to object keyed by language_code
+  const translationsObj = {};
+  (translations || []).forEach(t => {
+    translationsObj[t.language_code] = {
+      name: t.name,
+      text: t.text
+    };
+  });
+  return translationsObj;
+}
+
+/**
+ * Get product labels with translations from separate table
  */
 async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en', allTranslations = false) {
   // Build query for product labels using Supabase syntax
@@ -32,17 +57,40 @@ async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en
 
   if (!labels || labels.length === 0) return [];
 
+  // Fetch translations for all labels
+  const labelIds = labels.map(l => l.id);
+  const { data: allTrans, error: transError } = await tenantDb
+    .from('product_label_translations')
+    .select('*')
+    .in('product_label_id', labelIds);
+
+  if (transError) {
+    console.error('Error fetching translations:', transError);
+  }
+
+  // Group translations by label id
+  const transByLabelId = {};
+  (allTrans || []).forEach(t => {
+    if (!transByLabelId[t.product_label_id]) {
+      transByLabelId[t.product_label_id] = {};
+    }
+    transByLabelId[t.product_label_id][t.language_code] = {
+      name: t.name,
+      text: t.text
+    };
+  });
+
   if (allTranslations) {
-    // Return labels with translations object as-is from JSONB column
+    // Return labels with translations object
     return labels.map(label => ({
       ...label,
-      translations: label.translations || {}
+      translations: transByLabelId[label.id] || {}
     }));
   }
 
   // Single language mode - merge translation into label fields
   return labels.map(label => {
-    const trans = label.translations || {};
+    const trans = transByLabelId[label.id] || {};
     const reqLang = trans[lang];
     const enLang = trans['en'];
 
@@ -55,7 +103,7 @@ async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en
 }
 
 /**
- * Get single product label with ALL translations from JSONB column
+ * Get single product label with ALL translations from separate table
  */
 async function getProductLabelWithAllTranslations(tenantDb, id) {
   const { data: label, error } = await tenantDb
@@ -67,23 +115,27 @@ async function getProductLabelWithAllTranslations(tenantDb, id) {
   if (error) throw new Error(error.message);
   if (!label) return null;
 
-  // Ensure translations object exists
+  // Get translations from separate table
+  const translations = await getLabelTranslations(tenantDb, id);
+
   return {
     ...label,
-    translations: label.translations || {}
+    translations
   };
 }
 
 /**
- * Create product label with translations stored in JSONB column
+ * Create product label with translations in separate table
  */
 async function createProductLabelWithTranslations(tenantDb, labelData, translations = {}) {
-  // Insert product label with translations JSONB
   const now = new Date().toISOString();
+  const labelId = uuidv4();
+
+  // Insert product label (no translations column)
   const { data: label, error: insertError } = await tenantDb
     .from('product_labels')
     .insert({
-      id: uuidv4(),
+      id: labelId,
       store_id: labelData.store_id,
       name: labelData.name || '',
       slug: labelData.slug,
@@ -95,7 +147,6 @@ async function createProductLabelWithTranslations(tenantDb, labelData, translati
       sort_order: labelData.sort_order || 0,
       is_active: labelData.is_active !== false,
       conditions: labelData.conditions || {},
-      translations: translations,
       created_at: now,
       updated_at: now
     })
@@ -104,42 +155,41 @@ async function createProductLabelWithTranslations(tenantDb, labelData, translati
 
   if (insertError) throw new Error(insertError.message);
 
+  // Insert translations into separate table
+  for (const [langCode, data] of Object.entries(translations)) {
+    if (data && (data.name || data.text)) {
+      const { error: transError } = await tenantDb
+        .from('product_label_translations')
+        .insert({
+          product_label_id: labelId,
+          language_code: langCode,
+          name: data.name || '',
+          text: data.text || '',
+          created_at: now,
+          updated_at: now
+        });
+
+      if (transError) {
+        console.error(`Error inserting translation for ${langCode}:`, transError);
+      }
+    }
+  }
+
   return {
     ...label,
-    translations: label.translations || {}
+    translations
   };
 }
 
 /**
- * Update product label with translations stored in JSONB column
+ * Update product label with translations in separate table
  */
 async function updateProductLabelWithTranslations(tenantDb, id, labelData, translations = {}) {
-  // First get existing label to merge translations
-  const { data: existingLabel } = await tenantDb
-    .from('product_labels')
-    .select('translations')
-    .eq('id', id)
-    .single();
+  const now = new Date().toISOString();
 
-  // Merge existing translations with new ones
-  const existingTranslations = existingLabel?.translations || {};
-  const mergedTranslations = { ...existingTranslations };
-
-  // Update/add each language translation
-  for (const [langCode, data] of Object.entries(translations)) {
-    if (data && (data.name !== undefined || data.text !== undefined)) {
-      mergedTranslations[langCode] = {
-        ...(mergedTranslations[langCode] || {}),
-        ...data
-      };
-      console.log('🔍 Updating product label translation:', { langCode, data });
-    }
-  }
-
-  // Build update object
+  // Build update object for main label (no translations column)
   const updateData = {
-    updated_at: new Date().toISOString(),
-    translations: mergedTranslations
+    updated_at: now
   };
 
   if (labelData.name !== undefined) updateData.name = labelData.name;
@@ -163,9 +213,58 @@ async function updateProductLabelWithTranslations(tenantDb, id, labelData, trans
 
   if (updateError) throw new Error(updateError.message);
 
+  // Update translations in separate table (upsert pattern)
+  for (const [langCode, data] of Object.entries(translations)) {
+    if (data && (data.name !== undefined || data.text !== undefined)) {
+      // Check if translation exists
+      const { data: existing } = await tenantDb
+        .from('product_label_translations')
+        .select('product_label_id')
+        .eq('product_label_id', id)
+        .eq('language_code', langCode)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const { error: transError } = await tenantDb
+          .from('product_label_translations')
+          .update({
+            name: data.name || '',
+            text: data.text || '',
+            updated_at: now
+          })
+          .eq('product_label_id', id)
+          .eq('language_code', langCode);
+
+        if (transError) {
+          console.error(`Error updating translation for ${langCode}:`, transError);
+        }
+      } else {
+        // Insert new
+        const { error: transError } = await tenantDb
+          .from('product_label_translations')
+          .insert({
+            product_label_id: id,
+            language_code: langCode,
+            name: data.name || '',
+            text: data.text || '',
+            created_at: now,
+            updated_at: now
+          });
+
+        if (transError) {
+          console.error(`Error inserting translation for ${langCode}:`, transError);
+        }
+      }
+    }
+  }
+
+  // Get updated translations
+  const updatedTranslations = await getLabelTranslations(tenantDb, id);
+
   return {
     ...label,
-    translations: label.translations || {}
+    translations: updatedTranslations
   };
 }
 
