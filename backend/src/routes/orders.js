@@ -1603,12 +1603,11 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       });
     }
 
-    // Load store - use store_id from request (already validated) or fall back to order's store_id
-    const storeIdToLookup = store_id || order.store_id;
+    // Load store - use store_id from request (already validated)
     const { data: store } = await masterDbClient
       .from('stores')
       .select('id, name, user_id')
-      .eq('id', storeIdToLookup)
+      .eq('id', store_id)
       .maybeSingle();
 
     if (!store) {
