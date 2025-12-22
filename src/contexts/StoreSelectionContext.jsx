@@ -131,6 +131,8 @@ export const StoreSelectionProvider = ({ children }) => {
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
             localStorage.setItem('selectedStoreStatus', savedStore.status || '');
             localStorage.setItem('selectedStoreThemePreset', savedStore.theme_preset || '');
+            // Dispatch event to notify Layout to reload navigation
+            window.dispatchEvent(new CustomEvent('storeSelectionChanged', { detail: { store: savedStore } }));
           } else {
             // Saved store is not active and not pending_database - clear it and select first active store
             localStorage.removeItem('selectedStoreId');
@@ -149,6 +151,8 @@ export const StoreSelectionProvider = ({ children }) => {
               localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
               localStorage.setItem('selectedStoreStatus', firstActiveStore.status || '');
               localStorage.setItem('selectedStoreThemePreset', firstActiveStore.theme_preset || '');
+              // Dispatch event to notify Layout to reload navigation
+              window.dispatchEvent(new CustomEvent('storeSelectionChanged', { detail: { store: firstActiveStore } }));
             } else {
               // No active stores at all - clear auth and redirect to login
               localStorage.removeItem('store_owner_auth_token');
@@ -176,6 +180,8 @@ export const StoreSelectionProvider = ({ children }) => {
             localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
             localStorage.setItem('selectedStoreStatus', firstActiveStore.status || '');
             localStorage.setItem('selectedStoreThemePreset', firstActiveStore.theme_preset || '');
+            // Dispatch event to notify Layout to reload navigation
+            window.dispatchEvent(new CustomEvent('storeSelectionChanged', { detail: { store: firstActiveStore } }));
           } else {
             console.error('❌ StoreSelection: No stores available!');
           }
