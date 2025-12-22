@@ -154,7 +154,7 @@ async function buildStoreUrl({ tenantDb, storeId, storeSlug, path = '', queryPar
   } else {
     // Fallback to platform URL with store slug
     const platformUrl = process.env.PUBLIC_STORE_BASE_URL || DEFAULT_PLATFORM_URL;
-    baseUrl = `${platformUrl}/store/${storeSlug}`;
+    baseUrl = `${platformUrl}/public/${storeSlug}`;
   }
 
   // Build full URL with path and query params
@@ -188,7 +188,7 @@ function buildStoreUrlSync({ customDomain, storeSlug, path = '', queryParams = {
     baseUrl = `https://${customDomain}`;
   } else {
     const platformUrl = process.env.PUBLIC_STORE_BASE_URL || DEFAULT_PLATFORM_URL;
-    baseUrl = `${platformUrl}/store/${storeSlug}`;
+    baseUrl = `${platformUrl}/public/${storeSlug}`;
   }
 
   let fullUrl = baseUrl;
