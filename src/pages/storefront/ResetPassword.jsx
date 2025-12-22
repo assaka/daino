@@ -20,18 +20,44 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const token = searchParams.get("token");
   const email = searchParams.get("email");
 
-  // Validate we have required params
+  // Validate token on page load
   useEffect(() => {
-    if (!token) {
-      setError(t('account.reset_password_invalid_link', 'Invalid or expired reset link. Please request a new password reset.'));
-    }
-  }, [token, t]);
+    const validateToken = async () => {
+      if (!token) {
+        setError(t('account.reset_password_invalid_link', 'Invalid or expired reset link. Please request a new password reset.'));
+        setValidating(false);
+        return;
+      }
+
+      if (!store?.id) {
+        // Wait for store to load
+        return;
+      }
+
+      try {
+        const response = await CustomerAuthAPI.validateResetToken(token, store.id);
+        if (response?.valid) {
+          setTokenValid(true);
+        } else {
+          setError(response?.message || t('account.reset_password_invalid_link', 'Invalid or expired reset link. Please request a new password reset.'));
+        }
+      } catch (err) {
+        setError(t('account.reset_password_invalid_link', 'Invalid or expired reset link. Please request a new password reset.'));
+      } finally {
+        setValidating(false);
+      }
+    };
+
+    validateToken();
+  }, [token, store?.id, t]);
 
   const validatePassword = (pwd) => {
     const minLength = 8;
@@ -89,7 +115,7 @@ export default function ResetPassword() {
         setSuccess(true);
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          navigate(createPublicUrl(store?.code || '', 'LOGIN'));
+          navigate(createPublicUrl(store?.slug || '', 'LOGIN'));
         }, 3000);
       } else {
         setError(response?.message || t('account.reset_password_failed', 'Failed to reset password. Please try again.'));
@@ -100,6 +126,54 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
+
+  // Show loading while validating token
+  if (validating) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-6">
+              <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {t('account.validating_link', 'Validating reset link...')}
+            </h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if token is invalid (without the form)
+  if (!tokenValid && error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+              <AlertCircle className="h-10 w-10 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {t('account.invalid_reset_link_title', 'Invalid Reset Link')}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+            <button
+              onClick={() => navigate(createPublicUrl(store?.slug || '', 'LOGIN'))}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {t('account.back_to_login', 'Back to Login')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -152,7 +226,7 @@ export default function ResetPassword() {
           {!token ? (
             <div className="text-center">
               <button
-                onClick={() => navigate(createPublicUrl(store?.code || '', 'LOGIN'))}
+                onClick={() => navigate(createPublicUrl(store?.slug || '', 'LOGIN'))}
                 className="text-blue-600 hover:text-blue-800 font-medium"
               >
                 {t('account.back_to_login', 'Back to Login')}
@@ -241,7 +315,7 @@ export default function ResetPassword() {
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => navigate(createPublicUrl(store?.code || '', 'LOGIN'))}
+                  onClick={() => navigate(createPublicUrl(store?.slug || '', 'LOGIN'))}
                   className="text-sm text-blue-600 hover:text-blue-800"
                 >
                   {t('account.back_to_login', 'Back to Login')}

@@ -1640,6 +1640,69 @@ router.post('/customer/forgot-password', [
   }
 });
 
+// @route   POST /api/auth/customer/validate-reset-token
+// @desc    Validate password reset token before showing form
+// @access  Public
+// @note    TENANT ONLY - requires store_id
+router.post('/customer/validate-reset-token', [
+  body('token').trim().notEmpty().withMessage('Reset token is required'),
+  body('store_id').notEmpty().withMessage('Store ID is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Invalid request'
+      });
+    }
+
+    const { token, store_id } = req.body;
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find customer by reset token
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('id, email, password_reset_expires')
+      .eq('password_reset_token', token)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (!customer) {
+      return res.json({
+        success: true,
+        valid: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Check if token has expired
+    if (customer.password_reset_expires && new Date() > new Date(customer.password_reset_expires)) {
+      return res.json({
+        success: true,
+        valid: false,
+        message: 'Reset token has expired. Please request a new password reset.'
+      });
+    }
+
+    res.json({
+      success: true,
+      valid: true,
+      email: customer.email
+    });
+  } catch (error) {
+    console.error('Validate reset token error:', error);
+    res.status(500).json({
+      success: false,
+      valid: false,
+      message: 'Server error. Please try again later.'
+    });
+  }
+});
+
 // @route   POST /api/auth/customer/reset-password
 // @desc    Reset customer password with token
 // @access  Public

@@ -319,6 +319,17 @@ class CustomerAuthService {
       store_id: storeId
     });
   }
+
+  async validateResetToken(token, storeId) {
+    if (!storeId) {
+      throw new Error('Store ID is required for token validation');
+    }
+
+    return this.client.postPublic('auth/customer/validate-reset-token', {
+      token,
+      store_id: storeId
+    });
+  }
 }
 
 // Store service (public)
