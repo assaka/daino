@@ -878,6 +878,10 @@ const ProductItemsGrid = createSlotComponent({
           });
 
           // Get product labels from context
+          console.log('[DEBUG] ProductItemsGrid received:', {
+            variableContextProductLabels: variableContext?.productLabels?.length,
+            categoryContextProductLabels: categoryContext?.productLabels?.length
+          });
           const productLabels = variableContext?.productLabels || categoryContext?.productLabels || [];
 
           // Render product card - same structure for both contexts
