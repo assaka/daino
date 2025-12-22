@@ -147,13 +147,13 @@ export default function Settings() {
         // It's stored in settings.rootCategoryId
         contact_details: {
           email: storeData.settings?.store_email || '', // From settings JSON
-          phone: storeData.contact_phone || '',
+          phone: storeData.settings?.store_phone || '', // From settings JSON
           address: storeData.address_line1 || '',
           address_line2: storeData.address_line2 || '',
           city: storeData.city || '',
           state: storeData.state || '',
           postal_code: storeData.postal_code || '',
-          country: storeData.country || 'US', // Default to US
+          country: storeData.settings?.store_country || 'US', // From settings JSON
           support_email: storeData.settings?.store_email || '', // Use store_email as support_email
         },
         stripe_settings: {
@@ -365,18 +365,21 @@ export default function Settings() {
         name: store.name,
         description: store.description,
         logo_url: store.logo_url,
-        contact_phone: store.contact_details?.phone || store.contact_phone,
         address_line1: store.contact_details?.address || store.address_line1,
         address_line2: store.contact_details?.address_line2 || store.address_line2,
         city: store.contact_details?.city || store.city,
         state: store.contact_details?.state || store.state,
         postal_code: store.contact_details?.postal_code || store.postal_code,
-        country: store.contact_details?.country || store.country,
         timezone: store.timezone,
         currency: store.currency,
         // NOTE: root_category_id is NOT a column in stores table
         // It's stored in settings.rootCategoryId (already included in settingsPayload)
-        settings: settingsPayload
+        // Phone and country are stored in settings as store_phone and store_country
+        settings: {
+          ...settingsPayload,
+          store_phone: store.contact_details?.phone || '',
+          store_country: store.contact_details?.country || ''
+        }
       };
 
       // Ensure settings is a proper object

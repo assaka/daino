@@ -354,18 +354,16 @@ export default function StoreOnboarding() {
         // Continue anyway - user can update profile later from settings
       }
 
-      // Update store settings and fields if provided
+      // Update store settings if provided
       if (storeId) {
         try {
-          const storeUpdate = {};
-          // Root-level store fields
-          if (profileData.phone) storeUpdate.contact_phone = profileData.phone;
-          if (profileData.country) storeUpdate.country = profileData.country;
-          // Settings nested object
-          if (profileData.storeEmail) storeUpdate.settings = { store_email: profileData.storeEmail };
+          const settingsUpdate = {};
+          if (profileData.country) settingsUpdate.store_country = profileData.country;
+          if (profileData.phone) settingsUpdate.store_phone = profileData.phone;
+          if (profileData.storeEmail) settingsUpdate.store_email = profileData.storeEmail;
 
-          if (Object.keys(storeUpdate).length > 0) {
-            await StoreEntity.updateSettings(storeId, storeUpdate);
+          if (Object.keys(settingsUpdate).length > 0) {
+            await StoreEntity.updateSettings(storeId, { settings: settingsUpdate });
           }
         } catch (storeUpdateError) {
           // Continue anyway - user can update store settings later

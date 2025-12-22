@@ -224,7 +224,7 @@ class PDFService {
       store_state: store.state || '',
       store_postal_code: store.postal_code || '',
       store_email: store.settings?.store_email || '',
-      store_phone: store.contact_phone || '',
+      store_phone: store.settings?.store_phone || '',
       store_website: store.website_url || '',
       current_year: new Date().getFullYear()
     };
@@ -272,7 +272,7 @@ class PDFService {
       store_state: store.state || '',
       store_postal_code: store.postal_code || '',
       store_email: store.settings?.store_email || '',
-      store_phone: store.contact_phone || '',
+      store_phone: store.settings?.store_phone || '',
       store_website: store.website_url || '',
       current_year: new Date().getFullYear()
     };
@@ -292,7 +292,7 @@ class PDFService {
         <p style="color: #666; font-size: 14px; margin: 5px 0;">
           ${store.address_line1 || ''} ${store.address_line2 || ''}<br>
           ${store.city || ''}, ${store.state || ''} ${store.postal_code || ''}<br>
-          ${store.contact_email || ''} | ${store.contact_phone || ''}
+          ${store.settings?.store_email || ''} | ${store.settings?.store_phone || ''}
         </p>
       </div>
     `;
