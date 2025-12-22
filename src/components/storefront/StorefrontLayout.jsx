@@ -428,8 +428,9 @@ export default function StorefrontLayout({ children }) {
       }
     `;
 
-    // Check if store owner is viewing their own store
-    const storeOwnerData = getUserDataForRole('store_owner') || getUserDataForRole('admin');
+    // Check if store owner is viewing their own store (must have valid token AND user data)
+    const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
+    const storeOwnerData = hasStoreOwnerToken ? (getUserDataForRole('store_owner') || getUserDataForRole('admin')) : null;
     const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
 
     return (

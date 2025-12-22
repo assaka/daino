@@ -622,14 +622,18 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         }
         
         const response = await AuthService.register(registerData);
-        
+
         // Handle both array and object responses for registration
         let actualRegResponse = response;
         if (Array.isArray(response)) {
           actualRegResponse = response[0];
         }
-        
-        if (actualRegResponse?.success) {
+
+        // Check for success - handle both wrapped ({ success: true, data: {...} })
+        // and unwrapped ({ user: {...}, token: "..." }) response formats
+        const isSuccess = actualRegResponse?.success || actualRegResponse?.token || actualRegResponse?.user;
+
+        if (isSuccess) {
           const token = actualRegResponse.data?.token || actualRegResponse.token;
           
           if (token) {
@@ -642,8 +646,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             
             if (role === 'customer') {
               // Check if email verification is required for customer
-              const requiresVerification = actualRegResponse.data?.requiresVerification;
-              const userEmail = actualRegResponse.data?.user?.email || formData.email;
+              // Handle both wrapped and unwrapped response formats
+              const requiresVerification = actualRegResponse.data?.requiresVerification || actualRegResponse.requiresVerification;
+              const userEmail = actualRegResponse.data?.user?.email || actualRegResponse.user?.email || formData.email;
 
               if (requiresVerification) {
                 // Clear token - customer needs to verify first then login
@@ -661,8 +666,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               }
             } else {
               // Check if email verification is required for store owner
-              const requiresVerification = actualRegResponse.data?.requiresVerification;
-              const userEmail = actualRegResponse.data?.user?.email || formData.email;
+              // Handle both wrapped and unwrapped response formats
+              const requiresVerification = actualRegResponse.data?.requiresVerification || actualRegResponse.requiresVerification;
+              const userEmail = actualRegResponse.data?.user?.email || actualRegResponse.user?.email || formData.email;
 
               if (requiresVerification) {
                 // Redirect to email verification page
