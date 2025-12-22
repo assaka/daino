@@ -80,7 +80,7 @@ export default function EmailVerification() {
       if (response.success) {
         setSuccess(true);
         setTimeout(() => {
-          navigate(`/public/${storeCode}/login`);
+          navigate(`/public/${storeCode}/account`);
         }, 2000);
       } else {
         setError(response.message || 'Verification failed');
@@ -124,7 +124,7 @@ export default function EmailVerification() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
           <p className="text-gray-600 mb-4">
-            Your email has been successfully verified. Redirecting to login...
+            Your email has been successfully verified. Redirecting to your account...
           </p>
         </div>
       </div>

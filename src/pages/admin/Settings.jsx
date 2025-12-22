@@ -59,7 +59,6 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
       if (isRateLimit && i < maxRetries - 1) {
         const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
-        console.warn(`Settings: Rate limit hit, retrying in ${delayTime.toFixed(0)}ms... (Attempt ${i + 1}/${maxRetries})`);
         await delay(delayTime);
         continue;
       }
@@ -88,13 +87,11 @@ export default function Settings() {
       setLoading(true);
       
       if (!selectedStore) {
-        console.warn("No store selected");
         setLoading(false);
         return;
       }
       
       if (!selectedStore.id) {
-        console.error("Selected store has no ID:", selectedStore);
         setFlashMessage({ type: 'error', message: 'Invalid store selection. Please select a store.' });
         setLoading(false);
         return;
@@ -124,19 +121,15 @@ export default function Settings() {
           // Array response
           freshStoreData = storeResponse[0];
         } else {
-          console.warn('⚠️ Unexpected store response format:', storeResponse);
           freshStoreData = selectedStore;
         }
       } catch (error) {
-        console.error('Error fetching store data:', error);
         freshStoreData = selectedStore;
       }
 
       const storeData = freshStoreData || selectedStore;
-      console.log('📦 Loaded storeData:', JSON.stringify(storeData, null, 2));
 
       const settings = storeData.settings || {};
-      console.log('⚙️ Loaded settings:', JSON.stringify(settings, null, 2));
 
       setStore({
         id: storeData.id,
@@ -232,23 +225,7 @@ export default function Settings() {
           use_geoip_language: settings.hasOwnProperty('use_geoip_language') ? settings.use_geoip_language : false,
         }
       });
-
-      // Debug the loaded settings values
-      console.log('🔍 Store settings loaded:', {
-        rawStoreData: storeData,
-        rawSettings: settings,
-        allSettingsKeys: Object.keys(settings),
-        rootCategoryId: settings.rootCategoryId,
-        excludeRootFromMenu: settings.excludeRootFromMenu,
-        hasExcludeRootProperty: settings.hasOwnProperty('excludeRootFromMenu'),
-        finalExcludeRoot: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
-        expandAllMenuItems: settings.expandAllMenuItems,
-        hasExpandAllProperty: settings.hasOwnProperty('expandAllMenuItems'),
-        finalExpandAll: settings.hasOwnProperty('expandAllMenuItems') ? settings.expandAllMenuItems : false
-      });
-
     } catch (error) {
-      console.error('Failed to load store:', error);
       setFlashMessage({ type: 'error', message: 'Failed to load store settings. Please try again.' });
     } finally {
       setLoading(false);
@@ -402,37 +379,19 @@ export default function Settings() {
         settings: settingsPayload
       };
 
-      
-      // Debug what we're about to save
-      console.log('💾 Saving store settings:', {
-        storeId: store.id,
-        rootCategorySettings: {
-          rootCategoryId: payload.settings.rootCategoryId,
-          excludeRootFromMenu: payload.settings.excludeRootFromMenu,
-          expandAllMenuItems: payload.settings.expandAllMenuItems
-        },
-        fullSettingsPayload: payload.settings,
-        fullPayload: payload
-      });
-      
       // Ensure settings is a proper object
       if (typeof payload.settings === 'string') {
-        console.warn('⚠️ Settings was a string, parsing to object');
         payload.settings = JSON.parse(payload.settings);
       }
       
       // Use the specific settings endpoint for updating store settings
-      console.log('📤 Sending payload to API:', JSON.stringify(payload, null, 2));
       const apiResult = await retryApiCall(() => Store.updateSettings(store.id, payload));
-      console.log('📥 API response:', JSON.stringify(apiResult, null, 2));
 
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
-      console.log('📋 Parsed result:', result);
 
       // Update our local store state with the response data
       if (result && result.settings) {
-        console.log('✅ Setting flash message to success');
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
         setSaveSuccess(true);
 
@@ -450,7 +409,6 @@ export default function Settings() {
           // CRITICAL: Invalidate React Query bootstrap cache to force storefront to refetch settings
           queryClient.invalidateQueries({ queryKey: ['bootstrap'] });
         } catch (e) {
-          console.warn('Failed to clear cache from storage:', e);
         }
         
         // Update local store state with the fresh data from the response
@@ -485,12 +443,10 @@ export default function Settings() {
         });
         
       } else {
-        console.warn('⚠️ Settings not found in response');
         setFlashMessage({ type: 'warning', message: 'Settings saved but response unclear. Please refresh to verify.' });
       }
       
     } catch (error) {
-      console.error('Failed to save settings:', error);
       setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.message}` });
     } finally {
       setSaving(false);
