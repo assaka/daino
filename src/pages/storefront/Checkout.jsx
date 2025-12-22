@@ -2510,18 +2510,14 @@ export default function Checkout() {
 
               {isSectionVisible('review') && (
                 <>
-                  {isPublishedPreview && (
-                    <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md mb-3 text-sm">
-                      {t('checkout.order_not_available', 'Placing orders is not available on a preview store. This is a demonstration only.')}
-                    </div>
-                  )}
+                  {/* TEMPORARILY ENABLED FOR PREVIEW MODE - isPublishedPreview warning removed */}
                   <Button
                     onClick={handleCheckout}
-                    disabled={true /* TEMPORARILY DISABLED */ || isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) || isPublishedPreview}
+                    disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) /* TEMPORARILY REMOVED: || isPublishedPreview */}
                     variant="themed"
                     className="w-full h-12 text-lg"
                     style={{
-                      backgroundColor: isPublishedPreview ? '#9CA3AF' : (settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color),
+                      backgroundColor: settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color /* TEMPORARILY REMOVED preview gray */,
                       color: '#FFFFFF',
                     }}
                   >
