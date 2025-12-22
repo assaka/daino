@@ -196,34 +196,44 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
     }
 
     // Insert translations
+    console.log('Creating cookie consent translations, received:', JSON.stringify(translations, null, 2));
+
     for (const [langCode, data] of Object.entries(translations)) {
+      console.log(`Processing translation for language: ${langCode}`, data);
       if (data && Object.keys(data).length > 0) {
-        const { error: transError } = await tenantDb
+        const translationData = {
+          cookie_consent_settings_id: settings.id,
+          language_code: langCode,
+          banner_text: data.banner_text || null,
+          accept_button_text: data.accept_button_text || null,
+          reject_button_text: data.reject_button_text || null,
+          settings_button_text: data.settings_button_text || null,
+          privacy_policy_text: data.privacy_policy_text || null,
+          save_preferences_button_text: data.save_preferences_button_text || null,
+          necessary_name: data.necessary_name || null,
+          necessary_description: data.necessary_description || null,
+          analytics_name: data.analytics_name || null,
+          analytics_description: data.analytics_description || null,
+          marketing_name: data.marketing_name || null,
+          marketing_description: data.marketing_description || null,
+          functional_name: data.functional_name || null,
+          functional_description: data.functional_description || null
+        };
+
+        console.log(`Upserting translation for ${langCode}:`, translationData);
+
+        const { data: upsertResult, error: transError } = await tenantDb
           .from('cookie_consent_settings_translations')
-          .upsert({
-            cookie_consent_settings_id: settings.id,
-            language_code: langCode,
-            banner_text: data.banner_text || null,
-            accept_button_text: data.accept_button_text || null,
-            reject_button_text: data.reject_button_text || null,
-            settings_button_text: data.settings_button_text || null,
-            privacy_policy_text: data.privacy_policy_text || null,
-            save_preferences_button_text: data.save_preferences_button_text || null,
-            necessary_name: data.necessary_name || null,
-            necessary_description: data.necessary_description || null,
-            analytics_name: data.analytics_name || null,
-            analytics_description: data.analytics_description || null,
-            marketing_name: data.marketing_name || null,
-            marketing_description: data.marketing_description || null,
-            functional_name: data.functional_name || null,
-            functional_description: data.functional_description || null
-          }, {
+          .upsert(translationData, {
             onConflict: 'cookie_consent_settings_id,language_code'
-          });
+          })
+          .select();
 
         if (transError) {
           console.error('Error upserting cookie_consent_settings_translation:', transError);
           // Continue with other translations
+        } else {
+          console.log(`Successfully upserted translation for ${langCode}:`, upsertResult);
         }
       }
     }
@@ -287,35 +297,45 @@ async function updateCookieConsentSettingsWithTranslations(storeId, id, settings
     }
 
     // Update translations
+    console.log('Updating cookie consent translations, received:', JSON.stringify(translations, null, 2));
+
     for (const [langCode, data] of Object.entries(translations)) {
+      console.log(`Processing update for language: ${langCode}`, data);
       if (data && Object.keys(data).length > 0) {
-        const { error: transError } = await tenantDb
+        const translationData = {
+          cookie_consent_settings_id: id,
+          language_code: langCode,
+          banner_text: data.banner_text || null,
+          accept_button_text: data.accept_button_text || null,
+          reject_button_text: data.reject_button_text || null,
+          settings_button_text: data.settings_button_text || null,
+          privacy_policy_text: data.privacy_policy_text || null,
+          save_preferences_button_text: data.save_preferences_button_text || null,
+          necessary_name: data.necessary_name || null,
+          necessary_description: data.necessary_description || null,
+          analytics_name: data.analytics_name || null,
+          analytics_description: data.analytics_description || null,
+          marketing_name: data.marketing_name || null,
+          marketing_description: data.marketing_description || null,
+          functional_name: data.functional_name || null,
+          functional_description: data.functional_description || null,
+          updated_at: new Date().toISOString()
+        };
+
+        console.log(`Upserting translation update for ${langCode}:`, translationData);
+
+        const { data: upsertResult, error: transError } = await tenantDb
           .from('cookie_consent_settings_translations')
-          .upsert({
-            cookie_consent_settings_id: id,
-            language_code: langCode,
-            banner_text: data.banner_text,
-            accept_button_text: data.accept_button_text,
-            reject_button_text: data.reject_button_text,
-            settings_button_text: data.settings_button_text,
-            privacy_policy_text: data.privacy_policy_text,
-            save_preferences_button_text: data.save_preferences_button_text,
-            necessary_name: data.necessary_name,
-            necessary_description: data.necessary_description,
-            analytics_name: data.analytics_name,
-            analytics_description: data.analytics_description,
-            marketing_name: data.marketing_name,
-            marketing_description: data.marketing_description,
-            functional_name: data.functional_name,
-            functional_description: data.functional_description,
-            updated_at: new Date().toISOString()
-          }, {
+          .upsert(translationData, {
             onConflict: 'cookie_consent_settings_id,language_code'
-          });
+          })
+          .select();
 
         if (transError) {
           console.error('Error upserting cookie_consent_settings_translation:', transError);
           // Continue with other translations
+        } else {
+          console.log(`Successfully upserted translation update for ${langCode}:`, upsertResult);
         }
       }
     }
