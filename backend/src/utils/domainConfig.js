@@ -91,14 +91,131 @@ function getAllPlatformDomainVariants() {
   return variants;
 }
 
+// Default platform URL for store links
+const DEFAULT_PLATFORM_URL = 'https://www.dainostore.com';
+
+/**
+ * Get the primary verified custom domain for a store
+ * @param {object} tenantDb - Tenant database connection
+ * @param {string} storeId - Store ID
+ * @returns {Promise<string|null>} - Custom domain or null
+ */
+async function getPrimaryCustomDomain(tenantDb, storeId) {
+  try {
+    const { data: customDomain } = await tenantDb
+      .from('custom_domains')
+      .select('domain')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .eq('verification_status', 'verified')
+      .eq('is_primary', true)
+      .maybeSingle();
+
+    if (customDomain?.domain) {
+      return customDomain.domain;
+    }
+
+    // Fallback: get any active verified domain
+    const { data: anyDomain } = await tenantDb
+      .from('custom_domains')
+      .select('domain')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .eq('verification_status', 'verified')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    return anyDomain?.domain || null;
+  } catch (error) {
+    console.error('Error fetching custom domain:', error);
+    return null;
+  }
+}
+
+/**
+ * Build the store URL, preferring custom domain if available
+ * @param {object} options - Options object
+ * @param {object} options.tenantDb - Tenant database connection
+ * @param {string} options.storeId - Store ID
+ * @param {string} options.storeSlug - Store slug (fallback)
+ * @param {string} [options.path] - Optional path to append
+ * @param {object} [options.queryParams] - Optional query parameters
+ * @returns {Promise<string>} - Full store URL
+ */
+async function buildStoreUrl({ tenantDb, storeId, storeSlug, path = '', queryParams = {} }) {
+  let baseUrl;
+
+  // Try to get custom domain
+  const customDomain = await getPrimaryCustomDomain(tenantDb, storeId);
+
+  if (customDomain) {
+    baseUrl = `https://${customDomain}`;
+  } else {
+    // Fallback to platform URL with store slug
+    const platformUrl = process.env.PUBLIC_STORE_BASE_URL || DEFAULT_PLATFORM_URL;
+    baseUrl = `${platformUrl}/store/${storeSlug}`;
+  }
+
+  // Build full URL with path and query params
+  let fullUrl = baseUrl;
+  if (path) {
+    fullUrl += path.startsWith('/') ? path : `/${path}`;
+  }
+
+  // Add query parameters
+  const queryString = new URLSearchParams(queryParams).toString();
+  if (queryString) {
+    fullUrl += `?${queryString}`;
+  }
+
+  return fullUrl;
+}
+
+/**
+ * Synchronous version for when custom domain is already known
+ * @param {object} options - Options object
+ * @param {string} [options.customDomain] - Custom domain if known
+ * @param {string} options.storeSlug - Store slug (fallback)
+ * @param {string} [options.path] - Optional path to append
+ * @param {object} [options.queryParams] - Optional query parameters
+ * @returns {string} - Full store URL
+ */
+function buildStoreUrlSync({ customDomain, storeSlug, path = '', queryParams = {} }) {
+  let baseUrl;
+
+  if (customDomain) {
+    baseUrl = `https://${customDomain}`;
+  } else {
+    const platformUrl = process.env.PUBLIC_STORE_BASE_URL || DEFAULT_PLATFORM_URL;
+    baseUrl = `${platformUrl}/store/${storeSlug}`;
+  }
+
+  let fullUrl = baseUrl;
+  if (path) {
+    fullUrl += path.startsWith('/') ? path : `/${path}`;
+  }
+
+  const queryString = new URLSearchParams(queryParams).toString();
+  if (queryString) {
+    fullUrl += `?${queryString}`;
+  }
+
+  return fullUrl;
+}
+
 module.exports = {
   PLATFORM_DOMAINS,
   DEV_DOMAINS,
   HOSTING_DOMAINS,
+  DEFAULT_PLATFORM_URL,
   isPlatformDomain,
   isDevDomain,
   isHostingDomain,
   isCustomDomain,
   isAllowedDomain,
-  getAllPlatformDomainVariants
+  getAllPlatformDomainVariants,
+  getPrimaryCustomDomain,
+  buildStoreUrl,
+  buildStoreUrlSync
 };

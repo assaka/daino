@@ -7,6 +7,7 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 const crypto = require('crypto');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const masterEmailService = require('../services/master-email-service');
+const { buildStoreUrl, DEFAULT_PLATFORM_URL } = require('../utils/domainConfig');
 const router = express.Router();
 
 // NOTE: TENANT DB ARCHITECTURE
@@ -129,13 +130,21 @@ router.post('/request', [
     try {
       const owner = await getStoreOwnerEmail(store.user_id);
       if (owner?.email) {
+        // Build manage URL using store's domain
+        const manageUrl = await buildStoreUrl({
+          tenantDb,
+          storeId: store_id,
+          storeSlug: store.slug,
+          path: '/admin/access-requests'
+        });
+
         await masterEmailService.sendPauseAccessRequestEmail({
           toEmail: owner.email,
           storeName: store.name,
           requesterEmail: email,
           message: message || null,
           requestDate: new Date().toISOString(),
-          manageUrl: `${process.env.FRONTEND_URL}/admin/access-requests`
+          manageUrl
         });
       }
     } catch (emailError) {
@@ -248,10 +257,20 @@ router.post('/resend-link', [
       if (!access.expires_at || new Date(access.expires_at) >= new Date()) {
         // Send magic link email
         try {
+          const storeUrl = await buildStoreUrl({
+            tenantDb,
+            storeId: store_id,
+            storeSlug: store.slug,
+            queryParams: {
+              pause_access_email: email,
+              pause_access_token: access.access_token
+            }
+          });
+
           await masterEmailService.sendPauseAccessApprovedEmail({
             toEmail: email,
             storeName: store.name,
-            storeUrl: `${process.env.FRONTEND_URL}/store/${store.slug}?pause_access_email=${encodeURIComponent(email)}&pause_access_token=${access.access_token}`,
+            storeUrl,
             expiresDate: access.expires_at
           });
         } catch (emailError) {
@@ -418,10 +437,20 @@ router.put('/:store_id/:id/approve', authMiddleware, authorize(['admin', 'store_
     try {
       const store = await getStoreInfo(tenantDb, store_id);
       if (store) {
+        const storeUrl = await buildStoreUrl({
+          tenantDb,
+          storeId: store_id,
+          storeSlug: store.slug,
+          queryParams: {
+            pause_access_email: request.email,
+            pause_access_token: request.access_token
+          }
+        });
+
         await masterEmailService.sendPauseAccessApprovedEmail({
           toEmail: request.email,
           storeName: store.name,
-          storeUrl: `${process.env.FRONTEND_URL}/store/${store.slug}?pause_access_email=${encodeURIComponent(request.email)}&pause_access_token=${request.access_token}`,
+          storeUrl,
           expiresDate: expires_at
         });
       }
