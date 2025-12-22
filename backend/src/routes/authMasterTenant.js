@@ -92,24 +92,9 @@ router.post('/register', async (req, res) => {
       throw new Error(`Failed to create user: ${userError.message}`);
     }
 
-    // Create initial store in master DB
-    const storeId = uuidv4();
-    const { data: store, error: storeError } = await masterDbClient
-      .from('stores')
-      .insert({
-        id: storeId,
-        user_id: userId,
-        status: 'pending_database',
-        is_active: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (storeError) {
-      throw new Error(`Failed to create store: ${storeError.message}`);
-    }
+    // Note: Store is NOT created during registration
+    // Store will be created during onboarding when user provides store name
+    const storeId = null;
 
     // Send verification email
     try {

@@ -10,6 +10,8 @@ import '@/components/editor/slot/AccountLoginSlotComponents'; // Register accoun
 // Slot configurations are loaded from database via slotConfigurationService
 import { useTranslation } from '@/contexts/TranslationContext';
 import { PageLoader } from '@/components/ui/page-loader';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { getUserDataForRole } from '@/utils/auth';
 
 export default function CustomerAuth() {
   const { t } = useTranslation();
@@ -22,6 +24,21 @@ export default function CustomerAuth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { store, loading: storeLoading } = useStore();
+  const { isPreviewDraftMode, isPublishedPreview, isWorkspaceMode } = usePreviewMode();
+
+  // Check if store owner is viewing their own store
+  const hasStoreOwnerToken = typeof window !== 'undefined' && !!localStorage.getItem('store_owner_auth_token');
+  const storeOwnerData = hasStoreOwnerToken ? (getUserDataForRole('store_owner') || getUserDataForRole('admin')) : null;
+  const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
+
+  // Check if in preview mode (blocks registration because email verification cannot be sent)
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isInPreviewModeFromUrl = urlParams?.get('version') === 'published' || urlParams?.get('mode') === 'workspace';
+  const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
+
+  // Store is paused but store owner is logged in - allow registration
+  const isStorePaused = store?.published === false;
+  const allowRegistrationOnPausedStore = isStorePaused && isStoreOwnerViewingOwnStore;
 
   // Slot configuration state
   const [loginLayoutConfig, setLoginLayoutConfig] = useState(null);
@@ -151,6 +168,13 @@ export default function CustomerAuth() {
         }
       } else {
         // Registration
+        // Block registration in preview mode - email verification cannot be sent
+        if (isInPreviewMode) {
+          setError(t('customer_auth.error.registration_not_available_preview', 'Registration is not available in preview mode because email verification cannot be sent.'));
+          setAuthLoading(false);
+          return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
           setError(t('message.password_mismatch', 'Passwords do not match'));
           return;

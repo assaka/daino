@@ -92,7 +92,7 @@ export default function StoreOwnerEmailVerification() {
         setSuccess(true);
         setTimeout(() => {
           // Redirect to onboarding after verification
-          navigate(createAdminUrl('StoreOnboarding') || '/admin/onboarding');
+          navigate('/admin/onboarding');
         }, 2000);
       } else {
         setError(response.error || response.message || 'Verification failed');
