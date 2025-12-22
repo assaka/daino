@@ -222,7 +222,8 @@ export default function Orders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': getSelectedStoreId()
         }
       });
 
@@ -255,7 +256,8 @@ export default function Orders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': getSelectedStoreId()
         },
         body: JSON.stringify({ withPdf: true })
       });

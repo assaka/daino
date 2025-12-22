@@ -422,7 +422,7 @@ export default function OrderSuccess() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('order.date', settings)}:</span>
-                    <span className="font-semibold">{formatDate(order.created_date || order.createdAt)}</span>
+                    <span className="font-semibold">{formatDate(order.created_at || order.created_date || order.createdAt)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('common.status', settings)}:</span>
