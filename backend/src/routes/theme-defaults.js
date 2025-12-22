@@ -66,6 +66,7 @@ router.get('/presets', async (req, res) => {
       .from('theme_defaults')
       .select('id, preset_name, display_name, description, theme_settings, is_system_default, type, user_id')
       .eq('is_active', true)
+      .order('type', { ascending: false })  // 'user' before 'system' alphabetically descending
       .order('sort_order', { ascending: true });
 
     if (error) {
