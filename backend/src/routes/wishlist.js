@@ -115,7 +115,8 @@ router.post('/', async (req, res) => {
     let checkQuery = tenantDb
       .from('wishlists')
       .select('*')
-      .eq('product_id', product_id);
+      .eq('product_id', product_id)
+      .eq('store_id', store_id);
 
     if (user_id) {
       checkQuery = checkQuery.eq('user_id', user_id);
@@ -123,9 +124,9 @@ router.post('/', async (req, res) => {
       checkQuery = checkQuery.eq('session_id', session_id);
     }
 
-    const { data: existing, error: checkError } = await checkQuery.single();
+    const { data: existing, error: checkError } = await checkQuery.maybeSingle();
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError) {
       throw checkError;
     }
 
@@ -143,7 +144,8 @@ router.post('/', async (req, res) => {
         session_id,
         store_id,
         product_id,
-        user_id
+        user_id,
+        added_at: new Date().toISOString()
       })
       .select()
       .single();

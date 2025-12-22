@@ -12,7 +12,7 @@ import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // React Query hooks for optimized API calls
-import { useProduct, useUser, useWishlist } from "@/hooks/useApiQueries";
+import { useProduct, useUser, useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/hooks/useApiQueries";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
@@ -26,7 +26,6 @@ import { Badge } from "@/components/ui/badge";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontProductTab } from "@/api/storefront-entities";
-import { CustomerWishlist } from "@/api/storefront-entities";
 import FlashMessage from "@/components/storefront/FlashMessage";
 // New imports for enhanced functionality
 import CustomOptions from "@/components/storefront/CustomOptions";
@@ -111,6 +110,10 @@ export default function ProductDetail() {
 
   // Use shared wishlist hook to avoid duplicate API calls
   const { data: wishlistData = [] } = useWishlist(store?.id);
+
+  // Wishlist mutation hooks for proper cache invalidation
+  const addToWishlistMutation = useAddToWishlist();
+  const removeFromWishlistMutation = useRemoveFromWishlist();
 
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -647,7 +650,10 @@ export default function ProductDetail() {
 
     try {
       if (isInWishlist) {
-        await CustomerWishlist.removeItem(product.id, store.id);
+        await removeFromWishlistMutation.mutateAsync({
+          productId: product.id,
+          storeId: store.id
+        });
         setIsInWishlist(false);
         setFlashMessage({
           type: 'success',
@@ -655,7 +661,10 @@ export default function ProductDetail() {
         });
       } else {
         try {
-          await CustomerWishlist.addItem(product.id, store.id);
+          await addToWishlistMutation.mutateAsync({
+            productId: product.id,
+            storeId: store.id
+          });
           setIsInWishlist(true);
           setFlashMessage({
             type: 'success',
@@ -674,16 +683,7 @@ export default function ProductDetail() {
           }
         }
       }
-
-      window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-      
-      // Add a small delay to ensure backend persistence completes
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Wishlist hook will automatically update via React Query invalidation
-      // No need to manually check - useWishlist will refetch automatically
-      // when CustomerWishlist.addItem() or removeItem() is called
-
+      // React Query cache is automatically invalidated by the mutation hooks
     } catch (error) {
       console.error("Error toggling wishlist:", error);
       setFlashMessage({
