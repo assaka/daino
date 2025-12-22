@@ -458,6 +458,14 @@ class DemoDataProvisioningService {
       { name: 'Hiking Backpack 40L', sku: 'DEMO-SPRT-006', price: 109.99, compare_price: 89.99, category: 'outdoor-gear', attrSetCode: 'sports', description: 'Durable hiking backpack with rain cover and hydration compatible.' }
     ];
 
+    // Fetch root catalog category ID once (created by seed data, not demo)
+    const { data: rootCatalogData } = await this.tenantDb
+      .from('categories')
+      .select('id')
+      .eq('slug', 'root-catalog')
+      .maybeSingle();
+    const rootCatalogId = rootCatalogData?.id;
+
     for (let i = 0; i < products.length; i++) {
       const prod = products[i];
       const productId = uuidv4();
@@ -470,8 +478,11 @@ class DemoDataProvisioningService {
         .eq('demo', true)
         .maybeSingle();
 
-      // Build category_ids array with both parent and subcategory
+      // Build category_ids array with root catalog, parent, and subcategory
       const categoryIds = [];
+      if (rootCatalogId) {
+        categoryIds.push(rootCatalogId);
+      }
       if (subCategoryData) {
         categoryIds.push(subCategoryData.id);
         // Also add parent category
