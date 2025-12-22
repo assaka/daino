@@ -643,105 +643,6 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
   );
 };
 
-
-// SprShop Content Component
-const SprShopContent = () => (
-  <div className="space-y-8">
-    <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
-      <CardContent className="p-8">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <Store className="w-8 h-8" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">Welcome to SprShop</h2>
-            <p className="text-blue-100">Your Premium Shopping Experience</p>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <Globe className="w-8 h-8 mx-auto mb-2 text-blue-200" />
-            <h3 className="font-semibold mb-1">Global Shipping</h3>
-            <p className="text-sm text-blue-100">Worldwide delivery available</p>
-          </div>
-          <div className="text-center">
-            <CreditCard className="w-8 h-8 mx-auto mb-2 text-blue-200" />
-            <h3 className="font-semibold mb-1">Secure Payments</h3>
-            <p className="text-sm text-blue-100">Bank-level security</p>
-          </div>
-          <div className="text-center">
-            <Package className="w-8 h-8 mx-auto mb-2 text-blue-200" />
-            <h3 className="font-semibold mb-1">Quality Products</h3>
-            <p className="text-sm text-blue-100">Premium quality guaranteed</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Mail className="w-5 h-5" />
-          <span>Contact Information</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-2">Customer Service</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-gray-500" />
-                <span>support@sprshop.nl</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="w-4 h-4 text-gray-500" />
-                <span>+31 (0) 610 229 965</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Business Hours</h4>
-            <div className="space-y-1 text-sm text-gray-600">
-              <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
-              <p>Saturday: 10:00 AM - 4:00 PM</p>
-              <p>Sunday: Closed</p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <CardTitle>Why Choose SprShop?</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold mb-3">Our Commitment</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>• Premium quality products only</li>
-              <li>• Fast and reliable shipping</li>
-              <li>• 30-day return policy</li>
-              <li>• 24/7 customer support</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-3">Special Services</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>• Personal shopping assistance</li>
-              <li>• Gift wrapping available</li>
-              <li>• Bulk order discounts</li>
-              <li>• VIP customer program</li>
-            </ul>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
-
 // Guest Welcome Component
 const GuestWelcome = ({ onLogin, store, settings }) => (
   <div className="space-y-6">
@@ -764,8 +665,6 @@ const GuestWelcome = ({ onLogin, store, settings }) => (
         </div>
       </CardContent>
     </Card>
-
-    <SprShopContent />
   </div>
 );
 
@@ -1342,8 +1241,6 @@ export default function CustomerDashboard() {
                       subtitle={t('wishlist.saved_for_later', settings)}
                     />
                   </div>
-                  
-                  <SprShopContent />
                 </div>
               )}
               

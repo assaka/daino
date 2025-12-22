@@ -61,13 +61,13 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                     </div>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {store?.name || 'DAINO'} Shop is Currently Paused
+                    {store?.name || 'DAINO'} Shop is currently paused
                 </h2>
                 <p className="text-gray-600 mb-4">
                     This store is temporarily unavailable. Please check back later.
                 </p>
                 <p className="text-sm text-gray-500 mb-4">
-                    If you're the store owner, please publish your store from the admin dashboard.
+                    If you're the store owner, you can publish your store in the DainoStore dashboard.
                 </p>
                 <div className="pt-4 border-t border-gray-200">
                     <a
