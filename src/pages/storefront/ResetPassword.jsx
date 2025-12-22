@@ -114,8 +114,9 @@ export default function ResetPassword() {
       if (response?.success) {
         setSuccess(true);
         // Redirect to login after 3 seconds
+        const storeSlug = store?.slug || store?.code || 'default';
         setTimeout(() => {
-          navigate(createPublicUrl(store?.slug || '', 'LOGIN'));
+          navigate(createPublicUrl(storeSlug, 'LOGIN'));
         }, 3000);
       } else {
         setError(response?.message || t('account.reset_password_failed', 'Failed to reset password. Please try again.'));
@@ -164,7 +165,7 @@ export default function ResetPassword() {
               {error}
             </p>
             <button
-              onClick={() => navigate(createPublicUrl(store?.slug || '', 'LOGIN'))}
+              onClick={() => navigate(createPublicUrl(store?.slug || store?.code || 'default', 'LOGIN'))}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {t('account.back_to_login', 'Back to Login')}
@@ -226,7 +227,7 @@ export default function ResetPassword() {
           {!token ? (
             <div className="text-center">
               <button
-                onClick={() => navigate(createPublicUrl(store?.slug || '', 'LOGIN'))}
+                onClick={() => navigate(createPublicUrl(store?.slug || store?.code || 'default', 'LOGIN'))}
                 className="text-blue-600 hover:text-blue-800 font-medium"
               >
                 {t('account.back_to_login', 'Back to Login')}
@@ -315,7 +316,7 @@ export default function ResetPassword() {
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => navigate(createPublicUrl(store?.slug || '', 'LOGIN'))}
+                  onClick={() => navigate(createPublicUrl(store?.slug || store?.code || 'default', 'LOGIN'))}
                   className="text-sm text-blue-600 hover:text-blue-800"
                 >
                   {t('account.back_to_login', 'Back to Login')}
