@@ -52,7 +52,7 @@ async function getStoreOwnerEmail(userId) {
 router.post('/request', [
   body('store_id').isUUID().withMessage('Valid store_id is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('message').optional().isString().isLength({ max: 500 }).withMessage('Message must be under 500 characters')
+  body('message').optional({ nullable: true }).isString().isLength({ max: 500 }).withMessage('Message must be under 500 characters')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
