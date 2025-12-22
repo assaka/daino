@@ -353,14 +353,18 @@ export default function StoreOnboarding() {
         // Continue anyway - user can update profile later from settings
       }
 
-      // Update store_email in store settings if provided
-      if (profileData.storeEmail && storeId) {
+      // Update store settings (email and phone) if provided
+      const storeSettingsUpdate = {};
+      if (profileData.storeEmail) storeSettingsUpdate.store_email = profileData.storeEmail;
+      if (profileData.phone) storeSettingsUpdate.store_phone = profileData.phone;
+
+      if (Object.keys(storeSettingsUpdate).length > 0 && storeId) {
         try {
           await StoreEntity.updateSettings(storeId, {
-            settings: { store_email: profileData.storeEmail }
+            settings: storeSettingsUpdate
           });
         } catch (storeUpdateError) {
-          // Continue anyway - user can update store email later from settings
+          // Continue anyway - user can update store settings later
         }
       }
 
