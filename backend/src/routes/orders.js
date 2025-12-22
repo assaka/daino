@@ -21,7 +21,7 @@ const STRIPE_INTEGRATION_TYPE = 'stripe-connect';
  * Get store from master database
  */
 async function getMasterStore(storeId) {
-  const { data } = await masterDbClientClient
+  const { data } = await masterDbClient
     .from('stores')
     .select('*')
     .eq('id', storeId)
@@ -464,7 +464,7 @@ router.post('/finalize-order', async (req, res) => {
         console.log('📧 Order was finalized but email not sent yet, sending now...');
         try {
           // Get store info
-          const { data: store } = await masterDbClientClient
+          const { data: store } = await masterDbClient
             .from('stores')
             .select('*')
             .eq('id', order.store_id)
@@ -521,7 +521,7 @@ router.post('/finalize-order', async (req, res) => {
     }
 
     // Get the store for the connected account
-    const { data: store, error: storeError } = await masterDbClientClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', order.store_id)
@@ -1439,7 +1439,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Check store ownership
-    const { data: store, error: storeError } = await masterDbClientClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', store_id)
@@ -2149,7 +2149,7 @@ router.get('/test-invoice-settings/:storeId', async (req, res) => {
     console.log('🔍 Testing invoice settings for store:', storeId);
 
     // Load store with settings
-    const { data: store, error: storeError } = await masterDbClientClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('id, name, slug, currency, settings')
       .eq('id', storeId)
