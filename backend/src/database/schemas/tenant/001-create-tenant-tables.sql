@@ -1512,7 +1512,8 @@ CREATE TABLE IF NOT EXISTS cookie_consent_settings_translations (
   marketing_description TEXT,
   functional_name VARCHAR(255),
   functional_description TEXT,
-  save_preferences_button_text VARCHAR(255)
+  save_preferences_button_text VARCHAR(255),
+  UNIQUE (cookie_consent_settings_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS coupon_translations (
