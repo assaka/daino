@@ -198,6 +198,72 @@ router.get('/check', async (req, res) => {
   }
 });
 
+// @route   POST /api/pause-access/resend-link
+// @desc    Resend magic link to approved user (public)
+// @access  Public
+router.post('/resend-link', [
+  body('store_id').isUUID().withMessage('Valid store_id is required'),
+  body('email').isEmail().withMessage('Valid email is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { store_id, email } = req.body;
+
+    // Get store info
+    const store = await getStoreInfo(store_id);
+    if (!store) {
+      return res.status(404).json({ success: false, message: 'Store not found' });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getConnection(store_id);
+
+    // Check if email has approved access
+    const { data: access, error } = await tenantDb
+      .from('store_pause_access')
+      .select('id, status, access_token, expires_at')
+      .eq('store_id', store_id)
+      .eq('email', email.toLowerCase())
+      .eq('status', 'approved')
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    // Always return success to prevent email enumeration
+    // But only send email if access exists and is valid
+    if (access) {
+      // Check expiration
+      if (!access.expires_at || new Date(access.expires_at) >= new Date()) {
+        // Send magic link email
+        try {
+          await masterEmailService.sendPauseAccessApprovedEmail({
+            toEmail: email,
+            storeName: store.name,
+            storeUrl: `${process.env.FRONTEND_URL}/store/${store.slug}?pause_access_email=${encodeURIComponent(email)}&pause_access_token=${access.access_token}`,
+            expiresDate: access.expires_at
+          });
+        } catch (emailError) {
+          console.error('Failed to send pause access link email:', emailError);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'If your email has approved access, you will receive a link shortly.'
+    });
+  } catch (error) {
+    console.error('Error resending pause access link:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // @route   GET /api/pause-access/:store_id
 // @desc    Get all access requests for a store
 // @access  Private (store owner/admin)

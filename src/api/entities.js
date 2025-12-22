@@ -1362,6 +1362,20 @@ class StorePauseAccessService {
     }
   }
 
+  // Resend magic link to approved user (public)
+  async resendLink(storeId, email) {
+    try {
+      const response = await apiClient.publicRequest('POST', `${this.endpoint}/resend-link`, {
+        store_id: storeId,
+        email
+      });
+      return response;
+    } catch (error) {
+      console.error(`StorePauseAccessService.resendLink() error:`, error.message);
+      throw error;
+    }
+  }
+
   // Get all access requests for a store (admin)
   async getRequests(storeId, params = {}) {
     try {

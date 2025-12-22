@@ -43,10 +43,13 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // Separate component for the paused overlay that can use the preview mode context
 function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const { isPreviewDraftMode, isPublishedPreview, isWorkspaceMode } = usePreviewMode();
+    const { t } = useTranslation();
     const [showRequestForm, setShowRequestForm] = useState(false);
+    const [showAlreadyAccessForm, setShowAlreadyAccessForm] = useState(false);
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [linkSent, setLinkSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
     const [checkingAccess, setCheckingAccess] = useState(true);
@@ -145,6 +148,22 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         }
     };
 
+    const handleResendLink = async (e) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+
+        setLoading(true);
+        try {
+            await StorePauseAccess.resendLink(store.id, email.trim());
+            setLinkSent(true);
+        } catch (error) {
+            console.error('Error resending access link:', error);
+            alert('Failed to send link. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
             <div className="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center">
@@ -162,9 +181,9 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                     This store is temporarily unavailable. Please check back later.
                 </p>
 
-                {!submitted ? (
+                {!submitted && !linkSent ? (
                     <>
-                        {!showRequestForm ? (
+                        {!showRequestForm && !showAlreadyAccessForm ? (
                             <div className="mt-6 pt-6 border-t border-gray-200">
                                 <p className="text-sm text-gray-500 mb-4">
                                     Need access? Request permission from the store owner.
@@ -176,7 +195,52 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                                 >
                                     Request Access
                                 </Button>
+                                <button
+                                    onClick={() => setShowAlreadyAccessForm(true)}
+                                    className="mt-3 text-sm text-blue-600 hover:text-blue-800 underline"
+                                >
+                                    {t('account.already_access', 'Already have access?')}
+                                </button>
                             </div>
+                        ) : showAlreadyAccessForm ? (
+                            <form onSubmit={handleResendLink} className="mt-6 pt-6 border-t border-gray-200 text-left">
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-600">
+                                        Enter your email to receive a new access link.
+                                    </p>
+                                    <div>
+                                        <label htmlFor="email-resend" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Your Email Address
+                                        </label>
+                                        <Input
+                                            id="email-resend"
+                                            type="email"
+                                            placeholder="you@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => { setShowAlreadyAccessForm(false); setEmail(''); }}
+                                            className="flex-1"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={loading || !email.trim()}
+                                            className="flex-1"
+                                        >
+                                            {loading ? 'Sending...' : 'Send Link'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
                         ) : (
                             <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-200 text-left">
                                 <div className="space-y-4">
@@ -212,7 +276,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => setShowRequestForm(false)}
+                                            onClick={() => { setShowRequestForm(false); setEmail(''); setMessage(''); }}
                                             className="flex-1"
                                         >
                                             Cancel
@@ -229,6 +293,18 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                             </form>
                         )}
                     </>
+                ) : linkSent ? (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                            <svg className="w-8 h-8 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-blue-800 font-medium">Check Your Email</p>
+                            <p className="text-blue-700 text-sm mt-1">
+                                If your email has approved access, you'll receive a link shortly.
+                            </p>
+                        </div>
+                    </div>
                 ) : (
                     <div className="mt-6 pt-6 border-t border-gray-200">
                         <div className="p-4 bg-green-50 rounded-lg">
