@@ -144,6 +144,74 @@ router.post('/customer/forgot-password', [
   }
 });
 
+// @route   POST /api/public/auth/customer/validate-reset-token
+// @desc    Validate a password reset token
+// @access  Public
+router.post('/customer/validate-reset-token', [
+  body('token').trim().notEmpty().withMessage('Reset token is required'),
+  body('store_id').notEmpty().withMessage('Store ID is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Invalid request'
+      });
+    }
+
+    const { token, store_id } = req.body;
+
+    console.log('[VALIDATE-RESET-TOKEN] Request received:', { token: token?.substring(0, 10) + '...', store_id });
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find customer by reset token (token is unique within tenant DB, no need to filter by store_id)
+    const { data: customer, error: customerError } = await tenantDb
+      .from('customers')
+      .select('id, email, password_reset_expires, store_id')
+      .eq('password_reset_token', token)
+      .maybeSingle();
+
+    if (customerError) {
+      console.error('[VALIDATE-RESET-TOKEN] Database error:', customerError);
+    }
+
+    if (!customer) {
+      console.log('[VALIDATE-RESET-TOKEN] No customer found with token');
+      return res.json({
+        success: true,
+        valid: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Check if token has expired
+    if (customer.password_reset_expires && new Date() > new Date(customer.password_reset_expires)) {
+      return res.json({
+        success: true,
+        valid: false,
+        message: 'Reset token has expired. Please request a new password reset.'
+      });
+    }
+
+    res.json({
+      success: true,
+      valid: true,
+      email: customer.email
+    });
+  } catch (error) {
+    console.error('Validate reset token error:', error);
+    res.status(500).json({
+      success: false,
+      valid: false,
+      message: 'Server error. Please try again later.'
+    });
+  }
+});
+
 // @route   POST /api/public/auth/customer/reset-password
 // @desc    Reset customer password with token
 // @access  Public
@@ -167,23 +235,31 @@ router.post('/customer/reset-password', [
 
     const { token, password, store_id } = req.body;
 
+    console.log('[RESET-PASSWORD] Request received:', { token: token?.substring(0, 10) + '...', store_id });
+
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Find customer by reset token
-    const { data: customer } = await tenantDb
+    // Find customer by reset token (token is unique within tenant DB, no need to filter by store_id)
+    const { data: customer, error: customerError } = await tenantDb
       .from('customers')
       .select('*')
       .eq('password_reset_token', token)
-      .eq('store_id', store_id)
       .maybeSingle();
 
+    if (customerError) {
+      console.error('[RESET-PASSWORD] Database error:', customerError);
+    }
+
     if (!customer) {
+      console.log('[RESET-PASSWORD] No customer found with token');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired reset token'
       });
     }
+
+    console.log('[RESET-PASSWORD] Customer found:', { id: customer.id, email: customer.email });
 
     // Check if token has expired
     if (customer.password_reset_expires && new Date() > new Date(customer.password_reset_expires)) {
@@ -220,6 +296,6 @@ router.post('/customer/reset-password', [
   }
 });
 
-console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/reset-password');
+console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/validate-reset-token, customer/reset-password');
 
 module.exports = router;

@@ -79,6 +79,10 @@ export default function EmailVerification() {
 
       if (response.success) {
         setSuccess(true);
+        // Clear auth cache so CustomerDashboard fetches fresh user data with email_verified: true
+        if (window.__authMeCache) {
+          window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+        }
         setTimeout(() => {
           navigate(`/public/${storeCode}/account`);
         }, 2000);

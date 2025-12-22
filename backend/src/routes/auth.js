@@ -1544,33 +1544,44 @@ router.post('/customer/forgot-password', [
 
     const { email, store_id } = req.body;
 
+    console.log('[FORGOT-PASSWORD] Request received:', { email, store_id });
+
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Find customer by email and store_id
+    // Find customer by email (without store_id filter to check for mismatches)
     const { data: customer } = await tenantDb
       .from('customers')
       .select('*')
       .eq('email', email)
-      .eq('store_id', store_id)
       .maybeSingle();
+
+    // Debug: Log if customer exists but has different store_id
+    if (customer && customer.store_id !== store_id) {
+      console.warn('[FORGOT-PASSWORD] Customer found but store_id mismatch! Customer store_id:', customer.store_id, 'Request store_id:', store_id);
+    }
 
     // Always return success to prevent email enumeration attacks
     // Even if customer doesn't exist, we don't reveal that
     if (!customer) {
+      console.log('[FORGOT-PASSWORD] No customer found with email:', email);
       return res.json({
         success: true,
         message: 'If an account with this email exists, a password reset link has been sent.'
       });
     }
 
+    console.log('[FORGOT-PASSWORD] Customer found:', { id: customer.id, email: customer.email, store_id: customer.store_id });
+
     // Generate reset token (random 32 character string)
     const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
+    console.log('[FORGOT-PASSWORD] Generated token:', resetToken.substring(0, 10) + '...', 'Expiry:', resetExpiry);
+
     // Save reset token to customer record
-    await tenantDb
+    const { error: updateError } = await tenantDb
       .from('customers')
       .update({
         password_reset_token: resetToken,
@@ -1579,6 +1590,12 @@ router.post('/customer/forgot-password', [
       })
       .eq('id', customer.id);
 
+    if (updateError) {
+      console.error('[FORGOT-PASSWORD] Failed to save reset token:', updateError);
+    } else {
+      console.log('[FORGOT-PASSWORD] Reset token saved successfully for customer:', customer.id);
+    }
+
     // Get store info for email
     const { data: store } = await tenantDb
       .from('stores')
@@ -1586,13 +1603,16 @@ router.post('/customer/forgot-password', [
       .eq('id', store_id)
       .maybeSingle();
 
-    const storeName = store?.name || 'Our Store';
+    console.log('[FORGOT-PASSWORD] Store lookup by id:', store_id, '-> Found:', store?.name || 'NOT FOUND');
 
-    // Build reset URL
+    const storeName = store?.name || 'Our Store';
+    const storeSlug = store?.slug || store?.code || 'default';
+
+    // Build reset URL with store-specific path
     const baseUrl = store?.domain
       ? `https://${store.domain}`
       : (process.env.CORS_ORIGIN || 'https://www.dainostore.com');
-    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const resetUrl = `${baseUrl}/public/${storeSlug}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     // Send password reset email
     try {
@@ -1660,18 +1680,29 @@ router.post('/customer/validate-reset-token', [
 
     const { token, store_id } = req.body;
 
+    console.log('[VALIDATE-RESET-TOKEN] Request received:', { token: token?.substring(0, 10) + '...', store_id });
+
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Find customer by reset token
-    const { data: customer } = await tenantDb
+    const { data: customer, error: customerError } = await tenantDb
       .from('customers')
-      .select('id, email, password_reset_expires')
+      .select('id, email, password_reset_expires, store_id')
       .eq('password_reset_token', token)
-      .eq('store_id', store_id)
       .maybeSingle();
 
+    if (customerError) {
+      console.error('[VALIDATE-RESET-TOKEN] Database error:', customerError);
+    }
+
+    // Debug: check if token exists but store_id doesn't match
+    if (customer && customer.store_id !== store_id) {
+      console.warn('[VALIDATE-RESET-TOKEN] Store ID mismatch! Customer store_id:', customer.store_id, 'Request store_id:', store_id);
+    }
+
     if (!customer) {
+      console.log('[VALIDATE-RESET-TOKEN] No customer found with token');
       return res.json({
         success: true,
         valid: false,
@@ -1727,23 +1758,31 @@ router.post('/customer/reset-password', [
 
     const { token, password, store_id } = req.body;
 
+    console.log('[RESET-PASSWORD] Request received:', { token: token?.substring(0, 10) + '...', store_id });
+
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Find customer by reset token
-    const { data: customer } = await tenantDb
+    // Find customer by reset token (token is unique within tenant DB, no need to filter by store_id)
+    const { data: customer, error: customerError } = await tenantDb
       .from('customers')
       .select('*')
       .eq('password_reset_token', token)
-      .eq('store_id', store_id)
       .maybeSingle();
 
+    if (customerError) {
+      console.error('[RESET-PASSWORD] Database error:', customerError);
+    }
+
     if (!customer) {
+      console.log('[RESET-PASSWORD] No customer found with token');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired reset token'
       });
     }
+
+    console.log('[RESET-PASSWORD] Customer found:', { id: customer.id, email: customer.email, store_id: customer.store_id });
 
     // Check if token has expired
     if (customer.password_reset_expires && new Date() > new Date(customer.password_reset_expires)) {
