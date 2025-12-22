@@ -1779,7 +1779,10 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       if (userCredits < MINIMUM_CREDITS_TO_RUN) {
         return res.status(400).json({
           success: false,
-          error: `Insufficient credits to run store. Required: ${MINIMUM_CREDITS_TO_RUN}, Available: ${userCredits.toFixed(2)}`
+          error: 'Insufficient credits to run store',
+          message: `3 credits will be deducted every day at midnight UTC. Your current balance: ${userCredits.toFixed(0)} credits. Minimum required: ${MINIMUM_CREDITS_TO_RUN} credits.`,
+          currentBalance: userCredits,
+          requiredCredits: MINIMUM_CREDITS_TO_RUN
         });
       }
     }
@@ -1906,7 +1909,10 @@ router.put('/:id', authMiddleware, async (req, res) => {
       if (userCredits < MINIMUM_CREDITS_TO_RUN) {
         return res.status(400).json({
           success: false,
-          error: `Insufficient credits to run store. Required: ${MINIMUM_CREDITS_TO_RUN}, Available: ${userCredits.toFixed(2)}`
+          error: 'Insufficient credits to run store',
+          message: `3 credits will be deducted every day at midnight UTC. Your current balance: ${userCredits.toFixed(0)} credits. Minimum required: ${MINIMUM_CREDITS_TO_RUN} credits.`,
+          currentBalance: userCredits,
+          requiredCredits: MINIMUM_CREDITS_TO_RUN
         });
       }
     }
