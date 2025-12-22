@@ -21,7 +21,7 @@ const STRIPE_INTEGRATION_TYPE = 'stripe-connect';
  * Get store from master database
  */
 async function getMasterStore(storeId) {
-  const { data } = await masterDbClient
+  const { data } = await masterDbClientClient
     .from('stores')
     .select('*')
     .eq('id', storeId)
@@ -464,7 +464,7 @@ router.post('/finalize-order', async (req, res) => {
         console.log('📧 Order was finalized but email not sent yet, sending now...');
         try {
           // Get store info
-          const { data: store } = await masterDbClient
+          const { data: store } = await masterDbClientClient
             .from('stores')
             .select('*')
             .eq('id', order.store_id)
@@ -521,7 +521,7 @@ router.post('/finalize-order', async (req, res) => {
     }
 
     // Get the store for the connected account
-    const { data: store, error: storeError } = await masterDbClient
+    const { data: store, error: storeError } = await masterDbClientClient
       .from('stores')
       .select('*')
       .eq('id', order.store_id)
@@ -1439,7 +1439,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Check store ownership
-    const { data: store, error: storeError } = await masterDbClient
+    const { data: store, error: storeError } = await masterDbClientClient
       .from('stores')
       .select('*')
       .eq('id', store_id)
@@ -1604,7 +1604,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Load store
-    const { data: store } = await masterDb
+    const { data: store } = await masterDbClient
       .from('stores')
       .select('id, name, user_id')
       .eq('id', order.store_id)
@@ -1698,7 +1698,7 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
     order.OrderItems = orderItems || [];
 
     // Load store
-    const { data: store } = await masterDb
+    const { data: store } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', order.store_id)
@@ -1787,7 +1787,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     order.OrderItems = orderItems || [];
 
     // Load store
-    const { data: store } = await masterDb
+    const { data: store } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', order.store_id)
@@ -1966,7 +1966,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     order.OrderItems = orderItems || [];
 
     // Load store
-    const { data: store } = await masterDb
+    const { data: store } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', order.store_id)
@@ -2148,7 +2148,7 @@ router.get('/test-invoice-settings/:storeId', async (req, res) => {
     console.log('🔍 Testing invoice settings for store:', storeId);
 
     // Load store with settings
-    const { data: store, error: storeError } = await masterDbClient
+    const { data: store, error: storeError } = await masterDbClientClient
       .from('stores')
       .select('id, name, slug, currency, settings')
       .eq('id', storeId)
