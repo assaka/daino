@@ -332,7 +332,7 @@ router.post('/finalize-order', async (req, res) => {
 
     console.log('🎯 Finalizing order for session:', session_id);
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
     console.log('🔍 Store ID from header:', req.headers['x-store-id']);
     console.log('🔍 Store ID from body:', req.body.store_id);
     console.log('🔍 Final store_id:', store_id);
@@ -1580,7 +1580,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 // @access  Private
 router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -1665,7 +1665,7 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -1754,7 +1754,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { withPdf = true } = req.body;
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -1933,7 +1933,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { trackingNumber, trackingUrl, carrier, estimatedDeliveryDate } = req.body;
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
     if (!store_id) {
       return res.status(400).json({
         success: false,

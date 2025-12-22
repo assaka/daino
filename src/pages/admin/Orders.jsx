@@ -218,12 +218,12 @@ export default function Orders() {
     const key = `resend-order-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
     try {
-      const response = await fetch(`/api/orders/${orderId}/resend-confirmation`, {
+      const storeId = getSelectedStoreId();
+      const response = await fetch(`/api/orders/${orderId}/resend-confirmation?store_id=${storeId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': localStorage.getItem('selectedStoreId')
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
 
@@ -252,12 +252,12 @@ export default function Orders() {
     const key = `send-invoice-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
     try {
-      const response = await fetch(`/api/orders/${orderId}/send-invoice`, {
+      const storeId = getSelectedStoreId();
+      const response = await fetch(`/api/orders/${orderId}/send-invoice?store_id=${storeId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': localStorage.getItem('selectedStoreId')
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
         body: JSON.stringify({ withPdf: true })
       });
@@ -310,12 +310,12 @@ export default function Orders() {
     setActionLoading(prev => ({ ...prev, [key]: true }));
 
     try {
-      const response = await fetch(`/api/orders/${orderId}/send-shipment`, {
+      const storeId = getSelectedStoreId();
+      const response = await fetch(`/api/orders/${orderId}/send-shipment?store_id=${storeId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': localStorage.getItem('selectedStoreId')
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
         body: JSON.stringify({
           trackingNumber: shipmentDetails.trackingNumber,
@@ -400,12 +400,12 @@ export default function Orders() {
     const key = `cancel-order-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
     try {
-      const response = await fetch(`/api/orders/${orderId}`, {
+      const storeId = getSelectedStoreId();
+      const response = await fetch(`/api/orders/${orderId}?store_id=${storeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': localStorage.getItem('selectedStoreId')
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
         body: JSON.stringify({ status: 'cancelled' })
       });
@@ -449,12 +449,12 @@ export default function Orders() {
     const key = `refund-order-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
     try {
-      const response = await fetch(`/api/orders/${orderId}`, {
+      const storeId = getSelectedStoreId();
+      const response = await fetch(`/api/orders/${orderId}?store_id=${storeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': localStorage.getItem('selectedStoreId')
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
         body: JSON.stringify({
           status: 'refunded',
