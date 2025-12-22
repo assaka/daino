@@ -5,6 +5,7 @@ import NoStoreSelected from '@/components/admin/NoStoreSelected';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import SaveButton from '@/components/ui/save-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -481,31 +482,30 @@ export default function Customers() {
                                             <td className="py-3 px-4">{customer.email}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                        isGuest
-                                                            ? 'bg-gray-100 text-gray-700'
-                                                            : 'bg-blue-100 text-blue-700'
-                                                    }`}>
+                                                    <Badge variant="outline" className={isGuest
+                                                        ? 'bg-gray-100 text-gray-800 border-gray-200'
+                                                        : 'bg-blue-100 text-blue-800 border-blue-200'
+                                                    }>
                                                         {isGuest ? 'Guest' : 'Registered'}
-                                                    </span>
+                                                    </Badge>
                                                     {customer.demo && (
-                                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-300">
+                                                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
                                                             Demo
-                                                        </span>
+                                                        </Badge>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="py-3 px-4">
                                                 {customer.is_blacklisted ? (
-                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 w-fit">
-                                                        <Ban className="h-3 w-3" />
+                                                    <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+                                                        <Ban className="h-3 w-3 mr-1" />
                                                         Blacklisted
-                                                    </span>
+                                                    </Badge>
                                                 ) : (
-                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 w-fit">
-                                                        <CheckCircle className="h-3 w-3" />
+                                                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                                                        <CheckCircle className="h-3 w-3 mr-1" />
                                                         Active
-                                                    </span>
+                                                    </Badge>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4">{customer.total_orders}</td>
@@ -797,13 +797,13 @@ export default function Customers() {
                                 <p className="text-sm font-medium text-gray-700">Customer</p>
                                 <p className="text-sm text-gray-900">{blacklistingCustomer.first_name} {blacklistingCustomer.last_name}</p>
                                 <p className="text-sm text-gray-600">{blacklistingCustomer.email}</p>
-                                <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                <Badge variant="outline" className={`mt-2 ${
                                     blacklistingCustomer.customer_type === 'guest'
-                                        ? 'bg-gray-100 text-gray-700'
-                                        : 'bg-blue-100 text-blue-700'
+                                        ? 'bg-gray-100 text-gray-800 border-gray-200'
+                                        : 'bg-blue-100 text-blue-800 border-blue-200'
                                 }`}>
                                     {blacklistingCustomer.customer_type === 'guest' ? 'Guest' : 'Registered'}
-                                </span>
+                                </Badge>
                             </div>
 
                             <div className="space-y-3 p-4 border rounded-lg" style={{ backgroundColor: isBlacklisted ? '#fee2e2' : '#f0fdf4' }}>

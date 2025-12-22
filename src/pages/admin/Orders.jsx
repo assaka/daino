@@ -314,7 +314,8 @@ export default function Orders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': getSelectedStoreId()
         },
         body: JSON.stringify({
           trackingNumber: shipmentDetails.trackingNumber,
@@ -403,7 +404,8 @@ export default function Orders() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': getSelectedStoreId()
         },
         body: JSON.stringify({ status: 'cancelled' })
       });
@@ -451,7 +453,8 @@ export default function Orders() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': getSelectedStoreId()
         },
         body: JSON.stringify({
           status: 'refunded',
