@@ -456,7 +456,7 @@ VALUES
     "pagination_active_bg_color": "#007bff",
     "pagination_active_text_color": "#FFFFFF"
   }'::jsonb, true, 1),
-  ('dark', 'Dark Mode', 'Dark theme with muted colors', '{
+  ('eclipse', 'Eclipse', 'Dark theme with muted colors', '{
     "primary_button_color": "#6366F1",
     "secondary_button_color": "#4B5563",
     "add_to_cart_button_color": "#10B981",
@@ -502,7 +502,7 @@ VALUES
     "pagination_active_bg_color": "#6366F1",
     "pagination_active_text_color": "#FFFFFF"
   }'::jsonb, false, 2),
-  ('professional', 'Professional', 'Clean professional look', '{
+  ('corporate', 'Corporate', 'Clean business look', '{
     "primary_button_color": "#1E40AF",
     "secondary_button_color": "#475569",
     "add_to_cart_button_color": "#059669",

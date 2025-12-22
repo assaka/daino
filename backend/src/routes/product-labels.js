@@ -89,7 +89,7 @@ async function createProductLabelWithTranslations(tenantDb, labelData, translati
       slug: labelData.slug,
       text: labelData.text || '',
       background_color: labelData.background_color,
-      color: labelData.color,
+      color: labelData.color || labelData.text_color,
       position: labelData.position || 'top-right',
       priority: labelData.priority || 0,
       sort_order: labelData.sort_order || 0,
@@ -147,6 +147,7 @@ async function updateProductLabelWithTranslations(tenantDb, id, labelData, trans
   if (labelData.text !== undefined) updateData.text = labelData.text;
   if (labelData.background_color !== undefined) updateData.background_color = labelData.background_color;
   if (labelData.color !== undefined) updateData.color = labelData.color;
+  if (labelData.text_color !== undefined) updateData.color = labelData.text_color;
   if (labelData.position !== undefined) updateData.position = labelData.position;
   if (labelData.priority !== undefined) updateData.priority = labelData.priority;
   if (labelData.sort_order !== undefined) updateData.sort_order = labelData.sort_order;
@@ -448,9 +449,14 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     });
   } catch (error) {
     console.error('Update product label error:', error);
+    console.error('Update product label error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: `Server error: ${error.message}`
     });
   }
 });
