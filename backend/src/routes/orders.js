@@ -2011,7 +2011,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
 
     // Check if shipment already exists
     const { data: shipment } = await tenantDb
-      .from('shipments')
+      .from('sales_shipments')
       .select('*')
       .eq('order_id', id)
       .maybeSingle();
@@ -2062,7 +2062,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     let updatedShipment;
     if (shipment) {
       const { data: updated, error: updateError } = await tenantDb
-        .from('shipments')
+        .from('sales_shipments')
         .update({
           sent_at: new Date().toISOString(),
           tracking_number: trackingNumber || shipment.tracking_number,
@@ -2084,7 +2084,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
       const shipmentNumber = 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
       const { data: created, error: createError } = await tenantDb
-        .from('shipments')
+        .from('sales_shipments')
         .insert({
           shipment_number: shipmentNumber,
           order_id: id,
