@@ -231,7 +231,7 @@ class PDFService {
       payment_method: order.payment_method || 'N/A',
       payment_status: order.payment_status ? order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1) : 'N/A',
       store_name: store.name || '',
-      store_logo_url: store.logo_url || '',
+      store_logo_url: store.settings?.store_logo || '',
       store_address: store.settings?.store_address || '',
       store_city: store.settings?.store_city || '',
       store_state: store.settings?.store_state || '',
@@ -279,7 +279,7 @@ class PDFService {
       items_table_rows: itemsRows,
       items_count: orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0),
       store_name: store.name || '',
-      store_logo_url: store.logo_url || '',
+      store_logo_url: store.settings?.store_logo || '',
       store_address: store.settings?.store_address || '',
       store_city: store.settings?.store_city || '',
       store_state: store.settings?.store_state || '',
@@ -295,7 +295,7 @@ class PDFService {
    * Generate PDF header HTML
    */
   generatePDFHeader(store, type = 'invoice') {
-    const logoUrl = store.logo_url || '';
+    const logoUrl = store.settings?.store_logo || '';
     const storeName = store.name || '';
 
     return `

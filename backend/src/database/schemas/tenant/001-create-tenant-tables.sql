@@ -882,7 +882,6 @@ CREATE TABLE IF NOT EXISTS stores (
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
   description TEXT,
-  logo_url VARCHAR(255),
   currency VARCHAR(255) DEFAULT 'USD'::character varying,
   timezone VARCHAR(255) DEFAULT 'UTC'::character varying,
   is_active BOOLEAN DEFAULT true,

@@ -14,7 +14,7 @@ async function getUserStoresForDropdown(userId) {
           s.id,
           s.name,
           s.slug,
-          s.logo_url,
+          s.settings->>'store_logo' as logo_url,
           s.settings,
           s.created_at,
           s.updated_at,

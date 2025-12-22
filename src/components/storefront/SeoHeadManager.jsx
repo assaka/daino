@@ -420,7 +420,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                        getImageUrl(pageData?.images?.[0]) ||    // Entity's first image
                        seoSettings?.social_media_settings?.open_graph?.default_image_url ||  // Global OG default
                        seoSettings?.open_graph_settings?.default_image_url ||                // Legacy OG default
-                       store?.logo_url;                         // Store logo fallback
+                       store?.settings?.store_logo || store?.logo_url;  // Store logo fallback
 
 
         // Update document title

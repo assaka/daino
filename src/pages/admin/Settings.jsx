@@ -135,7 +135,7 @@ export default function Settings() {
         id: storeData.id,
         name: storeData.name || '',
         description: storeData.description || '',
-        logo_url: storeData.logo_url || '',
+        logo_url: storeData.settings?.store_logo || '', // From settings JSON
         domain: storeData.domain || '', // Keep existing domain if it's used internally
         domain_status: storeData.domain_status || '',
         ssl_enabled: storeData.ssl_enabled || false,
@@ -364,12 +364,12 @@ export default function Settings() {
       const payload = {
         name: store.name,
         description: store.description,
-        logo_url: store.logo_url,
         timezone: store.timezone,
         currency: store.currency,
-        // All contact details are stored in settings
+        // All contact details and logo are stored in settings
         settings: {
           ...settingsPayload,
+          store_logo: store.logo_url || '',
           store_email: store.contact_details?.email || '',
           store_phone: store.contact_details?.phone || '',
           store_address: store.contact_details?.address || '',

@@ -95,7 +95,7 @@ export function HeaderSlotRenderer({
     // Replace store variables
     if (context.store) {
       processed = processed.replace(/\{\{store\.name\}\}/g, context.store.name || '');
-      processed = processed.replace(/\{\{store\.logo_url\}\}/g, context.store.logo_url || '');
+      processed = processed.replace(/\{\{store\.logo_url\}\}/g, context.store.settings?.store_logo || context.store.logo_url || '');
       processed = processed.replace(/\{\{store\.url\}\}/g, createPublicUrl(context.store.slug, 'STOREFRONT'));
     }
 

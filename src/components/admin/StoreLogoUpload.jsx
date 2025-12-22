@@ -93,7 +93,7 @@ const StoreLogoUpload = ({
 
     setSaving(true);
     try {
-      await Store.updateSettings(currentStoreId, { logo_url: logoUrl });
+      await Store.updateSettings(currentStoreId, { settings: { store_logo: logoUrl } });
       return true;
     } finally {
       setSaving(false);
