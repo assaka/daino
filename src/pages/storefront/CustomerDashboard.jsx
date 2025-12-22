@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
@@ -786,6 +786,9 @@ export default function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [flashMessage, setFlashMessage] = useState(null);
 
+  // Ref to prevent duplicate auth checks (React Strict Mode / rapid re-renders)
+  const authCheckRef = useRef(false);
+
   // New state for address management
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
@@ -1099,6 +1102,12 @@ export default function CustomerDashboard() {
         return;
       }
 
+      // Prevent duplicate API calls (React Strict Mode runs effects twice)
+      if (authCheckRef.current) {
+        return;
+      }
+      authCheckRef.current = true;
+
       setLoading(true);
       try {
         // Check if customer token exists
@@ -1143,6 +1152,11 @@ export default function CustomerDashboard() {
     };
 
     checkAuthStatus();
+
+    // Reset ref on unmount so check can run again if user returns
+    return () => {
+      authCheckRef.current = false;
+    };
   }, [storeLoading, store]);
 
   // Effect for setting active tab from URL search params
