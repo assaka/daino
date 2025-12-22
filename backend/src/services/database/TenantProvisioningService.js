@@ -913,7 +913,8 @@ VALUES (
       if (customDomain) {
         baseUrl = customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
       } else {
-        baseUrl = `https://www.dainostore.com/public/${slug}`;
+        const platformUrl = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+        baseUrl = `${platformUrl}/public/${slug}`;
       }
 
       // Generate default robots.txt content with dynamic sitemap
@@ -984,7 +985,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       if (options.customDomain) {
         baseUrl = options.customDomain.startsWith('http') ? options.customDomain : `https://${options.customDomain}`;
       } else {
-        baseUrl = `https://www.dainostore.com/public/${slug}`;
+        const platformUrl = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+        baseUrl = `${platformUrl}/public/${slug}`;
       }
 
       // Generate default robots.txt content

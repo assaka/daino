@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const emailService = require('../services/email-service');
+const { buildStoreUrl } = require('../utils/domainConfig');
 
 const router = express.Router();
 
@@ -85,15 +86,19 @@ router.post('/customer/forgot-password', [
       .maybeSingle();
 
     // Build reset URL
-    // For custom domains: use domain directly with /reset-password
-    // For platform domains: use /public/{storeCode}/reset-password
-    const baseUrl = store?.domain
-      ? `https://${store.domain}`
-      : (process.env.CORS_ORIGIN || 'https://www.dainostore.com');
-    const resetPath = store?.domain
-      ? '/reset-password'
-      : `/public/${store?.slug || store?.code}/reset-password`;
-    const resetUrl = `${baseUrl}${resetPath}?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    // Build reset URL using store's custom domain or platform URL
+    const resetUrl = await buildStoreUrl({
+      tenantDb,
+      storeId: store_id,
+      storeSlug: store?.slug || store?.code,
+      path: '/reset-password',
+      queryParams: { token: resetToken, email }
+    });
+    const baseUrl = await buildStoreUrl({
+      tenantDb,
+      storeId: store_id,
+      storeSlug: store?.slug || store?.code
+    });
 
     // Send password reset email
     try {

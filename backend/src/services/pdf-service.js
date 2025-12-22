@@ -1,6 +1,7 @@
 const axios = require('axios');
 const path = require('path');
 const ConnectionManager = require('./database/ConnectionManager');
+const { buildStoreUrlSync } = require('../utils/domainConfig');
 
 /**
  * PDF Generation Service
@@ -25,13 +26,10 @@ const safeNumber = (value) => {
  * Get the public store URL (custom domain or public URL)
  */
 const getStoreUrl = (store) => {
-  // Use custom domain if available
-  if (store.custom_domain || store.primary_custom_domain) {
-    return `https://${store.custom_domain || store.primary_custom_domain}`;
-  }
-  // Fall back to public URL
-  const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www.dainostore.com';
-  return `${baseUrl}/public/${store.slug}`;
+  return buildStoreUrlSync({
+    customDomain: store.custom_domain || store.primary_custom_domain,
+    storeSlug: store.slug
+  });
 };
 
 /**

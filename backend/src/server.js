@@ -11,6 +11,7 @@ require('dotenv').config();
 const { masterDbClient } = require('./database/masterConnection');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/authMiddleware'); // Use same middleware as authMasterTenant
+const { buildStoreUrl } = require('./utils/domainConfig');
 
 // Import all models to ensure associations are loaded (Master DB)
 const models = require('./models');
@@ -447,10 +448,11 @@ app.get('/public/:storeSlug/robots.txt', async (req, res) => {
       robotsContent = seoSettings.robots_txt_content;
     } else {
       // Default robots.txt content with store-specific sitemap
-      // Use X-Forwarded-Host (from Vercel proxy) or fall back to req.get('host')
-      const forwardedHost = req.get('X-Forwarded-Host') || req.get('host');
-      const forwardedProto = req.get('X-Forwarded-Proto') || req.protocol;
-      const baseUrl = store.custom_domain || `${forwardedProto}://${forwardedHost}/public/${storeSlug}`;
+      const baseUrl = await buildStoreUrl({
+        tenantDb,
+        storeId: store.id,
+        storeSlug: store.slug
+      });
       robotsContent = `User-agent: *
 Allow: /
 
@@ -559,10 +561,11 @@ Disallow: /admin/`);
       robotsContent = seoSettings.robots_txt_content;
     } else {
       // Default robots.txt content with store-specific sitemap
-      // Use X-Forwarded-Host (from Vercel proxy) or fall back to req.get('host')
-      const forwardedHost = req.get('X-Forwarded-Host') || req.get('host');
-      const forwardedProto = req.get('X-Forwarded-Proto') || req.protocol;
-      const baseUrl = store.custom_domain || `${forwardedProto}://${forwardedHost}/public/${targetStoreSlug}`;
+      const baseUrl = await buildStoreUrl({
+        tenantDb,
+        storeId: store.id,
+        storeSlug: store.slug
+      });
       robotsContent = `User-agent: *
 Allow: /
 
@@ -654,10 +657,16 @@ app.get('/sitemap.xml', async (req, res) => {
       }).send('Store not found');
     }
 
-    // Determine base URL
-    const baseUrl = store.custom_domain
-      ? `https://${store.custom_domain}`
-      : `${req.protocol}://${req.get('host')}/public/${store.slug}`;
+    // Get tenant connection for custom domain lookup
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getConnection(store.id);
+
+    // Determine base URL (checks custom_domains table)
+    const baseUrl = await buildStoreUrl({
+      tenantDb,
+      storeId: store.id,
+      storeSlug: store.slug
+    });
 
     // Generate sitemap
     const sitemapXml = await generateSitemapXml(store.id, baseUrl);
@@ -706,10 +715,16 @@ app.get('/public/:storeSlug/sitemap.xml', async (req, res) => {
       }).send('Store not found');
     }
 
-    // Determine base URL
-    const baseUrl = store.custom_domain
-      ? `https://${store.custom_domain}`
-      : `${req.protocol}://${req.get('host')}/public/${store.slug}`;
+    // Get tenant connection for custom domain lookup
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getConnection(store.id);
+
+    // Determine base URL (checks custom_domains table)
+    const baseUrl = await buildStoreUrl({
+      tenantDb,
+      storeId: store.id,
+      storeSlug: store.slug
+    });
 
     // Generate sitemap
     const sitemapXml = await generateSitemapXml(store.id, baseUrl);

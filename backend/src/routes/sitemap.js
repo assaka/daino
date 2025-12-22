@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { buildStoreUrl } = require('../utils/domainConfig');
 
 /**
  * Generate XML sitemap content
@@ -277,7 +278,7 @@ router.get('/:storeId', async (req, res) => {
     // Find the store - query by is_active since storeId is tenant identifier, not store UUID
     const { data: store, error } = await tenantDb
       .from('stores')
-      .select('custom_domain, slug')
+      .select('id, slug')
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
@@ -289,8 +290,12 @@ router.get('/:storeId', async (req, res) => {
       }).send('Store not found');
     }
 
-    // Determine base URL
-    const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${store.slug}`;
+    // Determine base URL (checks custom_domains table)
+    const baseUrl = await buildStoreUrl({
+      tenantDb,
+      storeId: store.id,
+      storeSlug: store.slug
+    });
 
     // Generate sitemap
     const sitemapXml = await generateSitemapXml(storeId, baseUrl);

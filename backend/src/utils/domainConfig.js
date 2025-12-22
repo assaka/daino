@@ -91,8 +91,8 @@ function getAllPlatformDomainVariants() {
   return variants;
 }
 
-// Default platform URL for store links
-const DEFAULT_PLATFORM_URL = 'https://www.dainostore.com';
+// Default platform URL for store links (use CORS_ORIGIN from env)
+const DEFAULT_PLATFORM_URL = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
 
 /**
  * Get the primary verified custom domain for a store
@@ -153,8 +153,7 @@ async function buildStoreUrl({ tenantDb, storeId, storeSlug, path = '', queryPar
     baseUrl = `https://${customDomain}`;
   } else {
     // Fallback to platform URL with store slug
-    const platformUrl = process.env.PUBLIC_STORE_BASE_URL || DEFAULT_PLATFORM_URL;
-    baseUrl = `${platformUrl}/public/${storeSlug}`;
+    baseUrl = `${DEFAULT_PLATFORM_URL}/public/${storeSlug}`;
   }
 
   // Build full URL with path and query params
@@ -187,8 +186,7 @@ function buildStoreUrlSync({ customDomain, storeSlug, path = '', queryParams = {
   if (customDomain) {
     baseUrl = `https://${customDomain}`;
   } else {
-    const platformUrl = process.env.PUBLIC_STORE_BASE_URL || DEFAULT_PLATFORM_URL;
-    baseUrl = `${platformUrl}/public/${storeSlug}`;
+    baseUrl = `${DEFAULT_PLATFORM_URL}/public/${storeSlug}`;
   }
 
   let fullUrl = baseUrl;

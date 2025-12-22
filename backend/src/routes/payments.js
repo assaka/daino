@@ -5,6 +5,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const { getMasterStore, getMasterStoreSafe, updateMasterStore, getMasterUser, checkUserStoreAccess } = require('../utils/dbHelpers');
 const { v4: uuidv4 } = require('uuid');
 const IntegrationConfig = require('../models/IntegrationConfig');
+const { buildStoreUrl } = require('../utils/domainConfig');
 
 const router = express.Router();
 
@@ -1499,7 +1500,13 @@ router.post('/create-checkout', async (req, res) => {
         }
 
         // Build success URL for offline payment
-        const successUrl = `${process.env.CORS_ORIGIN || req.headers.origin}/public/${store.slug}/order-success?session_id=${mockSession.id}`;
+        const successUrl = await buildStoreUrl({
+          tenantDb,
+          storeId: store_id,
+          storeSlug: store.slug,
+          path: '/order-success',
+          queryParams: { session_id: mockSession.id }
+        });
 
         return res.json({
           success: true,
