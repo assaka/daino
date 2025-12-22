@@ -80,7 +80,9 @@ export const URL_CONFIG = {
     STORES: 'stores',
     CUSTOMER_ACTIVITY: 'customer-activity',
     HEATMAPS: 'heatmaps',
-    ABTESTING: 'ab-testing'
+    ABTESTING: 'ab-testing',
+    ONBOARDING: 'onboarding',
+    VERIFY_EMAIL: 'verify-email'
   },
   
   // Filter parameter mapping for SEO URLs

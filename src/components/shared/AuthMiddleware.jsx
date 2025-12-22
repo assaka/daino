@@ -581,8 +581,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                     window.location.href = decodeURIComponent(redirectUrl);
                   } else {
                     // No redirect, go to onboarding
-                    const onboardingUrl = createAdminUrl("StoreOnboarding");
-                    navigate(onboardingUrl || '/admin/onboarding');
+                    navigate(createAdminUrl("ONBOARDING"));
                   }
                 }
               } catch (error) {
@@ -592,8 +591,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   window.location.href = decodeURIComponent(redirectUrl);
                 } else {
                   // On error with no redirect, redirect to onboarding (safer fallback)
-                  const onboardingUrl = createAdminUrl("StoreOnboarding");
-                  navigate(onboardingUrl || '/admin/onboarding');
+                  navigate(createAdminUrl("ONBOARDING"));
                 }
               }
             }, 100); // Small delay to ensure token is set
