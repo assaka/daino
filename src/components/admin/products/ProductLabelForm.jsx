@@ -19,54 +19,59 @@ import TranslationFields from "@/components/admin/TranslationFields";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { getAttributeLabel } from "@/utils/attributeUtils";
 
+// Helper to ensure conditions structure is always complete with correct types
+const ensureConditionsStructure = (conditions) => ({
+  attribute_conditions: Array.isArray(conditions?.attribute_conditions) ? conditions.attribute_conditions : [],
+  price_conditions: conditions?.price_conditions || {},
+  product_ids: Array.isArray(conditions?.product_ids) ? conditions.product_ids : [],
+  category_ids: Array.isArray(conditions?.category_ids) ? conditions.category_ids : [],
+});
+
+// Helper to build form data from a label (or defaults)
+const buildFormData = (label) => {
+  if (!label) {
+    return {
+      name: '',
+      text: '',
+      background_color: '#FF0000',
+      text_color: '#FFFFFF',
+      position: 'top-right',
+      conditions: ensureConditionsStructure(null),
+      is_active: true,
+      priority: 0,
+      sort_order: 0,
+      translations: {},
+    };
+  }
+
+  // Handle translations with backward compatibility
+  let translations = label.translations || {};
+  if (!translations.en || (!translations.en.text && label.text)) {
+    translations.en = { text: label.text || "" };
+  }
+
+  return {
+    name: label.name || '',
+    text: translations.en?.text || '',
+    background_color: label.background_color || '#FF0000',
+    text_color: label.color || label.text_color || '#FFFFFF',
+    position: label.position || 'top-right',
+    conditions: ensureConditionsStructure(label.conditions),
+    is_active: label.is_active !== false,
+    priority: label.priority || 0,
+    sort_order: label.sort_order || 0,
+    translations: translations,
+  };
+};
+
 export default function ProductLabelForm({ label, attributes, onSubmit, onCancel }) {
   const { currentLanguage } = useTranslation();
-  const [formData, setFormData] = useState({
-    name: '',
-    text: '',
-    background_color: '#FF0000',
-    text_color: '#FFFFFF',
-    position: 'top-right',
-    conditions: {
-      attribute_conditions: [],
-      price_conditions: {}
-    },
-    is_active: true,
-    priority: 0,
-    sort_order: 0,
-    translations: {},
-  });
+  const [formData, setFormData] = useState(() => buildFormData(label));
   const [showTranslations, setShowTranslations] = useState(false);
 
+  // Update form when label prop changes (for dialog reuse)
   useEffect(() => {
-    if (label) {
-
-      // Handle translations with backward compatibility
-      let translations = label.translations || {};
-
-      // Ensure English translation exists (backward compatibility)
-      if (!translations.en || (!translations.en.text && label.text)) {
-        translations.en = {
-          text: label.text || ""
-        };
-      }
-
-      setFormData({
-        name: label.name || '',
-        text: translations.en?.text || '',
-        background_color: label.background_color || '#FF0000',
-        text_color: label.color || label.text_color || '#FFFFFF', // Handle both field names
-        position: label.position || 'top-right',
-        conditions: label.conditions || {
-          attribute_conditions: [],
-          price_conditions: {}
-        },
-        is_active: label.is_active !== false,
-        priority: label.priority || 0,
-        sort_order: label.sort_order || 0,
-        translations: translations,
-      });
-    }
+    setFormData(buildFormData(label));
   }, [label]);
 
   const handleInputChange = (field, value) => {
@@ -129,7 +134,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
       ...prev,
       conditions: {
         ...prev.conditions,
-        attribute_conditions: prev.conditions.attribute_conditions.map((cond, i) => 
+        attribute_conditions: prev.conditions.attribute_conditions.map((cond, i) =>
           i === index ? { ...cond, [field]: value } : cond
         )
       }
