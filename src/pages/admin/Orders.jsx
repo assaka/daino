@@ -223,7 +223,7 @@ export default function Orders() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': getSelectedStoreId()
+          'x-store-id': localStorage.getItem('selectedStoreId')
         }
       });
 
@@ -257,7 +257,7 @@ export default function Orders() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': getSelectedStoreId()
+          'x-store-id': localStorage.getItem('selectedStoreId')
         },
         body: JSON.stringify({ withPdf: true })
       });
@@ -315,7 +315,7 @@ export default function Orders() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': getSelectedStoreId()
+          'x-store-id': localStorage.getItem('selectedStoreId')
         },
         body: JSON.stringify({
           trackingNumber: shipmentDetails.trackingNumber,
@@ -405,7 +405,7 @@ export default function Orders() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': getSelectedStoreId()
+          'x-store-id': localStorage.getItem('selectedStoreId')
         },
         body: JSON.stringify({ status: 'cancelled' })
       });
@@ -454,7 +454,7 @@ export default function Orders() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'x-store-id': getSelectedStoreId()
+          'x-store-id': localStorage.getItem('selectedStoreId')
         },
         body: JSON.stringify({
           status: 'refunded',
