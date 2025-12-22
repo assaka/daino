@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette, Loader2, Database, RefreshCw, Beaker } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard, Palette, Loader2, Database, RefreshCw, Beaker, Coins } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -49,6 +49,9 @@ export default function Stores() {
   const [restoringDemo, setRestoringDemo] = useState(false);
   // Publishing cost from service_credit_costs
   const [publishingCost, setPublishingCost] = useState(1); // Default to 1 credit
+  // Insufficient credits error state
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
+  const [insufficientCreditsData, setInsufficientCreditsData] = useState({ currentBalance: 0, requiredCredits: 10 });
 
   useEffect(() => {
     loadData();
@@ -206,7 +209,18 @@ export default function Stores() {
       setStoreToPublish(null);
     } catch (error) {
       console.error('❌ Error toggling store published status:', error);
-      alert('Failed to update store status. Please try again.');
+
+      // Check if this is an insufficient credits error
+      const errorData = error?.response?.data || error?.data || error;
+      if (errorData?.error === 'Insufficient credits to run store' || errorData?.requiredCredits) {
+        setInsufficientCreditsData({
+          currentBalance: errorData.currentBalance || 0,
+          requiredCredits: errorData.requiredCredits || 10
+        });
+        setShowInsufficientCredits(true);
+      } else {
+        alert('Failed to update store status. Please try again.');
+      }
 
       // Revert optimistic update on error
       await loadData();
@@ -776,6 +790,58 @@ export default function Stores() {
                   Configure Payments
                 </Button>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Insufficient Credits Modal */}
+      <Dialog open={showInsufficientCredits} onOpenChange={setShowInsufficientCredits}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Coins className="w-5 h-5" />
+              Insufficient Credits
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-900 font-medium mb-3">
+                You don't have enough credits to run this store.
+              </p>
+              <div className="space-y-2 text-sm text-red-800">
+                <div className="flex items-center justify-between">
+                  <span>Your current balance:</span>
+                  <span className="font-semibold">{insufficientCreditsData.currentBalance} credits</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Minimum required:</span>
+                  <span className="font-semibold">{insufficientCreditsData.requiredCredits} credits</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-red-200">
+                <p className="text-xs text-red-700">
+                  <strong>Note:</strong> 3 credits will be deducted every day at midnight UTC while the store is running.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowInsufficientCredits(false)}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowInsufficientCredits(false);
+                  navigate('/admin/credits');
+                }}
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                Buy Credits
+              </Button>
             </div>
           </div>
         </DialogContent>
