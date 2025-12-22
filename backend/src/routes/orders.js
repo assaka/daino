@@ -1817,7 +1817,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
 
     // Check if invoice already exists
     const { data: invoice } = await tenantDb
-      .from('invoices')
+      .from('sales_invoices')
       .select('*')
       .eq('order_id', id)
       .maybeSingle();
@@ -1860,7 +1860,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     let updatedInvoice;
     if (invoice) {
       const { data: updated, error: updateError } = await tenantDb
-        .from('invoices')
+        .from('sales_invoices')
         .update({
           sent_at: new Date().toISOString(),
           pdf_generated: pdfGeneratedSuccessfully,
@@ -1876,7 +1876,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
       updatedInvoice = updated;
     } else {
       const { data: created, error: createError } = await tenantDb
-        .from('invoices')
+        .from('sales_invoices')
         .insert({
           invoice_number: invoiceNumber,
           order_id: id,
