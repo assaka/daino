@@ -441,7 +441,8 @@ export default function StorefrontLayout({ children }) {
         if (!isCustomFont && selectedFont) {
           const googleLink = document.createElement('link');
           googleLink.rel = 'stylesheet';
-          googleLink.href = `https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}:wght@100..900&display=swap`;
+          // Use specific weights for broader font compatibility (not all fonts support variable wght@100..900)
+          googleLink.href = `https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap`;
           googleLink.setAttribute('data-custom-font', 'google-builtin');
           document.head.appendChild(googleLink);
         }

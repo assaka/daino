@@ -14,7 +14,9 @@
       "Bash(git checkout:*)",
       "Bash(python reorganize_sql.py:*)",
       "Bash(cat:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "WebFetch(domain:unsplash.com)",
+      "WebFetch(domain:images.unsplash.com)"
     ],
     "deny": [],
     "ask": [],
