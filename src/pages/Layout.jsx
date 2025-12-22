@@ -329,7 +329,7 @@ function LayoutInner({ children, currentPageName }) {
   };
 
   const publicPages = ['Landing', 'Auth', 'Pricing', 'Onboarding'];
-  const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerAuth', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'SitemapPublic', 'NotFound', 'EmailVerification'];
+  const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerAuth', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'SitemapPublic', 'NotFound', 'EmailVerification', 'ResetPassword'];
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
   const aiWorkspacePages = ['AIWorkspace']; // Pages that use the AI Workspace mode (full-screen editor)
