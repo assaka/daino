@@ -166,13 +166,13 @@ export { createSlotComponent, ComponentRegistry, registerSlotComponent } from '.
 const renderProductLabels = (product, productLabels = []) => {
   if (!product || !productLabels || productLabels.length === 0) return null;
 
-  console.log('[DEBUG] renderProductLabels input:', productLabels.map(l => ({ name: l.name, position: l.position, conditions: l.conditions })));
-
   // Filter labels that match the product conditions
   const matchingLabels = productLabels.filter((label) => {
     let shouldShow = true;
+    const conditionsLength = label.conditions ? Object.keys(label.conditions).length : 0;
+    console.log('[DEBUG] Label check:', { name: label.name, conditions: label.conditions, conditionsLength, hasConditions: conditionsLength > 0 });
 
-    if (label.conditions && Object.keys(label.conditions).length > 0) {
+    if (label.conditions && conditionsLength > 0) {
       // Check product_ids condition
       if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
         if (!label.conditions.product_ids.includes(product.id)) {
