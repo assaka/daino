@@ -25,13 +25,15 @@ export default function ProductLabel({ label, style = {} }) {
   );
 }
 
-// Wrapper component for rendering multiple labels in a flex container
+// Wrapper component for rendering multiple labels in a flex container at a position
 export function ProductLabelsContainer({ children, position = 'top-left' }) {
   const positionClasses = {
     'top-left': 'top-2 left-2',
     'top-right': 'top-2 right-2',
+    'top-center': 'top-2 left-1/2 -translate-x-1/2',
     'bottom-left': 'bottom-2 left-2',
     'bottom-right': 'bottom-2 right-2',
+    'bottom-center': 'bottom-2 left-1/2 -translate-x-1/2',
   };
 
   return (
@@ -39,4 +41,26 @@ export function ProductLabelsContainer({ children, position = 'top-left' }) {
       {children}
     </div>
   );
+}
+
+// Render all labels grouped by their position
+export function renderLabelsGroupedByPosition(labels) {
+  if (!labels || labels.length === 0) return null;
+
+  // Group labels by position
+  const labelsByPosition = labels.reduce((acc, label) => {
+    const position = label.position || 'top-left';
+    if (!acc[position]) acc[position] = [];
+    acc[position].push(label);
+    return acc;
+  }, {});
+
+  // Render a container for each position with all its labels
+  return Object.entries(labelsByPosition).map(([position, positionLabels]) => (
+    <ProductLabelsContainer key={position} position={position}>
+      {positionLabels.map(label => (
+        <ProductLabel key={label.id} label={label} />
+      ))}
+    </ProductLabelsContainer>
+  ));
 }

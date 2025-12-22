@@ -30,7 +30,7 @@ import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDispla
 import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import ConfigurableProductSelectorComponent from '@/components/storefront/ConfigurableProductSelector';
-import ProductLabelComponent from '@/components/storefront/ProductLabel';
+import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/components/storefront/ProductLabel';
 import { getCurrentLanguage, getTranslatedField } from '@/utils/translationUtils';
 
 // Import category and header slot components to register them
@@ -306,27 +306,7 @@ const ProductGallery = createSlotComponent({
       <div className={extraClass}>
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
           <img src={imageSrc} alt={altText} className="w-full h-full object-cover" />
-          {productLabels && productLabels.length > 0 && (
-            <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
-              {productLabels.map((label, index) => (
-                <Badge
-                  key={index}
-                  variant="default"
-                  style={{
-                    backgroundColor: label.background_color || '#3B82F6',
-                    color: label.text_color || '#FFFFFF'
-                  }}
-                >
-                  {label.text || label}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {product?.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
-            <div className="absolute top-2 right-2">
-              <Badge variant="destructive" className="bg-red-600 text-white">SALE</Badge>
-            </div>
-          )}
+          {productLabels && productLabels.length > 0 && renderLabelsGroupedByPosition(productLabels)}
         </div>
       </div>
     );

@@ -59,7 +59,7 @@ import { processVariables } from '@/utils/variableProcessor';
 import { formatPrice, formatPriceNumber, safeNumber } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
-import ProductLabelComponent, { ProductLabelsContainer } from '@/components/storefront/ProductLabel';
+import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/components/storefront/ProductLabel';
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
@@ -644,14 +644,8 @@ const renderProductLabelsForProduct = (product, productLabels = []) => {
     return (b.priority || 0) - (a.priority || 0);
   });
 
-  // Render all labels in a flex container
-  return (
-    <ProductLabelsContainer position="top-left">
-      {sortedLabels.map(label => (
-        <ProductLabelComponent key={label.id} label={label} />
-      ))}
-    </ProductLabelsContainer>
-  );
+  // Render labels grouped by position (top-left labels together, top-right together, etc.)
+  return renderLabelsGroupedByPosition(sortedLabels);
 };
 
 /**

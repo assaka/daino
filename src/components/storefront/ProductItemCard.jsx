@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import ProductLabelComponent from '@/components/storefront/ProductLabel';
+import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/components/storefront/ProductLabel';
 import { formatPriceWithTax, formatPriceNumber, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
@@ -142,38 +142,18 @@ const ProductItemCard = ({
       return shouldShow;
     }) || [];
 
-    // Group labels by position and show one label per position
-    const labelsByPosition = matchingLabels.reduce((acc, label) => {
-      const position = label.position || 'top-right';
-      if (!acc[position]) {
-        acc[position] = [];
+    if (matchingLabels.length === 0) return null;
+
+    // Sort by sort_order then priority
+    const sortedLabels = matchingLabels.sort((a, b) => {
+      if ((a.sort_order || 0) !== (b.sort_order || 0)) {
+        return (a.sort_order || 0) - (b.sort_order || 0);
       }
-      acc[position].push(label);
-      return acc;
-    }, {});
+      return (b.priority || 0) - (a.priority || 0);
+    });
 
-    // For each position, sort by sort_order (ASC) then by priority (DESC) and take the first one
-    const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
-      const sortedLabels = positionLabels.sort((a, b) => {
-        const sortOrderA = a.sort_order || 0;
-        const sortOrderB = b.sort_order || 0;
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB; // ASC
-        }
-        const priorityA = a.priority || 0;
-        const priorityB = b.priority || 0;
-        return priorityB - priorityA; // DESC
-      });
-      return sortedLabels[0]; // Return highest priority label for this position
-    }).filter(Boolean);
-
-    // Show all labels (one per position)
-    return labelsToShow.map(label => (
-      <ProductLabelComponent
-        key={label.id}
-        label={label}
-      />
-    ));
+    // Render labels grouped by position (top-left labels together, top-right together, etc.)
+    return renderLabelsGroupedByPosition(sortedLabels);
   };
 
   const handleAddToCart = async (e) => {

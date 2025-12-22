@@ -149,7 +149,7 @@ import cartService from '@/services/cartService';
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice, formatPriceNumber, safeNumber } from '@/utils/priceUtils';
-import ProductLabelComponent, { ProductLabelsContainer } from '@/components/storefront/ProductLabel';
+import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/components/storefront/ProductLabel';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 // Import component registry to ensure all components are registered
@@ -170,7 +170,6 @@ const renderProductLabels = (product, productLabels = []) => {
   const matchingLabels = productLabels.filter((label) => {
     let shouldShow = true;
     const conditionsLength = label.conditions ? Object.keys(label.conditions).length : 0;
-    console.log('[DEBUG] Label check:', { name: label.name, conditions: label.conditions, conditionsLength, hasConditions: conditionsLength > 0 });
 
     if (label.conditions && conditionsLength > 0) {
       // Check product_ids condition
@@ -236,14 +235,8 @@ const renderProductLabels = (product, productLabels = []) => {
     return (b.priority || 0) - (a.priority || 0);
   });
 
-  // Render all labels in a flex container
-  return (
-    <ProductLabelsContainer position="top-left">
-      {sortedLabels.map(label => (
-        <ProductLabelComponent key={label.id} label={label} />
-      ))}
-    </ProductLabelsContainer>
-  );
+  // Render labels grouped by position (top-left labels together, top-right together, etc.)
+  return renderLabelsGroupedByPosition(sortedLabels);
 };
 
 /**
