@@ -22,6 +22,19 @@ const safeNumber = (value) => {
 };
 
 /**
+ * Get the public store URL (custom domain or public URL)
+ */
+const getStoreUrl = (store) => {
+  // Use custom domain if available
+  if (store.custom_domain || store.primary_custom_domain) {
+    return `https://${store.custom_domain || store.primary_custom_domain}`;
+  }
+  // Fall back to public URL
+  const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www.dainostore.com';
+  return `${baseUrl}/public/${store.slug}`;
+};
+
+/**
  * Generate PDF from HTML using PDF microservice
  */
 const generatePdfFromHtml = async (html, options = {}) => {
@@ -225,7 +238,7 @@ class PDFService {
       store_postal_code: store.settings?.store_postal_code || '',
       store_email: store.settings?.store_email || '',
       store_phone: store.settings?.store_phone || '',
-      store_website: store.settings?.store_website || '',
+      store_website: getStoreUrl(store),
       current_year: new Date().getFullYear()
     };
   }
@@ -273,7 +286,7 @@ class PDFService {
       store_postal_code: store.settings?.store_postal_code || '',
       store_email: store.settings?.store_email || '',
       store_phone: store.settings?.store_phone || '',
-      store_website: store.settings?.store_website || '',
+      store_website: getStoreUrl(store),
       current_year: new Date().getFullYear()
     };
   }
@@ -308,7 +321,7 @@ class PDFService {
       <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
         <p style="margin: 5px 0;">Thank you for your business!</p>
         <p style="margin: 5px 0;">
-          ${store.name || ''} | ${store.settings?.store_website || store.settings?.store_email || ''}
+          ${store.name || ''} | ${getStoreUrl(store)}
         </p>
         <p style="margin: 5px 0;">© ${currentYear} ${store.name || ''}. All rights reserved.</p>
       </div>

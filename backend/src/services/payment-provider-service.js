@@ -63,11 +63,6 @@ class PaymentProviderService {
   async refundStripe({ order, amount, reason, store }) {
     console.log('💳 Processing Stripe refund for order:', order.order_number);
 
-    const stripeOptions = {};
-    if (store?.settings?.stripe_account_id) {
-      stripeOptions.stripeAccount = store.settings.stripe_account_id;
-    }
-
     const refundParams = {
       reason: reason === 'stock_issue' ? 'requested_by_customer' : reason
     };
