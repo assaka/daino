@@ -636,7 +636,7 @@ export default function Orders() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-1.5">
-                                    <Badge className={getStatusBadge(order.status)}>
+                                    <Badge variant="outline" className={getStatusBadge(order.status)}>
                                       {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
                                     </Badge>
                                     {order.demo && (
