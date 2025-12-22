@@ -1854,6 +1854,18 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 
       tenantResult = tenantData;
       console.log('✅ Tenant DB updated:', Object.keys(tenantUpdates));
+
+      // Clear storefront bootstrap cache when settings are updated
+      // This ensures settings changes like show_stock_label take effect immediately
+      if ('settings' in tenantUpdates) {
+        try {
+          const { deletePattern } = require('../utils/cacheManager');
+          const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
+          console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for settings update:`, store.slug);
+        } catch (cacheError) {
+          console.warn('⚠️ Failed to clear cache:', cacheError.message);
+        }
+      }
     }
 
     res.json({
@@ -1994,6 +2006,18 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
       tenantResult = tenantData;
       console.log('✅ Tenant DB updated:', Object.keys(tenantUpdates));
+
+      // Clear storefront bootstrap cache when settings are updated
+      // This ensures settings changes like show_stock_label take effect immediately
+      if ('settings' in tenantUpdates) {
+        try {
+          const { deletePattern } = require('../utils/cacheManager');
+          const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
+          console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for settings update:`, store.slug);
+        } catch (cacheError) {
+          console.warn('⚠️ Failed to clear cache:', cacheError.message);
+        }
+      }
     }
 
     res.json({
