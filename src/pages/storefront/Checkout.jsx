@@ -2517,7 +2517,7 @@ export default function Checkout() {
                   )}
                   <Button
                     onClick={handleCheckout}
-                    disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) || isPublishedPreview}
+                    disabled={true /* TEMPORARILY DISABLED */ || isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) || isPublishedPreview}
                     variant="themed"
                     className="w-full h-12 text-lg"
                     style={{
