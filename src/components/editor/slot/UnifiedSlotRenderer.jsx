@@ -166,6 +166,8 @@ export { createSlotComponent, ComponentRegistry, registerSlotComponent } from '.
 const renderProductLabels = (product, productLabels = []) => {
   if (!product || !productLabels || productLabels.length === 0) return null;
 
+  console.log('[DEBUG] renderProductLabels input:', productLabels.map(l => ({ name: l.name, position: l.position, conditions: l.conditions })));
+
   // Filter labels that match the product conditions
   const matchingLabels = productLabels.filter((label) => {
     let shouldShow = true;
