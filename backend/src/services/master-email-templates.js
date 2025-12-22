@@ -869,6 +869,220 @@ const storeOwnerVerificationEmail = (data) => {
   });
 };
 
+/**
+ * Pause Access Request Email Template
+ * Sent to store owner when someone requests access to their paused store
+ */
+const pauseAccessRequestEmail = (data) => {
+  const {
+    storeName,
+    requesterEmail,
+    message,
+    requestDate,
+    manageUrl
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'New Access Request',
+    subtitle: `Someone wants to access ${storeName}`
+  });
+
+  const footer = masterEmailFooter();
+
+  const formattedDate = new Date(requestDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 20px;">
+
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Someone has requested access to view your paused store.
+          </p>
+
+          <!-- Request Details Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 12px; margin-bottom: 24px;">
+            <tr>
+              <td style="padding: 20px;">
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">Email</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${requesterEmail}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">Requested</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px; text-align: right;">${formattedDate}</td>
+                  </tr>
+                  ${message ? `
+                  <tr>
+                    <td colspan="2" style="padding: 12px 0 0 0;">
+                      <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 13px;">Message</p>
+                      <p style="margin: 0; padding: 12px; background-color: #ffffff; border-radius: 8px; color: #374151; font-size: 14px; line-height: 1.5; border: 1px solid #e5e7eb;">${message}</p>
+                    </td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td align="center">
+                <a href="${manageUrl}" style="display: inline-block; padding: 14px 32px; background-color: #3b82f6; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 8px;">
+                  Review Request
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `${requesterEmail} has requested access to ${storeName}`
+  });
+};
+
+/**
+ * Pause Access Approved Email Template
+ * Sent to requester when their access request is approved
+ */
+const pauseAccessApprovedEmail = (data) => {
+  const {
+    storeName,
+    storeUrl,
+    expiresDate
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Access Approved!',
+    subtitle: `You can now view ${storeName}`
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 20px;">
+
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Great news! Your request to access <strong>${storeName}</strong> has been approved.
+          </p>
+
+          ${expiresDate ? `
+          <!-- Expiration Notice -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+            <tr>
+              <td style="padding: 16px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+                  <strong>Note:</strong> Your access will expire on ${new Date(expiresDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.
+                </p>
+              </td>
+            </tr>
+          </table>
+          ` : ''}
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td align="center">
+                <a href="${storeUrl}" style="display: inline-block; padding: 14px 32px; background-color: #10b981; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 8px;">
+                  Visit Store
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 13px; text-align: center;">
+            Click the button above to access the store. Your access has been verified via this email address.
+          </p>
+
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Your access to ${storeName} has been approved`
+  });
+};
+
+/**
+ * Pause Access Rejected Email Template
+ * Sent to requester when their access request is rejected
+ */
+const pauseAccessRejectedEmail = (data) => {
+  const {
+    storeName,
+    contactEmail
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Access Request Update',
+    subtitle: `Regarding your request for ${storeName}`
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 20px;">
+
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Thank you for your interest in <strong>${storeName}</strong>.
+          </p>
+
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Unfortunately, your access request has not been approved at this time. The store owner has decided not to grant access to the paused store.
+          </p>
+
+          ${contactEmail ? `
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            If you believe this was a mistake or have questions, you can contact the store owner at <a href="mailto:${contactEmail}" style="color: #3b82f6; text-decoration: none;">${contactEmail}</a>.
+          </p>
+          ` : ''}
+
+          <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+            Thank you for your understanding.
+          </p>
+
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Your access request for ${storeName} was not approved`
+  });
+};
+
 module.exports = {
   // Components
   masterEmailHeader,
@@ -882,6 +1096,9 @@ module.exports = {
   passwordResetEmail,
   teamInvitationEmail,
   storeOwnerVerificationEmail,
+  pauseAccessRequestEmail,
+  pauseAccessApprovedEmail,
+  pauseAccessRejectedEmail,
 
   // Constants
   PLATFORM_NAME,

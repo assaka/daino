@@ -5,7 +5,10 @@ import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { handleLogout, getUserDataForRole } from '@/utils/auth';
 import { CustomerAuth } from '@/api/storefront-entities';
+import { StorePauseAccess } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Menu, Search, ChevronDown, Settings, LogOut, X } from "lucide-react";
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { PageLoader } from '@/components/ui/page-loader';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -40,15 +43,107 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // Separate component for the paused overlay that can use the preview mode context
 function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const { isPreviewDraftMode, isPublishedPreview, isWorkspaceMode } = usePreviewMode();
+    const [showRequestForm, setShowRequestForm] = useState(false);
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
+    const [checkingAccess, setCheckingAccess] = useState(true);
 
     // Also check URL params as fallback (for initial load before context initializes)
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const isInPreviewModeFromUrl = urlParams?.get('version') === 'published' || urlParams?.get('mode') === 'workspace';
 
+    // Check for pause_access_email and pause_access_token in URL (from approval email link)
+    const pauseAccessEmail = urlParams?.get('pause_access_email');
+    const pauseAccessToken = urlParams?.get('pause_access_token');
+
+    // Check localStorage for approved access on mount
+    useEffect(() => {
+        const checkAccess = async () => {
+            if (!store?.id) {
+                setCheckingAccess(false);
+                return;
+            }
+
+            // First check URL params (from approval email)
+            if (pauseAccessEmail && pauseAccessToken) {
+                try {
+                    const result = await StorePauseAccess.checkAccess(store.id, pauseAccessEmail, pauseAccessToken);
+                    if (result?.hasAccess) {
+                        // Store in localStorage for future visits
+                        localStorage.setItem(`pause_access_email_${store.id}`, pauseAccessEmail);
+                        localStorage.setItem(`pause_access_token_${store.id}`, pauseAccessToken);
+                        setHasApprovedAccess(true);
+                        setCheckingAccess(false);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error checking pause access from URL:', error);
+                }
+            }
+
+            // Then check localStorage
+            const storedEmail = localStorage.getItem(`pause_access_email_${store.id}`);
+            const storedToken = localStorage.getItem(`pause_access_token_${store.id}`);
+
+            if (storedEmail && storedToken) {
+                try {
+                    const result = await StorePauseAccess.checkAccess(store.id, storedEmail, storedToken);
+                    if (result?.hasAccess) {
+                        setHasApprovedAccess(true);
+                    } else {
+                        // Clear invalid access
+                        localStorage.removeItem(`pause_access_email_${store.id}`);
+                        localStorage.removeItem(`pause_access_token_${store.id}`);
+                    }
+                } catch (error) {
+                    console.error('Error checking pause access:', error);
+                }
+            }
+            setCheckingAccess(false);
+        };
+
+        checkAccess();
+    }, [store?.id, pauseAccessEmail, pauseAccessToken]);
+
     const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
     const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
 
-    if (!isStorePaused) return null;
+    // Don't show overlay if user has approved access
+    if (hasApprovedAccess || !isStorePaused) return null;
+
+    // Show loading while checking access
+    if (checkingAccess) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            </div>
+        );
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+
+        setLoading(true);
+        try {
+            const result = await StorePauseAccess.requestAccess(store.id, email.trim(), message.trim() || null);
+            if (result?.success || result?.already_pending || result?.already_approved) {
+                setSubmitted(true);
+                if (result?.already_approved) {
+                    // User already has access, refresh to check
+                    window.location.reload();
+                }
+            }
+        } catch (error) {
+            console.error('Error submitting access request:', error);
+            alert('Failed to submit request. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
@@ -66,10 +161,89 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                 <p className="text-gray-600 mb-4">
                     This store is temporarily unavailable. Please check back later.
                 </p>
-                <p className="text-sm text-gray-500 mb-4">
-                    If you're the store owner, you can publish your store in the DainoStore dashboard.
-                </p>
-                <div className="pt-4 border-t border-gray-200">
+
+                {!submitted ? (
+                    <>
+                        {!showRequestForm ? (
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Need access? Request permission from the store owner.
+                                </p>
+                                <Button
+                                    onClick={() => setShowRequestForm(true)}
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    Request Access
+                                </Button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-200 text-left">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Your Email Address
+                                        </label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="you@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Why do you need access? <span className="text-gray-400">(optional)</span>
+                                        </label>
+                                        <Textarea
+                                            id="message"
+                                            placeholder="I'm a returning customer..."
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                            maxLength={500}
+                                            rows={3}
+                                            className="w-full resize-none"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setShowRequestForm(false)}
+                                            className="flex-1"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={loading || !email.trim()}
+                                            className="flex-1"
+                                        >
+                                            {loading ? 'Submitting...' : 'Submit Request'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
+                    </>
+                ) : (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="p-4 bg-green-50 rounded-lg">
+                            <svg className="w-8 h-8 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <p className="text-green-800 font-medium">Request Submitted!</p>
+                            <p className="text-green-700 text-sm mt-1">
+                                You'll receive an email when the store owner reviews your request.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="pt-4 mt-4 border-t border-gray-200">
                     <a
                         href="https://www.dainostore.com"
                         className="text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center"

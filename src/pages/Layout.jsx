@@ -680,6 +680,12 @@ function LayoutInner({ children, currentPageName }) {
                       <span>Team</span>
                   </DropdownMenuItem>
                 )}
+                {!isPendingDatabase && (
+                  <DropdownMenuItem onClick={() => navigate("/admin/access-requests")}>
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      <span>Access Requests</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/admin/stores")}>
                     <StoreIcon className="mr-2 h-4 w-4" />
                     <span>Stores</span>

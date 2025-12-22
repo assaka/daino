@@ -86,6 +86,7 @@ const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
 const publicCmsPagesRoutes = require('./routes/public-cms-pages');
 const publicCustomerAuthRoutes = require('./routes/public-customer-auth');
 const storeTeamRoutes = require('./routes/store-teams');
+const storePauseAccessRoutes = require('./routes/store-pause-access');
 const robotsRoutes = require('./routes/robots');
 const sitemapRoutes = require('./routes/sitemap');
 const integrationRoutes = require('./routes/integrations');
@@ -1284,6 +1285,7 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
 });
 
 app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
+app.use('/api/pause-access', storePauseAccessRoutes);
 app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/supabase', supabaseRoutes);
 app.use('/api/supabase', supabaseSetupRoutes);

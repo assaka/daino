@@ -447,6 +447,7 @@ function App() {
           <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />
           <Route path="/admin/uptime-report" element={<PageWrapper Component={Pages.UptimeReport} pageName="UptimeReport" />} />
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
+          <Route path="/admin/access-requests" element={<PageWrapper Component={Pages.AccessRequestsPage} pageName="AccessRequestsPage" />} />
           <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.StoreOnboarding} pageName="StoreOnboarding" />} />
           <Route path="/admin/verify-email" element={<Pages.StoreOwnerEmailVerification />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />

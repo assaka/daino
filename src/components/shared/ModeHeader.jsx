@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import StoreSelector from '@/components/admin/StoreSelector';
-import { UserIcon, LogOut, ShoppingBag, Wallet, Users, Store as StoreIcon } from 'lucide-react';
+import { UserIcon, LogOut, ShoppingBag, Wallet, Users, Store as StoreIcon, KeyRound } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -172,6 +172,10 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 <Users className="mr-2 h-4 w-4" />
                 <span>Team</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/admin/access-requests")}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                <span>Access Requests</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/admin/stores")}>
                 <StoreIcon className="mr-2 h-4 w-4" />
                 <span>Stores</span>
@@ -320,6 +324,10 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               <DropdownMenuItem onClick={() => navigate("/admin/team")}>
                 <Users className="mr-2 h-4 w-4" />
                 <span>Team</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/admin/access-requests")}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                <span>Access Requests</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/admin/stores")}>
                 <StoreIcon className="mr-2 h-4 w-4" />

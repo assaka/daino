@@ -3017,6 +3017,22 @@ CREATE TABLE IF NOT EXISTS wishlists (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS store_pause_access (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  message TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'revoked')),
+  requested_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  responded_at TIMESTAMP WITH TIME ZONE,
+  responded_by UUID,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  access_token VARCHAR(64),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT unique_pause_access_email UNIQUE (store_id, email)
+);
+
 -- ============================================
 -- SECTION 4: CREATE INDEXES
 -- ============================================
@@ -3744,6 +3760,12 @@ CREATE INDEX IF NOT EXISTS idx_sales_shipments_store_id ON sales_shipments USING
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_order_id ON sales_invoices USING btree (order_id);
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_store_id ON sales_invoices USING btree (store_id);
 
+-- Store Pause Access
+CREATE INDEX IF NOT EXISTS idx_store_pause_access_store_id ON store_pause_access USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_store_pause_access_email ON store_pause_access USING btree (email);
+CREATE INDEX IF NOT EXISTS idx_store_pause_access_status ON store_pause_access USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_store_pause_access_token ON store_pause_access USING btree (access_token);
+
 -- ============================================
 -- SECTION 5: CREATE TRIGGERS
 -- ============================================
@@ -4236,6 +4258,10 @@ ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_published_by_
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE store_pause_access ADD CONSTRAINT store_pause_access_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE store_pause_access ADD CONSTRAINT store_pause_access_responded_by_fkey FOREIGN KEY (responded_by) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 

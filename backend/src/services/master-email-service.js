@@ -13,6 +13,9 @@ const {
   welcomeEmail,
   passwordResetEmail,
   storeOwnerVerificationEmail,
+  pauseAccessRequestEmail,
+  pauseAccessApprovedEmail,
+  pauseAccessRejectedEmail,
   PLATFORM_NAME
 } = require('./master-email-templates');
 
@@ -273,6 +276,80 @@ class MasterEmailService {
     const subject = `Verify Your Email - ${PLATFORM_NAME}`;
 
     return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send pause access request notification to store owner
+   * @param {Object} data - Request data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendPauseAccessRequestEmail(data) {
+    const {
+      toEmail,
+      storeName,
+      requesterEmail,
+      message,
+      requestDate,
+      manageUrl
+    } = data;
+
+    const htmlContent = pauseAccessRequestEmail({
+      storeName,
+      requesterEmail,
+      message,
+      requestDate,
+      manageUrl
+    });
+
+    const subject = `Access Request for ${storeName} - ${PLATFORM_NAME}`;
+
+    return await this.sendEmail(toEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send pause access approved notification to requester
+   * @param {Object} data - Approval data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendPauseAccessApprovedEmail(data) {
+    const {
+      toEmail,
+      storeName,
+      storeUrl,
+      expiresDate
+    } = data;
+
+    const htmlContent = pauseAccessApprovedEmail({
+      storeName,
+      storeUrl,
+      expiresDate
+    });
+
+    const subject = `Access Approved - ${storeName}`;
+
+    return await this.sendEmail(toEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send pause access rejected notification to requester
+   * @param {Object} data - Rejection data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendPauseAccessRejectedEmail(data) {
+    const {
+      toEmail,
+      storeName,
+      contactEmail
+    } = data;
+
+    const htmlContent = pauseAccessRejectedEmail({
+      storeName,
+      contactEmail
+    });
+
+    const subject = `Access Request Update - ${storeName}`;
+
+    return await this.sendEmail(toEmail, subject, htmlContent);
   }
 
   /**

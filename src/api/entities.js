@@ -1325,6 +1325,94 @@ class StoreTeamService extends BaseEntity {
 }
 
 export const StoreTeam = new StoreTeamService();
+
+// Pause Access Service - for managing access requests to paused stores
+class StorePauseAccessService {
+  constructor() {
+    this.endpoint = 'pause-access';
+  }
+
+  // Submit access request (public - no auth required)
+  async requestAccess(storeId, email, message = null) {
+    try {
+      const response = await apiClient.publicRequest('POST', `${this.endpoint}/request`, {
+        store_id: storeId,
+        email,
+        message
+      });
+      return response;
+    } catch (error) {
+      console.error(`StorePauseAccessService.requestAccess() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Check if email has approved access (public)
+  async checkAccess(storeId, email, token = null) {
+    try {
+      let url = `${this.endpoint}/check?store_id=${storeId}&email=${encodeURIComponent(email)}`;
+      if (token) {
+        url += `&token=${encodeURIComponent(token)}`;
+      }
+      const response = await apiClient.publicRequest('GET', url);
+      return response;
+    } catch (error) {
+      console.error(`StorePauseAccessService.checkAccess() error:`, error.message);
+      return { hasAccess: false };
+    }
+  }
+
+  // Get all access requests for a store (admin)
+  async getRequests(storeId, params = {}) {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const url = queryParams ? `${this.endpoint}/${storeId}?${queryParams}` : `${this.endpoint}/${storeId}`;
+      const response = await apiClient.get(url);
+      return response?.data || response || { requests: [], pagination: {} };
+    } catch (error) {
+      console.error(`StorePauseAccessService.getRequests() error:`, error.message);
+      return { requests: [], pagination: {} };
+    }
+  }
+
+  // Approve access request (admin)
+  async approve(storeId, requestId, expiresInDays = null) {
+    try {
+      const response = await apiClient.put(`${this.endpoint}/${storeId}/${requestId}/approve`, {
+        expires_in_days: expiresInDays
+      });
+      return response;
+    } catch (error) {
+      console.error(`StorePauseAccessService.approve() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Reject access request (admin)
+  async reject(storeId, requestId) {
+    try {
+      const response = await apiClient.put(`${this.endpoint}/${storeId}/${requestId}/reject`);
+      return response;
+    } catch (error) {
+      console.error(`StorePauseAccessService.reject() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Revoke access (admin)
+  async revoke(storeId, requestId) {
+    try {
+      const response = await apiClient.delete(`${this.endpoint}/${storeId}/${requestId}`);
+      return response;
+    } catch (error) {
+      console.error(`StorePauseAccessService.revoke() error:`, error.message);
+      throw error;
+    }
+  }
+}
+
+export const StorePauseAccess = new StorePauseAccessService();
+
 export const Language = new BaseEntity('languages');
 export const SeoTemplate = new BaseEntity('seo-templates');
 export const SeoSetting = new BaseEntity('seo-settings');
