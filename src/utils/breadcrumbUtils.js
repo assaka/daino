@@ -68,6 +68,12 @@ export function buildCategoryBreadcrumbs(currentCategory, storeCode, categories 
  */
 export function buildProductBreadcrumbs(product, storeCode, categories = [], settings = {}) {
 
+  console.log('🍞 buildProductBreadcrumbs:', {
+    show_category_in_breadcrumb: settings?.show_category_in_breadcrumb,
+    category_ids: product?.category_ids,
+    categoriesCount: categories?.length
+  });
+
   if (!product) return [];
 
   const breadcrumbs = [];
