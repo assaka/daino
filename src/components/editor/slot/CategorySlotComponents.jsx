@@ -727,10 +727,12 @@ const ProductItemsGrid = createSlotComponent({
     // Debug: Check if products have stock_label
     if (products[0]) {
       console.log('🏷️ ProductItemsGrid products check:', {
-        fromVariableContext: !!variableContext?.products,
-        fromCategoryContext: !variableContext?.products && !!categoryContext?.products,
-        firstProductHasStockLabel: 'stock_label' in products[0],
-        firstProductStockLabel: products[0]?.stock_label
+        variableContextProductsLength: variableContext?.products?.length,
+        categoryContextProductsLength: categoryContext?.products?.length,
+        fromVariableContext: !!variableContext?.products?.length,
+        variableContextFirstProductStockLabel: variableContext?.products?.[0]?.stock_label,
+        categoryContextFirstProductStockLabel: categoryContext?.products?.[0]?.stock_label,
+        actualProductsFirstStockLabel: products[0]?.stock_label
       });
     }
 
