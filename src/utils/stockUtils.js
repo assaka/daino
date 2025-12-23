@@ -188,6 +188,13 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   const showStockLabel = settings?.show_stock_label !== undefined
     ? settings.show_stock_label
     : (settings?.stock_settings?.show_stock_label !== false);
+
+  console.log('🏷️ getStockLabel check:', {
+    show_stock_label: settings?.show_stock_label,
+    stock_settings_show: settings?.stock_settings?.show_stock_label,
+    resolved: showStockLabel
+  });
+
   if (!showStockLabel) return null;
 
   if (!product) return null;

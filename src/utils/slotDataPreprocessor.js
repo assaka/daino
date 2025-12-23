@@ -234,6 +234,8 @@ function preprocessCategoryData(rawData, baseContext, options) {
 function formatProducts(products, context) {
   const { store, settings, currentLanguage, translations, productLabels = [], getProductImageUrl } = context;
 
+  console.log('📦 formatProducts settings:', { show_stock_label: settings?.show_stock_label });
+
   return products.map(product => {
     // Use centralized getPriceDisplay utility
     const priceInfo = getPriceDisplay(product);
