@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { DeliverySettings as DeliverySettingsEntity } from '@/api/entities';
@@ -11,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search, Package, ArrowRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import SaveButton from '@/components/ui/save-button';
@@ -393,7 +394,18 @@ export default function ThemeLayout() {
                 enable_product_filters: fullStore?.settings?.enable_product_filters ?? true,
                 collapse_filters: fullStore?.settings?.collapse_filters ?? false,
                 max_visible_attributes: fullStore?.settings?.max_visible_attributes ?? 5,
-                show_stock_label: fullStore?.settings?.show_stock_label ?? false,
+                // Stock display settings
+                show_stock_label: fullStore?.settings?.show_stock_label ?? true,
+                hide_stock_quantity: fullStore?.settings?.hide_stock_quantity ?? false,
+                display_low_stock_threshold: fullStore?.settings?.display_low_stock_threshold ?? 0,
+                stock_settings: {
+                    in_stock_text_color: fullStore?.settings?.stock_settings?.in_stock_text_color || '#166534',
+                    in_stock_bg_color: fullStore?.settings?.stock_settings?.in_stock_bg_color || '#dcfce7',
+                    out_of_stock_text_color: fullStore?.settings?.stock_settings?.out_of_stock_text_color || '#991b1b',
+                    out_of_stock_bg_color: fullStore?.settings?.stock_settings?.out_of_stock_bg_color || '#fee2e2',
+                    low_stock_text_color: fullStore?.settings?.stock_settings?.low_stock_text_color || '#92400e',
+                    low_stock_bg_color: fullStore?.settings?.stock_settings?.low_stock_bg_color || '#fef3c7',
+                },
                 enable_view_mode_toggle: fullStore?.settings?.enable_view_mode_toggle ?? true,
                 default_view_mode: fullStore?.settings?.default_view_mode || 'grid',
                 // Header defaults
@@ -1780,19 +1792,6 @@ export default function ThemeLayout() {
                                     />
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <Label htmlFor="show_stock_label">Show Stock Label</Label>
-                                    <p className="text-sm text-gray-500">Display stock status (In Stock/Out of Stock) above the Add to Cart button.</p>
-                                </div>
-                                <Switch
-                                    id="show_stock_label"
-                                    checked={!!store.settings.show_stock_label}
-                                    onCheckedChange={(c) => handleSettingsChange('show_stock_label', c)}
-                                />
-                            </div>
-
-                            <Separator />
 
                             <div className="p-3 border rounded-lg space-y-3">
                                 <div className="flex items-center justify-between">
@@ -2242,6 +2241,187 @@ export default function ThemeLayout() {
                                         >
                                             Next
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Stock Display Section */}
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Package className="w-5 h-5" /> Stock Display</CardTitle>
+                            <CardDescription>Configure how stock information appears to customers.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div>
+                                        <Label htmlFor="show_stock_label">Show Stock Labels</Label>
+                                        <p className="text-sm text-gray-500">Display stock status labels (e.g., "In Stock") on products.</p>
+                                    </div>
+                                    <Switch
+                                        id="show_stock_label"
+                                        checked={!!store.settings.show_stock_label}
+                                        onCheckedChange={(c) => handleSettingsChange('show_stock_label', c)}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div>
+                                        <Label htmlFor="hide_stock_quantity">Hide Stock Quantity</Label>
+                                        <p className="text-sm text-gray-500">Hide the exact stock number from customers.</p>
+                                    </div>
+                                    <Switch
+                                        id="hide_stock_quantity"
+                                        checked={!!store.settings.hide_stock_quantity}
+                                        onCheckedChange={(c) => handleSettingsChange('hide_stock_quantity', c)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="p-3 border rounded-lg">
+                                <Label htmlFor="display_low_stock_threshold">Low Stock Display Threshold</Label>
+                                <Input
+                                    id="display_low_stock_threshold"
+                                    type="number"
+                                    value={store.settings.display_low_stock_threshold || 0}
+                                    onChange={(e) => handleSettingsChange('display_low_stock_threshold', parseInt(e.target.value) || 0)}
+                                    min="0"
+                                    className="mt-2 max-w-32"
+                                />
+                                <p className="text-sm text-gray-500 mt-1">Show low stock warning when quantity falls below this number (0 to disable).</p>
+                            </div>
+
+                            {/* Stock Label Translation Link */}
+                            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <Languages className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-blue-900 mb-2">Stock Label Translations</h4>
+                                        <p className="text-blue-700 mb-3">
+                                            Stock label text and translations (In Stock, Out of Stock, Low Stock) are managed in the Translations page under the "Stock Labels" section.
+                                        </p>
+                                        <Link to={createPageUrl('Translations')}>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            >
+                                                <Languages className="w-4 h-4 mr-2" />
+                                                Manage Stock Label Translations
+                                                <ArrowRight className="w-4 h-4 ml-2" />
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stock Label Colors */}
+                            <div className="space-y-4 pt-4 border-t">
+                                <h4 className="font-medium text-gray-900">Stock Label Colors</h4>
+                                <p className="text-sm text-gray-600">Configure text and background colors for each stock status label.</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* In Stock Colors */}
+                                    <div className="p-4 border rounded-lg space-y-3">
+                                        <Label className="font-medium">In Stock</Label>
+                                        <div className="flex items-center gap-3">
+                                            <div className="space-y-1">
+                                                <span className="text-xs text-gray-500">Text</span>
+                                                <Input
+                                                    type="color"
+                                                    className="w-12 h-8 p-0.5 cursor-pointer"
+                                                    value={store.settings.stock_settings?.in_stock_text_color || '#166534'}
+                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, in_stock_text_color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-xs text-gray-500">Background</span>
+                                                <Input
+                                                    type="color"
+                                                    className="w-12 h-8 p-0.5 cursor-pointer"
+                                                    value={store.settings.stock_settings?.in_stock_bg_color || '#dcfce7'}
+                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, in_stock_bg_color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div
+                                                className="px-3 py-1 rounded text-xs font-medium"
+                                                style={{
+                                                    backgroundColor: store.settings.stock_settings?.in_stock_bg_color || '#dcfce7',
+                                                    color: store.settings.stock_settings?.in_stock_text_color || '#166534'
+                                                }}
+                                            >
+                                                Preview
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Out of Stock Colors */}
+                                    <div className="p-4 border rounded-lg space-y-3">
+                                        <Label className="font-medium">Out of Stock</Label>
+                                        <div className="flex items-center gap-3">
+                                            <div className="space-y-1">
+                                                <span className="text-xs text-gray-500">Text</span>
+                                                <Input
+                                                    type="color"
+                                                    className="w-12 h-8 p-0.5 cursor-pointer"
+                                                    value={store.settings.stock_settings?.out_of_stock_text_color || '#991b1b'}
+                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, out_of_stock_text_color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-xs text-gray-500">Background</span>
+                                                <Input
+                                                    type="color"
+                                                    className="w-12 h-8 p-0.5 cursor-pointer"
+                                                    value={store.settings.stock_settings?.out_of_stock_bg_color || '#fee2e2'}
+                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, out_of_stock_bg_color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div
+                                                className="px-3 py-1 rounded text-xs font-medium"
+                                                style={{
+                                                    backgroundColor: store.settings.stock_settings?.out_of_stock_bg_color || '#fee2e2',
+                                                    color: store.settings.stock_settings?.out_of_stock_text_color || '#991b1b'
+                                                }}
+                                            >
+                                                Preview
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Low Stock Colors */}
+                                    <div className="p-4 border rounded-lg space-y-3">
+                                        <Label className="font-medium">Low Stock</Label>
+                                        <div className="flex items-center gap-3">
+                                            <div className="space-y-1">
+                                                <span className="text-xs text-gray-500">Text</span>
+                                                <Input
+                                                    type="color"
+                                                    className="w-12 h-8 p-0.5 cursor-pointer"
+                                                    value={store.settings.stock_settings?.low_stock_text_color || '#92400e'}
+                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, low_stock_text_color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-xs text-gray-500">Background</span>
+                                                <Input
+                                                    type="color"
+                                                    className="w-12 h-8 p-0.5 cursor-pointer"
+                                                    value={store.settings.stock_settings?.low_stock_bg_color || '#fef3c7'}
+                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, low_stock_bg_color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div
+                                                className="px-3 py-1 rounded text-xs font-medium"
+                                                style={{
+                                                    backgroundColor: store.settings.stock_settings?.low_stock_bg_color || '#fef3c7',
+                                                    color: store.settings.stock_settings?.low_stock_text_color || '#92400e'
+                                                }}
+                                            >
+                                                Preview
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
