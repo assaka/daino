@@ -1463,17 +1463,10 @@ class DemoDataProvisioningService {
         placement: ['checkout_below_payment'],
         content: `
           <div class="rounded-xl py-5 px-6 mt-4 text-white" style="background-color: var(--theme-secondary-button)">
-            <div class="flex flex-col items-center justify-center gap-3">
-              <div class="flex items-center gap-6 text-white/60">
-                <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M8.5 3.5h-7A1.5 1.5 0 000 5v10a1.5 1.5 0 001.5 1.5h7A1.5 1.5 0 0010 15V5A1.5 1.5 0 008.5 3.5zM5 14.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"></path></svg>
-                <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M20 5v10h-5V5h5zm-2.5 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path></svg>
-                <svg class="w-10 h-6" viewBox="0 0 50 20" fill="currentColor"><path d="M35 10a5 5 0 11-10 0 5 5 0 0110 0zm-5 3a3 3 0 100-6 3 3 0 000 6z"></path></svg>
-              </div>
               <div class="flex items-center gap-2 text-sm text-white/80">
                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
                 <span>Secured with 256-bit SSL encryption</span>
               </div>
-            </div>
           </div>
         `
       },
