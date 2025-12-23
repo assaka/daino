@@ -397,7 +397,6 @@ export default function ThemeLayout() {
                 // Stock display settings
                 show_stock_label: fullStore?.settings?.show_stock_label ?? true,
                 hide_stock_quantity: fullStore?.settings?.hide_stock_quantity ?? false,
-                display_low_stock_threshold: fullStore?.settings?.display_low_stock_threshold ?? 0,
                 stock_settings: {
                     in_stock_text_color: fullStore?.settings?.stock_settings?.in_stock_text_color || '#166534',
                     in_stock_bg_color: fullStore?.settings?.stock_settings?.in_stock_bg_color || '#dcfce7',
@@ -2277,19 +2276,6 @@ export default function ThemeLayout() {
                                         onCheckedChange={(c) => handleSettingsChange('hide_stock_quantity', c)}
                                     />
                                 </div>
-                            </div>
-
-                            <div className="p-3 border rounded-lg">
-                                <Label htmlFor="display_low_stock_threshold">Low Stock Display Threshold</Label>
-                                <Input
-                                    id="display_low_stock_threshold"
-                                    type="number"
-                                    value={store.settings.display_low_stock_threshold || 0}
-                                    onChange={(e) => handleSettingsChange('display_low_stock_threshold', parseInt(e.target.value) || 0)}
-                                    min="0"
-                                    className="mt-2 max-w-32"
-                                />
-                                <p className="text-sm text-gray-500 mt-1">Show low stock warning when quantity falls below this number (0 to disable).</p>
                             </div>
 
                             {/* Stock Label Translation Link */}

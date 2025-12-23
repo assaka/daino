@@ -7,6 +7,7 @@ import { clearStorefrontCache } from '@/utils/cacheUtils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -77,6 +78,7 @@ export default function StockSettings() {
         enable_inventory: storeSettings.hasOwnProperty('enable_inventory') ? storeSettings.enable_inventory : true,
         display_out_of_stock: storeSettings.hasOwnProperty('display_out_of_stock') ? storeSettings.display_out_of_stock : true,
         display_out_of_stock_variants: storeSettings.hasOwnProperty('display_out_of_stock_variants') ? storeSettings.display_out_of_stock_variants : true,
+        display_low_stock_threshold: storeSettings.hasOwnProperty('display_low_stock_threshold') ? storeSettings.display_low_stock_threshold : 0,
       });
 
     } catch (error) {
@@ -110,6 +112,7 @@ export default function StockSettings() {
           enable_inventory: settings.enable_inventory,
           display_out_of_stock: settings.display_out_of_stock,
           display_out_of_stock_variants: settings.display_out_of_stock_variants,
+          display_low_stock_threshold: settings.display_low_stock_threshold,
         }
       };
 
@@ -218,6 +221,18 @@ export default function StockSettings() {
                   checked={settings.display_out_of_stock_variants}
                   onCheckedChange={(checked) => handleSettingsChange('display_out_of_stock_variants', checked)}
                 />
+              </div>
+              <div className="p-3 border rounded-lg">
+                <Label htmlFor="display_low_stock_threshold" className="font-medium">Low Stock Threshold</Label>
+                <Input
+                  id="display_low_stock_threshold"
+                  type="number"
+                  value={settings.display_low_stock_threshold}
+                  onChange={(e) => handleSettingsChange('display_low_stock_threshold', parseInt(e.target.value) || 0)}
+                  min="0"
+                  className="mt-2 max-w-32"
+                />
+                <p className="text-sm text-gray-500 mt-1">Show low stock warning when quantity falls below this number (0 to disable).</p>
               </div>
             </CardContent>
           </Card>
