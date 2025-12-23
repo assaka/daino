@@ -27,6 +27,13 @@ const ensureArray = (data) => {
 
 export default function Category() {
   const { store, settings, loading: storeLoading, categories, filterableAttributes, productLabels } = useStore();
+
+  // Debug: Log settings for show_stock_label and show_category_in_breadcrumb
+  console.log('📦 Category page settings:', {
+    show_stock_label: settings?.show_stock_label,
+    show_category_in_breadcrumb: settings?.show_category_in_breadcrumb
+  });
+
   const { showNotFound } = useNotFound();
   const { t } = useTranslation();
 

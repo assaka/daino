@@ -94,6 +94,12 @@ export default function ProductDetail() {
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
+
+  // Debug: Log settings for show_category_in_breadcrumb
+  console.log('🛍️ ProductDetail settings:', {
+    show_category_in_breadcrumb: settings?.show_category_in_breadcrumb
+  });
+
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
   const { t, currentLanguage, translations } = useTranslation();
