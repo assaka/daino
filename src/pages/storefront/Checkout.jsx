@@ -148,6 +148,22 @@ export default function Checkout() {
   const [billingErrors, setBillingErrors] = useState({});
   const [shippingAddressSelectionError, setShippingAddressSelectionError] = useState('');
 
+  // Helper function to check if an address has all required fields
+  const isAddressComplete = (address) => {
+    if (!address) return false;
+    return !!(
+      address.full_name?.trim() &&
+      address.street?.trim() &&
+      address.city?.trim() &&
+      address.state?.trim() &&
+      address.postal_code?.trim() &&
+      address.country?.trim()
+    );
+  };
+
+  // Filter to only complete addresses for the address selector
+  const completeUserAddresses = userAddresses.filter(isAddressComplete);
+
   useEffect(() => {
     // Wait for both store AND pageBootstrap to be ready
     if (!storeLoading && !pageBootstrapLoading && store?.id) {
@@ -1479,8 +1495,8 @@ export default function Checkout() {
 
     // Step 0 validation for both 2-step and 3-step
     if (currentStep === 0) {
-      // Validate shipping address selection for logged-in users with saved addresses
-      if (user && userAddresses.length > 0 && !selectedShippingAddress) {
+      // Validate shipping address selection for logged-in users with complete saved addresses
+      if (user && completeUserAddresses.length > 0 && !selectedShippingAddress) {
         setShippingAddressSelectionError('Please select a shipping address or add a new one');
         hasErrors = true;
       } else {
@@ -1488,7 +1504,7 @@ export default function Checkout() {
       }
 
       // Validate shipping address form fields (for new address or guest checkout)
-      if (!user || selectedShippingAddress === 'new' || userAddresses.length === 0) {
+      if (!user || selectedShippingAddress === 'new' || completeUserAddresses.length === 0) {
         // Email validation
         if (!shippingAddress.email) {
           newShippingErrors.email = true;
@@ -1531,7 +1547,7 @@ export default function Checkout() {
 
       // Validate billing address if different from shipping
       if (!useShippingForBilling) {
-        if (!user || selectedBillingAddress === 'new' || userAddresses.length === 0) {
+        if (!user || selectedBillingAddress === 'new' || completeUserAddresses.length === 0) {
           // Email validation for billing
           if (!billingAddress.email) {
             newBillingErrors.email = true;
@@ -1704,10 +1720,10 @@ export default function Checkout() {
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
               </CardHeader>
               <CardContent>
-              {user && userAddresses.length > 0 ? (
+              {user && completeUserAddresses.length > 0 ? (
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    {userAddresses.map((address) => (
+                    {completeUserAddresses.map((address) => (
                       <div key={address.id} className="border rounded-lg p-3 hover:bg-gray-50">
                         <div className="flex items-start space-x-3">
                           <input
@@ -1775,7 +1791,7 @@ export default function Checkout() {
                 </div>
               )}
 
-              {(!user || userAddresses.length === 0 || selectedShippingAddress === 'new') && (
+              {(!user || completeUserAddresses.length === 0 || selectedShippingAddress === 'new') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="md:col-span-2">
                     <Input
@@ -1951,9 +1967,9 @@ export default function Checkout() {
 
                 {!useShippingForBilling && (
                   <>
-                    {user && userAddresses.length > 0 ? (
+                    {user && completeUserAddresses.length > 0 ? (
                       <div className="space-y-3">
-                        {userAddresses.map((address) => (
+                        {completeUserAddresses.map((address) => (
                           <div key={address.id} className="border rounded-lg p-3 hover:bg-gray-50">
                             <div className="flex items-start space-x-3">
                               <input
@@ -2001,7 +2017,7 @@ export default function Checkout() {
                       </div>
                     ) : null}
 
-                    {(!user || userAddresses.length === 0 || selectedBillingAddress === 'new') && (
+                    {(!user || completeUserAddresses.length === 0 || selectedBillingAddress === 'new') && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                           <Input
