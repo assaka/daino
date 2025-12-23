@@ -268,9 +268,9 @@ const ProductGallery = createSlotComponent({
       verticalPosition,
       mobileLayout,
       contextSettings_layout: contextSettings?.product_gallery_layout,
+      contextSettings_vertical: contextSettings?.vertical_gallery_position,
       variableSettings_layout: variableSettings?.product_gallery_layout,
-      hasContextSettings: Object.keys(contextSettings).length > 0,
-      hasVariableSettings: Object.keys(variableSettings).length > 0
+      variableSettings_vertical: variableSettings?.vertical_gallery_position
     });
 
     // For storefront, get state from productContext
