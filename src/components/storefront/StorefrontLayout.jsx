@@ -53,6 +53,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const [loading, setLoading] = useState(false);
     const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
     const [checkingAccess, setCheckingAccess] = useState(true);
+    const [flashMessage, setFlashMessage] = useState(null);
 
     // Also check URL params as fallback (for initial load before context initializes)
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -83,7 +84,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                         return;
                     }
                 } catch (error) {
-                    console.error('Error checking pause access from URL:', error);
                 }
             }
 
@@ -102,7 +102,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                         localStorage.removeItem(`pause_access_token_${store.id}`);
                     }
                 } catch (error) {
-                    console.error('Error checking pause access:', error);
                 }
             }
             setCheckingAccess(false);
@@ -141,8 +140,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                 }
             }
         } catch (error) {
-            console.error('Error submitting access request:', error);
-            alert('Failed to submit request. Please try again.');
+            setFlashMessage({ type: 'error', message: 'Failed to submit request. Please try again.' });
         } finally {
             setLoading(false);
         }
@@ -157,15 +155,28 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
             await StorePauseAccess.resendLink(store.id, email.trim());
             setLinkSent(true);
         } catch (error) {
-            console.error('Error resending access link:', error);
-            alert('Failed to send link. Please try again.');
+            setFlashMessage({ type: 'error', message: 'Failed to send link. Please try again.' });
         } finally {
             setLoading(false);
         }
     };
 
+    // Auto-hide flash message after 5 seconds
+    useEffect(() => {
+        if (flashMessage) {
+            const timer = setTimeout(() => setFlashMessage(null), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [flashMessage]);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            {flashMessage && (
+                <FlashMessage
+                    message={flashMessage}
+                    onClose={() => setFlashMessage(null)}
+                />
+            )}
             <div className="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center">
                 <div className="mb-4">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
@@ -345,7 +356,6 @@ const retryApiCall = async (apiCall, maxRetries = 2, baseDelay = 1000, defaultVa
 
       if (isRateLimit && i < maxRetries - 1) {
         const delayTime = baseDelay * Math.pow(2, i);
-        console.warn(`StorefrontLayout: Rate limit hit, retrying...`);
         await delay(delayTime);
         continue;
       }
@@ -402,7 +412,6 @@ export default function StorefrontLayout({ children }) {
             const loginUrl = createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH');
             window.location.href = loginUrl;
         } catch (error) {
-            console.error('Customer logout error:', error);
             // Even on error, redirect to login to ensure clean state
             const loginUrl = createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH');
             window.location.href = loginUrl;
@@ -862,7 +871,6 @@ export default function StorefrontLayout({ children }) {
 
                                      <div className="hidden md:flex items-center space-x-3">
                                         {/* New Translation System Language Selector */}
-                                        {console.log('🌐 Fallback header LanguageSelector check:', { show_language_selector: settings?.show_language_selector })}
                                         {settings?.show_language_selector === true && (
                                             <LanguageSelector variant="storefront" />
                                         )}

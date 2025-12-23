@@ -592,6 +592,19 @@ export function UnifiedSlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug: Log slots to check for Breadcrumbs
+  if (parentId === null || parentId === 'page_header') {
+    const breadcrumbSlot = childSlots.find(s => s.component === 'Breadcrumbs' || s.id?.includes('breadcrumb'));
+    console.log('🍞 UnifiedSlotRenderer slot check:', {
+      parentId,
+      totalSlots: Object.keys(slots || {}).length,
+      childSlotsCount: childSlots.length,
+      childSlotIds: childSlots.map(s => s.id),
+      hasBreadcrumbSlot: !!breadcrumbSlot,
+      breadcrumbSlot: breadcrumbSlot ? { id: breadcrumbSlot.id, component: breadcrumbSlot.component, type: breadcrumbSlot.type } : null
+    });
+  }
+
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
@@ -1431,6 +1444,19 @@ export function UnifiedSlotRenderer({
     // Component Element
     if (type === 'component') {
       const componentName = slot.component || slot.metadata?.component;
+
+      // Debug: Log component slot processing
+      if (componentName === 'Breadcrumbs') {
+        console.log('🍞 UnifiedSlotRenderer processing Breadcrumbs component:', {
+          slotId: slot.id,
+          componentName,
+          hasInRegistry: ComponentRegistry.has(componentName),
+          hasCategoryData: !!categoryData,
+          hasProductData: !!productData,
+          categoryDataKeys: categoryData ? Object.keys(categoryData) : [],
+          productDataKeys: productData ? Object.keys(productData) : []
+        });
+      }
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);

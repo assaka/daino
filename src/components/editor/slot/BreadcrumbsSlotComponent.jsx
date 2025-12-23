@@ -14,12 +14,32 @@ const BreadcrumbsSlotComponent = createSlotComponent({
   render: (props) => {
     const { slot, categoryContext, productContext } = props;
 
+    console.log('🍞 BreadcrumbsSlotComponent render:', {
+      hasCategoryContext: !!categoryContext,
+      hasProductContext: !!productContext,
+      categoryContextKeys: categoryContext ? Object.keys(categoryContext) : [],
+      productContextKeys: productContext ? Object.keys(productContext) : []
+    });
+
     // Determine context (category or product)
     const context = categoryContext || productContext;
 
-    if (!context) return null;
+    if (!context) {
+      console.log('🍞 BreadcrumbsSlotComponent: No context, returning null');
+      return null;
+    }
 
     const { category, product, store, categories = [], settings = {}, breadcrumbs: prebuiltBreadcrumbs } = context;
+
+    console.log('🍞 BreadcrumbsSlotComponent data:', {
+      hasCategory: !!category,
+      hasProduct: !!product,
+      hasStore: !!store,
+      categoriesCount: categories?.length,
+      hasPrebuiltBreadcrumbs: !!prebuiltBreadcrumbs,
+      prebuiltBreadcrumbsLength: prebuiltBreadcrumbs?.length,
+      prebuiltBreadcrumbs
+    });
 
     // Use pre-built breadcrumbs if available (already built by Category.jsx or ProductDetail.jsx)
     // Otherwise build them here (fallback for editor or when not pre-built)

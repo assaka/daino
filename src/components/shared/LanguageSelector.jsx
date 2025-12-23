@@ -48,8 +48,6 @@ export default function LanguageSelector({ variant = 'default', className = '' }
     return null;
   }
 
-  console.log('🌐 LanguageSelector (shared) rendering - variant:', variant, 'languages:', availableLanguages.length);
-
   // Variant styles
   const variants = {
     default: {
