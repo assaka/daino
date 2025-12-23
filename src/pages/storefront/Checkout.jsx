@@ -2580,7 +2580,7 @@ export default function Checkout() {
               value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
             });
           }
-        } else if (shippingAddress.full_name) {
+        } else if (isAddressComplete(shippingAddress)) {
           items.push({
             label: t('common.shipping_address'),
             value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
@@ -2589,7 +2589,7 @@ export default function Checkout() {
       }
 
       // Billing address (if different from shipping)
-      if (!useShippingForBilling && billingAddress.full_name) {
+      if (!useShippingForBilling && isAddressComplete(billingAddress)) {
         items.push({
           label: t('common.billing_address'),
           value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
