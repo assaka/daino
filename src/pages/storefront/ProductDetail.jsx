@@ -763,6 +763,13 @@ export default function ProductDetail() {
         </div>
       )}
 
+      {/* Debug: Log breadcrumb data */}
+      {console.log('🍞 ProductDetail breadcrumb data:', {
+        show_category_in_breadcrumb: settings?.show_category_in_breadcrumb,
+        categoriesCount: categories?.length,
+        productCategoryIds: product?.category_ids,
+        storeCode
+      })}
       <SeoHeadManager
         pageType="product"
         pageData={{
