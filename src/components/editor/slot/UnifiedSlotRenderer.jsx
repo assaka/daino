@@ -592,34 +592,8 @@ export function UnifiedSlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
-  // Debug: Log slots to check for Breadcrumbs
-  if (parentId === null || parentId === 'page_header') {
-    const breadcrumbSlot = childSlots.find(s => s.component === 'Breadcrumbs' || s.id?.includes('breadcrumb'));
-    console.log('🍞 UnifiedSlotRenderer slot check:', {
-      parentId,
-      totalSlots: Object.keys(slots || {}).length,
-      childSlotsCount: childSlots.length,
-      childSlotIds: childSlots.map(s => s.id),
-      hasBreadcrumbSlot: !!breadcrumbSlot,
-      breadcrumbSlot: breadcrumbSlot ? { id: breadcrumbSlot.id, component: breadcrumbSlot.component, type: breadcrumbSlot.type } : null,
-      hasCategoryData: !!categoryData,
-      categoryDataKeys: categoryData ? Object.keys(categoryData).slice(0, 10) : []
-    });
-  }
-
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
-
-  // Debug: Check if breadcrumbs survives filtering
-  if (parentId === 'page_header') {
-    const breadcrumbInFiltered = filteredSlots.find(s => s.id === 'breadcrumbs_content');
-    console.log('🍞 After viewMode filter:', {
-      viewMode,
-      filteredSlotsCount: filteredSlots.length,
-      filteredSlotIds: filteredSlots.map(s => s.id),
-      breadcrumbSurvived: !!breadcrumbInFiltered
-    });
-  }
 
   // Apply renderCondition filtering based on slot metadata
   // renderConditions are now stored as string identifiers in slot.metadata.renderCondition
@@ -1454,33 +1428,9 @@ export function UnifiedSlotRenderer({
       );
     }
 
-    // Debug: Log all slots being processed to check types
-    if (slot.id === 'breadcrumbs_content' || slot.component === 'Breadcrumbs') {
-      console.log('🍞 renderBasicSlot reached for breadcrumbs:', {
-        slotId: slot.id,
-        slotType: type,
-        slotComponent: slot.component,
-        shouldSkipDueToViewport
-      });
-    }
-
     // Component Element
     if (type === 'component') {
-      console.log('🍞 ENTERED component block for:', slot.id);
       const componentName = slot.component || slot.metadata?.component;
-
-      // Debug: Log component slot processing
-      if (componentName === 'Breadcrumbs') {
-        console.log('🍞 UnifiedSlotRenderer processing Breadcrumbs component:', {
-          slotId: slot.id,
-          componentName,
-          hasInRegistry: ComponentRegistry.has(componentName),
-          hasCategoryData: !!categoryData,
-          hasProductData: !!productData,
-          categoryDataKeys: categoryData ? Object.keys(categoryData) : [],
-          productDataKeys: productData ? Object.keys(productData) : []
-        });
-      }
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);

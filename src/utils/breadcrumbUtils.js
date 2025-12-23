@@ -42,7 +42,14 @@ export function buildCategoryBreadcrumbs(currentCategory, storeCode, categories 
     }
   }
 
-  const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
+  // Filter out root categories from parent chain, but always keep the current category
+  // This ensures the current category always appears in breadcrumbs, even if it's a root
+  const filteredChain = categoryChain.filter(cat => {
+    // Always include the current category
+    if (cat.id === currentCategory.id) return true;
+    // Exclude root categories from parent chain
+    return cat.parent_id !== null;
+  });
 
   const currentLang = getCurrentLanguage();
   return filteredChain.map((cat, index) => {
@@ -112,7 +119,13 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
 
 
       const currentLang = getCurrentLanguage();
-      const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
+      // Filter out root categories, but always keep the deepest category (product's category)
+      const filteredChain = categoryChain.filter(cat => {
+        // Always include the deepest category (product's primary category)
+        if (cat.id === deepestCategory.id) return true;
+        // Exclude root categories from parent chain
+        return cat.parent_id !== null;
+      });
       filteredChain.forEach((cat, index) => {
         const categoryPath = [];
         const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);
