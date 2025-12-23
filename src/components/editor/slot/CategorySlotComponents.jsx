@@ -826,6 +826,14 @@ const ProductItemsGrid = createSlotComponent({
                 this: product,
                 product
               };
+              // Debug: Log for stock_label slot
+              if (slotConfig.id === 'product_card_stock_label' && index === 0) {
+                console.log('🏷️ ProductCard stock_label processing:', {
+                  slotContent: slotConfig.content,
+                  productStockLabel: product.stock_label,
+                  productKeys: Object.keys(product)
+                });
+              }
               processedContent = processVariables(slotConfig.content || '', productContext);
             }
 
