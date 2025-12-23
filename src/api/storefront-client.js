@@ -228,7 +228,7 @@ class StorefrontApiClient {
       finalEndpoint = `${endpoint}${separator}${params}`;
     }
 
-    const url = this.buildAuthUrl(finalEndpoint);
+    let url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
 
     // Add timeout to prevent hanging requests
