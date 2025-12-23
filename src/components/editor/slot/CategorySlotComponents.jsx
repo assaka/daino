@@ -724,6 +724,16 @@ const ProductItemsGrid = createSlotComponent({
     const allProductsRaw = variableContext?.products || categoryContext?.products || [];
     const products = isEditor ? allProductsRaw.slice(0, 6) : allProductsRaw;
 
+    // Debug: Check if products have stock_label
+    if (products[0]) {
+      console.log('🏷️ ProductItemsGrid products check:', {
+        fromVariableContext: !!variableContext?.products,
+        fromCategoryContext: !variableContext?.products && !!categoryContext?.products,
+        firstProductHasStockLabel: 'stock_label' in products[0],
+        firstProductStockLabel: products[0]?.stock_label
+      });
+    }
+
     const { t } = useTranslation();
 
     // Check if filters are actively applied (storefront only)
