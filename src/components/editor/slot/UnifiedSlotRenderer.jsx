@@ -1466,6 +1466,7 @@ export function UnifiedSlotRenderer({
 
     // Component Element
     if (type === 'component') {
+      console.log('🍞 ENTERED component block for:', slot.id);
       const componentName = slot.component || slot.metadata?.component;
 
       // Debug: Log component slot processing
