@@ -244,10 +244,16 @@ class StorefrontApiClient {
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       // CRITICAL FIX: Include session_id and store_id in body for POST/PUT/PATCH requests
+      // Exclude session_id for endpoints that don't have this column (e.g., addresses)
+      const excludeSessionIdEndpoints = ['addresses'];
+      const shouldExcludeSessionId = excludeSessionIdEndpoints.some(ep => endpoint.includes(ep));
+
       const bodyData = {
-        ...data,
-        session_id: this.sessionId
+        ...data
       };
+      if (!shouldExcludeSessionId) {
+        bodyData.session_id = this.sessionId;
+      }
       if (this.currentStoreId) {
         bodyData.store_id = this.currentStoreId;
       }
