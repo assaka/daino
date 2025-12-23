@@ -724,18 +724,6 @@ const ProductItemsGrid = createSlotComponent({
     const allProductsRaw = variableContext?.products || categoryContext?.products || [];
     const products = isEditor ? allProductsRaw.slice(0, 6) : allProductsRaw;
 
-    // Debug: Check if products have stock_label
-    if (products[0]) {
-      console.log('🏷️ ProductItemsGrid products check:', {
-        variableContextProductsLength: variableContext?.products?.length,
-        categoryContextProductsLength: categoryContext?.products?.length,
-        fromVariableContext: !!variableContext?.products?.length,
-        variableContextFirstProductStockLabel: variableContext?.products?.[0]?.stock_label,
-        categoryContextFirstProductStockLabel: categoryContext?.products?.[0]?.stock_label,
-        actualProductsFirstStockLabel: products[0]?.stock_label
-      });
-    }
-
     const { t } = useTranslation();
 
     // Check if filters are actively applied (storefront only)
@@ -838,14 +826,6 @@ const ProductItemsGrid = createSlotComponent({
                 this: product,
                 product
               };
-              // Debug: Log for stock_label slot
-              if (slotConfig.id === 'product_card_stock_label' && index === 0) {
-                console.log('🏷️ ProductCard stock_label processing:', {
-                  slotContent: slotConfig.content,
-                  productStockLabel: product.stock_label,
-                  productKeys: Object.keys(product)
-                });
-              }
               processedContent = processVariables(slotConfig.content || '', productContext);
             }
 

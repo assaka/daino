@@ -234,8 +234,6 @@ function preprocessCategoryData(rawData, baseContext, options) {
 function formatProducts(products, context) {
   const { store, settings, currentLanguage, translations, productLabels = [], getProductImageUrl } = context;
 
-  console.log('📦 formatProducts settings:', { show_stock_label: settings?.show_stock_label });
-
   return products.map(product => {
     // Use centralized getPriceDisplay utility
     const priceInfo = getPriceDisplay(product);
@@ -247,17 +245,6 @@ function formatProducts(products, context) {
     const isInStock = !isProductOutOfStock(product);
     const stockLabelInfo = getStockLabel(product, settings, null, translations);
     const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
-
-    // Debug: Log stock label result for first product
-    if (products.indexOf(product) === 0) {
-      console.log('🏷️ Stock label result:', {
-        productName: product.name,
-        stockLabelInfo,
-        stockLabelText: stockLabelInfo?.text,
-        stockQuantity: product.stock_quantity,
-        infiniteStock: product.infinite_stock
-      });
-    }
 
     // Get image URL
     const imageUrl = getProductImageUrl

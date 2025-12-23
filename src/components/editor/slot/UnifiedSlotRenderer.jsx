@@ -389,17 +389,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     const conditionToEvaluate = isTemplate ? conditionalDisplay : `{{${conditionalDisplay}}}`;
     const evaluatedCondition = processVariables(conditionToEvaluate, variableContext || {});
 
-    // Debug: Log conditionalDisplay evaluation for stock_label
-    if (slot.id?.includes('stock_label')) {
-      console.log('🏷️ conditionalDisplay check:', {
-        slotId: slot.id,
-        conditionalDisplay,
-        conditionToEvaluate,
-        evaluatedCondition,
-        settingsValue: variableContext?.settings?.show_stock_label
-      });
-    }
-
     // If the condition evaluates to empty/falsy, don't render the slot
     if (!evaluatedCondition || evaluatedCondition.trim() === '' || evaluatedCondition === 'false') {
       return null;
@@ -427,15 +416,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   }
 
   // Skip rendering entirely if empty (no placeholder text)
-  // Debug: Log for stock_label slots
-  if (slot.id?.includes('stock_label')) {
-    console.log('🏷️ TextSlot render check:', {
-      slotId: slot.id,
-      textContent,
-      processedContent,
-      willRender: !!textContent
-    });
-  }
   if (!textContent) {
     return null;
   }
@@ -748,29 +728,9 @@ export function UnifiedSlotRenderer({
   // This ensures both editor and storefront use the same data format
   const categorySource = preprocessedData || categoryData;
 
-  // Debug: Check if preprocessedData contains products with stock_label
-  if (preprocessedData?.products?.[0]) {
-    console.log('🏷️ UnifiedSlotRenderer preprocessedData check:', {
-      hasPreprocessedData: !!preprocessedData,
-      firstProductHasStockLabel: 'stock_label' in (preprocessedData?.products?.[0] || {}),
-      firstProductStockLabel: preprocessedData?.products?.[0]?.stock_label
-    });
-  }
-
-  // Debug: Check which products are used
-  const productsToUse = preprocessedData?.products || formattedProducts;
-  console.log('🏷️ variableContext products assignment:', {
-    parentId: parentId,  // To identify which render this is
-    hasPreprocessedData: !!preprocessedData,
-    usingPreprocessed: !!preprocessedData?.products,
-    usingFormattedProducts: !preprocessedData?.products,
-    firstProductHasStockLabel: 'stock_label' in (productsToUse?.[0] || {}),
-    firstProductStockLabel: productsToUse?.[0]?.stock_label
-  });
-
   const variableContext = {
     product: formattedProduct,
-    products: productsToUse, // Use preprocessed products if available
+    products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available
     allProducts: preprocessedData?.allProducts || categorySource?.allProducts || [], // Unfiltered products for LayeredNavigation
     category: categorySource?.category || categoryData,
     cart: cartData,
