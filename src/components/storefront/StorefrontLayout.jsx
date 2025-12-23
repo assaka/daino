@@ -369,6 +369,13 @@ const retryApiCall = async (apiCall, maxRetries = 2, baseDelay = 1000, defaultVa
 
 export default function StorefrontLayout({ children }) {
     const { store, settings, loading, selectedCountry, setSelectedCountry, categories } = useStore();
+
+    // Debug: Compare categories in layout vs product page
+    console.log('🍞 StorefrontLayout categories:', {
+      categoriesCount: categories?.length,
+      categoryNames: categories?.map(c => c.name)
+    });
+
     const { t } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
