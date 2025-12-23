@@ -427,6 +427,15 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   }
 
   // Skip rendering entirely if empty (no placeholder text)
+  // Debug: Log for stock_label slots
+  if (slot.id?.includes('stock_label')) {
+    console.log('🏷️ TextSlot render check:', {
+      slotId: slot.id,
+      textContent,
+      processedContent,
+      willRender: !!textContent
+    });
+  }
   if (!textContent) {
     return null;
   }
