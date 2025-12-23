@@ -248,11 +248,12 @@ export default function Checkout() {
             setSaveBillingAddress(data.saveBillingAddress);
           }
 
-          setDataRestored(true);
         }
       } catch (error) {
         console.error('Failed to load persisted checkout data:', error);
       }
+      // Always mark as restored to prevent re-running
+      setDataRestored(true);
     }
     }
   }, [loading, dataRestored]);
