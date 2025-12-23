@@ -248,6 +248,17 @@ function formatProducts(products, context) {
     const stockLabelInfo = getStockLabel(product, settings, null, translations);
     const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
+    // Debug: Log stock label result for first product
+    if (products.indexOf(product) === 0) {
+      console.log('🏷️ Stock label result:', {
+        productName: product.name,
+        stockLabelInfo,
+        stockLabelText: stockLabelInfo?.text,
+        stockQuantity: product.stock_quantity,
+        infiniteStock: product.infinite_stock
+      });
+    }
+
     // Get image URL
     const imageUrl = getProductImageUrl
       ? getProductImageUrl(product)
