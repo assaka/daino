@@ -5,9 +5,10 @@
     "user_id": {
       "type": "string"
     },
-    "is_default": {
-      "type": "boolean",
-      "default": false
+    "type": {
+      "type": "string",
+      "enum": ["shipping", "billing", "both"],
+      "description": "Address type: shipping, billing, or both"
     },
     "full_name": {
       "type": "string"

@@ -598,13 +598,25 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="is_default"
-              name="is_default"
-              checked={addressForm.is_default || false}
-              onChange={(e) => handleInputChange('is_default', e.target.checked)}
+              id="default_shipping"
+              name="default_shipping"
+              checked={addressForm.default_shipping || false}
+              onChange={(e) => handleInputChange('default_shipping', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="is_default">{t('address.default_address', settings)}</Label>
+            <Label htmlFor="default_shipping">{t('address.default_shipping', settings)}</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="default_billing"
+              name="default_billing"
+              checked={addressForm.default_billing || false}
+              onChange={(e) => handleInputChange('default_billing', e.target.checked)}
+              className="rounded"
+            />
+            <Label htmlFor="default_billing">{t('address.default_billing', settings)}</Label>
           </div>
 
           <div className="flex justify-end space-x-2">
@@ -688,7 +700,8 @@ export default function CustomerDashboard() {
     postal_code: '',
     country: 'US',
     email: '',
-    is_default: false,
+    default_shipping: false,
+    default_billing: false,
   });
 
   const getCountryName = (countryCode) => {
@@ -738,7 +751,8 @@ export default function CustomerDashboard() {
       postal_code: '',
       country: 'US',
       email: '',
-      is_default: false,
+      default_shipping: false,
+      default_billing: false,
     });
     setEditingAddress(null);
   };
@@ -866,9 +880,23 @@ export default function CustomerDashboard() {
     
     // Use customer_id instead of user_id for addresses
     delete dataToSave.user_id; // Remove user_id first
-    
+
     if (user && user.id) {
       dataToSave.customer_id = user.id; // Use customer_id instead
+    }
+
+    // Convert default_shipping and default_billing to type field
+    const { default_shipping, default_billing, ...restData } = dataToSave;
+    dataToSave = restData;
+
+    if (default_shipping && default_billing) {
+      dataToSave.type = 'both';
+    } else if (default_shipping) {
+      dataToSave.type = 'shipping';
+    } else if (default_billing) {
+      dataToSave.type = 'billing';
+    } else {
+      dataToSave.type = null;
     }
 
     // Validation
@@ -945,7 +973,8 @@ export default function CustomerDashboard() {
           postal_code: address.postal_code || '',
           country: address.country || 'US',
           email: address.email || '',
-          is_default: address.is_default || false,
+          default_shipping: address.type === 'shipping' || address.type === 'both',
+          default_billing: address.type === 'billing' || address.type === 'both',
       });
       setEditingAddress(address);
       setShowAddressForm(true);
@@ -1288,9 +1317,14 @@ export default function CustomerDashboard() {
                               {address.phone && <p className="text-gray-600">{address.phone}</p>}
                               {address.email && <p className="text-gray-600">{address.email}</p>}
                               
-                              {address.is_default && (
+                              {(address.type === 'shipping' || address.type === 'billing' || address.type === 'both') && (
                                 <div className="flex gap-2 mt-2">
-                                  <Badge className="bg-blue-100 text-blue-800">{t('address.default_badge', settings)}</Badge>
+                                  {(address.type === 'shipping' || address.type === 'both') && (
+                                    <Badge className="bg-blue-100 text-blue-800">{t('address.default_shipping_badge', settings)}</Badge>
+                                  )}
+                                  {(address.type === 'billing' || address.type === 'both') && (
+                                    <Badge className="bg-green-100 text-green-800">{t('address.default_billing_badge', settings)}</Badge>
+                                  )}
                                 </div>
                               )}
                             </div>
