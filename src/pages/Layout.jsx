@@ -138,6 +138,24 @@ function LayoutInner({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Set favicon to logo_red.svg for admin and landing pages
+  useEffect(() => {
+    const isStorefrontPath = location.pathname.startsWith('/public/');
+    const isCustomerPath = location.pathname.startsWith('/customerdashboard');
+
+    // Only set favicon for non-storefront pages (admin and landing)
+    if (!isStorefrontPath && !isCustomerPath) {
+      let faviconLink = document.querySelector('link[rel="icon"]');
+      if (!faviconLink) {
+        faviconLink = document.createElement('link');
+        faviconLink.setAttribute('rel', 'icon');
+        document.head.appendChild(faviconLink);
+      }
+      faviconLink.setAttribute('href', '/logo_red.svg');
+      faviconLink.setAttribute('type', 'image/svg+xml');
+    }
+  }, [location.pathname]);
   const [openGroups, setOpenGroups] = useState({
     "Catalog": false,
     "Sales": false,

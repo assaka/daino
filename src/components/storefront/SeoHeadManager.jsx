@@ -426,6 +426,29 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Update document title
         document.title = title;
 
+        // Update favicon with store logo
+        const faviconUrl = store?.settings?.store_logo || store?.logo_url;
+        if (faviconUrl) {
+            // Update or create favicon link
+            let faviconLink = document.querySelector('link[rel="icon"]');
+            if (!faviconLink) {
+                faviconLink = document.createElement('link');
+                faviconLink.setAttribute('rel', 'icon');
+                document.head.appendChild(faviconLink);
+            }
+            faviconLink.setAttribute('href', faviconUrl);
+            faviconLink.setAttribute('type', faviconUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/x-icon');
+
+            // Also update apple-touch-icon for iOS
+            let appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+            if (!appleTouchIcon) {
+                appleTouchIcon = document.createElement('link');
+                appleTouchIcon.setAttribute('rel', 'apple-touch-icon');
+                document.head.appendChild(appleTouchIcon);
+            }
+            appleTouchIcon.setAttribute('href', faviconUrl);
+        }
+
         // Function to update or create meta tag
         const updateMetaTag = (name, content, property = false, allowEmpty = false) => {
             // Allow empty content for certain critical tags
