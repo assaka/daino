@@ -760,6 +760,8 @@ export function UnifiedSlotRenderer({
   // Debug: Check which products are used
   const productsToUse = preprocessedData?.products || formattedProducts;
   console.log('🏷️ variableContext products assignment:', {
+    parentId: parentId,  // To identify which render this is
+    hasPreprocessedData: !!preprocessedData,
     usingPreprocessed: !!preprocessedData?.products,
     usingFormattedProducts: !preprocessedData?.products,
     firstProductHasStockLabel: 'stock_label' in (productsToUse?.[0] || {}),
