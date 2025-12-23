@@ -1462,6 +1462,7 @@ export function UnifiedSlotRenderer({
             loginData={loginData}
             accountData={accountData}
             useOverlay={useOverlay}
+            preprocessedData={preprocessedData}
           />
         </div>
       );
