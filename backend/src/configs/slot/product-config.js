@@ -463,7 +463,7 @@ const productConfig = {
       id: 'actions_container',
       type: 'grid',
       content: '',
-      className: 'actions-container grid grid-cols-12 gap-2 border-t pt-6',
+      className: 'actions-container grid grid-cols-12 gap-2 pt-6',
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 8 },
