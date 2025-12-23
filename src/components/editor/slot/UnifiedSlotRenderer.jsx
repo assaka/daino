@@ -379,7 +379,8 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   const conditionalSlots = ['product_labels', 'product_card_compare_price', 'compare_price'];
 
   // Check if slot has conditionalDisplay metadata and evaluate it
-  const conditionalDisplay = slot.metadata?.conditionalDisplay;
+  // Check both slot root and metadata for conditionalDisplay (config may have it at root level)
+  const conditionalDisplay = slot.conditionalDisplay || slot.metadata?.conditionalDisplay;
   if (conditionalDisplay && context === 'storefront') {
     // Evaluate the conditionalDisplay condition
     // Format can be a path like 'product.compare_price_formatted' or 'this.compare_price_formatted'
@@ -387,6 +388,17 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     const isTemplate = conditionalDisplay.includes('{{');
     const conditionToEvaluate = isTemplate ? conditionalDisplay : `{{${conditionalDisplay}}}`;
     const evaluatedCondition = processVariables(conditionToEvaluate, variableContext || {});
+
+    // Debug: Log conditionalDisplay evaluation for stock_label
+    if (slot.id?.includes('stock_label')) {
+      console.log('🏷️ conditionalDisplay check:', {
+        slotId: slot.id,
+        conditionalDisplay,
+        conditionToEvaluate,
+        evaluatedCondition,
+        settingsValue: variableContext?.settings?.show_stock_label
+      });
+    }
 
     // If the condition evaluates to empty/falsy, don't render the slot
     if (!evaluatedCondition || evaluatedCondition.trim() === '' || evaluatedCondition === 'false') {
