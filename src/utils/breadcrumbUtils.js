@@ -78,6 +78,13 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
 
   const breadcrumbs = [];
 
+  // Debug: Log categories available for breadcrumb building
+  console.log('🍞 buildProductBreadcrumbs:', {
+    productCategoryIds: product.category_ids,
+    availableCategories: categories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })),
+    categoriesCount: categories.length
+  });
+
   if (settings?.show_category_in_breadcrumb !== false && product.category_ids && product.category_ids.length > 0 && categories && categories.length > 0) {
     // Find the deepest category (the one that has no children in the product's category list)
     let deepestCategory = null;

@@ -31,6 +31,7 @@ export { default as Settings } from './admin/Settings';
 export { default as DatabaseIntegrations } from './admin/DatabaseIntegrations';
 export { default as ShopifyIntegration } from './admin/ShopifyIntegration';
 export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
+export { default as InstagramShopping } from './admin/InstagramShopping';
 // Unified Plugin System
 export { default as ProductTabs } from './admin/ProductTabs';
 export { default as ProductLabels } from './admin/ProductLabels';

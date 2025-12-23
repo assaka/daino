@@ -90,12 +90,15 @@ const storeTeamRoutes = require('./routes/store-teams');
 const storePauseAccessRoutes = require('./routes/store-pause-access');
 const robotsRoutes = require('./routes/robots');
 const sitemapRoutes = require('./routes/sitemap');
+const aiShoppingFeedsRoutes = require('./routes/ai-shopping-feeds');
+const aiAgentApiRoutes = require('./routes/ai-agent-api');
 const integrationRoutes = require('./routes/integrations');
 const supabaseRoutes = require('./routes/supabase');
 const supabaseSetupRoutes = require('./routes/supabase-setup');
 const shopifyRoutes = require('./routes/shopify');
 const amazonRoutes = require('./routes/amazon');
 const ebayRoutes = require('./routes/ebay');
+const metaCommerceRoutes = require('./routes/meta-commerce');
 const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
 const domainSettingsRoutes = require('./routes/domain-settings');
@@ -410,6 +413,10 @@ app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
 app.use('/api/robots', robotsRoutes);
 // Sitemap.xml serving route
 app.use('/api/sitemap', sitemapRoutes);
+
+// AI Shopping Feeds and Agent API
+app.use('/api/public/feeds', aiShoppingFeedsRoutes);
+app.use('/api/ai-agent', aiAgentApiRoutes);
 // Public preview routes (no authentication required)
 app.use('/api/preview', previewRoutes);
 
@@ -1308,6 +1315,7 @@ app.use('/api/supabase', supabaseSetupRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/amazon', amazonRoutes);
 app.use('/api/ebay', ebayRoutes);
+app.use('/api/meta-commerce', metaCommerceRoutes);
 app.use('/api/database-provisioning', authMiddleware, databaseProvisioningRoutes); // Master DB: provisioning, subscriptions, billing
 app.use('/api/database-oauth', databaseOAuthRoutes); // Database OAuth: Neon, PlanetScale
 app.use('/api/custom-domains', customDomainsRoutes); // Custom domain management: DNS verification, SSL provisioning

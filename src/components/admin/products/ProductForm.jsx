@@ -30,6 +30,91 @@ import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtil
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// AI Shopping Readiness Score Calculator
+const calculateAIReadinessScore = (product) => {
+  const weights = {
+    name: 10,
+    description: 15,
+    short_description: 5,
+    price: 10,
+    images: 15,
+    sku: 5,
+    gtin: 10,
+    brand: 10,
+    mpn: 5,
+    category_ids: 10,
+    weight: 2.5,
+    dimensions: 2.5
+  };
+
+  let score = 0;
+  let maxScore = 0;
+
+  Object.entries(weights).forEach(([field, weight]) => {
+    maxScore += weight;
+    const value = product[field];
+
+    if (field === 'images') {
+      if (Array.isArray(value) && value.length > 0) score += weight;
+    } else if (field === 'category_ids') {
+      if (Array.isArray(value) && value.length > 0) score += weight;
+    } else if (field === 'dimensions') {
+      if (value && (value.length || value.width || value.height)) score += weight;
+    } else if (field === 'description') {
+      if (value && value.length >= 100) score += weight;
+      else if (value && value.length >= 50) score += weight * 0.5;
+    } else if (value) {
+      score += weight;
+    }
+  });
+
+  return Math.round((score / maxScore) * 100);
+};
+
+// AI Readiness Checklist
+const getAIReadinessChecklist = (product) => {
+  const descLen = (product.description || '').length;
+
+  return [
+    {
+      passed: descLen >= 100,
+      message: descLen >= 100
+        ? `Description is ${descLen} characters (good length)`
+        : `Description is ${descLen} characters (aim for 100+ characters)`
+    },
+    {
+      passed: !!product.gtin || !!product.mpn,
+      message: (product.gtin || product.mpn)
+        ? "Product has identifiers (GTIN/MPN)"
+        : "Add GTIN or MPN for better discoverability"
+    },
+    {
+      passed: !!product.brand,
+      message: product.brand
+        ? `Brand is set: ${product.brand}`
+        : "Add brand name for better search visibility"
+    },
+    {
+      passed: Array.isArray(product.images) && product.images.length >= 2,
+      message: Array.isArray(product.images) && product.images.length >= 2
+        ? `Has ${product.images.length} images`
+        : "Add at least 2 product images"
+    },
+    {
+      passed: Array.isArray(product.category_ids) && product.category_ids.length > 0,
+      message: Array.isArray(product.category_ids) && product.category_ids.length > 0
+        ? "Product is categorized"
+        : "Assign product to at least one category"
+    },
+    {
+      passed: !!product.weight || (product.dimensions?.length || product.dimensions?.width || product.dimensions?.height),
+      message: (product.weight || product.dimensions?.length)
+        ? "Physical properties defined"
+        : "Add weight or dimensions for shipping info"
+    }
+  ];
+};
+
 const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 1000) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -93,7 +178,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     },
     related_product_ids: [],
     tags: [],
-    featured: false
+    featured: false,
+    // AI Shopping fields
+    gtin: "",
+    mpn: "",
+    brand: "",
+    product_identifiers: {},
+    ai_shopping_data: {}
   });
 
   const [loading, setLoading] = useState(false);
@@ -182,7 +273,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         } : { meta_title: "", meta_description: "", meta_keywords: "", url_key: product.slug || "", meta_robots_tag: "null" }, // Default for seo if product.seo is null/undefined
         related_product_ids: Array.isArray(product.related_product_ids) ? product.related_product_ids : [],
         tags: Array.isArray(product.tags) ? product.tags : [],
-        featured: product.featured || false
+        featured: product.featured || false,
+        // AI Shopping fields
+        gtin: product.gtin || "",
+        mpn: product.mpn || "",
+        brand: product.brand || "",
+        product_identifiers: product.product_identifiers || {},
+        ai_shopping_data: product.ai_shopping_data || {}
       });
       
       // Initialize additional images from product data
@@ -225,7 +322,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             seo: { meta_title: "", meta_description: "", meta_keywords: "", url_key: "", meta_robots_tag: "null" }, // Default for new product
             related_product_ids: [],
             tags: [],
-            featured: false
+            featured: false,
+            // AI Shopping fields
+            gtin: "",
+            mpn: "",
+            brand: "",
+            product_identifiers: {},
+            ai_shopping_data: {}
         });
     }
   }, [product, passedAttributeSets]);
@@ -1224,6 +1327,275 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 </>
               )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        {/* AI Shopping Readiness - Accordion */}
+        <Accordion type="multiple" className="w-full">
+          <AccordionItem value="ai-shopping">
+            <AccordionTrigger>
+              <div className="flex items-center justify-between w-full pr-4">
+                <span className="text-lg font-semibold flex items-center gap-2">
+                  AI Shopping Readiness
+                </span>
+                <Badge variant={
+                  calculateAIReadinessScore(formData) >= 80 ? "default" :
+                  calculateAIReadinessScore(formData) >= 50 ? "secondary" : "destructive"
+                }>
+                  {calculateAIReadinessScore(formData)}%
+                </Badge>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-6 pt-4">
+              {/* Data Quality Score */}
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl font-bold text-purple-600">
+                    {calculateAIReadinessScore(formData)}%
+                  </div>
+                  <div className="flex-1">
+                    <div className="h-2 bg-purple-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-purple-600 transition-all"
+                        style={{ width: `${calculateAIReadinessScore(formData)}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {calculateAIReadinessScore(formData) >= 80
+                        ? "Excellent! Product is well optimized for AI shopping."
+                        : calculateAIReadinessScore(formData) >= 50
+                          ? "Good start. Add more details to improve discoverability."
+                          : "Add more product information to improve AI visibility."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Identifiers */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Product Identifiers</Label>
+                <p className="text-sm text-gray-500">Required for Google Shopping, Microsoft Ads, and AI assistants</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="gtin">GTIN (UPC/EAN/ISBN)</Label>
+                    <Input
+                      id="gtin"
+                      value={formData.gtin || ''}
+                      onChange={(e) => handleInputChange("gtin", e.target.value)}
+                      placeholder="e.g., 0012345678905"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">8, 12, 13, or 14 digit barcode</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="mpn">Manufacturer Part Number (MPN)</Label>
+                    <Input
+                      id="mpn"
+                      value={formData.mpn || ''}
+                      onChange={(e) => handleInputChange("mpn", e.target.value)}
+                      placeholder="e.g., ACME-WH-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="brand">Brand</Label>
+                    <Input
+                      id="brand"
+                      value={formData.brand || ''}
+                      onChange={(e) => handleInputChange("brand", e.target.value)}
+                      placeholder="e.g., ACME Audio"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="manufacturer">Manufacturer</Label>
+                    <Input
+                      id="manufacturer"
+                      value={formData.product_identifiers?.manufacturer || ''}
+                      onChange={(e) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        manufacturer: e.target.value
+                      })}
+                      placeholder="e.g., ACME Corporation"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Attributes for AI */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Product Attributes for AI</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Condition</Label>
+                    <Select
+                      value={formData.product_identifiers?.condition || 'new'}
+                      onValueChange={(val) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        condition: val
+                      })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="refurbished">Refurbished</SelectItem>
+                        <SelectItem value="used">Used</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Age Group</Label>
+                    <Select
+                      value={formData.product_identifiers?.age_group || ''}
+                      onValueChange={(val) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        age_group: val
+                      })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Not specified</SelectItem>
+                        <SelectItem value="newborn">Newborn</SelectItem>
+                        <SelectItem value="infant">Infant</SelectItem>
+                        <SelectItem value="toddler">Toddler</SelectItem>
+                        <SelectItem value="kids">Kids</SelectItem>
+                        <SelectItem value="adult">Adult</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Gender</Label>
+                    <Select
+                      value={formData.product_identifiers?.gender || ''}
+                      onValueChange={(val) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        gender: val
+                      })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Not specified</SelectItem>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="unisex">Unisex</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="color">Color</Label>
+                    <Input
+                      id="color"
+                      value={formData.product_identifiers?.color || ''}
+                      onChange={(e) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        color: e.target.value
+                      })}
+                      placeholder="e.g., Black, Red"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="size">Size</Label>
+                    <Input
+                      id="size"
+                      value={formData.product_identifiers?.size || ''}
+                      onChange={(e) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        size: e.target.value
+                      })}
+                      placeholder="e.g., Medium, XL"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="material">Material</Label>
+                    <Input
+                      id="material"
+                      value={formData.product_identifiers?.material || ''}
+                      onChange={(e) => handleInputChange("product_identifiers", {
+                        ...formData.product_identifiers,
+                        material: e.target.value
+                      })}
+                      placeholder="e.g., Cotton, Leather"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Highlights */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Product Highlights</Label>
+                <p className="text-sm text-gray-500">Key selling points for AI assistants (max 5)</p>
+                <div className="space-y-2">
+                  {(formData.ai_shopping_data?.product_highlights || []).map((highlight, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={highlight}
+                        onChange={(e) => {
+                          const highlights = [...(formData.ai_shopping_data?.product_highlights || [])];
+                          highlights[index] = e.target.value;
+                          handleInputChange("ai_shopping_data", {
+                            ...formData.ai_shopping_data,
+                            product_highlights: highlights
+                          });
+                        }}
+                        placeholder={`Highlight ${index + 1}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const highlights = (formData.ai_shopping_data?.product_highlights || []).filter((_, i) => i !== index);
+                          handleInputChange("ai_shopping_data", {
+                            ...formData.ai_shopping_data,
+                            product_highlights: highlights
+                          });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(formData.ai_shopping_data?.product_highlights || []).length < 5 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const highlights = [...(formData.ai_shopping_data?.product_highlights || []), ''];
+                        handleInputChange("ai_shopping_data", {
+                          ...formData.ai_shopping_data,
+                          product_highlights: highlights
+                        });
+                      }}
+                    >
+                      + Add Highlight
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Optimization Checklist */}
+              <div className="space-y-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  Optimization Checklist
+                </Label>
+                <ul className="space-y-2 text-sm">
+                  {getAIReadinessChecklist(formData).map((item, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      {item.passed ? (
+                        <span className="text-green-600 mt-0.5">✓</span>
+                      ) : (
+                        <span className="text-amber-600 mt-0.5">○</span>
+                      )}
+                      <span className={item.passed ? "text-gray-600" : "text-amber-800"}>
+                        {item.message}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

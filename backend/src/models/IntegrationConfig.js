@@ -91,7 +91,11 @@ IntegrationConfig.getSensitiveFields = (integrationType) => {
     ebay: ['appId', 'certId', 'devId', 'authToken'],
     'google-shopping': ['apiKey'],
     facebook: ['accessToken'],
-    instagram: ['accessToken']
+    instagram: ['accessToken'],
+
+    // Meta Commerce / Instagram Shopping
+    'meta-commerce': ['accessToken', 'refreshToken'],
+    'instagram-shopping': ['accessToken', 'refreshToken']
   };
 
   return sensitiveFieldsMap[integrationType] || [];

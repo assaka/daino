@@ -2653,8 +2653,19 @@ CREATE TABLE IF NOT EXISTS products (
   configurable_attributes JSONB DEFAULT '[]'::jsonb,
   external_id VARCHAR(255),
   external_source VARCHAR(50),
-  demo BOOLEAN DEFAULT false
+  demo BOOLEAN DEFAULT false,
+  -- AI Shopping fields
+  gtin VARCHAR(14),
+  mpn VARCHAR(70),
+  brand VARCHAR(255),
+  product_identifiers JSONB DEFAULT '{}'::jsonb,
+  ai_shopping_data JSONB DEFAULT '{}'::jsonb
 );
+
+-- AI Shopping indexes
+CREATE INDEX IF NOT EXISTS idx_products_gtin ON products(gtin) WHERE gtin IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_products_mpn ON products(mpn) WHERE mpn IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand) WHERE brand IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS redirects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

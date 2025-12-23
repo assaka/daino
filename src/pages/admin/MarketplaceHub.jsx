@@ -27,7 +27,8 @@ import {
   ExternalLink,
   Loader2,
   ChevronRight,
-  BarChart3
+  BarChart3,
+  Instagram
 } from 'lucide-react';
 
 const MarketplaceHub = () => {
@@ -68,6 +69,9 @@ const MarketplaceHub = () => {
 
   // Shopify state
   const [shopifyConfigured, setShopifyConfigured] = useState(false);
+
+  // Instagram Shopping state
+  const [instagramConfigured, setInstagramConfigured] = useState(false);
 
   // Jobs state
   const [activeJobs, setActiveJobs] = useState([]);
@@ -110,6 +114,19 @@ const MarketplaceHub = () => {
       // Check Shopify status (from existing integration)
       // This would check if Shopify OAuth is already connected
       setShopifyConfigured(true); // Assuming already connected
+
+      // Load Instagram Shopping status
+      try {
+        const instagramRes = await fetch(`/api/meta-commerce/status?store_id=${storeId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const instagramData = await instagramRes.json();
+        if (instagramData.connected) {
+          setInstagramConfigured(true);
+        }
+      } catch (e) {
+        // Instagram not configured yet
+      }
 
     } catch (error) {
       console.error('Failed to load configurations:', error);
@@ -317,7 +334,7 @@ const MarketplaceHub = () => {
       </div>
 
       {/* Status Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -368,6 +385,23 @@ const MarketplaceHub = () => {
             </p>
           </CardContent>
         </Card>
+
+        <Card className="border-l-4 border-l-pink-500">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Instagram className="w-5 h-5 text-pink-500" />
+                Instagram
+              </CardTitle>
+              {getStatusBadge(instagramConfigured)}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-gray-600">
+              {instagramConfigured ? 'Sync products to Instagram Shop' : 'Connect Meta Business account'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Active Jobs */}
@@ -410,10 +444,7 @@ const MarketplaceHub = () => {
           <TabsTrigger value="amazon">Amazon</TabsTrigger>
           <TabsTrigger value="ebay">eBay</TabsTrigger>
           <TabsTrigger value="shopify">Shopify</TabsTrigger>
-          <TabsTrigger value="coming-soon" disabled>
-            <span className="mr-2">More</span>
-            <Badge variant="secondary" className="text-[10px]">Soon</Badge>
-          </TabsTrigger>
+          <TabsTrigger value="instagram">Instagram</TabsTrigger>
         </TabsList>
 
         {/* Amazon Tab */}
@@ -695,6 +726,34 @@ const MarketplaceHub = () => {
                 <Button variant="outline" onClick={() => window.location.href = '/admin/shopify-integration'}>
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Go to Shopify Integration
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Instagram Tab */}
+        <TabsContent value="instagram" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Instagram className="w-6 h-6 text-pink-500" />
+                Instagram Shopping
+              </CardTitle>
+              <CardDescription>Sync products to Instagram Shop via Meta Commerce Manager</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Alert>
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription>
+                  Instagram Shopping integration connects your product catalog to Meta Commerce Manager,
+                  enabling product tags on Instagram posts and the Instagram Shop tab.
+                </AlertDescription>
+              </Alert>
+              <div className="mt-4">
+                <Button variant="outline" onClick={() => window.location.href = '/admin/integrations/instagram-shopping'}>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Go to Instagram Shopping
                 </Button>
               </div>
             </CardContent>

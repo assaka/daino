@@ -437,6 +437,7 @@ function App() {
           <Route path="/admin/import-export-jobs" element={<PageWrapper Component={Pages.ImportExportJobs} pageName="IMPORT_EXPORT_JOBS" />} />
           <Route path="/admin/embedding-backfill" element={<PageWrapper Component={Pages.EmbeddingBackfill} pageName="EMBEDDING_BACKFILL" />} />
           <Route path="/admin/shopify-integration" element={<PageWrapper Component={Pages.ShopifyIntegration} pageName="ShopifyIntegration" />} />
+          <Route path="/admin/integrations/instagram-shopping" element={<PageWrapper Component={Pages.InstagramShopping} pageName="instagram-shopping" />} />
           <Route path="/admin/settings" element={<PageWrapper Component={Pages.Settings} pageName="SETTINGS" />} />
           <Route path="/admin/navigation-manager" element={<PageWrapper Component={Pages.NavigationManager} pageName="NAVIGATION_MANAGER" />} />
           <Route path="/admin/theme-layout" element={<PageWrapper Component={Pages.ThemeLayout} pageName="THEME_LAYOUT" />} />

@@ -707,26 +707,116 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 const priceInfo = getPriceDisplay(pageData);
                 const actualPrice = priceInfo.displayPrice; // Use the selling price (discounted if applicable)
 
+                // Build product images array
+                const productImages = Array.isArray(pageData.images)
+                    ? pageData.images.map(img => img?.url || img?.file_url || img).filter(Boolean)
+                    : (pageData.images ? [pageData.images] : []);
+
+                // Get product identifiers for AI shopping
+                const identifiers = pageData.product_identifiers || {};
+                const condition = identifiers.condition || 'new';
+                const conditionMap = {
+                    'new': 'NewCondition',
+                    'refurbished': 'RefurbishedCondition',
+                    'used': 'UsedCondition'
+                };
+
+                // Determine availability
+                let availability = "https://schema.org/OutOfStock";
+                if (pageData.infinite_stock || pageData.stock_quantity > 0) {
+                    availability = "https://schema.org/InStock";
+                } else if (pageData.allow_backorders) {
+                    availability = "https://schema.org/BackOrder";
+                }
+
                 const structuredData = {
                     "@context": "https://schema.org/",
                     "@type": "Product",
                     "name": pageData.name,
                     "description": pageData.description || pageData.short_description || defaultDescription,
-                    "image": Array.isArray(pageData.images) ? pageData.images : (pageData.images ? [pageData.images] : []),
-                    "sku": pageData.sku,
-                    "brand": {
-                        "@type": "Brand",
-                        "name": seoSettings?.social_media_settings?.schema?.organization_name ||
-                               seoSettings?.schema_settings?.organization_name ||
-                               store?.name || "Store"
-                    },
-                    "offers": {
-                        "@type": "Offer",
-                        "url": window.location.href,
-                        "priceCurrency": store?.currency || "No Currency",
-                        "price": actualPrice,
-                        "availability": (pageData.stock_quantity > 0 || pageData.infinite_stock) ?
-                            "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                    "image": productImages,
+                    "sku": pageData.sku
+                };
+
+                // Add GTIN with correct variant based on length
+                if (pageData.gtin) {
+                    structuredData.gtin = pageData.gtin;
+                    if (pageData.gtin.length === 8) structuredData.gtin8 = pageData.gtin;
+                    else if (pageData.gtin.length === 12) structuredData.gtin12 = pageData.gtin;
+                    else if (pageData.gtin.length === 13) structuredData.gtin13 = pageData.gtin;
+                    else if (pageData.gtin.length === 14) structuredData.gtin14 = pageData.gtin;
+                }
+
+                // Add MPN
+                if (pageData.mpn) structuredData.mpn = pageData.mpn;
+
+                // Add brand
+                structuredData.brand = {
+                    "@type": "Brand",
+                    "name": pageData.brand ||
+                           seoSettings?.social_media_settings?.schema?.organization_name ||
+                           seoSettings?.schema_settings?.organization_name ||
+                           store?.name || "Store"
+                };
+
+                // Add manufacturer if different from brand
+                if (identifiers.manufacturer) {
+                    structuredData.manufacturer = {
+                        "@type": "Organization",
+                        "name": identifiers.manufacturer
+                    };
+                }
+
+                // Add physical properties
+                if (pageData.weight) {
+                    structuredData.weight = {
+                        "@type": "QuantitativeValue",
+                        "value": parseFloat(pageData.weight),
+                        "unitCode": "KGM"
+                    };
+                }
+
+                // Add dimensions
+                if (pageData.dimensions) {
+                    if (pageData.dimensions.length) {
+                        structuredData.depth = {
+                            "@type": "QuantitativeValue",
+                            "value": parseFloat(pageData.dimensions.length),
+                            "unitCode": "CMT"
+                        };
+                    }
+                    if (pageData.dimensions.width) {
+                        structuredData.width = {
+                            "@type": "QuantitativeValue",
+                            "value": parseFloat(pageData.dimensions.width),
+                            "unitCode": "CMT"
+                        };
+                    }
+                    if (pageData.dimensions.height) {
+                        structuredData.height = {
+                            "@type": "QuantitativeValue",
+                            "value": parseFloat(pageData.dimensions.height),
+                            "unitCode": "CMT"
+                        };
+                    }
+                }
+
+                // Add product attributes from identifiers
+                if (identifiers.color) structuredData.color = identifiers.color;
+                if (identifiers.size) structuredData.size = identifiers.size;
+                if (identifiers.material) structuredData.material = identifiers.material;
+
+                // Build offers with enhanced data
+                structuredData.offers = {
+                    "@type": "Offer",
+                    "url": window.location.href,
+                    "priceCurrency": store?.currency || "USD",
+                    "price": actualPrice,
+                    "availability": availability,
+                    "itemCondition": `https://schema.org/${conditionMap[condition] || 'NewCondition'}`,
+                    "seller": {
+                        "@type": "Organization",
+                        "name": store?.name || "Store"
                     }
                 };
 
@@ -735,10 +825,38 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     structuredData.offers.priceSpecification = {
                         "@type": "PriceSpecification",
                         "price": actualPrice,
-                        "priceCurrency": store?.currency || "No Currency"
+                        "priceCurrency": store?.currency || "USD"
                     };
-                    // Add the original (higher) price for reference
                     structuredData.offers.priceValidUntil = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+                }
+
+                // Add shipping details if available
+                const shippingData = pageData.ai_shopping_data?.shipping;
+                if (shippingData && shippingData.rate !== undefined) {
+                    structuredData.offers.shippingDetails = {
+                        "@type": "OfferShippingDetails",
+                        "shippingRate": {
+                            "@type": "MonetaryAmount",
+                            "value": shippingData.rate,
+                            "currency": store?.currency || "USD"
+                        },
+                        "deliveryTime": {
+                            "@type": "ShippingDeliveryTime",
+                            "handlingTime": { "@type": "QuantitativeValue", "minValue": 0, "maxValue": 2, "unitCode": "d" },
+                            "transitTime": { "@type": "QuantitativeValue", "minValue": 3, "maxValue": 7, "unitCode": "d" }
+                        }
+                    };
+                }
+
+                // Add aggregate rating if reviews exist
+                if (pageData.reviews_count > 0 && pageData.average_rating) {
+                    structuredData.aggregateRating = {
+                        "@type": "AggregateRating",
+                        "ratingValue": pageData.average_rating,
+                        "reviewCount": pageData.reviews_count,
+                        "bestRating": 5,
+                        "worstRating": 1
+                    };
                 }
 
                 script.textContent = JSON.stringify(structuredData);

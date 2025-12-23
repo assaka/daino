@@ -168,6 +168,9 @@ class BackgroundJobManager extends EventEmitter {
       // eBay export jobs
       ['ebay:export:products', './jobs/EbayExportProductsJob'],
 
+      // Meta Commerce / Instagram Shopping jobs
+      ['meta-commerce:sync:products', './jobs/MetaCommerceSyncJob'],
+
       // Integration category jobs
       ['integration:create:categories', './jobs/IntegrationCreateCategoriesJob']
     ];
