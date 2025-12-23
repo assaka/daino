@@ -2100,7 +2100,8 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
       storeId,
       body: updates,
       hasSettings: !!updates.settings,
-      settingsKeys: updates.settings ? Object.keys(updates.settings) : []
+      settingsKeys: updates.settings ? Object.keys(updates.settings) : [],
+      product_gallery_layout: updates.settings?.product_gallery_layout // DEBUG: Track gallery layout specifically
     });
 
     // Get store from master DB using Supabase client
@@ -2156,7 +2157,11 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
         ...currentSettings,
         ...incomingSettings
       };
-      console.log('🔄 Merged settings:', finalUpdates.settings);
+      console.log('🔄 Merged settings - product_gallery_layout:', {
+        current: currentSettings.product_gallery_layout,
+        incoming: incomingSettings.product_gallery_layout,
+        final: finalUpdates.settings.product_gallery_layout
+      });
     }
 
     // Update in tenant DB (theme_preset excluded - handled separately in master DB)

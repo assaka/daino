@@ -201,6 +201,9 @@ async function getStoreBySlug(slug) {
   // Override published field from master DB (master is authoritative for published status)
   store.published = masterStore.published;
 
+  // DEBUG: Log product gallery layout setting
+  console.log('🖼️ Bootstrap - product_gallery_layout from tenant DB:', store.settings?.product_gallery_layout);
+
   // Step 4: Check if the incoming domain is a redirect domain
   // If the slug looks like a domain, check custom_domains for redirect info
   let redirectTo = null;
