@@ -373,7 +373,9 @@ export default function StorefrontLayout({ children }) {
     // Debug: Compare categories in layout vs product page
     console.log('🍞 StorefrontLayout categories:', {
       categoriesCount: categories?.length,
-      categoryNames: categories?.map(c => c.name)
+      categoryNames: categories?.map(c => c.name),
+      firstCategoryChildren: categories?.[0]?.children?.length,
+      isTree: categories?.[0]?.children ? 'YES - nested tree structure' : 'NO - flat array'
     });
 
     const { t } = useTranslation();
