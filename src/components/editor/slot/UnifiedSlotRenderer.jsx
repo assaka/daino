@@ -757,9 +757,18 @@ export function UnifiedSlotRenderer({
     });
   }
 
+  // Debug: Check which products are used
+  const productsToUse = preprocessedData?.products || formattedProducts;
+  console.log('🏷️ variableContext products assignment:', {
+    usingPreprocessed: !!preprocessedData?.products,
+    usingFormattedProducts: !preprocessedData?.products,
+    firstProductHasStockLabel: 'stock_label' in (productsToUse?.[0] || {}),
+    firstProductStockLabel: productsToUse?.[0]?.stock_label
+  });
+
   const variableContext = {
     product: formattedProduct,
-    products: preprocessedData?.products || formattedProducts, // Use preprocessed products if available
+    products: productsToUse, // Use preprocessed products if available
     allProducts: preprocessedData?.allProducts || categorySource?.allProducts || [], // Unfiltered products for LayeredNavigation
     category: categorySource?.category || categoryData,
     cart: cartData,
