@@ -109,15 +109,6 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
   // Flatten the category tree for searching (handles nested tree structure from bootstrap)
   const flatCategories = flattenCategoryTree(categories);
 
-  console.log('🍞 buildProductBreadcrumbs DEBUG:', {
-    inputCategoriesCount: categories?.length,
-    flatCategoriesCount: flatCategories?.length,
-    flatCategoryIds: flatCategories?.map(c => c.id),
-    flatCategoryNames: flatCategories?.map(c => c.name),
-    productCategoryIds: product?.category_ids,
-    show_category_in_breadcrumb: settings?.show_category_in_breadcrumb
-  });
-
   const breadcrumbs = [];
 
   if (settings?.show_category_in_breadcrumb !== false && product.category_ids && product.category_ids.length > 0 && flatCategories && flatCategories.length > 0) {
@@ -144,21 +135,12 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
       }
     }
 
-
-    console.log('🍞 deepestCategory found:', deepestCategory ? {
-      id: deepestCategory.id,
-      name: deepestCategory.name,
-      parent_id: deepestCategory.parent_id,
-      maxDepth
-    } : 'NONE');
-
     if (deepestCategory) {
       let category = deepestCategory;
       const categoryChain = [category];
 
       while (category?.parent_id) {
         const parent = flatCategories.find(c => c.id === category.parent_id);
-        console.log('🍞 Looking for parent:', category.parent_id, 'Found:', parent ? { id: parent.id, name: parent.name } : 'NOT FOUND');
         if (parent) {
           categoryChain.unshift(parent);
           category = parent;
@@ -166,8 +148,6 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
           break;
         }
       }
-
-      console.log('🍞 categoryChain:', categoryChain.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })));
 
       const currentLang = getCurrentLanguage();
       // Filter out root categories, but always keep the deepest category (product's category)
@@ -177,7 +157,6 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
         // Exclude root categories from parent chain
         return cat.parent_id !== null;
       });
-      console.log('🍞 filteredChain:', filteredChain.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })));
       filteredChain.forEach((cat, index) => {
         const categoryPath = [];
         const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);

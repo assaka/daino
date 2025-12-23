@@ -90,7 +90,6 @@ const storeTeamRoutes = require('./routes/store-teams');
 const storePauseAccessRoutes = require('./routes/store-pause-access');
 const robotsRoutes = require('./routes/robots');
 const sitemapRoutes = require('./routes/sitemap');
-const aiShoppingFeedsRoutes = require('./routes/ai-shopping-feeds');
 const aiAgentApiRoutes = require('./routes/ai-agent-api');
 const integrationRoutes = require('./routes/integrations');
 const supabaseRoutes = require('./routes/supabase');
@@ -414,8 +413,7 @@ app.use('/api/robots', robotsRoutes);
 // Sitemap.xml serving route
 app.use('/api/sitemap', sitemapRoutes);
 
-// AI Shopping Feeds and Agent API
-app.use('/api/public/feeds', aiShoppingFeedsRoutes);
+// AI Agent API
 app.use('/api/ai-agent', aiAgentApiRoutes);
 // Public preview routes (no authentication required)
 app.use('/api/preview', previewRoutes);

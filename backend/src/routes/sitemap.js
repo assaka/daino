@@ -954,3 +954,5 @@ router.get('/store/:storeSlug', async (req, res) => {
 module.exports = router;
 module.exports.generateSitemapXml = generateSitemapXml;
 module.exports.generateGoogleMerchantXml = generateGoogleMerchantXml;
+module.exports.generateChatGPTFeed = generateChatGPTFeed;
+module.exports.generateUniversalFeed = generateUniversalFeed;
