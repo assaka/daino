@@ -244,17 +244,24 @@ class StorefrontApiClient {
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       // CRITICAL FIX: Include session_id and store_id in body for POST/PUT/PATCH requests
-      // Exclude session_id for endpoints that don't have this column (e.g., addresses)
-      const excludeSessionIdEndpoints = ['addresses'];
-      const shouldExcludeSessionId = excludeSessionIdEndpoints.some(ep => endpoint.includes(ep));
+      // Exclude session_id/store_id from body for endpoints that don't have these columns (e.g., addresses)
+      // For addresses, store_id is passed as query param instead for validation
+      const excludeFromBodyEndpoints = ['addresses'];
+      const shouldExcludeFromBody = excludeFromBodyEndpoints.some(ep => endpoint.includes(ep));
 
       const bodyData = {
         ...data
       };
-      if (!shouldExcludeSessionId) {
+      if (!shouldExcludeFromBody) {
         bodyData.session_id = this.sessionId;
         if (this.currentStoreId) {
           bodyData.store_id = this.currentStoreId;
+        }
+      } else {
+        // For excluded endpoints, add store_id to URL as query param for validation
+        if (this.currentStoreId) {
+          const separator = url.includes('?') ? '&' : '?';
+          url = `${url}${separator}store_id=${this.currentStoreId}`;
         }
       }
       config.body = JSON.stringify(bodyData);
