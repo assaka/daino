@@ -5,11 +5,7 @@
     "user_id": {
       "type": "string"
     },
-    "is_default_shipping": {
-      "type": "boolean",
-      "default": false
-    },
-    "is_default_billing": {
+    "is_default": {
       "type": "boolean",
       "default": false
     },

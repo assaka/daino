@@ -598,25 +598,13 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="is_default_shipping"
-              name="is_default_shipping"
-              checked={addressForm.is_default_shipping || false}
-              onChange={(e) => handleInputChange('is_default_shipping', e.target.checked)}
+              id="is_default"
+              name="is_default"
+              checked={addressForm.is_default || false}
+              onChange={(e) => handleInputChange('is_default', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="is_default_shipping">{t('address.default_shipping', settings)}</Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="is_default_billing"
-              name="is_default_billing"
-              checked={addressForm.is_default_billing || false}
-              onChange={(e) => handleInputChange('is_default_billing', e.target.checked)}
-              className="rounded"
-            />
-            <Label htmlFor="is_default_billing">{t('address.default_billing', settings)}</Label>
+            <Label htmlFor="is_default">{t('address.default_address', settings)}</Label>
           </div>
 
           <div className="flex justify-end space-x-2">
@@ -700,8 +688,7 @@ export default function CustomerDashboard() {
     postal_code: '',
     country: 'US',
     email: '',
-    is_default_shipping: false,
-    is_default_billing: false,
+    is_default: false,
   });
 
   const getCountryName = (countryCode) => {
@@ -751,8 +738,7 @@ export default function CustomerDashboard() {
       postal_code: '',
       country: 'US',
       email: '',
-      is_default_shipping: false,
-      is_default_billing: false,
+      is_default: false,
     });
     setEditingAddress(null);
   };
@@ -959,8 +945,7 @@ export default function CustomerDashboard() {
           postal_code: address.postal_code || '',
           country: address.country || 'US',
           email: address.email || '',
-          is_default_shipping: address.is_default_shipping || false,
-          is_default_billing: address.is_default_billing || false,
+          is_default: address.is_default || false,
       });
       setEditingAddress(address);
       setShowAddressForm(true);
@@ -1303,14 +1288,11 @@ export default function CustomerDashboard() {
                               {address.phone && <p className="text-gray-600">{address.phone}</p>}
                               {address.email && <p className="text-gray-600">{address.email}</p>}
                               
-                              <div className="flex gap-2 mt-2">
-                                {address.is_default_shipping && (
-                                  <Badge className="bg-blue-100 text-blue-800">{t('address.default_shipping_badge', settings)}</Badge>
-                                )}
-                                {address.is_default_billing && (
-                                  <Badge className="bg-green-100 text-green-800">{t('address.default_billing_badge', settings)}</Badge>
-                                )}
-                              </div>
+                              {address.is_default && (
+                                <div className="flex gap-2 mt-2">
+                                  <Badge className="bg-blue-100 text-blue-800">{t('address.default_badge', settings)}</Badge>
+                                </div>
+                              )}
                             </div>
                             <div className="flex space-x-2">
                               <Button
