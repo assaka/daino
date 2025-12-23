@@ -601,12 +601,25 @@ export function UnifiedSlotRenderer({
       childSlotsCount: childSlots.length,
       childSlotIds: childSlots.map(s => s.id),
       hasBreadcrumbSlot: !!breadcrumbSlot,
-      breadcrumbSlot: breadcrumbSlot ? { id: breadcrumbSlot.id, component: breadcrumbSlot.component, type: breadcrumbSlot.type } : null
+      breadcrumbSlot: breadcrumbSlot ? { id: breadcrumbSlot.id, component: breadcrumbSlot.component, type: breadcrumbSlot.type } : null,
+      hasCategoryData: !!categoryData,
+      categoryDataKeys: categoryData ? Object.keys(categoryData).slice(0, 10) : []
     });
   }
 
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
+
+  // Debug: Check if breadcrumbs survives filtering
+  if (parentId === 'page_header') {
+    const breadcrumbInFiltered = filteredSlots.find(s => s.id === 'breadcrumbs_content');
+    console.log('🍞 After viewMode filter:', {
+      viewMode,
+      filteredSlotsCount: filteredSlots.length,
+      filteredSlotIds: filteredSlots.map(s => s.id),
+      breadcrumbSurvived: !!breadcrumbInFiltered
+    });
+  }
 
   // Apply renderCondition filtering based on slot metadata
   // renderConditions are now stored as string identifiers in slot.metadata.renderCondition
@@ -1439,6 +1452,16 @@ export function UnifiedSlotRenderer({
           />
         </div>
       );
+    }
+
+    // Debug: Log all slots being processed to check types
+    if (slot.id === 'breadcrumbs_content' || slot.component === 'Breadcrumbs') {
+      console.log('🍞 renderBasicSlot reached for breadcrumbs:', {
+        slotId: slot.id,
+        slotType: type,
+        slotComponent: slot.component,
+        shouldSkipDueToViewport
+      });
     }
 
     // Component Element
