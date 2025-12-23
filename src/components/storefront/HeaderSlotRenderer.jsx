@@ -204,8 +204,8 @@ export function HeaderSlotRenderer({
         return (
           <div key={id} className={className} style={styles} data-slot-id={id}>
             <Link to={createPublicUrl(store?.slug, 'STOREFRONT')} className="flex items-center space-x-1 md:space-x-2">
-              {store?.logo_url ? (
-                <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-6 md:h-8 w-6 md:w-8 object-contain" />
+              {(store?.settings?.store_logo || store?.logo_url) ? (
+                <img src={store?.settings?.store_logo || store.logo_url} alt={store.name || 'Store Logo'} className="h-6 md:h-8 w-6 md:w-8 object-contain" />
               ) : (
                 <ShoppingBag className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
               )}

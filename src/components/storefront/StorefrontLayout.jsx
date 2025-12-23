@@ -764,8 +764,8 @@ export default function StorefrontLayout({ children }) {
                             <div className="flex items-center justify-between h-16">
                                 <div className="flex items-center">
                                     <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="flex items-center space-x-2">
-                                        {store?.logo_url ? (
-                                            <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-8 w-8 object-contain" />
+                                        {(store?.settings?.store_logo || store?.logo_url) ? (
+                                            <img src={store?.settings?.store_logo || store.logo_url} alt={store.name || 'Store Logo'} className="h-8 w-8 object-contain" />
                                         ) : (
                                             <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
                                         )}
