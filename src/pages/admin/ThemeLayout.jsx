@@ -2278,30 +2278,6 @@ export default function ThemeLayout() {
                                 </div>
                             </div>
 
-                            {/* Stock Label Translation Link */}
-                            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                    <Languages className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-blue-900 mb-2">Stock Label Translations</h4>
-                                        <p className="text-blue-700 mb-3">
-                                            Stock label text and translations (In Stock, Out of Stock, Low Stock) are managed in the Translations page under the "Stock Labels" section.
-                                        </p>
-                                        <Link to={createPageUrl('Translations')}>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                            >
-                                                <Languages className="w-4 h-4 mr-2" />
-                                                Manage Stock Label Translations
-                                                <ArrowRight className="w-4 h-4 ml-2" />
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Stock Label Colors */}
                             <div className="space-y-4 pt-4 border-t">
                                 <h4 className="font-medium text-gray-900">Stock Label Colors</h4>
@@ -2411,6 +2387,31 @@ export default function ThemeLayout() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Stock Label Translation Link */}
+                            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <Languages className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-blue-900 mb-2">Stock Label Translations</h4>
+                                        <p className="text-blue-700 mb-3">
+                                            Stock label text and translations (In Stock, Out of Stock, Low Stock) are managed in the Translations page under the "Stock Labels" section.
+                                        </p>
+                                        <Link to={createPageUrl('Translations')}>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            >
+                                                <Languages className="w-4 h-4 mr-2" />
+                                                Manage Stock Label Translations
+                                                <ArrowRight className="w-4 h-4 ml-2" />
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
                         </CardContent>
                     </Card>
 

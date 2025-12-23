@@ -19,18 +19,24 @@ const BreadcrumbsSlotComponent = createSlotComponent({
 
     if (!context) return null;
 
-    const { category, product, store, categories = [], settings = {} } = context;
+    const { category, product, store, categories = [], settings = {}, breadcrumbs: prebuiltBreadcrumbs } = context;
 
-    // Build breadcrumb items based on context
-    const pageType = category ? 'category' : 'product';
-    const contextData = category || product;
-    const breadcrumbItems = buildBreadcrumbs(
-      pageType,
-      contextData,
-      store?.slug || store?.code,
-      categories,
-      settings
-    );
+    // Use pre-built breadcrumbs if available (already built by Category.jsx or ProductDetail.jsx)
+    // Otherwise build them here (fallback for editor or when not pre-built)
+    let breadcrumbItems = prebuiltBreadcrumbs;
+
+    if (!breadcrumbItems || breadcrumbItems.length === 0) {
+      const pageType = category ? 'category' : 'product';
+      const contextData = category || product;
+      const storeCode = store?.public_storecode || store?.slug || store?.code;
+      breadcrumbItems = buildBreadcrumbs(
+        pageType,
+        contextData,
+        storeCode,
+        categories,
+        settings
+      );
+    }
 
     if (!breadcrumbItems || breadcrumbItems.length === 0) return null;
 
