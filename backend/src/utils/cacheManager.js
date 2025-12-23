@@ -192,13 +192,21 @@ async function deletePattern(pattern) {
         keys.push(key);
       }
 
+      console.log(`[CACHE] deletePattern Redis - pattern: ${pattern}, found keys:`, keys);
+
       if (keys.length > 0) {
         deletedCount = await redis.del(keys);
+        console.log(`[CACHE] deletePattern Redis - deleted ${deletedCount} keys`);
       }
+    } else {
+      console.log(`[CACHE] deletePattern - Redis not connected, using in-memory only`);
     }
 
     // Also clear from in-memory cache
     const memKeys = memoryCache.keys(pattern);
+    if (memKeys.length > 0) {
+      console.log(`[CACHE] deletePattern in-memory - pattern: ${pattern}, found keys:`, memKeys);
+    }
     memKeys.forEach(key => memoryCache.delete(key));
     deletedCount += memKeys.length;
 

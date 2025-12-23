@@ -2190,13 +2190,39 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
       console.log('✅ Theme preset updated in master DB:', updates.theme_preset);
     }
 
-    // Clear Redis bootstrap cache so storefront gets fresh settings
+    // Clear ALL caches so storefront gets fresh settings
     try {
-      const { deletePattern } = require('../utils/cacheManager');
-      const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
-      console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for store:`, store.slug);
+      const { deletePattern, invalidateStoreSettings } = require('../utils/cacheManager');
+      const { isRedisConnected } = require('../config/redis');
+
+      // Get store slug from tenant DB (currentStore has it)
+      const storeSlug = currentStore.slug || store.slug;
+      console.log('🧹 Clearing caches for store:', { storeId, storeSlug, redisConnected: isRedisConnected() });
+
+      // Clear bootstrap cache (Redis + in-memory)
+      const bootstrapPattern = `bootstrap:${storeSlug}:*`;
+      const deletedBootstrap = await deletePattern(bootstrapPattern);
+      console.log(`  ✅ Cleared ${deletedBootstrap} bootstrap cache keys (pattern: ${bootstrapPattern})`);
+
+      // Clear store settings cache
+      await invalidateStoreSettings(storeId);
+      console.log('  ✅ Cleared store settings cache');
+
+      // Clear any other potential cache patterns
+      const additionalPatterns = [
+        `store:${storeId}:*`,
+        `settings:${storeId}:*`,
+        `storefront:${storeSlug}:*`
+      ];
+
+      for (const pattern of additionalPatterns) {
+        const deleted = await deletePattern(pattern);
+        if (deleted > 0) {
+          console.log(`  ✅ Cleared ${deleted} keys for pattern: ${pattern}`);
+        }
+      }
     } catch (cacheError) {
-      console.warn('⚠️ Failed to clear bootstrap cache:', cacheError.message);
+      console.warn('⚠️ Failed to clear caches:', cacheError.message);
     }
 
     res.json({
