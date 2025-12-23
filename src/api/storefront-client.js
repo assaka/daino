@@ -253,9 +253,9 @@ class StorefrontApiClient {
       };
       if (!shouldExcludeSessionId) {
         bodyData.session_id = this.sessionId;
-      }
-      if (this.currentStoreId) {
-        bodyData.store_id = this.currentStoreId;
+        if (this.currentStoreId) {
+          bodyData.store_id = this.currentStoreId;
+        }
       }
       config.body = JSON.stringify(bodyData);
     }
