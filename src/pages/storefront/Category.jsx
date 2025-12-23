@@ -35,7 +35,7 @@ export default function Category() {
   });
 
   const { showNotFound } = useNotFound();
-  const { t } = useTranslation();
+  const { t, translations } = useTranslation();
 
   const { storeCode } = useParams();
   const location = useLocation();
@@ -654,7 +654,7 @@ export default function Category() {
                 navigate: (url) => window.location.href = url,
                 formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
                 getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
-              }, store, settings, { translations: {}, productLabels: productLabels || [] })}
+              }, store, settings, { translations, productLabels: productLabels || [] })}
             />
           </div>
         )}
