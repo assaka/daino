@@ -2575,24 +2575,45 @@ export default function Checkout() {
         if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
           const address = userAddresses.find(a => a.id === selectedShippingAddress);
           if (address) {
+            const parts = [
+              address.full_name,
+              address.street,
+              address.city,
+              [address.state, address.postal_code].filter(Boolean).join(' '),
+              address.country
+            ].filter(Boolean);
             items.push({
               label: t('common.shipping_address'),
-              value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
+              value: parts.join(', ')
             });
           }
-        } else if (isAddressComplete(shippingAddress)) {
+        } else if (shippingAddress.full_name) {
+          const parts = [
+            shippingAddress.full_name,
+            shippingAddress.street,
+            shippingAddress.city,
+            [shippingAddress.state, shippingAddress.postal_code].filter(Boolean).join(' '),
+            shippingAddress.country
+          ].filter(Boolean);
           items.push({
             label: t('common.shipping_address'),
-            value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
+            value: parts.join(', ')
           });
         }
       }
 
       // Billing address (if different from shipping)
-      if (!useShippingForBilling && isAddressComplete(billingAddress)) {
+      if (!useShippingForBilling && billingAddress.full_name) {
+        const parts = [
+          billingAddress.full_name,
+          billingAddress.street,
+          billingAddress.city,
+          [billingAddress.state, billingAddress.postal_code].filter(Boolean).join(' '),
+          billingAddress.country
+        ].filter(Boolean);
         items.push({
           label: t('common.billing_address'),
-          value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
+          value: parts.join(', ')
         });
       }
 
