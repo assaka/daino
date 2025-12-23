@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { buildStoreUrl } = require('../utils/domainConfig');
+const { applyProductTranslationsToMany, fetchProductImages } = require('../utils/productHelpers');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 
 /**
  * Generate XML sitemap content
@@ -253,13 +255,600 @@ async function generateSitemapXml(storeId, baseUrl) {
  * Escape XML special characters
  */
 function escapeXml(unsafe) {
-  return unsafe
+  if (!unsafe) return '';
+  return String(unsafe)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 }
+
+/**
+ * Enrich products with brand and mpn from product_attribute_values
+ */
+async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, language = 'en') {
+  if (!products || products.length === 0) return products;
+
+  const productIds = products.map(p => p.id);
+
+  // Find the brand and mpn attribute IDs for this store
+  const { data: attributes } = await tenantDb
+    .from('attributes')
+    .select('id, code')
+    .eq('store_id', storeId)
+    .in('code', ['brand', 'mpn', 'manufacturer']);
+
+  if (!attributes || attributes.length === 0) return products;
+
+  const brandAttr = attributes.find(a => a.code === 'brand');
+  const mpnAttr = attributes.find(a => a.code === 'mpn');
+  const manufacturerAttr = attributes.find(a => a.code === 'manufacturer');
+
+  const attrIds = attributes.map(a => a.id);
+
+  // Fetch product_attribute_values for these products and attributes
+  const { data: productAttrValues } = await tenantDb
+    .from('product_attribute_values')
+    .select('product_id, attribute_id, value_id, text_value')
+    .in('product_id', productIds)
+    .in('attribute_id', attrIds);
+
+  if (!productAttrValues || productAttrValues.length === 0) return products;
+
+  // Collect value_ids for select/multiselect attributes to fetch translations
+  const valueIds = productAttrValues
+    .filter(pav => pav.value_id)
+    .map(pav => pav.value_id);
+
+  // Fetch attribute_values and their translations
+  let valueTranslations = {};
+  if (valueIds.length > 0) {
+    const { data: attrValues } = await tenantDb
+      .from('attribute_values')
+      .select('id, code, label')
+      .in('id', valueIds);
+
+    const { data: translations } = await tenantDb
+      .from('attribute_value_translations')
+      .select('attribute_value_id, language_code, value')
+      .in('attribute_value_id', valueIds);
+
+    if (attrValues) {
+      attrValues.forEach(av => {
+        valueTranslations[av.id] = av.label || av.code;
+      });
+    }
+
+    if (translations) {
+      translations.forEach(t => {
+        if (t.language_code === language && t.value) {
+          valueTranslations[t.attribute_value_id] = t.value;
+        }
+      });
+    }
+  }
+
+  // Build product -> brand/mpn lookup
+  const productBrandMap = {};
+  const productMpnMap = {};
+  const productManufacturerMap = {};
+
+  productAttrValues.forEach(pav => {
+    const value = pav.value_id
+      ? valueTranslations[pav.value_id]
+      : pav.text_value;
+
+    if (!value) return;
+
+    if (brandAttr && pav.attribute_id === brandAttr.id) {
+      productBrandMap[pav.product_id] = value;
+    }
+    if (mpnAttr && pav.attribute_id === mpnAttr.id) {
+      productMpnMap[pav.product_id] = value;
+    }
+    if (manufacturerAttr && pav.attribute_id === manufacturerAttr.id) {
+      productManufacturerMap[pav.product_id] = value;
+    }
+  });
+
+  return products.map(product => ({
+    ...product,
+    brand: productBrandMap[product.id] || null,
+    mpn: productMpnMap[product.id] || null,
+    manufacturer: productManufacturerMap[product.id] || null
+  }));
+}
+
+/**
+ * Generate Google Merchant Center RSS 2.0 XML feed
+ */
+async function generateGoogleMerchantXml(storeId, baseUrl, currency = 'EUR', language = 'en') {
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Get store info
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('name, currency')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    const storeCurrency = store?.currency || currency;
+    const storeName = store?.name || 'Store';
+
+    // Fetch active, visible products
+    const { data: products, error } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('status', 'active')
+      .eq('visibility', 'visible')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+
+    if (error) throw error;
+
+    // Apply translations
+    let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+
+    // Apply images
+    enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+
+    // Enrich with brand/mpn from product_attribute_values
+    enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
+
+    // Build XML
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n';
+    xml += '  <channel>\n';
+    xml += `    <title>${escapeXml(storeName)}</title>\n`;
+    xml += `    <link>${escapeXml(baseUrl)}</link>\n`;
+    xml += `    <description>Product feed for ${escapeXml(storeName)}</description>\n`;
+
+    enrichedProducts.forEach(product => {
+      const availability = getProductAvailability(product);
+      const primaryImage = getPrimaryImage(product);
+      const condition = product.product_identifiers?.condition || 'new';
+
+      xml += '    <item>\n';
+      xml += `      <g:id>${escapeXml(product.sku || product.id)}</g:id>\n`;
+      xml += `      <g:title>${escapeXml(truncate(product.name, 150))}</g:title>\n`;
+      xml += `      <g:description>${escapeXml(sanitizeDescription(product.description || product.short_description, 5000))}</g:description>\n`;
+      xml += `      <g:link>${escapeXml(baseUrl)}/product/${escapeXml(product.slug)}</g:link>\n`;
+      xml += `      <g:image_link>${escapeXml(primaryImage)}</g:image_link>\n`;
+
+      // Price handling (sale price if applicable)
+      if (product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)) {
+        xml += `      <g:price>${product.compare_price} ${storeCurrency}</g:price>\n`;
+        xml += `      <g:sale_price>${product.price} ${storeCurrency}</g:sale_price>\n`;
+      } else {
+        xml += `      <g:price>${product.price} ${storeCurrency}</g:price>\n`;
+      }
+
+      xml += `      <g:availability>${availability}</g:availability>\n`;
+      xml += `      <g:condition>${condition}</g:condition>\n`;
+
+      // Additional images
+      const additionalImages = getAdditionalImages(product);
+      additionalImages.forEach(img => {
+        xml += `      <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>\n`;
+      });
+
+      // Product identifiers
+      if (product.gtin) xml += `      <g:gtin>${escapeXml(product.gtin)}</g:gtin>\n`;
+      if (product.mpn) xml += `      <g:mpn>${escapeXml(product.mpn)}</g:mpn>\n`;
+      if (product.brand) xml += `      <g:brand>${escapeXml(product.brand)}</g:brand>\n`;
+      if (product.barcode && !product.gtin) xml += `      <g:gtin>${escapeXml(product.barcode)}</g:gtin>\n`;
+
+      // Google product category
+      if (product.ai_shopping_data?.google_category_id) {
+        xml += `      <g:google_product_category>${escapeXml(product.ai_shopping_data.google_category_id)}</g:google_product_category>\n`;
+      }
+
+      // Product attributes from product_identifiers
+      const identifiers = product.product_identifiers || {};
+      if (identifiers.color) xml += `      <g:color>${escapeXml(identifiers.color)}</g:color>\n`;
+      if (identifiers.size) xml += `      <g:size>${escapeXml(identifiers.size)}</g:size>\n`;
+      if (identifiers.gender) xml += `      <g:gender>${escapeXml(identifiers.gender)}</g:gender>\n`;
+      if (identifiers.age_group) xml += `      <g:age_group>${escapeXml(identifiers.age_group)}</g:age_group>\n`;
+      if (identifiers.material) xml += `      <g:material>${escapeXml(identifiers.material)}</g:material>\n`;
+
+      // Shipping weight
+      if (product.weight) {
+        xml += `      <g:shipping_weight>${product.weight} kg</g:shipping_weight>\n`;
+      }
+
+      xml += '    </item>\n';
+    });
+
+    xml += '  </channel>\n';
+    xml += '</rss>';
+
+    return xml;
+  } catch (error) {
+    console.error('[GoogleMerchant] Error generating feed:', error);
+    throw error;
+  }
+}
+
+// Helper functions for Google Merchant feed
+function getProductAvailability(product) {
+  if (product.infinite_stock || product.stock_quantity > 0) return 'in_stock';
+  if (product.allow_backorders) return 'backorder';
+  return 'out_of_stock';
+}
+
+function getPrimaryImage(product) {
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    return product.images[0].url || product.images[0].file_url || product.images[0];
+  }
+  return '';
+}
+
+function getAdditionalImages(product) {
+  if (Array.isArray(product.images) && product.images.length > 1) {
+    return product.images.slice(1, 10).map(img => img.url || img.file_url || img);
+  }
+  return [];
+}
+
+function sanitizeDescription(text, maxLength = 5000) {
+  if (!text) return '';
+  return text.replace(/<[^>]*>/g, '').substring(0, maxLength);
+}
+
+function truncate(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+}
+
+
+/**
+ * Generate ChatGPT/OpenAI compatible JSON feed
+ */
+async function generateChatGPTFeed(storeId, baseUrl, currency = 'EUR', language = 'en') {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: store } = await tenantDb
+    .from('stores')
+    .select('name, currency, settings')
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  const storeCurrency = store?.currency || currency;
+
+  const { data: products, error } = await tenantDb
+    .from('products')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('status', 'active')
+    .eq('visibility', 'visible')
+    .order('created_at', { ascending: false })
+    .limit(5000);
+
+  if (error) throw error;
+
+  let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+  enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+  enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
+
+  const formatPrice = (price) => {
+    const num = parseFloat(price) || 0;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: storeCurrency }).format(num);
+  };
+
+  const formattedProducts = enrichedProducts.map(product => {
+    const discount = product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)
+      ? Math.round((1 - parseFloat(product.price) / parseFloat(product.compare_price)) * 100)
+      : 0;
+
+    return {
+      id: product.id,
+      name: product.name,
+      natural_description: generateNaturalDescription(product, discount, formatPrice),
+      description: product.description,
+      short_description: product.short_description,
+      highlights: product.ai_shopping_data?.product_highlights || [],
+      pricing: {
+        current_price: parseFloat(product.price) || 0,
+        original_price: product.compare_price ? parseFloat(product.compare_price) : null,
+        currency: storeCurrency,
+        formatted_current: formatPrice(product.price),
+        formatted_original: product.compare_price ? formatPrice(product.compare_price) : null,
+        discount_percentage: discount
+      },
+      availability: {
+        status: getProductAvailability(product),
+        quantity: product.stock_quantity,
+        message: getAvailabilityMessage(product)
+      },
+      identifiers: {
+        sku: product.sku,
+        gtin: product.gtin,
+        mpn: product.mpn,
+        barcode: product.barcode
+      },
+      brand: product.brand,
+      url: `${baseUrl}/product/${product.slug}`,
+      images: (product.images || []).map((img, i) => ({
+        url: img.url || img.file_url || img,
+        alt: img.alt || img.alt_text || `${product.name} image ${i + 1}`
+      }))
+    };
+  });
+
+  return {
+    feed_version: '1.0',
+    format: 'chatgpt-shopping',
+    store: {
+      name: store?.name || 'Store',
+      url: baseUrl,
+      currency: storeCurrency,
+      return_policy: store?.settings?.return_policy || '30-day returns',
+      shipping_info: store?.settings?.shipping_info || 'Standard shipping available'
+    },
+    products: formattedProducts,
+    generated_at: new Date().toISOString(),
+    total_products: formattedProducts.length
+  };
+}
+
+/**
+ * Generate Universal AI feed (Schema.org based)
+ */
+async function generateUniversalFeed(storeId, baseUrl, currency = 'EUR', language = 'en') {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: store } = await tenantDb
+    .from('stores')
+    .select('name, currency')
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  const storeCurrency = store?.currency || currency;
+
+  const { data: products, error } = await tenantDb
+    .from('products')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('status', 'active')
+    .eq('visibility', 'visible')
+    .order('created_at', { ascending: false })
+    .limit(5000);
+
+  if (error) throw error;
+
+  let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+  enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+  enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
+
+  const itemListElement = enrichedProducts.map((product, index) => {
+    const schema = {
+      '@type': 'Product',
+      '@id': `${baseUrl}/product/${product.slug}`,
+      identifier: product.id,
+      sku: product.sku,
+      name: product.name,
+      description: product.description || product.short_description,
+      image: (product.images || []).map(img => img.url || img.file_url || img),
+      offers: {
+        '@type': 'Offer',
+        url: `${baseUrl}/product/${product.slug}`,
+        price: parseFloat(product.price) || 0,
+        priceCurrency: storeCurrency,
+        availability: `https://schema.org/${getSchemaAvailability(product)}`,
+        itemCondition: `https://schema.org/${getSchemaCondition(product)}`
+      }
+    };
+
+    if (product.gtin) schema.gtin = product.gtin;
+    if (product.mpn) schema.mpn = product.mpn;
+    if (product.brand) {
+      schema.brand = { '@type': 'Brand', name: product.brand };
+    }
+    if (product.weight) {
+      schema.weight = { '@type': 'QuantitativeValue', value: parseFloat(product.weight), unitCode: 'KGM' };
+    }
+
+    return { '@type': 'ListItem', position: index + 1, item: schema };
+  });
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `${store?.name || 'Store'} Product Catalog`,
+    description: `Products from ${store?.name || 'Store'}`,
+    url: baseUrl,
+    numberOfItems: enrichedProducts.length,
+    itemListElement,
+    dateModified: new Date().toISOString()
+  };
+}
+
+// Additional helper functions
+function generateNaturalDescription(product, discount, formatPrice) {
+  const parts = [];
+  if (product.brand) {
+    parts.push(`The ${product.brand} ${product.name}`);
+  } else {
+    parts.push(`This ${product.name}`);
+  }
+  if (product.short_description) {
+    parts.push(product.short_description.substring(0, 150));
+  }
+  if (discount > 0) {
+    parts.push(`Currently ${discount}% off at ${formatPrice(product.price)}.`);
+  } else {
+    parts.push(`Priced at ${formatPrice(product.price)}.`);
+  }
+  return parts.join(' ');
+}
+
+function getAvailabilityMessage(product) {
+  if (product.infinite_stock) return 'In stock and ready to ship';
+  if (product.stock_quantity > 10) return 'In stock and ready to ship';
+  if (product.stock_quantity > 0) return `Only ${product.stock_quantity} left in stock`;
+  if (product.allow_backorders) return 'Available for backorder';
+  return 'Out of stock';
+}
+
+function getSchemaAvailability(product) {
+  if (product.infinite_stock || product.stock_quantity > 0) return 'InStock';
+  if (product.allow_backorders) return 'BackOrder';
+  return 'OutOfStock';
+}
+
+function getSchemaCondition(product) {
+  const condition = product.product_identifiers?.condition || 'new';
+  const map = { 'new': 'NewCondition', 'refurbished': 'RefurbishedCondition', 'used': 'UsedCondition' };
+  return map[condition] || 'NewCondition';
+}
+
+
+/**
+ * GET /api/sitemap/:storeId/google-merchant-xml
+ * Serves the Google Merchant Center feed for a specific store
+ */
+router.get('/:storeId/google-merchant-xml', async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    console.log(`[Feed] Serving Google Merchant feed for store: ${storeId}`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: store, error } = await tenantDb
+      .from('stores')
+      .select('id, slug, currency')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !store) {
+      return res.status(404).send('Store not found');
+    }
+
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feedXml = await generateGoogleMerchantXml(storeId, baseUrl, store.currency, language);
+
+    res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+    res.send(feedXml);
+  } catch (error) {
+    console.error('[Feed] Google Merchant error:', error);
+    res.status(500).send('Error generating feed');
+  }
+});
+
+/**
+ * GET /api/sitemap/:storeId/microsoft-merchant-xml
+ * Serves the Microsoft Merchant Center feed (same format as Google)
+ */
+router.get('/:storeId/microsoft-merchant-xml', async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    console.log(`[Feed] Serving Microsoft Merchant feed for store: ${storeId}`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: store, error } = await tenantDb
+      .from('stores')
+      .select('id, slug, currency')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !store) {
+      return res.status(404).send('Store not found');
+    }
+
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feedXml = await generateGoogleMerchantXml(storeId, baseUrl, store.currency, language);
+
+    res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+    res.send(feedXml);
+  } catch (error) {
+    console.error('[Feed] Microsoft Merchant error:', error);
+    res.status(500).send('Error generating feed');
+  }
+});
+
+/**
+ * GET /api/sitemap/:storeId/chatgpt-feed
+ * Serves ChatGPT/OpenAI compatible JSON feed
+ */
+router.get('/:storeId/chatgpt-feed', async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    console.log(`[Feed] Serving ChatGPT feed for store: ${storeId}`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: store, error } = await tenantDb
+      .from('stores')
+      .select('id, slug, currency')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !store) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feed = await generateChatGPTFeed(storeId, baseUrl, store.currency, language);
+
+    res.set({ 'Cache-Control': 'public, max-age=3600' });
+    res.json(feed);
+  } catch (error) {
+    console.error('[Feed] ChatGPT error:', error);
+    res.status(500).json({ error: 'Error generating feed' });
+  }
+});
+
+/**
+ * GET /api/sitemap/:storeId/universal-feed
+ * Serves Universal AI feed (Schema.org based JSON)
+ */
+router.get('/:storeId/universal-feed', async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    console.log(`[Feed] Serving Universal feed for store: ${storeId}`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: store, error } = await tenantDb
+      .from('stores')
+      .select('id, slug, currency')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !store) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feed = await generateUniversalFeed(storeId, baseUrl, store.currency, language);
+
+    res.set({ 'Cache-Control': 'public, max-age=3600' });
+    res.json(feed);
+  } catch (error) {
+    console.error('[Feed] Universal error:', error);
+    res.status(500).json({ error: 'Error generating feed' });
+  }
+});
 
 
 /**
@@ -364,3 +953,4 @@ router.get('/store/:storeSlug', async (req, res) => {
 
 module.exports = router;
 module.exports.generateSitemapXml = generateSitemapXml;
+module.exports.generateGoogleMerchantXml = generateGoogleMerchantXml;
