@@ -197,8 +197,8 @@ async function deletePattern(pattern) {
         }
       }
 
-      // Flatten in case of nested arrays
-      const flatKeys = keys.flat();
+      // Flatten in case of deeply nested arrays
+      const flatKeys = keys.flat(Infinity).filter(k => typeof k === 'string' && k.length > 0);
       console.log(`[CACHE] deletePattern Redis - pattern: ${pattern}, found ${flatKeys.length} keys:`, flatKeys);
 
       if (flatKeys.length > 0) {

@@ -290,6 +290,7 @@ export function HeaderSlotRenderer({
       case 'LanguageSelector':
         // Hide if setting is disabled (default: false/hidden)
         // Only show if explicitly enabled
+        console.log('🌐 LanguageSelector check:', { show_language_selector: settings?.show_language_selector, languages_count: languages?.length });
         if (settings?.show_language_selector !== true) return null;
         if (!languages || languages.length <= 1) return null;
 

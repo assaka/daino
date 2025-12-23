@@ -537,41 +537,54 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
     </div>
   </div>
 </div>
-{{email_footer}}'), ('07958749-5770-4838-87e1-b860ee355fb7', '{{STORE_ID}}', 'email_header', 'html', '["store_name", "store_logo_url"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <!-- Colorful Top Border -->
-              <table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 8px 8px 0 0; overflow: hidden;">
-                <tr>
-                  <td style="height: 4px; width: 16.66%; background-color: #ef4444;"></td>
-                  <td style="height: 4px; width: 16.66%; background-color: #f97316;"></td>
-                  <td style="height: 4px; width: 16.66%; background-color: #eab308;"></td>
-                  <td style="height: 4px; width: 16.66%; background-color: #22c55e;"></td>
-                  <td style="height: 4px; width: 16.66%; background-color: #3b82f6;"></td>
-                  <td style="height: 4px; width: 16.66%; background-color: #8b5cf6;"></td>
-                </tr>
-              </table>
-              <!-- Header with white background -->
-              <div style="background-color: #ffffff; padding: 20px 20px 16px; text-align: center;">
-                <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 120px; max-height: 60px; object-fit: contain;">
-              </div>
-            </div>'), ('f67ae526-c1ab-45ab-bbd5-5b7b353644d9', '{{STORE_ID}}', 'email_footer', 'html', '["store_name", "store_url", "contact_email", "store_address", "store_city", "store_state", "store_postal_code", "current_year", "unsubscribe_url"]', 'true', '101', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Footer Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #ffffff; padding: 16px 20px 20px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-                <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
-                  Questions? Contact us at <a href="mailto:{{contact_email}}" style="color: #6b7280; text-decoration: none;">{{contact_email}}</a>
-                </p>
-                <p style="color: #9ca3af; font-size: 11px; margin: 10px 0;">
-                  {{store_address}}<br>
-                  {{store_city}}, {{store_state}} {{store_postal_code}}
-                </p>
-                <div style="margin: 16px 0;">
-                  <a href="{{store_url}}" style="color: #6b7280; text-decoration: none; margin: 0 10px; font-size: 13px;">Visit Store</a>
-                  <span style="color: #e5e7eb;">|</span>
-                  <a href="{{unsubscribe_url}}" style="color: #9ca3af; text-decoration: none; margin: 0 10px; font-size: 11px;">Unsubscribe</a>
-                </div>
-                <p style="color: #d1d5db; font-size: 11px; margin: 12px 0 0 0;">
-                  © {{current_year}} {{store_name}}. All rights reserved.
-                </p>
-              </div>
-            </div>');
+{{email_footer}}'), ('07958749-5770-4838-87e1-b860ee355fb7', '{{STORE_ID}}', 'email_header', 'html', '["store_name", "store_logo_url", "primary_color"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<!-- Colorful Top Border - Gradient effect using segments -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 12px 12px 0 0; overflow: hidden;">
+  <tr>
+    <td style="height: 4px; width: 16.66%; background-color: {{primary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{secondary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{primary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{secondary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{primary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{secondary_color}};"></td>
+  </tr>
+</table>
+<!-- Email Header - Clean white background -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 15px 5px 10px; text-align: center;">
+      <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 60px; height: auto;" /><br/>
+      <h1 style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px; margin: 8px 0 0 0;">
+        {{store_name}}
+      </h1>
+    </td>
+  </tr>
+</table>'), ('f67ae526-c1ab-45ab-bbd5-5b7b353644d9', '{{STORE_ID}}', 'email_footer', 'html', '["store_name", "store_url", "contact_email", "store_address", "store_city", "store_state", "store_postal_code", "current_year", "unsubscribe_url"]', 'true', '101', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Footer Template', null, '<!-- Email Footer -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 0 0 12px 12px;">
+  <tr>
+    <td style="padding: 24px 40px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <!-- Store URL - Prominent display -->
+      <p style="margin: 0 0 16px 0;">
+        <a href="{{store_url}}" style="color: #374151; text-decoration: none; font-size: 14px; font-weight: 500;">{{store_url}}</a>
+      </p>
+      <!-- Contact -->
+      <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 13px;">
+        Questions? <a href="mailto:{{contact_email}}" style="color: #6b7280; text-decoration: underline;">{{contact_email}}</a>
+      </p>
+      <!-- Address -->
+      <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 11px;">
+        {{store_address}}, {{store_city}}, {{store_state}} {{store_postal_code}}
+      </p>
+      <!-- Copyright -->
+      <p style="margin: 0 0 4px 0; color: #9ca3af; font-size: 12px;">
+        {{current_year}} {{store_name}}. All rights reserved.
+      </p>
+      <!-- Automated message notice -->
+      <p style="margin: 0; color: #d1d5db; font-size: 11px;">
+        This is an automated message from {{store_name}}.
+      </p>
+    </td>
+  </tr>
+</table>');
 
 -- Stock issue email templates (3 rows)
 INSERT INTO email_templates ("id", "store_id", "identifier", "content_type", "variables", "is_active", "sort_order", "attachment_enabled", "attachment_config", "created_at", "updated_at", "is_system", "default_subject", "default_template_content", "default_html_content") VALUES

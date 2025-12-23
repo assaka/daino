@@ -15,6 +15,60 @@ const {
  */
 class EmailService {
   /**
+   * Get theme colors for a store
+   * Fetches primary_button_color from theme_defaults based on store's theme_preset
+   * @param {string} storeId - Store ID
+   * @returns {Promise<Object>} Theme colors { primary_color, secondary_color }
+   */
+  async getThemeColors(storeId) {
+    try {
+      // Get store's theme preset from master DB
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('theme_preset')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      const themePreset = store?.theme_preset || 'default';
+
+      // Get theme settings from theme_defaults
+      const { data: themeData } = await masterDbClient
+        .from('theme_defaults')
+        .select('theme_settings')
+        .eq('preset_name', themePreset)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const themeSettings = themeData?.theme_settings;
+
+      if (themeSettings) {
+        // Use primary_button_color as the main color
+        const primaryColor = themeSettings.primary_button_color || '#007bff';
+        // Use add_to_cart_button_color as secondary, or generate a complementary color
+        const secondaryColor = themeSettings.add_to_cart_button_color || themeSettings.secondary_button_color || '#28a745';
+
+        return {
+          primary_color: primaryColor,
+          secondary_color: secondaryColor
+        };
+      }
+
+      // Fallback to default colors
+      return {
+        primary_color: '#007bff',
+        secondary_color: '#28a745'
+      };
+    } catch (error) {
+      console.warn('⚠️ [EMAIL SERVICE] Failed to fetch theme colors:', error.message);
+      // Return default colors on error
+      return {
+        primary_color: '#007bff',
+        secondary_color: '#28a745'
+      };
+    }
+  }
+
+  /**
    * Send email using template
    * @param {string} storeId - Store ID
    * @param {string} templateIdentifier - Email template identifier (signup_email, etc.)
@@ -109,9 +163,16 @@ class EmailService {
         content = await this.processHeaderFooter(storeId, content, languageCode);
       }
 
+      // Inject theme colors into variables for header/footer templates
+      const themeColors = await this.getThemeColors(storeId);
+      const enrichedVariables = {
+        ...variables,
+        ...themeColors  // Adds primary_color and secondary_color
+      };
+
       // Render template with variables
-      const renderedSubject = renderTemplate(subject, variables);
-      const renderedContent = renderTemplate(content, variables);
+      const renderedSubject = renderTemplate(subject, enrichedVariables);
+      const renderedContent = renderTemplate(content, enrichedVariables);
 
       // Send via Brevo
       const result = await this.sendViaBrevo(

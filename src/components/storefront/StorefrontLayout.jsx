@@ -862,7 +862,10 @@ export default function StorefrontLayout({ children }) {
 
                                      <div className="hidden md:flex items-center space-x-3">
                                         {/* New Translation System Language Selector */}
-                                        <LanguageSelector variant="storefront" />
+                                        {console.log('🌐 Fallback header LanguageSelector check:', { show_language_selector: settings?.show_language_selector })}
+                                        {settings?.show_language_selector === true && (
+                                            <LanguageSelector variant="storefront" />
+                                        )}
 
                                         {settings.allowed_countries && Array.isArray(settings.allowed_countries) && settings.allowed_countries.length > 1 && (
                                             <CountrySelect
