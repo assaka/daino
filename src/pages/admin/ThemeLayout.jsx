@@ -2311,7 +2311,7 @@ export default function ThemeLayout() {
                                     {/* In Stock Colors */}
                                     <div className="p-4 border rounded-lg space-y-3">
                                         <Label className="font-medium">In Stock</Label>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-end gap-3">
                                             <div className="space-y-1">
                                                 <span className="text-xs text-gray-500">Text</span>
                                                 <Input
@@ -2365,7 +2365,7 @@ export default function ThemeLayout() {
                                                 />
                                             </div>
                                             <div
-                                                className="px-3 py-1 rounded text-xs font-medium"
+                                                className="px-3 py-1 mb-1 rounded text-xs font-medium"
                                                 style={{
                                                     backgroundColor: store.settings.stock_settings?.out_of_stock_bg_color || '#fee2e2',
                                                     color: store.settings.stock_settings?.out_of_stock_text_color || '#991b1b'

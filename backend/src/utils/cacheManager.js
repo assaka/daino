@@ -189,13 +189,20 @@ async function deletePattern(pattern) {
       // Use Redis SCAN for efficiency
       const keys = [];
       for await (const key of redis.scanIterator({ MATCH: pattern, COUNT: 100 })) {
-        keys.push(key);
+        // Handle both single keys and arrays from scanIterator
+        if (Array.isArray(key)) {
+          keys.push(...key);
+        } else {
+          keys.push(key);
+        }
       }
 
-      console.log(`[CACHE] deletePattern Redis - pattern: ${pattern}, found keys:`, keys);
+      // Flatten in case of nested arrays
+      const flatKeys = keys.flat();
+      console.log(`[CACHE] deletePattern Redis - pattern: ${pattern}, found ${flatKeys.length} keys:`, flatKeys);
 
-      if (keys.length > 0) {
-        deletedCount = await redis.del(keys);
+      if (flatKeys.length > 0) {
+        deletedCount = await redis.del(flatKeys);
         console.log(`[CACHE] deletePattern Redis - deleted ${deletedCount} keys`);
       }
     } else {
