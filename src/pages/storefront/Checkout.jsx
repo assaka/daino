@@ -2573,8 +2573,12 @@ export default function Checkout() {
 
       // Shipping address (shown for both 2-step and 3-step, only if shipping is required)
       if (settings?.require_shipping_address !== false) {
-        if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
-          const address = userAddresses.find(a => a.id === selectedShippingAddress);
+        // Determine if we should use saved address or form data
+        // Use saved address only when: user is logged in, has complete saved addresses, and selected one (not 'new')
+        const useSavedAddress = user && completeUserAddresses.length > 0 && selectedShippingAddress && selectedShippingAddress !== 'new';
+
+        if (useSavedAddress) {
+          const address = completeUserAddresses.find(a => a.id === selectedShippingAddress);
           if (address) {
             const parts = [
               address.full_name,
@@ -2589,6 +2593,7 @@ export default function Checkout() {
             });
           }
         } else if (shippingAddress.full_name) {
+          // Use form data (when guest, no complete saved addresses, or entering new address)
           const parts = [
             shippingAddress.full_name,
             shippingAddress.street,
