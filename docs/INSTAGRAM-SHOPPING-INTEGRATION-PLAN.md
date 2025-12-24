@@ -27,6 +27,30 @@ META_OAUTH_REDIRECT_URI=https://your-backend.com/api/meta-commerce/auth/callback
 
 ---
 
+## How to Access
+
+### Navigation Options:
+1. **Marketplace Hub** → Instagram tab: `/admin/marketplace-hub`
+2. **Direct page**: `/admin/integrations/instagram-shopping`
+
+### Usage Flow:
+1. Navigate to **Marketplace Hub** and click the **Instagram** tab (or go directly to the Instagram Shopping page)
+2. Click **"Go to Instagram Shopping"** button
+3. Click **"Connect with Facebook"** to start OAuth flow
+4. Select your **Business Account** from the dropdown
+5. Select or create a **Product Catalog**
+6. Configure sync settings (optional)
+7. Click **"Sync All Products"** to push products to Instagram
+
+### Features:
+- **Connection Tab**: Connect/disconnect Meta Business account
+- **Catalog Tab**: Select business account and product catalog
+- **Settings Tab**: Configure sync options, default brand, currency
+- **Sync Tab**: Trigger manual product sync or schedule background jobs
+- **Errors Tab**: View products that failed validation or sync
+
+---
+
 ## Architecture Overview
 
 ```

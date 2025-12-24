@@ -309,24 +309,53 @@ ON CONFLICT DO NOTHING;
 
 
 -- email_templates (71 rows)
-INSERT INTO email_templates ("id", "store_id", "identifier", "content_type", "variables", "is_active", "sort_order", "attachment_enabled", "attachment_config", "created_at", "updated_at", "is_system", "default_subject", "default_template_content", "default_html_content") VALUES ('caa52211-ddca-40d1-ac14-4b3d84ba256b', '{{STORE_ID}}', 'email_verification', 'html', '["customer_name", "customer_first_name", "verification_code", "store_name", "store_url", "current_year"]', 'true', '2', 'false', '{}', '2025-11-03 23:14:30.679+00', '2025-11-05 19:00:58.234+00', 'true', 'Verify your email - {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Verify Your Email</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
-              <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
-                <h1 style="font-size: 36px; letter-spacing: 8px; color: #4F46E5; font-family: monospace; margin: 0;">
-                  {{verification_code}}
-                </h1>
-              </div>
-              <p>This code will expire in <strong>15 minutes</strong>.</p>
-              <p style="color: #666; font-size: 14px;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-              <p style="color: #999; font-size: 12px;">
-                Best regards,<br>
-                {{store_name}} Team<br>
-                <a href="{{store_url}}">{{store_url}}</a>
-              </p>
-            </div>'), ('c69316ab-7e8c-4590-850b-0f720c505d02', '{{STORE_ID}}', 'signup_email', 'both', '[{"key": "{{customer_name}}"}, {"key": "{{customer_first_name}}"}, {"key": "{{store_name}}"}, {"key": "{{store_url}}"}, {"key": "{{login_url}}"}, {"key": "{{current_year}}"}]', 'true', '1', 'false', '{}', '2025-10-31 21:21:14.762+00', '2025-11-05 19:00:58.234+00', 'true', 'Welcome to {{store_name}}!', 'Hi {{customer_first_name}},
+INSERT INTO email_templates ("id", "store_id", "identifier", "content_type", "variables", "is_active", "sort_order", "attachment_enabled", "attachment_config", "created_at", "updated_at", "is_system", "default_subject", "default_template_content", "default_html_content") VALUES ('caa52211-ddca-40d1-ac14-4b3d84ba256b', '{{STORE_ID}}', 'email_verification', 'html', '["customer_name", "customer_first_name", "verification_code", "store_name", "store_url", "current_year"]', 'true', '2', 'false', '{}', '2025-11-03 23:14:30.679+00', '2025-11-05 19:00:58.234+00', 'true', 'Verify your email - {{store_name}}', null, '{{email_header}}
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:
+      </p>
+      <!-- Verification Code Box -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <table role="presentation" style="border-collapse: collapse; background-color: #f3f4f6; border-radius: 12px;">
+              <tr>
+                <td style="padding: 24px 48px;">
+                  <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                    Your Verification Code
+                  </p>
+                  <p style="margin: 0; color: #111827; font-size: 36px; font-weight: 700; letter-spacing: 8px; font-family: monospace;">
+                    {{verification_code}}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!-- Info Box -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid {{primary_color}}; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
+              This code will expire in <strong>15 minutes</strong>. If you didn''t create an account, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+        Enter this code on the verification page to continue.
+      </p>
+    </td>
+  </tr>
+</table>
+{{email_footer}}'), ('c69316ab-7e8c-4590-850b-0f720c505d02', '{{STORE_ID}}', 'signup_email', 'both', '[{"key": "{{customer_name}}"}, {"key": "{{customer_first_name}}"}, {"key": "{{store_name}}"}, {"key": "{{store_url}}"}, {"key": "{{login_url}}"}, {"key": "{{current_year}}"}]', 'true', '1', 'false', '{}', '2025-10-31 21:21:14.762+00', '2025-11-05 19:00:58.234+00', 'true', 'Welcome to {{store_name}}!', 'Hi {{customer_first_name}},
 
 Welcome to {{store_name}}! We''re thrilled to have you with us.
 
@@ -335,29 +364,58 @@ Your account has been successfully created. You can now browse our products and 
 Login to your account: {{login_url}}
 
 Best regards,
-The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Welcome to {{store_name}}!</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Thank you for creating an account with us! We''re excited to have you on board.</p>
-              <p>You can now:</p>
-              <ul>
-                <li>Track your orders</li>
-                <li>Save addresses for faster checkout</li>
-                <li>View your order history</li>
-              </ul>
-              <p style="margin-top: 30px;">
-                <a href="{{login_url}}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Go to My Account
-                </a>
-              </p' ||
-                          '>
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-              <p style="color: #999; font-size: 12px;">
-                Best regards,<br>
-                {{store_name}} Team<br>
-                <a href="{{store_url}}">{{store_url}}</a>
-              </p>
-            </div>'), ('d6696302-9e73-4b27-a4bf-b2832803b3e3', '{{STORE_ID}}', 'order_success_email', 'both', '["customer_name", "customer_first_name", "order_number", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "shipping_address", "billing_address", "store_name", "store_url", "current_year"]', 'true', '3', 'true', '{"generateInvoicePdf": true}', '2025-10-31 21:21:14.762+00', '2025-11-05 19:00:58.234+00', 'true', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
+The {{store_name}} Team', '{{email_header}}
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Welcome to {{store_name}}! We''re excited to have you on board. Your account has been successfully created and verified.
+      </p>
+      <!-- Getting Started Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 24px;">
+            <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 15px; font-weight: 600;">
+              What you can do now:
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• Browse our products</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• Track your orders</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• Save addresses for faster checkout</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• View your order history</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <a href="{{login_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Login to Your Account
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+        Need help? Our support team is always here for you.
+      </p>
+    </td>
+  </tr>
+</table>
+{{email_footer}}'), ('d6696302-9e73-4b27-a4bf-b2832803b3e3', '{{STORE_ID}}', 'order_success_email', 'both', '["customer_name", "customer_first_name", "order_number", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "shipping_address", "billing_address", "store_name", "store_url", "current_year"]', 'true', '3', 'true', '{"generateInvoicePdf": true}', '2025-10-31 21:21:14.762+00', '2025-11-05 19:00:58.234+00', 'true', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
 
 Thank you for your order!
 
@@ -955,33 +1013,58 @@ Your account has been successfully created and verified. You can now:
 Login to your account: {{login_url}}
 
 Best regards,
-The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Welcome to {{store_name}}!</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We are thrilled to have you with us! Your account has been successfully created and verified.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">What you can do now:</h3>
-      <ul style="padding-left: 20px;">
-        <li>Browse our products</li>
-        <li>Track your orders</li>
-        <li>Save addresses for faster checkout</li>
-        <li>View your order history</li>
-      </ul>
-    </div>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="{{login_url}}" style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-        Login to Your Account
-      </a>
-    </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team
-    </p>
-  </div>
-</div>', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('f8a52211-ddca-40d1-ac14-4b3d84ba256c', 'caa52211-ddca-40d1-ac14-4b3d84ba256b', 'en', 'Verify your email - {{store_name}}', 'Hi {{customer_first_name}},
+The {{store_name}} Team', '{{email_header}}
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Welcome to {{store_name}}! We''re excited to have you on board. Your account has been successfully created and verified.
+      </p>
+      <!-- Getting Started Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 24px;">
+            <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 15px; font-weight: 600;">
+              What you can do now:
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• Browse our products</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• Track your orders</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• Save addresses for faster checkout</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #374151; font-size: 14px;">• View your order history</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <a href="{{login_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Login to Your Account
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+        Need help? Our support team is always here for you.
+      </p>
+    </td>
+  </tr>
+</table>
+{{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('f8a52211-ddca-40d1-ac14-4b3d84ba256c', 'caa52211-ddca-40d1-ac14-4b3d84ba256b', 'en', 'Verify your email - {{store_name}}', 'Hi {{customer_first_name}},
 
 Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:
 
@@ -992,27 +1075,53 @@ This code will expire in 15 minutes.
 If you didn''t create an account at {{store_name}}, please ignore this email.
 
 Best regards,
-{{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Verify Your Email</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
-    <div style="background-color: white; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
-      <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">Your verification code:</p>
-      <h1 style="font-size: 42px; letter-spacing: 8px; color: #667eea; font-family: monospace; margin: 0;">
-        {{verification_code}}
-      </h1>
-    </div>
-    <p style="text-align: center; color: #666;">This code will expire in <strong>15 minutes</strong>.</p>
-    <p style="color: #999; font-size: 14px; text-align: center;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team
-    </p>
-  </div>
-</div>', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('b1c2d3e4-f5a6-4789-bcde-111111111111', 'a1b2c3d4-e5f6-4789-abcd-111111111111', 'en', 'Update on your order #{{order_number}} - {{store_name}}', 'Hi {{customer_first_name}},
+{{store_name}} Team', '{{email_header}}
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:
+      </p>
+      <!-- Verification Code Box -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <table role="presentation" style="border-collapse: collapse; background-color: #f3f4f6; border-radius: 12px;">
+              <tr>
+                <td style="padding: 24px 48px;">
+                  <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                    Your Verification Code
+                  </p>
+                  <p style="margin: 0; color: #111827; font-size: 36px; font-weight: 700; letter-spacing: 8px; font-family: monospace;">
+                    {{verification_code}}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!-- Info Box -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid {{primary_color}}; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
+              This code will expire in <strong>15 minutes</strong>. If you didn''t create an account, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+        Enter this code on the verification page to continue.
+      </p>
+    </td>
+  </tr>
+</table>
+{{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('b1c2d3e4-f5a6-4789-bcde-111111111111', 'a1b2c3d4-e5f6-4789-abcd-111111111111', 'en', 'Update on your order #{{order_number}} - {{store_name}}', 'Hi {{customer_first_name}},
 
 Thank you for your order #{{order_number}} at {{store_name}}.
 

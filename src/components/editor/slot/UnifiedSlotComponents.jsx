@@ -261,18 +261,6 @@ const ProductGallery = createSlotComponent({
     const mobileLayout = contextSettings?.mobile_gallery_layout || variableSettings?.mobile_gallery_layout || 'below';
     const isVertical = galleryLayout === 'vertical';
 
-    // DEBUG: Log gallery layout settings
-    console.log('🖼️ ProductGallery Layout Debug:', {
-      galleryLayout,
-      isVertical,
-      verticalPosition,
-      mobileLayout,
-      contextSettings_layout: contextSettings?.product_gallery_layout,
-      contextSettings_vertical: contextSettings?.vertical_gallery_position,
-      variableSettings_layout: variableSettings?.product_gallery_layout,
-      variableSettings_vertical: variableSettings?.vertical_gallery_position
-    });
-
     // For storefront, get state from productContext
     const activeImageIndex = productContext?.activeImageIndex || 0;
     const setActiveImageIndex = productContext?.setActiveImageIndex;
