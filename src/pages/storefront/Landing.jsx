@@ -4,6 +4,7 @@ import Hero from '@/components/landing/Hero';
 import StoreGallery from '@/components/landing/StoreGallery';
 import AIFeatures from '@/components/landing/AIFeatures';
 import Pricing from '@/components/landing/Pricing';
+import Resources from '@/components/landing/Resources';
 import CTA from '@/components/landing/CTA';
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
         <StoreGallery />
         <AIFeatures />
         <Pricing />
+        <Resources />
         <CTA />
       </div>
   );

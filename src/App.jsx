@@ -528,7 +528,11 @@ function App() {
           <Route path="/public/:storeCode/sitemap" element={<PageWrapper Component={Pages.SitemapPublic} pageName="SitemapPublic" />} />
           <Route path="/public/:storeCode" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />
           <Route path="/landing" element={<PageWrapper Component={Pages.Landing} pageName="Landing" />} />
-          
+
+          {/* Blog routes */}
+          <Route path="/blog" element={<Pages.Blog />} />
+          <Route path="/blog/:slug" element={<Pages.Blog />} />
+
           {/* Special routes */}
           <Route path="/robots.txt" element={<PageWrapper Component={Pages.RobotsPublic} pageName="RobotsPublic" />} />
           <Route path="/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="CookieConsent" />} />
