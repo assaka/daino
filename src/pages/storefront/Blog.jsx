@@ -108,24 +108,50 @@ const CONTENT_PATHS = {
 function BlogHeader() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-200">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto p-2 md:px-6 md:py-4">
         <div className="flex items-center justify-between">
+          {/* Logo */}
           <Link to="/landing" className="flex items-center gap-2">
-            <img src="/logo_red.svg" alt="DainoStore" className="h-10" />
+            <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
             <span className="text-xl font-bold">DainoStore</span>
           </Link>
-          <nav className="flex items-center gap-6">
-            <Link to="/landing#resources" className="text-slate-600 hover:text-indigo-600 transition-colors font-medium">
+
+          {/* Navigation - Centered (Desktop) */}
+          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2 font-semibold text-lg">
+            <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
+              Discord
+            </a>
+            <a href="/landing#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
+              Pricing
+            </a>
+            <Link to="/blog" className="text-indigo-600 font-semibold">
               Resources
             </Link>
-            <Link to="/landing#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors font-medium">
-              Pricing
-            </Link>
-            <Link to="/auth">
-              <Button variant="outline" size="sm">Sign In</Button>
-            </Link>
           </nav>
+
+          {/* Auth Buttons */}
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <Link to="/auth">
+              <Button variant="ghost">Sign In</Button>
+            </Link>
+            <Link to="/admin/onboarding">
+              <Button className="bg-green-500 text-white">Try Now</Button>
+            </Link>
+          </div>
         </div>
+
+        {/* Mobile Navigation */}
+        <nav className="flex md:hidden items-center justify-center gap-6 font-semibold text-base mt-2">
+          <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
+            Discord
+          </a>
+          <a href="/landing#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
+            Pricing
+          </a>
+          <Link to="/blog" className="text-indigo-600 font-semibold">
+            Resources
+          </Link>
+        </nav>
       </div>
     </header>
   );
