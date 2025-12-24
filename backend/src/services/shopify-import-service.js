@@ -320,6 +320,17 @@ class ShopifyImportService {
       this.autoCreateSettings = await this.categoryMappingService.getAutoCreateSettings();
       console.log(`🔧 Category auto-create: ${this.autoCreateSettings.enabled ? 'enabled' : 'disabled'}`);
 
+      // Get the root-catalog category as fallback for products without categories
+      const tenantDb = ConnectionManager.getConnection(this.storeId);
+      const { data: rootCategory } = await tenantDb
+        .from('categories')
+        .select('id')
+        .eq('store_id', this.storeId)
+        .eq('slug', 'root-catalog')
+        .maybeSingle();
+      this.rootCategoryId = rootCategory?.id || null;
+      console.log(`📁 Root category for fallback: ${this.rootCategoryId || 'not found'}`);
+
       // Build collection ID to name map for auto-creation (fetch from Shopify)
       this.shopifyCollectionMap = {};
       console.log('📂 Fetching Shopify collections for category mapping...');
@@ -636,6 +647,12 @@ class ShopifyImportService {
           console.warn(`⚠️ Could not expand categories for "${product.title}":`, expandError.message);
           expandedCategoryIds = categoryIds;
         }
+      }
+
+      // Fallback: Assign to root-catalog if product has no categories
+      if (expandedCategoryIds.length === 0 && this.rootCategoryId) {
+        expandedCategoryIds = [this.rootCategoryId];
+        console.log(`📁 Product "${product.title}" has no categories - assigning to root-catalog`);
       }
 
       // Extract and process attributes using AttributeMappingService

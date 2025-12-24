@@ -80,6 +80,10 @@ class TenantProvisioningService {
         console.log('Seeding default SEO settings via Management API SQL...');
         await this.seedDefaultSeoSettingsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
 
+        // Seed default attributes via API
+        console.log('Seeding default attributes via Management API SQL...');
+        await this.seedDefaultAttributesViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+
         console.log(`✅ Tenant provisioning complete for store ${storeId} (OAuth mode)`);
         return {
           ...result,
@@ -211,6 +215,15 @@ class TenantProvisioningService {
       } else if (options.oauthAccessToken && options.projectId) {
         console.log('Seeding default SEO settings via Management API SQL...');
         await this.seedDefaultSeoSettingsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+      }
+
+      // 8. Seed default attributes and attribute set
+      if (tenantDb) {
+        console.log('Seeding default attributes via Supabase client...');
+        await this.seedDefaultAttributes(tenantDb, storeId, options, result);
+      } else if (options.oauthAccessToken && options.projectId) {
+        console.log('Seeding default attributes via Management API SQL...');
+        await this.seedDefaultAttributesViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
       }
 
       console.log(`✅ Tenant provisioning complete for store ${storeId}`);
@@ -1040,6 +1053,189 @@ VALUES (
       console.error('SEO settings seeding via API error:', error.response?.data || error.message);
       result.errors.push({
         step: 'seed_seo_settings',
+        error: error.message
+      });
+      // Don't throw - non-blocking
+      return false;
+    }
+  }
+
+  /**
+   * Get default attributes configuration
+   * @private
+   */
+  getDefaultAttributesConfig() {
+    return [
+      { name: 'Brand', code: 'brand', type: 'text', is_filterable: true, is_searchable: true, sort_order: 1 },
+      { name: 'Manufacturer', code: 'manufacturer', type: 'text', is_filterable: true, is_searchable: true, sort_order: 2 },
+      { name: 'Color', code: 'color', type: 'text', is_filterable: true, is_searchable: true, sort_order: 3 },
+      { name: 'Size', code: 'size', type: 'text', is_filterable: true, is_searchable: true, sort_order: 4 },
+      { name: 'Material', code: 'material', type: 'text', is_filterable: true, is_searchable: true, sort_order: 5 },
+      { name: 'Age Group', code: 'age_group', type: 'select', is_filterable: true, is_searchable: false, sort_order: 6 },
+      { name: 'Condition', code: 'condition', type: 'select', is_filterable: true, is_searchable: false, sort_order: 7 },
+      { name: 'Gender', code: 'gender', type: 'select', is_filterable: true, is_searchable: false, sort_order: 8 }
+    ];
+  }
+
+  /**
+   * Seed default attributes and attribute set
+   * @private
+   */
+  async seedDefaultAttributes(tenantDb, storeId, options, result) {
+    try {
+      console.log('📦 Creating default attributes...');
+
+      const defaultAttributes = this.getDefaultAttributesConfig();
+      const attributeIds = [];
+
+      // Insert each attribute
+      for (const attr of defaultAttributes) {
+        const attributeData = {
+          name: attr.name,
+          code: attr.code,
+          type: attr.type,
+          is_required: false,
+          is_filterable: attr.is_filterable,
+          is_searchable: attr.is_searchable,
+          is_usable_in_conditions: false,
+          sort_order: attr.sort_order,
+          store_id: storeId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: attribute, error } = await tenantDb
+          .from('attributes')
+          .insert(attributeData)
+          .select('id')
+          .single();
+
+        if (error) {
+          console.warn(`⚠️ Failed to create attribute ${attr.code}:`, error.message);
+          continue;
+        }
+
+        attributeIds.push(attribute.id);
+        console.log(`✅ Created attribute: ${attr.name} (${attr.code})`);
+      }
+
+      // Create default attribute set with all attributes
+      if (attributeIds.length > 0) {
+        const attributeSetData = {
+          name: 'Default',
+          description: 'Default attribute set with standard product attributes',
+          is_default: true,
+          sort_order: 0,
+          store_id: storeId,
+          attribute_ids: attributeIds,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: attributeSet, error: setError } = await tenantDb
+          .from('attribute_sets')
+          .insert(attributeSetData)
+          .select()
+          .single();
+
+        if (setError) {
+          console.warn('⚠️ Failed to create default attribute set:', setError.message);
+        } else {
+          console.log(`✅ Created default attribute set with ${attributeIds.length} attributes`);
+        }
+      }
+
+      result.dataSeeded.push(`${attributeIds.length} default attributes`);
+      result.dataSeeded.push('Default attribute set');
+
+      return true;
+    } catch (error) {
+      console.error('Default attributes seeding error:', error);
+      result.errors.push({
+        step: 'seed_default_attributes',
+        error: error.message
+      });
+      // Don't throw - non-blocking
+      return false;
+    }
+  }
+
+  /**
+   * Seed default attributes via Management API SQL
+   * @private
+   */
+  async seedDefaultAttributesViaAPI(oauthAccessToken, projectId, storeId, options, result) {
+    try {
+      const axios = require('axios');
+      console.log('📦 Creating default attributes via API...');
+
+      const defaultAttributes = this.getDefaultAttributesConfig();
+      const insertStatements = [];
+      const attributeIdPlaceholders = [];
+
+      // Generate UUIDs for attributes
+      for (let i = 0; i < defaultAttributes.length; i++) {
+        const attr = defaultAttributes[i];
+        const attrId = uuidv4();
+        attributeIdPlaceholders.push(`'${attrId}'`);
+
+        insertStatements.push(`
+INSERT INTO attributes (id, name, code, type, is_required, is_filterable, is_searchable, is_usable_in_conditions, sort_order, store_id, created_at, updated_at)
+VALUES (
+  '${attrId}',
+  '${attr.name}',
+  '${attr.code}',
+  '${attr.type}',
+  false,
+  ${attr.is_filterable},
+  ${attr.is_searchable},
+  false,
+  ${attr.sort_order},
+  '${storeId}',
+  NOW(),
+  NOW()
+) ON CONFLICT DO NOTHING;`);
+      }
+
+      // Create default attribute set
+      const attributeSetId = uuidv4();
+      insertStatements.push(`
+INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
+VALUES (
+  '${attributeSetId}',
+  'Default',
+  'Default attribute set with standard product attributes',
+  true,
+  0,
+  '${storeId}',
+  '[${attributeIdPlaceholders.join(', ')}]'::jsonb,
+  NOW(),
+  NOW()
+) ON CONFLICT DO NOTHING;`);
+
+      // Execute all inserts as a single batch
+      const batchSQL = insertStatements.join('\n');
+
+      await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: batchSQL },
+        {
+          headers: {
+            'Authorization': `Bearer ${oauthAccessToken}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      console.log(`✅ Seeded ${defaultAttributes.length} default attributes and attribute set via API`);
+      result.dataSeeded.push(`${defaultAttributes.length} default attributes (via API)`);
+      result.dataSeeded.push('Default attribute set (via API)');
+      return true;
+    } catch (error) {
+      console.error('Default attributes seeding via API error:', error.response?.data || error.message);
+      result.errors.push({
+        step: 'seed_default_attributes',
         error: error.message
       });
       // Don't throw - non-blocking

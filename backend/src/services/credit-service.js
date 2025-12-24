@@ -450,16 +450,19 @@ class CreditService {
     // Ensure dailyCost is a number (not string)
     const costAmount = parseFloat(dailyCost);
 
+    // Get root domain (strip www. prefix) for description - covers all variants
+    const rootDomain = domainName.replace(/^www\./i, '').toLowerCase();
+
     // Deduct credits
     const deductResult = await this.deduct(
       userId,
       domain.store_id,
       costAmount,
-      `Custom domain - daily charge (${domainName})`,
+      `Custom domain - daily charge (*.${rootDomain})`,
       {
         charge_type: 'daily',
         domain_id: domainId,
-        domain_name: domainName,
+        domain_name: `*.${rootDomain}`,
         charge_date: new Date().toISOString()
       },
       domainId,
@@ -470,7 +473,7 @@ class CreditService {
       success: true,
       credits_deducted: costAmount,
       remaining_balance: deductResult.remaining_balance,
-      message: `Daily charge applied for ${domainName}`
+      message: `Daily charge applied for *.${rootDomain}`
     };
   }
 

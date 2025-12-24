@@ -854,7 +854,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         store_id: storeToUse.id,
         attribute_set_id: formData.attribute_set_id || null, // Ensure null if empty string for API
         configurable_attributes: Array.isArray(formData.configurable_attributes) ? formData.configurable_attributes : [], // Configurable attributes
-        attributes: formData.attributes || {},
+        attributes: {
+          ...(formData.attributes || {}),
+          // Merge AI Shopping attributes from product_identifiers
+          ...(formData.product_identifiers?.age_group && { age_group: formData.product_identifiers.age_group }),
+          ...(formData.product_identifiers?.gender && { gender: formData.product_identifiers.gender }),
+          ...(formData.product_identifiers?.material && { material: formData.product_identifiers.material }),
+          ...(formData.product_identifiers?.color && { color: formData.product_identifiers.color }),
+          ...(formData.product_identifiers?.size && { size: formData.product_identifiers.size }),
+          ...(formData.product_identifiers?.condition && { condition: formData.product_identifiers.condition })
+        },
         translations: formData.translations || {},
         slug: formData.seo.url_key || "", // Use SEO url_key as the slug
         seo: {
@@ -866,7 +875,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           meta_robots_tag: formData.seo.meta_robots_tag === "null" ? "index, follow" : formData.seo.meta_robots_tag
         },
         related_product_ids: Array.isArray(formData.related_product_ids) ? formData.related_product_ids : [],
-        tags: Array.isArray(formData.tags) ? formData.tags : []
+        tags: Array.isArray(formData.tags) ? formData.tags : [],
+        // AI Shopping fields
+        gtin: formData.gtin || null,
+        ai_shopping_data: formData.ai_shopping_data || {}
       };
 
       if (product) {
