@@ -408,6 +408,9 @@ class EmailService {
       case 'email_verification':
         variables = this.buildEmailVerificationVariables(data);
         break;
+      case 'password_reset':
+        variables = this.buildPasswordResetVariables(data);
+        break;
       default:
         // If no specific builder, use data as variables directly
         variables = data;
@@ -451,6 +454,27 @@ class EmailService {
       store_logo_url: store?.logo_url || FALLBACK_LOGO_URL,
       store_url: store?.store_url || process.env.CORS_ORIGIN,
       current_year: new Date().getFullYear()
+    };
+  }
+
+  /**
+   * Build variables for password reset email
+   * @param {Object} data - Password reset data
+   * @returns {Object} Variables
+   */
+  buildPasswordResetVariables(data) {
+    const { customer, store, reset_url } = data;
+
+    return {
+      customer_name: `${customer.first_name} ${customer.last_name}`,
+      customer_first_name: customer.first_name,
+      reset_url: reset_url,
+      reset_link: reset_url,
+      store_name: store?.name || 'Our Store',
+      store_logo_url: store?.logo_url || FALLBACK_LOGO_URL,
+      store_url: store?.store_url || process.env.CORS_ORIGIN,
+      current_year: new Date().getFullYear(),
+      expiry_hours: 1
     };
   }
 

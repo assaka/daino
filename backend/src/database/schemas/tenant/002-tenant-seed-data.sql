@@ -1962,7 +1962,7 @@ INSERT INTO "public"."pdf_templates" ("id", "store_id", "identifier", "name", "t
     </div>
   </div>
 </body>
-</html>', 'true', 'true', '["order_number", "ship_date", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "shipping_address", "items_table_rows", "items_count", "store_name", "store_logo_url", "store_address", "store_city", "store_state", "store_postal_code", "store_email", "store_phone", "store_website", "current_year"]', '{"margins": {"top": "20px", "left": "20px", "right": "20px", "bottom": "20px"}, "page_size": "A4", "orientation": "portrait"}', '2', '2025-11-05 18:05:27.493', '2025-11-05 18:05:27.493'), ('219b5514-0428-409a-83af-ba80dcd34983', '970bdec6-9eeb-4fbf-925f-cb0f36cc6094', 'invoice_pdf', 'Invoice PDF', 'invoice', '<!DOCTYPE html>
+</html>', 'true', 'true', '["order_number", "ship_date", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "shipping_address", "items_table_rows", "items_count", "store_name", "store_logo_url", "store_address", "store_city", "store_state", "store_postal_code", "store_email", "store_phone", "store_website", "current_year"]', '{"margins": {"top": "20px", "left": "20px", "right": "20px", "bottom": "20px"}, "page_size": "A4", "orientation": "portrait"}', '2', '2025-11-05 18:05:27.493', '2025-11-05 18:05:27.493'), ('219b5514-0428-409a-83af-ba80dcd34983', '{{STORE_ID}}', 'invoice_pdf', 'Invoice PDF', 'invoice', '<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">

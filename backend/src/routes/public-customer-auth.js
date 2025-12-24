@@ -102,16 +102,11 @@ router.post('/customer/forgot-password', [
 
     // Send password reset email
     try {
-      await emailService.sendEmail(store_id, 'password_reset', email, {
-        customer_name: `${customer.first_name} ${customer.last_name}`,
-        customer_first_name: customer.first_name,
-        reset_url: resetUrl,
-        reset_link: resetUrl,
-        store_name: store?.name || 'Our Store',
-        store_url: baseUrl,
-        current_year: new Date().getFullYear(),
-        expiry_hours: 1
-      }, 'en').catch(async (templateError) => {
+      await emailService.sendTransactionalEmail(store_id, 'password_reset', {
+        recipientEmail: email,
+        customer: customer,
+        reset_url: resetUrl
+      }).catch(async (templateError) => {
         // Fallback: Send simple email
         await emailService.sendViaBrevo(store_id, email,
           `Reset your password - ${store?.name || 'Our Store'}`,
