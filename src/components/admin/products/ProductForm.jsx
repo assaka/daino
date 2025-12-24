@@ -40,11 +40,15 @@ const calculateAIReadinessScore = (product) => {
     images: 15,
     sku: 5,
     gtin: 10,
-    brand: 10,
-    mpn: 5,
     category_ids: 10,
     weight: 2.5,
     dimensions: 2.5
+  };
+
+  // Brand and MPN come from attributes now
+  const attrWeights = {
+    brand: 10,
+    mpn: 5
   };
 
   let score = 0;
@@ -68,12 +72,23 @@ const calculateAIReadinessScore = (product) => {
     }
   });
 
+  // Check brand/mpn in attributes
+  Object.entries(attrWeights).forEach(([attrCode, weight]) => {
+    maxScore += weight;
+    if (product.attributes?.[attrCode]) {
+      score += weight;
+    }
+  });
+
   return Math.round((score / maxScore) * 100);
 };
 
 // AI Readiness Checklist
 const getAIReadinessChecklist = (product) => {
   const descLen = (product.description || '').length;
+  // Brand and MPN are now in attributes
+  const brandValue = product.attributes?.brand;
+  const mpnValue = product.attributes?.mpn;
 
   return [
     {
@@ -83,16 +98,16 @@ const getAIReadinessChecklist = (product) => {
         : `Description is ${descLen} characters (aim for 100+ characters)`
     },
     {
-      passed: !!product.gtin || !!product.mpn,
-      message: (product.gtin || product.mpn)
+      passed: !!product.gtin || !!mpnValue,
+      message: (product.gtin || mpnValue)
         ? "Product has identifiers (GTIN/MPN)"
-        : "Add GTIN or MPN for better discoverability"
+        : "Add GTIN or MPN attribute for better discoverability"
     },
     {
-      passed: !!product.brand,
-      message: product.brand
-        ? `Brand is set: ${product.brand}`
-        : "Add brand name for better search visibility"
+      passed: !!brandValue,
+      message: brandValue
+        ? `Brand is set: ${brandValue}`
+        : "Add brand attribute for better search visibility"
     },
     {
       passed: Array.isArray(product.images) && product.images.length >= 2,
@@ -179,10 +194,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     related_product_ids: [],
     tags: [],
     featured: false,
-    // AI Shopping fields
+    // AI Shopping fields (brand/mpn are now in product attributes)
     gtin: "",
-    mpn: "",
-    brand: "",
     product_identifiers: {},
     ai_shopping_data: {}
   });
@@ -274,10 +287,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         related_product_ids: Array.isArray(product.related_product_ids) ? product.related_product_ids : [],
         tags: Array.isArray(product.tags) ? product.tags : [],
         featured: product.featured || false,
-        // AI Shopping fields
+        // AI Shopping fields (brand/mpn are now in product attributes)
         gtin: product.gtin || "",
-        mpn: product.mpn || "",
-        brand: product.brand || "",
         product_identifiers: product.product_identifiers || {},
         ai_shopping_data: product.ai_shopping_data || {}
       });
@@ -323,10 +334,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             related_product_ids: [],
             tags: [],
             featured: false,
-            // AI Shopping fields
+            // AI Shopping fields (brand/mpn are now in product attributes)
             gtin: "",
-            mpn: "",
-            brand: "",
             product_identifiers: {},
             ai_shopping_data: {}
         });
@@ -1387,37 +1396,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     />
                     <p className="text-xs text-gray-500 mt-1">8, 12, 13, or 14 digit barcode</p>
                   </div>
-                  <div>
-                    <Label htmlFor="mpn">Manufacturer Part Number (MPN)</Label>
-                    <Input
-                      id="mpn"
-                      value={formData.mpn || ''}
-                      onChange={(e) => handleInputChange("mpn", e.target.value)}
-                      placeholder="e.g., ACME-WH-500"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="brand">Brand</Label>
-                    <Input
-                      id="brand"
-                      value={formData.brand || ''}
-                      onChange={(e) => handleInputChange("brand", e.target.value)}
-                      placeholder="e.g., ACME Audio"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="manufacturer">Manufacturer</Label>
-                    <Input
-                      id="manufacturer"
-                      value={formData.product_identifiers?.manufacturer || ''}
-                      onChange={(e) => handleInputChange("product_identifiers", {
-                        ...formData.product_identifiers,
-                        manufacturer: e.target.value
-                      })}
-                      placeholder="e.g., ACME Corporation"
-                    />
+                  <div className="flex items-end">
+                    <p className="text-sm text-gray-500 italic">
+                      Brand and MPN are now managed via Product Attributes
+                    </p>
                   </div>
                 </div>
               </div>
