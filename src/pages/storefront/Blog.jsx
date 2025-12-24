@@ -826,20 +826,6 @@ function BlogIndex() {
                     matching "<span className="font-medium text-neutral-900">{searchQuery}</span>"
                   </span>
                 )}
-                {searchQuery && selectedTags.length > 0 && <span className="text-neutral-400">with</span>}
-                {selectedTags.length > 0 && (
-                  <>
-                    {!searchQuery && ' tagged with '}
-                    {selectedTags.map((tag, idx) => (
-                      <span key={tag} className="inline-flex items-center gap-1">
-                        <Badge className="bg-yellow-400 text-black border-yellow-500">
-                          {TAGS[tag]?.label}
-                        </Badge>
-                        {idx < selectedTags.length - 1 && <span className="text-neutral-400">or</span>}
-                      </span>
-                    ))}
-                  </>
-                )}
                 <button
                   onClick={clearFilters}
                   className="text-indigo-600 hover:underline ml-2"

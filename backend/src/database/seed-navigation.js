@@ -33,13 +33,13 @@ const allNavItems = [
   { key: 'cms_blocks', label: 'CMS Blocks', icon: 'FileText', route: '/admin/cms-blocks', order: 30, category: 'content' },
   { key: 'cms_pages', label: 'CMS Pages', icon: 'FileText', route: '/admin/cms-pages', order: 31, category: 'content' },
   { key: 'file_library', label: 'File Library', icon: 'Upload', route: '/admin/file-library', order: 32, category: 'content' },
-  { key: 'cookie_consent', label: 'Cookie Consent', icon: 'Shield', route: '/admin/cookie-consent', order: 33, category: 'content' },
 
   // Analytics (tracking & insights)
   { key: 'analytics', label: 'Analytics', icon: 'BarChart3', route: '/admin/analytics', order: 40, category: 'analytics' },
   { key: 'heatmaps', label: 'Heatmaps', icon: 'Activity', route: '/admin/heatmaps', order: 41, category: 'analytics' },
   { key: 'ab_testing', label: 'A/B Testing', icon: 'FlaskConical', route: '/admin/ab-testing', order: 42, category: 'analytics' },
   { key: 'customer_activity', label: 'Customer Activity', icon: 'Users', route: '/admin/customer-activity', order: 43, category: 'analytics' },
+  { key: 'cookie_consent', label: 'Cookie Consent', icon: 'Shield', route: '/admin/cookie-consent', order: 44, category: 'analytics' },
 
   // Marketing (email campaigns & automations)
   { key: 'campaigns', label: 'Campaigns', icon: 'Mail', route: '/admin/marketing/campaigns', order: 44, category: 'marketing' },

@@ -85,6 +85,7 @@ VALUES
   ('ef7e14a8-7cde-4635-ad0a-9186b32a7361', 'heatmaps', 'Heatmaps', 'Activity', '/admin/heatmaps', 'analytics', 2, true, true, NULL, 'analytics', NULL, NULL, NULL, NOW(), NOW(), 'premium'),
   ('6889bdcd-9849-4c7b-b26a-da08e4a9da25', 'ab_testing', 'A/B Testing', 'FlaskConical', '/admin/ab-testing', 'analytics', 3, true, true, NULL, 'analytics', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('bd22f10c-8b2e-4948-b306-431f2a97e7fd', 'customer_activity', 'Customer Activity', 'Users', '/admin/customer-activity', 'analytics', 4, true, true, NULL, 'analytics', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('8971f94f-c30c-4029-8432-2696176ca16a', 'cookie_consent', 'Cookie Consent', 'Shield', '/admin/cookie-consent', 'analytics', 5, true, true, NULL, 'analytics', NULL, 'GDPR compliance and consent management', NULL, NOW(), NOW(), 'standard'),
 
   -- =============================================
   -- MARKETING CHILDREN (parent: marketing, order: 1, 2, 3...)
@@ -93,7 +94,6 @@ VALUES
   ('a1b2c3d4-e5f6-7890-abcd-000000000011', 'automations', 'Automations', 'Workflow', '/admin/marketing/automations', 'marketing', 2, true, true, NULL, 'marketing', NULL, 'Abandoned cart, welcome series, and more', NULL, NOW(), NOW(), 'standard'),
   ('a1b2c3d4-e5f6-7890-abcd-000000000012', 'segments', 'Segments', 'UsersRound', '/admin/marketing/segments', 'marketing', 3, true, true, NULL, 'marketing', NULL, 'Audience builder and RFM segments', NULL, NOW(), NOW(), 'standard'),
   ('a1b2c3d4-e5f6-7890-abcd-000000000013', 'marketing_integrations', 'Integrations', 'Plug', '/admin/marketing/integrations', 'marketing', 4, true, true, NULL, 'marketing', NULL, 'Klaviyo, Mailchimp, HubSpot', NULL, NOW(), NOW(), 'standard'),
-  ('8971f94f-c30c-4029-8432-2696176ca16a', 'cookie_consent', 'Cookie Consent', 'Shield', '/admin/cookie-consent', 'marketing', 5, true, true, NULL, 'marketing', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
 
   -- =============================================
   -- CRM CHILDREN (parent: crm, order: 1, 2, 3...)
