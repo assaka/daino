@@ -313,6 +313,28 @@ export default function ProductFeeds() {
             />
           </div>
 
+          {/* Feed Purpose Clarification */}
+          <Card className="bg-amber-50 border-amber-200">
+            <CardContent className="pt-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 text-amber-600 text-lg">!</div>
+                <div className="text-sm space-y-2">
+                  <p className="font-medium text-amber-900">What are these feeds for?</p>
+                  <div className="text-muted-foreground space-y-1">
+                    <p><strong>Google & Microsoft feeds (XML):</strong> Submit these to Merchant Centers. This is required for Google Shopping, Bing Shopping, and enables AI assistants like Gemini and Copilot to recommend your products.</p>
+                    <p><strong>ChatGPT & Universal feeds (JSON):</strong> These are for reference, documentation, and custom integrations. ChatGPT Shopping crawls your website directly - it reads your product pages and Schema.org markup, so no feed submission is needed. However, these JSON feeds can be useful for:</p>
+                    <ul className="list-disc list-inside pl-2 space-y-0.5">
+                      <li>Building custom AI integrations or GPTs</li>
+                      <li>Future AI platforms that may accept product feeds</li>
+                      <li>Third-party tools and comparison engines</li>
+                      <li>Documentation and debugging your product data</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">How to add feeds to shopping platforms</CardTitle>
