@@ -476,12 +476,18 @@ export default function StoreOnboarding() {
             <StepIcon className="w-16 h-16 text-blue-600" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isReprovision && currentStep === 2 ? 'Reprovision Database' : currentStepData.title}
+            {currentStep === 2 && oauthCompleted && needsServiceKey && loading
+              ? 'Provisioning Database'
+              : isReprovision && currentStep === 2
+                ? 'Reprovision Database'
+                : currentStepData.title}
           </CardTitle>
           <CardDescription className="text-base">
-            {isReprovision && currentStep === 2
-              ? `Reconnect Supabase for "${storeData.name}"`
-              : currentStepData.description}
+            {currentStep === 2 && oauthCompleted && needsServiceKey && loading
+              ? 'Please wait. Will not take long.'
+              : isReprovision && currentStep === 2
+                ? `Reconnect Supabase for "${storeData.name}"`
+                : currentStepData.description}
           </CardDescription>
           {!currentStepData.required && (
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full mt-2">

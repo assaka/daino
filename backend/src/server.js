@@ -506,25 +506,37 @@ app.get('/api/public/:storeSlug/google-merchant.xml', async (req, res) => {
     const { storeSlug } = req.params;
     const language = getLanguageFromRequest(req) || 'en';
 
+    console.log(`[Feed] Google Merchant request for store: ${storeSlug}`);
+
     const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('slug', storeSlug)
       .single();
 
-    if (storeError || !store) {
+    if (storeError) {
+      console.error('[Feed] Store lookup error:', storeError);
+      return res.status(404).send(`Store not found: ${storeError.message}`);
+    }
+
+    if (!store) {
+      console.error('[Feed] Store not found for slug:', storeSlug);
       return res.status(404).send('Store not found');
     }
+
+    console.log(`[Feed] Found store: ${store.id}, generating feed...`);
 
     const tenantDb = await ConnectionManager.getStoreConnection(store.id);
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
     const feedXml = await generateGoogleMerchantXml(store.id, baseUrl, store.currency || 'EUR', language);
 
+    console.log(`[Feed] Generated feed with ${feedXml.length} bytes`);
+
     res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
     res.send(feedXml);
   } catch (error) {
-    console.error('[Feed] Error serving Google Merchant feed:', error);
-    res.status(500).send('Error generating feed');
+    console.error('[Feed] Error serving Google Merchant feed:', error.message, error.stack);
+    res.status(500).send(`Error generating feed: ${error.message}`);
   }
 });
 
