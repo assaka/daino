@@ -697,22 +697,52 @@ If you have any questions in the meantime, please don''t hesitate to reach out t
 
 Best regards,
 {{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #f59e0b; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Update</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for your order <strong>#{{order_number}}</strong> at {{store_name}}.</p>
-    <p>We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items, and our team is working to resolve this as quickly as possible.</p>
-    <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e;">Items being reviewed:</p>
-      <pre style="margin: 0; white-space: pre-wrap; color: #92400e; font-family: inherit;">{{items_list}}</pre>
-    </div>
-    <p>We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.</p>
-    <p style="color: #666;">If you have any questions in the meantime, please don''t hesitate to reach out to us.</p>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Order Update
+      </h1>
+      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
+        Order #{{order_number}}
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Thank you for your order <strong>#{{order_number}}</strong> at {{store_name}}.
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items, and our team is working to resolve this as quickly as possible.
+      </p>
+      <!-- Items Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 600;">
+              Items being reviewed:
+            </h3>
+            <pre style="margin: 0; white-space: pre-wrap; color: #92400e; font-family: inherit; font-size: 14px;">{{items_list}}</pre>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.
+      </p>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+        If you have any questions in the meantime, please don''t hesitate to reach out to us.
+      </p>
+    </td>
+  </tr>
+</table>
 {{email_footer}}'),
 ('a1b2c3d4-e5f6-4789-abcd-222222222222', '{{STORE_ID}}', 'stock_issue_admin', 'both', '["order_number", "order_id", "customer_email", "customer_name", "items_list", "store_name", "admin_url"]', 'true', '26', 'false', '{}', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00', 'true', 'ACTION REQUIRED: Stock issue on order #{{order_number}}', 'Stock Issue Alert - Order #{{order_number}}
 
@@ -734,42 +764,95 @@ View order in admin: {{admin_url}}
 
 Best regards,
 {{store_name}} System', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #dc2626; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Stock Issue Alert</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
-      <p style="margin: 0; font-weight: bold; color: #991b1b;">Action Required</p>
-      <p style="margin: 10px 0 0 0; color: #991b1b;">A stock issue has been detected and requires your attention.</p>
-    </div>
-    <h3 style="color: #333; margin-bottom: 15px;">Order Details</h3>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-      <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Order Number:</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>#{{order_number}}</strong></td></tr>
-      <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Customer:</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{{customer_name}}</td></tr>
-      <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Email:</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{{customer_email}}</td></tr>
-    </table>
-    <h3 style="color: #333; margin-bottom: 15px;">Items with Insufficient Stock</h3>
-    <div style="background-color: #fee2e2; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-      <pre style="margin: 0; white-space: pre-wrap; color: #991b1b; font-family: inherit;">{{items_list}}</pre>
-    </div>
-    <h3 style="color: #333; margin-bottom: 15px;">Recommended Actions</h3>
-    <ul style="color: #666; padding-left: 20px;">
-      <li>Process a full or partial refund</li>
-      <li>Wait for restock and contact customer</li>
-      <li>Offer alternative products</li>
-    </ul>
-    <p style="text-align: center; margin-top: 30px;">
-      <a href="{{admin_url}}" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-        View Order in Admin
-      </a>
-    </p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      This is an automated message from {{store_name}}.
-    </p>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #dc2626; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Stock Issue Alert
+      </h1>
+      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
+        Order #{{order_number}}
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <!-- Alert Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef2f2; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #dc2626;">
+        <tr>
+          <td style="padding: 20px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #991b1b; font-size: 15px;">Action Required</p>
+            <p style="margin: 0; color: #991b1b; font-size: 14px;">A stock issue has been detected and requires your attention.</p>
+          </td>
+        </tr>
+      </table>
+      <!-- Order Details Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Details
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Order Number</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">#{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Customer</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{customer_name}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Email</td>
+                <td style="padding: 8px 0; text-align: right; color: #111827; font-size: 14px;">{{customer_email}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!-- Items Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fee2e2; border-radius: 8px; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 14px; font-weight: 600;">
+              Items with Insufficient Stock
+            </h3>
+            <pre style="margin: 0; white-space: pre-wrap; color: #991b1b; font-family: inherit; font-size: 14px;">{{items_list}}</pre>
+          </td>
+        </tr>
+      </table>
+      <!-- Actions Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 14px; font-weight: 600;">
+              Recommended Actions
+            </h3>
+            <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.8;">
+              • Process a full or partial refund<br>
+              • Wait for restock and contact customer<br>
+              • Offer alternative products
+            </p>
+          </td>
+        </tr>
+      </table>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center">
+            <a href="{{admin_url}}" style="display: inline-block; padding: 14px 32px; background-color: #dc2626; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              View Order in Admin
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}'),
 ('a1b2c3d4-e5f6-4789-abcd-333333333333', '{{STORE_ID}}', 'stock_issue_refunded', 'both', '["customer_first_name", "order_number", "store_name", "store_url", "refund_amount", "currency"]', 'true', '27', 'false', '{}', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00', 'true', 'Your order #{{order_number}} has been refunded - {{store_name}}', 'Hi {{customer_first_name}},
 
@@ -867,27 +950,50 @@ If you didn''t request a password reset, please ignore this email. Your password
 Best regards,
 {{store_name}} Team
 {{store_url}}', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #4F46E5; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Reset Your Password</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We received a request to reset your password for your <strong>{{store_name}}</strong> account.</p>
-    <p>Click the button below to set a new password:</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="{{reset_url}}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Reset Password
-      </a>
-    </p>
-    <p style="color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
-    <p style="word-break: break-all; background-color: #e5e7eb; padding: 12px; border-radius: 4px; font-size: 12px;">{{reset_url}}</p>
-    <p style="color: #666;">This link will expire in <strong>{{expiry_hours}} hour(s)</strong>.</p>
-    <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
-    </div>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Reset Your Password
+      </h1>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We received a request to reset your password for your <strong>{{store_name}}</strong> account. Click the button below to set a new password:
+      </p>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <a href="{{reset_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Reset Password
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">Or copy and paste this link in your browser:</p>
+      <p style="margin: 0 0 20px 0; word-break: break-all; background-color: #f3f4f6; padding: 12px; border-radius: 6px; font-size: 12px; color: #374151;">{{reset_url}}</p>
+      <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 14px;">This link will expire in <strong>{{expiry_hours}} hour(s)</strong>.</p>
+      <!-- Warning Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <tr>
+          <td style="padding: 16px 20px;">
+            <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}'),
 -- Password reset confirmation email template
 ('a1b2c3d4-e5f6-4789-abcd-555555555555', '{{STORE_ID}}', 'password_reset_confirmation', 'both', '["customer_first_name", "customer_name", "store_name", "store_url", "login_url", "current_year"]', 'true', '29', 'false', '{}', '2025-11-28 10:00:00.000+00', '2025-11-28 10:00:00.000+00', 'true', 'Your password has been reset - {{store_name}}', 'Hi {{customer_first_name}},
@@ -902,23 +1008,47 @@ If you did not make this change, please contact our support team immediately.
 Best regards,
 {{store_name}} Team
 {{store_url}}', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #059669; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Password Reset Successful</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Your password for your <strong>{{store_name}}</strong> account has been successfully reset.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="{{login_url}}" style="background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Log In Now
-      </a>
-    </p>
-    <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
-      <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
-    </div>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #059669; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Password Reset Successful
+      </h1>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Your password for your <strong>{{store_name}}</strong> account has been successfully reset.
+      </p>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <a href="{{login_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Log In Now
+            </a>
+          </td>
+        </tr>
+      </table>
+      <!-- Security Warning Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+        <tr>
+          <td style="padding: 16px 20px;">
+            <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}');
 
 
@@ -935,23 +1065,47 @@ If you did not make this change, please contact our support team immediately.
 Best regards,
 {{store_name}} Team
 {{store_url}}', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #059669; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Password Reset Successful</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Your password for your <strong>{{store_name}}</strong> account has been successfully reset.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="{{login_url}}" style="background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Log In Now
-      </a>
-    </p>
-    <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
-      <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
-    </div>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #059669; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Password Reset Successful
+      </h1>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Your password for your <strong>{{store_name}}</strong> account has been successfully reset.
+      </p>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <a href="{{login_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Log In Now
+            </a>
+          </td>
+        </tr>
+      </table>
+      <!-- Security Warning Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+        <tr>
+          <td style="padding: 16px 20px;">
+            <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}', '2025-11-28 10:00:00+00', '2025-11-28 10:00:00+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '155851a2-e285-4ae8-a4eb-04b6aa024fad', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #f8f9fa; padding: 30px;">
@@ -1218,22 +1372,52 @@ If you have any questions in the meantime, please don''t hesitate to reach out t
 
 Best regards,
 {{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #f59e0b; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Update</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for your order <strong>#{{order_number}}</strong> at {{store_name}}.</p>
-    <p>We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items, and our team is working to resolve this as quickly as possible.</p>
-    <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e;">Items being reviewed:</p>
-      <pre style="margin: 0; white-space: pre-wrap; color: #92400e; font-family: inherit;">{{items_list}}</pre>
-    </div>
-    <p>We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.</p>
-    <p style="color: #666;">If you have any questions in the meantime, please don''t hesitate to reach out to us.</p>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Order Update
+      </h1>
+      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
+        Order #{{order_number}}
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Thank you for your order <strong>#{{order_number}}</strong> at {{store_name}}.
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items, and our team is working to resolve this as quickly as possible.
+      </p>
+      <!-- Items Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 600;">
+              Items being reviewed:
+            </h3>
+            <pre style="margin: 0; white-space: pre-wrap; color: #92400e; font-family: inherit; font-size: 14px;">{{items_list}}</pre>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.
+      </p>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+        If you have any questions in the meantime, please don''t hesitate to reach out to us.
+      </p>
+    </td>
+  </tr>
+</table>
 {{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('b1c2d3e4-f5a6-4789-bcde-444444444444', 'a1b2c3d4-e5f6-4789-abcd-444444444444', 'en', 'Reset your password - {{store_name}}', 'Hi {{customer_first_name}},
 
 We received a request to reset your password for your {{store_name}} account.
@@ -1248,27 +1432,50 @@ If you didn''t request a password reset, please ignore this email. Your password
 Best regards,
 {{store_name}} Team
 {{store_url}}', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #4F46E5; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Reset Your Password</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We received a request to reset your password for your <strong>{{store_name}}</strong> account.</p>
-    <p>Click the button below to set a new password:</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="{{reset_url}}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Reset Password
-      </a>
-    </p>
-    <p style="color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
-    <p style="word-break: break-all; background-color: #e5e7eb; padding: 12px; border-radius: 4px; font-size: 12px;">{{reset_url}}</p>
-    <p style="color: #666;">This link will expire in <strong>{{expiry_hours}} hour(s)</strong>.</p>
-    <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
-    </div>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Reset Your Password
+      </h1>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We received a request to reset your password for your <strong>{{store_name}}</strong> account. Click the button below to set a new password:
+      </p>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td align="center">
+            <a href="{{reset_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Reset Password
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">Or copy and paste this link in your browser:</p>
+      <p style="margin: 0 0 20px 0; word-break: break-all; background-color: #f3f4f6; padding: 12px; border-radius: 6px; font-size: 12px; color: #374151;">{{reset_url}}</p>
+      <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 14px;">This link will expire in <strong>{{expiry_hours}} hour(s)</strong>.</p>
+      <!-- Warning Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <tr>
+          <td style="padding: 16px 20px;">
+            <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}', '2025-11-28 10:00:00+00', '2025-11-28 10:00:00+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
 
 Thank you for your order!
@@ -1498,42 +1705,95 @@ View order in admin: {{admin_url}}
 
 Best regards,
 {{store_name}} System', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #dc2626; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Stock Issue Alert</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
-      <p style="margin: 0; font-weight: bold; color: #991b1b;">Action Required</p>
-      <p style="margin: 10px 0 0 0; color: #991b1b;">A stock issue has been detected and requires your attention.</p>
-    </div>
-    <h3 style="color: #333; margin-bottom: 15px;">Order Details</h3>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-      <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Order Number:</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>#{{order_number}}</strong></td></tr>
-      <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Customer:</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{{customer_name}}</td></tr>
-      <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee; color: #666;">Email:</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{{customer_email}}</td></tr>
-    </table>
-    <h3 style="color: #333; margin-bottom: 15px;">Items with Insufficient Stock</h3>
-    <div style="background-color: #fee2e2; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-      <pre style="margin: 0; white-space: pre-wrap; color: #991b1b; font-family: inherit;">{{items_list}}</pre>
-    </div>
-    <h3 style="color: #333; margin-bottom: 15px;">Recommended Actions</h3>
-    <ul style="color: #666; padding-left: 20px;">
-      <li>Process a full or partial refund</li>
-      <li>Wait for restock and contact customer</li>
-      <li>Offer alternative products</li>
-    </ul>
-    <p style="text-align: center; margin-top: 30px;">
-      <a href="{{admin_url}}" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-        View Order in Admin
-      </a>
-    </p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      This is an automated message from {{store_name}}.
-    </p>
-  </div>
-</div>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #dc2626; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Stock Issue Alert
+      </h1>
+      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
+        Order #{{order_number}}
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <!-- Alert Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef2f2; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #dc2626;">
+        <tr>
+          <td style="padding: 20px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #991b1b; font-size: 15px;">Action Required</p>
+            <p style="margin: 0; color: #991b1b; font-size: 14px;">A stock issue has been detected and requires your attention.</p>
+          </td>
+        </tr>
+      </table>
+      <!-- Order Details Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Details
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Order Number</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">#{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Customer</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{customer_name}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Email</td>
+                <td style="padding: 8px 0; text-align: right; color: #111827; font-size: 14px;">{{customer_email}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!-- Items Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fee2e2; border-radius: 8px; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 14px; font-weight: 600;">
+              Items with Insufficient Stock
+            </h3>
+            <pre style="margin: 0; white-space: pre-wrap; color: #991b1b; font-family: inherit; font-size: 14px;">{{items_list}}</pre>
+          </td>
+        </tr>
+      </table>
+      <!-- Actions Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 14px; font-weight: 600;">
+              Recommended Actions
+            </h3>
+            <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.8;">
+              • Process a full or partial refund<br>
+              • Wait for restock and contact customer<br>
+              • Offer alternative products
+            </p>
+          </td>
+        </tr>
+      </table>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center">
+            <a href="{{admin_url}}" style="display: inline-block; padding: 14px 32px; background-color: #dc2626; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              View Order in Admin
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00')
 ON CONFLICT DO NOTHING;
 
