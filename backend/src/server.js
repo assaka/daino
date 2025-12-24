@@ -496,6 +496,134 @@ Disallow: /admin/`);
   }
 });
 
+// Store-specific Google Merchant feed (for multi-store)
+app.get('/public/:storeSlug/google-merchant.xml', async (req, res) => {
+  try {
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const { generateGoogleMerchantXml } = require('./routes/sitemap');
+    const { getLanguageFromRequest } = require('./utils/languageUtils');
+    const { storeSlug } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).send('Store not found');
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feedXml = await generateGoogleMerchantXml(store.id, baseUrl, store.currency || 'EUR', language);
+
+    res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+    res.send(feedXml);
+  } catch (error) {
+    console.error('[Feed] Error serving Google Merchant feed:', error);
+    res.status(500).send('Error generating feed');
+  }
+});
+
+// Store-specific Microsoft Merchant feed
+app.get('/public/:storeSlug/microsoft-merchant.xml', async (req, res) => {
+  try {
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const { generateGoogleMerchantXml } = require('./routes/sitemap');
+    const { getLanguageFromRequest } = require('./utils/languageUtils');
+    const { storeSlug } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).send('Store not found');
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feedXml = await generateGoogleMerchantXml(store.id, baseUrl, store.currency || 'EUR', language);
+
+    res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+    res.send(feedXml);
+  } catch (error) {
+    console.error('[Feed] Error serving Microsoft Merchant feed:', error);
+    res.status(500).send('Error generating feed');
+  }
+});
+
+// Store-specific ChatGPT feed (JSON)
+app.get('/public/:storeSlug/chatgpt-feed.json', async (req, res) => {
+  try {
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const { generateChatGPTFeed } = require('./routes/sitemap');
+    const { getLanguageFromRequest } = require('./utils/languageUtils');
+    const { storeSlug } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feed = await generateChatGPTFeed(store.id, baseUrl, store.currency || 'EUR', language);
+
+    res.set({ 'Cache-Control': 'public, max-age=3600' });
+    res.json(feed);
+  } catch (error) {
+    console.error('[Feed] Error serving ChatGPT feed:', error);
+    res.status(500).json({ error: 'Error generating feed' });
+  }
+});
+
+// Store-specific Universal feed (Schema.org JSON)
+app.get('/public/:storeSlug/universal-feed.json', async (req, res) => {
+  try {
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const { generateUniversalFeed } = require('./routes/sitemap');
+    const { getLanguageFromRequest } = require('./utils/languageUtils');
+    const { storeSlug } = req.params;
+    const language = getLanguageFromRequest(req) || 'en';
+
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
+    const feed = await generateUniversalFeed(store.id, baseUrl, store.currency || 'EUR', language);
+
+    res.set({ 'Cache-Control': 'public, max-age=3600' });
+    res.json(feed);
+  } catch (error) {
+    console.error('[Feed] Error serving Universal feed:', error);
+    res.status(500).json({ error: 'Error generating feed' });
+  }
+});
+
 // Standard robots.txt route (for default store or custom domain)
 app.get('/robots.txt', async (req, res) => {
   try {
