@@ -86,7 +86,7 @@ export const SetupGuide = ({ store }) => {
     // Fetch theme preset display name
     useEffect(() => {
         const fetchThemeDisplayName = async () => {
-            if (!store?.theme_preset || store.theme_preset === 'default') {
+            if (!store?.theme_preset) {
                 setThemeDisplayName(null);
                 return;
             }
@@ -174,7 +174,7 @@ export const SetupGuide = ({ store }) => {
     };
 
     // Determine demo/theme status
-    const hasThemePreset = store?.theme_preset && store.theme_preset !== 'default';
+    const hasThemePreset = !!store?.theme_preset;
     const isDemoStore = store?.status === 'demo';
     const canProvisionDemo = store?.status === 'active' && !store?.published;
 

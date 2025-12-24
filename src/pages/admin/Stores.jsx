@@ -509,8 +509,8 @@ export default function Stores() {
                          store.status}
                       </Badge>
                     )}
-                    {/* Theme Preset Badge - show for all stores with non-default preset */}
-                    {store.theme_preset && store.theme_preset !== 'default' && (
+                    {/* Theme Preset Badge - show for all stores with a theme preset */}
+                    {store.theme_preset && (
                       <Badge className="bg-violet-100 text-violet-800 border-violet-200 px-2 py-1" variant="outline">
                         <ThemePresetBadge presetName={store.theme_preset} showName={true} size="sm" />
                       </Badge>
