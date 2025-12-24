@@ -74,6 +74,69 @@ const EMAIL_VARIABLES = {
     { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
     { key: '{{order_details_url}}', description: 'Link to view order details', example: 'https://mystore.com/order/12345' },
     { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Password Reset Email Variables
+  password_reset: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{reset_url}}', description: 'Password reset URL', example: 'https://mystore.com/reset-password?token=abc123' },
+    { key: '{{reset_link}}', description: 'Password reset link (alias)', example: 'https://mystore.com/reset-password?token=abc123' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{expiry_hours}}', description: 'Link expiry time in hours', example: '1' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Password Reset Confirmation Email Variables
+  password_reset_confirmation: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{login_url}}', description: 'Login URL', example: 'https://mystore.com/login' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Stock Issue Customer Email Variables
+  stock_issue_customer: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{order_number}}', description: 'Order number', example: 'ORD-12345' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{items_list}}', description: 'List of affected items', example: 'Product A, Product B' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Stock Issue Admin Email Variables
+  stock_issue_admin: [
+    { key: '{{admin_name}}', description: 'Admin name', example: 'Admin' },
+    { key: '{{order_number}}', description: 'Order number', example: 'ORD-12345' },
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_email}}', description: 'Customer email', example: 'john@example.com' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{items_list}}', description: 'List of affected items', example: 'Product A (qty: 2), Product B (qty: 1)' },
+    { key: '{{order_url}}', description: 'Link to order in admin', example: 'https://mystore.com/admin/orders/12345' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Stock Issue Refunded Email Variables
+  stock_issue_refunded: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{order_number}}', description: 'Order number', example: 'ORD-12345' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{refund_amount}}', description: 'Refund amount', example: '$25.00' },
+    { key: '{{currency}}', description: 'Currency code', example: 'USD' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
   ]
 };
 
