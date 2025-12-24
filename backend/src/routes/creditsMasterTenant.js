@@ -35,7 +35,8 @@ router.get('/pricing', async (req, res) => {
     res.json({
       success: true,
       data: pricing,
-      currency: currency.toUpperCase()
+      currency: currency.toUpperCase(),
+      freeCredits: parseInt(process.env.FREE_CREDITS) || 30
     });
   } catch (error) {
     console.error('Error getting credit pricing:', error);

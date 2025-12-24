@@ -85,6 +85,9 @@ services:
       # Service type for connection pool optimization
       - key: SERVICE_TYPE
         value: main
+      # Free credits for new store owners (default: 30)
+      - key: FREE_CREDITS
+        value: 30
     autoDeploy: true
 
   # PDF Generation Microservice (Docker with Chromium)

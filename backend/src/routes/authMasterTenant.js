@@ -68,6 +68,7 @@ router.post('/register', async (req, res) => {
 
     // Create user in master DB (using Supabase client)
     const userId = uuidv4();
+    const freeCredits = parseInt(process.env.FREE_CREDITS) || 30;
     const { data: user, error: userError } = await masterDbClient
       .from('users')
       .insert({
@@ -82,6 +83,7 @@ router.post('/register', async (req, res) => {
         email_verified: false,
         email_verification_token: verificationCode,
         password_reset_expires: verificationExpiry.toISOString(),
+        credits: freeCredits,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -90,6 +92,20 @@ router.post('/register', async (req, res) => {
 
     if (userError) {
       throw new Error(`Failed to create user: ${userError.message}`);
+    }
+
+    // Record free credits as a welcome bonus transaction
+    if (freeCredits > 0) {
+      await masterDbClient
+        .from('credit_transactions')
+        .insert({
+          user_id: userId,
+          amount: freeCredits,
+          transaction_type: 'bonus',
+          payment_status: 'completed',
+          description: 'Welcome bonus - free credits for new account',
+          created_at: new Date().toISOString()
+        });
     }
 
     // Note: Store is NOT created during registration

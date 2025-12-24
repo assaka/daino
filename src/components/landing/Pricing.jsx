@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from 'lucide-react';
 
-const plans = [
+const getPlans = (freeCredits) => [
     {
         name: "Free Setup",
         price: "0",
         description: "Configure your shop for free",
         features: [
             "Free account registration",
+            `${freeCredits} free credits included`,
             "Full store configuration",
             "Product & catalog management",
             "Payment & shipping setup",
@@ -51,6 +52,21 @@ const plans = [
 ];
 
 export default function Pricing() {
+    const [freeCredits, setFreeCredits] = useState(30);
+
+    useEffect(() => {
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/credits/pricing`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.freeCredits) {
+                    setFreeCredits(data.freeCredits);
+                }
+            })
+            .catch(() => {}); // Keep default on error
+    }, []);
+
+    const plans = getPlans(freeCredits);
+
     return (
         <section className="py-32 bg-white relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -65,10 +81,10 @@ export default function Pricing() {
                         FREE TO START
                     </div>
                     <h2 className="text-5xl md:text-6xl font-black mb-6 text-neutral-900">
-                        Free Setup. $3 to Go Live.
+                        Free Setup
                     </h2>
                     <p className="text-xl text-neutral-600 max-w-2xl">
-                        Register and configure for free. $3 = 30 days live (1 credit/day). AI features are pay-as-you-go.
+                        Set up your store at no cost. Publishing costs $3 for 30 days. AI features billed by usage.
                     </p>
                 </motion.div>
 
