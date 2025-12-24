@@ -1,18 +1,18 @@
-# 📊 Understanding Your Background Jobs & Queue
+# Understanding Your Background Jobs & Queue
 
 **Never lose progress again! Learn how DainoStore's smart job queue keeps your imports, exports, and translations running smoothly - even during updates.**
 
 ---
 
-## 🤔 **What Are Background Jobs?**
+## What Are Background Jobs?
 
 Background jobs are tasks that run "behind the scenes" so you don't have to wait around.
 
 **Examples in your store:**
-- 🌐 Translating 500 UI labels to Spanish (takes 10+ minutes)
-- 📦 Exporting 200 products to Amazon (takes 15+ minutes)
-- 🛍️ Importing 1,000 products from Shopify (takes 20+ minutes)
-- 🏭 Syncing catalog from Akeneo PIM (takes 30+ minutes)
+- Translating 500 UI labels to Spanish (takes 10+ minutes)
+- Exporting 200 products to Amazon (takes 15+ minutes)
+- Importing 1,000 products from Shopify (takes 20+ minutes)
+- Syncing catalog from Akeneo PIM (takes 30+ minutes)
 
 **Without background jobs:** You'd have to keep the page open and wait!
 
@@ -20,50 +20,50 @@ Background jobs are tasks that run "behind the scenes" so you don't have to wait
 
 ---
 
-## 🚀 **What Makes DainoStore's Queue Special?**
+## What Makes DainoStore's Queue Special?
 
-### **The Problem with Most Systems:**
+### The Problem with Most Systems:
 
 Other platforms lose progress when:
-- ❌ Server restarts
-- ❌ Deployments/updates
-- ❌ Browser closes
-- ❌ Internet disconnects
+- Server restarts
+- Deployments/updates
+- Browser closes
+- Internet disconnects
 
 **You have to start over!** Frustrating with 1,000 product imports.
 
-### **DainoStore's Solution: Persistent Queue**
+### DainoStore's Solution: Persistent Queue
 
 Our queue uses **BullMQ + Redis** which means:
-- ✅ **Survives server restarts** - Job resumes exactly where it left off
-- ✅ **Survives deployments** - Updates don't interrupt your work
-- ✅ **Real-time progress** - See exactly what's happening
-- ✅ **Automatic retries** - Temporary errors? Job retries automatically
-- ✅ **Priority system** - Important jobs go first
+- **Survives server restarts** - Job resumes exactly where it left off
+- **Survives deployments** - Updates don't interrupt your work
+- **Real-time progress** - See exactly what's happening
+- **Automatic retries** - Temporary errors? Job retries automatically
+- **Priority system** - Important jobs go first
 
 **You'll never lose progress again!**
 
 ---
 
-## 📍 **Where to Find the Queue Dashboard**
+## Where to Find the Queue Dashboard
 
 You have **3 ways** to monitor your background jobs:
 
-### **Option 1: Marketplace Hub (Recommended for Most Users)**
+### Option 1: Marketplace Hub (Recommended for Most Users)
 
-**Location:** Import & Export → Marketplace Hub
+**Location:** Import & Export > Marketplace Hub
 
 **What you see:**
 ```
-🔄 Active Jobs (2)
+Active Jobs (2)
 
 Amazon Export #1234
 AI optimizing: Blue Widget (15/30)
-━━━━━━━━━━━━━━━░░░░░░░░░░ 50%
+Progress: 50%
 
 Shopify Import #1235
 Importing products: 234/500
-━━━━━━━━━░░░░░░░░░░░░░░░ 47%
+Progress: 47%
 ```
 
 **Best for:**
@@ -74,7 +74,7 @@ Importing products: 234/500
 
 ---
 
-### **Option 2: API Endpoints (For Developers/Advanced Users)**
+### Option 2: API Endpoints (For Developers/Advanced Users)
 
 **Get Overall Queue Status:**
 ```
@@ -126,51 +126,51 @@ GET /api/background-jobs/{jobId}/status
 
 ---
 
-### **Option 3: Dedicated Job Dashboard (Coming Soon!)**
+### Option 3: Dedicated Job Dashboard (Coming Soon!)
 
 We're building a full-screen job monitoring dashboard:
 
 **Features:**
-- 📊 All jobs across all stores
-- 🔍 Filter by type, status, date
-- 📝 Detailed logs for each job
-- ⏱️ Performance metrics
-- 📈 Success rate trends
-- 🚨 Error alerts
+- All jobs across all stores
+- Filter by type, status, date
+- Detailed logs for each job
+- Performance metrics
+- Success rate trends
+- Error alerts
 
-**Location (when released):** Import & Export → Background Jobs
+**Location (when released):** Import & Export > Background Jobs
 
 ---
 
-## 🎯 **Understanding Job Types**
+## Understanding Job Types
 
 Your store runs different types of background jobs:
 
-### **Translation Jobs**
+### Translation Jobs
 - **Type:** `translation:ui-labels:bulk`
 - **What:** Translates all UI labels to another language
 - **Time:** 5-15 minutes for 500+ labels
 - **Why background:** Too slow for real-time
 
-### **Marketplace Exports**
+### Marketplace Exports
 - **Types:** `amazon:export:products`, `ebay:export:products`
 - **What:** Exports products to marketplaces with AI optimization
 - **Time:** 1-2 minutes per product with AI
 - **Why background:** Large catalogs take time
 
-### **Shopify Imports**
+### Shopify Imports
 - **Types:** `shopify:import:collections`, `shopify:import:products`, `shopify:import:all`
 - **What:** Imports your Shopify catalog
 - **Time:** 10-30 minutes depending on catalog size
 - **Why background:** Downloads images, processes variants
 
-### **Akeneo Sync**
+### Akeneo Sync
 - **Types:** `akeneo:import:products`, `akeneo:import:categories`, etc.
 - **What:** Syncs catalog from Akeneo PIM
 - **Time:** 15-60 minutes
 - **Why background:** Large PIM catalogs
 
-### **System Jobs**
+### System Jobs
 - **Types:** `system:daily_credit_deduction`, `system:cleanup`, etc.
 - **What:** Automated maintenance tasks
 - **Time:** Varies
@@ -178,59 +178,59 @@ Your store runs different types of background jobs:
 
 ---
 
-## 📊 **Job Status Explained**
+## Job Status Explained
 
-### **Status Types:**
+### Status Types:
 
-**🕐 Pending** (Gray)
+**Pending** (Gray)
 - Job is queued, waiting to start
 - Position in queue depends on priority
 - Will start when worker is available
 
-**🔄 Running** (Blue, spinning)
+**Running** (Blue, spinning)
 - Job is actively processing
 - Progress bar shows completion percentage
 - Message shows current step
 
-**✅ Completed** (Green)
+**Completed** (Green)
 - Job finished successfully!
 - Results available
 - Check "Recent Activity" for details
 
-**❌ Failed** (Red)
+**Failed** (Red)
 - Job encountered an error
 - Will automatically retry (up to 3 times)
 - Check error message for details
 
-**🔄 Retrying** (Yellow)
+**Retrying** (Yellow)
 - Job failed but will try again
 - Automatic retry with delays: 5s, 30s, 5m
 - Usually succeeds on retry
 
 ---
 
-## ⚡ **Priority System**
+## Priority System
 
 Not all jobs are equal! Here's how priority works:
 
-### **Priority Levels:**
+### Priority Levels:
 
-**🔴 Urgent** (Priority 1)
+**Urgent** (Priority 1)
 - Customer-facing issues
 - Payment processing
 - Order finalization
 
-**🟠 High** (Priority 2)
+**High** (Priority 2)
 - Inventory syncs
 - Full catalog imports
 - Customer data exports
 
-**🟡 Normal** (Priority 3)
+**Normal** (Priority 3)
 - Standard exports
 - Product imports
 - Most marketplace jobs
 
-**🟢 Low** (Priority 10)
+**Low** (Priority 10)
 - Cleanup tasks
 - Non-urgent syncs
 - Background optimizations
@@ -239,9 +239,9 @@ Not all jobs are equal! Here's how priority works:
 
 ---
 
-## 🎮 **How to Use the Queue Effectively**
+## How to Use the Queue Effectively
 
-### **Best Practices:**
+### Best Practices:
 
 **1. Export During Off-Hours**
 - Late night or early morning
@@ -270,33 +270,33 @@ Not all jobs are equal! Here's how priority works:
 
 ---
 
-## 🔧 **Advanced: Understanding the Queue Architecture**
+## Advanced: Understanding the Queue Architecture
 
 *For curious store owners or developers*
 
-### **How It Works:**
+### How It Works:
 
 ```
 Your Action (Click Export)
-    ↓
+    |
 Job Created in Database
-    ↓
+    |
 Added to BullMQ Queue (Redis)
-    ↓
+    |
 Worker Picks Up Job
-    ↓
+    |
 Processes Step by Step
-    ↓
+    |
 Updates Progress in Database
-    ↓
+    |
 Your UI Polls for Updates
-    ↓
+    |
 Shows Real-Time Progress
-    ↓
+    |
 Job Completes!
 ```
 
-### **Why This Matters:**
+### Why This Matters:
 
 **Database + Redis = Bulletproof**
 - Database: Permanent storage (survives everything)
@@ -311,11 +311,11 @@ Job Completes!
 
 ---
 
-## 📈 **Job Performance Metrics**
+## Job Performance Metrics
 
 Understanding your queue health:
 
-### **What to Monitor:**
+### What to Monitor:
 
 **Success Rate:**
 - **95%+** = Excellent (normal to have occasional failures)
@@ -335,11 +335,11 @@ Understanding your queue health:
 
 ---
 
-## 🚨 **When Jobs Fail**
+## When Jobs Fail
 
 Don't panic! Here's what happens:
 
-### **Automatic Recovery:**
+### Automatic Recovery:
 
 **Retry 1:** After 5 seconds
 - Usually fixes temporary network issues
@@ -355,7 +355,7 @@ Don't panic! Here's what happens:
 - Fix the issue
 - Re-run the job
 
-### **Common Errors & Fixes:**
+### Common Errors & Fixes:
 
 **"Insufficient Credits"**
 - You ran out of AI credits
@@ -380,9 +380,9 @@ Don't panic! Here's what happens:
 
 ---
 
-## 💡 **Pro Tips**
+## Pro Tips
 
-### **1. Job Progress is Your Friend**
+### 1. Job Progress is Your Friend
 
 The progress message tells you:
 - **Exactly which product** is processing
@@ -391,7 +391,7 @@ The progress message tells you:
 
 Use this to estimate remaining time!
 
-### **2. Jobs Survive Everything**
+### 2. Jobs Survive Everything
 
 Feel free to:
 - Close your browser
@@ -401,14 +401,14 @@ Feel free to:
 
 **The job keeps running!** Come back anytime to check progress.
 
-### **3. Multiple Jobs Run Together**
+### 3. Multiple Jobs Run Together
 
 The system processes up to **5 jobs simultaneously**:
 - Amazon export + Shopify import + Translation = All run at once!
 - Jobs don't block each other
 - Priority jobs go first
 
-### **4. Check Recent Activity**
+### 4. Check Recent Activity
 
 In Marketplace Hub, the **"Recent Activity"** section shows:
 - Last 5 completed jobs
@@ -418,31 +418,31 @@ In Marketplace Hub, the **"Recent Activity"** section shows:
 
 ---
 
-## 🎉 **Summary**
+## Summary
 
 **Where to find the Queue Dashboard:**
 
 **For Store Owners:**
-→ **Import & Export → Marketplace Hub**
+Import & Export > Marketplace Hub
 - Active jobs at the top
 - Recent activity at the bottom
 - Perfect for monitoring exports/imports
 
 **For Developers:**
-→ **API: /api/background-jobs/status**
+API: /api/background-jobs/status
 - Complete queue statistics
 - Job details
 - Performance metrics
 
 **Coming Soon:**
-→ **Dedicated Job Dashboard Page**
+Dedicated Job Dashboard Page
 - Full monitoring interface
 - Detailed logs
 - Analytics
 
 ---
 
-## 🆘 **Need Help?**
+## Need Help?
 
 - **Jobs stuck?** Wait 30 minutes (large jobs take time!)
 - **Job failed?** Check error message in Recent Activity
@@ -450,6 +450,6 @@ In Marketplace Hub, the **"Recent Activity"** section shows:
 
 ---
 
-**Your background job system is now working 24/7 to keep your business running smoothly!** 🚀
+**Your background job system is now working 24/7 to keep your business running smoothly!**
 
 *Last Updated: November 2025*

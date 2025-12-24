@@ -1,4 +1,4 @@
-# 🏷️ How to Sell Your Products on eBay
+# How to Sell Your Products on eBay
 
 **Reach millions of buyers worldwide by listing your products on eBay - one of the world's largest online marketplaces.**
 
@@ -6,7 +6,7 @@ With DainoStore's Marketplace Hub, you can create professional eBay listings in 
 
 ---
 
-## ⏱️ **Quick Facts**
+## Quick Facts
 
 - **Setup Time:** 10-15 minutes (one-time)
 - **Export Time:** 5-20 minutes depending on catalog size
@@ -15,21 +15,21 @@ With DainoStore's Marketplace Hub, you can create professional eBay listings in 
 
 ---
 
-## 🎯 **What You'll Accomplish**
+## What You'll Accomplish
 
 By the end of this guide, you'll be able to:
-- ✅ Connect your store to eBay
-- ✅ Create listings with AI-optimized descriptions
-- ✅ Export products in bulk
-- ✅ Manage everything from one dashboard
+- Connect your store to eBay
+- Create listings with AI-optimized descriptions
+- Export products in bulk
+- Manage everything from one dashboard
 
 ---
 
-## 📋 **What You Need to Get Started**
+## What You Need to Get Started
 
 You'll need an **eBay Seller Account** and **eBay Developer Account**.
 
-### **Don't have these yet?**
+### Don't have these yet?
 
 **eBay Seller Account:**
 1. Go to [eBay](https://www.ebay.com)
@@ -46,11 +46,11 @@ You'll need an **eBay Seller Account** and **eBay Developer Account**.
 
 ---
 
-## 🔑 **Step 1: Get Your eBay API Credentials**
+## Step 1: Get Your eBay API Credentials
 
 You need 4 credentials from eBay. Follow these steps carefully:
 
-### **Create an Application**
+### Create an Application
 
 1. Log in to [eBay Developer Console](https://developer.ebay.com/my/keys)
 2. Click **"Create an Application"** (or "Application Keys")
@@ -60,7 +60,7 @@ You need 4 credentials from eBay. Follow these steps carefully:
    - **Contact Email:** Your email
 5. Click **"Create"**
 
-### **Get Your Keys**
+### Get Your Keys
 
 You'll now see your application keys:
 
@@ -82,7 +82,7 @@ PRD-1234567890abcdef-1234-5678-9abc-defg
 ```
 **Copy this!**
 
-### **Get Your Auth Token (User Token)**
+### Get Your Auth Token (User Token)
 
 This is the most important one!
 
@@ -95,20 +95,20 @@ This is the most important one!
    - Long string of random characters
 7. **COPY THIS IMMEDIATELY!** It's only shown once.
 
-**⚠️ CRITICAL:** Save all 4 credentials in a secure location!
+**CRITICAL:** Save all 4 credentials in a secure location!
 
 ---
 
-## 🎨 **Step 2: Configure in Your DainoStore Store**
+## Step 2: Configure in Your DainoStore Store
 
-### **1. Open Marketplace Hub**
+### 1. Open Marketplace Hub
 
 In your DainoStore admin:
 1. Click **"Import & Export"** in sidebar
 2. Click **"Marketplace Hub"**
 3. Click the **"eBay"** tab
 
-### **2. Enter Your Credentials**
+### 2. Enter Your Credentials
 
 Fill in the form with the credentials you gathered:
 
@@ -132,23 +132,23 @@ Paste your Dev ID here
 Paste your User Token here
 ```
 
-### **3. Save Configuration**
+### 3. Save Configuration
 
 Click **"Save Configuration"**
 
-You should see: ✅ **"eBay configuration saved successfully!"**
+You should see: **"eBay configuration saved successfully!"**
 
-The status badge changes from ⚪ **"Not Configured"** to 🟢 **"Connected"**
+The status badge changes from **"Not Configured"** to **"Connected"**
 
 ---
 
-## ⚡ **Step 3: Configure Listing Settings**
+## Step 3: Configure Listing Settings
 
-### **AI Optimization (Recommended!)**
+### AI Optimization (Recommended!)
 
 Toggle this ON for better listings:
 
-**☑️ AI Optimization**
+**AI Optimization**
 - **What it does:** Creates professional HTML descriptions
 - **Features:**
   - Eye-catching formatting
@@ -158,7 +158,7 @@ Toggle this ON for better listings:
   - Call-to-action
 - **Result:** Listings that convert better!
 
-### **Listing Format**
+### Listing Format
 
 Choose your selling format:
 
@@ -172,7 +172,7 @@ Choose your selling format:
 - Good for unique items or testing market value
 - Takes longer to sell
 
-### **Listing Duration**
+### Listing Duration
 
 How long listings stay active:
 
@@ -182,34 +182,34 @@ How long listings stay active:
 
 ---
 
-## 📦 **Step 4: Create Your eBay Listings**
+## Step 4: Create Your eBay Listings
 
-### **Select Products**
+### Select Products
 
 1. Click **"Select Products"** button
 2. Go to your Products page
 3. Select products to list on eBay
-4. Return to **Marketplace Hub** → **eBay** tab
+4. Return to **Marketplace Hub** > **eBay** tab
 
-**💡 Start with 3-5 products to test!**
+**Start with 3-5 products to test!**
 
-### **Start the Export**
+### Start the Export
 
 1. Make sure AI optimization is enabled (recommended!)
 2. Check your listing format and duration
 3. Click **"Create eBay Listings"** button
 4. You'll see a success message
 
-### **Monitor Progress**
+### Monitor Progress
 
 Watch real-time progress:
 
 ```
-🔄 Active Jobs (1)
+Active Jobs (1)
 
 eBay Export #5678
 Processing: Blue Widget (5/15)
-━━━━━━━━░░░░░░░░░░░░░ 33%
+Progress: 33%
 ```
 
 **What happens:**
@@ -222,15 +222,15 @@ Processing: Blue Widget (5/15)
 
 ---
 
-## 📥 **Step 5: Review & Publish on eBay**
+## Step 5: Review & Publish on eBay
 
 Once export completes:
 
-### **Download Listing Data**
+### Download Listing Data
 
 *Note: Download feature coming soon. Currently generated listings are prepared for you.*
 
-### **Create Listings on eBay**
+### Create Listings on eBay
 
 **Option 1: Via eBay Seller Hub (Current)**
 1. Log in to [eBay Seller Hub](https://www.ebay.com/sh/lst/active)
@@ -248,16 +248,16 @@ Once export completes:
 - Faster for large catalogs
 
 **Option 3: API Auto-Upload (Coming Soon!)**
-- One click → listings appear on eBay automatically
+- One click and listings appear on eBay automatically
 - No manual work needed
 
 ---
 
-## ✅ **Success! You're Selling on eBay**
+## Success! You're Selling on eBay
 
 Your products are now ready to sell to millions of eBay buyers!
 
-### **What's Next?**
+### What's Next?
 
 **Monitor Your Listings:**
 1. Check **"Recent Activity"** in Marketplace Hub
@@ -274,9 +274,9 @@ Your products are now ready to sell to millions of eBay buyers!
 
 ---
 
-## 💡 **Pro Tips for eBay Success**
+## Pro Tips for eBay Success
 
-### **1. Use AI Optimization**
+### 1. Use AI Optimization
 
 eBay buyers love detailed, professional listings. Our AI creates:
 - **Compelling titles** with key search terms
@@ -286,7 +286,7 @@ eBay buyers love detailed, professional listings. Our AI creates:
 
 **Result:** Higher conversion rates and better buyer confidence!
 
-### **2. Competitive Pricing**
+### 2. Competitive Pricing
 
 Consider eBay's fees when pricing:
 - **Final Value Fee:** ~13% of sale price
@@ -303,14 +303,14 @@ Selling price: $10 + $5 + $2.40 (fees) = $17.40
 
 Use DainoStore's price adjustment to auto-calculate!
 
-### **3. Great Photos = More Sales**
+### 3. Great Photos = More Sales
 
 - Upload 5-12 images (eBay allows up to 12 free)
 - Show product from multiple angles
 - Include lifestyle shots if possible
 - High resolution (1600px minimum)
 
-### **4. Start with Buy It Now**
+### 4. Start with Buy It Now
 
 For e-commerce sellers, **Fixed Price** listings work best:
 - Buyers purchase immediately
@@ -318,7 +318,7 @@ For e-commerce sellers, **Fixed Price** listings work best:
 - Easier to manage inventory
 - Better for bulk selling
 
-### **5. Use Good 'Til Cancelled**
+### 5. Use Good 'Til Cancelled
 
 Set listings to **Good 'Til Cancelled** (GTC):
 - Stays active until sold
@@ -327,7 +327,7 @@ Set listings to **Good 'Til Cancelled** (GTC):
 
 ---
 
-## 🎯 **Understanding eBay Categories**
+## Understanding eBay Categories
 
 eBay has thousands of categories. Our system:
 - Automatically suggests categories based on your product data
@@ -335,31 +335,31 @@ eBay has thousands of categories. Our system:
 - You can override suggestions if needed
 
 **Common Categories:**
-- Electronics → eBay Electronics
-- Clothing → Clothing, Shoes & Accessories
-- Home & Garden → Home & Garden
-- Toys → Toys & Hobbies
+- Electronics > eBay Electronics
+- Clothing > Clothing, Shoes & Accessories
+- Home & Garden > Home & Garden
+- Toys > Toys & Hobbies
 
 ---
 
-## 🔄 **Keeping Listings Updated**
+## Keeping Listings Updated
 
-### **Update Prices**
+### Update Prices
 
 When you change prices in DainoStore:
 1. Re-export affected products
 2. Listings update on eBay
 3. No need to manually edit each listing!
 
-### **Update Inventory**
+### Update Inventory
 
 When stock changes:
-1. Go to Marketplace Hub → eBay
+1. Go to Marketplace Hub > eBay
 2. Click **"Sync Inventory"** (coming soon)
 3. Or re-export products
 4. eBay quantities update automatically
 
-### **Update Descriptions**
+### Update Descriptions
 
 Made product improvements?
 1. Update in your DainoStore catalog
@@ -368,9 +368,9 @@ Made product improvements?
 
 ---
 
-## 🆘 **Troubleshooting**
+## Troubleshooting
 
-### **Problem: "Invalid eBay Credentials"**
+### Problem: "Invalid eBay Credentials"
 
 **Solutions:**
 - Double-check all 4 credentials are correct
@@ -378,14 +378,14 @@ Made product improvements?
 - Verify User Token hasn't expired
 - Generate new token if needed
 
-### **Problem: "Export Job Failed"**
+### Problem: "Export Job Failed"
 
 **Check:**
 - Do products have all required fields? (title, price, images)
 - Are images accessible (public URLs)?
 - Is title under 80 characters?
 
-### **Problem: "eBay Rejected My Listing"**
+### Problem: "eBay Rejected My Listing"
 
 **Common reasons:**
 - Title too long (eBay max: 80 characters)
@@ -397,46 +397,7 @@ Made product improvements?
 
 ---
 
-## 📊 **Where to Find the Queue Dashboard**
-
-Track all your background jobs (not just eBay!):
-
-### **Built-in Job Monitoring:**
-
-**1. Marketplace Hub (Quick View)**
-- Location: **Import & Export → Marketplace Hub**
-- Shows: Active jobs with progress bars
-- Updates: Real-time
-- Best for: Checking current exports
-
-**2. API Endpoints (Advanced)**
-
-For developers or custom dashboards:
-
-```
-GET /api/background-jobs/status
-```
-Returns overall queue statistics
-
-```
-GET /api/background-jobs/{jobId}/status
-```
-Returns specific job progress
-
-```
-GET /api/background-jobs/store/{storeId}
-```
-Returns all jobs for your store
-
-**3. Coming Soon: Dedicated Job Dashboard**
-- Full-screen job monitor
-- Filter by type (exports, imports, translations)
-- Detailed logs and error messages
-- Performance analytics
-
----
-
-## 💰 **eBay Fee Calculator**
+## eBay Fee Calculator
 
 Plan your pricing with eBay fees in mind:
 
@@ -451,42 +412,19 @@ Plan your pricing with eBay fees in mind:
 
 ---
 
-## 🎉 **You're Ready to Sell!**
+## You're Ready to Sell!
 
 You now have:
-- ✅ eBay integration configured
-- ✅ AI-powered listing creation
-- ✅ Professional HTML descriptions
-- ✅ Background job processing
-- ✅ Progress tracking
+- eBay integration configured
+- AI-powered listing creation
+- Professional HTML descriptions
+- Background job processing
+- Progress tracking
 
-**Start selling on eBay today!** 🚀
-
----
-
-## 🌟 **Why DainoStore Beats Other Tools**
-
-**vs. Channable:**
-- ✅ AI product optimization (they don't have this!)
-- ✅ Auto-translation
-- ✅ Deployment-resilient jobs
-- ✅ Real-time progress tracking
-- ✅ Built into your e-commerce platform
-
-**vs. Manual eBay Uploads:**
-- ✅ Bulk create hundreds of listings
-- ✅ Consistent formatting
-- ✅ Professional HTML descriptions
-- ✅ One-click updates
-
-**vs. Other Feed Management:**
-- ✅ No monthly subscription fees
-- ✅ Unlimited products
-- ✅ AI enhancement included
-- ✅ All-in-one solution
+**Start selling on eBay today!**
 
 ---
 
-*Need Amazon setup?* See our [Amazon Setup Guide](./how-to-configure-amazon-marketplace.md)
+*Need Amazon setup?* See our [Amazon Setup Guide](/blog/how-to-configure-amazon-marketplace)
 
 *Last Updated: November 2025*

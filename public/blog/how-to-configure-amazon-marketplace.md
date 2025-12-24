@@ -1,4 +1,4 @@
-# 🛒 How to Sell Your Products on Amazon
+# How to Sell Your Products on Amazon
 
 **Expand your reach and boost sales by listing your products on Amazon - the world's largest online marketplace.**
 
@@ -6,7 +6,7 @@ With DainoStore's Marketplace Hub, you can export your entire product catalog to
 
 ---
 
-## ⏱️ **Quick Facts**
+## Quick Facts
 
 - **Setup Time:** 15-20 minutes (one-time)
 - **Export Time:** 5-30 minutes depending on catalog size
@@ -15,17 +15,17 @@ With DainoStore's Marketplace Hub, you can export your entire product catalog to
 
 ---
 
-## 🎯 **What You'll Accomplish**
+## What You'll Accomplish
 
 By the end of this guide, you'll be able to:
-- ✅ Connect your store to Amazon
-- ✅ Export products with AI-optimized titles and descriptions
-- ✅ Sync inventory automatically
-- ✅ Manage everything from one dashboard
+- Connect your store to Amazon
+- Export products with AI-optimized titles and descriptions
+- Sync inventory automatically
+- Manage everything from one dashboard
 
 ---
 
-## 📋 **What You Need to Get Started**
+## What You Need to Get Started
 
 You'll need an **Amazon Seller Account**. If you don't have one:
 
@@ -38,11 +38,11 @@ You'll need an **Amazon Seller Account**. If you don't have one:
 
 ---
 
-## 🔑 **Step 1: Gather Your Amazon Credentials**
+## Step 1: Gather Your Amazon Credentials
 
 Don't worry - this sounds technical but it's straightforward! You need 4 pieces of information.
 
-### **1. Your Seller ID** ⭐ Easy!
+### 1. Your Seller ID
 
 **What it is:** Your unique Amazon seller identifier
 
@@ -56,12 +56,12 @@ Don't worry - this sounds technical but it's straightforward! You need 4 pieces 
 
 ---
 
-### **2. MWS Auth Token** ⭐ Important!
+### 2. MWS Auth Token
 
 **What it is:** This gives DainoStore permission to manage your Amazon listings
 
 **How to get it:**
-1. In Seller Central, go to **Settings** → **User Permissions**
+1. In Seller Central, go to **Settings** > **User Permissions**
 2. Scroll to **Amazon MWS Developer Permissions**
 3. Click **"Visit Amazon MWS"**
 4. Click **"I want to authorize a developer..."**
@@ -73,11 +73,11 @@ Don't worry - this sounds technical but it's straightforward! You need 4 pieces 
    - Looks like: `amzn.mws.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 8. **COPY THIS IMMEDIATELY!** You can't see it again.
 
-**💡 Pro Tip:** Save it in a password manager or secure note.
+**Pro Tip:** Save it in a password manager or secure note.
 
 ---
 
-### **3 & 4. AWS Access Keys** ⭐ Technical but Simple!
+### 3 & 4. AWS Access Keys
 
 **What they are:** Security keys that let our system upload your products to Amazon
 
@@ -92,46 +92,46 @@ Don't worry - this sounds technical but it's straightforward! You need 4 pieces 
 6. Click **"Next: Permissions"**
 7. Click **"Attach existing policies directly"**
 8. Search for and select: **"AmazonMWSFullAccess"**
-9. Click **Next** → **Next** → **Create User**
+9. Click **Next** > **Next** > **Create User**
 10. **IMPORTANT PAGE:** You'll see two keys:
     - **Access Key ID:** Starts with `AKIA...` (copy this)
     - **Secret Access Key:** Long random string (copy this)
 11. Click **"Download .csv"** to save both keys
 
-**⚠️ CRITICAL:** You can't see the Secret Access Key again! Save it now.
+**CRITICAL:** You can't see the Secret Access Key again! Save it now.
 
-**💡 Don't have AWS access?** Ask your developer or Amazon support for help.
+**Don't have AWS access?** Ask your developer or Amazon support for help.
 
 ---
 
-### **5. Marketplace ID** ⭐ Super Easy!
+### 5. Marketplace ID
 
 **What it is:** Which Amazon store you sell on (US, UK, etc.)
 
 **Pick yours:**
-- 🇺🇸 **United States:** `ATVPDKIKX0DER`
-- 🇬🇧 **United Kingdom:** `A1F83G8C2ARO7P`
-- 🇩🇪 **Germany:** `A1PA6795UKMFR9`
-- 🇫🇷 **France:** `A13V1IB3VIYZZH`
-- 🇨🇦 **Canada:** `A2EUQ1WTGCTBG2`
-- 🇲🇽 **Mexico:** `A1AM78C64UM0Y8`
+- **United States:** `ATVPDKIKX0DER`
+- **United Kingdom:** `A1F83G8C2ARO7P`
+- **Germany:** `A1PA6795UKMFR9`
+- **France:** `A13V1IB3VIYZZH`
+- **Canada:** `A2EUQ1WTGCTBG2`
+- **Mexico:** `A1AM78C64UM0Y8`
 
 **Selling in multiple countries?** You'll configure each one separately later.
 
 ---
 
-## 🎨 **Step 2: Configure in Your DainoStore Store**
+## Step 2: Configure in Your DainoStore Store
 
 Now the fun part - connect everything!
 
-### **1. Open Marketplace Hub**
+### 1. Open Marketplace Hub
 
 In your DainoStore admin:
 1. Click **"Import & Export"** in sidebar
 2. Click **"Marketplace Hub"**
 3. Click the **"Amazon"** tab
 
-### **2. Enter Your Credentials**
+### 2. Enter Your Credentials
 
 You'll see a form. Fill in the credentials you gathered:
 
@@ -161,21 +161,21 @@ Paste your access key (starts with AKIA...)
 Paste your secret key
 ```
 
-### **3. Save Configuration**
+### 3. Save Configuration
 
 Click the **"Save Configuration"** button at the bottom.
 
-You should see: ✅ **"Amazon configuration saved successfully!"**
+You should see: **"Amazon configuration saved successfully!"**
 
-The status badge will change from ⚪ **"Not Configured"** to 🟢 **"Connected"**
+The status badge will change from **"Not Configured"** to **"Connected"**
 
 ---
 
-## ⚡ **Step 3: Supercharge with AI (Optional)**
+## Step 3: Supercharge with AI (Optional)
 
 This is where DainoStore beats tools like Channable!
 
-### **Why Use AI Optimization?**
+### Why Use AI Optimization?
 
 Amazon has **millions** of products. To stand out, you need:
 - Keyword-rich titles
@@ -185,11 +185,11 @@ Amazon has **millions** of products. To stand out, you need:
 
 Our AI does this automatically for every product!
 
-### **Enable AI Features:**
+### Enable AI Features:
 
 Still in the Amazon tab, scroll to **"AI Optimization"** section:
 
-**☑️ Optimize Titles & Descriptions**
+**Optimize Titles & Descriptions**
 - **What it does:** AI rewrites your product titles and descriptions for Amazon SEO
 - **Example:**
   - Before: "Blue Widget"
@@ -197,7 +197,7 @@ Still in the Amazon tab, scroll to **"AI Optimization"** section:
 - **Benefit:** Products rank higher in Amazon search, get more clicks
 - **Cost:** Uses AI credits (small cost per product)
 
-**☐ Auto-translate**
+**Auto-translate**
 - **What it does:** Translates products to marketplace language
 - **Example:** Selling on Amazon Mexico? Auto-translates to Spanish
 - **Benefit:** Expand internationally without manual translation
@@ -212,20 +212,20 @@ Click **"Save Configuration"** again.
 
 ---
 
-## 📦 **Step 4: Export Your Products**
+## Step 4: Export Your Products
 
 Time to list your products on Amazon!
 
-### **Select Products**
+### Select Products
 
 1. Click **"Select Products"** button
 2. You'll go to your Products page
 3. Check the boxes next to products you want to export
-4. Go back to **Marketplace Hub** → **Amazon** tab
+4. Go back to **Marketplace Hub** > **Amazon** tab
 
-**💡 Tip:** Start with 5-10 products to test, then export your full catalog.
+**Tip:** Start with 5-10 products to test, then export your full catalog.
 
-### **Start the Export**
+### Start the Export
 
 1. Make sure AI optimization is configured how you want
 2. Click the big **"Export Selected Products"** button
@@ -237,16 +237,16 @@ Your export runs in the background. You can:
 - Monitor progress in real-time
 - Come back later (job survives server restarts!)
 
-### **Monitor Progress**
+### Monitor Progress
 
 At the top of the page, you'll see:
 
 ```
-🔄 Active Jobs (1)
+Active Jobs (1)
 
 Amazon Export #1234
 AI optimizing: Blue Widget (15/30)
-━━━━━━━━━━━━━━━░░░░░░░░░░ 50%
+Progress: 50%
 ```
 
 **Progress stages you'll see:**
@@ -262,11 +262,11 @@ AI optimizing: Blue Widget (15/30)
 
 ---
 
-## 📥 **Step 5: Upload to Amazon**
+## Step 5: Upload to Amazon
 
-Once the export completes (you'll see ✅ **"Completed"**):
+Once the export completes (you'll see **"Completed"**):
 
-### **Download Your Feeds**
+### Download Your Feeds
 
 *Note: Currently feeds are generated - download feature coming soon. For now, contact support to get your feeds.*
 
@@ -276,10 +276,10 @@ You'll receive 4 XML files:
 3. **Price Feed** - Pricing
 4. **Image Feed** - Product photos
 
-### **Upload to Amazon Seller Central**
+### Upload to Amazon Seller Central
 
 1. Log in to [Amazon Seller Central](https://sellercentral.amazon.com)
-2. Go to **Inventory** → **Add Products via Upload**
+2. Go to **Inventory** > **Add Products via Upload**
 3. Click **"Upload your inventory file"**
 4. Choose **"Product Feed"** XML file
 5. Click **Upload**
@@ -290,23 +290,23 @@ You'll receive 4 XML files:
 - Upload Price Feed
 - Upload Image Feed
 
-### **Check Results**
+### Check Results
 
 After Amazon processes (10-30 min):
-1. Go to **Inventory** → **Manage Inventory**
+1. Go to **Inventory** > **Manage Inventory**
 2. Your products should appear!
 3. Check for any errors (Amazon will show warnings)
 
 ---
 
-## ✅ **Success! You're Selling on Amazon**
+## Success! You're Selling on Amazon
 
 Congratulations! Your products are now listed on the world's largest marketplace.
 
-### **What's Next?**
+### What's Next?
 
 **Keep Inventory Synced:**
-1. Return to **Marketplace Hub** → **Amazon**
+1. Return to **Marketplace Hub** > **Amazon**
 2. Click **"Sync Inventory"** whenever stock changes
 3. Keeps Amazon updated with real quantities
 
@@ -322,37 +322,37 @@ Congratulations! Your products are now listed on the world's largest marketplace
 
 ---
 
-## 💡 **Pro Tips for Success**
+## Pro Tips for Success
 
-### **1. Start Small, Scale Big**
+### 1. Start Small, Scale Big
 - Export 10 products first
 - Verify they look good on Amazon
 - Then export your full catalog
 
-### **2. Use AI Optimization**
+### 2. Use AI Optimization
 - Products with AI optimization convert ~23% better
 - Worth the small credit cost
 - Especially important for competitive categories
 
-### **3. Price Strategically**
+### 3. Price Strategically
 - Amazon fees are ~15%
 - Set price adjustment to maintain your margins
 - Example: +20% adjustment = original margin preserved
 
-### **4. High-Quality Product Data Wins**
+### 4. High-Quality Product Data Wins
 - Add detailed descriptions in your DainoStore catalog
 - Upload multiple images (5-8 is ideal)
 - Include dimensions, weight, specifications
 - Better data = better AI optimization = more sales!
 
-### **5. Monitor Your Jobs**
+### 5. Monitor Your Jobs
 - Jobs run in background (you can close the page)
 - Check back for progress
 - Jobs never lose progress (even if server restarts!)
 
 ---
 
-## 🆘 **Common Questions**
+## Common Questions
 
 **Q: Do I need to manually upload every time?**
 A: For now, yes. Auto-upload via API is coming soon! You'll just click "Export" and products will automatically appear on Amazon.
@@ -374,7 +374,7 @@ A: In the **Marketplace Hub**, check the **"Active Jobs"** and **"Recent Activit
 
 ---
 
-## 📞 **Need Help?**
+## Need Help?
 
 - **Quick Questions:** Check the Marketplace Hub tooltips
 - **Technical Issues:** See `QUEUE_SYSTEM_IMPLEMENTATION.md`
@@ -382,19 +382,19 @@ A: In the **Marketplace Hub**, check the **"Active Jobs"** and **"Recent Activit
 
 ---
 
-## 🎉 **You're All Set!**
+## You're All Set!
 
 You now have a powerful Amazon integration that:
-- ✅ Exports products with one click
-- ✅ Optimizes listings with AI
-- ✅ Syncs inventory automatically
-- ✅ Runs in background (no waiting!)
-- ✅ Never loses progress
+- Exports products with one click
+- Optimizes listings with AI
+- Syncs inventory automatically
+- Runs in background (no waiting!)
+- Never loses progress
 
-**Start selling on Amazon today!** 🚀
+**Start selling on Amazon today!**
 
 ---
 
-*Ready for eBay?* See our [eBay Setup Guide](./how-to-configure-ebay-marketplace.md)
+*Ready for eBay?* See our [eBay Setup Guide](/blog/how-to-configure-ebay-marketplace)
 
 *Last Updated: November 2025*

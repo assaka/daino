@@ -1,35 +1,35 @@
-# 🔌 Plugin Developer Guide: Job Scheduler & Background Jobs
+# Plugin Developer Guide: Job Scheduler & Background Jobs
 
 **Learn how to create scheduled tasks and background jobs from your plugins.**
 
 ---
 
-## 🎯 **What You Can Do**
+## What You Can Do
 
 As a plugin developer, you can:
-- ✅ Schedule recurring tasks (cron jobs)
-- ✅ Create background jobs that survive deployments
-- ✅ Monitor job execution from your plugin
-- ✅ Handle long-running tasks properly
+- Schedule recurring tasks (cron jobs)
+- Create background jobs that survive deployments
+- Monitor job execution from your plugin
+- Handle long-running tasks properly
 
 ---
 
-## 📅 **Creating Scheduled Jobs (Cron Jobs)**
+## Creating Scheduled Jobs (Cron Jobs)
 
-### **Use Case Examples:**
+### Use Case Examples:
 
 - Daily data sync at 2 AM
 - Hourly inventory updates
 - Weekly report generation
 - Monthly cleanup tasks
 
-### **API Endpoint:**
+### API Endpoint:
 
 ```javascript
 POST /api/cron-jobs
 ```
 
-### **Example: Daily Sync Task**
+### Example: Daily Sync Task
 
 ```javascript
 const response = await fetch('/api/cron-jobs', {
@@ -61,7 +61,7 @@ const data = await response.json();
 console.log('Cron job created:', data.job.id);
 ```
 
-### **Cron Expression Examples:**
+### Cron Expression Examples:
 
 | Expression | Meaning | Use Case |
 |------------|---------|----------|
@@ -76,22 +76,22 @@ console.log('Cron job created:', data.job.id);
 
 ---
 
-## 🚀 **Creating Background Jobs**
+## Creating Background Jobs
 
-### **Use Case Examples:**
+### Use Case Examples:
 
 - Importing large datasets
 - Exporting to external APIs
 - Processing bulk operations
 - Generating reports
 
-### **API Endpoint:**
+### API Endpoint:
 
 ```javascript
 POST /api/background-jobs/schedule
 ```
 
-### **Example: Bulk Data Import**
+### Example: Bulk Data Import
 
 ```javascript
 const response = await fetch('/api/background-jobs/schedule', {
@@ -138,9 +138,9 @@ const checkProgress = setInterval(async () => {
 
 ---
 
-## 🛠️ **Creating Custom Job Handlers**
+## Creating Custom Job Handlers
 
-### **Step 1: Create Your Job Handler**
+### Step 1: Create Your Job Handler
 
 Create a file in your plugin:
 
@@ -204,7 +204,7 @@ class MyImportJob extends BaseJobHandler {
 module.exports = MyImportJob;
 ```
 
-### **Step 2: Register Your Job Type**
+### Step 2: Register Your Job Type
 
 In your plugin's initialization:
 
@@ -218,13 +218,13 @@ function initializePlugin() {
   // Register your custom job type
   jobManager.registerJobType('plugin:my-plugin:import', MyImportJob);
 
-  console.log('✅ My Plugin job types registered');
+  console.log('My Plugin job types registered');
 }
 
 module.exports = { initializePlugin };
 ```
 
-### **Step 3: Trigger Jobs from Your Plugin**
+### Step 3: Trigger Jobs from Your Plugin
 
 ```javascript
 // From your plugin code
@@ -250,9 +250,9 @@ async function triggerImport(storeId, userId, config) {
 
 ---
 
-## 📊 **Job Types Available**
+## Job Types Available
 
-### **Standard Job Types:**
+### Standard Job Types:
 
 All plugins can use these built-in types:
 
@@ -264,7 +264,7 @@ All plugins can use these built-in types:
 | `email` | Send scheduled email | Daily reports |
 | `cleanup` | Maintenance task | Delete temp files |
 
-### **Custom Job Types:**
+### Custom Job Types:
 
 Name your types with pattern: `plugin:{plugin-name}:{action}`
 
@@ -275,9 +275,9 @@ Examples:
 
 ---
 
-## ⚙️ **Job Configuration Examples**
+## Job Configuration Examples
 
-### **Webhook Job:**
+### Webhook Job:
 
 ```javascript
 {
@@ -297,7 +297,7 @@ Examples:
 }
 ```
 
-### **API Call Job:**
+### API Call Job:
 
 ```javascript
 {
@@ -312,7 +312,7 @@ Examples:
 }
 ```
 
-### **Database Query Job:**
+### Database Query Job:
 
 ```javascript
 {
@@ -324,7 +324,7 @@ Examples:
 }
 ```
 
-### **Email Job:**
+### Email Job:
 
 ```javascript
 {
@@ -342,9 +342,9 @@ Examples:
 
 ---
 
-## 🔐 **Security Best Practices**
+## Security Best Practices
 
-### **1. Validate Plugin Ownership**
+### 1. Validate Plugin Ownership
 
 When creating jobs, always pass your `plugin_id`:
 
@@ -360,23 +360,23 @@ The system will:
 - Show it's a plugin job in the UI
 - Allow users to see which plugin created it
 
-### **2. Use Secure Credentials**
+### 2. Use Secure Credentials
 
 Don't hardcode secrets in configuration:
 
 ```javascript
-// ❌ Bad
+// Bad
 configuration: {
   api_key: 'hardcoded-key-123'
 }
 
-// ✅ Good
+// Good
 configuration: {
   api_key: process.env.MY_PLUGIN_API_KEY
 }
 ```
 
-### **3. Handle Failures Gracefully**
+### 3. Handle Failures Gracefully
 
 Use `maxRetries` appropriately:
 
@@ -389,7 +389,7 @@ Use `maxRetries` appropriately:
 
 ---
 
-## 📈 **Progress Tracking**
+## Progress Tracking
 
 Always update progress in your job handler:
 
@@ -416,7 +416,7 @@ async execute() {
 
 ---
 
-## 🎯 **Advanced: Job Priorities**
+## Advanced: Job Priorities
 
 Choose priority based on urgency:
 
@@ -429,89 +429,16 @@ Choose priority based on urgency:
 
 ---
 
-## 📖 **Full Example: Complete Plugin with Jobs**
+## Troubleshooting
 
-```javascript
-// plugins/inventory-sync/index.js
-
-const jobManager = require('@/core/BackgroundJobManager');
-const InventorySyncJob = require('./jobs/InventorySyncJob');
-
-class InventorySyncPlugin {
-  constructor(pluginId) {
-    this.pluginId = pluginId;
-  }
-
-  async initialize() {
-    // Register custom job type
-    jobManager.registerJobType('plugin:inventory-sync:full', InventorySyncJob);
-
-    // Create a daily cron job
-    await this.createDailySyncJob();
-
-    console.log('✅ Inventory Sync Plugin initialized');
-  }
-
-  async createDailySyncJob() {
-    const res = await fetch('/api/cron-jobs', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.getAdminToken()}`
-      },
-      body: JSON.stringify({
-        name: 'Daily Inventory Sync',
-        description: 'Syncs inventory with supplier API every day at 3 AM',
-        cron_expression: '0 3 * * *',
-        job_type: 'api_call',
-        configuration: {
-          url: '/api/inventory-sync/run',
-          method: 'POST'
-        },
-        plugin_id: this.pluginId,
-        is_active: true
-      })
-    });
-
-    const data = await res.json();
-    console.log('✅ Daily sync job created:', data.job.id);
-  }
-
-  async runSync(storeId, userId) {
-    const job = await jobManager.scheduleJob({
-      type: 'plugin:inventory-sync:full',
-      payload: {
-        storeId,
-        syncType: 'full'
-      },
-      priority: 'normal',
-      storeId,
-      userId,
-      metadata: {
-        pluginId: this.pluginId,
-        pluginName: 'Inventory Sync'
-      }
-    });
-
-    return job.id;
-  }
-}
-
-module.exports = InventorySyncPlugin;
-```
-
----
-
-## 🆘 **Troubleshooting**
-
-### **Job Not Running**
+### Job Not Running
 
 Check:
 - Is cron expression valid? Use [crontab.guru](https://crontab.guru)
 - Is `is_active` set to `true`?
 - Is the cron scheduler service running?
 
-### **Job Failing**
+### Job Failing
 
 Check:
 - Job execution history: `GET /api/cron-jobs/:id/executions`
@@ -519,7 +446,7 @@ Check:
 - Endpoint is accessible
 - Credentials are valid
 
-### **Progress Not Updating**
+### Progress Not Updating
 
 Ensure you call `updateProgress()` in your job handler:
 
@@ -529,7 +456,7 @@ await this.updateProgress(50, 'Halfway done');
 
 ---
 
-## 📚 **Resources**
+## Resources
 
 - **Cron Expression Tester:** https://crontab.guru
 - **Base Job Handler:** `backend/src/core/jobs/BaseJobHandler.js`
@@ -538,16 +465,16 @@ await this.updateProgress(50, 'Halfway done');
 
 ---
 
-## 🎉 **Summary**
+## Summary
 
 With DainoStore's job system, your plugins can:
-- ✅ Schedule recurring tasks
-- ✅ Run background jobs
-- ✅ Track progress in real-time
-- ✅ Survive deployments
-- ✅ Retry on failures automatically
+- Schedule recurring tasks
+- Run background jobs
+- Track progress in real-time
+- Survive deployments
+- Retry on failures automatically
 
-**Build powerful plugins with confidence!** 🚀
+**Build powerful plugins with confidence!**
 
 ---
 
