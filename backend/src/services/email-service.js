@@ -2,12 +2,16 @@ const SibApiV3Sdk = require('@getbrevo/brevo');
 const ConnectionManager = require('./database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
 const brevoService = require('./brevo-service');
+const { buildStoreUrlSync } = require('../utils/domainConfig');
 const {
   renderTemplate,
   formatOrderItemsHtml,
   formatAddress,
   getExampleData
 } = require('./email-template-variables');
+
+// Fallback logo URL
+const FALLBACK_LOGO_URL = `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/logo_red.svg`;
 
 /**
  * Email Service
@@ -64,6 +68,69 @@ class EmailService {
       return {
         primary_color: '#007bff',
         secondary_color: '#28a745'
+      };
+    }
+  }
+
+  /**
+   * Get full store data from tenant DB including settings and custom domain
+   * @param {string} storeId - Store ID
+   * @returns {Promise<Object>} Store data with logo_url and store_url
+   */
+  async getFullStoreData(storeId) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Get store data with settings
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('id, name, slug, settings')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      // Get primary custom domain if exists
+      const { data: customDomain } = await tenantDb
+        .from('custom_domains')
+        .select('domain')
+        .eq('store_id', storeId)
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const storeSlug = store?.slug || 'default';
+      const storeName = store?.name || 'Our Store';
+      const storeSettings = store?.settings || {};
+
+      // Build proper store URL
+      const storeUrl = buildStoreUrlSync({
+        customDomain: customDomain?.domain,
+        storeSlug: storeSlug
+      });
+
+      // Get logo from settings, fallback to default
+      const logoUrl = storeSettings.store_logo || FALLBACK_LOGO_URL;
+
+      return {
+        name: storeName,
+        slug: storeSlug,
+        settings: storeSettings,
+        store_url: storeUrl,
+        login_url: `${storeUrl}/login`,
+        logo_url: logoUrl,
+        custom_domain: customDomain?.domain
+      };
+    } catch (error) {
+      console.warn('⚠️ [EMAIL SERVICE] Failed to fetch full store data:', error.message);
+      // Return defaults on error
+      const fallbackUrl = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+      return {
+        name: 'Our Store',
+        slug: 'default',
+        settings: {},
+        store_url: fallbackUrl,
+        login_url: `${fallbackUrl}/login`,
+        logo_url: FALLBACK_LOGO_URL,
+        custom_domain: null
       };
     }
   }
@@ -286,28 +353,20 @@ class EmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendTransactionalEmail(storeId, templateIdentifier, data) {
-    // Ensure store name is available - fetch from tenant DB if missing or store not provided
-    if (!data.store || !data.store.name) {
-      try {
-        const ConnectionManager = require('./database/ConnectionManager');
-        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    // Always fetch full store data to ensure logo and URL are correct
+    const fullStoreData = await this.getFullStoreData(storeId);
 
-        const { data: tenantStore } = await tenantDb
-          .from('stores')
-          .select('name, settings')
-          .eq('id', storeId)
-          .maybeSingle();
-
-        if (tenantStore) {
-          data.store = {
-            ...(data.store || {}),
-            name: tenantStore.name || data.store?.name
-          };
-        }
-      } catch (err) {
-        // Failed to fetch store from tenant DB
-      }
-    }
+    // Merge full store data into data.store
+    data.store = {
+      ...(data.store || {}),
+      name: data.store?.name || fullStoreData.name,
+      slug: fullStoreData.slug,
+      settings: fullStoreData.settings,
+      store_url: fullStoreData.store_url,
+      login_url: fullStoreData.login_url,
+      logo_url: fullStoreData.logo_url,
+      custom_domain: fullStoreData.custom_domain
+    };
 
     // Build variables based on template identifier
     let variables = {};
@@ -376,9 +435,9 @@ class EmailService {
       customer_first_name: customer.first_name,
       customer_email: customer.email,
       store_name: store?.name || 'Our Store',
-      store_logo_url: store?.settings?.store_logo || `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/logo_red.svg`,
-      store_url: store?.domain || process.env.CORS_ORIGIN,
-      login_url: `${store?.domain || process.env.CORS_ORIGIN}/login`,
+      store_logo_url: store?.logo_url || FALLBACK_LOGO_URL,
+      store_url: store?.store_url || process.env.CORS_ORIGIN,
+      login_url: store?.login_url || `${process.env.CORS_ORIGIN}/login`,
       signup_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       current_year: new Date().getFullYear()
     };
@@ -397,7 +456,8 @@ class EmailService {
       customer_first_name: customer.first_name,
       customer_email: customer.email,
       store_name: store?.name || 'Our Store',
-      store_logo_url: store?.settings?.store_logo || `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/logo_red.svg`,
+      store_logo_url: store?.logo_url || FALLBACK_LOGO_URL,
+      store_url: store?.store_url || process.env.CORS_ORIGIN,
       credits_purchased: transaction.credits_purchased,
       amount_usd: `$${parseFloat(transaction.amount_usd).toFixed(2)}`,
       transaction_id: transaction.id,
@@ -430,12 +490,14 @@ class EmailService {
                                   paymentStatusRaw === 'partially_refunded' ? 'Partially Refunded' :
                                   'Pending Payment';
 
+    const storeUrl = store?.store_url || process.env.CORS_ORIGIN;
+
     return {
       customer_name: `${customer.first_name} ${customer.last_name}`,
       customer_first_name: customer.first_name,
       customer_email: customer.email || order.customer_email,
       store_name: store?.name || 'Our Store',
-      store_logo_url: store?.settings?.store_logo || `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/logo_red.svg`,
+      store_logo_url: store?.logo_url || FALLBACK_LOGO_URL,
       order_number: order.order_number,
       order_date: new Date(order.createdAt || order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       order_total: `$${parseFloat(order.total_amount).toFixed(2)}`,
@@ -453,8 +515,9 @@ class EmailService {
       tracking_url: order.tracking_url || '#',
       order_status: order.status || 'Processing',
       estimated_delivery: order.estimated_delivery || 'TBD',
-      store_url: store?.domain || process.env.CORS_ORIGIN,
-      order_details_url: `${store?.domain || process.env.CORS_ORIGIN}/order/${order.id}`,
+      store_url: storeUrl,
+      login_url: store?.login_url || `${storeUrl}/login`,
+      order_details_url: `${storeUrl}/order/${order.id}`,
       current_year: new Date().getFullYear()
     };
   }
@@ -607,19 +670,13 @@ class EmailService {
   async sendTestEmail(storeId, templateIdentifier, testEmail, languageCode = 'en') {
     const exampleData = getExampleData(templateIdentifier);
 
-    // Add store context - get from master DB
-    const { data: store, error } = await masterDbClient
-      .from('stores')
-      .select('*')
-      .eq('id', storeId)
-      .maybeSingle();
+    // Get full store data from tenant DB
+    const fullStoreData = await this.getFullStoreData(storeId);
 
-    if (error) {
-      console.error('Failed to fetch store:', error.message);
-    }
-
-    exampleData.store_name = store?.name || 'Test Store';
-    exampleData.store_url = store?.domain || process.env.CORS_ORIGIN;
+    exampleData.store_name = fullStoreData.name;
+    exampleData.store_url = fullStoreData.store_url;
+    exampleData.store_logo_url = fullStoreData.logo_url;
+    exampleData.login_url = fullStoreData.login_url;
 
     return await this.sendEmail(
       storeId,

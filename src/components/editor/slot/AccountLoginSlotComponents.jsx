@@ -760,7 +760,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           <DialogHeader>
             <DialogTitle>{t('account.email_not_configured_title', 'Email Not Configured')}</DialogTitle>
             <DialogDescription>
-              {t('account.email_not_configured_description', 'Please configure an email provider in your store settings to enable customer registration.')}
+              {t('account.email_not_configured_description', 'Please configure an email provider in Store -> Email to enable customer registration.')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end pt-4">

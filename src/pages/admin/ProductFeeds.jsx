@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SaveButton from '@/components/ui/save-button';
 import { Copy, ExternalLink, Rss, ShoppingBag, Bot, Globe, Check, RefreshCw } from "lucide-react";
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { AdminAttribute, AdminSeoSetting } from '@/api/admin-entities';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function ProductFeeds() {
-  const { store } = useStore();
+  const { selectedStore: store } = useStoreSelection();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [attributes, setAttributes] = useState([]);
