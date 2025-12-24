@@ -648,6 +648,9 @@ function BlogIndex() {
   const tagsParam = searchParams.get('tags') || '';
   const selectedTags = tagsParam ? tagsParam.split(',').filter(Boolean) : [];
 
+  // Get search query from URL
+  const searchQuery = searchParams.get('q') || '';
+
   const articles = Object.entries(BLOG_ARTICLES).map(([slug, meta]) => ({
     slug,
     ...meta
@@ -656,10 +659,23 @@ function BlogIndex() {
   // Get all unique tags used in articles
   const usedTags = [...new Set(articles.flatMap(a => a.tags || []))].sort();
 
-  // Filter articles by selected tags (show articles that have ANY of the selected tags)
-  const filteredArticles = selectedTags.length > 0
-    ? articles.filter(a => a.tags?.some(tag => selectedTags.includes(tag)))
-    : articles;
+  // Filter articles by search query and selected tags
+  let filteredArticles = articles;
+
+  // Apply search filter
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    filteredArticles = filteredArticles.filter(a =>
+      a.title.toLowerCase().includes(query) ||
+      a.description.toLowerCase().includes(query) ||
+      a.category.toLowerCase().includes(query)
+    );
+  }
+
+  // Apply tag filter (show articles that have ANY of the selected tags)
+  if (selectedTags.length > 0) {
+    filteredArticles = filteredArticles.filter(a => a.tags?.some(tag => selectedTags.includes(tag)));
+  }
 
   // Group by category
   const categories = filteredArticles.reduce((acc, article) => {
@@ -685,11 +701,22 @@ function BlogIndex() {
       newTags = [...selectedTags, tag];
     }
 
-    if (newTags.length === 0) {
-      setSearchParams({});
-    } else {
-      setSearchParams({ tags: newTags.join(',') });
-    }
+    const params = {};
+    if (searchQuery) params.q = searchQuery;
+    if (newTags.length > 0) params.tags = newTags.join(',');
+    setSearchParams(params);
+  };
+
+  const handleSearch = (e) => {
+    const query = e.target.value;
+    const params = {};
+    if (query) params.q = query;
+    if (selectedTags.length > 0) params.tags = selectedTags.join(',');
+    setSearchParams(params);
+  };
+
+  const clearFilters = () => {
+    setSearchParams({});
   };
 
   return (
@@ -715,6 +742,33 @@ function BlogIndex() {
             </p>
           </motion.div>
 
+          {/* Search Input */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="mb-6"
+          >
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-neutral-900 placeholder-neutral-400"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => handleSearch({ target: { value: '' } })}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </motion.div>
+
           {/* Tag Filter Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -728,9 +782,9 @@ function BlogIndex() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge
-                onClick={() => setSearchParams({})}
+                onClick={clearFilters}
                 className={`cursor-pointer px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
-                  selectedTags.length === 0
+                  selectedTags.length === 0 && !searchQuery
                     ? 'bg-yellow-400 text-black border-yellow-500 hover:bg-yellow-500'
                     : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-100'
                 }`}
@@ -759,22 +813,39 @@ function BlogIndex() {
           </motion.div>
 
           {/* Results count when filtered */}
-          {selectedTags.length > 0 && (
+          {(selectedTags.length > 0 || searchQuery) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="mb-6"
             >
               <p className="text-neutral-600 flex items-center gap-2 flex-wrap">
-                Showing {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''} tagged with{' '}
-                {selectedTags.map((tag, idx) => (
-                  <span key={tag} className="inline-flex items-center gap-1">
-                    <Badge className="bg-yellow-400 text-black border-yellow-500">
-                      {TAGS[tag]?.label}
-                    </Badge>
-                    {idx < selectedTags.length - 1 && <span className="text-neutral-400">or</span>}
+                Showing {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''}
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1">
+                    matching "<span className="font-medium text-neutral-900">{searchQuery}</span>"
                   </span>
-                ))}
+                )}
+                {searchQuery && selectedTags.length > 0 && <span className="text-neutral-400">with</span>}
+                {selectedTags.length > 0 && (
+                  <>
+                    {!searchQuery && ' tagged with '}
+                    {selectedTags.map((tag, idx) => (
+                      <span key={tag} className="inline-flex items-center gap-1">
+                        <Badge className="bg-yellow-400 text-black border-yellow-500">
+                          {TAGS[tag]?.label}
+                        </Badge>
+                        {idx < selectedTags.length - 1 && <span className="text-neutral-400">or</span>}
+                      </span>
+                    ))}
+                  </>
+                )}
+                <button
+                  onClick={clearFilters}
+                  className="text-indigo-600 hover:underline ml-2"
+                >
+                  Clear filters
+                </button>
               </p>
             </motion.div>
           )}
@@ -785,9 +856,14 @@ function BlogIndex() {
               animate={{ opacity: 1 }}
               className="text-center py-16"
             >
-              <p className="text-neutral-500 text-lg">No articles found with this tag.</p>
+              <Search className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
+              <p className="text-neutral-500 text-lg">
+                {searchQuery
+                  ? `No articles found matching "${searchQuery}"`
+                  : 'No articles found with the selected filters.'}
+              </p>
               <button
-                onClick={() => setSearchParams({})}
+                onClick={clearFilters}
                 className="mt-4 text-indigo-600 hover:underline"
               >
                 View all articles

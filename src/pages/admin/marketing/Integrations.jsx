@@ -20,15 +20,15 @@ const INTEGRATIONS = {
   klaviyo: {
     id: 'klaviyo',
     name: 'Klaviyo',
-    description: 'Advanced email marketing and SMS automation platform',
+    description: 'Sync customers hourly to Klaviyo for advanced email flows and SMS campaigns',
     logo: '/integrations/klaviyo.svg',
     logoFallback: '🎯',
     color: 'from-black to-gray-800',
     features: [
-      'Advanced Segmentation',
-      'Predictive Analytics',
-      'SMS Marketing',
-      'Product Recommendations'
+      'Auto-sync customer profiles',
+      'Track purchases as events',
+      'Predictive analytics & AI',
+      'SMS marketing support'
     ],
     docsUrl: 'https://developers.klaviyo.com/',
     available: true
@@ -36,15 +36,15 @@ const INTEGRATIONS = {
   mailchimp: {
     id: 'mailchimp',
     name: 'Mailchimp',
-    description: 'Popular all-in-one marketing platform',
+    description: 'Keep your Mailchimp audience in sync with your store customers',
     logo: '/integrations/mailchimp.svg',
     logoFallback: '🐵',
     color: 'from-yellow-400 to-yellow-500',
     features: [
-      'Email Campaigns',
-      'Marketing Automation',
-      'Landing Pages',
-      'Audience Management'
+      'Auto-sync subscribers',
+      'Merge fields for personalization',
+      'Tag-based segmentation',
+      'Landing page integration'
     ],
     docsUrl: 'https://mailchimp.com/developer/',
     available: true
@@ -52,15 +52,15 @@ const INTEGRATIONS = {
   hubspot: {
     id: 'hubspot',
     name: 'HubSpot',
-    description: 'Complete CRM and marketing automation suite',
+    description: 'Sync customers as contacts and orders as deals to your HubSpot CRM',
     logo: '/integrations/hubspot.svg',
     logoFallback: '🟠',
     color: 'from-orange-500 to-orange-600',
     features: [
-      'CRM Integration',
-      'Marketing Hub',
-      'Sales Pipeline',
-      'Customer Service'
+      'Auto-create contacts',
+      'Orders become deals',
+      'Activity timeline tracking',
+      'Sales pipeline visibility'
     ],
     docsUrl: 'https://developers.hubspot.com/',
     available: true
@@ -289,6 +289,54 @@ export default function Integrations() {
           Connect third-party marketing platforms to sync customers and track campaigns
         </p>
       </div>
+
+      {/* Info Section - When to use integrations */}
+      <Card className="mb-8 border-blue-200 bg-blue-50/50">
+        <CardContent className="pt-6">
+          <div className="flex gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Info className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 mb-2">Do I need these integrations?</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                <strong>These integrations are optional.</strong> Catalyst includes built-in email campaigns,
+                customer segmentation, RFM scoring, and marketing automations that work without any external platform.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-purple-500" />
+                    <span className="font-medium text-sm">Built-in Features (No Integration Needed)</span>
+                  </div>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Send email campaigns to segments</li>
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Create automated workflows</li>
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Customer tagging & segmentation</li>
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> RFM scoring & analytics</li>
+                  </ul>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Plug className="w-4 h-4 text-orange-500" />
+                    <span className="font-medium text-sm">Why Connect an Integration?</span>
+                  </div>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Already using Klaviyo/Mailchimp/HubSpot</li>
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Need advanced email design tools</li>
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Want unified CRM across platforms</li>
+                    <li className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Require platform-specific features</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.values(INTEGRATIONS).map((integration) => {
