@@ -161,12 +161,14 @@ function LayoutInner({ children, currentPageName }) {
     "Catalog": false,
     "Sales": false,
     "Content": false,
-    "Marketing": false,
-    "SEO": false, // Added new group for SEO
-    "Plugins": false, // Added new group for Plugins
-    "Import & Export": false, // Added new group for Import & Export
+    "Analytics": false, // Tracking & insights
+    "Marketing": false, // Email campaigns & automations
+    "CRM": false, // Sales pipeline & leads
+    "SEO": false,
+    "Plugins": false,
+    "Import & Export": false,
     "Store": false,
-    "Advanced": false, // Added new group for Advanced features
+    "Advanced": false,
   });
   const [dynamicNavItems, setDynamicNavItems] = useState([]);
 

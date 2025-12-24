@@ -136,6 +136,14 @@ const brevoOAuthRoutes = require('./routes/brevo-oauth');
 const storefrontsRoutes = require('./routes/storefronts');
 const demoDataRoutes = require('./routes/demo-data');
 
+// Marketing and CRM routes
+const segmentsRoutes = require('./routes/segments');
+const automationsRoutes = require('./routes/automations');
+const campaignsRoutes = require('./routes/campaigns');
+const rfmRoutes = require('./routes/rfm');
+const crmRoutes = require('./routes/crm');
+const marketingIntegrationsRoutes = require('./routes/marketing-integrations');
+
 // Import usage tracking middleware
 const {
   trackApiCall,
@@ -1142,6 +1150,14 @@ app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/ab-testing', abTestingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/analytics-dashboard', analyticsDashboardRoutes);
+
+// Marketing and CRM routes
+app.use('/api/segments', authMiddleware, segmentsRoutes);
+app.use('/api/automations', authMiddleware, automationsRoutes);
+app.use('/api/campaigns', authMiddleware, campaignsRoutes);
+app.use('/api/rfm', authMiddleware, rfmRoutes);
+app.use('/api/crm', crmRoutes); // CRM: pipelines, deals, leads, activities (auth in routes via storeOwnerOnly)
+app.use('/api/marketing-integrations', marketingIntegrationsRoutes); // Klaviyo, Mailchimp, HubSpot (auth in routes)
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/custom-analytics-events', customAnalyticsEventsRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);

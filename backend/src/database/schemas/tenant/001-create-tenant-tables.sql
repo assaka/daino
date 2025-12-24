@@ -773,6 +773,126 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- Email Marketing & CRM ENUMs
+DO $$ BEGIN
+    CREATE TYPE enum_email_campaigns_status AS ENUM (
+    'draft',
+    'scheduled',
+    'sending',
+    'sent',
+    'paused',
+    'cancelled'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_email_campaigns_type AS ENUM (
+    'broadcast',
+    'automated',
+    'ab_test'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_campaign_recipients_status AS ENUM (
+    'pending',
+    'sent',
+    'delivered',
+    'opened',
+    'clicked',
+    'bounced',
+    'failed',
+    'unsubscribed'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_customer_segments_type AS ENUM (
+    'dynamic',
+    'static',
+    'rfm'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_automation_workflows_status AS ENUM (
+    'draft',
+    'active',
+    'paused',
+    'archived'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_automation_workflows_trigger AS ENUM (
+    'abandoned_cart',
+    'welcome',
+    'post_purchase',
+    'birthday',
+    'win_back',
+    'custom_event'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_automation_enrollments_status AS ENUM (
+    'active',
+    'completed',
+    'cancelled',
+    'failed'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_crm_deals_status AS ENUM (
+    'open',
+    'won',
+    'lost'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_crm_leads_status AS ENUM (
+    'new',
+    'contacted',
+    'qualified',
+    'converted',
+    'lost'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE enum_crm_activities_type AS ENUM (
+    'email',
+    'call',
+    'meeting',
+    'note',
+    'task',
+    'deal_created',
+    'stage_changed'
+);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- ============================================
 -- SECTION 2: FUNCTIONS
 -- ============================================
@@ -1909,6 +2029,292 @@ CREATE TABLE IF NOT EXISTS email_templates (
   default_template_content TEXT,
   default_html_content TEXT
 );
+
+-- ============================================
+-- EMAIL MARKETING TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS email_campaigns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  from_name VARCHAR(100),
+  from_email VARCHAR(255),
+  content_type VARCHAR(20) DEFAULT 'html',
+  html_content TEXT,
+  template_id UUID,
+  status VARCHAR(50) DEFAULT 'draft',
+  campaign_type VARCHAR(50) DEFAULT 'broadcast',
+  segment_id UUID,
+  scheduled_at TIMESTAMP WITH TIME ZONE,
+  started_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  total_recipients INTEGER DEFAULT 0,
+  sent_count INTEGER DEFAULT 0,
+  failed_count INTEGER DEFAULT 0,
+  open_count INTEGER DEFAULT 0,
+  click_count INTEGER DEFAULT 0,
+  unsubscribe_count INTEGER DEFAULT 0,
+  bounce_count INTEGER DEFAULT 0,
+  settings JSONB DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS email_campaign_recipients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID NOT NULL,
+  customer_id UUID NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  provider_message_id VARCHAR(255),
+  sent_at TIMESTAMP WITH TIME ZONE,
+  delivered_at TIMESTAMP WITH TIME ZONE,
+  opened_at TIMESTAMP WITH TIME ZONE,
+  clicked_at TIMESTAMP WITH TIME ZONE,
+  error_message TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS email_unsubscribes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  customer_id UUID,
+  reason VARCHAR(100),
+  source_campaign_id UUID,
+  unsubscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(store_id, email)
+);
+
+-- ============================================
+-- CUSTOMER SEGMENTATION TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS customer_segments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  segment_type VARCHAR(50) DEFAULT 'dynamic',
+  filters JSONB NOT NULL DEFAULT '[]',
+  rfm_config JSONB,
+  customer_count INTEGER DEFAULT 0,
+  last_calculated_at TIMESTAMP WITH TIME ZONE,
+  is_active BOOLEAN DEFAULT true,
+  is_system BOOLEAN DEFAULT false,
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS customer_segment_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  segment_id UUID NOT NULL,
+  customer_id UUID NOT NULL,
+  added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  added_by UUID,
+  UNIQUE(segment_id, customer_id)
+);
+
+CREATE TABLE IF NOT EXISTS customer_rfm_scores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  customer_id UUID NOT NULL,
+  recency_score INTEGER CHECK (recency_score BETWEEN 1 AND 5),
+  frequency_score INTEGER CHECK (frequency_score BETWEEN 1 AND 5),
+  monetary_score INTEGER CHECK (monetary_score BETWEEN 1 AND 5),
+  rfm_score VARCHAR(3),
+  rfm_segment VARCHAR(50),
+  last_calculated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(store_id, customer_id)
+);
+
+-- ============================================
+-- MARKETING AUTOMATION TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS automation_workflows (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  trigger_type VARCHAR(100) NOT NULL,
+  trigger_config JSONB NOT NULL DEFAULT '{}',
+  steps JSONB NOT NULL DEFAULT '[]',
+  status VARCHAR(50) DEFAULT 'draft',
+  version INTEGER DEFAULT 1,
+  total_enrolled INTEGER DEFAULT 0,
+  total_completed INTEGER DEFAULT 0,
+  total_converted INTEGER DEFAULT 0,
+  settings JSONB DEFAULT '{}',
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS automation_enrollments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workflow_id UUID NOT NULL,
+  customer_id UUID NOT NULL,
+  trigger_data JSONB DEFAULT '{}',
+  current_step INTEGER DEFAULT 0,
+  status VARCHAR(50) DEFAULT 'active',
+  next_action_at TIMESTAMP WITH TIME ZONE,
+  enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed_at TIMESTAMP WITH TIME ZONE,
+  cancelled_at TIMESTAMP WITH TIME ZONE,
+  metadata JSONB DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS automation_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  enrollment_id UUID NOT NULL,
+  step_index INTEGER NOT NULL,
+  action_type VARCHAR(100) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  result JSONB,
+  error_message TEXT,
+  executed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- CRM TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS crm_pipelines (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  is_default BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS crm_pipeline_stages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pipeline_id UUID NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  color VARCHAR(20) DEFAULT '#3b82f6',
+  probability INTEGER DEFAULT 0 CHECK (probability BETWEEN 0 AND 100),
+  sort_order INTEGER DEFAULT 0,
+  is_won BOOLEAN DEFAULT false,
+  is_lost BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS crm_leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  company VARCHAR(255),
+  phone VARCHAR(50),
+  source VARCHAR(100),
+  status VARCHAR(50) DEFAULT 'new',
+  score INTEGER DEFAULT 0,
+  assigned_to UUID,
+  converted_customer_id UUID,
+  converted_at TIMESTAMP WITH TIME ZONE,
+  tags JSONB DEFAULT '[]',
+  custom_fields JSONB DEFAULT '{}',
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS crm_deals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  pipeline_id UUID NOT NULL,
+  stage_id UUID NOT NULL,
+  customer_id UUID,
+  lead_id UUID,
+  name VARCHAR(255) NOT NULL,
+  value NUMERIC(12, 2) DEFAULT 0,
+  currency VARCHAR(3) DEFAULT 'USD',
+  probability INTEGER DEFAULT 0,
+  expected_close_date DATE,
+  actual_close_date DATE,
+  status VARCHAR(50) DEFAULT 'open',
+  lost_reason VARCHAR(255),
+  source VARCHAR(100),
+  assigned_to UUID,
+  notes TEXT,
+  tags JSONB DEFAULT '[]',
+  custom_fields JSONB DEFAULT '{}',
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS crm_activities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  activity_type VARCHAR(100) NOT NULL,
+  subject VARCHAR(255),
+  description TEXT,
+  deal_id UUID,
+  lead_id UUID,
+  customer_id UUID,
+  due_date TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  is_completed BOOLEAN DEFAULT false,
+  created_by UUID,
+  assigned_to UUID,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- MARKETING SYNC TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS marketing_sync_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  integration_type VARCHAR(50) NOT NULL,
+  sync_type VARCHAR(50) NOT NULL,
+  direction VARCHAR(10) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  records_processed INTEGER DEFAULT 0,
+  records_created INTEGER DEFAULT 0,
+  records_updated INTEGER DEFAULT 0,
+  records_failed INTEGER DEFAULT 0,
+  error_message TEXT,
+  started_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for Email Marketing & CRM tables
+CREATE INDEX IF NOT EXISTS idx_email_campaigns_store ON email_campaigns(store_id);
+CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_email_campaigns_scheduled ON email_campaigns(scheduled_at) WHERE status = 'scheduled';
+CREATE INDEX IF NOT EXISTS idx_campaign_recipients_campaign ON email_campaign_recipients(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_recipients_status ON email_campaign_recipients(status);
+CREATE INDEX IF NOT EXISTS idx_customer_segments_store ON customer_segments(store_id);
+CREATE INDEX IF NOT EXISTS idx_segment_members_segment ON customer_segment_members(segment_id);
+CREATE INDEX IF NOT EXISTS idx_segment_members_customer ON customer_segment_members(customer_id);
+CREATE INDEX IF NOT EXISTS idx_rfm_scores_store_customer ON customer_rfm_scores(store_id, customer_id);
+CREATE INDEX IF NOT EXISTS idx_automation_workflows_store ON automation_workflows(store_id);
+CREATE INDEX IF NOT EXISTS idx_automation_enrollments_workflow ON automation_enrollments(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_automation_enrollments_next_action ON automation_enrollments(next_action_at) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_crm_pipelines_store ON crm_pipelines(store_id);
+CREATE INDEX IF NOT EXISTS idx_crm_deals_pipeline ON crm_deals(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_crm_deals_stage ON crm_deals(stage_id);
+CREATE INDEX IF NOT EXISTS idx_crm_deals_customer ON crm_deals(customer_id);
+CREATE INDEX IF NOT EXISTS idx_crm_leads_store ON crm_leads(store_id);
+CREATE INDEX IF NOT EXISTS idx_crm_activities_deal ON crm_activities(deal_id);
+CREATE INDEX IF NOT EXISTS idx_crm_activities_lead ON crm_activities(lead_id);
 
 CREATE TABLE IF NOT EXISTS heatmap_aggregations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4275,6 +4681,62 @@ ALTER TABLE wishlists ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (prod
 ALTER TABLE wishlists ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
 ALTER TABLE wishlists ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+-- Email Marketing & CRM Foreign Keys
+ALTER TABLE email_campaigns ADD CONSTRAINT email_campaigns_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE email_campaigns ADD CONSTRAINT email_campaigns_template_id_fkey FOREIGN KEY (template_id) REFERENCES email_templates(id) ON DELETE SET NULL;
+ALTER TABLE email_campaigns ADD CONSTRAINT email_campaigns_segment_id_fkey FOREIGN KEY (segment_id) REFERENCES customer_segments(id) ON DELETE SET NULL;
+ALTER TABLE email_campaigns ADD CONSTRAINT email_campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE email_campaign_recipients ADD CONSTRAINT email_campaign_recipients_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE CASCADE;
+ALTER TABLE email_campaign_recipients ADD CONSTRAINT email_campaign_recipients_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+ALTER TABLE email_unsubscribes ADD CONSTRAINT email_unsubscribes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE email_unsubscribes ADD CONSTRAINT email_unsubscribes_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL;
+ALTER TABLE email_unsubscribes ADD CONSTRAINT email_unsubscribes_campaign_id_fkey FOREIGN KEY (source_campaign_id) REFERENCES email_campaigns(id) ON DELETE SET NULL;
+
+ALTER TABLE customer_segments ADD CONSTRAINT customer_segments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE customer_segments ADD CONSTRAINT customer_segments_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE customer_segment_members ADD CONSTRAINT customer_segment_members_segment_id_fkey FOREIGN KEY (segment_id) REFERENCES customer_segments(id) ON DELETE CASCADE;
+ALTER TABLE customer_segment_members ADD CONSTRAINT customer_segment_members_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+ALTER TABLE customer_segment_members ADD CONSTRAINT customer_segment_members_added_by_fkey FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE customer_rfm_scores ADD CONSTRAINT customer_rfm_scores_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE customer_rfm_scores ADD CONSTRAINT customer_rfm_scores_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+ALTER TABLE automation_workflows ADD CONSTRAINT automation_workflows_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE automation_workflows ADD CONSTRAINT automation_workflows_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE automation_enrollments ADD CONSTRAINT automation_enrollments_workflow_id_fkey FOREIGN KEY (workflow_id) REFERENCES automation_workflows(id) ON DELETE CASCADE;
+ALTER TABLE automation_enrollments ADD CONSTRAINT automation_enrollments_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+ALTER TABLE automation_logs ADD CONSTRAINT automation_logs_enrollment_id_fkey FOREIGN KEY (enrollment_id) REFERENCES automation_enrollments(id) ON DELETE CASCADE;
+
+ALTER TABLE crm_pipelines ADD CONSTRAINT crm_pipelines_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE crm_pipeline_stages ADD CONSTRAINT crm_pipeline_stages_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES crm_pipelines(id) ON DELETE CASCADE;
+
+ALTER TABLE crm_leads ADD CONSTRAINT crm_leads_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE crm_leads ADD CONSTRAINT crm_leads_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE crm_leads ADD CONSTRAINT crm_leads_converted_customer_id_fkey FOREIGN KEY (converted_customer_id) REFERENCES customers(id) ON DELETE SET NULL;
+
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES crm_pipelines(id) ON DELETE CASCADE;
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES crm_pipeline_stages(id) ON DELETE CASCADE;
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL;
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES crm_leads(id) ON DELETE SET NULL;
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE crm_deals ADD CONSTRAINT crm_deals_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE crm_activities ADD CONSTRAINT crm_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE crm_activities ADD CONSTRAINT crm_activities_deal_id_fkey FOREIGN KEY (deal_id) REFERENCES crm_deals(id) ON DELETE SET NULL;
+ALTER TABLE crm_activities ADD CONSTRAINT crm_activities_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES crm_leads(id) ON DELETE SET NULL;
+ALTER TABLE crm_activities ADD CONSTRAINT crm_activities_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL;
+ALTER TABLE crm_activities ADD CONSTRAINT crm_activities_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE crm_activities ADD CONSTRAINT crm_activities_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE marketing_sync_logs ADD CONSTRAINT marketing_sync_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 -- ALTER TABLE storage.objects ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
 --

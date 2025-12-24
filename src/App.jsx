@@ -419,6 +419,19 @@ function App() {
           <Route path="/admin/heatmap-analytics" element={<PageWrapper Component={Pages.HeatmapAnalytics} pageName="HEATMAPS" />} />
           <Route path="/admin/ab-testing" element={<PageWrapper Component={Pages.ABTesting} pageName="ABTESTING" />} />
           <Route path="/admin/customer-activity" element={<PageWrapper Component={Pages.CustomerActivity} pageName="CUSTOMER_ACTIVITY" />} />
+
+          {/* Marketing Routes */}
+          <Route path="/admin/marketing/segments" element={<PageWrapper Component={Pages.Segments} pageName="MARKETING_SEGMENTS" />} />
+          <Route path="/admin/marketing/automations" element={<PageWrapper Component={Pages.Automations} pageName="MARKETING_AUTOMATIONS" />} />
+          <Route path="/admin/marketing/campaigns" element={<PageWrapper Component={Pages.Campaigns} pageName="MARKETING_CAMPAIGNS" />} />
+          <Route path="/admin/marketing/integrations" element={<PageWrapper Component={Pages.MarketingIntegrations} pageName="MARKETING_INTEGRATIONS" />} />
+
+          {/* CRM Routes */}
+          <Route path="/admin/crm" element={<PageWrapper Component={Pages.CrmDashboard} pageName="CRM_DASHBOARD" />} />
+          <Route path="/admin/crm/deals" element={<PageWrapper Component={Pages.CrmDeals} pageName="CRM_DEALS" />} />
+          <Route path="/admin/crm/leads" element={<PageWrapper Component={Pages.CrmLeads} pageName="CRM_LEADS" />} />
+          <Route path="/admin/crm/pipelines" element={<PageWrapper Component={Pages.CrmPipelines} pageName="CRM_PIPELINES" />} />
+          <Route path="/admin/crm/activities" element={<PageWrapper Component={Pages.CrmActivities} pageName="CRM_ACTIVITIES" />} />
           <Route path="/admin/seo-tools/settings" element={<PageWrapper Component={Pages.SeoSettings} pageName="seo-tools/settings" />} />
           <Route path="/admin/seo-tools/templates" element={<PageWrapper Component={Pages.SeoTemplates} pageName="seo-tools/templates" />} />
           <Route path="/admin/seo-tools/redirects" element={<PageWrapper Component={Pages.SeoRedirects} pageName="seo-tools/redirects" />} />

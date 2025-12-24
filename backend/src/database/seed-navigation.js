@@ -35,46 +35,59 @@ const allNavItems = [
   { key: 'file_library', label: 'File Library', icon: 'Upload', route: '/admin/file-library', order: 32, category: 'content' },
   { key: 'cookie_consent', label: 'Cookie Consent', icon: 'Shield', route: '/admin/cookie-consent', order: 33, category: 'content' },
 
-  // Marketing
-  { key: 'analytics', label: 'Analytics', icon: 'BarChart3', route: '/admin/analytics', order: 40, category: 'marketing' },
-  { key: 'heatmaps', label: 'Heatmaps', icon: 'Activity', route: '/admin/heatmaps', order: 41, category: 'marketing' },
-  { key: 'ab_testing', label: 'A/B Testing', icon: 'FlaskConical', route: '/admin/ab-testing', order: 42, category: 'marketing' },
-  { key: 'customer_activity', label: 'Customer Activity', icon: 'Users', route: '/admin/customer-activity', order: 43, category: 'marketing' },
+  // Analytics (tracking & insights)
+  { key: 'analytics', label: 'Analytics', icon: 'BarChart3', route: '/admin/analytics', order: 40, category: 'analytics' },
+  { key: 'heatmaps', label: 'Heatmaps', icon: 'Activity', route: '/admin/heatmaps', order: 41, category: 'analytics' },
+  { key: 'ab_testing', label: 'A/B Testing', icon: 'FlaskConical', route: '/admin/ab-testing', order: 42, category: 'analytics' },
+  { key: 'customer_activity', label: 'Customer Activity', icon: 'Users', route: '/admin/customer-activity', order: 43, category: 'analytics' },
+
+  // Marketing (email campaigns & automations)
+  { key: 'campaigns', label: 'Campaigns', icon: 'Mail', route: '/admin/marketing/campaigns', order: 44, category: 'marketing' },
+  { key: 'automations', label: 'Automations', icon: 'Workflow', route: '/admin/marketing/automations', order: 45, category: 'marketing' },
+  { key: 'segments', label: 'Segments', icon: 'UsersRound', route: '/admin/marketing/segments', order: 46, category: 'marketing' },
+  { key: 'marketing_integrations', label: 'Integrations', icon: 'Plug', route: '/admin/marketing/integrations', order: 47, category: 'marketing' },
+
+  // CRM (sales pipeline & leads)
+  { key: 'crm_dashboard', label: 'CRM Dashboard', icon: 'LayoutDashboard', route: '/admin/crm', order: 48, category: 'crm' },
+  { key: 'crm_pipelines', label: 'Pipelines', icon: 'GitBranch', route: '/admin/crm/pipelines', order: 49, category: 'crm' },
+  { key: 'crm_deals', label: 'Deals', icon: 'Handshake', route: '/admin/crm/deals', order: 50, category: 'crm' },
+  { key: 'crm_leads', label: 'Leads', icon: 'UserPlus', route: '/admin/crm/leads', order: 51, category: 'crm' },
+  { key: 'crm_activities', label: 'Activities', icon: 'ListTodo', route: '/admin/crm/activities', order: 52, category: 'crm' },
 
   // SEO
-  { key: 'seo_settings', label: 'SEO Settings', icon: 'Search', route: '/admin/seo-tools/settings', order: 50, category: 'seo' },
-  { key: 'seo_templates', label: 'SEO Templates', icon: 'FileText', route: '/admin/seo-tools/templates', order: 51, category: 'seo' },
-  { key: 'seo_redirects', label: 'Redirects', icon: 'RefreshCw', route: '/admin/seo-tools/redirects', order: 52, category: 'seo' },
-  { key: 'seo_canonical', label: 'Canonical URLs', icon: 'Link', route: '/admin/seo-tools/canonical', order: 53, category: 'seo' },
-  { key: 'seo_hreflang', label: 'Hreflang', icon: 'Globe', route: '/admin/seo-tools/hreflang', order: 54, category: 'seo' },
-  { key: 'seo_robots', label: 'Robots.txt', icon: 'Bot', route: '/admin/seo-tools/robots', order: 55, category: 'seo' },
-  { key: 'seo_social', label: 'Social Media', icon: 'Share2', route: '/admin/seo-tools/social', order: 56, category: 'seo' },
-  { key: 'seo_report', label: 'SEO Report', icon: 'FileText', route: '/admin/seo-tools/report', order: 57, category: 'seo' },
-  { key: 'xml_sitemap', label: 'XML Sitemap', icon: 'FileCode', route: '/admin/xml-sitemap', order: 58, category: 'seo' },
-  { key: 'html_sitemap', label: 'HTML Sitemap', icon: 'FileText', route: '/admin/html-sitemap', order: 59, category: 'seo' },
+  { key: 'seo_settings', label: 'SEO Settings', icon: 'Search', route: '/admin/seo-tools/settings', order: 60, category: 'seo' },
+  { key: 'seo_templates', label: 'SEO Templates', icon: 'FileText', route: '/admin/seo-tools/templates', order: 61, category: 'seo' },
+  { key: 'seo_redirects', label: 'Redirects', icon: 'RefreshCw', route: '/admin/seo-tools/redirects', order: 62, category: 'seo' },
+  { key: 'seo_canonical', label: 'Canonical URLs', icon: 'Link', route: '/admin/seo-tools/canonical', order: 63, category: 'seo' },
+  { key: 'seo_hreflang', label: 'Hreflang', icon: 'Globe', route: '/admin/seo-tools/hreflang', order: 64, category: 'seo' },
+  { key: 'seo_robots', label: 'Robots.txt', icon: 'Bot', route: '/admin/seo-tools/robots', order: 65, category: 'seo' },
+  { key: 'seo_social', label: 'Social Media', icon: 'Share2', route: '/admin/seo-tools/social', order: 66, category: 'seo' },
+  { key: 'seo_report', label: 'SEO Report', icon: 'FileText', route: '/admin/seo-tools/report', order: 67, category: 'seo' },
+  { key: 'xml_sitemap', label: 'XML Sitemap', icon: 'FileCode', route: '/admin/xml-sitemap', order: 68, category: 'seo' },
+  { key: 'html_sitemap', label: 'HTML Sitemap', icon: 'FileText', route: '/admin/html-sitemap', order: 69, category: 'seo' },
 
   // Import/Export
-  { key: 'akeneo_integration', label: 'Akeneo', icon: 'Database', route: '/admin/akeneo-integration', order: 60, category: 'import_export' },
-  { key: 'shopify_integration', label: 'Shopify', icon: 'ShoppingBag', route: '/admin/shopify-integration', order: 64, category: 'import_export' },
+  { key: 'akeneo_integration', label: 'Akeneo', icon: 'Database', route: '/admin/akeneo-integration', order: 70, category: 'import_export' },
+  { key: 'shopify_integration', label: 'Shopify', icon: 'ShoppingBag', route: '/admin/shopify-integration', order: 71, category: 'import_export' },
 
   // Store Settings
-  { key: 'settings', label: 'General Settings', icon: 'Settings', route: '/admin/settings', order: 70, category: 'store' },
-  { key: 'theme_layout', label: 'Theme & Layout', icon: 'Palette', route: '/admin/theme-layout', order: 71, category: 'store' },
-  { key: 'media_storage', label: 'Media Storage', icon: 'Image', route: '/admin/media-storage', order: 72, category: 'store' },
-  { key: 'database_integrations', label: 'Database', icon: 'Database', route: '/admin/database-integrations', order: 73, category: 'store' },
-  { key: 'custom_domains', label: 'Custom Domains', icon: 'Globe', route: '/admin/custom-domains', order: 74, category: 'store' },
+  { key: 'settings', label: 'General Settings', icon: 'Settings', route: '/admin/settings', order: 80, category: 'store' },
+  { key: 'theme_layout', label: 'Theme & Layout', icon: 'Palette', route: '/admin/theme-layout', order: 81, category: 'store' },
+  { key: 'media_storage', label: 'Media Storage', icon: 'Image', route: '/admin/media-storage', order: 82, category: 'store' },
+  { key: 'database_integrations', label: 'Database', icon: 'Database', route: '/admin/database-integrations', order: 83, category: 'store' },
+  { key: 'custom_domains', label: 'Custom Domains', icon: 'Globe', route: '/admin/custom-domains', order: 84, category: 'store' },
   // Stores moved to dropdown menu (View Storefront, Billing, Team, Stores)
-  // { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order: 75, category: 'store' },
-  { key: 'supabase', label: 'Supabase', icon: 'Database', route: '/admin/supabase', order: 76, category: 'store' },
+  // { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order: 85, category: 'store' },
+  { key: 'supabase', label: 'Supabase', icon: 'Database', route: '/admin/supabase', order: 86, category: 'store' },
 
   // Advanced
-  { key: 'monitoring_dashboard', label: 'Monitoring', icon: 'Activity', route: '/admin/monitoring-dashboard', order: 80, category: 'advanced' },
-  { key: 'scheduled_jobs', label: 'Scheduled Jobs', icon: 'Calendar', route: '/admin/scheduled-jobs', order: 81, category: 'advanced' },
-  { key: 'billing', label: 'Billing', icon: 'Wallet', route: '/admin/billing', order: 82, category: 'advanced' },
-  { key: 'team', label: 'Team', icon: 'Users', route: '/admin/team', order: 83, category: 'advanced' },
-  { key: 'onboarding', label: 'Onboarding', icon: 'BookOpen', route: '/admin/onboarding', order: 84, category: 'advanced' },
-  { key: 'ai_context_window', label: 'AI Context', icon: 'Bot', route: '/admin/ai-context-window', order: 85, category: 'advanced' },
-  { key: 'translations', label: 'Translations', icon: 'Globe', route: '/admin/translations', order: 86, category: 'advanced' }
+  { key: 'monitoring_dashboard', label: 'Monitoring', icon: 'Activity', route: '/admin/monitoring-dashboard', order: 90, category: 'advanced' },
+  { key: 'scheduled_jobs', label: 'Scheduled Jobs', icon: 'Calendar', route: '/admin/scheduled-jobs', order: 91, category: 'advanced' },
+  { key: 'billing', label: 'Billing', icon: 'Wallet', route: '/admin/billing', order: 92, category: 'advanced' },
+  { key: 'team', label: 'Team', icon: 'Users', route: '/admin/team', order: 93, category: 'advanced' },
+  { key: 'onboarding', label: 'Onboarding', icon: 'BookOpen', route: '/admin/onboarding', order: 94, category: 'advanced' },
+  { key: 'ai_context_window', label: 'AI Context', icon: 'Bot', route: '/admin/ai-context-window', order: 95, category: 'advanced' },
+  { key: 'translations', label: 'Translations', icon: 'Globe', route: '/admin/translations', order: 96, category: 'advanced' }
 ];
 
 async function seedNavigation() {

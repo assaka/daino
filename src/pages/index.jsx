@@ -71,6 +71,19 @@ export { default as NavigationManager } from './admin/NavigationManager';
 export { default as AdminForgotPassword } from './admin/AdminForgotPassword';
 export { default as AdminResetPassword } from './admin/AdminResetPassword';
 
+// Marketing Pages
+export { default as Segments } from './admin/marketing/Segments';
+export { default as Automations } from './admin/marketing/Automations';
+export { default as Campaigns } from './admin/marketing/Campaigns';
+export { default as MarketingIntegrations } from './admin/marketing/Integrations';
+
+// CRM Pages
+export { default as CrmDashboard } from './admin/crm/Dashboard';
+export { default as CrmDeals } from './admin/crm/Deals';
+export { default as CrmLeads } from './admin/crm/Leads';
+export { default as CrmPipelines } from './admin/crm/Pipelines';
+export { default as CrmActivities } from './admin/crm/Activities';
+
 // Editor Pages
 export { default as AIContextWindow } from './editor/EditorWrapper';
 export { default as EditorWrapper } from './editor/EditorWrapper';

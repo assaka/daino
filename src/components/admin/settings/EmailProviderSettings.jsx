@@ -21,24 +21,34 @@ const EMAIL_PROVIDERS = {
     features: ['Transactional Emails', 'Email Templates', 'Analytics', 'Free tier: 300 emails/day'],
     setupUrl: 'https://app.brevo.com/settings/keys/api'
   },
-  hubspot: {
-    id: 'hubspot',
-    name: 'HubSpot',
-    description: 'All-in-one CRM and email marketing platform',
-    logo: '🟠',
-    color: 'from-orange-500 to-orange-600',
+  sendgrid: {
+    id: 'sendgrid',
+    name: 'SendGrid',
+    description: 'Cloud-based email delivery and management platform by Twilio',
+    logo: '📤',
+    color: 'from-blue-400 to-cyan-500',
     available: false,
-    features: ['CRM Integration', 'Marketing Automation', 'Advanced Analytics', 'Lead Scoring'],
+    features: ['High Deliverability', 'Email API', 'Analytics & Tracking', 'Free tier: 100 emails/day'],
     comingSoon: true
   },
-  mailchimp: {
-    id: 'mailchimp',
-    name: 'Mailchimp',
-    description: 'Popular email marketing and automation platform',
-    logo: '🐵',
-    color: 'from-yellow-500 to-yellow-600',
+  postmark: {
+    id: 'postmark',
+    name: 'Postmark',
+    description: 'Fast and reliable transactional email service',
+    logo: '📬',
+    color: 'from-yellow-400 to-yellow-500',
     available: false,
-    features: ['Email Campaigns', 'Marketing Automation', 'Audience Segmentation', 'A/B Testing'],
+    features: ['Fast Delivery', 'Detailed Analytics', 'Dedicated IPs', 'Developer Friendly'],
+    comingSoon: true
+  },
+  resend: {
+    id: 'resend',
+    name: 'Resend',
+    description: 'Modern email API for developers',
+    logo: '✉️',
+    color: 'from-gray-700 to-gray-900',
+    available: false,
+    features: ['React Email Support', 'Simple API', 'Real-time Webhooks', 'Free tier: 3,000 emails/month'],
     comingSoon: true
   }
 };
@@ -199,24 +209,20 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
       )}
 
       {/*
-       Add new probider
-       1. Create src/components/admin/settings/providers/HubSpotProvider.jsx
-       2. In EmailProviderSettings.jsx,
-      add:
+       Add new provider:
+       1. Create src/components/admin/settings/providers/[ProviderName]Provider.jsx
+       2. In EmailProviderSettings.jsx, add:
 
-      {selectedProvider === 'hubspot' &&
-          (
-              <HubSpotProvider
-                  storeEmail={storeEmail}
-                  storeName={storeName}
-                  onBack={handleBackToProviders}
-
-                  onFlashMessage={setFlashMessage}
-                  getSelectedStoreId={getSelected
-                    StoreId}
-                  showConfirm={showConfirm}
-              />
-          )}
+      {selectedProvider === 'providerId' && (
+          <ProviderComponent
+              storeEmail={storeEmail}
+              storeName={storeName}
+              onBack={handleBackToProviders}
+              onFlashMessage={setFlashMessage}
+              getSelectedStoreId={getSelectedStoreId}
+              showConfirm={showConfirm}
+          />
+      )}
         */}
 
 
