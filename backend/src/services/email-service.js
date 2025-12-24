@@ -230,11 +230,15 @@ class EmailService {
         content = await this.processHeaderFooter(storeId, content, languageCode);
       }
 
-      // Inject theme colors into variables for header/footer templates
+      // Inject theme colors and store data into variables for header/footer templates
       const themeColors = await this.getThemeColors(storeId);
+      const fullStoreData = await this.getFullStoreData(storeId);
       const enrichedVariables = {
         ...variables,
-        ...themeColors  // Adds primary_color and secondary_color
+        ...themeColors,  // Adds primary_color and secondary_color
+        store_logo_url: fullStoreData.logo_url,
+        store_url: variables.store_url || fullStoreData.store_url,
+        store_name: variables.store_name || fullStoreData.name
       };
 
       // Render template with variables
