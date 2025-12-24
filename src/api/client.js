@@ -229,8 +229,6 @@ class ApiClient {
       
       return result;
     } catch (error) {
-      console.error(`Public API request failed: ${method} ${url}`, error);
-      
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         throw new Error('Network error: Unable to connect to server');
       }
@@ -540,10 +538,6 @@ class ApiClient {
       const isAuthMeEndpoint = endpoint.includes('auth/me');
       const isNoTokenError = error.message && error.message.includes('No token provided');
 
-      if (!(isAuthMeEndpoint && isNoTokenError)) {
-        console.error(`API request failed: ${method} ${url}`, error);
-      }
-      
       // Handle network errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         throw new Error('Network error: Unable to connect to server');

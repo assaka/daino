@@ -112,7 +112,6 @@ class AdminApiClient {
       
       return result;
     } catch (error) {
-      console.error(`Admin API request failed: ${method} ${url}`, error);
       throw error;
     }
   }

@@ -169,7 +169,6 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
         setTranslations(response.data.labels);
       }
     } catch (error) {
-      console.error('Failed to load translations:', error);
       setTranslations({});
     } finally {
       setLoading(false);

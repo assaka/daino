@@ -211,7 +211,6 @@ class TestingIntegration {
         return response;
       } catch (error) {
         const responseTime = Date.now() - startTime;
-        console.error(`API request failed: ${method} ${endpoint} (${responseTime}ms)`, error);
         throw error;
       }
     };

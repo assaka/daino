@@ -623,7 +623,6 @@ class ProductService extends BaseEntity {
         }
       };
     } catch (error) {
-      console.error(`ProductService.findPaginated() error:`, error.message);
       
       // Try public API as fallback if authenticated fails
       if (error.status === 401) {
@@ -647,7 +646,6 @@ class ProductService extends BaseEntity {
             }
           };
         } catch (publicError) {
-          console.error(`ProductService.findPaginated() public fallback error:`, publicError.message);
         }
       }
       
@@ -669,7 +667,6 @@ class ProductService extends BaseEntity {
       const result = await this.findAll(params);
       return Array.isArray(result) ? result : [];
     } catch (error) {
-      console.error(`ProductService.filter() error:`, error.message);
       return [];
     }
   }
@@ -707,7 +704,6 @@ class ProductService extends BaseEntity {
         } catch (authError) {
           // If authenticated request fails, fall back to public API
           if (authError.status === 401 || authError.status === 403) {
-            console.warn('ProductService: Authenticated request failed, falling back to public API');
             response = await apiClient.publicRequest('GET', url);
           } else {
             throw authError;
@@ -721,7 +717,6 @@ class ProductService extends BaseEntity {
       // Ensure response is always an array
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error(`ProductService.findAll() error:`, error.message);
       return [];
     }
   }
@@ -773,7 +768,6 @@ class CategoryService extends BaseEntity {
       const result = Array.isArray(response) ? response : [];
       return result;
     } catch (error) {
-      console.error(`CategoryService.filter() error:`, error.message);
       return [];
     }
   }
@@ -813,7 +807,6 @@ class CategoryService extends BaseEntity {
         } catch (authError) {
           // If authenticated request fails (e.g., 401), fall back to public API
           if (authError.status === 401 || authError.status === 403) {
-            console.warn('CategoryService: Authenticated request failed, falling back to public API');
             response = await apiClient.publicRequest('GET', url);
           } else {
             throw authError;
@@ -828,7 +821,6 @@ class CategoryService extends BaseEntity {
       const result = Array.isArray(response) ? response : [];
       return result;
     } catch (error) {
-      console.error(`CategoryService.findAll() error:`, error.message, error);
       return [];
     }
   }
@@ -899,7 +891,6 @@ class CategoryService extends BaseEntity {
         }
       };
     } catch (error) {
-      console.error(`CategoryService.findPaginated() error:`, error.message);
       return {
         data: [],
         pagination: {
@@ -928,7 +919,6 @@ class OrderService extends BaseEntity {
       const finalResult = Array.isArray(result) ? result : [];
       return finalResult;
     } catch (error) {
-      console.error(`OrderService.filter() error:`, error.message);
       return [];
     }
   }
@@ -987,7 +977,6 @@ class CmsPageService extends BaseEntity {
       const result = Array.isArray(response) ? response : [];
       return result;
     } catch (error) {
-      console.error(`❌ CmsPageService.filter() error:`, error.message);
       return [];
     }
   }
@@ -1033,7 +1022,6 @@ class CmsBlockService extends BaseEntity {
       const result = Array.isArray(response) ? response : [];
       return result;
     } catch (error) {
-      console.error(`❌ CmsBlockService.filter() error:`, error.message);
       return [];
     }
   }
@@ -1070,7 +1058,6 @@ class EmailTemplateService extends BaseEntity {
       const result = Array.isArray(response) ? response : [];
       return result;
     } catch (error) {
-      console.error(`❌ EmailTemplateService.filter() error:`, error.message);
       return [];
     }
   }

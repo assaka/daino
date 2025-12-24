@@ -204,7 +204,6 @@ class StorefrontApiClient {
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
         return []; // Return empty array for aborted requests - entities expect arrays
       }
-      console.error(`Storefront public API request failed: ${method} ${url}`, error);
       throw error;
     }
   }
@@ -299,7 +298,6 @@ class StorefrontApiClient {
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
         return []; // Return empty array for aborted requests - entities expect arrays
       }
-      console.error(`Storefront customer API request failed: ${method} ${url}`, error);
       throw error;
     }
   }

@@ -180,7 +180,6 @@ export default function Translations() {
         showMessage('Unexpected response format', 'error');
       }
     } catch (error) {
-      console.error('Failed to load labels:', error);
       showMessage(`Failed to load translations: ${error.message}`, 'error');
     } finally {
       setLoading(false);
