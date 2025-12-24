@@ -51,7 +51,6 @@ export default function BrevoProvider({
         }
       }
     } catch (error) {
-      console.error('Error loading Brevo status:', error);
     } finally {
       setLoading(false);
     }
@@ -67,7 +66,6 @@ export default function BrevoProvider({
         setStats(response.data);
       }
     } catch (error) {
-      console.error('Error loading email stats:', error);
     }
   };
 
@@ -95,8 +93,6 @@ export default function BrevoProvider({
         loadConnectionStatus();
       }
     } catch (error) {
-      console.error('Save config error:', error);
-
       // Check if this is an IP whitelist error
       const errorMsg = error.message || 'Failed to save configuration';
       if (errorMsg.includes('IP address not whitelisted')) {
@@ -130,7 +126,6 @@ export default function BrevoProvider({
         onBack();
         loadConnectionStatus();
       } catch (error) {
-        console.error('Disconnect error:', error);
         onFlashMessage({ type: 'error', message: 'Failed to disconnect Brevo' });
       }
     }
@@ -158,7 +153,6 @@ export default function BrevoProvider({
         onFlashMessage({ type: 'error', message: errorMsg });
       }
     } catch (error) {
-      console.error('Test connection error:', error);
       const errorMsg = 'Failed to send test email. Important: If your sender email is not yet verified in Brevo, check your inbox for a verification email and click the verification link.';
       onFlashMessage({ type: 'error', message: errorMsg });
     } finally {
@@ -177,12 +171,6 @@ export default function BrevoProvider({
   };
 
   const handleConfigureBrevo = () => {
-    console.log('📧 handleConfigureBrevo - Setting form values:', {
-      storeName,
-      storeEmail,
-      willSetSenderName: storeName || '',
-      willSetSenderEmail: storeEmail || ''
-    });
     setShowConfig(true);
     // Pre-fill with store data from Settings > General
     setSenderName(storeName || '');

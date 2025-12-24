@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { buildStoreUrl } = require('../utils/domainConfig');
-const { applyProductTranslationsToMany, fetchProductImages, enrichProductsWithBrandAndMpn } = require('../utils/productHelpers');
+const { applyProductTranslationsToMany, applyProductImages, enrichProductsWithBrandAndMpn } = require('../utils/productHelpers');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 
 /**
@@ -301,7 +301,7 @@ async function generateGoogleMerchantXml(tenantDb, storeId, baseUrl, currency = 
     let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
 
     // Apply images
-    enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+    enrichedProducts = await applyProductImages(enrichedProducts, tenantDb);
 
     // Enrich with brand/mpn from product_attribute_values
     enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
@@ -438,7 +438,7 @@ async function generateChatGPTFeed(tenantDb, storeId, baseUrl, currency = 'EUR',
   if (error) throw error;
 
   let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
-  enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+  enrichedProducts = await applyProductImages(enrichedProducts, tenantDb);
   enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
   const formatPrice = (price) => {
@@ -527,7 +527,7 @@ async function generateUniversalFeed(tenantDb, storeId, baseUrl, currency = 'EUR
   if (error) throw error;
 
   let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
-  enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+  enrichedProducts = await applyProductImages(enrichedProducts, tenantDb);
   enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
   const itemListElement = enrichedProducts.map((product, index) => {
