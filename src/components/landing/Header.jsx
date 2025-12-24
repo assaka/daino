@@ -42,7 +42,7 @@ export default function Header() {
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-200">
-            <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="max-w-7xl mx-auto p-2 md:px-6 md:py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export default function Header() {
                 </div>
 
                 {/* Mobile Navigation - Below logo row */}
-                <nav className="flex md:hidden items-center justify-center gap-6 font-semibold text-base mt-4">
+                <nav className="flex md:hidden items-center justify-center gap-6 font-semibold text-base mt-2">
                     <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
                         Discord
                     </a>
