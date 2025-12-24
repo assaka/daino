@@ -29,6 +29,7 @@ export default function Stores() {
   const [loading, setLoading] = useState(true);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [storeToPublish, setStoreToPublish] = useState(null);
+  const [publishingStore, setPublishingStore] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState(null);
   const [storeUptimes, setStoreUptimes] = useState({});
@@ -193,6 +194,7 @@ export default function Stores() {
 
   const confirmTogglePublished = async (storeId, currentStatus) => {
     const newStatus = !currentStatus;
+    setPublishingStore(true);
 
     try {
       // Optimistic update: Update UI immediately
@@ -237,6 +239,8 @@ export default function Stores() {
       // Close confirmation modal
       setShowPublishConfirm(false);
       setStoreToPublish(null);
+    } finally {
+      setPublishingStore(false);
     }
   };
 
@@ -660,6 +664,7 @@ export default function Stores() {
                   setShowPublishConfirm(false);
                   setStoreToPublish(null);
                 }}
+                disabled={publishingStore}
               >
                 Cancel
               </Button>
@@ -670,7 +675,9 @@ export default function Stores() {
                     confirmTogglePublished(storeToPublish.id, false);
                   }
                 }}
+                loading={publishingStore}
                 defaultText="Start Running"
+                loadingText="Starting..."
                 icon={<Play className="w-4 h-4 mr-2" />}
               />
             </div>
