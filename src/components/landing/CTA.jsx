@@ -52,7 +52,7 @@ export default function CTA() {
                         <div className="flex flex-wrap items-center justify-center gap-8 text-white/90 border-t border-white/30 pt-8">
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-white rounded-full" />
-                                <span className="font-medium">50,000+ Stores</span>
+                                <span className="font-medium">10,000+ Stores</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-white rounded-full" />
@@ -60,7 +60,7 @@ export default function CTA() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-white rounded-full" />
-                                <span className="font-medium">14-Day Trial</span>
+                                <span className="font-medium">Pay as you Go</span>
                             </div>
                         </div>
                     </div>
