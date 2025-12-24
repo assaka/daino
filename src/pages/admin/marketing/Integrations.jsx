@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import {
   Plug, Check, X, RefreshCw, Settings, ExternalLink,
-  Loader2, AlertCircle, CheckCircle
+  Loader2, AlertCircle, CheckCircle, Info, Sparkles
 } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';

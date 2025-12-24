@@ -1071,9 +1071,33 @@ VALUES (
       { name: 'Color', code: 'color', type: 'text', is_filterable: true, is_searchable: true, sort_order: 3 },
       { name: 'Size', code: 'size', type: 'text', is_filterable: true, is_searchable: true, sort_order: 4 },
       { name: 'Material', code: 'material', type: 'text', is_filterable: true, is_searchable: true, sort_order: 5 },
-      { name: 'Age Group', code: 'age_group', type: 'select', is_filterable: true, is_searchable: false, sort_order: 6 },
-      { name: 'Condition', code: 'condition', type: 'select', is_filterable: true, is_searchable: false, sort_order: 7 },
-      { name: 'Gender', code: 'gender', type: 'select', is_filterable: true, is_searchable: false, sort_order: 8 }
+      {
+        name: 'Age Group', code: 'age_group', type: 'select', is_filterable: true, is_searchable: false, sort_order: 6,
+        values: [
+          { code: 'newborn', label: 'Newborn' },
+          { code: 'infant', label: 'Infant' },
+          { code: 'toddler', label: 'Toddler' },
+          { code: 'kids', label: 'Kids' },
+          { code: 'teen', label: 'Teen' },
+          { code: 'adult', label: 'Adult' }
+        ]
+      },
+      {
+        name: 'Condition', code: 'condition', type: 'select', is_filterable: true, is_searchable: false, sort_order: 7,
+        values: [
+          { code: 'new', label: 'New' },
+          { code: 'refurbished', label: 'Refurbished' },
+          { code: 'used', label: 'Used' }
+        ]
+      },
+      {
+        name: 'Gender', code: 'gender', type: 'select', is_filterable: true, is_searchable: false, sort_order: 8,
+        values: [
+          { code: 'male', label: 'Male' },
+          { code: 'female', label: 'Female' },
+          { code: 'unisex', label: 'Unisex' }
+        ]
+      }
     ];
   }
 
@@ -1087,6 +1111,7 @@ VALUES (
 
       const defaultAttributes = this.getDefaultAttributesConfig();
       const attributeIds = [];
+      let totalValues = 0;
 
       // Insert each attribute
       for (const attr of defaultAttributes) {
@@ -1117,6 +1142,50 @@ VALUES (
 
         attributeIds.push(attribute.id);
         console.log(`✅ Created attribute: ${attr.name} (${attr.code})`);
+
+        // Create attribute values for select-type attributes
+        if (attr.type === 'select' && attr.values && attr.values.length > 0) {
+          for (let i = 0; i < attr.values.length; i++) {
+            const val = attr.values[i];
+
+            // Insert attribute value
+            const { data: attrValue, error: valError } = await tenantDb
+              .from('attribute_values')
+              .insert({
+                attribute_id: attribute.id,
+                code: val.code,
+                sort_order: i,
+                metadata: {},
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .select('id')
+              .single();
+
+            if (valError) {
+              console.warn(`⚠️ Failed to create value ${val.code} for ${attr.code}:`, valError.message);
+              continue;
+            }
+
+            // Insert English translation
+            const { error: transError } = await tenantDb
+              .from('attribute_value_translations')
+              .insert({
+                attribute_value_id: attrValue.id,
+                language_code: 'en',
+                value: val.label,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (transError) {
+              console.warn(`⚠️ Failed to create translation for ${val.code}:`, transError.message);
+            }
+
+            totalValues++;
+          }
+          console.log(`✅ Created ${attr.values.length} values for ${attr.code}`);
+        }
       }
 
       // Create default attribute set with all attributes
@@ -1146,6 +1215,7 @@ VALUES (
       }
 
       result.dataSeeded.push(`${attributeIds.length} default attributes`);
+      result.dataSeeded.push(`${totalValues} attribute values with translations`);
       result.dataSeeded.push('Default attribute set');
 
       return true;
@@ -1172,8 +1242,9 @@ VALUES (
       const defaultAttributes = this.getDefaultAttributesConfig();
       const insertStatements = [];
       const attributeIdPlaceholders = [];
+      let totalValues = 0;
 
-      // Generate UUIDs for attributes
+      // Generate UUIDs for attributes and their values
       for (let i = 0; i < defaultAttributes.length; i++) {
         const attr = defaultAttributes[i];
         const attrId = uuidv4();
@@ -1195,6 +1266,42 @@ VALUES (
   NOW(),
   NOW()
 ) ON CONFLICT DO NOTHING;`);
+
+        // Add attribute values and translations for select-type attributes
+        if (attr.type === 'select' && attr.values && attr.values.length > 0) {
+          for (let j = 0; j < attr.values.length; j++) {
+            const val = attr.values[j];
+            const valueId = uuidv4();
+            const translationId = uuidv4();
+
+            // Insert attribute value
+            insertStatements.push(`
+INSERT INTO attribute_values (id, attribute_id, code, sort_order, metadata, created_at, updated_at)
+VALUES (
+  '${valueId}',
+  '${attrId}',
+  '${val.code}',
+  ${j},
+  '{}'::json,
+  NOW(),
+  NOW()
+) ON CONFLICT DO NOTHING;`);
+
+            // Insert English translation
+            insertStatements.push(`
+INSERT INTO attribute_value_translations (id, attribute_value_id, language_code, value, created_at, updated_at)
+VALUES (
+  '${translationId}',
+  '${valueId}',
+  'en',
+  '${val.label}',
+  NOW(),
+  NOW()
+) ON CONFLICT DO NOTHING;`);
+
+            totalValues++;
+          }
+        }
       }
 
       // Create default attribute set
@@ -1228,8 +1335,9 @@ VALUES (
         }
       );
 
-      console.log(`✅ Seeded ${defaultAttributes.length} default attributes and attribute set via API`);
+      console.log(`✅ Seeded ${defaultAttributes.length} default attributes, ${totalValues} values, and attribute set via API`);
       result.dataSeeded.push(`${defaultAttributes.length} default attributes (via API)`);
+      result.dataSeeded.push(`${totalValues} attribute values with translations (via API)`);
       result.dataSeeded.push('Default attribute set (via API)');
       return true;
     } catch (error) {

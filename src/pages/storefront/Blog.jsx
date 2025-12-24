@@ -643,7 +643,10 @@ function BlogHeader() {
 
 function BlogIndex() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedTag = searchParams.get('tag');
+
+  // Parse selected tags from URL (comma-separated)
+  const tagsParam = searchParams.get('tags') || '';
+  const selectedTags = tagsParam ? tagsParam.split(',').filter(Boolean) : [];
 
   const articles = Object.entries(BLOG_ARTICLES).map(([slug, meta]) => ({
     slug,
@@ -653,9 +656,9 @@ function BlogIndex() {
   // Get all unique tags used in articles
   const usedTags = [...new Set(articles.flatMap(a => a.tags || []))].sort();
 
-  // Filter articles by selected tag
-  const filteredArticles = selectedTag
-    ? articles.filter(a => a.tags?.includes(selectedTag))
+  // Filter articles by selected tags (show articles that have ANY of the selected tags)
+  const filteredArticles = selectedTags.length > 0
+    ? articles.filter(a => a.tags?.some(tag => selectedTags.includes(tag)))
     : articles;
 
   // Group by category
@@ -673,10 +676,19 @@ function BlogIndex() {
   }, {});
 
   const handleTagClick = (tag) => {
-    if (tag === selectedTag) {
+    let newTags;
+    if (selectedTags.includes(tag)) {
+      // Remove tag
+      newTags = selectedTags.filter(t => t !== tag);
+    } else {
+      // Add tag
+      newTags = [...selectedTags, tag];
+    }
+
+    if (newTags.length === 0) {
       setSearchParams({});
     } else {
-      setSearchParams({ tag });
+      setSearchParams({ tags: newTags.join(',') });
     }
   };
 
@@ -712,52 +724,57 @@ function BlogIndex() {
           >
             <div className="flex items-center gap-2 mb-3">
               <Tag className="w-4 h-4 text-neutral-500" />
-              <span className="text-sm font-medium text-neutral-500">Filter by topic:</span>
+              <span className="text-sm font-medium text-neutral-500">Filter by topic (select multiple):</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
+              <Badge
                 onClick={() => setSearchParams({})}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${
-                  !selectedTag
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-neutral-600 border-neutral-200 hover:border-indigo-300 hover:text-indigo-600'
+                className={`cursor-pointer px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
+                  selectedTags.length === 0
+                    ? 'bg-yellow-400 text-black border-yellow-500 hover:bg-yellow-500'
+                    : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-100'
                 }`}
               >
                 All Articles
-              </button>
+              </Badge>
               {usedTags.map(tag => {
                 const tagInfo = TAGS[tag];
                 if (!tagInfo) return null;
-                const isSelected = selectedTag === tag;
+                const isSelected = selectedTags.includes(tag);
                 return (
-                  <button
+                  <Badge
                     key={tag}
                     onClick={() => handleTagClick(tag)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${
+                    className={`cursor-pointer px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
                       isSelected
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : `${tagInfo.color} border hover:opacity-80`
+                        ? 'bg-yellow-400 text-black border-yellow-500 hover:bg-yellow-500'
+                        : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-100'
                     }`}
                   >
                     {tagInfo.label}
-                  </button>
+                  </Badge>
                 );
               })}
             </div>
           </motion.div>
 
           {/* Results count when filtered */}
-          {selectedTag && (
+          {selectedTags.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="mb-6"
             >
-              <p className="text-neutral-600">
+              <p className="text-neutral-600 flex items-center gap-2 flex-wrap">
                 Showing {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''} tagged with{' '}
-                <Badge className={TAGS[selectedTag]?.color}>
-                  {TAGS[selectedTag]?.label}
-                </Badge>
+                {selectedTags.map((tag, idx) => (
+                  <span key={tag} className="inline-flex items-center gap-1">
+                    <Badge className="bg-yellow-400 text-black border-yellow-500">
+                      {TAGS[tag]?.label}
+                    </Badge>
+                    {idx < selectedTags.length - 1 && <span className="text-neutral-400">or</span>}
+                  </span>
+                ))}
               </p>
             </motion.div>
           )}
@@ -813,18 +830,18 @@ function BlogIndex() {
                               const tagInfo = TAGS[tag];
                               if (!tagInfo) return null;
                               return (
-                                <span
+                                <Badge
                                   key={tag}
-                                  className={`text-xs px-2 py-0.5 rounded-full border ${tagInfo.color}`}
+                                  className="bg-yellow-400 text-black border-yellow-500 text-xs px-2 py-0.5"
                                 >
                                   {tagInfo.label}
-                                </span>
+                                </Badge>
                               );
                             })}
                             {article.tags.length > 3 && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500">
+                              <Badge className="bg-neutral-100 text-neutral-500 border-neutral-200 text-xs px-2 py-0.5">
                                 +{article.tags.length - 3}
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         )}
@@ -971,12 +988,10 @@ function BlogArticle({ slug }) {
                   const tagInfo = TAGS[tag];
                   if (!tagInfo) return null;
                   return (
-                    <Link
-                      key={tag}
-                      to={`/blog?tag=${tag}`}
-                      className={`text-sm px-3 py-1 rounded-full border ${tagInfo.color} hover:opacity-80 transition-opacity`}
-                    >
-                      {tagInfo.label}
+                    <Link key={tag} to={`/blog?tags=${tag}`}>
+                      <Badge className="bg-yellow-400 text-black border-yellow-500 hover:bg-yellow-500 transition-colors cursor-pointer px-3 py-1">
+                        {tagInfo.label}
+                      </Badge>
                     </Link>
                   );
                 })}
