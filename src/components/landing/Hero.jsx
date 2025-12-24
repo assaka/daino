@@ -64,7 +64,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="text-5xl md:text-6xl lg:text-8xl font-black mb-8 leading-tight text-slate-900"
+                    className="text-4xl md:text-6xl lg:text-8xl font-black mb-8 leading-tight text-slate-900"
                 >
                     Build any store
                     <br />
@@ -75,7 +75,7 @@ export default function Hero() {
                             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
                             transition={{ duration: 0.5 }}
-                            className="text-indigo-600 inline-block text-4xl md:text-5xl lg:text-7xl"
+                            className="text-indigo-600 inline-block text-3xl md:text-5xl lg:text-7xl"
                         >
                             {titleVariants[currentTitleIndex]}
                         </motion.span>
