@@ -274,13 +274,15 @@ function escapeXml(unsafe) {
  */
 async function generateGoogleMerchantXml(tenantDb, storeId, baseUrl, currency = 'EUR', language = 'en') {
   try {
-    // Get store info
-    const { data: store } = await tenantDb
-      .from('stores')
-      .select('name, currency')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
+    // Get store info and SEO settings (for attribute mappings)
+    const [storeResult, seoResult] = await Promise.all([
+      tenantDb.from('stores').select('name, currency').eq('is_active', true).limit(1).maybeSingle(),
+      tenantDb.from('seo_settings').select('feed_attribute_mappings').eq('store_id', storeId).limit(1).maybeSingle()
+    ]);
+
+    const store = storeResult.data;
+    const seoSettings = seoResult.data;
+    const attributeMappings = seoSettings?.feed_attribute_mappings || null;
 
     const storeCurrency = store?.currency || currency;
     const storeName = store?.name || 'Store';
@@ -303,8 +305,8 @@ async function generateGoogleMerchantXml(tenantDb, storeId, baseUrl, currency = 
     // Apply images
     enrichedProducts = await applyProductImages(enrichedProducts, tenantDb);
 
-    // Enrich with brand/mpn from product_attribute_values
-    enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
+    // Enrich with brand/mpn from product_attribute_values (using custom mappings if configured)
+    enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language, attributeMappings);
 
     // Build XML
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -417,12 +419,15 @@ function truncate(text, maxLength) {
  * Generate ChatGPT/OpenAI compatible JSON feed
  */
 async function generateChatGPTFeed(tenantDb, storeId, baseUrl, currency = 'EUR', language = 'en') {
-  const { data: store } = await tenantDb
-    .from('stores')
-    .select('name, currency, settings')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
+  // Get store info and SEO settings (for attribute mappings)
+  const [storeResult, seoResult] = await Promise.all([
+    tenantDb.from('stores').select('name, currency, settings').eq('is_active', true).limit(1).maybeSingle(),
+    tenantDb.from('seo_settings').select('feed_attribute_mappings').eq('store_id', storeId).limit(1).maybeSingle()
+  ]);
+
+  const store = storeResult.data;
+  const seoSettings = seoResult.data;
+  const attributeMappings = seoSettings?.feed_attribute_mappings || null;
 
   const storeCurrency = store?.currency || currency;
 
@@ -439,7 +444,7 @@ async function generateChatGPTFeed(tenantDb, storeId, baseUrl, currency = 'EUR',
 
   let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
   enrichedProducts = await applyProductImages(enrichedProducts, tenantDb);
-  enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
+  enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language, attributeMappings);
 
   const formatPrice = (price) => {
     const num = parseFloat(price) || 0;
@@ -506,12 +511,15 @@ async function generateChatGPTFeed(tenantDb, storeId, baseUrl, currency = 'EUR',
  * Generate Universal AI feed (Schema.org based)
  */
 async function generateUniversalFeed(tenantDb, storeId, baseUrl, currency = 'EUR', language = 'en') {
-  const { data: store } = await tenantDb
-    .from('stores')
-    .select('name, currency')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
+  // Get store info and SEO settings (for attribute mappings)
+  const [storeResult, seoResult] = await Promise.all([
+    tenantDb.from('stores').select('name, currency').eq('is_active', true).limit(1).maybeSingle(),
+    tenantDb.from('seo_settings').select('feed_attribute_mappings').eq('store_id', storeId).limit(1).maybeSingle()
+  ]);
+
+  const store = storeResult.data;
+  const seoSettings = seoResult.data;
+  const attributeMappings = seoSettings?.feed_attribute_mappings || null;
 
   const storeCurrency = store?.currency || currency;
 
@@ -528,7 +536,7 @@ async function generateUniversalFeed(tenantDb, storeId, baseUrl, currency = 'EUR
 
   let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
   enrichedProducts = await applyProductImages(enrichedProducts, tenantDb);
-  enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
+  enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language, attributeMappings);
 
   const itemListElement = enrichedProducts.map((product, index) => {
     const schema = {

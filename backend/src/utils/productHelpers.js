@@ -461,25 +461,54 @@ async function applyProductImages(products, tenantDb) {
  * @param {Object} tenantDb - Tenant database connection
  * @param {string} storeId - Store ID
  * @param {string} language - Language code for translations
- * @returns {Promise<Array>} Products with brand, mpn, manufacturer fields
+ * @param {Object} attributeMappings - Optional custom mappings { brand: 'attr_code', mpn: 'attr_code', ... }
+ * @returns {Promise<Array>} Products with brand, mpn, manufacturer, color, size, material fields
  */
-async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, language = 'en') {
+async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, language = 'en', attributeMappings = null) {
   if (!products || products.length === 0) return products;
 
   const productIds = products.map(p => p.id);
 
-  // Find the brand and mpn attribute IDs for this store
+  // Default mappings (attribute code matches field name)
+  const defaultMappings = {
+    brand: 'brand',
+    mpn: 'mpn',
+    manufacturer: 'manufacturer',
+    color: 'color',
+    size: 'size',
+    material: 'material',
+    gender: 'gender',
+    age_group: 'age_group'
+  };
+
+  // Merge with custom mappings (custom mappings override defaults)
+  const mappings = { ...defaultMappings };
+  if (attributeMappings) {
+    Object.entries(attributeMappings).forEach(([field, attrCode]) => {
+      if (attrCode) mappings[field] = attrCode;
+    });
+  }
+
+  // Get unique attribute codes to fetch
+  const attrCodesToFetch = [...new Set(Object.values(mappings).filter(Boolean))];
+
+  if (attrCodesToFetch.length === 0) return products;
+
+  // Find the attribute IDs for these codes
   const { data: attributes } = await tenantDb
     .from('attributes')
     .select('id, code')
     .eq('store_id', storeId)
-    .in('code', ['brand', 'mpn', 'manufacturer']);
+    .in('code', attrCodesToFetch);
 
   if (!attributes || attributes.length === 0) return products;
 
-  const brandAttr = attributes.find(a => a.code === 'brand');
-  const mpnAttr = attributes.find(a => a.code === 'mpn');
-  const manufacturerAttr = attributes.find(a => a.code === 'manufacturer');
+  // Create lookup: field -> attribute
+  const fieldToAttr = {};
+  Object.entries(mappings).forEach(([field, attrCode]) => {
+    const attr = attributes.find(a => a.code === attrCode);
+    if (attr) fieldToAttr[field] = attr;
+  });
 
   const attrIds = attributes.map(a => a.id);
 
@@ -525,10 +554,11 @@ async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, langua
     }
   }
 
-  // Build product -> brand/mpn lookup
-  const productBrandMap = {};
-  const productMpnMap = {};
-  const productManufacturerMap = {};
+  // Build product -> field value lookups
+  const productFieldMaps = {};
+  Object.keys(fieldToAttr).forEach(field => {
+    productFieldMaps[field] = {};
+  });
 
   productAttrValues.forEach(pav => {
     const value = pav.value_id
@@ -537,22 +567,24 @@ async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, langua
 
     if (!value) return;
 
-    if (brandAttr && pav.attribute_id === brandAttr.id) {
-      productBrandMap[pav.product_id] = value;
-    }
-    if (mpnAttr && pav.attribute_id === mpnAttr.id) {
-      productMpnMap[pav.product_id] = value;
-    }
-    if (manufacturerAttr && pav.attribute_id === manufacturerAttr.id) {
-      productManufacturerMap[pav.product_id] = value;
-    }
+    // Find which field this attribute maps to
+    Object.entries(fieldToAttr).forEach(([field, attr]) => {
+      if (attr && pav.attribute_id === attr.id) {
+        productFieldMaps[field][pav.product_id] = value;
+      }
+    });
   });
 
   return products.map(product => ({
     ...product,
-    brand: productBrandMap[product.id] || null,
-    mpn: productMpnMap[product.id] || null,
-    manufacturer: productManufacturerMap[product.id] || null
+    brand: productFieldMaps.brand?.[product.id] || null,
+    mpn: productFieldMaps.mpn?.[product.id] || null,
+    manufacturer: productFieldMaps.manufacturer?.[product.id] || null,
+    color: productFieldMaps.color?.[product.id] || null,
+    size: productFieldMaps.size?.[product.id] || null,
+    material: productFieldMaps.material?.[product.id] || null,
+    gender: productFieldMaps.gender?.[product.id] || null,
+    age_group: productFieldMaps.age_group?.[product.id] || null
   }));
 }
 

@@ -49,6 +49,7 @@ export { default as SeoHreflang } from './admin/SeoHreflang';
 export { default as SeoRobots } from './admin/SeoRobots';
 export { default as SeoSocial } from './admin/SeoSocial';
 export { default as SeoReport } from './admin/SeoReport';
+export { default as ProductFeeds } from './admin/ProductFeeds';
 export { default as XmlSitemap } from './admin/XmlSitemap';
 export { default as RobotsTxt } from './admin/RobotsTxt';
 export { default as HtmlSitemap } from './admin/HtmlSitemap';
