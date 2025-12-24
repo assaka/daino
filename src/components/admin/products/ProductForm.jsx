@@ -1428,15 +1428,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   <div>
                     <Label>Age Group</Label>
                     <Select
-                      value={formData.product_identifiers?.age_group || ''}
+                      value={formData.product_identifiers?.age_group || 'not_specified'}
                       onValueChange={(val) => handleInputChange("product_identifiers", {
                         ...formData.product_identifiers,
-                        age_group: val
+                        age_group: val === 'not_specified' ? null : val
                       })}
                     >
                       <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Not specified</SelectItem>
+                        <SelectItem value="not_specified">Not specified</SelectItem>
                         <SelectItem value="newborn">Newborn</SelectItem>
                         <SelectItem value="infant">Infant</SelectItem>
                         <SelectItem value="toddler">Toddler</SelectItem>
@@ -1448,15 +1448,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   <div>
                     <Label>Gender</Label>
                     <Select
-                      value={formData.product_identifiers?.gender || ''}
+                      value={formData.product_identifiers?.gender || 'not_specified'}
                       onValueChange={(val) => handleInputChange("product_identifiers", {
                         ...formData.product_identifiers,
-                        gender: val
+                        gender: val === 'not_specified' ? null : val
                       })}
                     >
                       <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Not specified</SelectItem>
+                        <SelectItem value="not_specified">Not specified</SelectItem>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
                         <SelectItem value="unisex">Unisex</SelectItem>

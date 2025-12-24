@@ -155,7 +155,29 @@ class DailyCreditDeductionJob extends BaseJobHandler {
 
       const domainsToProcess = activeCustomDomains || [];
 
+      // Group domains by root TLD (strip www. prefix) so sprtags.io and www.sprtags.io count as one
+      // Only charge once per root domain
+      const getRootDomain = (domain) => {
+        return domain.replace(/^www\./i, '').toLowerCase();
+      };
+
+      const domainsByRoot = new Map();
       for (const domain of domainsToProcess) {
+        const rootDomain = getRootDomain(domain.domain);
+        if (!domainsByRoot.has(rootDomain)) {
+          domainsByRoot.set(rootDomain, domain); // Use first domain entry as the one to charge
+        }
+      }
+
+      // Log grouped domains info
+      const totalDomains = domainsToProcess.length;
+      const uniqueRootDomains = domainsByRoot.size;
+      if (totalDomains !== uniqueRootDomains) {
+        console.log(`[DAILY_DEDUCTION] Grouped ${totalDomains} domains into ${uniqueRootDomains} unique root domains (www variants combined)`);
+      }
+
+      // Process only unique root domains (charge once per TLD)
+      for (const domain of domainsByRoot.values()) {
         domainResults.processed++;
 
         try {
