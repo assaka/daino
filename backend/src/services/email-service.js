@@ -673,6 +673,7 @@ class EmailService {
    */
   async sendTestEmail(storeId, templateIdentifier, testEmail, languageCode = 'en') {
     const exampleData = getExampleData(templateIdentifier);
+    console.log(`🔍 [TEST EMAIL] Template: ${templateIdentifier}, exampleData:`, JSON.stringify(exampleData, null, 2));
 
     // Get full store data from tenant DB
     const fullStoreData = await this.getFullStoreData(storeId);
