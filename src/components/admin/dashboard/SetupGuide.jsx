@@ -457,6 +457,7 @@ export const SetupGuide = ({ store }) => {
                         value={selectedPreset}
                         onChange={setSelectedPreset}
                         variant="cards"
+                        storeId={store?.id}
                     />
 
                     <div className="flex justify-between items-center pt-4 border-t">

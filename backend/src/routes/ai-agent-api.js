@@ -1,6 +1,6 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { applyProductTranslationsToMany, fetchProductImages } = require('../utils/productHelpers');
+const { applyProductTranslationsToMany, fetchProductImages, enrichProductsWithBrandAndMpn } = require('../utils/productHelpers');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 
 const router = express.Router();
@@ -273,10 +273,7 @@ router.get('/products', async (req, res) => {
       .eq('status', 'active')
       .eq('visibility', 'visible');
 
-    // Apply filters
-    if (brand) {
-      query = query.ilike('brand', `%${brand}%`);
-    }
+    // Note: brand filter applied after enrichment (brand is in attributes, not products table)
 
     if (min_price) {
       query = query.gte('price', parseFloat(min_price));
@@ -297,11 +294,22 @@ router.get('/products', async (req, res) => {
     const { data: products, error } = await query;
     if (error) throw error;
 
-    // Apply translations
-    let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+    // Apply translations (correct parameter order: products, language, tenantDb)
+    let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
+
+    // Enrich with brand/mpn from attributes
+    enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
     // Apply images
     enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
+
+    // Brand filter (applied after enrichment since brand is in attributes)
+    if (brand) {
+      const brandLower = brand.toLowerCase();
+      enrichedProducts = enrichedProducts.filter(p =>
+        p.brand && p.brand.toLowerCase().includes(brandLower)
+      );
+    }
 
     // Search filter (after translations applied)
     if (search) {
@@ -390,8 +398,11 @@ router.get('/products/search', async (req, res) => {
     const { data: products, error } = await query;
     if (error) throw error;
 
-    // Apply translations
-    let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+    // Apply translations (correct parameter order: products, language, tenantDb)
+    let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
+
+    // Enrich with brand/mpn from attributes
+    enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
     // Apply images
     enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
@@ -479,8 +490,11 @@ router.get('/products/:id', async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Apply translations
-    let enrichedProducts = await applyProductTranslationsToMany([product], tenantDb, language);
+    // Apply translations (correct parameter order: products, language, tenantDb)
+    let enrichedProducts = await applyProductTranslationsToMany([product], language, tenantDb);
+
+    // Enrich with brand/mpn from attributes
+    enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
     // Apply images
     enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
@@ -498,7 +512,7 @@ router.get('/products/:id', async (req, res) => {
         .eq('status', 'active');
 
       if (related) {
-        let relatedEnriched = await applyProductTranslationsToMany(related, tenantDb, language);
+        let relatedEnriched = await applyProductTranslationsToMany(related, language, tenantDb);
         relatedProducts = relatedEnriched.map(rp => ({
           id: rp.id,
           name: rp.name,

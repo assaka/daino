@@ -707,11 +707,6 @@ Best regards,
     </div>
     <p>We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.</p>
     <p style="color: #666;">If you have any questions in the meantime, please don''t hesitate to reach out to us.</p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: {{primary_color}};">{{store_url}}</a>
-    </p>
   </div>
 </div>
 {{email_footer}}'),
@@ -887,11 +882,6 @@ Best regards,
     <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b;">
       <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #4F46E5;">{{store_url}}</a>
-    </p>
   </div>
 </div>
 {{email_footer}}'),
@@ -923,11 +913,6 @@ Best regards,
     <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
       <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #059669;">{{store_url}}</a>
-    </p>
   </div>
 </div>
 {{email_footer}}');
@@ -961,11 +946,6 @@ Best regards,
     <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
       <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #059669;">{{store_url}}</a>
-    </p>
   </div>
 </div>
 {{email_footer}}', '2025-11-28 10:00:00+00', '2025-11-28 10:00:00+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '155851a2-e285-4ae8-a4eb-04b6aa024fad', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
@@ -1248,11 +1228,6 @@ Best regards,
     </div>
     <p>We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.</p>
     <p style="color: #666;">If you have any questions in the meantime, please don''t hesitate to reach out to us.</p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: {{primary_color}};">{{store_url}}</a>
-    </p>
   </div>
 </div>
 {{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('b1c2d3e4-f5a6-4789-bcde-444444444444', 'a1b2c3d4-e5f6-4789-abcd-444444444444', 'en', 'Reset your password - {{store_name}}', 'Hi {{customer_first_name}},

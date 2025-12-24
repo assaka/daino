@@ -453,6 +453,109 @@ async function applyProductImages(products, tenantDb) {
   }));
 }
 
+/**
+ * Enrich products with brand and MPN from product_attribute_values
+ * Fetches brand/mpn from attribute system with translations
+ *
+ * @param {Array} products - Array of product objects
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {string} storeId - Store ID
+ * @param {string} language - Language code for translations
+ * @returns {Promise<Array>} Products with brand, mpn, manufacturer fields
+ */
+async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, language = 'en') {
+  if (!products || products.length === 0) return products;
+
+  const productIds = products.map(p => p.id);
+
+  // Find the brand and mpn attribute IDs for this store
+  const { data: attributes } = await tenantDb
+    .from('attributes')
+    .select('id, code')
+    .eq('store_id', storeId)
+    .in('code', ['brand', 'mpn', 'manufacturer']);
+
+  if (!attributes || attributes.length === 0) return products;
+
+  const brandAttr = attributes.find(a => a.code === 'brand');
+  const mpnAttr = attributes.find(a => a.code === 'mpn');
+  const manufacturerAttr = attributes.find(a => a.code === 'manufacturer');
+
+  const attrIds = attributes.map(a => a.id);
+
+  // Fetch product_attribute_values for these products and attributes
+  const { data: productAttrValues } = await tenantDb
+    .from('product_attribute_values')
+    .select('product_id, attribute_id, value_id, text_value')
+    .in('product_id', productIds)
+    .in('attribute_id', attrIds);
+
+  if (!productAttrValues || productAttrValues.length === 0) return products;
+
+  // Collect value_ids for select/multiselect attributes to fetch translations
+  const valueIds = productAttrValues
+    .filter(pav => pav.value_id)
+    .map(pav => pav.value_id);
+
+  // Fetch attribute_values and their translations
+  let valueTranslations = {};
+  if (valueIds.length > 0) {
+    const { data: attrValues } = await tenantDb
+      .from('attribute_values')
+      .select('id, code, label')
+      .in('id', valueIds);
+
+    const { data: translations } = await tenantDb
+      .from('attribute_value_translations')
+      .select('attribute_value_id, language_code, value')
+      .in('attribute_value_id', valueIds);
+
+    if (attrValues) {
+      attrValues.forEach(av => {
+        valueTranslations[av.id] = av.label || av.code;
+      });
+    }
+
+    if (translations) {
+      translations.forEach(t => {
+        if (t.language_code === language && t.value) {
+          valueTranslations[t.attribute_value_id] = t.value;
+        }
+      });
+    }
+  }
+
+  // Build product -> brand/mpn lookup
+  const productBrandMap = {};
+  const productMpnMap = {};
+  const productManufacturerMap = {};
+
+  productAttrValues.forEach(pav => {
+    const value = pav.value_id
+      ? valueTranslations[pav.value_id]
+      : pav.text_value;
+
+    if (!value) return;
+
+    if (brandAttr && pav.attribute_id === brandAttr.id) {
+      productBrandMap[pav.product_id] = value;
+    }
+    if (mpnAttr && pav.attribute_id === mpnAttr.id) {
+      productMpnMap[pav.product_id] = value;
+    }
+    if (manufacturerAttr && pav.attribute_id === manufacturerAttr.id) {
+      productManufacturerMap[pav.product_id] = value;
+    }
+  });
+
+  return products.map(product => ({
+    ...product,
+    brand: productBrandMap[product.id] || null,
+    mpn: productMpnMap[product.id] || null,
+    manufacturer: productManufacturerMap[product.id] || null
+  }));
+}
+
 module.exports = {
   getProductTranslation,
   applyProductTranslations,
@@ -461,5 +564,6 @@ module.exports = {
   updateProductTranslations,
   getProductsOptimized,
   fetchProductImages,
-  applyProductImages
+  applyProductImages,
+  enrichProductsWithBrandAndMpn
 };
