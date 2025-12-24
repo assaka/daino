@@ -405,6 +405,9 @@ class EmailService {
         if (data.shipping_method) variables.shipping_method = data.shipping_method;
         if (data.estimated_delivery_date) variables.estimated_delivery_date = data.estimated_delivery_date;
         break;
+      case 'email_verification':
+        variables = this.buildEmailVerificationVariables(data);
+        break;
       default:
         // If no specific builder, use data as variables directly
         variables = data;
@@ -429,6 +432,26 @@ class EmailService {
       data.languageCode || 'en',
       data.attachments || []
     );
+  }
+
+  /**
+   * Build variables for email verification
+   * @param {Object} data - Verification data
+   * @returns {Object} Variables
+   */
+  buildEmailVerificationVariables(data) {
+    const { customer, store, verification_code } = data;
+
+    return {
+      customer_name: `${customer.first_name} ${customer.last_name}`,
+      customer_first_name: customer.first_name,
+      customer_email: customer.email,
+      verification_code: verification_code,
+      store_name: store?.name || 'Our Store',
+      store_logo_url: store?.logo_url || FALLBACK_LOGO_URL,
+      store_url: store?.store_url || process.env.CORS_ORIGIN,
+      current_year: new Date().getFullYear()
+    };
   }
 
   /**
