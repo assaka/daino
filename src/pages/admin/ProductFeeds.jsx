@@ -343,20 +343,32 @@ export default function ProductFeeds() {
                 </ol>
               </div>
 
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
                 <h4 className="font-semibold text-purple-900">AI Shopping Assistants</h4>
                 <p className="text-muted-foreground">
-                  The ChatGPT and Universal feeds are designed for AI shopping assistants like Google Gemini,
-                  Microsoft Copilot, and ChatGPT plugins. They include:
+                  AI assistants discover your products through multiple channels:
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Natural language product descriptions</li>
-                  <li>Schema.org structured data</li>
-                  <li>AI-friendly summaries and highlights</li>
-                  <li>Pricing context (e.g., "25% off, save $50")</li>
-                </ul>
-                <p className="text-muted-foreground mt-2">
-                  These feeds can be submitted to AI platforms or used with custom GPT integrations.
+                <div className="space-y-2 text-muted-foreground">
+                  <div className="pl-3 border-l-2 border-purple-300">
+                    <strong className="text-purple-800">Google Gemini:</strong> Uses your Google Merchant Center feed.
+                    When users ask Gemini for product recommendations, it pulls from Shopping data.
+                  </div>
+                  <div className="pl-3 border-l-2 border-purple-300">
+                    <strong className="text-purple-800">Microsoft Copilot:</strong> Uses your Microsoft Merchant Center feed.
+                    Copilot in Bing and Edge can recommend your products to shoppers.
+                  </div>
+                  <div className="pl-3 border-l-2 border-purple-300">
+                    <strong className="text-purple-800">ChatGPT & Custom GPTs:</strong> Create a <a href="https://chat.openai.com/gpts" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Custom GPT</a> that
+                    fetches your ChatGPT feed URL via Actions. Users can then ask your GPT for product recommendations.
+                  </div>
+                  <div className="pl-3 border-l-2 border-purple-300">
+                    <strong className="text-purple-800">Schema.org / Web Crawlers:</strong> The Universal feed provides
+                    structured data that AI crawlers (like GPTBot, Google-Extended) can index from your sitemap.
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Tip: Submitting to Google and Microsoft Merchant Centers automatically makes your products
+                  discoverable by their AI assistants (Gemini and Copilot).
                 </p>
               </div>
             </CardContent>

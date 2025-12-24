@@ -65,8 +65,9 @@ export function ThemePresetSelector({
 
       if (data.success && data.data) {
         setPresets(data.data);
-        // Auto-select system default if no value set
-        if (!value) {
+        // Auto-select system default if no value set OR if current value doesn't match any preset
+        const valueMatchesPreset = value && data.data.some(p => p.preset_name === value);
+        if (!valueMatchesPreset) {
           const systemDefault = data.data.find(p => p.is_system_default);
           if (systemDefault && onChange) {
             onChange(systemDefault.preset_name);
