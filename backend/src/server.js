@@ -497,7 +497,7 @@ Disallow: /admin/`);
 });
 
 // Store-specific Google Merchant feed (for multi-store)
-app.get('/public/:storeSlug/google-merchant.xml', async (req, res) => {
+app.get('/api/public/:storeSlug/google-merchant.xml', async (req, res) => {
   try {
     const { masterDbClient } = require('./database/masterConnection');
     const ConnectionManager = require('./services/database/ConnectionManager');
@@ -529,7 +529,7 @@ app.get('/public/:storeSlug/google-merchant.xml', async (req, res) => {
 });
 
 // Store-specific Microsoft Merchant feed
-app.get('/public/:storeSlug/microsoft-merchant.xml', async (req, res) => {
+app.get('/api/public/:storeSlug/microsoft-merchant.xml', async (req, res) => {
   try {
     const { masterDbClient } = require('./database/masterConnection');
     const ConnectionManager = require('./services/database/ConnectionManager');
@@ -561,7 +561,7 @@ app.get('/public/:storeSlug/microsoft-merchant.xml', async (req, res) => {
 });
 
 // Store-specific ChatGPT feed (JSON)
-app.get('/public/:storeSlug/chatgpt-feed.json', async (req, res) => {
+app.get('/api/public/:storeSlug/chatgpt-feed.json', async (req, res) => {
   try {
     const { masterDbClient } = require('./database/masterConnection');
     const ConnectionManager = require('./services/database/ConnectionManager');
@@ -593,7 +593,7 @@ app.get('/public/:storeSlug/chatgpt-feed.json', async (req, res) => {
 });
 
 // Store-specific Universal feed (Schema.org JSON)
-app.get('/public/:storeSlug/universal-feed.json', async (req, res) => {
+app.get('/api/public/:storeSlug/universal-feed.json', async (req, res) => {
   try {
     const { masterDbClient } = require('./database/masterConnection');
     const ConnectionManager = require('./services/database/ConnectionManager');
