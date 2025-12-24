@@ -346,9 +346,14 @@ export default function ProductFeeds() {
               <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
                 <h4 className="font-semibold text-purple-900">AI Shopping Assistants</h4>
                 <p className="text-muted-foreground">
-                  AI assistants discover your products through multiple channels:
+                  AI assistants discover your products automatically - no manual submission required:
                 </p>
                 <div className="space-y-2 text-muted-foreground">
+                  <div className="pl-3 border-l-2 border-purple-300">
+                    <strong className="text-purple-800">ChatGPT Shopping:</strong> Crawls your website directly and reads
+                    product pages. Having good Schema.org markup (which your store already has) helps ChatGPT understand
+                    your products. No feed submission needed - it's fully automatic.
+                  </div>
                   <div className="pl-3 border-l-2 border-purple-300">
                     <strong className="text-purple-800">Google Gemini:</strong> Uses your Google Merchant Center feed.
                     When users ask Gemini for product recommendations, it pulls from Shopping data.
@@ -358,18 +363,19 @@ export default function ProductFeeds() {
                     Copilot in Bing and Edge can recommend your products to shoppers.
                   </div>
                   <div className="pl-3 border-l-2 border-purple-300">
-                    <strong className="text-purple-800">ChatGPT & Custom GPTs:</strong> Create a <a href="https://chat.openai.com/gpts" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Custom GPT</a> that
-                    fetches your ChatGPT feed URL via Actions. Users can then ask your GPT for product recommendations.
-                  </div>
-                  <div className="pl-3 border-l-2 border-purple-300">
-                    <strong className="text-purple-800">Schema.org / Web Crawlers:</strong> The Universal feed provides
-                    structured data that AI crawlers (like GPTBot, Google-Extended) can index from your sitemap.
+                    <strong className="text-purple-800">Other AI Crawlers:</strong> AI bots like GPTBot and Google-Extended
+                    index your product pages. The Schema.org structured data on your pages helps them understand your catalog.
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 italic">
-                  Tip: Submitting to Google and Microsoft Merchant Centers automatically makes your products
-                  discoverable by their AI assistants (Gemini and Copilot).
-                </p>
+                <div className="mt-3 p-3 bg-purple-100 rounded text-xs">
+                  <strong className="text-purple-900">How to maximize AI visibility:</strong>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Submit feeds to Google & Microsoft Merchant Centers (enables Gemini & Copilot)</li>
+                    <li>Ensure your robots.txt allows GPTBot and other AI crawlers</li>
+                    <li>Keep product descriptions detailed and accurate</li>
+                    <li>Your store's Schema.org markup is automatically included on product pages</li>
+                  </ul>
+                </div>
               </div>
             </CardContent>
           </Card>

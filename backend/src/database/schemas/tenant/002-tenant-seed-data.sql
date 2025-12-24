@@ -99,13 +99,14 @@ VALUES
   ('067d4c9b-7823-4f64-be28-8c75450d231e', 'seo_settings', 'Global', 'Search', '/admin/seo-tools/settings', 'seo', 1, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('dd08ce7f-b4ae-40dc-ae0a-e0e8667a9a2e', 'seo_templates', 'SEO Templates', 'FileText', '/admin/seo-tools/templates', 'seo', 2, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('c4c35189-2da3-4062-a490-cab76a4cd967', 'seo_redirects', 'Redirects', 'RefreshCw', '/admin/seo-tools/redirects', 'seo', 3, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('6d54e5c6-d6d8-4ea0-aa72-8eacc29f0f72', 'seo_canonical', 'Canonical URLs', 'Link', '/admin/seo-tools/canonical', 'seo', 4, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('572c97b0-a00e-4a65-8a5d-e87036325e68', 'seo_hreflang', 'Hreflang', 'Globe', '/admin/seo-tools/hreflang', 'seo', 5, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('c498373d-a513-4f78-b732-3c1933d181c9', 'seo_robots', 'Robots.txt', 'Bot', '/admin/seo-tools/robots', 'seo', 6, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('c724b28d-e3bc-48ae-8707-87d585a7fe74', 'seo_social', 'Social Media', 'Share2', '/admin/seo-tools/social', 'seo', 7, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('793535ce-1c1f-4c35-9cb0-24f05a52f047', 'xml_sitemap', 'XML Sitemap', 'FileCode', '/admin/xml-sitemap', 'seo', 8, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('7ecc37c8-13fe-45a2-bded-0172da9184de', 'html_sitemap', 'HTML Sitemap', 'FileText', '/admin/html-sitemap', 'seo', 9, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
-  ('86af5d49-7fb1-405e-a371-f627274772b5', 'seo_report', 'SEO Report', 'FileText', '/admin/seo-tools/report', 'seo', 10, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c4c35189-2da3-4062-a490-cab76a4c3234', 'product_feeds', 'Product Feeds', 'Rss', '/admin/seo-tools/product-feeds', 'seo', 4, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('6d54e5c6-d6d8-4ea0-aa72-8eacc29f0f72', 'seo_canonical', 'Canonical URLs', 'Link', '/admin/seo-tools/canonical', 'seo', 5, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('572c97b0-a00e-4a65-8a5d-e87036325e68', 'seo_hreflang', 'Hreflang', 'Globe', '/admin/seo-tools/hreflang', 'seo', 6, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c498373d-a513-4f78-b732-3c1933d181c9', 'seo_robots', 'Robots.txt', 'Bot', '/admin/seo-tools/robots', 'seo', 7, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('c724b28d-e3bc-48ae-8707-87d585a7fe74', 'seo_social', 'Social Media', 'Share2', '/admin/seo-tools/social', 'seo', 8, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('793535ce-1c1f-4c35-9cb0-24f05a52f047', 'xml_sitemap', 'XML Sitemap', 'FileCode', '/admin/xml-sitemap', 'seo', 9, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('7ecc37c8-13fe-45a2-bded-0172da9184de', 'html_sitemap', 'HTML Sitemap', 'FileText', '/admin/html-sitemap', 'seo', 10, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
+  ('86af5d49-7fb1-405e-a371-f627274772b5', 'seo_report', 'SEO Report', 'FileText', '/admin/seo-tools/report', 'seo', 11, true, true, NULL, 'seo', NULL, NULL, NULL, NOW(), NOW(), 'standard'),
 
   -- =============================================
   -- LAYOUT CHILDREN (parent: layout, order: 1, 2, 3...)
