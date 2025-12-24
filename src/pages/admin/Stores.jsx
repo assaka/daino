@@ -18,6 +18,7 @@ import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
 import brevoAPI from '@/api/brevo';
 import { ThemePresetSelector, ThemePresetBadge } from '@/components/admin/ThemePresetSelector';
+import { SaveButton } from '@/components/ui/save-button';
 
 export default function Stores() {
   const navigate = useNavigate();
@@ -662,17 +663,16 @@ export default function Stores() {
               >
                 Cancel
               </Button>
-              <Button
+              <SaveButton
                 className="bg-green-600 hover:bg-green-700"
                 onClick={() => {
                   if (storeToPublish) {
                     confirmTogglePublished(storeToPublish.id, false);
                   }
                 }}
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Start Running
-              </Button>
+                defaultText="Start Running"
+                icon={<Play className="w-4 h-4 mr-2" />}
+              />
             </div>
           </div>
         </DialogContent>
