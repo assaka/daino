@@ -294,39 +294,33 @@ class CreditService {
 
     const ConnectionManager = require('./database/ConnectionManager');
 
-    // TEMP: Check by hour for hourly testing (was: check by day)
-    const now = new Date();
-    const chargeDate = now.toISOString().split('T')[0];
-    const chargeHour = now.getUTCHours();
-    const hourStart = `${chargeDate}T${String(chargeHour).padStart(2, '0')}:00:00`;
-    const hourEnd = `${chargeDate}T${String(chargeHour).padStart(2, '0')}:59:59`;
-
+    // Check if already charged today BEFORE deducting credits
+    const chargeDate = new Date().toISOString().split('T')[0];
     try {
       const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
 
-      // TEMP: Check by hour instead of by day for testing
       const { data: existingCharge, error: checkError } = await tenantDb
         .from('credit_usage')
         .select('id, created_at')
         .eq('reference_id', domainId)
         .eq('reference_type', 'custom_domain')
-        .gte('created_at', hourStart)
-        .lt('created_at', hourEnd)
+        .gte('created_at', `${chargeDate}T00:00:00`)
+        .lt('created_at', `${chargeDate}T23:59:59`)
         .maybeSingle();
 
       if (!checkError && existingCharge) {
-        console.log(`[HOURLY_DEDUCTION] Domain ${domainName} already charged this hour (${chargeHour}:00), skipping`);
+        console.log(`[DAILY_DEDUCTION] Domain ${domainName} already charged today (${chargeDate}), skipping`);
         return {
           success: true,
           already_charged: true,
-          message: `Already charged this hour (${chargeDate} ${chargeHour}:00)`,
+          message: `Already charged today (${chargeDate})`,
           credits_deducted: 0,
           charge_date: chargeDate
         };
       }
     } catch (checkError) {
       // If check fails, log but continue (fail-open to avoid missed charges)
-      console.warn(`[HOURLY_DEDUCTION] Could not check existing charge for domain ${domainId}:`, checkError.message);
+      console.warn(`[DAILY_DEDUCTION] Could not check existing charge for domain ${domainId}:`, checkError.message);
     }
 
     // Get balance before deduction
@@ -518,39 +512,32 @@ class CreditService {
       };
     }
 
-    // TEMP: Check by hour for hourly testing (was: check by day)
-    const now = new Date();
-    const chargeDate = now.toISOString().split('T')[0];
-    const chargeHour = now.getUTCHours();
-    const hourStart = `${chargeDate}T${String(chargeHour).padStart(2, '0')}:00:00`;
-    const hourEnd = `${chargeDate}T${String(chargeHour).padStart(2, '0')}:59:59`;
-
+    // Check if already charged today BEFORE deducting credits
+    const chargeDate = new Date().toISOString().split('T')[0];
     try {
       const ConnectionManager = require('./database/ConnectionManager');
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      // TEMP: Check by hour instead of by day for testing
       const { data: existingCharge, error: checkError } = await tenantDb
         .from('store_uptime')
-        .select('id, charged_date, created_at')
+        .select('id, charged_date')
         .eq('store_id', storeId)
-        .gte('created_at', hourStart)
-        .lt('created_at', hourEnd)
+        .eq('charged_date', chargeDate)
         .maybeSingle();
 
       if (!checkError && existingCharge) {
-        console.log(`[HOURLY_DEDUCTION] Store ${store.slug} already charged this hour (${chargeHour}:00), skipping`);
+        console.log(`[DAILY_DEDUCTION] Store ${store.slug} already charged today (${chargeDate}), skipping`);
         return {
           success: true,
           already_charged: true,
-          message: `Already charged this hour (${chargeDate} ${chargeHour}:00)`,
+          message: `Already charged today (${chargeDate})`,
           credits_deducted: 0,
           charge_date: chargeDate
         };
       }
     } catch (checkError) {
       // If check fails, log but continue (fail-open to avoid missed charges)
-      console.warn(`[HOURLY_DEDUCTION] Could not check existing charge for store ${storeId}:`, checkError.message);
+      console.warn(`[DAILY_DEDUCTION] Could not check existing charge for store ${storeId}:`, checkError.message);
     }
 
     // Get balance before deduction

@@ -391,11 +391,10 @@ async function runSystemJobs() {
     stats.errors.push({ job: 'System: Token Refresh', store: 'system', error: error.message });
   }
 
-  // 2. Credit Deduction - TEMP: Changed to hourly for testing (was: midnight UTC only)
+  // 2. Credit Deduction - Only runs at midnight UTC (hour 0)
   const currentHour = new Date().getUTCHours();
-  // if (currentHour === 0) { // DISABLED FOR TESTING - runs every hour now
-  if (true) { // TEMP: Always run for hourly testing
-    console.log(`\n[SYSTEM] Running credit deduction (hourly test mode, hour=${currentHour})...`);
+  if (currentHour === 0) {
+    console.log(`\n[SYSTEM] Running daily credit deduction (midnight UTC)...`);
     try {
       const DailyCreditDeductionJob = require('../src/core/jobs/DailyCreditDeductionJob');
       const job = new DailyCreditDeductionJob({
@@ -416,7 +415,6 @@ async function runSystemJobs() {
   } else {
     console.log(`\n[SYSTEM] Skipping daily credit deduction (current hour: ${currentHour}, runs at midnight UTC)`);
   }
-  // NOTE: Also changed credit-service.js to check by hour instead of day
 
   return systemResults;
 }
