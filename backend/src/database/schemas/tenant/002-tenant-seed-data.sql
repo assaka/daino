@@ -357,9 +357,13 @@ INSERT INTO email_templates ("id", "store_id", "identifier", "content_type", "va
 </table>
 {{email_footer}}'), ('c69316ab-7e8c-4590-850b-0f720c505d02', '{{STORE_ID}}', 'signup_email', 'both', '[{"key": "{{customer_name}}"}, {"key": "{{customer_first_name}}"}, {"key": "{{store_name}}"}, {"key": "{{store_url}}"}, {"key": "{{login_url}}"}, {"key": "{{current_year}}"}]', 'true', '1', 'false', '{}', '2025-10-31 21:21:14.762+00', '2025-11-05 19:00:58.234+00', 'true', 'Welcome to {{store_name}}!', 'Hi {{customer_first_name}},
 
-Welcome to {{store_name}}! We''re thrilled to have you with us.
+Welcome to {{store_name}}! We''re excited to have you on board. Your account has been successfully created and verified.
 
-Your account has been successfully created. You can now browse our products and track your orders.
+What you can do now:
+- Browse our products
+- Track your orders
+- Save addresses for faster checkout
+- View your order history
 
 Login to your account: {{login_url}}
 
