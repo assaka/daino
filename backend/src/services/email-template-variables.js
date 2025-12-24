@@ -137,6 +137,40 @@ const EMAIL_VARIABLES = {
     { key: '{{refund_amount}}', description: 'Refund amount', example: '$25.00' },
     { key: '{{currency}}', description: 'Currency code', example: 'USD' },
     { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Invoice Email Variables
+  invoice_email: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{customer_email}}', description: 'Customer email address', example: 'john@example.com' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{order_number}}', description: 'Order number', example: 'ORD-12345' },
+    { key: '{{invoice_number}}', description: 'Invoice number', example: 'INV-12345' },
+    { key: '{{invoice_date}}', description: 'Invoice date', example: 'January 15, 2025' },
+    { key: '{{order_total}}', description: 'Order total amount', example: '$125.99' },
+    { key: '{{items_html}}', description: 'HTML table of order items', example: '<table>...</table>' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Shipment Email Variables
+  shipment_email: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{customer_email}}', description: 'Customer email address', example: 'john@example.com' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_logo_url}}', description: 'Store logo URL', example: 'https://mystore.com/logo.png' },
+    { key: '{{order_number}}', description: 'Order number', example: 'ORD-12345' },
+    { key: '{{tracking_number}}', description: 'Tracking number', example: '1Z999AA10123456784' },
+    { key: '{{tracking_url}}', description: 'Tracking URL', example: 'https://track.example.com/12345' },
+    { key: '{{carrier}}', description: 'Shipping carrier', example: 'UPS' },
+    { key: '{{shipping_method}}', description: 'Shipping method', example: 'Ground' },
+    { key: '{{estimated_delivery_date}}', description: 'Estimated delivery date', example: 'January 20, 2025' },
+    { key: '{{items_html}}', description: 'HTML table of shipped items', example: '<table>...</table>' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
   ]
 };
 
