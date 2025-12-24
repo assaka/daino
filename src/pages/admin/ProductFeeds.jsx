@@ -204,28 +204,31 @@ export default function ProductFeeds() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="container mx-auto p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Rss className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Product Feeds</h1>
+        </div>
+        <p>Loading settings...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {flashMessage && (
-        <FlashMessage
-          type={flashMessage.type}
-          message={flashMessage.message}
-          onClose={() => setFlashMessage(null)}
-        />
-      )}
+    <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
 
-      <div>
-        <h1 className="text-2xl font-bold">Product Feeds</h1>
-        <p className="text-muted-foreground mt-1">
-          Generate product feeds for Google Shopping, Microsoft Ads, AI assistants, and more.
-        </p>
+      <div className="flex items-center gap-2 mb-6">
+        <Rss className="h-6 w-6" />
+        <h1 className="text-3xl font-bold">Product Feeds</h1>
       </div>
+
+      <p className="text-muted-foreground -mt-4 mb-6">
+        Generate product feeds for Google Shopping, Microsoft Ads, AI assistants, and more.
+      </p>
 
       <Tabs defaultValue="feeds" className="space-y-6">
         <TabsList>
