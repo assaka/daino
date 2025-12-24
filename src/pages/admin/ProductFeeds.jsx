@@ -237,6 +237,44 @@ export default function ProductFeeds() {
         </TabsList>
 
         <TabsContent value="feeds" className="space-y-4">
+          {/* Benefits Section */}
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-green-900">Why use product feeds?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3 text-sm">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <ShoppingBag className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-green-900">Reach more customers</h4>
+                    <p className="text-muted-foreground">Your products appear in Google Shopping, Bing Shopping, and comparison sites - reaching millions of shoppers actively searching for products.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-green-900">AI-powered discovery</h4>
+                    <p className="text-muted-foreground">AI assistants like ChatGPT, Google Gemini, and Copilot can recommend your products to users asking for shopping advice.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-green-900">Better SEO & visibility</h4>
+                    <p className="text-muted-foreground">Structured product data helps search engines understand your products, improving rankings and enabling rich snippets in search results.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-2">
             <FeedCard
               title="Google Merchant Center"
