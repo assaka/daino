@@ -17,6 +17,30 @@ if (typeof window !== 'undefined') {
 }
 const CANONICAL_CACHE_TTL = 60000; // 1 minute
 
+/**
+ * Extract brand/mpn/manufacturer from product attributes array
+ * Used when these fields are stored in product_attribute_values instead of products table
+ */
+function extractBrandAndMpnFromAttributes(productData) {
+    if (!productData?.attributes || !Array.isArray(productData.attributes)) {
+        return { brand: null, mpn: null, manufacturer: null };
+    }
+
+    const result = { brand: null, mpn: null, manufacturer: null };
+
+    for (const attr of productData.attributes) {
+        if (attr.code === 'brand' && attr.value) {
+            result.brand = attr.value;
+        } else if (attr.code === 'mpn' && attr.value) {
+            result.mpn = attr.value;
+        } else if (attr.code === 'manufacturer' && attr.value) {
+            result.manufacturer = attr.value;
+        }
+    }
+
+    return result;
+}
+
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
     const storeContext = useStore();
     const seoContext = useSeoSettings();
@@ -27,6 +51,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
     const seoSettings = seoContext?.seoSettings || {};
 
     const [customCanonicalUrl, setCustomCanonicalUrl] = useState(null);
+
+    // Extract brand/mpn from attributes if not directly on product
+    const attributeData = pageType === 'product' && pageData ? extractBrandAndMpnFromAttributes(pageData) : {};
+    const effectiveBrand = pageData?.brand || attributeData.brand;
+    const effectiveMpn = pageData?.mpn || attributeData.mpn;
+    const effectiveManufacturer = pageData?.manufacturer || attributeData.manufacturer || pageData?.product_identifiers?.manufacturer;
 
     // Fetch custom canonical URL for the current page
     useEffect(() => {
@@ -186,7 +216,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{currency}}': store?.currency || 'No Currency',
                 '{{sku}}': data?.sku || '',
                 '{{price}}': data?.price ? formatPrice(data.price, store?.currency) : '',
-                '{{brand}}': data?.brand || ''
+                '{{brand}}': effectiveBrand || ''
             };
             
             
@@ -747,23 +777,23 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     else if (pageData.gtin.length === 14) structuredData.gtin14 = pageData.gtin;
                 }
 
-                // Add MPN
-                if (pageData.mpn) structuredData.mpn = pageData.mpn;
+                // Add MPN (from product or attributes)
+                if (effectiveMpn) structuredData.mpn = effectiveMpn;
 
-                // Add brand
+                // Add brand (from product or attributes)
                 structuredData.brand = {
                     "@type": "Brand",
-                    "name": pageData.brand ||
+                    "name": effectiveBrand ||
                            seoSettings?.social_media_settings?.schema?.organization_name ||
                            seoSettings?.schema_settings?.organization_name ||
                            store?.name || "Store"
                 };
 
-                // Add manufacturer if different from brand
-                if (identifiers.manufacturer) {
+                // Add manufacturer if different from brand (from product or attributes)
+                if (effectiveManufacturer) {
                     structuredData.manufacturer = {
                         "@type": "Organization",
-                        "name": identifiers.manufacturer
+                        "name": effectiveManufacturer
                     };
                 }
 
