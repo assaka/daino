@@ -64,9 +64,9 @@ export default function Header() {
                         <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
                             Pricing
                         </a>
-                        <a href="#resources" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                        <Link to="/blog" className="text-slate-600 hover:text-indigo-600 transition-colors">
                             Resources
-                        </a>
+                        </Link>
                     </nav>
 
                     {/* Auth Buttons */}
@@ -130,9 +130,9 @@ export default function Header() {
                     <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
                         Pricing
                     </a>
-                    <a href="#resources" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                    <Link to="/blog" className="text-slate-600 hover:text-indigo-600 transition-colors">
                         Resources
-                    </a>
+                    </Link>
                 </nav>
             </div>
         </header>
