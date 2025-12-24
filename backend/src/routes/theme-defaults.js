@@ -57,15 +57,29 @@ router.get('/', async (req, res) => {
 
 /**
  * @route   GET /api/public/theme-defaults/presets
- * @desc    Get all available theme presets
+ * @desc    Get all available theme presets (system + store-specific custom themes)
  * @access  Public
+ * @query   storeId - Optional store ID to include custom themes created by that store
  */
 router.get('/presets', async (req, res) => {
   try {
-    const { data: presets, error } = await masterDbClient
+    const { storeId } = req.query;
+
+    // Build query for active presets
+    let query = masterDbClient
       .from('theme_defaults')
-      .select('id, preset_name, display_name, description, theme_settings, is_system_default, type, user_id')
-      .eq('is_active', true)
+      .select('id, preset_name, display_name, description, theme_settings, is_system_default, type, user_id, store_id')
+      .eq('is_active', true);
+
+    // If storeId provided, get system themes + this store's custom themes
+    // If no storeId, only return system themes
+    if (storeId) {
+      query = query.or(`type.eq.system,store_id.eq.${storeId}`);
+    } else {
+      query = query.eq('type', 'system');
+    }
+
+    const { data: presets, error } = await query
       .order('type', { ascending: false })  // 'user' before 'system' alphabetically descending
       .order('sort_order', { ascending: true });
 
@@ -77,8 +91,8 @@ router.get('/presets', async (req, res) => {
       });
     }
 
-    // Set cache headers
-    res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
+    // Set cache headers - shorter cache for filtered results
+    res.set('Cache-Control', storeId ? 'private, max-age=300' : 'public, max-age=3600');
 
     res.json({
       success: true,
@@ -150,13 +164,21 @@ router.get('/preset/:presetName', async (req, res) => {
  */
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { preset_name, display_name, description, theme_settings, type = 'user' } = req.body;
+    const { preset_name, display_name, description, theme_settings, type = 'user', store_id } = req.body;
     const userId = req.user?.id;
 
     if (!preset_name || !display_name || !theme_settings) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: preset_name, display_name, theme_settings'
+      });
+    }
+
+    // For user themes, require store_id so the theme is scoped to that store
+    if (type === 'user' && !store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required for custom themes'
       });
     }
 
@@ -194,6 +216,7 @@ router.post('/', authMiddleware, async (req, res) => {
         theme_settings,
         type,
         user_id: userId,
+        store_id: type === 'user' ? store_id : null,
         is_system_default: false,
         is_active: true,
         sort_order: sortOrder

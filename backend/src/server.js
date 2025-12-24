@@ -528,7 +528,7 @@ app.get('/api/public/:storeSlug/google-merchant.xml', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store.id);
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feedXml = await generateGoogleMerchantXml(store.id, baseUrl, store.currency || 'EUR', language);
+    const feedXml = await generateGoogleMerchantXml(tenantDb, store.id, baseUrl, store.currency || 'EUR', language);
 
     console.log(`[Feed] Generated feed with ${feedXml.length} bytes`);
 
@@ -562,7 +562,7 @@ app.get('/api/public/:storeSlug/microsoft-merchant.xml', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store.id);
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feedXml = await generateGoogleMerchantXml(store.id, baseUrl, store.currency || 'EUR', language);
+    const feedXml = await generateGoogleMerchantXml(tenantDb, store.id, baseUrl, store.currency || 'EUR', language);
 
     res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
     res.send(feedXml);
@@ -594,7 +594,7 @@ app.get('/api/public/:storeSlug/chatgpt-feed.json', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store.id);
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feed = await generateChatGPTFeed(store.id, baseUrl, store.currency || 'EUR', language);
+    const feed = await generateChatGPTFeed(tenantDb, store.id, baseUrl, store.currency || 'EUR', language);
 
     res.set({ 'Cache-Control': 'public, max-age=3600' });
     res.json(feed);
@@ -626,7 +626,7 @@ app.get('/api/public/:storeSlug/universal-feed.json', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store.id);
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feed = await generateUniversalFeed(store.id, baseUrl, store.currency || 'EUR', language);
+    const feed = await generateUniversalFeed(tenantDb, store.id, baseUrl, store.currency || 'EUR', language);
 
     res.set({ 'Cache-Control': 'public, max-age=3600' });
     res.json(feed);

@@ -2394,7 +2394,7 @@ VALUES
   ('92597919-c7fd-4907-9bbb-51d9997f373c', 'account.forgot_password', 'en', 'Forgot password?', 'account', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
   ('42ab27b9-1a5b-419d-94bb-efb5a21d44b5', 'checkout.enter_shipping_address', 'en', 'Enter shipping address', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
   ('a1b2c3d4-0001-4001-a001-000000000001', 'account.email_not_configured_title', 'en', 'Email Not Configured', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
-  ('a1b2c3d4-0001-4001-a001-000000000002', 'account.email_not_configured_description', 'en', 'Registration is not available in preview mode because email verification cannot be sent. Please configure an email provider in your store settings to enable customer registration.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000002', 'account.email_not_configured_description', 'en', 'Please configure an email provider in your store settings to enable customer registration.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
   ('a1b2c3d4-0001-4001-a001-000000000004', 'account.already_access', 'en', 'Already have access?', 'account', '2025-12-22T00:00:00.000Z', '2025-12-22T00:00:00.000Z', 'system', '{{STORE_ID}}'),
   ('a1b2c3d4-0001-4001-a001-000000000003', 'checkout.order_not_available', 'en', 'Placing orders is not available on a preview store. This is a demonstration only.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}')
 ON CONFLICT DO NOTHING;

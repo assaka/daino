@@ -362,11 +362,14 @@ async function enrichProductsWithBrandAndMpn(products, tenantDb, storeId, langua
 
 /**
  * Generate Google Merchant Center RSS 2.0 XML feed
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {string} storeId - Store ID
+ * @param {string} baseUrl - Base URL for the store
+ * @param {string} currency - Currency code
+ * @param {string} language - Language code
  */
-async function generateGoogleMerchantXml(storeId, baseUrl, currency = 'EUR', language = 'en') {
+async function generateGoogleMerchantXml(tenantDb, storeId, baseUrl, currency = 'EUR', language = 'en') {
   try {
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
     // Get store info
     const { data: store } = await tenantDb
       .from('stores')
@@ -509,9 +512,7 @@ function truncate(text, maxLength) {
 /**
  * Generate ChatGPT/OpenAI compatible JSON feed
  */
-async function generateChatGPTFeed(storeId, baseUrl, currency = 'EUR', language = 'en') {
-  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
+async function generateChatGPTFeed(tenantDb, storeId, baseUrl, currency = 'EUR', language = 'en') {
   const { data: store } = await tenantDb
     .from('stores')
     .select('name, currency, settings')
@@ -600,9 +601,7 @@ async function generateChatGPTFeed(storeId, baseUrl, currency = 'EUR', language 
 /**
  * Generate Universal AI feed (Schema.org based)
  */
-async function generateUniversalFeed(storeId, baseUrl, currency = 'EUR', language = 'en') {
-  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
+async function generateUniversalFeed(tenantDb, storeId, baseUrl, currency = 'EUR', language = 'en') {
   const { data: store } = await tenantDb
     .from('stores')
     .select('name, currency')
@@ -735,7 +734,7 @@ router.get('/:storeId/google-merchant-xml', async (req, res) => {
     }
 
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feedXml = await generateGoogleMerchantXml(storeId, baseUrl, store.currency, language);
+    const feedXml = await generateGoogleMerchantXml(tenantDb, storeId, baseUrl, store.currency, language);
 
     res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
     res.send(feedXml);
@@ -770,7 +769,7 @@ router.get('/:storeId/microsoft-merchant-xml', async (req, res) => {
     }
 
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feedXml = await generateGoogleMerchantXml(storeId, baseUrl, store.currency, language);
+    const feedXml = await generateGoogleMerchantXml(tenantDb, storeId, baseUrl, store.currency, language);
 
     res.set({ 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
     res.send(feedXml);
@@ -805,7 +804,7 @@ router.get('/:storeId/chatgpt-feed', async (req, res) => {
     }
 
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feed = await generateChatGPTFeed(storeId, baseUrl, store.currency, language);
+    const feed = await generateChatGPTFeed(tenantDb, storeId, baseUrl, store.currency, language);
 
     res.set({ 'Cache-Control': 'public, max-age=3600' });
     res.json(feed);
@@ -840,7 +839,7 @@ router.get('/:storeId/universal-feed', async (req, res) => {
     }
 
     const baseUrl = await buildStoreUrl({ tenantDb, storeId: store.id, storeSlug: store.slug });
-    const feed = await generateUniversalFeed(storeId, baseUrl, store.currency, language);
+    const feed = await generateUniversalFeed(tenantDb, storeId, baseUrl, store.currency, language);
 
     res.set({ 'Cache-Control': 'public, max-age=3600' });
     res.json(feed);
