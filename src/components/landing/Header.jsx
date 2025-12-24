@@ -69,8 +69,8 @@ export default function Header() {
                         </a>
                     </nav>
 
-                    {/* Desktop Auth Buttons */}
-                    <div className="hidden md:flex items-center space-x-4">
+                    {/* Auth Buttons */}
+                    <div className="flex items-center space-x-4">
                         {user ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -122,34 +122,18 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Mobile Navigation */}
-                <div className="flex md:hidden flex-col items-center gap-3 mt-4">
-                    <nav className="flex items-center gap-6 font-semibold text-base">
-                        <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
-                            Discord
-                        </a>
-                        <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
-                            Pricing
-                        </a>
-                        <a href="#resources" className="text-slate-600 hover:text-indigo-600 transition-colors">
-                            Resources
-                        </a>
-                    </nav>
-                    {!user && (
-                        <div className="flex items-center gap-3">
-                            <Link to="/auth">
-                                <Button variant="ghost" size="sm" className="material-ripple">
-                                    Sign In
-                                </Button>
-                            </Link>
-                            <Link to={createPageUrl("Onboarding")}>
-                                <Button size="sm" className="bg-green-500 text-white">
-                                    Try Now
-                                </Button>
-                            </Link>
-                        </div>
-                    )}
-                </div>
+                {/* Mobile Navigation - Below logo row */}
+                <nav className="flex md:hidden items-center justify-center gap-6 font-semibold text-base mt-4">
+                    <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                        Discord
+                    </a>
+                    <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                        Pricing
+                    </a>
+                    <a href="#resources" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                        Resources
+                    </a>
+                </nav>
             </div>
         </header>
     );
