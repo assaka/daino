@@ -233,7 +233,6 @@ class EmailService {
       // Inject theme colors and store data into variables for header/footer templates
       const themeColors = await this.getThemeColors(storeId);
       const fullStoreData = await this.getFullStoreData(storeId);
-      console.log(`🔍 [SEND EMAIL] Template: ${templateIdentifier}, incoming variables:`, JSON.stringify(variables, null, 2));
       const enrichedVariables = {
         ...variables,
         ...themeColors,  // Adds primary_color and secondary_color
@@ -241,14 +240,10 @@ class EmailService {
         store_url: variables.store_url || fullStoreData.store_url,
         store_name: variables.store_name || fullStoreData.name
       };
-      console.log(`🔍 [SEND EMAIL] enrichedVariables:`, JSON.stringify(enrichedVariables, null, 2));
 
       // Render template with variables
       const renderedSubject = renderTemplate(subject, enrichedVariables);
       const renderedContent = renderTemplate(content, enrichedVariables);
-
-      // Debug: Check if customer_first_name was replaced
-      console.log(`🔍 [SEND EMAIL] customer_first_name value: "${enrichedVariables.customer_first_name}"`);
 
       // Send via Brevo
       const result = await this.sendViaBrevo(
@@ -725,7 +720,6 @@ class EmailService {
    */
   async sendTestEmail(storeId, templateIdentifier, testEmail, languageCode = 'en') {
     const exampleData = getExampleData(templateIdentifier);
-    console.log(`🔍 [TEST EMAIL] Template: ${templateIdentifier}, exampleData:`, JSON.stringify(exampleData, null, 2));
 
     // Get full store data from tenant DB
     const fullStoreData = await this.getFullStoreData(storeId);
