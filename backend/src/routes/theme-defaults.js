@@ -84,27 +84,29 @@ router.get('/presets', async (req, res) => {
 
     console.log('[theme-defaults/presets] Total presets found:', allPresets?.length);
     console.log('[theme-defaults/presets] User themes:', allPresets?.filter(p => p.type === 'user').map(p => ({ name: p.preset_name, store_id: p.store_id })));
+    console.log('[theme-defaults/presets] Looking for storeId:', storeId, 'type:', typeof storeId);
 
     // Filter presets based on storeId
     let filteredPresets = allPresets || [];
 
     if (storeId) {
       // Include system themes + this store's custom themes
+      // Use string comparison to handle UUID vs string mismatch
       filteredPresets = filteredPresets.filter(p =>
-        p.type === 'system' || p.store_id === storeId
+        p.type === 'system' || String(p.store_id) === String(storeId)
       );
     } else {
       // No storeId - only show system themes
       filteredPresets = filteredPresets.filter(p => p.type === 'system');
     }
 
-    console.log('[theme-defaults/presets] After filtering:', filteredPresets.length);
+    console.log('[theme-defaults/presets] After filtering:', filteredPresets.length, 'store-owned:', filteredPresets.filter(p => p.type === 'user').length);
 
     // Sort results: store-owned themes first, then system themes
     const sortedPresets = filteredPresets.sort((a, b) => {
       // Store-owned themes (matching storeId) come first
-      const aIsStoreOwned = storeId && a.store_id === storeId;
-      const bIsStoreOwned = storeId && b.store_id === storeId;
+      const aIsStoreOwned = storeId && String(a.store_id) === String(storeId);
+      const bIsStoreOwned = storeId && String(b.store_id) === String(storeId);
 
       if (aIsStoreOwned && !bIsStoreOwned) return -1;
       if (!aIsStoreOwned && bIsStoreOwned) return 1;
