@@ -172,11 +172,16 @@ export default function ThemeLayout() {
         }
     }, [selectedStore]);
 
-    // Fetch available themes (system + user)
+    // Fetch available themes (system + store-specific custom themes)
     const fetchAvailableThemes = async () => {
         setLoadingThemes(true);
         try {
-            const response = await fetch('/api/public/theme-defaults/presets');
+            // Pass storeId to get store-specific custom themes along with system themes
+            const storeId = selectedStore?.id || store?.id;
+            const url = storeId
+                ? `/api/public/theme-defaults/presets?storeId=${storeId}`
+                : '/api/public/theme-defaults/presets';
+            const response = await fetch(url);
             const data = await response.json();
             if (data.success && data.data) {
                 setAvailableThemes(data.data);
@@ -820,7 +825,8 @@ export default function ThemeLayout() {
                 display_name: newThemeName.trim(),
                 description: newThemeDescription.trim() || null,
                 theme_settings: store.settings.theme,
-                type: 'user'
+                type: 'user',
+                store_id: store.id // Scope custom theme to this store
             });
 
             if (response.success) {

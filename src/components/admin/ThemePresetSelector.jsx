@@ -14,7 +14,8 @@ export function ThemePresetSelector({
   value,
   onChange,
   variant = 'cards', // 'cards' | 'compact' | 'dropdown'
-  className = ''
+  className = '',
+  storeId = null // Pass storeId to show store-specific custom themes
 }) {
   const [presets, setPresets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +36,7 @@ export function ThemePresetSelector({
 
   useEffect(() => {
     fetchPresets();
-  }, []);
+  }, [storeId]);
 
   useEffect(() => {
     if (variant === 'cards' && !loading && presets.length > 0) {
@@ -55,7 +56,11 @@ export function ThemePresetSelector({
   const fetchPresets = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/public/theme-defaults/presets');
+      // Pass storeId to get store-specific custom themes along with system themes
+      const url = storeId
+        ? `/api/public/theme-defaults/presets?storeId=${storeId}`
+        : '/api/public/theme-defaults/presets';
+      const response = await fetch(url);
       const data = await response.json();
 
       if (data.success && data.data) {

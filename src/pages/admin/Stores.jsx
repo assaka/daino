@@ -884,6 +884,7 @@ export default function Stores() {
               value={selectedPreset}
               onChange={setSelectedPreset}
               variant="cards"
+              storeId={storeForTheme?.id}
             />
 
             <div className="flex justify-between items-center pt-4 border-t">

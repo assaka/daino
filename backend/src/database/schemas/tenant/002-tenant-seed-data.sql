@@ -431,59 +431,93 @@ Shipping Address: {{shipping_address}}
 Track your order: {{order_details_url}}
 
 Best regards,
-The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Confirmed!</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for your order! Your order has been confirmed and is being processed.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Details</h3>
-      <table style="width: 100%; border-collapse: collapse;">
+The {{store_name}} Team', '{{email_header}}
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Order Confirmed!
+      </h1>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: 400;">
+        Order #{{order_number}}
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Thank you for your order! Your order has been confirmed and is being processed.
+      </p>
+      <!-- Order Details Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{order_number}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0;">Order Date</td>
-          <td style="padding: 8px 0; text-align: right;">{{order_date}}</td>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Details
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Order Number</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Order Date</td>
+                <td style="padding: 8px 0; text-align: right; color: #111827; font-size: 14px;">{{order_date}}</td>
+              </tr>
+            </table>
+          </td>
         </tr>
       </table>
-    </div>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
-      {{items_html}}
-    </div>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Summary</h3>
-      <table style="width: 100%; border-collapse: collapse;">
+      <!-- Order Items -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
-          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Items
+            </h3>
+            {{items_html}}
+          </td>
         </tr>
       </table>
-    </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
-  </div>
-</div>'), ('d3176294-44e3-4893-993d-9b5c60202aaa', '{{STORE_ID}}', 'invoice_email', 'html', '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '10', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
+      <!-- Order Summary -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Summary
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Subtotal</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{order_subtotal}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Shipping</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{order_shipping}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Tax</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{order_tax}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: {{primary_color}};">Total</td>
+                <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: {{primary_color}};">{{order_total}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+{{email_footer}}'), ('d3176294-44e3-4893-993d-9b5c60202aaa', '{{STORE_ID}}', 'invoice_email', 'html', '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '10', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #f8f9fa; padding: 30px;">
     <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Invoice #{{invoice_number}}</h2>
@@ -758,35 +792,68 @@ If you have any questions or concerns, please don''t hesitate to contact us.
 
 Best regards,
 {{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Refunded</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We are writing to inform you that your order <strong>#{{order_number}}</strong> has been refunded.</p>
-    <p>Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
-      <h3 style="margin: 0 0 15px 0; color: #333;">Refund Details</h3>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr><td style="padding: 8px 0; color: #666;">Order Number:</td><td style="padding: 8px 0; text-align: right;"><strong>#{{order_number}}</strong></td></tr>
-        <tr><td style="padding: 8px 0; color: #666;">Refund Amount:</td><td style="padding: 8px 0; text-align: right; font-size: 18px; color: #059669;"><strong>{{currency}} {{refund_amount}}</strong></td></tr>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Order Refunded
+      </h1>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We are writing to inform you that your order <strong>#{{order_number}}</strong> has been refunded.
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.
+      </p>
+      <!-- Refund Details Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Refund Details
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Order Number</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">#{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Refund Amount</td>
+                <td style="padding: 8px 0; text-align: right; color: #059669; font-size: 18px; font-weight: 600;">{{currency}} {{refund_amount}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
       </table>
-    </div>
-    <p style="color: #666;">The refund has been processed and should appear in your account within <strong>5-10 business days</strong>, depending on your payment provider.</p>
-    <p>We truly value you as a customer and hope you will give us another opportunity to serve you.</p>
-    <p style="text-align: center; margin-top: 30px;">
-      <a href="{{store_url}}" style="background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-        Continue Shopping
-      </a>
-    </p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
-  </div>
-</div>
+      <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+        The refund has been processed and should appear in your account within <strong>5-10 business days</strong>, depending on your payment provider.
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We truly value you as a customer and hope you will give us another opportunity to serve you.
+      </p>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center">
+            <a href="{{store_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Continue Shopping
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}'),
 -- Password reset email template
 ('a1b2c3d4-e5f6-4789-abcd-444444444444', '{{STORE_ID}}', 'password_reset', 'both', '["customer_first_name", "customer_name", "reset_url", "reset_link", "store_name", "store_url", "current_year", "expiry_hours"]', 'true', '28', 'false', '{}', '2025-11-28 10:00:00.000+00', '2025-11-28 10:00:00.000+00', 'true', 'Reset your password - {{store_name}}', 'Hi {{customer_first_name}},
@@ -971,35 +1038,68 @@ If you have any questions or concerns, please don''t hesitate to contact us.
 
 Best regards,
 {{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Refunded</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We are writing to inform you that your order <strong>#{{order_number}}</strong> has been refunded.</p>
-    <p>Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
-      <h3 style="margin: 0 0 15px 0; color: #333;">Refund Details</h3>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr><td style="padding: 8px 0; color: #666;">Order Number:</td><td style="padding: 8px 0; text-align: right;"><strong>#{{order_number}}</strong></td></tr>
-        <tr><td style="padding: 8px 0; color: #666;">Refund Amount:</td><td style="padding: 8px 0; text-align: right; font-size: 18px; color: #059669;"><strong>{{currency}} {{refund_amount}}</strong></td></tr>
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Order Refunded
+      </h1>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We are writing to inform you that your order <strong>#{{order_number}}</strong> has been refunded.
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.
+      </p>
+      <!-- Refund Details Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Refund Details
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Order Number</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">#{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Refund Amount</td>
+                <td style="padding: 8px 0; text-align: right; color: #059669; font-size: 18px; font-weight: 600;">{{currency}} {{refund_amount}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
       </table>
-    </div>
-    <p style="color: #666;">The refund has been processed and should appear in your account within <strong>5-10 business days</strong>, depending on your payment provider.</p>
-    <p>We truly value you as a customer and hope you will give us another opportunity to serve you.</p>
-    <p style="text-align: center; margin-top: 30px;">
-      <a href="{{store_url}}" style="background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-        Continue Shopping
-      </a>
-    </p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
-  </div>
-</div>
+      <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+        The refund has been processed and should appear in your account within <strong>5-10 business days</strong>, depending on your payment provider.
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        We truly value you as a customer and hope you will give us another opportunity to serve you.
+      </p>
+      <!-- CTA Button -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center">
+            <a href="{{store_url}}" style="display: inline-block; padding: 14px 32px; background-color: {{primary_color}}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+              Continue Shopping
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {{email_footer}}', '2025-11-26 10:00:00+00', '2025-12-05 16:03:44.220462+00'), ('a1b52211-ddca-40d1-ac14-4b3d84ba256d', 'c69316ab-7e8c-4590-850b-0f720c505d02', 'en', 'Welcome to {{store_name}}!', 'Hi {{customer_first_name}},
 
 Welcome to {{store_name}}! We are thrilled to have you with us.
@@ -1213,59 +1313,93 @@ Shipping Address: {{shipping_address}}
 Track your order: {{order_details_url}}
 
 Best regards,
-The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Confirmed!</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for your order! Your order has been confirmed and is being processed.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Details</h3>
-      <table style="width: 100%; border-collapse: collapse;">
+The {{store_name}} Team', '{{email_header}}
+<!-- Title Section -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 0 20px 15px; text-align: center;">
+      <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 20px; font-weight: 600; line-height: 1.3;">
+        Order Confirmed!
+      </h1>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: 400;">
+        Order #{{order_number}}
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- Email Body -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 20px 40px 40px;">
+      <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Hi <strong>{{customer_first_name}}</strong>,
+      </p>
+      <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+        Thank you for your order! Your order has been confirmed and is being processed.
+      </p>
+      <!-- Order Details Card -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{order_number}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0;">Order Date</td>
-          <td style="padding: 8px 0; text-align: right;">{{order_date}}</td>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Details
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Order Number</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Order Date</td>
+                <td style="padding: 8px 0; text-align: right; color: #111827; font-size: 14px;">{{order_date}}</td>
+              </tr>
+            </table>
+          </td>
         </tr>
       </table>
-    </div>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
-      {{items_html}}
-    </div>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Summary</h3>
-      <table style="width: 100%; border-collapse: collapse;">
+      <!-- Order Items -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
-          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Items
+            </h3>
+            {{items_html}}
+          </td>
         </tr>
       </table>
-    </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
-  </div>
-</div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', 'd3176294-44e3-4893-993d-9b5c60202aaa', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
+      <!-- Order Summary -->
+      <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+        <tr>
+          <td style="padding: 20px;">
+            <h3 style="margin: 0 0 16px 0; color: {{primary_color}}; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              Order Summary
+            </h3>
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Subtotal</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{order_subtotal}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Shipping</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{order_shipping}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Tax</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-size: 14px;">{{order_tax}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: {{primary_color}};">Total</td>
+                <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: {{primary_color}};">{{order_total}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+{{email_footer}}', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', 'd3176294-44e3-4893-993d-9b5c60202aaa', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #f8f9fa; padding: 30px;">
     <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Invoice #{{invoice_number}}</h2>
@@ -1327,32 +1461,54 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
     </div>
   </div>
 </div>
-{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-12-05 15:13:06.768427+00'), ('00a2b31c-0f9e-4f6f-a0e1-211077b54eae', '07958749-5770-4838-87e1-b860ee355fb7', 'en', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                <div style="background-color: white; width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 10px;">
-                  <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 100px; max-height: 100px; object-fit: contain;">
-                </div>
-                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">{{store_name}}</h1>
-              </div>
-            </div>', '2025-11-05 17:45:19.314+00', '2025-12-05 15:24:04.223845+00'), ('de637ddd-bcf9-4323-90fb-14b695d5cc81', 'f67ae526-c1ab-45ab-bbd5-5b7b353644d9', 'en', 'Email Footer Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #f9fafb; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
-                  Questions? Contact us at <a href="mailto:{{contact_email}}" style="color: #4f46e5; text-decoration: none;">{{contact_email}}</a>
-                </p>
-                <p style="color: #9ca3af; font-size: 12px; margin: 10px 0;">
-                  {{store_address}}<br>
-                  {{store_city}}, {{store_state}} {{store_postal_code}}
-                </p>
-                <div style="margin: 20px 0;">
-                  <a href="{{store_url}}" style="color: #4f46e5; text-decoration: none; margin: 0 10px; font-size: 14px;">Visit Store</a>
-                  <span style="color: #e5e7eb;">|</span>
-                  <a href="{{unsubscribe_url}}" style="color: #6b7280; text-decoration: none; margin: 0 10px; font-size: 12px;">Unsubscribe</a>
-                </div>
-                <p style="color: #9ca3af; font-size: 11px; margin: 15px 0 0 0;">
-                  © {{current_year}} {{store_name}}. All rights reserved.
-                </p>
-              </div>
-            </div>', '2025-11-05 17:45:19.314+00', '2025-12-05 15:59:13.967406+00'), ('b1c2d3e4-f5a6-4789-bcde-222222222222', 'a1b2c3d4-e5f6-4789-abcd-222222222222', 'en', 'ACTION REQUIRED: Stock issue on order #{{order_number}}', 'Stock Issue Alert - Order #{{order_number}}
+{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-12-05 15:13:06.768427+00'), ('00a2b31c-0f9e-4f6f-a0e1-211077b54eae', '07958749-5770-4838-87e1-b860ee355fb7', 'en', 'Email Header Template', null, '<!-- Colorful Top Border - Gradient effect using segments -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; border-radius: 12px 12px 0 0; overflow: hidden;">
+  <tr>
+    <td style="height: 4px; width: 16.66%; background-color: {{primary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{secondary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{primary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{secondary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{primary_color}};"></td>
+    <td style="height: 4px; width: 16.66%; background-color: {{secondary_color}};"></td>
+  </tr>
+</table>
+<!-- Email Header - Clean white background -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+  <tr>
+    <td style="padding: 15px 5px 10px; text-align: center;">
+      <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 60px; height: auto;" /><br/>
+      <h1 style="font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.5px; margin: 8px 0 0 0;">
+        {{store_name}}
+      </h1>
+    </td>
+  </tr>
+</table>', '2025-11-05 17:45:19.314+00', '2025-12-05 15:24:04.223845+00'), ('de637ddd-bcf9-4323-90fb-14b695d5cc81', 'f67ae526-c1ab-45ab-bbd5-5b7b353644d9', 'en', 'Email Footer Template', null, '<!-- Email Footer -->
+<table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 0 0 12px 12px;">
+  <tr>
+    <td style="padding: 24px 40px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <!-- Store URL - Prominent display -->
+      <p style="margin: 0 0 16px 0;">
+        <a href="{{store_url}}" style="color: #374151; text-decoration: none; font-size: 14px; font-weight: 500;">{{store_url}}</a>
+      </p>
+      <!-- Contact -->
+      <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 13px;">
+        Questions? <a href="mailto:{{contact_email}}" style="color: #6b7280; text-decoration: underline;">{{contact_email}}</a>
+      </p>
+      <!-- Address -->
+      <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 11px;">
+        {{store_address}}, {{store_city}}, {{store_state}} {{store_postal_code}}
+      </p>
+      <!-- Copyright -->
+      <p style="margin: 0 0 4px 0; color: #9ca3af; font-size: 12px;">
+        {{current_year}} {{store_name}}. All rights reserved.
+      </p>
+      <!-- Automated message notice -->
+      <p style="margin: 0; color: #d1d5db; font-size: 11px;">
+        This is an automated message from {{store_name}}.
+      </p>
+    </td>
+  </tr>
+</table>', '2025-11-05 17:45:19.314+00', '2025-12-05 15:59:13.967406+00'), ('b1c2d3e4-f5a6-4789-bcde-222222222222', 'a1b2c3d4-e5f6-4789-abcd-222222222222', 'en', 'ACTION REQUIRED: Stock issue on order #{{order_number}}', 'Stock Issue Alert - Order #{{order_number}}
 
 A stock issue has been detected for the following order:
 

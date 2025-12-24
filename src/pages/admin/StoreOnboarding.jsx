@@ -473,7 +473,7 @@ export default function StoreOnboarding() {
 
         <CardHeader className="text-center pb-4">
           <div className="flex justify-center mb-4">
-            <StepIcon className="w-16 h-16 text-blue-600" />
+            <StepIcon className={`w-16 h-16 text-blue-600 ${currentStep === 2 && oauthCompleted && needsServiceKey && loading ? 'animate-spin' : ''}`} />
           </div>
           <CardTitle className="text-2xl font-bold">
             {currentStep === 2 && oauthCompleted && needsServiceKey && loading
