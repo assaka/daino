@@ -321,8 +321,8 @@ class ShopifyImportService {
       console.log(`🔧 Category auto-create: ${this.autoCreateSettings.enabled ? 'enabled' : 'disabled'}`);
 
       // Get the root-catalog category as fallback for products without categories
-      const tenantDb = ConnectionManager.getConnection(this.storeId);
-      const { data: rootCategory } = await tenantDb
+      const rootCatDb = ConnectionManager.getConnection(this.storeId);
+      const { data: rootCategory } = await rootCatDb
         .from('categories')
         .select('id')
         .eq('store_id', this.storeId)
