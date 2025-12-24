@@ -172,7 +172,14 @@ class BackgroundJobManager extends EventEmitter {
       ['meta-commerce:sync:products', './jobs/MetaCommerceSyncJob'],
 
       // Integration category jobs
-      ['integration:create:categories', './jobs/IntegrationCreateCategoriesJob']
+      ['integration:create:categories', './jobs/IntegrationCreateCategoriesJob'],
+
+      // Marketing & CRM jobs
+      ['marketing:campaign:send', './jobs/CampaignSendJob'],
+      ['marketing:automation:process', './jobs/AutomationProcessJob'],
+      ['marketing:abandoned_cart', './jobs/AbandonedCartJob'],
+      ['marketing:rfm:calculate', './jobs/RfmCalculateJob'],
+      ['marketing:sync:contacts', './jobs/MarketingSyncJob']
     ];
 
     for (const [type, path] of jobTypes) {
@@ -1067,9 +1074,50 @@ class BackgroundJobManager extends EventEmitter {
       // Note: Database-driven cron jobs are now handled by unified-scheduler.js
       // which runs via Render cron (external) instead of internal polling
 
+      // Schedule marketing automation processing (every 5 minutes)
+      await this.scheduleMarketingJob('marketing:automation:process', 'every_5_minutes');
+
+      // Schedule abandoned cart detection (every 15 minutes)
+      await this.scheduleMarketingJob('marketing:abandoned_cart', 'every_15_minutes');
+
+      // Schedule RFM score calculation (daily)
+      await this.scheduleMarketingJob('marketing:rfm:calculate', 'daily');
+
+      // Schedule marketing contact sync (hourly)
+      await this.scheduleMarketingJob('marketing:sync:contacts', 'hourly');
+
     } catch (error) {
       console.error('❌ Failed to schedule system jobs:', error.message);
       // Don't throw error to prevent server startup failure
+    }
+  }
+
+  /**
+   * Helper to schedule marketing jobs if not already scheduled
+   */
+  async scheduleMarketingJob(jobType, schedule) {
+    try {
+      const { data: existingJob } = await masterDbClient
+        .from('job_queue')
+        .select('id')
+        .eq('job_type', jobType)
+        .eq('status', 'pending')
+        .limit(1)
+        .single();
+
+      if (!existingJob) {
+        await this.scheduleRecurringJob({
+          type: jobType,
+          payload: {},
+          priority: 'normal',
+          maxRetries: 3
+        }, schedule);
+        console.log(`✅ Scheduled ${jobType} (${schedule})`);
+      } else {
+        console.log(`ℹ️ ${jobType} already scheduled`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Could not schedule ${jobType}: ${error.message}`);
     }
   }
 }
