@@ -277,21 +277,50 @@ export default function ProductFeeds() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">How to use these feeds</CardTitle>
+              <CardTitle className="text-base">How to add feeds to shopping platforms</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                <strong>Google Merchant Center:</strong> Go to Products → Feeds → Add feed → Scheduled fetch,
-                and paste the Google Merchant feed URL.
-              </p>
-              <p>
-                <strong>Microsoft Merchant Center:</strong> Similar process - create a new feed and use the
-                Microsoft Merchant URL for scheduled fetches.
-              </p>
-              <p>
-                <strong>AI Assistants:</strong> The ChatGPT and Universal feeds are designed for AI shopping
-                assistants. They include natural language descriptions and Schema.org structured data.
-              </p>
+            <CardContent className="space-y-4 text-sm">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                <h4 className="font-semibold text-blue-900">Google Merchant Center</h4>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>Go to <a href="https://merchants.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">merchants.google.com</a></li>
+                  <li>Navigate to <strong>Products → Feeds</strong></li>
+                  <li>Click <strong>Add feed</strong> (+ button)</li>
+                  <li>Select your country and language</li>
+                  <li>Choose <strong>Scheduled fetch</strong> as the input method</li>
+                  <li>Paste the Google Merchant feed URL above</li>
+                  <li>Set fetch frequency (daily recommended)</li>
+                </ol>
+              </div>
+
+              <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg space-y-2">
+                <h4 className="font-semibold text-cyan-900">Microsoft Merchant Center</h4>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>Go to <a href="https://ads.microsoft.com/merchant" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ads.microsoft.com/merchant</a></li>
+                  <li>Navigate to <strong>Feed management</strong></li>
+                  <li>Click <strong>Create feed</strong></li>
+                  <li>Select <strong>Download from URL</strong></li>
+                  <li>Paste the Microsoft Merchant feed URL above</li>
+                  <li>Configure schedule and save</li>
+                </ol>
+              </div>
+
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+                <h4 className="font-semibold text-purple-900">AI Shopping Assistants</h4>
+                <p className="text-muted-foreground">
+                  The ChatGPT and Universal feeds are designed for AI shopping assistants like Google Gemini,
+                  Microsoft Copilot, and ChatGPT plugins. They include:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>Natural language product descriptions</li>
+                  <li>Schema.org structured data</li>
+                  <li>AI-friendly summaries and highlights</li>
+                  <li>Pricing context (e.g., "25% off, save $50")</li>
+                </ul>
+                <p className="text-muted-foreground mt-2">
+                  These feeds can be submitted to AI platforms or used with custom GPT integrations.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
