@@ -65,22 +65,13 @@ router.get('/presets', async (req, res) => {
   try {
     const { storeId } = req.query;
 
-    // Build query for active presets
-    let query = masterDbClient
+    console.log('[theme-defaults/presets] Fetching presets, storeId:', storeId);
+
+    // Fetch all active presets first
+    const { data: allPresets, error } = await masterDbClient
       .from('theme_defaults')
       .select('id, preset_name, display_name, description, theme_settings, is_system_default, type, user_id, store_id')
-      .eq('is_active', true);
-
-    // If storeId provided, get system themes + this store's custom themes
-    // If no storeId, only return system themes
-    if (storeId) {
-      query = query.or(`type.eq.system,store_id.eq.${storeId}`);
-    } else {
-      query = query.eq('type', 'system');
-    }
-
-    const { data: presets, error } = await query
-      .order('type', { ascending: false })  // 'user' before 'system' alphabetically descending
+      .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
     if (error) {
@@ -91,12 +82,43 @@ router.get('/presets', async (req, res) => {
       });
     }
 
+    console.log('[theme-defaults/presets] Total presets found:', allPresets?.length);
+    console.log('[theme-defaults/presets] User themes:', allPresets?.filter(p => p.type === 'user').map(p => ({ name: p.preset_name, store_id: p.store_id })));
+
+    // Filter presets based on storeId
+    let filteredPresets = allPresets || [];
+
+    if (storeId) {
+      // Include system themes + this store's custom themes
+      filteredPresets = filteredPresets.filter(p =>
+        p.type === 'system' || p.store_id === storeId
+      );
+    } else {
+      // No storeId - only show system themes
+      filteredPresets = filteredPresets.filter(p => p.type === 'system');
+    }
+
+    console.log('[theme-defaults/presets] After filtering:', filteredPresets.length);
+
+    // Sort results: store-owned themes first, then system themes
+    const sortedPresets = filteredPresets.sort((a, b) => {
+      // Store-owned themes (matching storeId) come first
+      const aIsStoreOwned = storeId && a.store_id === storeId;
+      const bIsStoreOwned = storeId && b.store_id === storeId;
+
+      if (aIsStoreOwned && !bIsStoreOwned) return -1;
+      if (!aIsStoreOwned && bIsStoreOwned) return 1;
+
+      // Then sort by sort_order within each group
+      return (a.sort_order || 0) - (b.sort_order || 0);
+    });
+
     // Set cache headers - shorter cache for filtered results
     res.set('Cache-Control', storeId ? 'private, max-age=300' : 'public, max-age=3600');
 
     res.json({
       success: true,
-      data: presets || []
+      data: sortedPresets
     });
   } catch (error) {
     console.error('Error fetching theme presets:', error);

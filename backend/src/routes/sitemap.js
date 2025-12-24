@@ -394,7 +394,7 @@ async function generateGoogleMerchantXml(tenantDb, storeId, baseUrl, currency = 
     if (error) throw error;
 
     // Apply translations
-    let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+    let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
 
     // Apply images
     enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
@@ -533,7 +533,7 @@ async function generateChatGPTFeed(tenantDb, storeId, baseUrl, currency = 'EUR',
 
   if (error) throw error;
 
-  let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+  let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
   enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
   enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
@@ -622,7 +622,7 @@ async function generateUniversalFeed(tenantDb, storeId, baseUrl, currency = 'EUR
 
   if (error) throw error;
 
-  let enrichedProducts = await applyProductTranslationsToMany(products || [], tenantDb, language);
+  let enrichedProducts = await applyProductTranslationsToMany(products || [], language, tenantDb);
   enrichedProducts = await fetchProductImages(enrichedProducts, tenantDb);
   enrichedProducts = await enrichProductsWithBrandAndMpn(enrichedProducts, tenantDb, storeId, language);
 
