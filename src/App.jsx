@@ -425,6 +425,7 @@ function App() {
           <Route path="/admin/marketing/automations" element={<PageWrapper Component={Pages.Automations} pageName="MARKETING_AUTOMATIONS" />} />
           <Route path="/admin/marketing/campaigns" element={<PageWrapper Component={Pages.Campaigns} pageName="MARKETING_CAMPAIGNS" />} />
           <Route path="/admin/marketing/integrations" element={<PageWrapper Component={Pages.MarketingIntegrations} pageName="MARKETING_INTEGRATIONS" />} />
+          <Route path="/admin/marketing/help" element={<PageWrapper Component={Pages.MarketingHelp} pageName="MARKETING_HELP" />} />
 
           {/* CRM Routes */}
           <Route path="/admin/crm" element={<PageWrapper Component={Pages.CrmDashboard} pageName="CRM_DASHBOARD" />} />

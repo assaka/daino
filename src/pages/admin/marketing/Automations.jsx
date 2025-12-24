@@ -521,7 +521,21 @@ export default function Automations() {
               <div className="text-center py-12">
                 <Zap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900">No automations found</h3>
-                <p className="text-gray-600 mb-4">Create your first automation to engage customers automatically.</p>
+                <p className="text-gray-600 mb-2">Create your first automation to engage customers automatically.</p>
+                <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 max-w-lg mx-auto mb-6">
+                  <p className="text-sm text-purple-800 font-medium mb-2">Popular automations to start with:</p>
+                  <ul className="text-sm text-purple-700 text-left space-y-1">
+                    <li className="flex items-center gap-2">
+                      <Clock className="w-3 h-3" /> Abandoned Cart Recovery - recover 5-15% of lost sales
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Users className="w-3 h-3" /> Welcome Series - introduce your brand to new customers
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Mail className="w-3 h-3" /> Post-Purchase - thank customers and ask for reviews
+                    </li>
+                  </ul>
+                </div>
                 <div className="flex justify-center gap-2">
                   <Button variant="outline" onClick={handleCreateFromTemplate}>
                     <GitBranch className="w-4 h-4 mr-2" />
@@ -530,6 +544,9 @@ export default function Automations() {
                   <Button onClick={handleCreateNew}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Custom
+                  </Button>
+                  <Button variant="ghost" onClick={() => window.location.href = '/admin/marketing/help'}>
+                    Learn More
                   </Button>
                 </div>
               </div>

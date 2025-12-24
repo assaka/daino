@@ -76,6 +76,7 @@ export { default as Segments } from './admin/marketing/Segments';
 export { default as Automations } from './admin/marketing/Automations';
 export { default as Campaigns } from './admin/marketing/Campaigns';
 export { default as MarketingIntegrations } from './admin/marketing/Integrations';
+export { default as MarketingHelp } from './admin/marketing/Help';
 
 // CRM Pages
 export { default as CrmDashboard } from './admin/crm/Dashboard';

@@ -481,11 +481,30 @@ export default function Segments() {
               <div className="text-center py-12">
                 <Layers className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900">No segments found</h3>
-                <p className="text-gray-600 mb-4">Create your first segment to start targeting customers.</p>
-                <Button onClick={handleCreateNew}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Segment
-                </Button>
+                <p className="text-gray-600 mb-2">Create your first segment to start targeting customers.</p>
+                <div className="bg-green-50 border border-green-100 rounded-lg p-4 max-w-lg mx-auto mb-6">
+                  <p className="text-sm text-green-800 font-medium mb-2">Segment ideas to get started:</p>
+                  <ul className="text-sm text-green-700 text-left space-y-1">
+                    <li className="flex items-center gap-2">
+                      <UserCheck className="w-3 h-3" /> VIP Customers - 5+ orders or $500+ total spent
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <UserCheck className="w-3 h-3" /> At-Risk - no purchase in 90+ days
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <UserCheck className="w-3 h-3" /> New Subscribers - signed up but never ordered
+                    </li>
+                  </ul>
+                </div>
+                <div className="flex justify-center gap-3">
+                  <Button onClick={handleCreateNew}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Segment
+                  </Button>
+                  <Button variant="outline" onClick={() => window.location.href = '/admin/marketing/help'}>
+                    Learn How
+                  </Button>
+                </div>
               </div>
             )}
           </div>

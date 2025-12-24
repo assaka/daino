@@ -530,11 +530,20 @@ export default function Campaigns() {
               <div className="text-center py-12">
                 <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900">No campaigns found</h3>
-                <p className="text-gray-600 mb-4">Create your first email campaign to reach your customers.</p>
-                <Button onClick={handleCreateNew}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Campaign
-                </Button>
+                <p className="text-gray-600 mb-2">Create your first email campaign to reach your customers.</p>
+                <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                  Email campaigns are one-time broadcasts perfect for announcements, sales, and newsletters.
+                  Target specific customer segments for better engagement.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <Button onClick={handleCreateNew}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Campaign
+                  </Button>
+                  <Button variant="outline" onClick={() => window.location.href = '/admin/marketing/help'}>
+                    Learn How
+                  </Button>
+                </div>
               </div>
             )}
           </div>
