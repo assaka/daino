@@ -14,7 +14,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
-import brevoAPI from '@/api/brevo';
+import storefrontApiClient from '@/api/storefront-client';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -535,11 +535,13 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
   const [showEmailNotConfiguredModal, setShowEmailNotConfiguredModal] = React.useState(false);
 
   // Check email configuration on mount when in preview mode
+  // Uses public endpoint that works on custom domains without admin auth
   React.useEffect(() => {
     const checkEmailConfig = async () => {
       if (isPublishedPreview && store?.id) {
         try {
-          const response = await brevoAPI.getConnectionStatus(store.id);
+          // Use public endpoint that checks ANY email provider (Brevo or SendGrid)
+          const response = await storefrontApiClient.getPublic(`auth/email-configured?store_id=${store.id}`);
           setIsEmailConfigured(response?.success && response?.data?.isConfigured);
         } catch (error) {
           console.error('Failed to check email configuration:', error);
