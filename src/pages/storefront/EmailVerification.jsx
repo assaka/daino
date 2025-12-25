@@ -13,6 +13,10 @@ export default function EmailVerification() {
   const { store } = useStore();
   const email = searchParams.get('email');
 
+  // On custom domains, storeCode is undefined - navigate without /public prefix
+  const isCustomDomain = !storeCode;
+  const buildPath = (path) => isCustomDomain ? path : `/public/${storeCode}${path}`;
+
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,9 +27,9 @@ export default function EmailVerification() {
 
   useEffect(() => {
     if (!email) {
-      navigate(`/public/${storeCode}/login`);
+      navigate(buildPath('/login'));
     }
-  }, [email, navigate, storeCode]);
+  }, [email, navigate, storeCode, isCustomDomain]);
 
   const handleChange = (index, value) => {
     // Only allow digits
@@ -84,7 +88,7 @@ export default function EmailVerification() {
           window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
         }
         setTimeout(() => {
-          navigate(`/public/${storeCode}/account`);
+          navigate(buildPath('/account'));
         }, 2000);
       } else {
         setError(response.message || 'Verification failed');
