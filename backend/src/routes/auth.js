@@ -1148,7 +1148,7 @@ router.post('/customer/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, date_of_birth, gender, send_welcome_email = false, address_data, store_id } = req.body;
+    const { email, password, first_name, last_name, phone, date_of_birth, gender, send_welcome_email = false, address_data, store_id, origin_url } = req.body;
 
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
@@ -1228,11 +1228,22 @@ router.post('/customer/register', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const verifyOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug) || await buildStoreUrl({
-      tenantDb,
-      storeId: store_id,
-      storeSlug: storeForVerify?.slug
-    });
+
+    // Build origin URL: use frontend-provided origin_url, or fallback to request headers
+    let verifyOrigin = origin_url;
+    if (verifyOrigin) {
+      // If platform domain, append store path
+      const { isPlatformDomain, isDevDomain } = require('../utils/domainConfig');
+      if (isPlatformDomain(verifyOrigin) || isDevDomain(verifyOrigin)) {
+        verifyOrigin = `${verifyOrigin}/public/${storeForVerify?.slug}`;
+      }
+    } else {
+      verifyOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug) || await buildStoreUrl({
+        tenantDb,
+        storeId: store_id,
+        storeSlug: storeForVerify?.slug
+      });
+    }
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
 
     // Generate token (user can login but will be blocked until verified)

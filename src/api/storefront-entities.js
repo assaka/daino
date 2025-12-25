@@ -204,8 +204,14 @@ class CustomerAuthService {
       throw new Error('Store ID is required for customer registration');
     }
 
+    // Add origin_url for email links (the domain user is currently on)
+    const dataWithOrigin = {
+      ...userData,
+      origin_url: window.location.origin
+    };
+
     // Use the public customer register endpoint (no auth required for registration)
-    const response = await this.client.postPublic('auth/customer/register', userData);
+    const response = await this.client.postPublic('auth/customer/register', dataWithOrigin);
 
     // Extract token from response.data (backend returns {success, data: {token, user}})
     const token = response.data?.token;
