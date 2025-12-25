@@ -1439,6 +1439,10 @@ router.post('/create-checkout', async (req, res) => {
 
             // Get store URL from request origin for email links
             const emailOrigin = getStoreUrlFromRequest(req, store?.slug);
+            console.log('[CREATE-CHECKOUT-OFFLINE] Origin header:', req.get('origin'));
+            console.log('[CREATE-CHECKOUT-OFFLINE] Referer header:', req.get('referer'));
+            console.log('[CREATE-CHECKOUT-OFFLINE] Store slug:', store?.slug);
+            console.log('[CREATE-CHECKOUT-OFFLINE] getStoreUrlFromRequest result:', emailOrigin);
 
             // Send the order confirmation email (await to ensure it's sent before response)
             try {

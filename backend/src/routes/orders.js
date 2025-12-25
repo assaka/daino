@@ -498,6 +498,10 @@ router.post('/finalize-order', async (req, res) => {
 
           // Get store URL from request origin
           const storeUrlForEmail = getStoreUrlFromRequest(req, store?.slug);
+          console.log('[FINALIZE-ORDER-ALREADY] Origin header:', req.get('origin'));
+          console.log('[FINALIZE-ORDER-ALREADY] Referer header:', req.get('referer'));
+          console.log('[FINALIZE-ORDER-ALREADY] Store slug:', store?.slug);
+          console.log('[FINALIZE-ORDER-ALREADY] getStoreUrlFromRequest result:', storeUrlForEmail);
 
           await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
             recipientEmail: order.customer_email,
@@ -670,6 +674,10 @@ router.post('/finalize-order', async (req, res) => {
 
       // Get store URL from request origin
       const orderEmailOrigin = getStoreUrlFromRequest(req, store?.slug);
+      console.log('[FINALIZE-ORDER] Origin header:', req.get('origin'));
+      console.log('[FINALIZE-ORDER] Referer header:', req.get('referer'));
+      console.log('[FINALIZE-ORDER] Store slug:', store?.slug);
+      console.log('[FINALIZE-ORDER] getStoreUrlFromRequest result:', orderEmailOrigin);
 
       await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: order.customer_email,
