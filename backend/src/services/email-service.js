@@ -450,6 +450,7 @@ class EmailService {
 
     // Use origin first (the actual domain visited), then store_url, then looked-up value
     const storeUrl = data.origin || data.store_url || fullStoreData.store_url;
+    console.log(`[EMAIL-SERVICE] Template: ${templateIdentifier}, origin: ${data.origin}, storeUrl: ${storeUrl}`);
 
     // Merge full store data into data.store, but preserve explicitly passed values
     data.store = {
