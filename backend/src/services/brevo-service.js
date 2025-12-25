@@ -31,14 +31,23 @@ class BrevoService {
         throw new Error(validation.error || 'Invalid Brevo API key');
       }
 
-      // Store configuration using IntegrationConfig
+      // Before saving, unset is_primary on other email providers
+      await IntegrationConfig.unsetPrimaryForTypes(storeId, ['sendgrid']);
+
+      // Store configuration using IntegrationConfig with is_primary
       const configData = {
         apiKey: apiKey,
         senderName: senderName,
         senderEmail: senderEmail
       };
 
-      const config = await IntegrationConfig.createOrUpdate(storeId, this.integrationType, configData);
+      const config = await IntegrationConfig.createOrUpdateWithKey(
+        storeId,
+        this.integrationType,
+        configData,
+        'default',
+        { isPrimary: true }
+      );
 
       // Update connection status to success
       if (config && config.id) {
@@ -53,6 +62,7 @@ class BrevoService {
           senderName: config.config_data.senderName,
           senderEmail: config.config_data.senderEmail,
           isActive: config.is_active,
+          isPrimary: config.is_primary,
           createdAt: config.created_at,
           updatedAt: config.updated_at
         }
@@ -253,6 +263,7 @@ class BrevoService {
         senderName: config.config_data?.senderName,
         senderEmail: config.config_data?.senderEmail,
         isActive: config.is_active,
+        isPrimary: config.is_primary,
         connectionStatus: config.connection_status,
         createdAt: config.created_at,
         updatedAt: config.updated_at

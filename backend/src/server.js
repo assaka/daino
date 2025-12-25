@@ -1517,6 +1517,7 @@ app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credi
 app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
 app.use('/api/pdf-templates', pdfTemplatesRoutes); // PDF template management for invoices, shipments
 app.use('/api/brevo', brevoOAuthRoutes); // Brevo email service OAuth and configuration
+app.use('/api/sendgrid', sendgridRoutes); // SendGrid email service configuration
 // Conditional auth middleware that excludes preview and public routes
 const conditionalAuthMiddleware = (req, res, next) => {
   // Skip authentication for preview routes, public routes, and auth routes

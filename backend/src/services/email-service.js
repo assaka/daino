@@ -1,7 +1,10 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
+const sgMail = require('@sendgrid/mail');
 const ConnectionManager = require('./database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
 const brevoService = require('./brevo-service');
+const sendgridService = require('./sendgrid-service');
+const IntegrationConfig = require('../models/IntegrationConfig');
 const { buildStoreUrlSync } = require('../utils/domainConfig');
 const {
   renderTemplate,
@@ -15,7 +18,8 @@ const FALLBACK_LOGO_URL = `${process.env.FRONTEND_URL || 'https://www.dainostore
 
 /**
  * Email Service
- * Handles email sending through Brevo with template rendering
+ * Handles email sending through multiple providers (Brevo, SendGrid) with template rendering
+ * Uses is_primary flag to determine which provider to use
  */
 class EmailService {
   /**
@@ -136,6 +140,22 @@ class EmailService {
   }
 
   /**
+   * Get the active email provider for a store
+   * Returns the provider with is_primary=true from the configured email providers
+   * @param {string} storeId - Store ID
+   * @returns {Promise<string|null>} Provider type ('brevo' or 'sendgrid') or null if none configured
+   */
+  async getActiveEmailProvider(storeId) {
+    try {
+      const config = await IntegrationConfig.findPrimaryEmailProvider(storeId, ['brevo', 'sendgrid']);
+      return config ? config.integration_type : null;
+    } catch (error) {
+      console.error('Error getting active email provider:', error.message);
+      return null;
+    }
+  }
+
+  /**
    * Send email using template
    * @param {string} storeId - Store ID
    * @param {string} templateIdentifier - Email template identifier (signup_email, etc.)
@@ -154,10 +174,10 @@ class EmailService {
         languageCode
       });
 
-      // Check if Brevo is configured
-      const isConfigured = await brevoService.isConfigured(storeId);
-      if (!isConfigured) {
-        const errorMsg = `Brevo email service is not configured for store ${storeId}. Please configure Brevo in Settings > Email to enable email sending.`;
+      // Check if any email provider is configured (primary provider)
+      const activeProvider = await this.getActiveEmailProvider(storeId);
+      if (!activeProvider) {
+        const errorMsg = `No email provider is configured for store ${storeId}. Please configure Brevo or SendGrid in Settings > Email to enable email sending.`;
         console.error(`❌ [EMAIL SERVICE] ${errorMsg}`);
 
         // Log as failed
@@ -168,7 +188,7 @@ class EmailService {
         };
       }
 
-      console.log(`✅ [EMAIL SERVICE] Brevo is configured for store ${storeId}`);
+      console.log(`✅ [EMAIL SERVICE] Email provider '${activeProvider}' is configured for store ${storeId}`);
 
       // Get tenant database connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
@@ -245,14 +265,10 @@ class EmailService {
       const renderedSubject = renderTemplate(subject, enrichedVariables);
       const renderedContent = renderTemplate(content, enrichedVariables);
 
-      // Send via Brevo
-      const result = await this.sendViaBrevo(
-        storeId,
-        recipientEmail,
-        renderedSubject,
-        renderedContent,
-        attachments
-      );
+      // Send via active email provider (Brevo or SendGrid)
+      const result = activeProvider === 'sendgrid'
+        ? await this.sendViaSendGrid(storeId, recipientEmail, renderedSubject, renderedContent, attachments)
+        : await this.sendViaBrevo(storeId, recipientEmail, renderedSubject, renderedContent, attachments);
 
       // Log successful send
       await this.logEmail(
@@ -346,6 +362,58 @@ class EmailService {
       console.error('Brevo send error:', JSON.stringify(error.response?.body, null, 2) || error.message);
       console.error('Brevo request details - sender:', JSON.stringify(sendSmtpEmail.sender), 'to:', JSON.stringify(sendSmtpEmail.to), 'subject:', subject?.substring(0, 50));
       throw new Error(`Failed to send email via Brevo: ${error.response?.body?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Send email via SendGrid API
+   * @param {string} storeId - Store ID
+   * @param {string} recipientEmail - Recipient email
+   * @param {string} subject - Email subject
+   * @param {string} htmlContent - HTML content
+   * @param {Array} attachments - Attachments
+   * @returns {Promise<Object>} Send result
+   */
+  async sendViaSendGrid(storeId, recipientEmail, subject, htmlContent, attachments = []) {
+    try {
+      // Get valid API key and config
+      const apiKey = await sendgridService.getValidApiKey(storeId);
+      const config = await sendgridService.getConfiguration(storeId);
+
+      // Set API key
+      sgMail.setApiKey(apiKey);
+
+      // Prepare email message
+      const msg = {
+        to: recipientEmail,
+        from: {
+          name: config.senderName,
+          email: config.senderEmail
+        },
+        subject: subject,
+        html: htmlContent
+      };
+
+      // Add attachments if provided
+      if (attachments && attachments.length > 0) {
+        msg.attachments = attachments.map(att => ({
+          filename: att.filename,
+          content: att.content, // Base64 encoded
+          type: att.contentType || 'application/pdf',
+          disposition: 'attachment'
+        }));
+      }
+
+      // Send email
+      const [response] = await sgMail.send(msg);
+
+      return {
+        success: true,
+        messageId: response.headers['x-message-id'] || response.headers['X-Message-Id'] || null
+      };
+    } catch (error) {
+      console.error('SendGrid send error:', JSON.stringify(error.response?.body, null, 2) || error.message);
+      throw new Error(`Failed to send email via SendGrid: ${error.response?.body?.errors?.[0]?.message || error.message}`);
     }
   }
 

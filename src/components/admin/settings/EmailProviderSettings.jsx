@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, AlertCircle } from 'lucide-react';
 import brevoAPI from '@/api/brevo';
+import sendgridAPI from '@/api/sendgrid';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { useAlertTypes } from '@/hooks/useAlert';
 import BrevoProvider from './providers/BrevoProvider';
+import SendGridProvider from './providers/SendGridProvider';
 
 // Email provider configurations
 const EMAIL_PROVIDERS = {
@@ -27,9 +29,9 @@ const EMAIL_PROVIDERS = {
     description: 'Cloud-based email delivery and management platform by Twilio',
     logo: '📤',
     color: 'from-blue-400 to-cyan-500',
-    available: false,
+    available: true,
     features: ['High Deliverability', 'Email API', 'Analytics & Tracking', 'Free tier: 100 emails/day'],
-    comingSoon: true
+    setupUrl: 'https://app.sendgrid.com/settings/api_keys'
   },
   postmark: {
     id: 'postmark',
@@ -59,6 +61,7 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isBrevoConnected, setIsBrevoConnected] = useState(false);
+  const [isSendGridConnected, setIsSendGridConnected] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
@@ -72,9 +75,19 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
     setLoading(true);
     try {
       // Check Brevo connection status
-      const response = await brevoAPI.getConnectionStatus(storeId);
-      if (response.success && response.data.isConfigured) {
+      const brevoResponse = await brevoAPI.getConnectionStatus(storeId);
+      if (brevoResponse.success && brevoResponse.data.isConfigured) {
         setIsBrevoConnected(true);
+      } else {
+        setIsBrevoConnected(false);
+      }
+
+      // Check SendGrid connection status
+      const sendgridResponse = await sendgridAPI.getConnectionStatus(storeId);
+      if (sendgridResponse.success && sendgridResponse.data.isConfigured) {
+        setIsSendGridConnected(true);
+      } else {
+        setIsSendGridConnected(false);
       }
     } catch (error) {
       console.error('Error checking provider status:', error);
@@ -165,6 +178,11 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                         <Check className="w-3 h-3 mr-1" /> Active
                       </Badge>
                     )}
+                    {provider.id === 'sendgrid' && isSendGridConnected && (
+                      <Badge className="bg-green-500 text-xs">
+                        <Check className="w-3 h-3 mr-1" /> Active
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -180,13 +198,13 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                   {provider.available && (
                     <Button
                       className="w-full mt-4"
-                      variant={provider.id === 'brevo' && isBrevoConnected ? 'outline' : 'default'}
+                      variant={(provider.id === 'brevo' && isBrevoConnected) || (provider.id === 'sendgrid' && isSendGridConnected) ? 'outline' : 'default'}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleProviderSelect(provider.id);
                       }}
                     >
-                      {provider.id === 'brevo' && isBrevoConnected ? 'Manage' : 'Configure'}
+                      {(provider.id === 'brevo' && isBrevoConnected) || (provider.id === 'sendgrid' && isSendGridConnected) ? 'Manage' : 'Configure'}
                     </Button>
                   )}
                 </CardContent>
@@ -199,6 +217,18 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
       {/* Brevo Provider */}
       {selectedProvider === 'brevo' && (
         <BrevoProvider
+          storeEmail={storeEmail}
+          storeName={storeName}
+          onBack={handleBackToProviders}
+          onFlashMessage={setFlashMessage}
+          getSelectedStoreId={getSelectedStoreId}
+          showConfirm={showConfirm}
+        />
+      )}
+
+      {/* SendGrid Provider */}
+      {selectedProvider === 'sendgrid' && (
+        <SendGridProvider
           storeEmail={storeEmail}
           storeName={storeName}
           onBack={handleBackToProviders}

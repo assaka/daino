@@ -42,11 +42,11 @@ router.get('/auth/callback', async (req, res) => {
     const { code, state, error: oauthError } = req.query;
 
     if (oauthError) {
-      return res.redirect(`/admin/integrations/instagram-shopping?error=${oauthError}`);
+      return res.redirect(`/admin/marketplace-hub?error=${oauthError}`);
     }
 
     if (!code || !state) {
-      return res.redirect('/admin/integrations/instagram-shopping?error=missing_params');
+      return res.redirect('/admin/marketplace-hub?error=missing_params');
     }
 
     // Find integration by pending state
@@ -55,7 +55,7 @@ router.get('/auth/callback', async (req, res) => {
     const decoded = service.verifyState(state);
 
     if (!decoded || !decoded.storeId) {
-      return res.redirect('/admin/integrations/instagram-shopping?error=invalid_state');
+      return res.redirect('/admin/marketplace-hub?error=invalid_state');
     }
 
     const storeId = decoded.storeId;
@@ -63,12 +63,12 @@ router.get('/auth/callback', async (req, res) => {
     // Verify the pending state matches
     const integration = await IntegrationConfig.findByStoreAndType(storeId, 'meta-commerce');
     if (!integration || integration.config_data?.pendingState !== state) {
-      return res.redirect('/admin/integrations/instagram-shopping?error=state_mismatch');
+      return res.redirect('/admin/marketplace-hub?error=state_mismatch');
     }
 
     // Check if state is expired
     if (integration.config_data?.pendingStateExpires < Date.now()) {
-      return res.redirect('/admin/integrations/instagram-shopping?error=state_expired');
+      return res.redirect('/admin/marketplace-hub?error=state_expired');
     }
 
     // Exchange code for token
@@ -93,10 +93,10 @@ router.get('/auth/callback', async (req, res) => {
       'connected'
     );
 
-    res.redirect('/admin/integrations/instagram-shopping?success=connected');
+    res.redirect('/admin/marketplace-hub?success=connected');
   } catch (error) {
     console.error('Meta OAuth callback error:', error);
-    res.redirect(`/admin/integrations/instagram-shopping?error=${encodeURIComponent(error.message)}`);
+    res.redirect(`/admin/marketplace-hub?error=${encodeURIComponent(error.message)}`);
   }
 });
 

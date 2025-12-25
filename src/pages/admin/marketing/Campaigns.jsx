@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Search, Plus, Edit, Trash2, Send, Clock, Copy,
   Mail, Users, BarChart3, Eye, Calendar, CheckCircle,
-  AlertCircle, Loader2
+  AlertCircle, Loader2, Lightbulb, ChevronDown, ChevronUp,
+  Target, FileText, Zap
 } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -44,6 +45,7 @@ export default function Campaigns() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [sending, setSending] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(true);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -527,21 +529,109 @@ export default function Campaigns() {
             ))}
 
             {filteredCampaigns.length === 0 && (
-              <div className="text-center py-12">
-                <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No campaigns found</h3>
-                <p className="text-gray-600 mb-2">Create your first email campaign to reach your customers.</p>
-                <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-                  Email campaigns are one-time broadcasts perfect for announcements, sales, and newsletters.
-                  Target specific customer segments for better engagement.
-                </p>
-                <div className="flex justify-center gap-3">
+              <div className="py-8">
+                {/* Getting Started Tutorial */}
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-6 mb-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <Lightbulb className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Create Your First Email Campaign</h3>
+                        <p className="text-sm text-gray-600">Follow these steps to send your first broadcast</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowTutorial(!showTutorial)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      {showTutorial ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </button>
+                  </div>
+
+                  {showTutorial && (
+                    <div className="space-y-4">
+                      {/* Step 1 */}
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                          1
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                            <Target className="w-4 h-4 text-indigo-500" />
+                            Create a Segment First
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Go to <a href="/admin/marketing/segments" className="text-indigo-600 hover:underline font-medium">Marketing → Segments</a> and create a customer segment.
+                            Use RFM segments like "Champions" or "New Customers", or create custom filters.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                          2
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-indigo-500" />
+                            Create Your Campaign
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Click <strong>"Create Campaign"</strong> above. Fill in:
+                          </p>
+                          <ul className="text-sm text-gray-600 mt-2 ml-4 space-y-1">
+                            <li>• <strong>Campaign Name</strong> – Internal name (customers won't see this)</li>
+                            <li>• <strong>Subject Line</strong> – What appears in the inbox</li>
+                            <li>• <strong>Select Segment</strong> – Choose who receives this email</li>
+                            <li>• <strong>Email Content</strong> – Your message in HTML format</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                          3
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-indigo-500" />
+                            Send or Schedule
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            After creating your campaign, you can:
+                          </p>
+                          <ul className="text-sm text-gray-600 mt-2 ml-4 space-y-1">
+                            <li>• <strong>Send Now</strong> – Immediately sends to all segment members</li>
+                            <li>• <strong>Schedule</strong> – Pick a future date/time to send</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Tips */}
+                      <div className="bg-white/60 rounded-lg p-4 mt-4">
+                        <h4 className="font-medium text-gray-900 text-sm mb-2">Pro Tips</h4>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          <li>• Test your email by creating a segment with just your own email first</li>
+                          <li>• Use personalization: <code className="bg-gray-100 px-1 rounded">{"{{customer_first_name}}"}</code> inserts the customer's name</li>
+                          <li>• Send at 10am local time for best open rates</li>
+                          <li>• Keep subject lines under 50 characters</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Empty state CTA */}
+                <div className="text-center">
+                  <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No campaigns yet. Ready to create your first one?</p>
                   <Button onClick={handleCreateNew}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Campaign
-                  </Button>
-                  <Button variant="outline" onClick={() => window.location.href = '/admin/marketing/help'}>
-                    Learn How
                   </Button>
                 </div>
               </div>
