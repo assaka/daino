@@ -180,42 +180,14 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer, origin = nul
 // Helper: Send verification email with code
 const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode, origin = null) => {
   try {
-    // Get store from tenant database by storeId
-    const { data: store } = await tenantDb
-      .from('stores')
-      .select('*')
-      .eq('id', storeId)
-      .maybeSingle();
-
-    const storeName = store?.name || 'Our Store';
-    const storeUrl = origin || store?.domain || process.env.CORS_ORIGIN;
-
-    // Try to send via email template if exists, otherwise send simple email
-    emailService.sendEmail(storeId, 'email_verification', email, {
-      customer_name: `${customer.first_name} ${customer.last_name}`,
-      customer_first_name: customer.first_name,
+    await emailService.sendTransactionalEmail(storeId, 'email_verification', {
+      recipientEmail: email,
+      customer: customer,
       verification_code: verificationCode,
-      store_name: storeName,
-      store_url: storeUrl,
-      current_year: new Date().getFullYear()
-    }, 'en').catch(templateError => {
-      // Fallback: Send simple email with verification code
-      emailService.sendViaBrevo(storeId, email,
-        `Verify your email - ${storeName}`,
-        `
-          <h2>Verify Your Email</h2>
-          <p>Hi ${customer.first_name},</p>
-          <p>Thank you for registering! Please use the following verification code to complete your registration:</p>
-          <h1 style="font-size: 32px; letter-spacing: 5px; color: #4F46E5;">${verificationCode}</h1>
-          <p>This code will expire in 15 minutes.</p>
-          <p>If you didn't create an account, please ignore this email.</p>
-        `
-      ).catch(err => {
-        // Verification email failed
-      });
+      origin: origin
     });
   } catch (error) {
-    // Error sending verification email
+    console.error('Error sending verification email:', error);
   }
 };
 
@@ -340,17 +312,11 @@ router.post('/register', [
         .limit(1)
         .maybeSingle();
       // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
-      const requestOrigin = getStoreUrlFromRequest(req, store?.slug);
-      console.log('[REGISTER] Origin header:', req.get('origin'));
-      console.log('[REGISTER] Referer header:', req.get('referer'));
-      console.log('[REGISTER] Store slug:', store?.slug);
-      console.log('[REGISTER] getStoreUrlFromRequest result:', requestOrigin);
-      const origin = requestOrigin || await buildStoreUrl({
+      const origin = getStoreUrlFromRequest(req, store?.slug) || await buildStoreUrl({
         tenantDb,
         storeId: store_id,
         storeSlug: store?.slug
       });
-      console.log('[REGISTER] Final origin for email:', origin);
       sendWelcomeEmail(tenantDb, store_id, email, user, origin);
     }
 
@@ -1172,9 +1138,6 @@ router.post('/customer/register', [
   body('last_name').trim().notEmpty().withMessage('Last name is required'),
   body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
-  console.log('[CUSTOMER-REGISTER] Route hit!');
-  console.log('[CUSTOMER-REGISTER] Origin header:', req.get('origin'));
-  console.log('[CUSTOMER-REGISTER] Referer header:', req.get('referer'));
   try {
     // Validate request
     const errors = validationResult(req);
@@ -1265,18 +1228,11 @@ router.post('/customer/register', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
-    const requestOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug);
-    console.log('[CUSTOMER-REGISTER] Origin header:', req.get('origin'));
-    console.log('[CUSTOMER-REGISTER] Referer header:', req.get('referer'));
-    console.log('[CUSTOMER-REGISTER] Store slug:', storeForVerify?.slug);
-    console.log('[CUSTOMER-REGISTER] getStoreUrlFromRequest result:', requestOrigin);
-    const verifyOrigin = requestOrigin || await buildStoreUrl({
+    const verifyOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug) || await buildStoreUrl({
       tenantDb,
       storeId: store_id,
       storeSlug: storeForVerify?.slug
     });
-    console.log('[CUSTOMER-REGISTER] Final verifyOrigin:', verifyOrigin);
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
 
     // Generate token (user can login but will be blocked until verified)
