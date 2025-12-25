@@ -47,12 +47,13 @@ const allNavItems = [
   { key: 'segments', label: 'Segments', icon: 'UsersRound', route: '/admin/marketing/segments', order: 46, category: 'marketing' },
   { key: 'marketing_integrations', label: 'Integrations', icon: 'Plug', route: '/admin/marketing/integrations', order: 47, category: 'marketing' },
 
-  // CRM (sales pipeline & leads)
-  { key: 'crm_dashboard', label: 'CRM Dashboard', icon: 'LayoutDashboard', route: '/admin/crm', order: 48, category: 'crm' },
-  { key: 'crm_pipelines', label: 'Pipelines', icon: 'GitBranch', route: '/admin/crm/pipelines', order: 49, category: 'crm' },
-  { key: 'crm_deals', label: 'Deals', icon: 'Handshake', route: '/admin/crm/deals', order: 50, category: 'crm' },
-  { key: 'crm_leads', label: 'Leads', icon: 'UserPlus', route: '/admin/crm/leads', order: 51, category: 'crm' },
-  { key: 'crm_activities', label: 'Activities', icon: 'ListTodo', route: '/admin/crm/activities', order: 52, category: 'crm' },
+  // CRM (sales pipeline & leads) - Hidden by default, designed for B2B/high-touch sales
+  // Store owners can enable via Manage Navigation if needed
+  { key: 'crm_dashboard', label: 'CRM Dashboard', icon: 'LayoutDashboard', route: '/admin/crm', order: 48, category: 'crm', is_visible: false },
+  { key: 'crm_pipelines', label: 'Pipelines', icon: 'GitBranch', route: '/admin/crm/pipelines', order: 49, category: 'crm', is_visible: false },
+  { key: 'crm_deals', label: 'Deals', icon: 'Handshake', route: '/admin/crm/deals', order: 50, category: 'crm', is_visible: false },
+  { key: 'crm_leads', label: 'Leads', icon: 'UserPlus', route: '/admin/crm/leads', order: 51, category: 'crm', is_visible: false },
+  { key: 'crm_activities', label: 'Activities', icon: 'ListTodo', route: '/admin/crm/activities', order: 52, category: 'crm', is_visible: false },
 
   // SEO
   { key: 'seo_settings', label: 'SEO Settings', icon: 'Search', route: '/admin/seo-tools/settings', order: 60, category: 'seo' },
@@ -96,18 +97,20 @@ async function seedNavigation() {
 
     let count = 0;
     for (const item of allNavItems) {
+      const isVisible = item.is_visible !== false; // Default to true unless explicitly false
       await sequelize.query(`
         INSERT INTO admin_navigation_registry
         (key, label, icon, route, order_position, is_core, is_visible, category)
-        VALUES ($1, $2, $3, $4, $5, true, true, $6)
+        VALUES ($1, $2, $3, $4, $5, true, $6, $7)
         ON CONFLICT (key) DO UPDATE SET
           label = EXCLUDED.label,
           icon = EXCLUDED.icon,
           route = EXCLUDED.route,
           order_position = EXCLUDED.order_position,
+          is_visible = EXCLUDED.is_visible,
           category = EXCLUDED.category
       `, {
-        bind: [item.key, item.label, item.icon, item.route, item.order, item.category]
+        bind: [item.key, item.label, item.icon, item.route, item.order, isVisible, item.category]
       });
       count++;
       if (count % 10 === 0) {

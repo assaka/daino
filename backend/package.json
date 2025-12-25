@@ -33,6 +33,7 @@
     "@babel/traverse": "^7.28.3",
     "@getbrevo/brevo": "^3.0.1",
     "@google-cloud/storage": "^7.5.0",
+    "@sendgrid/mail": "^8.1.6",
     "@supabase/supabase-js": "^2.38.4",
     "adm-zip": "^0.5.16",
     "aws-sdk": "^2.1675.0",

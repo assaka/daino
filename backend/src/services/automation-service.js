@@ -747,6 +747,19 @@ class AutomationService {
           { type: 'send_email', config: { templateId: 'winback_2', subject: 'Special offer inside' } },
           { type: 'add_tag', config: { tags: ['winback_sent'] } }
         ]
+      },
+      {
+        id: 'complete_profile',
+        name: 'Complete Your Profile',
+        description: 'Encourage customers to complete their profile with birthday and preferences',
+        triggerType: this.TRIGGER_TYPES.CUSTOMER_CREATED,
+        steps: [
+          { type: 'delay', config: { value: 3, unit: 'days' } },
+          { type: 'condition', config: { field: 'date_of_birth', operator: 'is_empty', value: true, trueStep: 2, falseStep: 4 } },
+          { type: 'send_email', config: { templateId: 'complete_profile', subject: 'Complete your profile for a special reward!' } },
+          { type: 'add_tag', config: { tags: ['profile_reminder_sent'] } },
+          { type: 'exit' }
+        ]
       }
     ];
   }

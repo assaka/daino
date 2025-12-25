@@ -133,6 +133,7 @@ const serviceCreditCostsRoutes = require('./routes/service-credit-costs');
 const emailTemplatesRoutes = require('./routes/email-templates');
 const pdfTemplatesRoutes = require('./routes/pdf-templates');
 const brevoOAuthRoutes = require('./routes/brevo-oauth');
+const sendgridRoutes = require('./routes/sendgrid');
 const storefrontsRoutes = require('./routes/storefronts');
 const demoDataRoutes = require('./routes/demo-data');
 

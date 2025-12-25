@@ -2802,7 +2802,16 @@ VALUES
   ('a1b2c3d4-0001-4001-a001-000000000001', 'account.email_not_configured_title', 'en', 'Email Not Configured', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
   ('a1b2c3d4-0001-4001-a001-000000000002', 'account.email_not_configured_description', 'en', 'Please configure an email provider in Store -> Email to enable customer registration.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
   ('a1b2c3d4-0001-4001-a001-000000000004', 'account.already_access', 'en', 'Already have access?', 'account', '2025-12-22T00:00:00.000Z', '2025-12-22T00:00:00.000Z', 'system', '{{STORE_ID}}'),
-  ('a1b2c3d4-0001-4001-a001-000000000003', 'checkout.order_not_available', 'en', 'Placing orders is not available on a preview store. This is a demonstration only.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}')
+  ('a1b2c3d4-0001-4001-a001-000000000003', 'checkout.order_not_available', 'en', 'Placing orders is not available on a preview store. This is a demonstration only.', 'preview', '2025-12-21T00:00:00.000Z', '2025-12-21T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  -- Customer profile fields (birthday, gender)
+  ('a1b2c3d4-0001-4001-a001-000000000010', 'common.date_of_birth', 'en', 'Date of Birth', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000011', 'common.gender', 'en', 'Gender', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000012', 'common.optional', 'en', 'optional', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000013', 'common.select', 'en', 'Select...', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000014', 'common.male', 'en', 'Male', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000015', 'common.female', 'en', 'Female', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000016', 'common.other', 'en', 'Other', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}'),
+  ('a1b2c3d4-0001-4001-a001-000000000017', 'common.prefer_not_to_say', 'en', 'Prefer not to say', 'common', '2025-12-25T00:00:00.000Z', '2025-12-25T00:00:00.000Z', 'system', '{{STORE_ID}}')
 ON CONFLICT DO NOTHING;
 
 -- =============================================

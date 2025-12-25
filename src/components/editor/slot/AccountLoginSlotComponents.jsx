@@ -153,40 +153,70 @@ const RecentOrdersSlot = createSlotComponent({
  * ProfileFormSlot - Profile edit form
  */
 const ProfileFormSlotComponent = ({ slot, variableContext }) => {
+  const { t } = useTranslation();
   const { settings } = useStore();
   const user = variableContext?.user || { full_name: 'John Doe', email: 'john@example.com' };
-  const [firstName, lastName] = user.full_name.split(' ');
+  const [firstName, lastName] = (user.full_name || '').split(' ');
   const primaryColor = settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color;
 
   return (
     <div className={slot.className} style={slot.styles}>
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('account.profile_information', 'Profile Information')}</h3>
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.first_name', 'First Name')}</label>
               <input type="text" defaultValue={firstName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.last_name', 'Last Name')}</label>
               <input type="text" defaultValue={lastName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email', 'Email')}</label>
             <input type="email" defaultValue={user.email} className="w-full border border-gray-300 rounded-md px-3 py-2" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input type="tel" className="w-full border border-gray-300 rounded-md px-3 py-2" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.phone', 'Phone')}</label>
+            <input type="tel" defaultValue={user.phone || ''} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('common.date_of_birth', 'Date of Birth')}
+                <span className="text-gray-400 font-normal ml-1">({t('common.optional', 'optional')})</span>
+              </label>
+              <input
+                type="date"
+                defaultValue={user.date_of_birth || ''}
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('common.gender', 'Gender')}
+                <span className="text-gray-400 font-normal ml-1">({t('common.optional', 'optional')})</span>
+              </label>
+              <select
+                defaultValue={user.gender || ''}
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              >
+                <option value="">{t('common.select', 'Select...')}</option>
+                <option value="male">{t('common.male', 'Male')}</option>
+                <option value="female">{t('common.female', 'Female')}</option>
+                <option value="other">{t('common.other', 'Other')}</option>
+                <option value="prefer_not_to_say">{t('common.prefer_not_to_say', 'Prefer not to say')}</option>
+              </select>
+            </div>
           </div>
           <button
             type="submit"
             className="btn-themed text-white px-6 py-2 rounded-md"
             style={{ backgroundColor: primaryColor }}
           >
-            Save Changes
+            {t('common.save_changes', 'Save Changes')}
           </button>
         </form>
       </div>
@@ -489,6 +519,8 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
     firstName: '',
     lastName: '',
     email: '',
+    dateOfBirth: '',
+    gender: '',
     password: '',
     confirmPassword: ''
   });
@@ -596,7 +628,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
       }
 
       // Use CustomerAuth from storefront-entities for registration
-      const response = await CustomerAuth.register({
+      const registerData = {
         email: formData.email,
         password: formData.password,
         first_name: formData.firstName,
@@ -605,7 +637,17 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         account_type: 'individual',
         store_id: store.id,
         send_welcome_email: true
-      });
+      };
+
+      // Add optional fields if provided
+      if (formData.dateOfBirth) {
+        registerData.date_of_birth = formData.dateOfBirth;
+      }
+      if (formData.gender) {
+        registerData.gender = formData.gender;
+      }
+
+      const response = await CustomerAuth.register(registerData);
 
       // Backend returns: { success: true, data: { user, token, requiresVerification, ... } }
       if (response.success) {
@@ -697,6 +739,41 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
             placeholder={t('common.enter_your_email', 'Enter your email')}
             disabled={loading}
           />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('common.date_of_birth', 'Date of Birth')}
+              <span className="text-gray-400 font-normal ml-1">({t('common.optional', 'optional')})</span>
+            </label>
+            <input
+              type="date"
+              name="dateOfBirth"
+              value={formData.dateOfBirth}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('common.gender', 'Gender')}
+              <span className="text-gray-400 font-normal ml-1">({t('common.optional', 'optional')})</span>
+            </label>
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              disabled={loading}
+            >
+              <option value="">{t('common.select', 'Select...')}</option>
+              <option value="male">{t('common.male', 'Male')}</option>
+              <option value="female">{t('common.female', 'Female')}</option>
+              <option value="other">{t('common.other', 'Other')}</option>
+              <option value="prefer_not_to_say">{t('common.prefer_not_to_say', 'Prefer not to say')}</option>
+            </select>
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.password', 'Password')}</label>

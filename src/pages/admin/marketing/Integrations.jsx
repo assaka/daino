@@ -302,7 +302,7 @@ export default function Integrations() {
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 mb-2">Do I need these integrations?</h3>
               <p className="text-sm text-gray-600 mb-4">
-                <strong>These integrations are optional.</strong> Catalyst includes built-in email campaigns,
+                <strong>These integrations are optional.</strong> DainoStore includes built-in email campaigns,
                 customer segmentation, RFM scoring, and marketing automations that work without any external platform.
               </p>
 

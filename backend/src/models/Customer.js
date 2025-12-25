@@ -39,6 +39,17 @@ const Customer = sequelize.define('Customer', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  date_of_birth: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  gender: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+    validate: {
+      isIn: [['male', 'female', 'other', 'prefer_not_to_say', null]]
+    }
+  },
   avatar_url: {
     type: DataTypes.STRING,
     allowNull: true

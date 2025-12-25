@@ -1148,7 +1148,7 @@ router.post('/customer/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data, store_id } = req.body;
+    const { email, password, first_name, last_name, phone, date_of_birth, gender, send_welcome_email = false, address_data, store_id } = req.body;
 
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
@@ -1177,24 +1177,34 @@ router.post('/customer/register', [
     const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Create customer with verification code
+    const customerData = {
+      email,
+      password: hashedPassword,
+      first_name,
+      last_name,
+      phone,
+      role: 'customer',
+      account_type: 'individual',
+      store_id: store_id,
+      email_verified: false,
+      email_verification_token: verificationCode,
+      password_reset_expires: verificationExpiry.toISOString(),
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Add optional fields if provided
+    if (date_of_birth) {
+      customerData.date_of_birth = date_of_birth;
+    }
+    if (gender) {
+      customerData.gender = gender;
+    }
+
     const { data: customer, error: createError } = await tenantDb
       .from('customers')
-      .insert({
-        email,
-        password: hashedPassword,
-        first_name,
-        last_name,
-        phone,
-        role: 'customer',
-        account_type: 'individual',
-        store_id: store_id,
-        email_verified: false,
-        email_verification_token: verificationCode,
-        password_reset_expires: verificationExpiry.toISOString(),
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(customerData)
       .select()
       .single();
 

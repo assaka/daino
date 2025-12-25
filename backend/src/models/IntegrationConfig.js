@@ -65,6 +65,7 @@ IntegrationConfig.getSensitiveFields = (integrationType) => {
 
     // Email/Marketing integrations
     brevo: ['apiKey', 'accessToken'],
+    sendgrid: ['apiKey'],
     mailchimp: ['apiKey'],
     klaviyo: ['apiKey'],
 
@@ -782,6 +783,62 @@ IntegrationConfig.deactivate = async function(storeId, integrationType, configKe
     return { success: true };
   } catch (error) {
     throw error;
+  }
+};
+
+/**
+ * Find primary email provider among configured ones
+ * @param {string} storeId - Store ID
+ * @param {Array} providerTypes - Array of provider types to check (e.g., ['brevo', 'sendgrid'])
+ * @returns {Promise<Object|null>} Primary email provider config or null
+ */
+IntegrationConfig.findPrimaryEmailProvider = async function(storeId, providerTypes) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', storeId)
+      .in('integration_type', providerTypes)
+      .eq('is_active', true)
+      .eq('is_primary', true)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      ...data,
+      config_data: this.decryptSensitiveData(data.config_data, data.integration_type)
+    };
+  } catch (error) {
+    console.error('Error finding primary email provider:', error.message);
+    return null;
+  }
+};
+
+/**
+ * Unset is_primary for specified integration types
+ * @param {string} storeId - Store ID
+ * @param {Array} providerTypes - Array of provider types to unset
+ */
+IntegrationConfig.unsetPrimaryForTypes = async function(storeId, providerTypes) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    await tenantDb
+      .from('integration_configs')
+      .update({ is_primary: false, updated_at: new Date().toISOString() })
+      .eq('store_id', storeId)
+      .in('integration_type', providerTypes);
+  } catch (error) {
+    console.error('Error unsetting primary for types:', error.message);
   }
 };
 
