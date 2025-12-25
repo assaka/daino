@@ -686,7 +686,7 @@ router.post('/finalize-order', async (req, res) => {
 
       console.log('✅ Order confirmation email sent successfully');
 
-      // For online payment methods, also send invoice email automatically
+      // For online payment methods with auto-invoice enabled, send invoice email automatically
       try {
         // Check if payment method is online
         const { data: paymentMethod } = await tenantDb
@@ -695,8 +695,11 @@ router.post('/finalize-order', async (req, res) => {
           .eq('id', order.payment_method_id)
           .maybeSingle();
 
-        if (paymentMethod?.payment_flow === 'online') {
-          console.log('📧 Online payment detected, sending invoice email...');
+        // Get sales settings for auto-invoice configuration
+        const salesSettings = store.settings?.sales_settings || {};
+
+        if (paymentMethod?.payment_flow === 'online' && salesSettings.auto_invoice_enabled) {
+          console.log('📧 Online payment detected with auto-invoice enabled, sending invoice email...');
 
           // Generate invoice number if not exists
           let invoiceNumber = completeOrder.invoice_number;
@@ -706,6 +709,28 @@ router.post('/finalize-order', async (req, res) => {
               .from('sales_orders')
               .update({ invoice_number: invoiceNumber })
               .eq('id', order.id);
+          }
+
+          // Generate PDF attachment if enabled
+          let attachments = [];
+          if (salesSettings.auto_invoice_pdf_enabled) {
+            try {
+              console.log('📄 Generating PDF invoice...');
+              const pdfService = require('../services/pdf-service');
+              const invoicePdf = await pdfService.generateInvoicePDF(
+                completeOrder,
+                store,
+                orderItems
+              );
+              attachments = [{
+                filename: pdfService.getInvoiceFilename(completeOrder),
+                content: invoicePdf.toString('base64'),
+                contentType: 'application/pdf'
+              }];
+              console.log('✅ PDF invoice generated successfully');
+            } catch (pdfError) {
+              console.error('⚠️ PDF generation failed, sending invoice email without PDF:', pdfError.message);
+            }
           }
 
           // Send invoice email
@@ -721,9 +746,12 @@ router.post('/finalize-order', async (req, res) => {
             origin: orderEmailOrigin,
             languageCode: 'en',
             invoice_number: invoiceNumber,
-            invoice_date: new Date().toISOString()
+            invoice_date: new Date().toISOString(),
+            attachments: attachments
           });
           console.log('✅ Invoice email sent automatically for online payment order', order.id);
+        } else if (paymentMethod?.payment_flow === 'online') {
+          console.log('ℹ️ Online payment detected but auto-invoice is disabled, skipping invoice email');
         }
       } catch (invoiceError) {
         console.error('⚠️ Failed to send automatic invoice email:', invoiceError.message);
