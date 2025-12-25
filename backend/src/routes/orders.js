@@ -718,6 +718,7 @@ router.post('/finalize-order', async (req, res) => {
             },
             order: { ...completeOrder, invoice_number: invoiceNumber },
             store: store,
+            origin: orderEmailOrigin,
             languageCode: 'en',
             invoice_number: invoiceNumber,
             invoice_date: new Date().toISOString()
