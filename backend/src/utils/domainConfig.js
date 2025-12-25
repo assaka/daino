@@ -270,6 +270,56 @@ function buildUrlFromRequest(req, storeSlug, path = '', queryParams = {}) {
   return fullUrl;
 }
 
+/**
+ * Extract origin URL from request (body or headers) and format for store
+ * This is the CORE function for email URLs - centralizes all origin logic
+ *
+ * Priority:
+ * 1. req.body.origin_url (frontend-provided, most reliable)
+ * 2. req.headers.origin (browser-provided)
+ * 3. req.headers.referer (fallback)
+ *
+ * @param {object} req - Express request object
+ * @param {string} storeSlug - Store slug (required for platform domains)
+ * @returns {string|null} - Full store URL with /public/{storeSlug} if needed, or null
+ */
+function extractOriginFromRequest(req, storeSlug) {
+  // Priority 1: Frontend-provided origin_url in request body
+  let origin = req?.body?.origin_url;
+
+  // Priority 2: Browser Origin header
+  if (!origin) {
+    origin = req?.get?.('origin');
+  }
+
+  // Priority 3: Referer header (fallback)
+  if (!origin) {
+    origin = req?.get?.('referer');
+    // Extract just the origin from referer URL
+    if (origin) {
+      try {
+        const url = new URL(origin);
+        origin = url.origin;
+      } catch (e) {
+        // Invalid URL, keep as-is
+      }
+    }
+  }
+
+  if (!origin) return null;
+
+  // Clean trailing slash
+  origin = origin.replace(/\/$/, '');
+
+  // For platform or dev domains, append /public/{storeSlug}
+  if ((isPlatformDomain(origin) || isDevDomain(origin)) && storeSlug) {
+    return `${origin}/public/${storeSlug}`;
+  }
+
+  // Custom domains - use as-is
+  return origin;
+}
+
 module.exports = {
   PLATFORM_DOMAINS,
   DEV_DOMAINS,
@@ -285,5 +335,6 @@ module.exports = {
   buildStoreUrl,
   buildStoreUrlSync,
   getStoreUrlFromRequest,
-  buildUrlFromRequest
+  buildUrlFromRequest,
+  extractOriginFromRequest
 };

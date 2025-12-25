@@ -1,11 +1,11 @@
-console.log('[AUTH ROUTES] Loading auth.js module - v1.0.3');
+console.log('[AUTH ROUTES] Loading auth.js module - v1.0.4');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const passport = require('../config/passport');
 const emailService = require('../services/email-service');
-const { getStoreUrlFromRequest, buildStoreUrl } = require('../utils/domainConfig');
+
 const router = express.Router();
 
 // Helper function to determine tenant table name based on role
@@ -153,7 +153,8 @@ const createCustomerAddresses = async (tenantDb, userId, firstName, lastName, ph
 };
 
 // Helper: Send welcome email
-const sendWelcomeEmail = async (tenantDb, storeId, email, customer, origin = null) => {
+// Now accepts req as 4th parameter for automatic origin extraction in email service
+const sendWelcomeEmail = async (tenantDb, storeId, email, customer, req = null) => {
   try {
     // Get store from tenant database by storeId
     const { data: store } = await tenantDb
@@ -162,14 +163,13 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer, origin = nul
       .eq('id', storeId)
       .maybeSingle();
 
-    // email-service will fetch store from tenant DB if store is missing or has no name
+    // email-service extracts origin from req automatically
     emailService.sendTransactionalEmail(storeId, 'signup_email', {
       recipientEmail: email,
       customer: customer,
       store: store,
-      origin: origin,  // Pass origin for email links
       languageCode: 'en'
-    }).catch(err => {
+    }, req).catch(err => {
       // Welcome email failed
     });
   } catch (error) {
@@ -178,15 +178,15 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer, origin = nul
 };
 
 // Helper: Send verification email with code
-const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode, origin = null) => {
-  console.log('[sendVerificationEmail] origin param:', origin);
+// Now accepts req as last parameter for automatic origin extraction in email service
+const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode, req = null) => {
   try {
+    // email-service extracts origin from req automatically
     await emailService.sendTransactionalEmail(storeId, 'email_verification', {
       recipientEmail: email,
       customer: customer,
-      verification_code: verificationCode,
-      origin: origin
-    });
+      verification_code: verificationCode
+    }, req);
   } catch (error) {
     console.error('Error sending verification email:', error);
   }
@@ -216,7 +216,7 @@ router.post('/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data, store_id } = req.body;
+    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data, store_id, origin_url } = req.body;
 
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
@@ -304,21 +304,9 @@ router.post('/register', [
     }
 
     // Send welcome email if requested (for customer registrations)
+    // Email service extracts origin from req automatically
     if (send_welcome_email && role === 'customer' && store_id) {
-      // Get store slug for origin URL
-      const { data: store } = await tenantDb
-        .from('stores')
-        .select('slug')
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
-      // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
-      const origin = getStoreUrlFromRequest(req, store?.slug) || await buildStoreUrl({
-        tenantDb,
-        storeId: store_id,
-        storeSlug: store?.slug
-      });
-      sendWelcomeEmail(tenantDb, store_id, email, user, origin);
+      sendWelcomeEmail(tenantDb, store_id, email, user, req);
     }
 
     // Generate token
@@ -423,19 +411,8 @@ router.post('/upgrade-guest', [
     const token = generateToken(updatedCustomer);
 
     // Send welcome email asynchronously
-    const { data: storeForEmail } = await tenantDb
-      .from('stores')
-      .select('slug')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-    // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
-    const emailOrigin = getStoreUrlFromRequest(req, storeForEmail?.slug) || await buildStoreUrl({
-      tenantDb,
-      storeId: store_id,
-      storeSlug: storeForEmail?.slug
-    });
-    sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer, emailOrigin).catch(err => {
+    // Email service extracts origin from req automatically
+    sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer, req).catch(err => {
       console.error('Welcome email error:', err);
     });
 
@@ -1223,31 +1200,8 @@ router.post('/customer/register', [
     }
 
     // Send verification email with code
-    const { data: storeForVerify } = await tenantDb
-      .from('stores')
-      .select('slug')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-
-    // Build origin URL: use frontend-provided origin_url, or fallback to request headers
-    console.log('[CUSTOMER-REGISTER] origin_url from body:', origin_url);
-    let verifyOrigin = origin_url;
-    if (verifyOrigin) {
-      // If platform domain, append store path
-      const { isPlatformDomain, isDevDomain } = require('../utils/domainConfig');
-      if (isPlatformDomain(verifyOrigin) || isDevDomain(verifyOrigin)) {
-        verifyOrigin = `${verifyOrigin}/public/${storeForVerify?.slug}`;
-      }
-    } else {
-      verifyOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug) || await buildStoreUrl({
-        tenantDb,
-        storeId: store_id,
-        storeSlug: storeForVerify?.slug
-      });
-    }
-    console.log('[CUSTOMER-REGISTER] verifyOrigin:', verifyOrigin);
-    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
+    // Email service extracts origin from req automatically
+    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, req);
 
     // Generate token (user can login but will be blocked until verified)
     const token = generateToken(customer);
@@ -1996,29 +1950,8 @@ router.post('/resend-verification', [
       .eq('id', customer.id);
 
     // Send verification email
-    const { data: storeForResend } = await tenantDb
-      .from('stores')
-      .select('slug')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-
-    // Build origin URL: use frontend-provided origin_url, or fallback
-    let resendOrigin = origin_url;
-    if (resendOrigin) {
-      // If platform domain, append store path
-      const { isPlatformDomain, isDevDomain } = require('../utils/domainConfig');
-      if (isPlatformDomain(resendOrigin) || isDevDomain(resendOrigin)) {
-        resendOrigin = `${resendOrigin}/public/${storeForResend?.slug}`;
-      }
-    } else {
-      resendOrigin = getStoreUrlFromRequest(req, storeForResend?.slug) || await buildStoreUrl({
-        tenantDb,
-        storeId: store_id,
-        storeSlug: storeForResend?.slug
-      });
-    }
-    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, resendOrigin);
+    // Email service extracts origin from req automatically
+    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, req);
 
     res.json({
       success: true,

@@ -5,7 +5,7 @@ const { masterDbClient } = require('../database/masterConnection');
 const brevoService = require('./brevo-service');
 const sendgridService = require('./sendgrid-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
-const { buildStoreUrlSync } = require('../utils/domainConfig');
+const { buildStoreUrlSync, extractOriginFromRequest } = require('../utils/domainConfig');
 const {
   renderTemplate,
   formatOrderItemsHtml,
@@ -442,15 +442,26 @@ class EmailService {
    * @param {string} storeId - Store ID
    * @param {string} templateIdentifier - Email template identifier (signup_email, credit_purchase_email, order_success_email)
    * @param {Object} data - Email data
+   * @param {Object} [req] - Optional Express request object (for automatic origin extraction)
    * @returns {Promise<Object>} Send result
    */
-  async sendTransactionalEmail(storeId, templateIdentifier, data) {
+  async sendTransactionalEmail(storeId, templateIdentifier, data, req = null) {
     // Always fetch full store data to ensure logo and URL are correct
     const fullStoreData = await this.getFullStoreData(storeId);
 
-    // Use origin first (the actual domain visited), then store_url, then looked-up value
-    const storeUrl = data.origin || data.store_url || fullStoreData.store_url;
-    console.log(`[EMAIL-SERVICE] Template: ${templateIdentifier}, origin: ${data.origin}, storeUrl: ${storeUrl}`);
+    // Determine origin URL:
+    // 1. data.origin (explicitly passed)
+    // 2. Extract from req (body.origin_url, headers.origin, headers.referer)
+    // 3. data.store_url
+    // 4. fullStoreData.store_url (custom domain lookup)
+    let storeUrl = data.origin;
+    if (!storeUrl && req) {
+      storeUrl = extractOriginFromRequest(req, fullStoreData.slug);
+    }
+    if (!storeUrl) {
+      storeUrl = data.store_url || fullStoreData.store_url;
+    }
+    console.log(`[EMAIL-SERVICE] Template: ${templateIdentifier}, origin: ${data.origin}, reqOrigin: ${req ? 'extracted' : 'no-req'}, storeUrl: ${storeUrl}`);
 
     // Merge full store data into data.store, but preserve explicitly passed values
     data.store = {

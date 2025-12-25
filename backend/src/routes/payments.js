@@ -5,7 +5,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const { getMasterStore, getMasterStoreSafe, updateMasterStore, getMasterUser, checkUserStoreAccess } = require('../utils/dbHelpers');
 const { v4: uuidv4 } = require('uuid');
 const IntegrationConfig = require('../models/IntegrationConfig');
-const { buildStoreUrl, getStoreUrlFromRequest } = require('../utils/domainConfig');
+const { buildStoreUrl } = require('../utils/domainConfig');
 
 const router = express.Router();
 
@@ -1437,10 +1437,7 @@ router.post('/create-checkout', async (req, res) => {
 
             console.log('📧 Sending email to:', customer_email);
 
-            // Get store URL from request origin for email links
-            const emailOrigin = getStoreUrlFromRequest(req, store?.slug);
-
-            // Send the order confirmation email (await to ensure it's sent before response)
+            // Send the order confirmation email - email service extracts origin from req automatically
             try {
               await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
                 recipientEmail: customer_email,
@@ -1455,9 +1452,8 @@ router.post('/create-checkout', async (req, res) => {
                   OrderItems: orderItems || []
                 },
                 store: store,
-                origin: emailOrigin,
                 languageCode: 'en'
-              });
+              }, req);
               console.log(`🎉 Offline order confirmation email sent to: ${customer_email}`);
             } catch (emailSendError) {
               console.error('❌ Failed to send offline order confirmation email:', emailSendError.message);

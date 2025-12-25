@@ -750,14 +750,14 @@ router.post('/upgrade-guest', async (req, res) => {
       })
       .eq('id', finalCustomer.id);
 
-    // Send verification email
+    // Send verification email - email service extracts origin from req automatically
     try {
       const emailService = require('../services/email-service');
       await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: finalCustomer,
         verification_code: verificationCode
-      });
+      }, req);
       console.log('📧 Verification email sent to:', email);
     } catch (emailError) {
       console.error('⚠️ Failed to send verification email:', emailError.message);
@@ -888,14 +888,14 @@ router.post('/customer/register', async (req, res) => {
         })
         .eq('id', upgradedCustomer.id);
 
-      // Send verification email
+      // Send verification email - email service extracts origin from req automatically
       try {
         const emailService = require('../services/email-service');
         await emailService.sendTransactionalEmail(store_id, 'email_verification', {
           recipientEmail: email,
           customer: upgradedCustomer,
           verification_code: verificationCode
-        });
+        }, req);
         console.log('📧 Verification email sent to:', email);
       } catch (emailError) {
         console.error('⚠️ Failed to send verification email:', emailError.message);
@@ -1003,14 +1003,14 @@ router.post('/customer/register', async (req, res) => {
       })
       .eq('id', newCustomer.id);
 
-    // Send verification email
+    // Send verification email - email service extracts origin from req automatically
     try {
       const emailService = require('../services/email-service');
       await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: newCustomer,
         verification_code: verificationCode
-      });
+      }, req);
       console.log('📧 Verification email sent to:', email);
     } catch (emailError) {
       console.error('⚠️ Failed to send verification email:', emailError.message);
@@ -1140,14 +1140,14 @@ router.post('/customer/login', async (req, res) => {
         })
         .eq('id', customer.id);
 
-      // Send verification email
+      // Send verification email - email service extracts origin from req automatically
       try {
         const emailService = require('../services/email-service');
         await emailService.sendTransactionalEmail(store_id, 'email_verification', {
           recipientEmail: email,
           customer: customer,
           verification_code: verificationCode
-        });
+        }, req);
         console.log('📧 Verification email sent to:', email);
       } catch (emailError) {
         console.error('⚠️ Failed to send verification email:', emailError.message);
@@ -1321,14 +1321,14 @@ router.post('/resend-verification', async (req, res) => {
       })
       .eq('id', customer.id);
 
-    // Send verification email
+    // Send verification email - email service extracts origin from req automatically
     try {
       const emailService = require('../services/email-service');
       await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: customer,
         verification_code: verificationCode
-      });
+      }, req);
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       // Still return success - code was generated
@@ -1432,13 +1432,13 @@ router.post('/verify-email', async (req, res) => {
       last_name: updatedCustomer.last_name
     }, store_id);
 
-    // Send welcome email after successful verification
+    // Send welcome email after successful verification - email service extracts origin from req automatically
     try {
       const emailService = require('../services/email-service');
       await emailService.sendTransactionalEmail(store_id, 'signup_email', {
         recipientEmail: email,
         customer: updatedCustomer
-      });
+      }, req);
       console.log('📧 Welcome email sent to:', email);
     } catch (emailError) {
       console.error('⚠️ Failed to send welcome email:', emailError.message);

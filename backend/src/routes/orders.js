@@ -8,7 +8,6 @@ const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth
 const emailService = require('../services/email-service');
 const { cacheOrder } = require('../middleware/cacheMiddleware');
 const IntegrationConfig = require('../models/IntegrationConfig');
-const { getStoreUrlFromRequest } = require('../utils/domainConfig');
 const router = express.Router();
 
 // Initialize Stripe
@@ -496,9 +495,7 @@ router.post('/finalize-order', async (req, res) => {
 
           const completeOrder = { ...order, OrderItems: orderItems || [], Store: store };
 
-          // Get store URL from request origin
-          const storeUrlForEmail = getStoreUrlFromRequest(req, store?.slug);
-
+          // Email service extracts origin from req automatically
           await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
             recipientEmail: order.customer_email,
             customer: customer || {
@@ -508,10 +505,9 @@ router.post('/finalize-order', async (req, res) => {
             },
             order: completeOrder,
             store: store,
-            origin: storeUrlForEmail,
             languageCode: 'en',
             orderId: order.id  // Include orderId for duplicate detection
-          });
+          }, req);
           console.log('✅ Order confirmation email sent successfully');
         } catch (emailError) {
           console.error('⚠️ Failed to send order email:', emailError.message);
@@ -668,9 +664,7 @@ router.post('/finalize-order', async (req, res) => {
 
       console.log('📧 Sending order confirmation email to:', order.customer_email);
 
-      // Get store URL from request origin
-      const orderEmailOrigin = getStoreUrlFromRequest(req, store?.slug);
-
+      // Email service extracts origin from req automatically
       await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: order.customer_email,
         customer: customer || {
@@ -680,9 +674,8 @@ router.post('/finalize-order', async (req, res) => {
         },
         order: completeOrder,
         store: store,
-        origin: orderEmailOrigin,
         languageCode: 'en'
-      });
+      }, req);
 
       console.log('✅ Order confirmation email sent successfully');
 
@@ -738,7 +731,7 @@ router.post('/finalize-order', async (req, res) => {
             }
           }
 
-          // Send invoice email
+          // Send invoice email - email service extracts origin from req automatically
           await emailService.sendTransactionalEmail(store_id, 'invoice_email', {
             recipientEmail: order.customer_email,
             customer: customer || {
@@ -748,12 +741,11 @@ router.post('/finalize-order', async (req, res) => {
             },
             order: { ...completeOrder, invoice_number: invoiceNumber },
             store: store,
-            origin: orderEmailOrigin,
             languageCode: 'en',
             invoice_number: invoiceNumber,
             invoice_date: new Date().toISOString(),
             attachments: attachments
-          });
+          }, req);
           console.log('✅ Invoice email sent automatically for online payment order', order.id);
         } else if (paymentMethod?.payment_flow === 'online') {
           console.log('ℹ️ Online payment detected but auto-invoice is disabled, skipping invoice email');
@@ -1580,13 +1572,14 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       }
 
       // Send email asynchronously (don't block response)
+      // Email service extracts origin from req automatically
       emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: completeOrder.customer_email,
         customer,
         order: completeOrder,
         store: store,
         languageCode: 'en' // TODO: Get from customer preferences or order metadata
-      }).then((result) => {
+      }, req).then((result) => {
         if (result.success) {
           console.log('✅ Order success email sent successfully to:', completeOrder.customer_email);
         } else {
@@ -1767,13 +1760,13 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
       lastName = nameParts.slice(1).join(' ');
     }
 
-    // Send order confirmation email
+    // Send order confirmation email - email service extracts origin from req automatically
     await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
       order: order,
       store: store
-    });
+    }, req);
 
     res.json({
       success: true,
@@ -1889,6 +1882,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     }
 
     // Send invoice email (with or without PDF attachment)
+    // Email service extracts origin from req automatically
     await emailService.sendTransactionalEmail(order.store_id, 'invoice_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
@@ -1897,7 +1891,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
       invoice_number: invoiceNumber,
       invoice_date: new Date().toLocaleDateString(),
       attachments: attachments
-    });
+    }, req);
 
     // Create or update invoice record
     let updatedInvoice;
@@ -2088,6 +2082,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     }
 
     // Send shipment notification email
+    // Email service extracts origin from req automatically
     await emailService.sendTransactionalEmail(order.store_id, 'shipment_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
@@ -2099,7 +2094,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
       shipping_method: carrier || order.shipping_method || 'Not specified',
       estimated_delivery_date: estimatedDeliveryDate ? new Date(estimatedDeliveryDate).toLocaleDateString() : 'To be confirmed',
       attachments: shipmentAttachments
-    });
+    }, req);
 
     // Create or update shipment record
     let updatedShipment;
