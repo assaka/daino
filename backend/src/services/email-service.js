@@ -644,6 +644,7 @@ class EmailService {
   /**
    * Process email_header and email_footer placeholders
    * Replaces {{email_header}} and {{email_footer}} with actual template content
+   * Always checks for active primary custom domain to use in links
    * @param {string} storeId - Store ID
    * @param {string} content - Email content with placeholders
    * @param {string} languageCode - Language code for translations
@@ -655,6 +656,42 @@ class EmailService {
     try {
       // Get tenant database connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Always check for active primary custom domain first
+      const { data: customDomain } = await tenantDb
+        .from('custom_domains')
+        .select('domain')
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // Get store data for building URLs
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('id, name, slug, settings')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      // Build store URL using custom domain if available
+      const storeUrl = buildStoreUrlSync({
+        customDomain: customDomain?.domain,
+        storeSlug: store?.slug || 'default'
+      });
+
+      // Get theme colors for header/footer styling
+      const themeColors = await this.getThemeColors(storeId);
+
+      // Build variables for header/footer templates
+      const headerFooterVariables = {
+        store_url: storeUrl,
+        store_name: store?.name || 'Our Store',
+        store_logo_url: store?.settings?.store_logo || FALLBACK_LOGO_URL,
+        custom_domain: customDomain?.domain || null,
+        custom_domain_url: customDomain?.domain ? `https://${customDomain.domain}` : storeUrl,
+        current_year: new Date().getFullYear(),
+        ...themeColors
+      };
 
       // Get header template if needed
       if (content.includes('{{email_header}}')) {
@@ -676,7 +713,9 @@ class EmailService {
             .eq('language_code', languageCode);
 
           const headerTranslation = headerTranslations?.[0];
-          const headerHtml = headerTranslation?.html_content || headerTemplate.html_content || '';
+          let headerHtml = headerTranslation?.html_content || headerTemplate.html_content || '';
+          // Render header template with custom domain variables
+          headerHtml = renderTemplate(headerHtml, headerFooterVariables);
           processedContent = processedContent.replace('{{email_header}}', headerHtml);
         } else {
           // If no header template found, just remove the placeholder
@@ -704,7 +743,9 @@ class EmailService {
             .eq('language_code', languageCode);
 
           const footerTranslation = footerTranslations?.[0];
-          const footerHtml = footerTranslation?.html_content || footerTemplate.html_content || '';
+          let footerHtml = footerTranslation?.html_content || footerTemplate.html_content || '';
+          // Render footer template with custom domain variables
+          footerHtml = renderTemplate(footerHtml, headerFooterVariables);
           processedContent = processedContent.replace('{{email_footer}}', footerHtml);
         } else {
           // If no footer template found, just remove the placeholder
