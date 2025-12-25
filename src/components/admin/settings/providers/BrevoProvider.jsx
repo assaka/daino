@@ -209,10 +209,30 @@ export default function BrevoProvider({
 
   return (
     <>
-      {/* Back Button */}
-      <Button variant="outline" size="sm" onClick={onBack}>
-        ← Back to Providers
-      </Button>
+      {/* Header with Back Button and Set as Primary */}
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="sm" onClick={onBack}>
+          ← Back to Providers
+        </Button>
+        {isBrevoConnected && (
+          connectionStatus?.config?.is_primary ? (
+            <Button variant="secondary" size="sm" disabled>
+              <Check className="w-4 h-4 mr-2" />
+              Primary Provider
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSetPrimary}
+              disabled={settingPrimary}
+            >
+              <Star className="w-4 h-4 mr-2" />
+              {settingPrimary ? 'Setting...' : 'Set as Primary'}
+            </Button>
+          )
+        )}
+      </div>
 
       {/* Connection Status */}
       <Card>
@@ -248,9 +268,6 @@ export default function BrevoProvider({
                 <div className="space-y-1 text-sm text-green-800">
                   <p><strong>Sender Name:</strong> {connectionStatus.config.sender_name}</p>
                   <p><strong>Sender Email:</strong> {connectionStatus.config.sender_email}</p>
-                  {connectionStatus.config.is_primary && (
-                    <Badge className="bg-blue-500 text-xs mt-1">Primary Provider</Badge>
-                  )}
                   {(connectionStatus.config.updated_at || connectionStatus.config.created_at) && (
                     <p className="text-xs text-green-600 mt-2">
                       <strong>Configured:</strong> {new Date(connectionStatus.config.updated_at || connectionStatus.config.created_at).toLocaleDateString('en-US', {
@@ -289,22 +306,6 @@ export default function BrevoProvider({
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
-                  {/* Set as Primary button */}
-                  {connectionStatus?.config?.is_primary ? (
-                    <Button variant="secondary" disabled>
-                      <Check className="w-4 h-4 mr-2" />
-                      Primary Provider
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={handleSetPrimary}
-                      disabled={settingPrimary}
-                    >
-                      <Star className="w-4 h-4 mr-2" />
-                      {settingPrimary ? 'Setting...' : 'Set as Primary'}
-                    </Button>
-                  )}
                 </div>
                 <Button
                     variant="outline"

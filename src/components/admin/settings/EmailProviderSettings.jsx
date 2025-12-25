@@ -62,6 +62,8 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
   const [loading, setLoading] = useState(true);
   const [isBrevoConnected, setIsBrevoConnected] = useState(false);
   const [isSendGridConnected, setIsSendGridConnected] = useState(false);
+  const [isBrevoPrimary, setIsBrevoPrimary] = useState(false);
+  const [isSendGridPrimary, setIsSendGridPrimary] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
@@ -78,16 +80,20 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
       const brevoResponse = await brevoAPI.getConnectionStatus(storeId);
       if (brevoResponse.success && brevoResponse.data.isConfigured) {
         setIsBrevoConnected(true);
+        setIsBrevoPrimary(brevoResponse.data.config?.is_primary || false);
       } else {
         setIsBrevoConnected(false);
+        setIsBrevoPrimary(false);
       }
 
       // Check SendGrid connection status
       const sendgridResponse = await sendgridAPI.getConnectionStatus(storeId);
       if (sendgridResponse.success && sendgridResponse.data.isConfigured) {
         setIsSendGridConnected(true);
+        setIsSendGridPrimary(sendgridResponse.data.config?.is_primary || false);
       } else {
         setIsSendGridConnected(false);
+        setIsSendGridPrimary(false);
       }
     } catch (error) {
       console.error('Error checking provider status:', error);
@@ -174,14 +180,28 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                       </Badge>
                     )}
                     {provider.id === 'brevo' && isBrevoConnected && (
-                      <Badge className="bg-green-500 text-xs">
-                        <Check className="w-3 h-3 mr-1" /> Active
-                      </Badge>
+                      <div className="flex gap-1">
+                        <Badge className="bg-green-500 text-xs">
+                          <Check className="w-3 h-3 mr-1" /> Active
+                        </Badge>
+                        {isBrevoPrimary && (
+                          <Badge className="bg-yellow-500 text-black text-xs">
+                            Primary
+                          </Badge>
+                        )}
+                      </div>
                     )}
                     {provider.id === 'sendgrid' && isSendGridConnected && (
-                      <Badge className="bg-green-500 text-xs">
-                        <Check className="w-3 h-3 mr-1" /> Active
-                      </Badge>
+                      <div className="flex gap-1">
+                        <Badge className="bg-green-500 text-xs">
+                          <Check className="w-3 h-3 mr-1" /> Active
+                        </Badge>
+                        {isSendGridPrimary && (
+                          <Badge className="bg-yellow-500 text-black text-xs">
+                            Primary
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
                 </CardHeader>
