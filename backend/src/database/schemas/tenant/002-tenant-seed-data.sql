@@ -1842,7 +1842,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO payment_methods (id, name, code, type, is_active, sort_order, description, settings, fee_type, fee_amount, min_amount, max_amount, availability, countries, store_id, created_at, updated_at, conditions, payment_flow)
 VALUES
   ('ca67027c-e0a1-4cca-a836-0a3583179ee7', 'Cash on Delivery', 'CASH', 'cash_on_delivery', true, 0, '', '{}'::jsonb, 'none', '0.00', NULL, NULL, 'all', '[]'::jsonb, '{{STORE_ID}}', '2025-07-27T19:36:05.622Z', '2025-07-27T19:36:05.622Z', '{}'::jsonb, 'offline'),
-  ('01b3d3ba-1b53-4115-8793-cca1372ef457', 'bank-en', 'bank_en', 'bank_transfer', true, 0, '', '{}'::jsonb, 'fixed', '8.00', NULL, NULL, 'all', '[]'::jsonb, '{{STORE_ID}}', '2025-07-27T19:36:32.972Z', '2025-10-26T12:32:00.638Z', '{"skus":[],"categories":["edbfff44-11d7-4b41-9232-008b4b3873a7"],"attribute_sets":["8a76e7ad-1b4d-4377-9b82-cac062bb5559"],"attribute_conditions":[]}'::jsonb, 'offline'),
+  ('01b3d3ba-1b53-4115-8793-cca1372ef457', 'Banktransfer', 'banktransfer', 'bank_transfer', true, 0, '', '{}'::jsonb, 'fixed', '8.00', NULL, NULL, 'all', '[]'::jsonb, '{{STORE_ID}}', '2025-07-27T19:36:32.972Z', '2025-10-26T12:32:00.638Z', '{"skus":[],"categories":["edbfff44-11d7-4b41-9232-008b4b3873a7"],"attribute_sets":["8a76e7ad-1b4d-4377-9b82-cac062bb5559"],"attribute_conditions":[]}'::jsonb, 'offline'),
   ('a01439da-bc46-4031-a303-14d60b046298', 'Creditcard', 'creditcard', 'credit_card', true, 0, '', '{}'::jsonb, 'percentage', '2.00', NULL, NULL, 'all', '[]'::jsonb, '{{STORE_ID}}', '2025-11-04T12:48:42.036Z', '2025-11-04T12:48:55.087Z', '{"skus":[],"categories":[],"attribute_sets":[],"attribute_conditions":[]}'::jsonb, 'online')
 ON CONFLICT DO NOTHING;
 
@@ -1851,8 +1851,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO payment_method_translations (payment_method_id, language_code, name, description, created_at, updated_at)
 VALUES
   ('ca67027c-e0a1-4cca-a836-0a3583179ee7', 'en', 'Cash on Delivery', '', '2025-10-24T16:42:27.922Z', '2025-10-24T16:42:27.922Z'),
-  ('01b3d3ba-1b53-4115-8793-cca1372ef457', 'en', 'bank-en', '', '2025-10-24T16:42:27.972Z', '2025-10-24T16:42:27.972Z'),
-  ('01b3d3ba-1b53-4115-8793-cca1372ef457', 'nl', 'bank-nl', '', '2025-10-24T16:42:28.016Z', '2025-10-24T16:42:28.016Z')
+  ('01b3d3ba-1b53-4115-8793-cca1372ef457', 'en', 'Banktransfer', '', '2025-10-24T16:42:27.972Z', '2025-10-24T16:42:27.972Z')
 ON CONFLICT DO NOTHING;
 
 
