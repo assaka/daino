@@ -340,11 +340,17 @@ router.post('/register', [
         .limit(1)
         .maybeSingle();
       // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
-      const origin = getStoreUrlFromRequest(req, store?.slug) || await buildStoreUrl({
+      const requestOrigin = getStoreUrlFromRequest(req, store?.slug);
+      console.log('[REGISTER] Origin header:', req.get('origin'));
+      console.log('[REGISTER] Referer header:', req.get('referer'));
+      console.log('[REGISTER] Store slug:', store?.slug);
+      console.log('[REGISTER] getStoreUrlFromRequest result:', requestOrigin);
+      const origin = requestOrigin || await buildStoreUrl({
         tenantDb,
         storeId: store_id,
         storeSlug: store?.slug
       });
+      console.log('[REGISTER] Final origin for email:', origin);
       sendWelcomeEmail(tenantDb, store_id, email, user, origin);
     }
 
