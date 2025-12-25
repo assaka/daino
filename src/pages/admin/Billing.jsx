@@ -95,7 +95,7 @@ const CheckoutForm = ({ selectedPackage, currency, storeId, onSuccess, onError }
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-blue-900">
-            Your credit card will be charged <strong>{currency === 'eur' ? '€' : '$'}{total.toFixed(2)}</strong> (incl. {taxPercentage}% BTW) when you submit the payment.
+            Your credit card will be charged <strong>{currency === 'eur' ? '€' : '$'}{total.toFixed(2)}</strong> (incl. {taxPercentage}% BTW NL) when you submit the payment.
           </p>
         </div>
       </div>
@@ -399,7 +399,7 @@ export default function Billing() {
                 ))}
               </div>
               <p className="text-sm text-gray-500 text-center mt-4">
-                All prices are excl. 21% BTW
+                All prices are excl. 21% BTW (NL)
               </p>
 
               {selectedPackage && (
@@ -416,7 +416,7 @@ export default function Billing() {
                         <span>{pricingService.formatPrice(selectedPackage.subtotal || selectedPackage.price, selectedCurrency)}</span>
                       </div>
                       <div className="flex justify-between text-gray-600">
-                        <span>BTW ({selectedPackage.tax_percentage || 21}%)</span>
+                        <span>BTW NL ({selectedPackage.tax_percentage || 21}%)</span>
                         <span>{pricingService.formatPrice(selectedPackage.tax_amount || (selectedPackage.price * 0.21), selectedCurrency)}</span>
                       </div>
                       <div className="border-t pt-2 mt-2">
