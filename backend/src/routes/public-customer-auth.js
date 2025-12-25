@@ -45,10 +45,20 @@ router.post('/customer/forgot-password', [
     const { email, store_id } = req.body;
 
     // Get origin URL from request (for email links)
-    const origin = req.get('origin') || req.get('referer');
+    let origin = req.get('origin') || req.get('referer');
+
+    // If origin is platform domain, we need to append store path
+    // For custom domains, the origin is the full storefront URL
+    // For platform domains (dainostore.com), storefront is at /public/{storeSlug}
+    const isPlatformDomain = origin && (
+      origin.includes('dainostore.com') ||
+      origin.includes('daino.ai') ||
+      origin.includes('daino.store') ||
+      origin.includes('localhost')
+    );
+
     console.log('[FORGOT-PASSWORD] Origin header:', req.get('origin'));
-    console.log('[FORGOT-PASSWORD] Referer header:', req.get('referer'));
-    console.log('[FORGOT-PASSWORD] Using origin:', origin);
+    console.log('[FORGOT-PASSWORD] Is platform domain:', isPlatformDomain);
 
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
@@ -91,29 +101,38 @@ router.post('/customer/forgot-password', [
       .limit(1)
       .maybeSingle();
 
-    // Build reset URL
+    // For platform domains, append the store path to origin
+    // Custom domains don't need path modification
+    const storeSlug = store?.slug || store?.code;
+    if (isPlatformDomain && origin && storeSlug) {
+      // Clean origin and append store path
+      origin = origin.replace(/\/$/, '') + '/public/' + storeSlug;
+    }
+    console.log('[FORGOT-PASSWORD] Final origin for email:', origin);
+
     // Build reset URL using store's custom domain or platform URL
     const resetUrl = await buildStoreUrl({
       tenantDb,
       storeId: store_id,
-      storeSlug: store?.slug || store?.code,
+      storeSlug: storeSlug,
       path: '/reset-password',
       queryParams: { token: resetToken, email }
     });
     const baseUrl = await buildStoreUrl({
       tenantDb,
       storeId: store_id,
-      storeSlug: store?.slug || store?.code
+      storeSlug: storeSlug
     });
 
     // Send password reset email
+    // Use origin (actual visited domain) for email links
     try {
       await emailService.sendTransactionalEmail(store_id, 'password_reset', {
         recipientEmail: email,
         customer: customer,
         reset_url: resetUrl,
-        store_url: baseUrl,  // Use the same URL built for reset link
-        origin: origin       // Pass origin for email footer
+        store_url: baseUrl,
+        origin: origin
       }).catch(async (templateError) => {
         // Fallback: Send simple email
         await emailService.sendViaBrevo(store_id, email,
