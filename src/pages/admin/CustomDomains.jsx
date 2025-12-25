@@ -40,7 +40,6 @@ import {
   AlertTriangle,
   ExternalLink,
   Trash2,
-  Star,
   Copy,
   Check,
   RefreshCw,
@@ -63,7 +62,6 @@ const CustomDomains = () => {
   const [dnsDialogOpen, setDnsDialogOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [newDomain, setNewDomain] = useState('');
-  const [isPrimary, setIsPrimary] = useState(false);
   const [adding, setAdding] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [checkingSSL, setCheckingSSL] = useState(false);
@@ -72,9 +70,6 @@ const CustomDomains = () => {
   const [deleting, setDeleting] = useState(false);
   const [dnsDebugData, setDnsDebugData] = useState(null);
   const [isDnsDebugOpen, setIsDnsDebugOpen] = useState(false);
-  const [selectPrimaryDialogOpen, setSelectPrimaryDialogOpen] = useState(false);
-  const [availableDomainsForPrimary, setAvailableDomainsForPrimary] = useState([]);
-  const [selectedNewPrimary, setSelectedNewPrimary] = useState(null);
   const [copiedText, setCopiedText] = useState(null);
 
   // Companion domain state
@@ -210,7 +205,6 @@ const CustomDomains = () => {
       const response = await apiClient.post('/custom-domains/add', {
         domain: newDomain.trim().toLowerCase(),
         redirect_from: includeCompanion && companionDomain ? companionDomain : null,
-        isPrimary,
         verificationMethod: 'txt',
         sslProvider: 'letsencrypt'
       });
@@ -222,7 +216,6 @@ const CustomDomains = () => {
         toast.success(message);
         setAddDialogOpen(false);
         setNewDomain('');
-        setIsPrimary(false);
         setCompanionDomain('');
         setIncludeCompanion(true);
         setShowCompanionOption(false);
@@ -335,42 +328,7 @@ const CustomDomains = () => {
     }
   };
 
-  const handleSetPrimary = async (domainId) => {
-    try {
-      const response = await apiClient.post(`/custom-domains/${domainId}/set-primary`);
-
-      if (response.success) {
-        toast.success('Primary domain updated!');
-        loadDomains();
-      }
-    } catch (error) {
-      console.error('Error setting primary domain:', error);
-      toast.error(error.response?.data?.message || 'Failed to set primary domain');
-    }
-  };
-
   const handleRemoveDomain = (domainId, domainName) => {
-    const domainToRemove = domains.find(d => d.id === domainId);
-
-    // Check if this is the primary domain and there are other domains
-    if (domainToRemove?.is_primary) {
-      const otherVerifiedDomains = domains.filter(d =>
-        d.id !== domainId &&
-        d.verification_status === 'verified' &&
-        d.ssl_status === 'active'
-      );
-
-      // If there are other verified domains, ask user to select new primary
-      if (otherVerifiedDomains.length > 0) {
-        setDomainToDelete({ id: domainId, name: domainName });
-        setAvailableDomainsForPrimary(otherVerifiedDomains);
-        setSelectedNewPrimary(otherVerifiedDomains[0]?.id || null);
-        setSelectPrimaryDialogOpen(true);
-        return;
-      }
-    }
-
-    // Normal deletion (not primary, or only domain)
     setDomainToDelete({ id: domainId, name: domainName });
     setDeleteDialogOpen(true);
   };
@@ -390,37 +348,6 @@ const CustomDomains = () => {
       }
     } catch (error) {
       console.error('Error removing domain:', error);
-      toast.error(error.response?.data?.message || 'Failed to remove domain');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const confirmRemovePrimaryWithNewSelection = async () => {
-    if (!domainToDelete || !selectedNewPrimary) return;
-
-    try {
-      setDeleting(true);
-
-      // First, set the new primary domain
-      await handleSetPrimary(selectedNewPrimary);
-
-      // Wait a bit for the primary to update
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Then delete the old primary domain
-      const response = await apiClient.delete(`/custom-domains/${domainToDelete.id}`);
-
-      if (response.success) {
-        toast.success('Primary domain transferred and old domain removed successfully');
-        setSelectPrimaryDialogOpen(false);
-        setDomainToDelete(null);
-        setSelectedNewPrimary(null);
-        setAvailableDomainsForPrimary([]);
-        loadDomains();
-      }
-    } catch (error) {
-      console.error('Error removing primary domain:', error);
       toast.error(error.response?.data?.message || 'Failed to remove domain');
     } finally {
       setDeleting(false);
@@ -506,20 +433,20 @@ const CustomDomains = () => {
           <div className="flex items-center gap-3">
             <div className="flex-1">
               {(() => {
-                const primaryDomain = domains.find(d => d.is_primary && d.verification_status === 'verified' && d.ssl_status === 'active');
+                const activeDomain = domains.find(d => d.verification_status === 'verified' && d.ssl_status === 'active' && !d.is_redirect);
                 const storeCode = selectedStore?.code || selectedStore?.slug;
-                const currentUrl = primaryDomain
-                  ? `https://${primaryDomain.domain}`
+                const currentUrl = activeDomain
+                  ? `https://${activeDomain.domain}`
                   : storeCode ? getExternalStoreUrl(storeCode) : 'Store code not available';
 
                 const internalUrl = storeCode ? getExternalStoreUrl(storeCode) : null;
 
                 return (
                   <div className="space-y-3">
-                    {/* Primary URL */}
+                    {/* Active Custom Domain URL */}
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">
-                        {primaryDomain ? 'Primary Custom Domain' : 'Default Platform URL'}
+                        {activeDomain ? 'Custom Domain' : 'Default Platform URL'}
                       </p>
                       <a
                         href={currentUrl}
@@ -530,7 +457,7 @@ const CustomDomains = () => {
                         {currentUrl}
                         <ExternalLink className="w-4 h-4" />
                       </a>
-                      {primaryDomain && (
+                      {activeDomain && (
                         <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" />
                           SSL Active, Verified
@@ -607,7 +534,6 @@ const CustomDomains = () => {
                   <TableHead>Store URL</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>SSL</TableHead>
-                  <TableHead>Primary</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -656,14 +582,6 @@ const CustomDomains = () => {
                     </TableCell>
                     <TableCell>
                       {getSSLBadge(domain.ssl_status)}
-                    </TableCell>
-                    <TableCell>
-                      {domain.is_primary && (
-                        <Badge variant="secondary">
-                          <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
-                          Primary
-                        </Badge>
-                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -725,17 +643,6 @@ const CustomDomains = () => {
                                 Check SSL
                               </>
                             )}
-                          </Button>
-                        )}
-
-                        {domain.verification_status === 'verified' && !domain.is_primary && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSetPrimary(domain.id)}
-                          >
-                            <Star className="w-3 h-3 mr-1" />
-                            Set Primary
                           </Button>
                         )}
 
@@ -817,18 +724,6 @@ const CustomDomains = () => {
               </div>
             )}
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="primary"
-                checked={isPrimary}
-                onChange={(e) => setIsPrimary(e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="primary" className="cursor-pointer">
-                Set as primary domain
-              </Label>
-            </div>
           </div>
 
           <DialogFooter>
@@ -1071,30 +966,7 @@ const CustomDomains = () => {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmRemoveDomain}
         title="Delete Custom Domain?"
-        description={(() => {
-          const domainToRemove = domains.find(d => d.id === domainToDelete?.id);
-          const isPrimary = domainToRemove?.is_primary;
-          const storeSlug = selectedStore?.code || selectedStore?.slug;
-          const internalUrl = storeSlug ? getExternalStoreUrl(storeSlug) : 'the internal URL';
-
-          if (isPrimary) {
-            return (
-              <div className="space-y-2">
-                <p>Are you sure you want to remove <span className="font-semibold">{domainToDelete?.name}</span>?</p>
-                <Alert className="border-orange-200 bg-orange-50">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                  <AlertDescription className="text-sm">
-                    This is your <strong>primary domain</strong>. After deletion, your store will only be accessible at: <br/>
-                    <code className="text-xs bg-white px-1 py-0.5 rounded mt-1 inline-block">{internalUrl}</code>
-                  </AlertDescription>
-                </Alert>
-                <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
-              </div>
-            );
-          }
-
-          return `Are you sure you want to remove ${domainToDelete?.name}? This action cannot be undone and will immediately stop serving your store on this domain.`;
-        })()}
+        description={`Are you sure you want to remove ${domainToDelete?.name}? This action cannot be undone and will immediately stop serving your store on this domain.`}
         confirmText="Delete Domain"
         cancelText="Cancel"
         loading={deleting}
@@ -1275,76 +1147,6 @@ const CustomDomains = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Select New Primary Domain Dialog */}
-      <Dialog open={selectPrimaryDialogOpen} onOpenChange={setSelectPrimaryDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-              Select New Primary Domain
-            </DialogTitle>
-            <DialogDescription>
-              You're deleting the primary domain <span className="font-semibold">{domainToDelete?.name}</span>.
-              Your store will only be accessible via the internal URL unless you select a new primary domain.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <Alert className="border-orange-200 bg-orange-50">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-sm">
-                Without a primary domain, your store will only be accessible at the internal URL.
-                Select one of your other verified domains to set as the new primary.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label>Select New Primary Domain</Label>
-              <Select value={selectedNewPrimary} onValueChange={setSelectedNewPrimary}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a domain..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDomainsForPrimary.map((domain) => (
-                    <SelectItem key={domain.id} value={domain.id}>
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        {domain.domain}
-                        <Badge variant="outline" className="ml-2">
-                          <Shield className="w-3 h-3 mr-1" />
-                          SSL Active
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectPrimaryDialogOpen(false);
-                setDomainToDelete(null);
-                setSelectedNewPrimary(null);
-                setAvailableDomainsForPrimary([]);
-              }}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmRemovePrimaryWithNewSelection}
-              disabled={!selectedNewPrimary || deleting}
-            >
-              {deleting ? 'Processing...' : 'Transfer Primary & Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
