@@ -5,6 +5,8 @@
  * Import from here instead of duplicating domain checks across files.
  */
 
+const { masterDbClient } = require('../database/masterConnection');
+
 // Platform domains - these are our main application domains
 const PLATFORM_DOMAINS = [
   'dainostore.com',
@@ -104,18 +106,25 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
   try {
     console.log(`[DOMAIN-CONFIG] Looking for custom domain with store_id: ${storeId}`);
 
-    // First, let's see all custom domains in the database for debugging
-    const { data: allDomains } = await tenantDb
-      .from('custom_domains')
-      .select('domain, store_id, is_active, is_primary, verification_status');
-    console.log(`[DOMAIN-CONFIG] All custom domains in DB:`, JSON.stringify(allDomains, null, 2));
+    // Look up custom domain in master DB's custom_domain_lookups table
+    if (!masterDbClient) {
+      console.warn('[DOMAIN-CONFIG] masterDbClient not available');
+      return null;
+    }
 
-    const { data: customDomain } = await tenantDb
-      .from('custom_domains')
+    // First, let's see all custom domains for debugging
+    const { data: allDomains } = await masterDbClient
+      .from('custom_domain_lookups')
+      .select('*')
+      .eq('store_id', storeId);
+    console.log(`[DOMAIN-CONFIG] All custom domains for store:`, JSON.stringify(allDomains, null, 2));
+
+    // Get primary active custom domain
+    const { data: customDomain } = await masterDbClient
+      .from('custom_domain_lookups')
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
-      .eq('verification_status', 'verified')
       .eq('is_primary', true)
       .maybeSingle();
 
@@ -125,13 +134,12 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
       return customDomain.domain;
     }
 
-    // Fallback: get any active verified domain
-    const { data: anyDomain } = await tenantDb
-      .from('custom_domains')
+    // Fallback: get any active domain for this store
+    const { data: anyDomain } = await masterDbClient
+      .from('custom_domain_lookups')
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
-      .eq('verification_status', 'verified')
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();

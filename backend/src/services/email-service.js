@@ -89,17 +89,22 @@ class EmailService {
       const { data: store } = await tenantDb
         .from('stores')
         .select('id, name, slug, settings')
-        .eq('id', storeId)
+        .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
 
-      // Get primary custom domain if exists
-      const { data: customDomain } = await tenantDb
-        .from('custom_domains')
-        .select('domain')
-        .eq('store_id', storeId)
-        .eq('is_primary', true)
-        .eq('is_active', true)
-        .maybeSingle();
+      // Get primary custom domain from master DB
+      let customDomain = null;
+      if (masterDbClient && store?.id) {
+        const { data: domainData } = await masterDbClient
+          .from('custom_domain_lookups')
+          .select('domain')
+          .eq('store_id', store.id)
+          .eq('is_primary', true)
+          .eq('is_active', true)
+          .maybeSingle();
+        customDomain = domainData;
+      }
 
       const storeSlug = store?.slug || 'default';
       const storeName = store?.name || 'Our Store';
@@ -657,14 +662,6 @@ class EmailService {
       // Get tenant database connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      // Always check for active primary custom domain first
-      const { data: customDomain } = await tenantDb
-        .from('custom_domains')
-        .select('domain')
-        .eq('is_primary', true)
-        .eq('is_active', true)
-        .maybeSingle();
-
       // Get store data for building URLs
       const { data: store } = await tenantDb
         .from('stores')
@@ -672,6 +669,19 @@ class EmailService {
         .eq('is_active', true)
         .limit(1)
         .maybeSingle();
+
+      // Always check for active primary custom domain first (from master DB)
+      let customDomain = null;
+      if (masterDbClient && store?.id) {
+        const { data: domainData } = await masterDbClient
+          .from('custom_domain_lookups')
+          .select('domain')
+          .eq('store_id', store.id)
+          .eq('is_primary', true)
+          .eq('is_active', true)
+          .maybeSingle();
+        customDomain = domainData;
+      }
 
       // Build store URL using custom domain if available
       const storeUrl = buildStoreUrlSync({
