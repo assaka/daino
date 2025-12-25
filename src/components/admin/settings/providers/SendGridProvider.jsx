@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Check, X, Send, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
+import { Mail, Check, X, Send, RefreshCw, ExternalLink, AlertCircle, Star } from 'lucide-react';
 import sendgridAPI from '@/api/sendgrid';
 
 export default function SendGridProvider({
@@ -18,6 +18,7 @@ export default function SendGridProvider({
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [settingPrimary, setSettingPrimary] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [testingSend, setTestingSend] = useState(false);
@@ -115,6 +116,24 @@ export default function SendGridProvider({
       } catch (error) {
         onFlashMessage({ type: 'error', message: 'Failed to disconnect SendGrid' });
       }
+    }
+  };
+
+  const handleSetPrimary = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) return;
+
+    setSettingPrimary(true);
+    try {
+      const response = await sendgridAPI.setPrimary(storeId);
+      if (response.success) {
+        onFlashMessage({ type: 'success', message: 'SendGrid set as primary email provider' });
+        loadConnectionStatus();
+      }
+    } catch (error) {
+      onFlashMessage({ type: 'error', message: 'Failed to set SendGrid as primary' });
+    } finally {
+      setSettingPrimary(false);
     }
   };
 
@@ -254,6 +273,22 @@ export default function SendGridProvider({
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
+                  {/* Set as Primary button */}
+                  {connectionStatus?.config?.is_primary ? (
+                    <Button variant="secondary" disabled>
+                      <Check className="w-4 h-4 mr-2" />
+                      Primary Provider
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={handleSetPrimary}
+                      disabled={settingPrimary}
+                    >
+                      <Star className="w-4 h-4 mr-2" />
+                      {settingPrimary ? 'Setting...' : 'Set as Primary'}
+                    </Button>
+                  )}
                 </div>
                 <Button
                     variant="outline"

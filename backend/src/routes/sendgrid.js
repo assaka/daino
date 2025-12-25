@@ -219,4 +219,53 @@ router.get('/email-statistics',
   }
 );
 
+/**
+ * POST /api/sendgrid/set-primary
+ * Set SendGrid as the primary email provider
+ */
+router.post('/set-primary',
+  checkStoreOwnership,
+  async (req, res) => {
+    try {
+      const storeId = req.storeId;
+      const IntegrationConfig = require('../models/IntegrationConfig');
+
+      // Check if SendGrid is configured
+      const isConfigured = await sendgridService.isConfigured(storeId);
+      if (!isConfigured) {
+        return res.status(400).json({
+          success: false,
+          error: 'SendGrid is not configured. Please configure it first.'
+        });
+      }
+
+      // Unset is_primary on other email providers
+      await IntegrationConfig.unsetPrimaryForTypes(storeId, ['brevo']);
+
+      // Get SendGrid config and set as primary
+      const config = await IntegrationConfig.findByStoreAndType(storeId, 'sendgrid');
+      if (config && config.id) {
+        const ConnectionManager = require('../services/database/ConnectionManager');
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+        await tenantDb
+          .from('integration_configs')
+          .update({ is_primary: true, updated_at: new Date().toISOString() })
+          .eq('id', config.id);
+      }
+
+      res.json({
+        success: true,
+        message: 'SendGrid set as primary email provider'
+      });
+    } catch (error) {
+      console.error('SendGrid set-primary error:', error.message);
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;

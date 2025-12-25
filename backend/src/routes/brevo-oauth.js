@@ -140,6 +140,7 @@ router.get('/status', async (req, res) => {
         sender_name: config.senderName,
         sender_email: config.senderEmail,
         is_active: config.isActive,
+        is_primary: config.isPrimary,
         connected_at: config.createdAt,
         updated_at: config.updatedAt
       } : null
@@ -275,6 +276,52 @@ router.get('/email-statistics', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get email statistics',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/brevo/set-primary
+ * Set Brevo as the primary email provider
+ */
+router.post('/set-primary', checkStoreOwnership, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const IntegrationConfig = require('../models/IntegrationConfig');
+
+    // Check if Brevo is configured
+    const isConfigured = await brevoService.isConfigured(storeId);
+    if (!isConfigured) {
+      return res.status(400).json({
+        success: false,
+        error: 'Brevo is not configured. Please configure it first.'
+      });
+    }
+
+    // Unset is_primary on other email providers
+    await IntegrationConfig.unsetPrimaryForTypes(storeId, ['sendgrid']);
+
+    // Get Brevo config and set as primary
+    const config = await IntegrationConfig.findByStoreAndType(storeId, 'brevo');
+    if (config && config.id) {
+      const ConnectionManager = require('../services/database/ConnectionManager');
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      await tenantDb
+        .from('integration_configs')
+        .update({ is_primary: true, updated_at: new Date().toISOString() })
+        .eq('id', config.id);
+    }
+
+    res.json({
+      success: true,
+      message: 'Brevo set as primary email provider'
+    });
+  } catch (error) {
+    console.error('Brevo set-primary error:', error.message);
+    res.status(400).json({
+      success: false,
       error: error.message
     });
   }

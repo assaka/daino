@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Check, X, Send, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
+import { Mail, Check, X, Send, RefreshCw, ExternalLink, AlertCircle, Star } from 'lucide-react';
 import brevoAPI from '@/api/brevo';
 
 export default function BrevoProvider({
@@ -18,6 +18,7 @@ export default function BrevoProvider({
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [settingPrimary, setSettingPrimary] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [testingSend, setTestingSend] = useState(false);
@@ -131,6 +132,24 @@ export default function BrevoProvider({
     }
   };
 
+  const handleSetPrimary = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) return;
+
+    setSettingPrimary(true);
+    try {
+      const response = await brevoAPI.setPrimary(storeId);
+      if (response.success) {
+        onFlashMessage({ type: 'success', message: 'Brevo set as primary email provider' });
+        loadConnectionStatus();
+      }
+    } catch (error) {
+      onFlashMessage({ type: 'error', message: 'Failed to set Brevo as primary' });
+    } finally {
+      setSettingPrimary(false);
+    }
+  };
+
   const handleTestConnection = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId || !testEmail) {
@@ -229,6 +248,9 @@ export default function BrevoProvider({
                 <div className="space-y-1 text-sm text-green-800">
                   <p><strong>Sender Name:</strong> {connectionStatus.config.sender_name}</p>
                   <p><strong>Sender Email:</strong> {connectionStatus.config.sender_email}</p>
+                  {connectionStatus.config.is_primary && (
+                    <Badge className="bg-blue-500 text-xs mt-1">Primary Provider</Badge>
+                  )}
                   {(connectionStatus.config.updated_at || connectionStatus.config.created_at) && (
                     <p className="text-xs text-green-600 mt-2">
                       <strong>Configured:</strong> {new Date(connectionStatus.config.updated_at || connectionStatus.config.created_at).toLocaleDateString('en-US', {
@@ -267,6 +289,22 @@ export default function BrevoProvider({
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
+                  {/* Set as Primary button */}
+                  {connectionStatus?.config?.is_primary ? (
+                    <Button variant="secondary" disabled>
+                      <Check className="w-4 h-4 mr-2" />
+                      Primary Provider
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={handleSetPrimary}
+                      disabled={settingPrimary}
+                    >
+                      <Star className="w-4 h-4 mr-2" />
+                      {settingPrimary ? 'Setting...' : 'Set as Primary'}
+                    </Button>
+                  )}
                 </div>
                 <Button
                     variant="outline"

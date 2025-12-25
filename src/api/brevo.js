@@ -95,6 +95,23 @@ class BrevoAPI {
       throw error;
     }
   }
+
+  /**
+   * Set Brevo as the primary email provider
+   * @param {string} storeId - Store ID
+   * @returns {Promise<Object>} Result
+   */
+  async setPrimary(storeId) {
+    try {
+      const response = await apiClient.post('brevo/set-primary', {
+        store_id: storeId
+      });
+      return response;
+    } catch (error) {
+      console.error('Brevo set-primary error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new BrevoAPI();
