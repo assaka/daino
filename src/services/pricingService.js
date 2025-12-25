@@ -1,10 +1,50 @@
 import apiClient from '@/api/client';
 
+// Dutch VAT (BTW) rate - 21%
+const DUTCH_VAT_RATE = 0.21;
+
 /**
  * Frontend Pricing Service
  * Fetches credit pricing and currency information from backend
  */
 class PricingService {
+  constructor() {
+    this.taxInfo = null;
+  }
+
+  /**
+   * Calculate tax for a given amount (frontend fallback)
+   * @param {number} amount - Base amount (excl. tax)
+   * @param {number} vatRate - VAT rate as decimal (default: 0.21)
+   * @returns {object} - { subtotal, taxAmount, total, taxRate, taxPercentage }
+   */
+  calculateTax(amount, vatRate = DUTCH_VAT_RATE) {
+    const subtotal = parseFloat(amount);
+    const taxAmount = Math.round(subtotal * vatRate * 100) / 100;
+    const total = Math.round((subtotal + taxAmount) * 100) / 100;
+
+    return {
+      subtotal,
+      taxAmount,
+      total,
+      taxRate: vatRate,
+      taxPercentage: Math.round(vatRate * 100)
+    };
+  }
+
+  /**
+   * Get the stored tax info
+   * @returns {object|null} - Tax info from last pricing fetch
+   */
+  getTaxInfo() {
+    return this.taxInfo || {
+      rate: DUTCH_VAT_RATE,
+      percentage: Math.round(DUTCH_VAT_RATE * 100),
+      label: 'BTW',
+      country: 'NL'
+    };
+  }
+
   /**
    * Get credit pricing for a specific currency
    * @param {string} currency - Currency code (usd, eur)
@@ -13,6 +53,12 @@ class PricingService {
   async getPricing(currency = 'usd') {
     try {
       const response = await apiClient.get(`credits/pricing?currency=${currency}`);
+
+      // Store tax info if provided
+      if (response?.tax) {
+        this.taxInfo = response.tax;
+      }
+
       return response?.data || [];
     } catch (error) {
       console.error('Error fetching pricing:', error);
@@ -39,10 +85,10 @@ class PricingService {
   /**
    * Get default pricing (fallback)
    * @param {string} currency - Currency code
-   * @returns {Array} - Default pricing options
+   * @returns {Array} - Default pricing options with tax
    */
   getDefaultPricing(currency = 'usd') {
-    const defaultPricing = {
+    const basePricing = {
       usd: [
         { credits: 100, amount: 10, currency: 'usd', popular: false },
         { credits: 550, amount: 50, currency: 'usd', popular: true },
@@ -55,18 +101,34 @@ class PricingService {
       ]
     };
 
-    return defaultPricing[currency.toLowerCase()] || defaultPricing.usd;
+    const pricing = basePricing[currency.toLowerCase()] || basePricing.usd;
+
+    // Add tax calculation to each option
+    return pricing.map(option => {
+      const taxInfo = this.calculateTax(option.amount);
+      return {
+        ...option,
+        subtotal: taxInfo.subtotal,
+        tax_amount: taxInfo.taxAmount,
+        total: taxInfo.total,
+        tax_rate: taxInfo.taxRate,
+        tax_percentage: taxInfo.taxPercentage
+      };
+    });
   }
 
   /**
    * Format price with currency symbol
    * @param {number} amount - Price amount
    * @param {string} currency - Currency code
-   * @returns {string} - Formatted price (e.g., "$10" or "€9")
+   * @returns {string} - Formatted price (e.g., "$10.50" or "€9.00")
    */
   formatPrice(amount, currency) {
     const symbol = currency === 'eur' ? '€' : '$';
-    return `${symbol}${amount}`;
+    // Format to 2 decimal places, but remove trailing zeros for whole numbers
+    const formatted = parseFloat(amount).toFixed(2);
+    const cleanFormatted = formatted.endsWith('.00') ? formatted.slice(0, -3) : formatted;
+    return `${symbol}${cleanFormatted}`;
   }
 
   /**

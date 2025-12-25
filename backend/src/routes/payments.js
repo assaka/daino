@@ -883,8 +883,8 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
     console.log(`🔧 [${requestId}] Environment check:`, {
       hasStripeSecretKey: !!process.env.STRIPE_SECRET_KEY,
       stripeKeyPrefix: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 7) + '...' : 'MISSING',
-      hasPublishableKey: !!(process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY),
-      publishableKeyPrefix: (process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY)?.substring(0, 7) + '...' || 'MISSING',
+      hasPublishableKey: !!process.env.STRIPE_PUBLISHABLE_KEY,
+      publishableKeyPrefix: process.env.STRIPE_PUBLISHABLE_KEY?.substring(0, 7) + '...' || 'MISSING',
       hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
       nodeEnv: process.env.NODE_ENV
     });
@@ -941,7 +941,19 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       });
     }
 
-    console.log(`✅ [${requestId}] Validation passed:`, { credits, amountUsd, currency });
+    // Calculate Dutch VAT (BTW) - 21%
+    const pricingService = require('../services/pricing-service');
+    const taxInfo = pricingService.calculateTax(amountUsd);
+    const totalWithTax = taxInfo.total;
+
+    console.log(`✅ [${requestId}] Validation passed:`, {
+      credits,
+      subtotal: amountUsd,
+      taxAmount: taxInfo.taxAmount,
+      taxRate: `${taxInfo.taxPercentage}%`,
+      totalWithTax,
+      currency
+    });
 
     // Check if Stripe is configured
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -1017,14 +1029,17 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       throw txError;
     }
 
-    // Create Stripe payment intent
-    const stripeAmount = convertToStripeAmount(amountUsd, currency);
+    // Create Stripe payment intent with total including tax
+    const stripeAmount = convertToStripeAmount(totalWithTax, currency);
     console.log(`💰 [${requestId}] Preparing Stripe payment intent:`, {
-      originalAmount: amountUsd,
+      subtotal: amountUsd,
+      taxAmount: taxInfo.taxAmount,
+      taxRate: `${taxInfo.taxPercentage}%`,
+      totalWithTax,
       stripeAmount,
       currency,
       credits,
-      description: `Credit purchase: ${credits} credits`
+      description: `Credit purchase: ${credits} credits (incl. ${taxInfo.taxPercentage}% BTW)`
     });
 
     let paymentIntent;
@@ -1038,9 +1053,14 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
           credits_amount: credits.toString(),
           transaction_id: transaction.id,
           type: 'credit_purchase',
+          subtotal: amountUsd.toString(),
+          tax_amount: taxInfo.taxAmount.toString(),
+          tax_rate: taxInfo.taxRate.toString(),
+          tax_percentage: taxInfo.taxPercentage.toString(),
+          total_with_tax: totalWithTax.toString(),
           ...metadata
         },
-        description: `Credit purchase: ${credits} credits`
+        description: `Credit purchase: ${credits} credits (incl. ${taxInfo.taxPercentage}% BTW)`
       });
 
       console.log(`✅ [${requestId}] Stripe payment intent created:`, {
@@ -1074,7 +1094,14 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       data: {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        transactionId: transaction.id
+        transactionId: transaction.id,
+        taxInfo: {
+          subtotal: amountUsd,
+          taxAmount: taxInfo.taxAmount,
+          total: totalWithTax,
+          taxRate: taxInfo.taxRate,
+          taxPercentage: taxInfo.taxPercentage
+        }
       }
     };
 
@@ -1111,85 +1138,20 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 // @desc    Get Stripe publishable key
 // @access  Public
 router.get('/publishable-key', (req, res) => {
-  const requestId = Math.random().toString(36).substring(7);
+  const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
 
-  console.log('='.repeat(80));
-  console.log(`🔑 [${requestId}] GET PUBLISHABLE KEY REQUEST`);
-  console.log(`🔑 [${requestId}] Timestamp: ${new Date().toISOString()}`);
-  console.log('='.repeat(80));
-
-  try {
-    // Log all Stripe-related environment variables (without exposing full keys)
-    console.log(`🔍 [${requestId}] Environment Variable Check:`);
-    console.log(`🔍 [${requestId}] All env vars starting with STRIPE or VITE_STRIPE:`,
-      Object.keys(process.env)
-        .filter(key => key.includes('STRIPE'))
-        .map(key => ({
-          name: key,
-          isSet: !!process.env[key],
-          prefix: process.env[key] ? process.env[key].substring(0, 10) + '...' : 'NOT SET',
-          length: process.env[key] ? process.env[key].length : 0
-        }))
-    );
-
-    // Support both STRIPE_PUBLISHABLE_KEY and VITE_STRIPE_PUBLISHABLE_KEY for backward compatibility
-    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY;
-
-    console.log(`🔍 [${requestId}] Stripe Configuration Status:`, {
-      hasSTRIPE_PUBLISHABLE_KEY: !!process.env.STRIPE_PUBLISHABLE_KEY,
-      hasVITE_STRIPE_PUBLISHABLE_KEY: !!process.env.VITE_STRIPE_PUBLISHABLE_KEY,
-      hasSTRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
-      hasSTRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
-      selectedKey: publishableKey ? 'Found' : 'NOT FOUND',
-      selectedKeySource: process.env.STRIPE_PUBLISHABLE_KEY ? 'STRIPE_PUBLISHABLE_KEY' :
-                        process.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'VITE_STRIPE_PUBLISHABLE_KEY' :
-                        'NONE'
-    });
-
-    if (publishableKey) {
-      console.log(`✅ [${requestId}] Publishable key found:`, {
-        source: process.env.STRIPE_PUBLISHABLE_KEY ? 'STRIPE_PUBLISHABLE_KEY' : 'VITE_STRIPE_PUBLISHABLE_KEY',
-        prefix: publishableKey.substring(0, 10) + '...',
-        length: publishableKey.length,
-        startsWithPk: publishableKey.startsWith('pk_'),
-        isTestKey: publishableKey.includes('_test_'),
-        isLiveKey: publishableKey.includes('_live_')
-      });
-    } else {
-      console.warn(`⚠️ [${requestId}] NO PUBLISHABLE KEY FOUND IN ENVIRONMENT`);
-      console.warn(`⚠️ [${requestId}] Checked variables:`, {
-        STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || 'NOT SET',
-        VITE_STRIPE_PUBLISHABLE_KEY: process.env.VITE_STRIPE_PUBLISHABLE_KEY || 'NOT SET'
-      });
-    }
-
-    const responseData = {
-      data: {
-        publishableKey: publishableKey || null
-      }
-    };
-
-    console.log(`✅ [${requestId}] Returning response:`, {
-      hasKey: !!publishableKey,
-      keyPrefix: publishableKey ? publishableKey.substring(0, 10) + '...' : 'null'
-    });
-    console.log('='.repeat(80));
-
-    // Return null if not configured (allows graceful degradation on frontend)
-    res.json(responseData);
-  } catch (error) {
-    console.error('='.repeat(80));
-    console.error(`🔴 [${requestId}] Get publishable key error:`, {
-      message: error.message,
-      stack: error.stack
-    });
-    console.error('='.repeat(80));
-
-    res.status(500).json({
+  if (!publishableKey) {
+    return res.status(500).json({
       success: false,
-      error: 'Failed to get publishable key'
+      error: 'STRIPE_PUBLISHABLE_KEY environment variable is not configured'
     });
   }
+
+  res.json({
+    data: {
+      publishableKey
+    }
+  });
 });
 
 // @route   POST /api/payments/create-checkout

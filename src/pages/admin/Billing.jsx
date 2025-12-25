@@ -85,13 +85,17 @@ const CheckoutForm = ({ selectedPackage, currency, storeId, onSuccess, onError }
     }
   };
 
+  // Calculate total with tax
+  const total = selectedPackage.total || (selectedPackage.price * 1.21);
+  const taxPercentage = selectedPackage.tax_percentage || 21;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-blue-900">
-            Your credit card will be charged <strong>{currency === 'eur' ? '€' : '$'}{selectedPackage.price}</strong> when you submit the payment.
+            Your credit card will be charged <strong>{currency === 'eur' ? '€' : '$'}{total.toFixed(2)}</strong> (incl. {taxPercentage}% BTW) when you submit the payment.
           </p>
         </div>
       </div>
@@ -122,7 +126,7 @@ const CheckoutForm = ({ selectedPackage, currency, storeId, onSuccess, onError }
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                 Processing...
             </>
-        ) : `Pay ${pricingService.formatPrice(selectedPackage.price, currency)}`}
+        ) : `Pay ${pricingService.formatPrice(total, currency)}`}
       </Button>
     </form>
   );
@@ -206,16 +210,22 @@ export default function Billing() {
       const pricing = await pricingService.getPricing(currency);
 
       // Transform to match existing structure (map 'amount' to 'price')
+      // Now includes tax info: subtotal, tax_amount, total, tax_rate, tax_percentage
       const transformedPricing = pricing.map(option => ({
         ...option,
         price: option.amount, // Backend uses 'amount', frontend expects 'price'
-        stripe_price_id: option.stripe_price_id
+        stripe_price_id: option.stripe_price_id,
+        // Tax fields are already included from backend
+        subtotal: option.subtotal || option.amount,
+        tax_amount: option.tax_amount || (option.amount * 0.21),
+        total: option.total || (option.amount * 1.21),
+        tax_percentage: option.tax_percentage || 21
       }));
 
       setCreditOptions(transformedPricing);
     } catch (error) {
       console.error('Error loading pricing:', error);
-      // Set default pricing as fallback
+      // Set default pricing as fallback (now includes tax)
       setCreditOptions(pricingService.getDefaultPricing(currency).map(opt => ({
         ...opt,
         price: opt.amount
@@ -388,12 +398,35 @@ export default function Billing() {
                   </Card>
                 ))}
               </div>
-              
+              <p className="text-sm text-gray-500 text-center mt-4">
+                All prices are excl. 21% BTW
+              </p>
+
               {selectedPackage && (
                 <div className="mt-8 p-6 bg-gray-50 rounded-lg">
                   <h3 className="text-lg font-semibold mb-4">
                     Complete Payment for {selectedPackage.credits} Credits
                   </h3>
+
+                  {/* Price breakdown with tax */}
+                  <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Subtotal</span>
+                        <span>{pricingService.formatPrice(selectedPackage.subtotal || selectedPackage.price, selectedCurrency)}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>BTW ({selectedPackage.tax_percentage || 21}%)</span>
+                        <span>{pricingService.formatPrice(selectedPackage.tax_amount || (selectedPackage.price * 0.21), selectedCurrency)}</span>
+                      </div>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between font-semibold text-lg">
+                          <span>Total</span>
+                          <span>{pricingService.formatPrice(selectedPackage.total || (selectedPackage.price * 1.21), selectedCurrency)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   {stripeConfigError ? (
                      <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
                        <div className="flex items-start gap-3">

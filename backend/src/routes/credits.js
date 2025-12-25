@@ -16,13 +16,20 @@ router.get('/pricing', async (req, res) => {
 
     const pricingService = require('../services/pricing-service');
     const pricing = await pricingService.getPricingForCurrency(currency);
+    const vatRate = pricingService.getVatRate();
 
-    console.log(`✅ [Credits API] Returning ${pricing.length} pricing options for ${currency}`);
+    console.log(`✅ [Credits API] Returning ${pricing.length} pricing options for ${currency} (with ${vatRate * 100}% BTW)`);
 
     res.json({
       success: true,
       data: pricing,
-      currency: currency.toUpperCase()
+      currency: currency.toUpperCase(),
+      tax: {
+        rate: vatRate,
+        percentage: Math.round(vatRate * 100),
+        label: 'BTW',
+        country: 'NL'
+      }
     });
   } catch (error) {
     console.error('Error getting credit pricing:', error);
