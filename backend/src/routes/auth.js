@@ -5,7 +5,7 @@ const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const passport = require('../config/passport');
 const emailService = require('../services/email-service');
-const { getStoreUrlFromRequest } = require('../utils/domainConfig');
+const { getStoreUrlFromRequest, buildStoreUrl } = require('../utils/domainConfig');
 const router = express.Router();
 
 // Helper function to determine tenant table name based on role
@@ -339,7 +339,12 @@ router.post('/register', [
         .eq('is_active', true)
         .limit(1)
         .maybeSingle();
-      const origin = getStoreUrlFromRequest(req, store?.slug);
+      // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
+      const origin = getStoreUrlFromRequest(req, store?.slug) || await buildStoreUrl({
+        tenantDb,
+        storeId: store_id,
+        storeSlug: store?.slug
+      });
       sendWelcomeEmail(tenantDb, store_id, email, user, origin);
     }
 
@@ -451,7 +456,12 @@ router.post('/upgrade-guest', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const emailOrigin = getStoreUrlFromRequest(req, storeForEmail?.slug);
+    // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
+    const emailOrigin = getStoreUrlFromRequest(req, storeForEmail?.slug) || await buildStoreUrl({
+      tenantDb,
+      storeId: store_id,
+      storeSlug: storeForEmail?.slug
+    });
     sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer, emailOrigin).catch(err => {
       console.error('Welcome email error:', err);
     });
@@ -1246,7 +1256,18 @@ router.post('/customer/register', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const verifyOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug);
+    // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
+    const requestOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug);
+    console.log('[CUSTOMER-REGISTER] Origin header:', req.get('origin'));
+    console.log('[CUSTOMER-REGISTER] Referer header:', req.get('referer'));
+    console.log('[CUSTOMER-REGISTER] Store slug:', storeForVerify?.slug);
+    console.log('[CUSTOMER-REGISTER] getStoreUrlFromRequest result:', requestOrigin);
+    const verifyOrigin = requestOrigin || await buildStoreUrl({
+      tenantDb,
+      storeId: store_id,
+      storeSlug: storeForVerify?.slug
+    });
+    console.log('[CUSTOMER-REGISTER] Final verifyOrigin:', verifyOrigin);
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
 
     // Generate token (user can login but will be blocked until verified)
@@ -2002,7 +2023,12 @@ router.post('/resend-verification', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const resendOrigin = getStoreUrlFromRequest(req, storeForResend?.slug);
+    // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
+    const resendOrigin = getStoreUrlFromRequest(req, storeForResend?.slug) || await buildStoreUrl({
+      tenantDb,
+      storeId: store_id,
+      storeSlug: storeForResend?.slug
+    });
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, resendOrigin);
 
     res.json({
