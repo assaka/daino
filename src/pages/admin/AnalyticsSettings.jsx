@@ -532,12 +532,17 @@ export default function AnalyticsSettings() {
     };
 
     // Custom Events Management Functions
+    const getAuthHeaders = () => ({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+    });
+
     const loadCustomEvents = async () => {
         if (!selectedStore?.id) return;
         setLoadingEvents(true);
         try {
             const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}`, {
-                credentials: 'include'
+                headers: getAuthHeaders()
             });
             if (response.ok) {
                 const data = await response.json();
@@ -553,7 +558,7 @@ export default function AnalyticsSettings() {
     const loadEventTemplates = async () => {
         try {
             const response = await fetch('/api/custom-analytics-events/templates/list', {
-                credentials: 'include'
+                headers: getAuthHeaders()
             });
             if (response.ok) {
                 const data = await response.json();
@@ -637,8 +642,7 @@ export default function AnalyticsSettings() {
 
             const response = await fetch(url, {
                 method: editingEvent ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                headers: getAuthHeaders(),
                 body: JSON.stringify(eventForm)
             });
 
@@ -663,7 +667,7 @@ export default function AnalyticsSettings() {
         try {
             const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}/${eventId}`, {
                 method: 'DELETE',
-                credentials: 'include'
+                headers: getAuthHeaders()
             });
 
             if (response.ok) {
@@ -684,8 +688,7 @@ export default function AnalyticsSettings() {
         try {
             const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}/${event.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ enabled: !event.enabled })
             });
 
