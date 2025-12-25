@@ -706,6 +706,11 @@ router.post('/finalize-order', async (req, res) => {
         // Get sales settings for auto-invoice configuration
         const salesSettings = store.settings?.sales_settings || {};
 
+        console.log('🔍 Invoice check - payment_method_id:', order.payment_method_id);
+        console.log('🔍 Invoice check - payment_flow:', paymentMethod?.payment_flow);
+        console.log('🔍 Invoice check - auto_invoice_enabled:', salesSettings.auto_invoice_enabled);
+        console.log('🔍 Invoice check - auto_invoice_pdf_enabled:', salesSettings.auto_invoice_pdf_enabled);
+
         if (paymentMethod?.payment_flow === 'online' && salesSettings.auto_invoice_enabled) {
           console.log('📧 Online payment detected with auto-invoice enabled, sending invoice email...');
 
