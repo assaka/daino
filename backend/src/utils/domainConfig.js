@@ -216,6 +216,60 @@ function buildStoreUrlSync({ customDomain, storeSlug, path = '', queryParams = {
   return fullUrl;
 }
 
+/**
+ * Get the store URL from request origin/referer
+ * Handles platform domains by appending /public/{storeSlug}
+ * Use this for email links, CMS pages, and any URL that needs to match visited domain
+ *
+ * @param {object} req - Express request object
+ * @param {string} storeSlug - Store slug (required for platform domains)
+ * @returns {string|null} - Store URL or null if no origin
+ */
+function getStoreUrlFromRequest(req, storeSlug) {
+  let origin = req.get('origin') || req.get('referer');
+  if (!origin) return null;
+
+  // Clean trailing slash
+  origin = origin.replace(/\/$/, '');
+
+  // Check if it's a platform or dev domain that needs store path
+  const needsStorePath = isPlatformDomain(origin) || isDevDomain(origin);
+
+  if (needsStorePath && storeSlug) {
+    return `${origin}/public/${storeSlug}`;
+  }
+
+  // Custom domains - use as-is (storefront is at root)
+  return origin;
+}
+
+/**
+ * Build URL with path from request origin
+ * Convenience wrapper that builds full URL with path
+ *
+ * @param {object} req - Express request object
+ * @param {string} storeSlug - Store slug
+ * @param {string} path - Path to append (e.g., '/reset-password')
+ * @param {object} queryParams - Query parameters
+ * @returns {string|null} - Full URL or null if no origin
+ */
+function buildUrlFromRequest(req, storeSlug, path = '', queryParams = {}) {
+  const baseUrl = getStoreUrlFromRequest(req, storeSlug);
+  if (!baseUrl) return null;
+
+  let fullUrl = baseUrl;
+  if (path) {
+    fullUrl += path.startsWith('/') ? path : `/${path}`;
+  }
+
+  const queryString = new URLSearchParams(queryParams).toString();
+  if (queryString) {
+    fullUrl += `?${queryString}`;
+  }
+
+  return fullUrl;
+}
+
 module.exports = {
   PLATFORM_DOMAINS,
   DEV_DOMAINS,
@@ -229,5 +283,7 @@ module.exports = {
   getAllPlatformDomainVariants,
   getPrimaryCustomDomain,
   buildStoreUrl,
-  buildStoreUrlSync
+  buildStoreUrlSync,
+  getStoreUrlFromRequest,
+  buildUrlFromRequest
 };

@@ -5,23 +5,8 @@ const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const passport = require('../config/passport');
 const emailService = require('../services/email-service');
+const { getStoreUrlFromRequest } = require('../utils/domainConfig');
 const router = express.Router();
-
-// Platform domains list
-const PLATFORM_DOMAINS = ['dainostore.com', 'daino.ai', 'daino.store', 'localhost'];
-
-// Helper: Get origin URL from request and format for email links
-const getEmailOrigin = (req, storeSlug) => {
-  let origin = req.get('origin') || req.get('referer');
-  if (!origin) return null;
-
-  // Check if it's a platform domain that needs store path
-  const isPlatformDomain = PLATFORM_DOMAINS.some(d => origin.includes(d));
-  if (isPlatformDomain && storeSlug) {
-    origin = origin.replace(/\/$/, '') + '/public/' + storeSlug;
-  }
-  return origin;
-};
 
 // Helper function to determine tenant table name based on role
 const getTableForRole = (role) => {
@@ -354,7 +339,7 @@ router.post('/register', [
         .eq('is_active', true)
         .limit(1)
         .maybeSingle();
-      const origin = getEmailOrigin(req, store?.slug);
+      const origin = getStoreUrlFromRequest(req, store?.slug);
       sendWelcomeEmail(tenantDb, store_id, email, user, origin);
     }
 
@@ -466,7 +451,7 @@ router.post('/upgrade-guest', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const emailOrigin = getEmailOrigin(req, storeForEmail?.slug);
+    const emailOrigin = getStoreUrlFromRequest(req, storeForEmail?.slug);
     sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer, emailOrigin).catch(err => {
       console.error('Welcome email error:', err);
     });
@@ -1261,7 +1246,7 @@ router.post('/customer/register', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const verifyOrigin = getEmailOrigin(req, storeForVerify?.slug);
+    const verifyOrigin = getStoreUrlFromRequest(req, storeForVerify?.slug);
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
 
     // Generate token (user can login but will be blocked until verified)
@@ -2017,7 +2002,7 @@ router.post('/resend-verification', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    const resendOrigin = getEmailOrigin(req, storeForResend?.slug);
+    const resendOrigin = getStoreUrlFromRequest(req, storeForResend?.slug);
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, resendOrigin);
 
     res.json({

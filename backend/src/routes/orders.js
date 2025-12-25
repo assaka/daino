@@ -8,6 +8,7 @@ const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth
 const emailService = require('../services/email-service');
 const { cacheOrder } = require('../middleware/cacheMiddleware');
 const IntegrationConfig = require('../models/IntegrationConfig');
+const { getStoreUrlFromRequest } = require('../utils/domainConfig');
 const router = express.Router();
 
 // Initialize Stripe
@@ -495,6 +496,9 @@ router.post('/finalize-order', async (req, res) => {
 
           const completeOrder = { ...order, OrderItems: orderItems || [], Store: store };
 
+          // Get store URL from request origin
+          const storeUrlForEmail = getStoreUrlFromRequest(req, store?.slug);
+
           await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
             recipientEmail: order.customer_email,
             customer: customer || {
@@ -504,6 +508,7 @@ router.post('/finalize-order', async (req, res) => {
             },
             order: completeOrder,
             store: store,
+            origin: storeUrlForEmail,
             languageCode: 'en',
             orderId: order.id  // Include orderId for duplicate detection
           });
@@ -663,6 +668,9 @@ router.post('/finalize-order', async (req, res) => {
 
       console.log('📧 Sending order confirmation email to:', order.customer_email);
 
+      // Get store URL from request origin
+      const orderEmailOrigin = getStoreUrlFromRequest(req, store?.slug);
+
       await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: order.customer_email,
         customer: customer || {
@@ -672,6 +680,7 @@ router.post('/finalize-order', async (req, res) => {
         },
         order: completeOrder,
         store: store,
+        origin: orderEmailOrigin,
         languageCode: 'en'
       });
 
