@@ -61,6 +61,7 @@ export default function PaymentMethods() {
   const [disconnectingStripe, setDisconnectingStripe] = useState(false);
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [connectingExistingAccount, setConnectingExistingAccount] = useState(false);
+  const [showStripeGuideModal, setShowStripeGuideModal] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -725,19 +726,14 @@ export default function PaymentMethods() {
                                   <><Link2 className="w-4 h-4 mr-2" /> Connect Existing</>
                                 )}
                               </Button>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="px-2 h-9">
-                                      <Info className="w-4 h-4 text-gray-400" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs text-left">
-                                    <p className="font-medium mb-1">Connect your existing Stripe account</p>
-                                    <p>You will be redirected to Stripe where you need to enter your Stripe email and password to log in. After logging in, authorize the connection to link your account.</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="px-2 h-9"
+                                onClick={() => setShowStripeGuideModal(true)}
+                              >
+                                <Info className="w-4 h-4 text-gray-400" />
+                              </Button>
                             </div>
                             <div className="relative py-2">
                               <div className="absolute inset-0 flex items-center">
@@ -1463,6 +1459,80 @@ export default function PaymentMethods() {
           iconClassName="text-orange-600"
           iconBgClassName="bg-orange-100"
         />
+
+        <Dialog open={showStripeGuideModal} onOpenChange={setShowStripeGuideModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-blue-600" />
+                Connect Your Stripe Account
+              </DialogTitle>
+              <DialogDescription>
+                Follow these steps to connect your existing Stripe account
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">1</div>
+                <div>
+                  <p className="font-medium">Click "Connect Existing"</p>
+                  <p className="text-sm text-gray-600">You will be redirected to Stripe's authorization page.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">2</div>
+                <div>
+                  <p className="font-medium">Log in to Stripe</p>
+                  <p className="text-sm text-gray-600">Enter your Stripe email and password to log in.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-medium">3</div>
+                <div>
+                  <p className="font-medium text-amber-700">Verify the correct account is selected</p>
+                  <p className="text-sm text-gray-600">
+                    Check the account shown in the <strong>top-right corner</strong> of the Stripe page.
+                    If it's not the account you want to connect, click the dropdown to switch accounts.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">4</div>
+                <div>
+                  <p className="font-medium">Authorize the connection</p>
+                  <p className="text-sm text-gray-600">Click "Connect" or "Authorize" to link your account to your store.</p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Tip:</strong> If you're already logged into the wrong Stripe account, you can either use an incognito/private browser window, or switch accounts using the dropdown in Stripe.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowStripeGuideModal(false)}>
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowStripeGuideModal(false);
+                  handleConnectExistingStripeAccount();
+                }}
+                disabled={connectingExistingAccount}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Connect Now
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
