@@ -1513,6 +1513,22 @@ export default function PaymentMethods() {
                   <strong>Tip:</strong> If you're already logged into the wrong Stripe account, you can either use an incognito/private browser window, or switch accounts using the dropdown in Stripe.
                 </p>
               </div>
+
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 font-medium mb-2">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
+                  Important: Business Name Required
+                </p>
+                <p className="text-sm text-amber-700 mb-2">
+                  Your Stripe account must have a business name set before you can accept payments via Checkout.
+                </p>
+                <p className="text-sm text-amber-700">
+                  To set this up: Go to <a href="https://dashboard.stripe.com/account" target="_blank" rel="noopener noreferrer" className="underline font-medium">dashboard.stripe.com/account</a> → Account details → Set your Business name.
+                </p>
+                <p className="text-xs text-amber-600 mt-2">
+                  In test mode, you can use any name like "Test Store".
+                </p>
+              </div>
             </div>
 
             <DialogFooter>
