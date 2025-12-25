@@ -132,7 +132,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SaveButton } from '@/components/ui/save-button';
 import { Badge } from '@/components/ui/badge';
+import { ShoppingCart } from 'lucide-react';
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
@@ -555,6 +557,10 @@ export function UnifiedSlotRenderer({
 }) {
   // Get translation function and translations data
   const { t, translations: contextTranslations, currentLanguage } = useTranslation();
+
+  // State for add to cart button loading/success
+  const [addToCartLoading, setAddToCartLoading] = useState(false);
+  const [addToCartSuccess, setAddToCartSuccess] = useState(false);
 
   /**
    * processTranslation - Detects and translates content if it's a translation key
@@ -1161,6 +1167,9 @@ export function UnifiedSlotRenderer({
               return;
             }
 
+            setAddToCartLoading(true);
+            setAddToCartSuccess(false);
+
             try {
               // CRITICAL: Get the correct base price using utility function (same as ProductItemCard)
               const { getPriceDisplay } = await import('@/utils/priceUtils');
@@ -1177,6 +1186,12 @@ export function UnifiedSlotRenderer({
 
               // CRITICAL: Use same success check as ProductItemCard (result.success === true, not !== false)
               if (result.success) {
+                setAddToCartLoading(false);
+                setAddToCartSuccess(true);
+
+                // Reset success state after 2 seconds
+                setTimeout(() => setAddToCartSuccess(false), 2000);
+
                 // Track add to cart event
                 if (typeof window !== 'undefined' && window.daino?.trackAddToCart) {
                   window.daino.trackAddToCart(product, 1);
@@ -1196,9 +1211,12 @@ export function UnifiedSlotRenderer({
                     message: `${product.name} ${addedToCartMessage}`
                   }
                 }));
+              } else {
+                setAddToCartLoading(false);
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);
+              setAddToCartLoading(false);
 
               // Get translation from ui_translations
               const currentLang = localStorage.getItem('daino_language') || 'en';
@@ -1229,6 +1247,38 @@ export function UnifiedSlotRenderer({
             }
           }
         };
+
+        // Use SaveButton for add_to_cart_button
+        if (id === 'add_to_cart_button') {
+          // Get translated button texts
+          const currentLang = localStorage.getItem('daino_language') || 'en';
+          const translations = variableContext?.settings?.ui_translations || {};
+
+          const defaultText = translations[currentLang]?.product?.add_to_cart ||
+                            translations['en']?.product?.add_to_cart ||
+                            'Add to Cart';
+          const loadingText = translations[currentLang]?.common?.adding ||
+                            translations['en']?.common?.adding ||
+                            'Adding...';
+          const successText = translations[currentLang]?.common?.added ||
+                            translations['en']?.common?.added ||
+                            'Added!';
+
+          return (
+            <SaveButton
+              onClick={handleButtonClick}
+              loading={addToCartLoading}
+              success={addToCartSuccess}
+              disabled={isOutOfStock}
+              defaultText={buttonContent !== 'Button' ? buttonContent : defaultText}
+              loadingText={loadingText}
+              successText={successText}
+              className={buttonClassName}
+              style={buttonStyles}
+              icon={<ShoppingCart className="w-4 h-4 mr-2" />}
+            />
+          );
+        }
 
         return (
           <Button

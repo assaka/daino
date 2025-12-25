@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { SaveButton } from '@/components/ui/save-button';
 import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/components/storefront/ProductLabel';
 import { formatPriceWithTax, formatPriceNumber, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
@@ -35,6 +36,7 @@ const ProductItemCard = ({
 
   // Local state for add to cart if not managed externally
   const [localIsAddingToCart, setLocalIsAddingToCart] = useState(false);
+  const [addToCartSuccess, setAddToCartSuccess] = useState(false);
 
   // Use external state if provided, otherwise use local state
   const addingToCart = isAddingToCart || localIsAddingToCart;
@@ -204,6 +206,12 @@ const ProductItemCard = ({
 
       // CRITICAL: Use same success check as ProductDetail (result.success === true, not !== false)
       if (result.success) {
+        setAddingToCart(false);
+        setAddToCartSuccess(true);
+
+        // Reset success state after 2 seconds
+        setTimeout(() => setAddToCartSuccess(false), 2000);
+
         // Track add to cart event
         if (typeof window !== 'undefined' && window.daino?.trackAddToCart) {
           window.daino.trackAddToCart(product, 1);
@@ -217,6 +225,7 @@ const ProductItemCard = ({
           }
         }));
       } else {
+        setAddingToCart(false);
         console.error('❌ Failed to add to cart:', result.error);
 
         // Show error flash message
@@ -228,6 +237,7 @@ const ProductItemCard = ({
         }));
       }
     } catch (error) {
+      setAddingToCart(false);
       console.error("❌ Failed to add to cart", error);
 
       // Show error flash message for catch block
@@ -237,11 +247,6 @@ const ProductItemCard = ({
           message: `${t('common.error_adding', 'Error adding')} ${translatedProductName} ${t('common.to_cart', 'to cart')}. ${t('common.please_try_again', 'Please try again')}.`
         }
       }));
-    } finally {
-      // Always reset the loading state after 2 seconds to prevent permanent lock
-      setTimeout(() => {
-        setAddingToCart(false);
-      }, 2000);
     }
   };
 
@@ -362,28 +367,45 @@ const ProductItemCard = ({
             </div>
 
             {/* Add to Cart Button */}
-            <Button
-              onClick={isEditorMode ? (e) => handleSlotClick(e, 'add_to_cart_button') : handleAddToCart}
-              disabled={(addingToCart || isProductOutOfStock(product)) && !isEditorMode}
-              variant="themed"
-              className={addToCartConfig.className || "w-full text-white border-0 btn-add-to-cart transition-all duration-200"}
-              size="sm"
-              style={{
-                backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
-                color: 'white',
-                opacity: isProductOutOfStock(product) && !isEditorMode ? 0.5 : 1,
-                cursor: isProductOutOfStock(product) && !isEditorMode ? 'not-allowed' : 'pointer',
-                ...addToCartConfig.styles
-              }}
-              data-slot-id={isEditorMode ? 'add_to_cart_button' : undefined}
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              {isProductOutOfStock(product) && !isEditorMode
-                ? t('product.out_of_stock', 'Out of Stock')
-                : addingToCart
-                ? t('common.adding', 'Adding...')
-                : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
-            </Button>
+            {isEditorMode ? (
+              <Button
+                onClick={(e) => handleSlotClick(e, 'add_to_cart_button')}
+                variant="themed"
+                className={addToCartConfig.className || "w-full text-white border-0 btn-add-to-cart transition-all duration-200"}
+                size="sm"
+                style={{
+                  backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
+                  color: 'white',
+                  ...addToCartConfig.styles
+                }}
+                data-slot-id="add_to_cart_button"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                {addToCartConfig.content || t('product.add_to_cart', 'Add to Cart')}
+              </Button>
+            ) : (
+              <SaveButton
+                onClick={handleAddToCart}
+                loading={addingToCart}
+                success={addToCartSuccess}
+                disabled={isProductOutOfStock(product)}
+                defaultText={isProductOutOfStock(product)
+                  ? t('product.out_of_stock', 'Out of Stock')
+                  : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
+                loadingText={t('common.adding', 'Adding...')}
+                successText={t('common.added', 'Added!')}
+                size="sm"
+                className={addToCartConfig.className || "w-full text-white border-0 btn-add-to-cart transition-all duration-200"}
+                style={{
+                  backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
+                  color: 'white',
+                  opacity: isProductOutOfStock(product) ? 0.5 : 1,
+                  cursor: isProductOutOfStock(product) ? 'not-allowed' : 'pointer',
+                  ...addToCartConfig.styles
+                }}
+                icon={<ShoppingCart className="w-4 h-4 mr-2" />}
+              />
+            )}
 
             {/* Stock status for list view */}
             {viewMode === 'list' && (() => {

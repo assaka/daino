@@ -15,6 +15,7 @@ import { DeliverySettings } from "@/api/entities";
 import { useStore } from "@/components/storefront/StoreProvider";
 import { createStripeCheckout } from "@/api/functions";
 import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/ui/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tag, CalendarIcon, Eye, EyeOff, EyeIcon, EyeOffIcon, User as UserIcon, LogOut, UserCircle } from "lucide-react";
+import { Tag, CalendarIcon, Eye, EyeOff, EyeIcon, EyeOffIcon, User as UserIcon, LogOut, UserCircle, ShoppingBag } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
 import { CustomerAuth } from "@/api/storefront-entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
@@ -1326,12 +1327,26 @@ export default function Checkout() {
       if (!response) {
         throw new Error('No response from checkout API');
       }
-      
+
       // Handle array response from API
       const responseData = Array.isArray(response) ? response[0] : response;
 
+      // Validate responseData exists
+      if (!responseData) {
+        console.error('Invalid response from checkout API:', response);
+        throw new Error('Invalid response from checkout API');
+      }
+
+      // Extract the data object from the response (backend returns { success, data: { checkout_url } })
+      const data = responseData.data || responseData;
+
+      // Log response structure for debugging
+      if (!data) {
+        console.error('Data extraction failed. Response structure:', responseData);
+      }
+
       // Get checkout URL from response
-      const checkoutUrl = responseData.checkout_url || responseData.url;
+      const checkoutUrl = data?.checkout_url || data?.url;
 
       if (checkoutUrl) {
         // Clear persisted checkout form data on successful checkout
@@ -2532,18 +2547,20 @@ export default function Checkout() {
                       {t('checkout.order_not_available', 'Placing orders is not available on a preview store. This is a demonstration only.')}
                     </div>
                   )}
-                  <Button
+                  <SaveButton
                     onClick={handleCheckout}
-                    disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) || isPublishedPreview}
-                    variant="themed"
+                    loading={isProcessing}
+                    disabled={cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false) || isPublishedPreview}
+                    defaultText={`${t('common.place_order', 'Place Order')} - ${formatPrice(getTotalAmount())}`}
+                    loadingText={t('checkout.processing', 'Processing...')}
+                    size="lg"
                     className="w-full h-12 text-lg"
                     style={{
                       backgroundColor: isPublishedPreview ? '#9CA3AF' : (settings?.theme?.place_order_button_color || getThemeDefaults().place_order_button_color),
                       color: '#FFFFFF',
                     }}
-                  >
-                    {isProcessing ? t('checkout.processing', 'Processing...') : `${t('common.place_order', 'Place Order')} - ${formatPrice(getTotalAmount())}`}
-                  </Button>
+                    icon={<ShoppingBag className="w-4 h-4 mr-2" />}
+                  />
                 </>
               )}
             </CardContent>

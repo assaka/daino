@@ -1,5 +1,6 @@
 import apiClient from './client';
 import storefrontApiClient from './storefront-client';
+import { createPublicUrl } from '@/utils/urlUtils';
 
 // Stripe payment functions
 export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
@@ -51,11 +52,16 @@ export const createStripeCheckout = async (checkoutData) => {
       sessionId
     } = checkoutData;
 
+    // Build URLs using createPublicUrl which handles custom domain detection
+    // Custom domain: /order-success, Platform domain: /public/{storeSlug}/order-success
+    const successPath = createPublicUrl(store.slug, 'ORDER_SUCCESS');
+    const cancelPath = createPublicUrl(store.slug, 'CHECKOUT');
+
     const requestPayload = {
       items: cartItems, // Map cartItems to items
       store_id: store?.id,
-      success_url: `${window.location.origin}/public/${store.slug}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${window.location.origin}/public/${store.slug}/checkout`,
+      success_url: `${window.location.origin}${successPath}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${window.location.origin}${cancelPath}`,
       customer_email: email,
       customer_id: userId, // Pass customer ID if available
       shipping_address: shippingAddress,
