@@ -104,31 +104,21 @@ const DEFAULT_PLATFORM_URL = process.env.CORS_ORIGIN || 'https://www.dainostore.
  */
 async function getPrimaryCustomDomain(tenantDb, storeId) {
   try {
-    console.log(`[DOMAIN-CONFIG] Looking for custom domain with store_id: ${storeId}`);
-
     // Look up custom domain in master DB's custom_domains_lookup table
     if (!masterDbClient) {
       console.warn('[DOMAIN-CONFIG] masterDbClient not available');
       return null;
     }
 
-    // First, let's see all custom domains for debugging
-    const { data: allDomains } = await masterDbClient
-      .from('custom_domains_lookup')
-      .select('*')
-      .eq('store_id', storeId);
-    console.log(`[DOMAIN-CONFIG] All custom domains for store:`, JSON.stringify(allDomains, null, 2));
-
-    // Get primary active custom domain
+    // Get active non-redirect custom domain (prefer main domain over www redirect)
     const { data: customDomain } = await masterDbClient
       .from('custom_domains_lookup')
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
-      .eq('is_primary', true)
+      .eq('is_redirect', false)
+      .limit(1)
       .maybeSingle();
-
-    console.log(`[DOMAIN-CONFIG] Primary domain query result:`, customDomain);
 
     if (customDomain?.domain) {
       return customDomain.domain;
@@ -140,11 +130,8 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
-      .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();
-
-    console.log(`[DOMAIN-CONFIG] Fallback domain query result:`, anyDomain);
 
     return anyDomain?.domain || null;
   } catch (error) {

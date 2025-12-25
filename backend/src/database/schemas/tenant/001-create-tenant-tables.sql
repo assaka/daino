@@ -176,39 +176,6 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE enum_custom_domains_ssl_status AS ENUM (
-    'pending',
-    'active',
-    'failed',
-    'expired',
-    'renewing'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE enum_custom_domains_verification_method AS ENUM (
-    'txt',
-    'cname',
-    'http'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE enum_custom_domains_verification_status AS ENUM (
-    'pending',
-    'verifying',
-    'verified',
-    'failed'
-);
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
     CREATE TYPE enum_customer_activities_activity_type AS ENUM (
     'page_view',
     'product_view',
@@ -1788,46 +1755,6 @@ CREATE TABLE IF NOT EXISTS custom_analytics_events (
   metadata JSON DEFAULT '{}'::json,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS custom_domains (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  domain VARCHAR(255) NOT NULL,
-  subdomain VARCHAR(255),
-  is_primary BOOLEAN DEFAULT false,
-  is_active BOOLEAN DEFAULT false,
-  dns_configured BOOLEAN DEFAULT false,
-  dns_provider VARCHAR(100),
-  verification_status enum_custom_domains_verification_status DEFAULT 'pending'::enum_custom_domains_verification_status,
-  verification_method enum_custom_domains_verification_method DEFAULT 'txt'::enum_custom_domains_verification_method,
-  verification_token VARCHAR(255),
-  verification_record_name VARCHAR(255),
-  verification_record_value VARCHAR(500),
-  verified_at TIMESTAMP WITH TIME ZONE,
-  ssl_status enum_custom_domains_ssl_status DEFAULT 'pending'::enum_custom_domains_ssl_status,
-  ssl_provider VARCHAR(50) DEFAULT 'letsencrypt'::character varying,
-  ssl_certificate_id VARCHAR(255),
-  ssl_issued_at TIMESTAMP WITH TIME ZONE,
-  ssl_expires_at TIMESTAMP WITH TIME ZONE,
-  ssl_auto_renew BOOLEAN DEFAULT true,
-  dns_records JSONB DEFAULT '[]'::jsonb,
-  cname_target VARCHAR(255),
-  redirect_to_https BOOLEAN DEFAULT true,
-  redirect_to_primary BOOLEAN DEFAULT false,
-  is_redirect BOOLEAN DEFAULT false,
-  redirect_to VARCHAR(255),
-  custom_headers JSONB DEFAULT '{}'::jsonb,
-  custom_rewrites JSONB DEFAULT '[]'::jsonb,
-  cdn_enabled BOOLEAN DEFAULT false,
-  cdn_provider VARCHAR(50),
-  cdn_config JSONB DEFAULT '{}'::jsonb,
-  last_accessed_at TIMESTAMP WITH TIME ZONE,
-  access_count INTEGER DEFAULT 0,
-  notes TEXT,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS custom_option_rules (
@@ -3641,8 +3568,6 @@ CREATE INDEX IF NOT EXISTS idx_cron_jobs_user_id ON cron_jobs USING btree (user_
 
 CREATE INDEX IF NOT EXISTS idx_current_edit ON slot_configurations USING btree (current_edit_id);
 
-CREATE INDEX IF NOT EXISTS idx_custom_domains_active_lookup ON custom_domains USING btree (domain, store_id) WHERE ((is_active = true) AND (verification_status = 'verified'::enum_custom_domains_verification_status));
-
 CREATE INDEX IF NOT EXISTS idx_custom_option_rules_is_active ON custom_option_rules USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS idx_custom_option_rules_store_id ON custom_option_rules USING btree (store_id);
@@ -4444,8 +4369,6 @@ ALTER TABLE cron_jobs ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_
 ALTER TABLE cron_jobs ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE custom_analytics_events ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-ALTER TABLE custom_domains ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
 ALTER TABLE custom_option_rules ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 

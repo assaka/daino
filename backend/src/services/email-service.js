@@ -93,17 +93,32 @@ class EmailService {
         .limit(1)
         .maybeSingle();
 
-      // Get primary custom domain from master DB
+      // Get active custom domain from master DB (prefer non-redirect)
       let customDomain = null;
       if (masterDbClient && store?.id) {
-        const { data: domainData } = await masterDbClient
+        // First try non-redirect domain
+        const { data: mainDomain } = await masterDbClient
           .from('custom_domains_lookup')
           .select('domain')
           .eq('store_id', store.id)
-          .eq('is_primary', true)
           .eq('is_active', true)
+          .eq('is_redirect', false)
+          .limit(1)
           .maybeSingle();
-        customDomain = domainData;
+
+        if (mainDomain) {
+          customDomain = mainDomain;
+        } else {
+          // Fallback to any active domain
+          const { data: anyDomain } = await masterDbClient
+            .from('custom_domains_lookup')
+            .select('domain')
+            .eq('store_id', store.id)
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+          customDomain = anyDomain;
+        }
       }
 
       const storeSlug = store?.slug || 'default';
