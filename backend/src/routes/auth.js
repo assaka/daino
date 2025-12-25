@@ -1172,6 +1172,9 @@ router.post('/customer/register', [
   body('last_name').trim().notEmpty().withMessage('Last name is required'),
   body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
+  console.log('[CUSTOMER-REGISTER] Route hit!');
+  console.log('[CUSTOMER-REGISTER] Origin header:', req.get('origin'));
+  console.log('[CUSTOMER-REGISTER] Referer header:', req.get('referer'));
   try {
     // Validate request
     const errors = validationResult(req);
