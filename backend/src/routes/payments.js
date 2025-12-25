@@ -2203,13 +2203,12 @@ router.post('/webhook', async (req, res) => {
               Product: productMap[item.product_id] || null
             }));
 
-            // Fetch store from master DB
-            const { masterDbClient } = require('../database/masterConnection');
-            const { data: storeData, error: storeError } = await masterDbClient
+            // Fetch store from tenant DB (has name, slug, currency, settings)
+            const { data: storeData, error: storeError } = await tenantDb
               .from('stores')
               .select('id, name, slug, currency, settings')
               .eq('id', store_id)
-              .single();
+              .maybeSingle();
 
             console.log('🔍 Store fetch - store_id:', store_id);
             console.log('🔍 Store fetch - storeData:', storeData ? 'found' : 'NOT FOUND');
@@ -2709,13 +2708,12 @@ router.post('/webhook', async (req, res) => {
                     .select('*')
                     .eq('order_id', order.id);
 
-                  // Get store info
-                  const { masterDbClient } = require('../database/masterConnection');
-                  const { data: storeData } = await masterDbClient
+                  // Get store info from tenant DB
+                  const { data: storeData } = await tenantDb
                     .from('stores')
                     .select('id, name, slug, currency, settings')
                     .eq('id', store_id)
-                    .single();
+                    .maybeSingle();
 
                   // Get customer info
                   let customer = null;
@@ -2934,13 +2932,12 @@ router.post('/webhook-connect', async (req, res) => {
             Product: productMap[item.product_id] || null
           }));
 
-          // Fetch store from master DB
-          const { masterDbClient } = require('../database/masterConnection');
-          const { data: storeData, error: storeError } = await masterDbClient
+          // Fetch store from tenant DB (has name, slug, currency, settings)
+          const { data: storeData, error: storeError } = await tenantDb
             .from('stores')
             .select('id, name, slug, currency, settings')
             .eq('id', store_id)
-            .single();
+            .maybeSingle();
 
           console.log('🔍 Store fetch (path 2) - store_id:', store_id);
           console.log('🔍 Store fetch (path 2) - storeData:', storeData ? 'found' : 'NOT FOUND');
