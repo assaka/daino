@@ -101,7 +101,11 @@ export default function EmailVerification() {
     setError('');
 
     try {
-      const response = await apiClient.post('auth/resend-verification', { email, store_id: store?.id });
+      const response = await apiClient.post('auth/resend-verification', {
+        email,
+        store_id: store?.id,
+        origin_url: window.location.origin
+      });
 
       if (response.success) {
         setError('');

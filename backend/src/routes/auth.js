@@ -1953,7 +1953,7 @@ router.post('/resend-verification', [
       });
     }
 
-    const { email, store_id } = req.body;
+    const { email, store_id, origin_url } = req.body;
 
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
@@ -2002,12 +2002,22 @@ router.post('/resend-verification', [
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
-    // Use request origin, fallback to buildStoreUrl (which uses custom domain from DB)
-    const resendOrigin = getStoreUrlFromRequest(req, storeForResend?.slug) || await buildStoreUrl({
-      tenantDb,
-      storeId: store_id,
-      storeSlug: storeForResend?.slug
-    });
+
+    // Build origin URL: use frontend-provided origin_url, or fallback
+    let resendOrigin = origin_url;
+    if (resendOrigin) {
+      // If platform domain, append store path
+      const { isPlatformDomain, isDevDomain } = require('../utils/domainConfig');
+      if (isPlatformDomain(resendOrigin) || isDevDomain(resendOrigin)) {
+        resendOrigin = `${resendOrigin}/public/${storeForResend?.slug}`;
+      }
+    } else {
+      resendOrigin = getStoreUrlFromRequest(req, storeForResend?.slug) || await buildStoreUrl({
+        tenantDb,
+        storeId: store_id,
+        storeSlug: storeForResend?.slug
+      });
+    }
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, resendOrigin);
 
     res.json({
