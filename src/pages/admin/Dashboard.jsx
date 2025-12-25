@@ -414,23 +414,13 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {user?.full_name?.split(' ')[0] || 'User'} 👋
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Here's what's happening with your store today
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link to={createPageUrl("Products")}>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Product
-                </Button>
-              </Link>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome back, {user?.full_name?.split(' ')[0] || 'User'} 👋
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Here's what's happening with your store today
+            </p>
           </div>
         </div>
 
