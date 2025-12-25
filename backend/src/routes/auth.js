@@ -2222,12 +2222,13 @@ router.get('/email-configured', async (req, res) => {
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Check if ANY email provider (brevo or sendgrid) is configured and active
+    // Check if PRIMARY email provider (brevo or sendgrid) is configured and active
     const { data: emailConfig, error } = await tenantDb
       .from('integration_configs')
       .select('integration_type, is_active, is_primary')
       .in('integration_type', ['brevo', 'sendgrid'])
       .eq('is_active', true)
+      .eq('is_primary', true)
       .limit(1)
       .maybeSingle();
 
