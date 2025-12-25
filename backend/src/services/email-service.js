@@ -97,7 +97,7 @@ class EmailService {
       let customDomain = null;
       if (masterDbClient && store?.id) {
         const { data: domainData } = await masterDbClient
-          .from('custom_domain_lookups')
+          .from('custom_domains_lookup')
           .select('domain')
           .eq('store_id', store.id)
           .eq('is_primary', true)
@@ -674,7 +674,7 @@ class EmailService {
       let customDomain = null;
       if (masterDbClient && store?.id) {
         const { data: domainData } = await masterDbClient
-          .from('custom_domain_lookups')
+          .from('custom_domains_lookup')
           .select('domain')
           .eq('store_id', store.id)
           .eq('is_primary', true)

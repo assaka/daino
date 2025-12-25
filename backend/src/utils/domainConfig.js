@@ -106,7 +106,7 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
   try {
     console.log(`[DOMAIN-CONFIG] Looking for custom domain with store_id: ${storeId}`);
 
-    // Look up custom domain in master DB's custom_domain_lookups table
+    // Look up custom domain in master DB's custom_domains_lookup table
     if (!masterDbClient) {
       console.warn('[DOMAIN-CONFIG] masterDbClient not available');
       return null;
@@ -114,14 +114,14 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
 
     // First, let's see all custom domains for debugging
     const { data: allDomains } = await masterDbClient
-      .from('custom_domain_lookups')
+      .from('custom_domains_lookup')
       .select('*')
       .eq('store_id', storeId);
     console.log(`[DOMAIN-CONFIG] All custom domains for store:`, JSON.stringify(allDomains, null, 2));
 
     // Get primary active custom domain
     const { data: customDomain } = await masterDbClient
-      .from('custom_domain_lookups')
+      .from('custom_domains_lookup')
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
@@ -136,7 +136,7 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
 
     // Fallback: get any active domain for this store
     const { data: anyDomain } = await masterDbClient
-      .from('custom_domain_lookups')
+      .from('custom_domains_lookup')
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
