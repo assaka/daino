@@ -333,8 +333,9 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
     const account = await stripe.accounts.retrieve(stripeAccountId);
 
     // Determine if onboarding is complete
-    // Onboarding is complete when details are submitted and charges are enabled
-    const onboardingComplete = account.details_submitted && account.charges_enabled;
+    // In test mode, skip onboarding requirements since verification isn't needed
+    const isTestMode = stripeConfig.config_data?.livemode === false;
+    const onboardingComplete = isTestMode || (account.details_submitted && account.charges_enabled);
 
     const connectStatus = {
       connected: true,
@@ -480,7 +481,9 @@ router.post('/link-existing-account', authMiddleware, authorize(['admin', 'store
     }
 
     // Check onboarding status
-    const onboardingComplete = account.details_submitted && account.charges_enabled;
+    // In test mode, skip onboarding requirements since verification isn't needed
+    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+    const onboardingComplete = isTestMode || (account.details_submitted && account.charges_enabled);
 
     // Save account ID to integration_configs
     await IntegrationConfig.createOrUpdate(store_id, STRIPE_INTEGRATION_TYPE, {
@@ -488,6 +491,7 @@ router.post('/link-existing-account', authMiddleware, authorize(['admin', 'store
       onboardingComplete: onboardingComplete,
       onboardingCompletedAt: onboardingComplete ? new Date().toISOString() : null,
       linkedManually: true,
+      livemode: !isTestMode,
       createdAt: new Date().toISOString()
     });
 
@@ -679,7 +683,9 @@ router.post('/connect-oauth-callback', authMiddleware, authorize(['admin', 'stor
 
     // Retrieve account details to check status
     const account = await stripe.accounts.retrieve(connectedAccountId);
-    const onboardingComplete = account.details_submitted && account.charges_enabled;
+    // In test mode, skip onboarding requirements since verification isn't needed
+    const isTestMode = !tokenResponse.livemode;
+    const onboardingComplete = isTestMode || (account.details_submitted && account.charges_enabled);
 
     // Save account to integration_configs
     await IntegrationConfig.createOrUpdate(store_id, STRIPE_INTEGRATION_TYPE, {
