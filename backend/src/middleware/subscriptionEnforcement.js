@@ -1,4 +1,3 @@
-const ConnectionManager = require('../services/database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
 
 /**
@@ -98,42 +97,6 @@ async function getStoreAccessLevel(storeId) {
     if (subscription.status === 'trial' && subscription.trial_ends_at) {
       if (new Date(subscription.trial_ends_at) < new Date()) {
         return { level: ACCESS_LEVELS.SUSPENDED, reason: 'Trial period expired - please upgrade to a paid plan' };
-      }
-    }
-
-    // Check usage limits
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
-    const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
-    const monthEnd = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-
-    // Get usage metrics from tenant DB
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-    const { data: usageMetrics, error: metricsError } = await tenantDb
-      .from('usage_metrics')
-      .select('api_calls, products_created, orders_created, storage_total_bytes')
-      .eq('store_id', storeId)
-      .gte('metric_date', monthStart)
-      .lt('metric_date', monthEnd);
-
-    // Calculate totals
-    const usage = (usageMetrics || []).reduce((acc, metric) => ({
-      total_api_calls: acc.total_api_calls + (metric.api_calls || 0),
-      total_products: acc.total_products + (metric.products_created || 0),
-      total_orders: acc.total_orders + (metric.orders_created || 0),
-      total_storage: Math.max(acc.total_storage, metric.storage_total_bytes || 0)
-    }), { total_api_calls: 0, total_products: 0, total_orders: 0, total_storage: 0 });
-
-    // Check API call limit
-    if (subscription.max_api_calls_per_month && subscription.max_api_calls_per_month > 0) {
-      const apiCalls = parseInt(usage.total_api_calls || 0);
-      if (apiCalls >= subscription.max_api_calls_per_month) {
-        return {
-          level: ACCESS_LEVELS.READ_ONLY,
-          reason: `API call limit exceeded (${apiCalls}/${subscription.max_api_calls_per_month})`,
-          upgrade_required: true
-        };
       }
     }
 
@@ -323,32 +286,7 @@ const checkResourceLimit = (resourceType) => {
           break;
 
         case 'order':
-          // Check monthly order limit
-          const currentMonth = new Date();
-          const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString().split('T')[0];
-
-          const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
-          const { data: orderMetrics } = await tenantDb
-            .from('usage_metrics')
-            .select('orders_created')
-            .eq('store_id', req.storeId)
-            .gte('metric_date', monthStart);
-
-          const monthlyOrders = (orderMetrics || []).reduce((sum, metric) => sum + (metric.orders_created || 0), 0);
-
-          if (subscription.max_orders_per_month && subscription.max_orders_per_month > 0) {
-            if (monthlyOrders >= subscription.max_orders_per_month) {
-              return res.status(403).json({
-                success: false,
-                limit_exceeded: true,
-                resource: 'orders',
-                current: monthlyOrders,
-                limit: subscription.max_orders_per_month,
-                message: `Monthly order limit reached. Upgrade for more capacity.`,
-                upgrade_url: '/admin/subscription/upgrade'
-              });
-            }
-          }
+          // Monthly order limit check removed - usage_metrics table deprecated
           break;
 
         case 'storage':

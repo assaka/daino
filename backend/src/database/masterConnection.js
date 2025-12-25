@@ -9,7 +9,7 @@
  * - store_databases (tenant connection credentials)
  * - store_hostnames (hostname mapping)
  * - job_queue (centralized queue)
- * - usage_metrics, billing_transactions
+ * - billing_transactions
  *
  * The master DB is used for platform-level management and monitoring.
  * Tenant databases contain store-specific operational data.

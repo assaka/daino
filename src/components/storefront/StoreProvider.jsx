@@ -43,11 +43,9 @@ export { cachedApiCall, clearCache, clearCacheKeys } from '@/utils/cacheUtils';
 export const StoreProvider = ({ children }) => {
   const location = useLocation();
 
-  // Use centralized config to decide if we should skip StoreProvider
-  // Admin/editor pages use StoreSelectionContext instead - see domainConfig.js
-  if (shouldSkipStoreProvider(location.pathname)) {
-    return <>{children}</>;
-  }
+  // Check if we should skip StoreProvider BEFORE any conditional logic
+  // but AFTER useLocation (which is always called)
+  const shouldSkip = shouldSkipStoreProvider(location.pathname);
 
   const [loading, setLoading] = useState(true);
   const [storeData, setStoreData] = useState(null);
@@ -57,30 +55,36 @@ export const StoreProvider = ({ children }) => {
 
   // Step 1: Try to get store slug (use useState to prevent re-renders)
   const [resolvedSlug, setResolvedSlug] = useState(() => {
+    if (shouldSkip) return null;
     const slug = determineStoreSlug(location);
     return slug;
   });
 
-  const storeId = !resolvedSlug ? localStorage.getItem('selectedStoreId') : null;
+  const storeId = !resolvedSlug && !shouldSkip ? localStorage.getItem('selectedStoreId') : null;
 
   // Step 2: If no slug but have ID, fetch slug first
   const { data: fetchedSlug, isLoading: slugLoading } = useStoreSlugById(storeId);
 
   // Use fetched slug if we had to look it up
   useEffect(() => {
+    if (shouldSkip) return;
     if (!resolvedSlug && fetchedSlug) {
       setResolvedSlug(fetchedSlug);
       localStorage.setItem('selectedStoreSlug', fetchedSlug);
     }
-  }, [fetchedSlug, resolvedSlug]);
+  }, [fetchedSlug, resolvedSlug, shouldSkip]);
 
   const language = localStorage.getItem('daino_language') || 'en';
 
   // LAYER 1: Bootstrap data (global data - 1 API call)
-  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap, error: bootstrapError } = useStoreBootstrap(resolvedSlug, language);
+  // Pass null slug when skipping to prevent API calls
+  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap, error: bootstrapError } = useStoreBootstrap(shouldSkip ? null : resolvedSlug, language);
 
   // Main data loading effect
+  // IMPORTANT: All hooks must be called before any conditional returns (React Rules of Hooks)
   useEffect(() => {
+    // Skip data loading if shouldSkip is true
+    if (shouldSkip) return;
 
     if (slugLoading || bootstrapLoading || !bootstrap) {
       setLoading(true);
@@ -187,10 +191,11 @@ export const StoreProvider = ({ children }) => {
     };
 
     loadStoreData();
-  }, [bootstrap, bootstrapLoading, slugLoading, language, location.pathname]);
+  }, [bootstrap, bootstrapLoading, slugLoading, language, location.pathname, shouldSkip]);
 
   // Event Listener: Store selection changes
   useEffect(() => {
+    if (shouldSkip) return;
     const handleStoreChange = () => {
       clearCache();
       refetchBootstrap();
@@ -198,10 +203,11 @@ export const StoreProvider = ({ children }) => {
 
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
-  }, [refetchBootstrap]);
+  }, [refetchBootstrap, shouldSkip]);
 
   // Event Listener: Language changes
   useEffect(() => {
+    if (shouldSkip) return;
     const handleLanguageChange = () => {
       clearCache();
       refetchBootstrap();
@@ -209,10 +215,11 @@ export const StoreProvider = ({ children }) => {
 
     window.addEventListener('languageChanged', handleLanguageChange);
     return () => window.removeEventListener('languageChanged', handleLanguageChange);
-  }, [refetchBootstrap]);
+  }, [refetchBootstrap, shouldSkip]);
 
   // Event Listener: Cache clear broadcasts (from admin)
   useEffect(() => {
+    if (shouldSkip) return;
     try {
       const storeChannel = new BroadcastChannel('store_settings_update');
       storeChannel.onmessage = (event) => {
@@ -250,13 +257,20 @@ export const StoreProvider = ({ children }) => {
     } catch (e) {
       console.warn('BroadcastChannel not supported:', e);
     }
-  }, []);
+  }, [shouldSkip]);
 
   // Country selection handler
   const handleSetSelectedCountry = useCallback((country) => {
     setSelectedCountry(country);
     localStorage.setItem('selectedCountry', country);
   }, []);
+
+  // Use centralized config to decide if we should skip StoreProvider
+  // Admin/editor pages use StoreSelectionContext instead - see domainConfig.js
+  // IMPORTANT: This check must be AFTER all hooks to comply with React Rules of Hooks
+  if (shouldSkip) {
+    return <>{children}</>;
+  }
 
   // Context value
   // Check for storefront preview mode

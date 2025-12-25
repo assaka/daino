@@ -48,7 +48,6 @@ const PluginConfiguration = require('./PluginConfiguration');
 const MediaAsset = require('./MediaAsset');
 // Master database models (business management)
 const Subscription = require('./Subscription');
-const UsageMetric = require('./UsageMetric');
 const CustomDomain = require('./CustomDomain');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
 const AkeneoSchedule = require('./AkeneoSchedule');
@@ -291,10 +290,6 @@ const defineAssociations = () => {
   Subscription.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   Store.hasMany(Subscription, { foreignKey: 'store_id', as: 'subscriptions' });
 
-  // UsageMetric associations
-  UsageMetric.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  Store.hasMany(UsageMetric, { foreignKey: 'store_id', as: 'usageMetrics' });
-
   // CustomDomain associations
   CustomDomain.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   Store.hasMany(CustomDomain, { foreignKey: 'store_id', as: 'customDomains' });
@@ -405,7 +400,6 @@ module.exports = {
   MediaAsset,
   // Master database models
   Subscription,
-  UsageMetric,
   CustomDomain,
   AkeneoCustomMapping,
   AkeneoSchedule,

@@ -28,8 +28,33 @@ import {
   AlertCircle,
   CheckCircle,
   Activity,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Pencil,
+  Trash2,
+  Copy,
+  MousePointer,
+  FileText,
+  Timer,
+  Zap,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import SaveButton from '@/components/ui/save-button';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -61,6 +86,27 @@ export default function AnalyticsSettings() {
     const [newEventsCount, setNewEventsCount] = useState(0);
     const [importData, setImportData] = useState('');
     const [exportFormat, setExportFormat] = useState('json');
+
+    // Custom Events Management State
+    const [customEvents, setCustomEvents] = useState([]);
+    const [eventTemplates, setEventTemplates] = useState([]);
+    const [loadingEvents, setLoadingEvents] = useState(false);
+    const [showEventDialog, setShowEventDialog] = useState(false);
+    const [editingEvent, setEditingEvent] = useState(null);
+    const [eventForm, setEventForm] = useState({
+        event_name: '',
+        display_name: '',
+        description: '',
+        event_category: 'custom',
+        trigger_type: 'click',
+        trigger_selector: '',
+        trigger_condition: null,
+        event_parameters: {},
+        enabled: true,
+        priority: 10,
+        fire_once_per_session: false,
+        send_to_backend: true
+    });
 
     useEffect(() => {
         const loadStore = async () => {
@@ -122,7 +168,11 @@ export default function AnalyticsSettings() {
                 
                 // Load dataLayer events
                 loadDataLayerEvents();
-                
+
+                // Load custom events and templates
+                loadCustomEvents();
+                loadEventTemplates();
+
             } catch (error) {
                 console.error("Failed to load store:", error);
                 setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -480,7 +530,186 @@ export default function AnalyticsSettings() {
             setFlashMessage({ type: 'success', message: 'Test event pushed to dataLayer successfully!' });
         }
     };
-    
+
+    // Custom Events Management Functions
+    const loadCustomEvents = async () => {
+        if (!selectedStore?.id) return;
+        setLoadingEvents(true);
+        try {
+            const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}`);
+            if (response.ok) {
+                const data = await response.json();
+                setCustomEvents(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load custom events:', error);
+        } finally {
+            setLoadingEvents(false);
+        }
+    };
+
+    const loadEventTemplates = async () => {
+        try {
+            const response = await fetch('/api/custom-analytics-events/templates/list');
+            if (response.ok) {
+                const data = await response.json();
+                setEventTemplates(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load event templates:', error);
+        }
+    };
+
+    const resetEventForm = () => {
+        setEventForm({
+            event_name: '',
+            display_name: '',
+            description: '',
+            event_category: 'custom',
+            trigger_type: 'click',
+            trigger_selector: '',
+            trigger_condition: null,
+            event_parameters: {},
+            enabled: true,
+            priority: 10,
+            fire_once_per_session: false,
+            send_to_backend: true
+        });
+        setEditingEvent(null);
+    };
+
+    const openCreateDialog = () => {
+        resetEventForm();
+        setShowEventDialog(true);
+    };
+
+    const openEditDialog = (event) => {
+        setEditingEvent(event);
+        setEventForm({
+            event_name: event.event_name || '',
+            display_name: event.display_name || '',
+            description: event.description || '',
+            event_category: event.event_category || 'custom',
+            trigger_type: event.trigger_type || 'click',
+            trigger_selector: event.trigger_selector || '',
+            trigger_condition: event.trigger_condition || null,
+            event_parameters: event.event_parameters || {},
+            enabled: event.enabled !== false,
+            priority: event.priority || 10,
+            fire_once_per_session: event.fire_once_per_session || false,
+            send_to_backend: event.send_to_backend !== false
+        });
+        setShowEventDialog(true);
+    };
+
+    const applyTemplate = (template) => {
+        setEventForm({
+            event_name: template.id || '',
+            display_name: template.display_name || '',
+            description: template.description || '',
+            event_category: template.event_category || 'custom',
+            trigger_type: template.trigger_type || 'click',
+            trigger_selector: template.trigger_selector || '',
+            trigger_condition: template.trigger_condition || null,
+            event_parameters: template.event_parameters || {},
+            enabled: true,
+            priority: 10,
+            fire_once_per_session: false,
+            send_to_backend: template.send_to_backend !== false
+        });
+    };
+
+    const saveEvent = async () => {
+        if (!selectedStore?.id) return;
+        if (!eventForm.event_name || !eventForm.display_name || !eventForm.trigger_type) {
+            setFlashMessage({ type: 'error', message: 'Event name, display name, and trigger type are required.' });
+            return;
+        }
+
+        try {
+            const url = editingEvent
+                ? `/api/custom-analytics-events/${selectedStore.id}/${editingEvent.id}`
+                : `/api/custom-analytics-events/${selectedStore.id}`;
+
+            const response = await fetch(url, {
+                method: editingEvent ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(eventForm)
+            });
+
+            if (response.ok) {
+                setFlashMessage({ type: 'success', message: editingEvent ? 'Event updated successfully!' : 'Event created successfully!' });
+                setShowEventDialog(false);
+                resetEventForm();
+                loadCustomEvents();
+            } else {
+                const error = await response.json();
+                setFlashMessage({ type: 'error', message: error.error || 'Failed to save event.' });
+            }
+        } catch (error) {
+            setFlashMessage({ type: 'error', message: 'Failed to save event.' });
+        }
+    };
+
+    const deleteEvent = async (eventId) => {
+        if (!selectedStore?.id) return;
+        if (!confirm('Are you sure you want to delete this event?')) return;
+
+        try {
+            const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}/${eventId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                setFlashMessage({ type: 'success', message: 'Event deleted successfully!' });
+                loadCustomEvents();
+            } else {
+                const error = await response.json();
+                setFlashMessage({ type: 'error', message: error.error || 'Failed to delete event.' });
+            }
+        } catch (error) {
+            setFlashMessage({ type: 'error', message: 'Failed to delete event.' });
+        }
+    };
+
+    const toggleEventEnabled = async (event) => {
+        if (!selectedStore?.id) return;
+
+        try {
+            const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}/${event.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: !event.enabled })
+            });
+
+            if (response.ok) {
+                loadCustomEvents();
+            }
+        } catch (error) {
+            setFlashMessage({ type: 'error', message: 'Failed to toggle event.' });
+        }
+    };
+
+    const getTriggerIcon = (triggerType) => {
+        switch (triggerType) {
+            case 'click': return <MousePointer className="w-4 h-4" />;
+            case 'page_load': return <FileText className="w-4 h-4" />;
+            case 'form_submit': return <FileText className="w-4 h-4" />;
+            case 'scroll': return <Activity className="w-4 h-4" />;
+            case 'timer': return <Timer className="w-4 h-4" />;
+            default: return <Zap className="w-4 h-4" />;
+        }
+    };
+
+    const getCategoryColor = (category) => {
+        switch (category) {
+            case 'ecommerce': return 'bg-green-100 text-green-800';
+            case 'engagement': return 'bg-blue-100 text-blue-800';
+            case 'conversion': return 'bg-purple-100 text-purple-800';
+            case 'navigation': return 'bg-orange-100 text-orange-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     if (loading) {
         return <PageLoader size="lg" fullScreen={false} className="p-8" />;
@@ -720,156 +949,367 @@ export default function AnalyticsSettings() {
 
                 {/* DataLayer Events */}
                 <TabsContent value="events" className="space-y-6">
+                    {/* Custom Events Management Card */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Activity className="w-5 h-5" />
-                                Custom DataLayer Events
-                            </CardTitle>
-                            <CardDescription>
-                                Configure custom events to track specific user interactions. Events are pushed to window.dataLayer and can be sent to Google Tag Manager.
-                                View collected data in <a href="/admin/customer-activity" className="text-blue-600 hover:underline">Customer Activity</a>.
-                            </CardDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Zap className="w-5 h-5" />
+                                        Custom DataLayer Events
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Create custom events to track specific user interactions. Events are pushed to window.dataLayer for Google Tag Manager.
+                                    </CardDescription>
+                                </div>
+                                <Button onClick={openCreateDialog} className="flex items-center gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    New Event
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <Alert className="mb-6">
-                                <AlertCircle className="w-4 h-4" />
-                                <AlertDescription>
-                                    <strong>Coming Soon:</strong> Custom event configuration UI is under development.
-                                    For now, events are configured programmatically in DataLayerManager.jsx.
-                                </AlertDescription>
-                            </Alert>
-
-                            <div className="space-y-4">
-                                <div className="p-4 bg-blue-50 rounded-lg">
-                                    <h4 className="font-semibold text-blue-900 mb-2">Current Event Collection</h4>
-                                    <p className="text-sm text-blue-800 mb-3">
-                                        Your store automatically collects these events:
-                                    </p>
-                                    <ul className="space-y-2 text-sm text-blue-800">
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Page Views</strong> - Every page load
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Product Views</strong> - When users view product details
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Add to Cart</strong> - When products are added to cart
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Remove from Cart</strong> - When products are removed
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Checkout Started</strong> - When checkout process begins
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Order Completed</strong> - When purchase is finalized
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <strong>Search</strong> - When users search products
-                                        </li>
-                                    </ul>
+                            {loadingEvents ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                                 </div>
-
-                                <div className="p-4 border rounded-lg">
-                                    <h4 className="font-semibold text-gray-900 mb-2">DataLayer Structure</h4>
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        Events are pushed to <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">window.dataLayer</code> with this format:
-                                    </p>
-                                    <pre className="text-xs bg-gray-900 text-green-400 p-4 rounded overflow-x-auto">
-{`{
-  "event": "add_to_cart",
-  "timestamp": "2025-01-07T12:00:00Z",
-  "item_id": "product-uuid",
-  "item_name": "Product Name",
-  "item_category": "Electronics",
-  "price": 99.99,
-  "quantity": 1,
-  "currency": "USD"
-}`}
-                                    </pre>
-                                </div>
-
-                                <div className="p-4 bg-amber-50 border-amber-200 rounded-lg">
-                                    <h4 className="font-semibold text-amber-900 mb-2">📊 View Collected Data</h4>
-                                    <p className="text-sm text-amber-800 mb-3">
-                                        All collected events are stored and can be viewed in the Customer Activity page.
-                                    </p>
-                                    <Button
-                                        onClick={() => window.location.href = '/admin/customer-activity'}
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-amber-300 text-amber-800 hover:bg-amber-100"
-                                    >
-                                        <BarChart3 className="w-4 h-4 mr-2" />
-                                        View Customer Activity
+                            ) : customEvents.length === 0 ? (
+                                <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                                    <Zap className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No custom events yet</h3>
+                                    <p className="text-gray-500 mb-4">Create custom events to track user interactions like button clicks, form submissions, and more.</p>
+                                    <Button onClick={openCreateDialog} variant="outline">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Create Your First Event
                                     </Button>
                                 </div>
-
-                                <div className="p-4 bg-green-50 border-green-200 rounded-lg">
-                                    <h4 className="font-semibold text-green-900 mb-2">✅ Enhanced Tracking Available Now</h4>
-                                    <p className="text-sm text-green-800 mb-3">
-                                        20+ tracking functions are ready to use in your components via <code className="px-1 py-0.5 bg-green-100 rounded">window.daino</code>:
-                                    </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-green-800">
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Product Impressions (Lists)
+                            ) : (
+                                <div className="space-y-3">
+                                    {customEvents.map((event) => (
+                                        <div
+                                            key={event.id}
+                                            className={`border rounded-lg p-4 ${event.enabled ? 'bg-white' : 'bg-gray-50 opacity-75'}`}
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`p-2 rounded-lg ${event.enabled ? 'bg-blue-100' : 'bg-gray-200'}`}>
+                                                        {getTriggerIcon(event.trigger_type)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="font-medium text-gray-900">{event.display_name}</h4>
+                                                            <Badge variant="outline" className={getCategoryColor(event.event_category)}>
+                                                                {event.event_category}
+                                                            </Badge>
+                                                            {event.is_system && (
+                                                                <Badge variant="secondary">System</Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-500 mt-1">
+                                                            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{event.event_name}</code>
+                                                            {event.trigger_selector && (
+                                                                <span className="ml-2">• Selector: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{event.trigger_selector}</code></span>
+                                                            )}
+                                                        </p>
+                                                        {event.description && (
+                                                            <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                                                        )}
+                                                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                                            <span className="flex items-center gap-1">
+                                                                {getTriggerIcon(event.trigger_type)}
+                                                                {event.trigger_type.replace('_', ' ')}
+                                                            </span>
+                                                            {event.fire_once_per_session && (
+                                                                <span>Once per session</span>
+                                                            )}
+                                                            {event.send_to_backend && (
+                                                                <span className="text-green-600">Logs to backend</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => toggleEventEnabled(event)}
+                                                        title={event.enabled ? 'Disable' : 'Enable'}
+                                                    >
+                                                        {event.enabled ? (
+                                                            <ToggleRight className="w-5 h-5 text-green-600" />
+                                                        ) : (
+                                                            <ToggleLeft className="w-5 h-5 text-gray-400" />
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => openEditDialog(event)}
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </Button>
+                                                    {!event.is_system && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => deleteEvent(event.id)}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Product Clicks
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Add/Remove Cart (Enhanced)
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Wishlist Tracking
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Promotion Views & Clicks
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Newsletter Signup
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Filter & Sort Tracking
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Coupon Applied
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Quick View
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <CheckCircle className="w-3 h-3" />
-                                            Checkout Funnel
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 pt-3 border-t border-green-200">
-                                        <p className="text-xs text-green-700">
-                                            📖 See <strong>ENHANCED_TRACKING_GUIDE.md</strong> for implementation examples
-                                        </p>
-                                    </div>
+                                    ))}
                                 </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Built-in Events Info Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                                Built-in Events (Always Active)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {[
+                                    { name: 'page_view', label: 'Page View', desc: 'Every page load' },
+                                    { name: 'view_item', label: 'Product View', desc: 'Product detail pages' },
+                                    { name: 'add_to_cart', label: 'Add to Cart', desc: 'Products added to cart' },
+                                    { name: 'remove_from_cart', label: 'Remove from Cart', desc: 'Products removed' },
+                                    { name: 'begin_checkout', label: 'Checkout Started', desc: 'Checkout initiated' },
+                                    { name: 'purchase', label: 'Purchase', desc: 'Order completed' },
+                                    { name: 'search', label: 'Search', desc: 'Product searches' },
+                                    { name: 'view_item_list', label: 'Product List View', desc: 'Category pages' },
+                                    { name: 'select_item', label: 'Product Click', desc: 'Product clicks in lists' },
+                                ].map((event) => (
+                                    <div key={event.name} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <p className="font-medium text-sm">{event.label}</p>
+                                            <p className="text-xs text-gray-500">{event.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {/* Event Create/Edit Dialog */}
+                <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>{editingEvent ? 'Edit Event' : 'Create Custom Event'}</DialogTitle>
+                            <DialogDescription>
+                                {editingEvent ? 'Update the event configuration.' : 'Configure a custom event to track user interactions.'}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-6 py-4">
+                            {/* Templates Section (only for new events) */}
+                            {!editingEvent && eventTemplates.length > 0 && (
+                                <div>
+                                    <Label className="text-sm font-medium mb-2 block">Start from Template</Label>
+                                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
+                                        {eventTemplates.map((template) => (
+                                            <button
+                                                key={template.id}
+                                                onClick={() => applyTemplate(template)}
+                                                className="text-left p-3 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                            >
+                                                <p className="font-medium text-sm">{template.display_name}</p>
+                                                <p className="text-xs text-gray-500 truncate">{template.description}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Basic Info */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="event_name">Event Name *</Label>
+                                    <Input
+                                        id="event_name"
+                                        value={eventForm.event_name}
+                                        onChange={(e) => setEventForm(prev => ({ ...prev, event_name: e.target.value }))}
+                                        placeholder="add_to_wishlist"
+                                        className="mt-1"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Technical name for dataLayer</p>
+                                </div>
+                                <div>
+                                    <Label htmlFor="display_name">Display Name *</Label>
+                                    <Input
+                                        id="display_name"
+                                        value={eventForm.display_name}
+                                        onChange={(e) => setEventForm(prev => ({ ...prev, display_name: e.target.value }))}
+                                        placeholder="Add to Wishlist"
+                                        className="mt-1"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Human-readable name</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={eventForm.description}
+                                    onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
+                                    placeholder="Track when users add products to their wishlist"
+                                    className="mt-1"
+                                    rows={2}
+                                />
+                            </div>
+
+                            {/* Trigger Configuration */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="trigger_type">Trigger Type *</Label>
+                                    <Select
+                                        value={eventForm.trigger_type}
+                                        onValueChange={(value) => setEventForm(prev => ({ ...prev, trigger_type: value }))}
+                                    >
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="click">Click</SelectItem>
+                                            <SelectItem value="page_load">Page Load</SelectItem>
+                                            <SelectItem value="form_submit">Form Submit</SelectItem>
+                                            <SelectItem value="scroll">Scroll</SelectItem>
+                                            <SelectItem value="timer">Timer</SelectItem>
+                                            <SelectItem value="custom">Custom (Code)</SelectItem>
+                                            <SelectItem value="automatic">Automatic</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label htmlFor="event_category">Category</Label>
+                                    <Select
+                                        value={eventForm.event_category}
+                                        onValueChange={(value) => setEventForm(prev => ({ ...prev, event_category: value }))}
+                                    >
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="ecommerce">E-commerce</SelectItem>
+                                            <SelectItem value="engagement">Engagement</SelectItem>
+                                            <SelectItem value="conversion">Conversion</SelectItem>
+                                            <SelectItem value="navigation">Navigation</SelectItem>
+                                            <SelectItem value="custom">Custom</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* CSS Selector for click/form triggers */}
+                            {['click', 'form_submit'].includes(eventForm.trigger_type) && (
+                                <div>
+                                    <Label htmlFor="trigger_selector">CSS Selector</Label>
+                                    <Input
+                                        id="trigger_selector"
+                                        value={eventForm.trigger_selector}
+                                        onChange={(e) => setEventForm(prev => ({ ...prev, trigger_selector: e.target.value }))}
+                                        placeholder=".wishlist-button, [data-wishlist-btn]"
+                                        className="mt-1 font-mono text-sm"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">CSS selector for the element(s) that trigger this event</p>
+                                </div>
+                            )}
+
+                            {/* Event Parameters */}
+                            <div>
+                                <Label htmlFor="event_parameters">Event Parameters (JSON)</Label>
+                                <Textarea
+                                    id="event_parameters"
+                                    value={JSON.stringify(eventForm.event_parameters, null, 2)}
+                                    onChange={(e) => {
+                                        try {
+                                            const params = JSON.parse(e.target.value);
+                                            setEventForm(prev => ({ ...prev, event_parameters: params }));
+                                        } catch {
+                                            // Allow invalid JSON while typing
+                                        }
+                                    }}
+                                    placeholder='{"item_id": "{{product_id}}", "item_name": "{{product_name}}"}'
+                                    className="mt-1 font-mono text-sm"
+                                    rows={4}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Use {'{{variable}}'} for dynamic values</p>
+                            </div>
+
+                            {/* Options */}
+                            <div className="space-y-3">
+                                <Label className="text-sm font-medium">Options</Label>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-sm">Enabled</p>
+                                            <p className="text-xs text-gray-500">Event is active and will fire</p>
+                                        </div>
+                                        <Switch
+                                            checked={eventForm.enabled}
+                                            onCheckedChange={(checked) => setEventForm(prev => ({ ...prev, enabled: checked }))}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-sm">Fire Once Per Session</p>
+                                            <p className="text-xs text-gray-500">Prevent duplicate events in same session</p>
+                                        </div>
+                                        <Switch
+                                            checked={eventForm.fire_once_per_session}
+                                            onCheckedChange={(checked) => setEventForm(prev => ({ ...prev, fire_once_per_session: checked }))}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-sm">Log to Backend</p>
+                                            <p className="text-xs text-gray-500">Save event to customer_activities table</p>
+                                        </div>
+                                        <Switch
+                                            checked={eventForm.send_to_backend}
+                                            onCheckedChange={(checked) => setEventForm(prev => ({ ...prev, send_to_backend: checked }))}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Priority */}
+                            <div>
+                                <Label htmlFor="priority">Priority</Label>
+                                <Input
+                                    id="priority"
+                                    type="number"
+                                    value={eventForm.priority}
+                                    onChange={(e) => setEventForm(prev => ({ ...prev, priority: parseInt(e.target.value) || 10 }))}
+                                    className="mt-1 w-24"
+                                    min={1}
+                                    max={100}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Higher priority events execute first (1-100)</p>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowEventDialog(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={saveEvent}>
+                                {editingEvent ? 'Update Event' : 'Create Event'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Import */}
                 <TabsContent value="import" className="space-y-6">

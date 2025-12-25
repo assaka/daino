@@ -110,6 +110,15 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         checkAccess();
     }, [store?.id, pauseAccessEmail, pauseAccessToken]);
 
+    // Auto-hide flash message after 5 seconds
+    // IMPORTANT: This useEffect must be BEFORE any conditional returns to avoid React hooks error #310
+    useEffect(() => {
+        if (flashMessage) {
+            const timer = setTimeout(() => setFlashMessage(null), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [flashMessage]);
+
     const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
     const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
 
@@ -160,14 +169,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
             setLoading(false);
         }
     };
-
-    // Auto-hide flash message after 5 seconds
-    useEffect(() => {
-        if (flashMessage) {
-            const timer = setTimeout(() => setFlashMessage(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [flashMessage]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">

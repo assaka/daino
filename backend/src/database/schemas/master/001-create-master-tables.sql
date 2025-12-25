@@ -265,39 +265,9 @@ CREATE INDEX IF NOT EXISTS idx_service_credit_costs_active ON service_credit_cos
 -- REMOVED: job_queue table and indexes
 
 -- ============================================
--- 9. USAGE_METRICS TABLE
--- Store usage tracking for analytics
+-- 9. USAGE_METRICS TABLE - REMOVED
+-- No longer tracking usage metrics in database
 -- ============================================
-CREATE TABLE IF NOT EXISTS usage_metrics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-  metric_date DATE NOT NULL,
-
-  -- Product metrics
-  products_created INTEGER DEFAULT 0,
-  products_updated INTEGER DEFAULT 0,
-  products_deleted INTEGER DEFAULT 0,
-  total_products INTEGER DEFAULT 0,
-
-  -- Order metrics
-  orders_created INTEGER DEFAULT 0,
-  orders_total_value DECIMAL(10, 2) DEFAULT 0,
-
-  -- Storage metrics
-  storage_uploaded_bytes BIGINT DEFAULT 0,
-  storage_deleted_bytes BIGINT DEFAULT 0,
-  storage_total_bytes BIGINT DEFAULT 0,
-
-  -- API metrics
-  api_calls INTEGER DEFAULT 0,
-  api_errors INTEGER DEFAULT 0,
-
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  UNIQUE(store_id, metric_date)
-);
-
-CREATE INDEX IF NOT EXISTS idx_usage_metrics_store_date ON usage_metrics(store_id, metric_date DESC);
 
 -- ============================================
 -- 10. BILLING_TRANSACTIONS TABLE
@@ -1713,7 +1683,6 @@ COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing informat
 COMMENT ON TABLE credit_transactions IS 'Credit purchase history and adjustments';
 COMMENT ON TABLE service_credit_costs IS 'Pricing for all services that consume credits';
 COMMENT ON TABLE job_queue IS 'Centralized job queue for processing tenant jobs';
-COMMENT ON TABLE usage_metrics IS 'Daily usage metrics per store for analytics';
 COMMENT ON TABLE billing_transactions IS 'Subscription payment history';
 COMMENT ON TABLE theme_defaults IS 'Centralized theme presets (default, eclipse, corporate, etc.) used for new tenant provisioning and as fallback values';
 

@@ -145,13 +145,6 @@ const rfmRoutes = require('./routes/rfm');
 const crmRoutes = require('./routes/crm');
 const marketingIntegrationsRoutes = require('./routes/marketing-integrations');
 
-// Import usage tracking middleware
-const {
-  trackApiCall,
-  trackApiError,
-  checkUsageLimits
-} = require('./middleware/usageTracking');
-
 // Import subscription enforcement middleware
 const {
   requireActiveSubscription,
@@ -308,11 +301,6 @@ app.use(passport.session());
 
 // Static files
 app.use('/uploads', express.static('uploads'));
-
-// Usage tracking middleware (must be after body parsers, before routes)
-app.use(trackApiCall); // Track API usage for billing
-app.use(trackApiError); // Track API errors
-// Note: checkUsageLimits is applied selectively on routes that need it
 
 // Custom domain resolution middleware (must be before routes)
 const domainResolver = require('./middleware/domainResolver');

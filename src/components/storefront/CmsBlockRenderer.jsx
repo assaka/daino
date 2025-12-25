@@ -104,35 +104,21 @@ const loadCmsBlocksWithCache = async (storeId) => {
 export default function CmsBlockRenderer({ position, page, storeId }) {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Try to get store from different contexts
-  let adminStore = null;
-  let storefrontStore = null;
-  let storeIdToUse = storeId;
-  
-  // Try admin context first
-  try {
-    const { selectedStore } = useStoreSelection();
-    if (selectedStore?.id) {
-      adminStore = selectedStore;
-    }
-  } catch (e) {
-    // Not in admin context - this is expected on storefront pages
-  }
-  
-  // Try storefront context
-  let storefrontSettings = null;
-  try {
-    const storeContext = useStore();
-    if (storeContext?.store?.id) {
-      storefrontStore = storeContext.store;
-      storefrontSettings = storeContext.settings;
-    }
-  } catch (e) {
-    // Not in storefront context - this is expected on admin pages
-  }
-  
+
+  // IMPORTANT: Hooks must ALWAYS be called unconditionally at the top level
+  // Never put hooks inside try-catch, conditions, or loops (React Rules of Hooks)
+
+  // Get admin context (may return null/undefined if not in admin context)
+  const adminContext = useStoreSelection();
+  const adminStore = adminContext?.selectedStore || null;
+
+  // Get storefront context (may return null/undefined if not in storefront context)
+  const storefrontContext = useStore();
+  const storefrontStore = storefrontContext?.store || null;
+  const storefrontSettings = storefrontContext?.settings || null;
+
   // Determine which store ID to use
+  let storeIdToUse = storeId;
   if (!storeIdToUse) {
     if (storefrontStore?.id) {
       storeIdToUse = storefrontStore.id;
@@ -252,7 +238,7 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
 
   // Get store and settings for variable processing
   const storeForVariables = storefrontStore || adminStore;
-  const settingsForVariables = storefrontSettings;
+  const settingsForVariables = storefrontSettings || null;
 
   return (
     <div className="cms-blocks">

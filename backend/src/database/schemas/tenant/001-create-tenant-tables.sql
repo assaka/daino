@@ -3350,38 +3350,6 @@ CREATE TABLE IF NOT EXISTS translations (
   store_id UUID NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS usage_metrics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  metric_date DATE NOT NULL,
-  metric_hour INTEGER,
-  products_created INTEGER DEFAULT 0,
-  products_updated INTEGER DEFAULT 0,
-  products_deleted INTEGER DEFAULT 0,
-  total_products INTEGER DEFAULT 0,
-  categories_created INTEGER DEFAULT 0,
-  categories_updated INTEGER DEFAULT 0,
-  orders_created INTEGER DEFAULT 0,
-  orders_completed INTEGER DEFAULT 0,
-  orders_cancelled INTEGER DEFAULT 0,
-  orders_total_value NUMERIC DEFAULT 0,
-  orders_avg_value NUMERIC DEFAULT 0,
-  customers_new INTEGER DEFAULT 0,
-  customers_returning INTEGER DEFAULT 0,
-  storage_uploaded_bytes BIGINT DEFAULT 0,
-  storage_deleted_bytes BIGINT DEFAULT 0,
-  storage_total_bytes BIGINT DEFAULT 0,
-  storage_files_count INTEGER DEFAULT 0,
-  api_calls INTEGER DEFAULT 0,
-  api_errors INTEGER DEFAULT 0,
-  api_avg_response_time_ms INTEGER DEFAULT 0,
-  page_views INTEGER DEFAULT 0,
-  unique_visitors INTEGER DEFAULT 0,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) NOT NULL,
@@ -4115,12 +4083,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_store_session ON heatmap_sessions USING
 
 CREATE UNIQUE INDEX IF NOT EXISTS unique_test_session ON ab_test_assignments USING btree (test_id, session_id);
 
-CREATE INDEX IF NOT EXISTS usage_metrics_metric_date ON usage_metrics USING btree (metric_date);
-
-CREATE INDEX IF NOT EXISTS usage_metrics_store_id ON usage_metrics USING btree (store_id);
-
-CREATE UNIQUE INDEX IF NOT EXISTS usage_metrics_store_id_metric_date_metric_hour ON usage_metrics USING btree (store_id, metric_date, metric_hour);
-
 CREATE UNIQUE INDEX IF NOT EXISTS wishlists_session_id_product_id ON wishlists USING btree (session_id, product_id);
 
 -- Sales Orders - for order lookups and filtering
@@ -4673,8 +4635,6 @@ ALTER TABLE stores ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFE
 ALTER TABLE taxes ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE translations ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-ALTER TABLE usage_metrics ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
 ALTER TABLE wishlists ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
 
