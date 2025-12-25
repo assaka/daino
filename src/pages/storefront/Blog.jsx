@@ -236,6 +236,17 @@ const BLOG_ARTICLES = {
     date: 'December 2024',
     author: 'DainoStore Team'
   },
+  'custom-datalayer-events': {
+    title: 'Custom DataLayer Events for Advanced Tracking',
+    description: 'Learn how to create and manage custom datalayer events to track user interactions and send data to Google Tag Manager, analytics platforms, and marketing tools.',
+    category: 'Analytics & Testing',
+    categoryIcon: Layers,
+    categoryColor: 'bg-purple-100 text-purple-600',
+    tags: ['analytics', 'developer', 'integrations', 'marketing'],
+    readTime: '12 min read',
+    date: 'December 2024',
+    author: 'DainoStore Team'
+  },
   // Marketplace Integrations
   'how-to-configure-amazon-marketplace': {
     title: 'How to Sell Your Products on Amazon',
@@ -379,6 +390,17 @@ const BLOG_ARTICLES = {
     categoryColor: 'bg-pink-100 text-pink-600',
     tags: ['getting-started', 'ai'],
     readTime: '12 min read',
+    date: 'December 2024',
+    author: 'DainoStore Team'
+  },
+  'first-marketing-campaign': {
+    title: 'How to Create Your First Marketing Campaign',
+    description: 'A step-by-step guide to launching your first email marketing campaign, from building your audience to tracking results.',
+    category: 'Marketing & Growth',
+    categoryIcon: Mail,
+    categoryColor: 'bg-pink-100 text-pink-600',
+    tags: ['marketing', 'email', 'getting-started'],
+    readTime: '15 min read',
     date: 'December 2024',
     author: 'DainoStore Team'
   },
@@ -553,6 +575,7 @@ const CONTENT_PATHS = {
   'heatmaps-guide': '/blog/heatmaps-guide.md',
   'analytics-dashboard': '/blog/analytics-dashboard.md',
   'customer-activity-tracking': '/blog/customer-activity-tracking.md',
+  'custom-datalayer-events': '/blog/custom-datalayer-events.md',
   // Marketplace Integrations
   'how-to-configure-amazon-marketplace': '/blog/how-to-configure-amazon-marketplace.md',
   'how-to-configure-ebay-marketplace': '/blog/how-to-configure-ebay-marketplace.md',
@@ -569,6 +592,7 @@ const CONTENT_PATHS = {
   'marketing-integrations': '/blog/marketing-integrations.md',
   'ai-product-optimization': '/blog/ai-product-optimization.md',
   'multi-language-setup': '/blog/multi-language-setup.md',
+  'first-marketing-campaign': '/blog/first-marketing-campaign.md',
   // SEO & Optimization
   'seo-optimization-guide': '/blog/seo-optimization-guide.md',
   // Advanced Features
