@@ -110,19 +110,32 @@ router.post('/customer/forgot-password', [
     }
     console.log('[FORGOT-PASSWORD] Final origin for email:', origin);
 
-    // Build reset URL using store's custom domain or platform URL
-    const resetUrl = await buildStoreUrl({
-      tenantDb,
-      storeId: store_id,
-      storeSlug: storeSlug,
-      path: '/reset-password',
-      queryParams: { token: resetToken, email }
-    });
-    const baseUrl = await buildStoreUrl({
-      tenantDb,
-      storeId: store_id,
-      storeSlug: storeSlug
-    });
+    // Build reset URL using origin (visited domain) if available
+    let resetUrl;
+    let baseUrl;
+
+    if (origin) {
+      // Use the actual visited domain for links
+      baseUrl = origin;
+      const params = new URLSearchParams({ token: resetToken, email });
+      resetUrl = `${origin}/reset-password?${params.toString()}`;
+    } else {
+      // Fallback to buildStoreUrl if no origin
+      baseUrl = await buildStoreUrl({
+        tenantDb,
+        storeId: store_id,
+        storeSlug: storeSlug
+      });
+      resetUrl = await buildStoreUrl({
+        tenantDb,
+        storeId: store_id,
+        storeSlug: storeSlug,
+        path: '/reset-password',
+        queryParams: { token: resetToken, email }
+      });
+    }
+
+    console.log('[FORGOT-PASSWORD] Reset URL:', resetUrl);
 
     // Send password reset email
     // Use origin (actual visited domain) for email links
