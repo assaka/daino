@@ -536,7 +536,9 @@ export default function AnalyticsSettings() {
         if (!selectedStore?.id) return;
         setLoadingEvents(true);
         try {
-            const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}`);
+            const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}`, {
+                credentials: 'include'
+            });
             if (response.ok) {
                 const data = await response.json();
                 setCustomEvents(data.data || []);
@@ -550,7 +552,9 @@ export default function AnalyticsSettings() {
 
     const loadEventTemplates = async () => {
         try {
-            const response = await fetch('/api/custom-analytics-events/templates/list');
+            const response = await fetch('/api/custom-analytics-events/templates/list', {
+                credentials: 'include'
+            });
             if (response.ok) {
                 const data = await response.json();
                 setEventTemplates(data.data || []);
@@ -634,6 +638,7 @@ export default function AnalyticsSettings() {
             const response = await fetch(url, {
                 method: editingEvent ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(eventForm)
             });
 
@@ -657,7 +662,8 @@ export default function AnalyticsSettings() {
 
         try {
             const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}/${eventId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -679,6 +685,7 @@ export default function AnalyticsSettings() {
             const response = await fetch(`/api/custom-analytics-events/${selectedStore.id}/${event.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ enabled: !event.enabled })
             });
 
