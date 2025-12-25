@@ -46,6 +46,9 @@ router.post('/customer/forgot-password', [
 
     // Get origin URL from request (for email links)
     const origin = req.get('origin') || req.get('referer');
+    console.log('[FORGOT-PASSWORD] Origin header:', req.get('origin'));
+    console.log('[FORGOT-PASSWORD] Referer header:', req.get('referer'));
+    console.log('[FORGOT-PASSWORD] Using origin:', origin);
 
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);

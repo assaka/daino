@@ -448,8 +448,8 @@ class EmailService {
     // Always fetch full store data to ensure logo and URL are correct
     const fullStoreData = await this.getFullStoreData(storeId);
 
-    // Use passed store_url/origin if provided (from request), otherwise use looked-up value
-    const storeUrl = data.store_url || data.origin || fullStoreData.store_url;
+    // Use origin first (the actual domain visited), then store_url, then looked-up value
+    const storeUrl = data.origin || data.store_url || fullStoreData.store_url;
 
     // Merge full store data into data.store, but preserve explicitly passed values
     data.store = {
