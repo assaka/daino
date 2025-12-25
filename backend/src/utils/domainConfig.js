@@ -110,28 +110,35 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
       return null;
     }
 
+    console.log(`[DOMAIN-CONFIG] Looking for custom domain for store_id: ${storeId}`);
+
     // Get active non-redirect custom domain (prefer main domain over www redirect)
-    const { data: customDomain } = await masterDbClient
+    const { data: customDomain, error: err1 } = await masterDbClient
       .from('custom_domains_lookup')
-      .select('domain')
+      .select('domain, is_redirect')
       .eq('store_id', storeId)
       .eq('is_active', true)
       .eq('is_redirect', false)
       .limit(1)
       .maybeSingle();
 
+    console.log(`[DOMAIN-CONFIG] Non-redirect domain query result:`, customDomain, err1);
+
     if (customDomain?.domain) {
+      console.log(`[DOMAIN-CONFIG] Found domain: ${customDomain.domain}`);
       return customDomain.domain;
     }
 
     // Fallback: get any active domain for this store
-    const { data: anyDomain } = await masterDbClient
+    const { data: anyDomain, error: err2 } = await masterDbClient
       .from('custom_domains_lookup')
       .select('domain')
       .eq('store_id', storeId)
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
+
+    console.log(`[DOMAIN-CONFIG] Fallback domain query result:`, anyDomain, err2);
 
     return anyDomain?.domain || null;
   } catch (error) {
