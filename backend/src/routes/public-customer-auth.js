@@ -44,6 +44,9 @@ router.post('/customer/forgot-password', [
 
     const { email, store_id } = req.body;
 
+    // Get origin URL from request (for email links)
+    const origin = req.get('origin') || req.get('referer');
+
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
@@ -105,7 +108,9 @@ router.post('/customer/forgot-password', [
       await emailService.sendTransactionalEmail(store_id, 'password_reset', {
         recipientEmail: email,
         customer: customer,
-        reset_url: resetUrl
+        reset_url: resetUrl,
+        store_url: baseUrl,  // Use the same URL built for reset link
+        origin: origin       // Pass origin for email footer
       }).catch(async (templateError) => {
         // Fallback: Send simple email
         await emailService.sendViaBrevo(store_id, email,

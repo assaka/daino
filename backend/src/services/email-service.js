@@ -267,7 +267,7 @@ class EmailService {
 
       // Process email_header and email_footer placeholders
       if (content && (content.includes('{{email_header}}') || content.includes('{{email_footer}}'))) {
-        content = await this.processHeaderFooter(storeId, content, languageCode);
+        content = await this.processHeaderFooter(storeId, content, languageCode, variables.store_url);
       }
 
       // Inject theme colors and store data into variables for header/footer templates
@@ -448,17 +448,23 @@ class EmailService {
     // Always fetch full store data to ensure logo and URL are correct
     const fullStoreData = await this.getFullStoreData(storeId);
 
-    // Merge full store data into data.store
+    // Use passed store_url/origin if provided (from request), otherwise use looked-up value
+    const storeUrl = data.store_url || data.origin || fullStoreData.store_url;
+
+    // Merge full store data into data.store, but preserve explicitly passed values
     data.store = {
       ...(data.store || {}),
       name: data.store?.name || fullStoreData.name,
       slug: fullStoreData.slug,
       settings: fullStoreData.settings,
-      store_url: fullStoreData.store_url,
-      login_url: fullStoreData.login_url,
+      store_url: storeUrl,
+      login_url: `${storeUrl}/login`,
       logo_url: fullStoreData.logo_url,
       custom_domain: fullStoreData.custom_domain
     };
+
+    // Also set top-level store_url for header/footer processing
+    data.store_url = storeUrl;
 
     // Build variables based on template identifier
     let variables = {};
@@ -664,13 +670,14 @@ class EmailService {
   /**
    * Process email_header and email_footer placeholders
    * Replaces {{email_header}} and {{email_footer}} with actual template content
-   * Always checks for active primary custom domain to use in links
+   * Uses passed storeUrl if provided (from request origin), otherwise looks up custom domain
    * @param {string} storeId - Store ID
    * @param {string} content - Email content with placeholders
    * @param {string} languageCode - Language code for translations
+   * @param {string} passedStoreUrl - Optional store URL passed from request
    * @returns {Promise<string>} Content with header/footer replaced
    */
-  async processHeaderFooter(storeId, content, languageCode = 'en') {
+  async processHeaderFooter(storeId, content, languageCode = 'en', passedStoreUrl = null) {
     let processedContent = content;
 
     try {
@@ -685,24 +692,30 @@ class EmailService {
         .limit(1)
         .maybeSingle();
 
-      // Always check for active primary custom domain first (from master DB)
+      // Use passed storeUrl if available, otherwise look up custom domain
+      let storeUrl = passedStoreUrl;
       let customDomain = null;
-      if (masterDbClient && store?.id) {
-        const { data: domainData } = await masterDbClient
-          .from('custom_domains_lookup')
-          .select('domain')
-          .eq('store_id', store.id)
-          .eq('is_primary', true)
-          .eq('is_active', true)
-          .maybeSingle();
-        customDomain = domainData;
-      }
 
-      // Build store URL using custom domain if available
-      const storeUrl = buildStoreUrlSync({
-        customDomain: customDomain?.domain,
-        storeSlug: store?.slug || 'default'
-      });
+      if (!storeUrl) {
+        // Fallback: look up custom domain from master DB
+        if (masterDbClient && store?.id) {
+          const { data: domainData } = await masterDbClient
+            .from('custom_domains_lookup')
+            .select('domain')
+            .eq('store_id', store.id)
+            .eq('is_active', true)
+            .eq('is_redirect', false)
+            .limit(1)
+            .maybeSingle();
+          customDomain = domainData;
+        }
+
+        // Build store URL using custom domain if available
+        storeUrl = buildStoreUrlSync({
+          customDomain: customDomain?.domain,
+          storeSlug: store?.slug || 'default'
+        });
+      }
 
       // Get theme colors for header/footer styling
       const themeColors = await this.getThemeColors(storeId);
