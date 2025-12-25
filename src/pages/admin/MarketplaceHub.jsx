@@ -28,8 +28,11 @@ import {
   Loader2,
   ChevronRight,
   BarChart3,
-  Instagram
+  Instagram,
+  Link2,
+  Building2
 } from 'lucide-react';
+import { MetaCommerce } from '@/api/meta-commerce';
 
 const MarketplaceHub = () => {
   const [flashMessage, setFlashMessage] = useState(null);
@@ -70,8 +73,20 @@ const MarketplaceHub = () => {
   // Shopify state
   const [shopifyConfigured, setShopifyConfigured] = useState(false);
 
-  // Instagram Shopping state
+  // Instagram Shopping state - extended
   const [instagramConfigured, setInstagramConfigured] = useState(false);
+  const [instagramStatus, setInstagramStatus] = useState(null);
+  const [instagramConfig, setInstagramConfig] = useState(null);
+  const [instagramBusinesses, setInstagramBusinesses] = useState([]);
+  const [instagramCatalogs, setInstagramCatalogs] = useState([]);
+  const [instagramErrors, setInstagramErrors] = useState([]);
+  const [instagramSettings, setInstagramSettings] = useState({
+    defaultBrand: '',
+    storeDomain: '',
+    currency: 'USD'
+  });
+  const [instagramSyncing, setInstagramSyncing] = useState(false);
+  const [instagramActiveSection, setInstagramActiveSection] = useState('connection');
 
   // Jobs state
   const [activeJobs, setActiveJobs] = useState([]);
@@ -83,6 +98,23 @@ const MarketplaceHub = () => {
   useEffect(() => {
     loadConfigurations();
     loadActiveJobs();
+    loadInstagramStatus();
+
+    // Check for Instagram OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const error = urlParams.get('error');
+
+    if (success === 'connected') {
+      setFlashMessage({ type: 'success', message: 'Connected to Instagram Shopping!' });
+      setActiveTab('instagram');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      loadInstagramStatus();
+    } else if (error) {
+      setFlashMessage({ type: 'error', message: `Connection failed: ${error}` });
+      setActiveTab('instagram');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const loadConfigurations = async () => {
@@ -115,18 +147,7 @@ const MarketplaceHub = () => {
       // This would check if Shopify OAuth is already connected
       setShopifyConfigured(true); // Assuming already connected
 
-      // Load Instagram Shopping status
-      try {
-        const instagramRes = await fetch(`/api/meta-commerce/status?store_id=${storeId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const instagramData = await instagramRes.json();
-        if (instagramData.connected) {
-          setInstagramConfigured(true);
-        }
-      } catch (e) {
-        // Instagram not configured yet
-      }
+      // Note: Instagram status is loaded separately via loadInstagramStatus()
 
     } catch (error) {
       console.error('Failed to load configurations:', error);
@@ -149,6 +170,128 @@ const MarketplaceHub = () => {
       }
     } catch (error) {
       console.error('Failed to load jobs:', error);
+    }
+  };
+
+  // Instagram functions
+  const loadInstagramStatus = async () => {
+    try {
+      const [statusRes, configRes] = await Promise.all([
+        MetaCommerce.getStatus(),
+        MetaCommerce.getConfig()
+      ]);
+      setInstagramStatus(statusRes);
+      if (configRes.configured && configRes.config) {
+        setInstagramConfig(configRes.config);
+        setInstagramSettings({
+          defaultBrand: configRes.config.defaultBrand || '',
+          storeDomain: configRes.config.storeDomain || '',
+          currency: configRes.config.currency || 'USD'
+        });
+      }
+      if (statusRes.connected) {
+        loadInstagramBusinesses();
+        loadInstagramErrors();
+      }
+      setInstagramConfigured(statusRes?.connected || false);
+    } catch (error) {
+      console.error('Failed to load Instagram status:', error);
+    }
+  };
+
+  const loadInstagramBusinesses = async () => {
+    try {
+      const result = await MetaCommerce.getBusinesses();
+      setInstagramBusinesses(result.businesses || []);
+    } catch (error) {
+      console.error('Failed to load businesses:', error);
+    }
+  };
+
+  const loadInstagramCatalogs = async () => {
+    try {
+      const result = await MetaCommerce.getCatalogs();
+      setInstagramCatalogs(result.catalogs || []);
+    } catch (error) {
+      console.error('Failed to load catalogs:', error);
+    }
+  };
+
+  const loadInstagramErrors = async () => {
+    try {
+      const result = await MetaCommerce.getProductErrors();
+      setInstagramErrors(result.errors || []);
+    } catch (error) {
+      console.error('Failed to load errors:', error);
+    }
+  };
+
+  const handleInstagramConnect = async () => {
+    try {
+      const result = await MetaCommerce.getAuthUrl();
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to initiate connection' });
+    }
+  };
+
+  const handleInstagramDisconnect = async () => {
+    if (!confirm('Disconnect Instagram Shopping?')) return;
+    try {
+      await MetaCommerce.disconnect();
+      setInstagramStatus({ connected: false });
+      setInstagramConfig(null);
+      setInstagramConfigured(false);
+      setFlashMessage({ type: 'success', message: 'Disconnected from Instagram Shopping' });
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to disconnect' });
+    }
+  };
+
+  const handleInstagramSelectBusiness = async (businessId) => {
+    const business = instagramBusinesses.find(b => b.id === businessId);
+    try {
+      await MetaCommerce.selectBusiness(businessId, business?.name);
+      setInstagramConfig(prev => ({ ...prev, businessId, businessName: business?.name, catalogId: null }));
+      loadInstagramCatalogs();
+      setFlashMessage({ type: 'success', message: 'Business selected' });
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to select business' });
+    }
+  };
+
+  const handleInstagramSelectCatalog = async (catalogId) => {
+    const catalog = instagramCatalogs.find(c => c.id === catalogId);
+    try {
+      await MetaCommerce.selectCatalog(catalogId, catalog?.name);
+      setInstagramConfig(prev => ({ ...prev, catalogId, catalogName: catalog?.name }));
+      loadInstagramStatus();
+      setFlashMessage({ type: 'success', message: 'Catalog selected' });
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to select catalog' });
+    }
+  };
+
+  const handleInstagramSaveSettings = async () => {
+    try {
+      await MetaCommerce.saveConfig(instagramSettings);
+      setFlashMessage({ type: 'success', message: 'Settings saved' });
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to save settings' });
+    }
+  };
+
+  const handleInstagramSync = async () => {
+    setInstagramSyncing(true);
+    try {
+      const result = await MetaCommerce.scheduleSyncJob({});
+      setFlashMessage({ type: 'success', message: `Sync started (Job ID: ${result.jobId})` });
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to start sync' });
+    } finally {
+      setInstagramSyncing(false);
     }
   };
 
@@ -732,30 +875,256 @@ const MarketplaceHub = () => {
           </Card>
         </TabsContent>
 
-        {/* Instagram Tab */}
+        {/* Instagram Tab - Full Integration */}
         <TabsContent value="instagram" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Instagram className="w-6 h-6 text-pink-500" />
-                Instagram Shopping
-              </CardTitle>
-              <CardDescription>Sync products to Instagram Shop via Meta Commerce Manager</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Instagram className="w-6 h-6 text-pink-500" />
+                    Instagram Shopping
+                  </CardTitle>
+                  <CardDescription>Sync products to Instagram Shop via Meta Commerce Manager</CardDescription>
+                </div>
+                {instagramStatus?.connected && (
+                  <Badge className="bg-green-500 text-white">Connected</Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              <Alert>
-                <AlertCircle className="w-4 h-4" />
-                <AlertDescription>
-                  Instagram Shopping integration connects your product catalog to Meta Commerce Manager,
-                  enabling product tags on Instagram posts and the Instagram Shop tab.
-                </AlertDescription>
-              </Alert>
-              <div className="mt-4">
-                <Button variant="outline" onClick={() => window.location.href = '/admin/integrations/instagram-shopping'}>
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Go to Instagram Shopping
-                </Button>
+              {/* Section Navigation */}
+              <div className="flex gap-2 mb-6 border-b pb-4">
+                {['connection', 'catalog', 'settings', 'sync', 'errors'].map((section) => (
+                  <Button
+                    key={section}
+                    variant={instagramActiveSection === section ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setInstagramActiveSection(section)}
+                    disabled={section !== 'connection' && !instagramStatus?.connected}
+                  >
+                    {section.charAt(0).toUpperCase() + section.slice(1)}
+                  </Button>
+                ))}
               </div>
+
+              {/* Connection Section */}
+              {instagramActiveSection === 'connection' && (
+                <>
+                  {!instagramStatus?.connected ? (
+                    <div className="text-center py-8">
+                      <Instagram className="w-16 h-16 mx-auto mb-4 text-pink-600" />
+                      <p className="text-gray-600 mb-6">
+                        Connect your Meta Business account to sync products to Instagram Shopping.
+                      </p>
+                      <Button onClick={handleInstagramConnect} size="lg">
+                        <Link2 className="w-4 h-4 mr-2" />
+                        Connect with Facebook
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="w-6 h-6 text-green-600" />
+                          <div>
+                            <p className="font-medium">Connected to Meta Commerce</p>
+                            <p className="text-sm text-gray-600">
+                              {instagramStatus.businessName || 'No business selected'}
+                              {instagramStatus.catalogName && ` | ${instagramStatus.catalogName}`}
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="outline" onClick={handleInstagramDisconnect}>
+                          Disconnect
+                        </Button>
+                      </div>
+                      {instagramStatus.lastSyncAt && (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                          <p className="text-sm">
+                            <span className="font-medium">Last sync:</span>{' '}
+                            {new Date(instagramStatus.lastSyncAt).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Catalog Section */}
+              {instagramActiveSection === 'catalog' && instagramStatus?.connected && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Business Account</Label>
+                    <select
+                      className="w-full p-2 border rounded-md bg-white"
+                      value={instagramConfig?.businessId || ''}
+                      onChange={(e) => handleInstagramSelectBusiness(e.target.value)}
+                    >
+                      <option value="">Select a business...</option>
+                      {instagramBusinesses.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {instagramConfig?.businessId && (
+                    <div className="space-y-2">
+                      <Label>Product Catalog</Label>
+                      <select
+                        className="w-full p-2 border rounded-md bg-white"
+                        value={instagramConfig?.catalogId || ''}
+                        onChange={(e) => handleInstagramSelectCatalog(e.target.value)}
+                      >
+                        <option value="">Select a catalog...</option>
+                        {instagramCatalogs.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-gray-600">
+                        Select an existing catalog or create one in Meta Commerce Manager
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Settings Section */}
+              {instagramActiveSection === 'settings' && instagramStatus?.connected && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="ig_storeDomain">Store Domain</Label>
+                    <Input
+                      id="ig_storeDomain"
+                      placeholder="yourstore.com"
+                      value={instagramSettings.storeDomain}
+                      onChange={(e) => setInstagramSettings(prev => ({ ...prev, storeDomain: e.target.value }))}
+                    />
+                    <p className="text-sm text-gray-600">Your store's domain for product URLs</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ig_defaultBrand">Default Brand</Label>
+                    <Input
+                      id="ig_defaultBrand"
+                      placeholder="Your Brand Name"
+                      value={instagramSettings.defaultBrand}
+                      onChange={(e) => setInstagramSettings(prev => ({ ...prev, defaultBrand: e.target.value }))}
+                    />
+                    <p className="text-sm text-gray-600">Brand name for products without a brand attribute</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ig_currency">Currency</Label>
+                    <select
+                      id="ig_currency"
+                      className="w-full p-2 border rounded-md bg-white"
+                      value={instagramSettings.currency}
+                      onChange={(e) => setInstagramSettings(prev => ({ ...prev, currency: e.target.value }))}
+                    >
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="EUR">EUR - Euro</option>
+                      <option value="GBP">GBP - British Pound</option>
+                      <option value="CAD">CAD - Canadian Dollar</option>
+                      <option value="AUD">AUD - Australian Dollar</option>
+                    </select>
+                  </div>
+                  <Button onClick={handleInstagramSaveSettings}>Save Settings</Button>
+                </div>
+              )}
+
+              {/* Sync Section */}
+              {instagramActiveSection === 'sync' && instagramStatus?.connected && (
+                <div className="space-y-6">
+                  {!instagramConfig?.catalogId ? (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Please select a catalog in the Catalog tab before syncing products.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
+                      <Alert>
+                        <Package className="h-4 w-4" />
+                        <AlertDescription>
+                          Products need SKU, title, price, and 500x500+ image to sync successfully.
+                        </AlertDescription>
+                      </Alert>
+                      <Button onClick={handleInstagramSync} disabled={instagramSyncing} size="lg">
+                        {instagramSyncing ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Syncing...</>
+                        ) : (
+                          <><RefreshCw className="w-4 h-4 mr-2" /> Sync All Products</>
+                        )}
+                      </Button>
+                      {instagramStatus?.lastSyncAt && (
+                        <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                          <p className="font-medium">Last Sync</p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(instagramStatus.lastSyncAt).toLocaleString()}
+                          </p>
+                          {instagramStatus.syncStatus && (
+                            <Badge variant={
+                              instagramStatus.syncStatus === 'success' ? 'default' :
+                              instagramStatus.syncStatus === 'error' ? 'destructive' : 'secondary'
+                            }>
+                              {instagramStatus.syncStatus}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Errors Section */}
+              {instagramActiveSection === 'errors' && instagramStatus?.connected && (
+                <div className="space-y-4">
+                  {!instagramConfig?.catalogId ? (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Please select a catalog in the Catalog tab first.
+                      </AlertDescription>
+                    </Alert>
+                  ) : instagramErrors.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-600" />
+                      <p className="text-gray-600">No errors. All products synced successfully.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">
+                          {instagramErrors.length} product(s) with errors
+                        </p>
+                        <Button variant="outline" size="sm" onClick={loadInstagramErrors}>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Refresh
+                        </Button>
+                      </div>
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-4 py-2 text-left font-medium">SKU</th>
+                              <th className="px-4 py-2 text-left font-medium">Error</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {instagramErrors.map((err, i) => (
+                              <tr key={i} className="border-t">
+                                <td className="px-4 py-2 font-mono">{err.retailerId}</td>
+                                <td className="px-4 py-2 text-red-600">{err.errorMessage}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
