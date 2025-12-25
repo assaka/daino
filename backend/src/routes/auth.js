@@ -7,6 +7,22 @@ const passport = require('../config/passport');
 const emailService = require('../services/email-service');
 const router = express.Router();
 
+// Platform domains list
+const PLATFORM_DOMAINS = ['dainostore.com', 'daino.ai', 'daino.store', 'localhost'];
+
+// Helper: Get origin URL from request and format for email links
+const getEmailOrigin = (req, storeSlug) => {
+  let origin = req.get('origin') || req.get('referer');
+  if (!origin) return null;
+
+  // Check if it's a platform domain that needs store path
+  const isPlatformDomain = PLATFORM_DOMAINS.some(d => origin.includes(d));
+  if (isPlatformDomain && storeSlug) {
+    origin = origin.replace(/\/$/, '') + '/public/' + storeSlug;
+  }
+  return origin;
+};
+
 // Helper function to determine tenant table name based on role
 const getTableForRole = (role) => {
   if (role === 'customer') {
@@ -152,7 +168,7 @@ const createCustomerAddresses = async (tenantDb, userId, firstName, lastName, ph
 };
 
 // Helper: Send welcome email
-const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
+const sendWelcomeEmail = async (tenantDb, storeId, email, customer, origin = null) => {
   try {
     // Get store from tenant database by storeId
     const { data: store } = await tenantDb
@@ -166,6 +182,7 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
       recipientEmail: email,
       customer: customer,
       store: store,
+      origin: origin,  // Pass origin for email links
       languageCode: 'en'
     }).catch(err => {
       // Welcome email failed
@@ -176,7 +193,7 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
 };
 
 // Helper: Send verification email with code
-const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode) => {
+const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode, origin = null) => {
   try {
     // Get store from tenant database by storeId
     const { data: store } = await tenantDb
@@ -186,6 +203,7 @@ const sendVerificationEmail = async (tenantDb, storeId, email, customer, verific
       .maybeSingle();
 
     const storeName = store?.name || 'Our Store';
+    const storeUrl = origin || store?.domain || process.env.CORS_ORIGIN;
 
     // Try to send via email template if exists, otherwise send simple email
     emailService.sendEmail(storeId, 'email_verification', email, {
@@ -193,7 +211,7 @@ const sendVerificationEmail = async (tenantDb, storeId, email, customer, verific
       customer_first_name: customer.first_name,
       verification_code: verificationCode,
       store_name: storeName,
-      store_url: store?.domain || process.env.CORS_ORIGIN,
+      store_url: storeUrl,
       current_year: new Date().getFullYear()
     }, 'en').catch(templateError => {
       // Fallback: Send simple email with verification code
@@ -329,7 +347,15 @@ router.post('/register', [
 
     // Send welcome email if requested (for customer registrations)
     if (send_welcome_email && role === 'customer' && store_id) {
-      sendWelcomeEmail(tenantDb, store_id, email, user);
+      // Get store slug for origin URL
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('slug')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      const origin = getEmailOrigin(req, store?.slug);
+      sendWelcomeEmail(tenantDb, store_id, email, user, origin);
     }
 
     // Generate token
@@ -434,7 +460,14 @@ router.post('/upgrade-guest', [
     const token = generateToken(updatedCustomer);
 
     // Send welcome email asynchronously
-    sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer).catch(err => {
+    const { data: storeForEmail } = await tenantDb
+      .from('stores')
+      .select('slug')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    const emailOrigin = getEmailOrigin(req, storeForEmail?.slug);
+    sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer, emailOrigin).catch(err => {
       console.error('Welcome email error:', err);
     });
 
@@ -1222,7 +1255,14 @@ router.post('/customer/register', [
     }
 
     // Send verification email with code
-    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode);
+    const { data: storeForVerify } = await tenantDb
+      .from('stores')
+      .select('slug')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    const verifyOrigin = getEmailOrigin(req, storeForVerify?.slug);
+    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
 
     // Generate token (user can login but will be blocked until verified)
     const token = generateToken(customer);
@@ -1971,7 +2011,14 @@ router.post('/resend-verification', [
       .eq('id', customer.id);
 
     // Send verification email
-    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode);
+    const { data: storeForResend } = await tenantDb
+      .from('stores')
+      .select('slug')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    const resendOrigin = getEmailOrigin(req, storeForResend?.slug);
+    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, resendOrigin);
 
     res.json({
       success: true,
