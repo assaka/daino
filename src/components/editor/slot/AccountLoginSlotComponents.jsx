@@ -305,7 +305,8 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
 
         // Check if email verification is required
         if (response.data?.requiresVerification) {
-          navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(formData.email)}`);
+          const verifyPath = createPublicUrl(storeCode, 'VERIFY_EMAIL');
+          navigate(`${verifyPath}?email=${encodeURIComponent(formData.email)}`);
         } else {
           const accountUrl = await getCustomerAccountUrl();
           navigate(accountUrl);
@@ -659,7 +660,8 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         // Check if email verification is required
         if (response.data?.requiresVerification) {
           // Redirect to verification page
-          navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(formData.email)}`);
+          const verifyPath = createPublicUrl(storeCode, 'VERIFY_EMAIL');
+          navigate(`${verifyPath}?email=${encodeURIComponent(formData.email)}`);
         } else {
           setSuccess(t('customer_auth.success.registration', 'Registration successful!'));
           // Redirect after showing success message

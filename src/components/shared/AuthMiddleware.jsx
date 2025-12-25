@@ -655,7 +655,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 localStorage.removeItem('customer_auth_store_code');
                 // Redirect to email verification page
                 const storeCode = localStorage.getItem('selectedStoreSlug') || '';
-                navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(userEmail)}`);
+                const verifyPath = createPublicUrl(storeCode, 'VERIFY_EMAIL');
+                navigate(`${verifyPath}?email=${encodeURIComponent(userEmail)}`);
               } else {
                 localStorage.removeItem('customer_auth_store_id');
                 localStorage.removeItem('customer_auth_store_code');
