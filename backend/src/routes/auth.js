@@ -2200,57 +2200,7 @@ router.post('/store-owner/reset-password', [
   }
 });
 
-// ========================================
-// PUBLIC EMAIL CONFIGURATION CHECK
-// ========================================
-
-// @route   GET /api/auth/email-configured
-// @desc    Check if any email provider is configured for a store (PUBLIC - no auth required)
-// @access  Public
-// @note    Used by storefront registration to check if emails can be sent
-router.get('/email-configured', async (req, res) => {
-  try {
-    const { store_id } = req.query;
-
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Check if PRIMARY email provider (brevo or sendgrid) is configured and active
-    const { data: emailConfig, error } = await tenantDb
-      .from('integration_configs')
-      .select('integration_type, is_active, is_primary')
-      .in('integration_type', ['brevo', 'sendgrid'])
-      .eq('is_active', true)
-      .eq('is_primary', true)
-      .limit(1)
-      .maybeSingle();
-
-    const isConfigured = !!emailConfig;
-
-    res.json({
-      success: true,
-      data: {
-        isConfigured,
-        provider: emailConfig?.integration_type || null
-      }
-    });
-  } catch (error) {
-    console.error('Email config check error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check email configuration'
-    });
-  }
-});
-
 // Log registered routes on module load
-console.log(`[AUTH ROUTES] Registered ${router.stack.length} routes including: customer/login, customer/register, customer/forgot-password, customer/reset-password, store-owner/forgot-password, store-owner/reset-password, email-configured`);
+console.log(`[AUTH ROUTES] Registered ${router.stack.length} routes including: customer/login, customer/register, customer/forgot-password, customer/reset-password, store-owner/forgot-password, store-owner/reset-password`);
 
 module.exports = router;

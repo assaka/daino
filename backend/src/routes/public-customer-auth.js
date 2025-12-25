@@ -297,6 +297,52 @@ router.post('/customer/reset-password', [
   }
 });
 
-console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/validate-reset-token, customer/reset-password');
+// @route   GET /api/public/auth/email-configured
+// @desc    Check if primary email provider is configured for a store
+// @access  Public (no authentication required)
+// @note    Used by storefront registration to check if emails can be sent
+router.get('/email-configured', async (req, res) => {
+  try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if PRIMARY email provider (brevo or sendgrid) is configured and active
+    const { data: emailConfig, error } = await tenantDb
+      .from('integration_configs')
+      .select('integration_type, is_active, is_primary')
+      .in('integration_type', ['brevo', 'sendgrid'])
+      .eq('is_active', true)
+      .eq('is_primary', true)
+      .limit(1)
+      .maybeSingle();
+
+    const isConfigured = !!emailConfig;
+
+    res.json({
+      success: true,
+      data: {
+        isConfigured,
+        provider: emailConfig?.integration_type || null
+      }
+    });
+  } catch (error) {
+    console.error('Email config check error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check email configuration'
+    });
+  }
+});
+
+console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/validate-reset-token, customer/reset-password, email-configured');
 
 module.exports = router;
