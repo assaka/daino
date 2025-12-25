@@ -501,6 +501,7 @@ function App() {
               <Route path="/register" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
               <Route path="/forgot-password" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
               <Route path="/reset-password" element={<PageWrapper Component={Pages.ResetPassword} pageName="ResetPassword" />} />
+              <Route path="/verify-email" element={<PageWrapper Component={Pages.EmailVerification} pageName="EmailVerification" />} />
               <Route path="/account" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
               <Route path="/cms-page/:pageSlug" element={<PageWrapper Component={Pages.CmsPageViewer} pageName="CmsPageViewer" />} />
               <Route path="/sitemap" element={<PageWrapper Component={Pages.SitemapPublic} pageName="SitemapPublic" />} />
