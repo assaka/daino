@@ -2940,11 +2940,15 @@ router.post('/webhook-connect', async (req, res) => {
 
           // Fetch store from master DB
           const { masterDbClient } = require('../database/masterConnection');
-          const { data: storeData } = await masterDbClient
+          const { data: storeData, error: storeError } = await masterDbClient
             .from('stores')
             .select('id, name, slug, currency, settings')
             .eq('id', store_id)
             .single();
+
+          console.log('🔍 Store fetch (path 2) - store_id:', store_id);
+          console.log('🔍 Store fetch (path 2) - storeData:', storeData ? 'found' : 'NOT FOUND');
+          if (storeError) console.log('🔍 Store fetch (path 2) - error:', storeError.message);
 
           orderWithDetails.Store = storeData;
 
