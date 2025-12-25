@@ -179,6 +179,7 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer, origin = nul
 
 // Helper: Send verification email with code
 const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode, origin = null) => {
+  console.log('[sendVerificationEmail] origin param:', origin);
   try {
     await emailService.sendTransactionalEmail(storeId, 'email_verification', {
       recipientEmail: email,
@@ -1230,6 +1231,7 @@ router.post('/customer/register', [
       .maybeSingle();
 
     // Build origin URL: use frontend-provided origin_url, or fallback to request headers
+    console.log('[CUSTOMER-REGISTER] origin_url from body:', origin_url);
     let verifyOrigin = origin_url;
     if (verifyOrigin) {
       // If platform domain, append store path
@@ -1244,6 +1246,7 @@ router.post('/customer/register', [
         storeSlug: storeForVerify?.slug
       });
     }
+    console.log('[CUSTOMER-REGISTER] verifyOrigin:', verifyOrigin);
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, verifyOrigin);
 
     // Generate token (user can login but will be blocked until verified)
