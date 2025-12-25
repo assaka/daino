@@ -102,6 +102,14 @@ const DEFAULT_PLATFORM_URL = process.env.CORS_ORIGIN || 'https://www.dainostore.
  */
 async function getPrimaryCustomDomain(tenantDb, storeId) {
   try {
+    console.log(`[DOMAIN-CONFIG] Looking for custom domain with store_id: ${storeId}`);
+
+    // First, let's see all custom domains in the database for debugging
+    const { data: allDomains } = await tenantDb
+      .from('custom_domains')
+      .select('domain, store_id, is_active, is_primary, verification_status');
+    console.log(`[DOMAIN-CONFIG] All custom domains in DB:`, JSON.stringify(allDomains, null, 2));
+
     const { data: customDomain } = await tenantDb
       .from('custom_domains')
       .select('domain')
@@ -110,6 +118,8 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
       .eq('verification_status', 'verified')
       .eq('is_primary', true)
       .maybeSingle();
+
+    console.log(`[DOMAIN-CONFIG] Primary domain query result:`, customDomain);
 
     if (customDomain?.domain) {
       return customDomain.domain;
@@ -125,6 +135,8 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();
+
+    console.log(`[DOMAIN-CONFIG] Fallback domain query result:`, anyDomain);
 
     return anyDomain?.domain || null;
   } catch (error) {
