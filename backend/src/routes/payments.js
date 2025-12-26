@@ -44,6 +44,202 @@ function convertToStripeAmount(amount, currency) {
 }
 
 /**
+ * Stripe payment methods configuration
+ * Each payment method has its display info and Stripe capability requirement
+ */
+const STRIPE_PAYMENT_METHODS = [
+  { code: 'stripe_card', name: 'Credit/Debit Card', stripeType: 'card', icon: 'credit-card', description: 'Pay securely with your credit or debit card' },
+  { code: 'stripe_apple_pay', name: 'Apple Pay', stripeType: 'apple_pay', icon: 'apple', description: 'Pay with Apple Pay' },
+  { code: 'stripe_google_pay', name: 'Google Pay', stripeType: 'google_pay', icon: 'google', description: 'Pay with Google Pay' },
+  { code: 'stripe_link', name: 'Link', stripeType: 'link', icon: 'link', description: 'Fast checkout with Link by Stripe' },
+  { code: 'stripe_klarna', name: 'Klarna', stripeType: 'klarna', icon: 'klarna', description: 'Buy now, pay later with Klarna' },
+  { code: 'stripe_afterpay', name: 'Afterpay / Clearpay', stripeType: 'afterpay_clearpay', icon: 'afterpay', description: 'Buy now, pay later with Afterpay' },
+  { code: 'stripe_ideal', name: 'iDEAL', stripeType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL (Netherlands)' },
+  { code: 'stripe_bancontact', name: 'Bancontact', stripeType: 'bancontact', icon: 'bancontact', description: 'Pay with Bancontact (Belgium)' },
+  { code: 'stripe_giropay', name: 'Giropay', stripeType: 'giropay', icon: 'giropay', description: 'Pay with Giropay (Germany)' },
+  { code: 'stripe_sepa', name: 'SEPA Direct Debit', stripeType: 'sepa_debit', icon: 'bank', description: 'Pay via SEPA bank transfer' },
+  { code: 'stripe_sofort', name: 'Sofort', stripeType: 'sofort', icon: 'sofort', description: 'Pay with Sofort (Europe)' },
+  { code: 'stripe_eps', name: 'EPS', stripeType: 'eps', icon: 'eps', description: 'Pay with EPS (Austria)' },
+  { code: 'stripe_p24', name: 'Przelewy24', stripeType: 'p24', icon: 'p24', description: 'Pay with Przelewy24 (Poland)' },
+];
+
+/**
+ * Ensure provider column exists in payment_methods table
+ * @param {Object} tenantDb - Tenant database connection
+ */
+async function ensureProviderColumn(tenantDb) {
+  try {
+    // Try to select with provider to check if column exists
+    const { error } = await tenantDb
+      .from('payment_methods')
+      .select('provider')
+      .limit(1);
+
+    if (error && error.message.includes('provider')) {
+      // Column doesn't exist, add it via raw SQL
+      const sequelize = tenantDb.sequelize;
+      if (sequelize) {
+        await sequelize.query(`
+          ALTER TABLE payment_methods
+          ADD COLUMN IF NOT EXISTS provider VARCHAR(50) DEFAULT NULL
+        `);
+        console.log('✅ Added provider column to payment_methods table');
+      }
+    }
+  } catch (err) {
+    console.warn('Could not ensure provider column:', err.message);
+  }
+}
+
+/**
+ * Insert all available Stripe payment methods for a store after connection
+ * @param {string} storeId - Store ID
+ * @param {string} stripeAccountId - Connected Stripe account ID
+ */
+async function insertStripePaymentMethods(storeId, stripeAccountId) {
+  try {
+    console.log(`🔧 Inserting Stripe payment methods for store ${storeId}...`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Ensure provider column exists
+    await ensureProviderColumn(tenantDb);
+
+    // Get existing payment methods to avoid duplicates (check by code AND provider)
+    const { data: existingMethods } = await tenantDb
+      .from('payment_methods')
+      .select('code, provider')
+      .eq('store_id', storeId);
+
+    const existingCodes = new Set((existingMethods || []).map(m => `${m.provider || ''}:${m.code}`));
+
+    // Get enabled payment method types from Stripe account
+    let enabledTypes = new Set(['card']); // Card is always available
+
+    try {
+      // Retrieve account to check capabilities
+      const account = await stripe.accounts.retrieve(stripeAccountId);
+      const capabilities = account.capabilities || {};
+
+      // Map Stripe capabilities to payment method types
+      if (capabilities.card_payments === 'active') enabledTypes.add('card');
+      if (capabilities.link_payments === 'active') enabledTypes.add('link');
+      if (capabilities.klarna_payments === 'active') enabledTypes.add('klarna');
+      if (capabilities.afterpay_clearpay_payments === 'active') enabledTypes.add('afterpay_clearpay');
+      if (capabilities.ideal_payments === 'active') enabledTypes.add('ideal');
+      if (capabilities.bancontact_payments === 'active') enabledTypes.add('bancontact');
+      if (capabilities.giropay_payments === 'active') enabledTypes.add('giropay');
+      if (capabilities.sepa_debit_payments === 'active') enabledTypes.add('sepa_debit');
+      if (capabilities.sofort_payments === 'active') enabledTypes.add('sofort');
+      if (capabilities.eps_payments === 'active') enabledTypes.add('eps');
+      if (capabilities.p24_payments === 'active') enabledTypes.add('p24');
+
+      // Apple Pay and Google Pay are enabled through card capability
+      if (capabilities.card_payments === 'active') {
+        enabledTypes.add('apple_pay');
+        enabledTypes.add('google_pay');
+      }
+
+      console.log(`✅ Stripe account capabilities loaded, enabled types:`, Array.from(enabledTypes));
+    } catch (capError) {
+      console.warn('Could not retrieve Stripe capabilities, using defaults:', capError.message);
+    }
+
+    // Prepare payment methods to insert
+    const methodsToInsert = [];
+    let sortOrder = 0;
+
+    for (const pm of STRIPE_PAYMENT_METHODS) {
+      // Skip if already exists (check by provider:code combination)
+      if (existingCodes.has(`stripe:${pm.code}`)) {
+        console.log(`⏭️ Skipping ${pm.code} - already exists for Stripe provider`);
+        continue;
+      }
+
+      // Skip if not enabled in Stripe account
+      if (!enabledTypes.has(pm.stripeType)) {
+        console.log(`⏭️ Skipping ${pm.code} - not enabled in Stripe account`);
+        continue;
+      }
+
+      methodsToInsert.push({
+        name: pm.name,
+        code: pm.code,
+        type: 'stripe',
+        payment_flow: 'online',
+        description: pm.description,
+        settings: { stripe_type: pm.stripeType, icon: pm.icon },
+        provider: 'stripe',
+        is_active: true,
+        sort_order: sortOrder++,
+        store_id: storeId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+
+    if (methodsToInsert.length === 0) {
+      console.log('ℹ️ No new Stripe payment methods to insert');
+      return { inserted: 0 };
+    }
+
+    // Insert all payment methods
+    const { data: inserted, error } = await tenantDb
+      .from('payment_methods')
+      .insert(methodsToInsert)
+      .select();
+
+    if (error) {
+      console.error('Error inserting Stripe payment methods:', error);
+      throw error;
+    }
+
+    console.log(`✅ Inserted ${inserted.length} Stripe payment methods for store ${storeId}`);
+    return { inserted: inserted.length, methods: inserted };
+
+  } catch (error) {
+    console.error('Failed to insert Stripe payment methods:', error);
+    // Don't throw - this is a non-critical operation
+    return { inserted: 0, error: error.message };
+  }
+}
+
+/**
+ * Hide/deactivate Stripe payment methods when disconnecting
+ * @param {string} storeId - Store ID
+ */
+async function hideStripePaymentMethods(storeId) {
+  try {
+    console.log(`🔧 Hiding Stripe payment methods for store ${storeId}...`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Deactivate all payment methods with provider = 'stripe'
+    const { data: updated, error } = await tenantDb
+      .from('payment_methods')
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('store_id', storeId)
+      .eq('provider', 'stripe')
+      .select();
+
+    if (error) {
+      console.error('Error hiding Stripe payment methods:', error);
+      throw error;
+    }
+
+    console.log(`✅ Deactivated ${updated?.length || 0} Stripe payment methods for store ${storeId}`);
+    return { deactivated: updated?.length || 0 };
+
+  } catch (error) {
+    console.error('Failed to hide Stripe payment methods:', error);
+    return { deactivated: 0, error: error.message };
+  }
+}
+
+/**
  * Handle stock issue for an order - notify customer and store, optionally refund
  * @param {Object} params - Parameters for handling stock issue
  * @param {Object} params.tenantDb - Tenant database connection
@@ -367,6 +563,10 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
           onboardingCompletedAt: new Date().toISOString()
         });
         console.log('Updated Stripe integration config with onboarding status');
+
+        // Insert Stripe payment methods now that onboarding is complete
+        const paymentMethodsResult = await insertStripePaymentMethods(store_id, stripeAccountId);
+        console.log(`Stripe payment methods insertion result:`, paymentMethodsResult);
       } catch (updateError) {
         console.error('Could not update Stripe config:', updateError.message);
       }
@@ -423,7 +623,9 @@ router.delete('/disconnect-stripe', authMiddleware, authorize(['admin', 'store_o
       });
     }
 
-    console.log(`Disconnected Stripe for store ${store_id}`);
+    // Hide/deactivate Stripe payment methods
+    const hideResult = await hideStripePaymentMethods(store_id);
+    console.log(`Disconnected Stripe for store ${store_id}, deactivated ${hideResult.deactivated} payment methods`);
 
     res.json({
       success: true,
@@ -702,6 +904,10 @@ router.post('/connect-oauth-callback', authMiddleware, authorize(['admin', 'stor
     });
 
     console.log(`Connected existing Stripe account ${connectedAccountId} to store ${store_id} via OAuth`);
+
+    // Insert available Stripe payment methods for the store
+    const paymentMethodsResult = await insertStripePaymentMethods(store_id, connectedAccountId);
+    console.log(`Stripe payment methods insertion result:`, paymentMethodsResult);
 
     res.json({
       success: true,
