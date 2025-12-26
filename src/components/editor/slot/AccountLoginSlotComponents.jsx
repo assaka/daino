@@ -1059,6 +1059,50 @@ const AccountCTASlot = createSlotComponent({
   render: (props) => <AccountCTASlotComponent {...props} />
 });
 
+/**
+ * AuthAgreementSlot - Terms and Privacy Policy agreement text
+ */
+const AuthAgreementSlotComponent = ({ slot }) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className={slot?.className || 'text-center text-sm text-gray-600'} style={slot?.styles}>
+      <p className="text-xs">
+        {replacePlaceholders(
+          t('auth.agree_signup_with_links', 'By creating an account, you agree to our {termsLink} and {privacyLink}.'),
+          {
+            termsLink: (
+              <a
+                href="/cms/terms-of-service"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                {t('common.terms_of_service', 'Terms of Service')}
+              </a>
+            ),
+            privacyLink: (
+              <a
+                href="/cms/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                {t('common.privacy_policy', 'Privacy Policy')}
+              </a>
+            )
+          }
+        )}
+      </p>
+    </div>
+  );
+};
+
+const AuthAgreementSlot = createSlotComponent({
+  name: 'AuthAgreementSlot',
+  render: (props) => <AuthAgreementSlotComponent {...props} />
+});
+
 // Register all components
 registerSlotComponent('UserProfileSlot', UserProfileSlot);
 registerSlotComponent('NavigationMenuSlot', NavigationMenuSlot);
@@ -1070,6 +1114,7 @@ registerSlotComponent('RegisterFormSlot', RegisterFormSlot);
 registerSlotComponent('AccountIntroHeroSlot', AccountIntroHeroSlot);
 registerSlotComponent('AccountBenefitsSlot', AccountBenefitsSlot);
 registerSlotComponent('AccountCTASlot', AccountCTASlot);
+registerSlotComponent('AuthAgreementSlot', AuthAgreementSlot);
 
 export {
   UserProfileSlot,
@@ -1081,5 +1126,6 @@ export {
   RegisterFormSlot,
   AccountIntroHeroSlot,
   AccountBenefitsSlot,
-  AccountCTASlot
+  AccountCTASlot,
+  AuthAgreementSlot
 };

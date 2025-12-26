@@ -6,7 +6,6 @@ import { setRoleBasedAuthData } from "@/utils/auth";
 import { Auth as AuthService, User } from "@/api/entities";
 import apiClient from "@/api/client";
 import StoreOwnerAuthLayout from "@/components/admin/StoreOwnerAuthLayout";
-import CustomerAuthLayout from "@/components/storefront/CustomerAuthLayout";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 // Helper function to clear logout state and retry authentication
@@ -736,25 +735,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
   };
 
   // Render appropriate layout based on role
-  if (role === 'customer') {
-    return (
-      <CustomerAuthLayout
-        loading={loading}
-        error={error}
-        success={success}
-        onAuth={handleAuth}
-        onGoogleAuth={handleGoogleAuth}
-      />
-    );
-  } else {
-    return (
-      <StoreOwnerAuthLayout
-        loading={loading}
-        error={error}
-        success={success}
-        onAuth={handleAuth}
-        onGoogleAuth={handleGoogleAuth}
-      />
-    );
-  }
+  // Note: Customer authentication is now handled by slot-based components (AccountLoginSlotComponents.jsx)
+  // This middleware is only used for store owner authentication
+  return (
+    <StoreOwnerAuthLayout
+      loading={loading}
+      error={error}
+      success={success}
+      onAuth={handleAuth}
+      onGoogleAuth={handleGoogleAuth}
+    />
+  );
 }

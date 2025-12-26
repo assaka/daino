@@ -114,8 +114,9 @@ const loginConfig = {
 
     login_footer: {
       id: 'login_footer',
-      type: 'text',
-      content: '{{t "common.terms_agreement"}}',
+      type: 'component',
+      component: 'AuthAgreementSlot',
+      content: '',
       className: 'text-center text-sm text-gray-600',
       parentClassName: 'text-center',
       styles: { paddingTop: '20px', paddingBottom: '20px', gridColumn: '1 / -1' },
