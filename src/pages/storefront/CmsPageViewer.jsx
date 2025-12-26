@@ -187,7 +187,6 @@ export default function CmsPageViewer() {
                 pageTitle={pageTitle}
             />
             <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
-                <h1>{pageTitle}</h1>
                 <div dangerouslySetInnerHTML={{ __html: pageContent }} />
             </article>
 
