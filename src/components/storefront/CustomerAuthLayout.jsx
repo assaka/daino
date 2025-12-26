@@ -188,14 +188,21 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
 
               <p className="text-xs text-center text-gray-500 mt-3">
                 <span dangerouslySetInnerHTML={{
-                  __html: t(
-                    isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
-                    isLogin
-                      ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
-                      : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
-                  )
-                    .replace('{termsLink}', '<a href="/cms/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Terms of Service</a>')
-                    .replace('{privacyLink}', '<a href="/cms/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>')
+                  __html: (() => {
+                    const text = t(
+                      isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
+                      isLogin
+                        ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
+                        : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
+                    );
+
+                    const result = text
+                      .replace('{termsLink}', '<a href="/cms/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Terms of Service</a>')
+                      .replace('{privacyLink}', '<a href="/cms/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>');
+
+                    console.log('Agreement text:', { original: text, result });
+                    return result;
+                  })()
                 }} />
               </p>
             </form>

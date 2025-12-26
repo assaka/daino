@@ -40,8 +40,8 @@ VALUES
   ('6c05b36b-b525-4d55-81fe-b8857ed21572', 'sales', 'Sales', 'Receipt', NULL, NULL, 30, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('63e01829-d4b6-4e8e-a7f2-9578d4c7f394', 'content', 'Content', 'FileText', NULL, NULL, 40, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('a1b2c3d4-e5f6-7890-abcd-000000000002', 'analytics', 'Analytics', 'BarChart3', NULL, NULL, 45, true, true, NULL, NULL, NULL, 'Tracking and insights', NULL, NOW(), NOW(), 'standard'),
-  ('8ed2a4ed-f089-4d31-907c-4890a0fe3f93', 'marketing', 'Marketing', 'Mail', NULL, NULL, 50, true, true, NULL, NULL, NULL, 'Email campaigns and automations', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000003', 'crm', 'CRM', 'Users', NULL, NULL, 55, true, true, NULL, NULL, NULL, 'Sales pipeline and leads', NULL, NOW(), NOW(), 'standard'),
+  ('8ed2a4ed-f089-4d31-907c-4890a0fe3f93', 'marketing', 'Marketing', 'Mail', NULL, NULL, 50, true, false, NULL, NULL, NULL, 'Email campaigns and automations', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000003', 'crm', 'CRM', 'Users', NULL, NULL, 55, true, false, NULL, NULL, NULL, 'Sales pipeline and leads', NULL, NOW(), NOW(), 'standard'),
   ('245a141f-f41b-4e1c-9030-639681b0ac7d', 'import_export', 'Import & Export', 'Upload', NULL, NULL, 60, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('458e07de-a8b2-401a-91bb-bcb4bab85456', 'seo', 'SEO', 'Search', NULL, NULL, 70, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
   ('c8478891-a228-42c7-bf48-df2543ac9536', 'layout', 'Layout', 'Megaphone', NULL, NULL, 80, true, true, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 'standard'),
@@ -92,24 +92,24 @@ VALUES
   -- =============================================
   -- MARKETING CHILDREN (parent: marketing, order: 1, 2, 3...)
   -- =============================================
-  ('a1b2c3d4-e5f6-7890-abcd-000000000010', 'campaigns', 'Campaigns', 'Mail', '/admin/marketing/campaigns', 'marketing', 1, true, true, NULL, 'marketing', NULL, 'Email broadcasts and newsletters', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000011', 'automations', 'Automations', 'Workflow', '/admin/marketing/automations', 'marketing', 2, true, true, NULL, 'marketing', NULL, 'Abandoned cart, welcome series, and more', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000012', 'segments', 'Segments', 'UsersRound', '/admin/marketing/segments', 'marketing', 3, true, true, NULL, 'marketing', NULL, 'Audience builder and RFM segments', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000013', 'marketing_integrations', 'Integrations', 'Plug', '/admin/marketing/integrations', 'marketing', 4, true, true, NULL, 'marketing', NULL, 'Klaviyo, Mailchimp, HubSpot', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000010', 'campaigns', 'Campaigns', 'Mail', '/admin/marketing/campaigns', 'marketing', 1, true, false, NULL, 'marketing', NULL, 'Email broadcasts and newsletters', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000011', 'automations', 'Automations', 'Workflow', '/admin/marketing/automations', 'marketing', 2, true, false, NULL, 'marketing', NULL, 'Abandoned cart, welcome series, and more', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000012', 'segments', 'Segments', 'UsersRound', '/admin/marketing/segments', 'marketing', 3, true, false, NULL, 'marketing', NULL, 'Audience builder and RFM segments', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000013', 'marketing_integrations', 'Integrations', 'Plug', '/admin/marketing/integrations', 'marketing', 4, true, false, NULL, 'marketing', NULL, 'Klaviyo, Mailchimp, HubSpot', NULL, NOW(), NOW(), 'standard'),
 
   -- =============================================
   -- CRM CHILDREN (parent: crm, order: 1, 2, 3...)
   -- =============================================
-  ('a1b2c3d4-e5f6-7890-abcd-000000000020', 'crm_dashboard', 'Dashboard', 'LayoutDashboard', '/admin/crm', 'crm', 1, true, true, NULL, 'crm', NULL, 'CRM overview and metrics', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000021', 'crm_pipelines', 'Pipelines', 'GitBranch', '/admin/crm/pipelines', 'crm', 2, true, true, NULL, 'crm', NULL, 'Sales pipeline management', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000022', 'crm_deals', 'Deals', 'Handshake', '/admin/crm/deals', 'crm', 3, true, true, NULL, 'crm', NULL, 'Opportunities and sales tracking', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000023', 'crm_leads', 'Leads', 'UserPlus', '/admin/crm/leads', 'crm', 4, true, true, NULL, 'crm', NULL, 'Lead management and scoring', NULL, NOW(), NOW(), 'standard'),
-  ('a1b2c3d4-e5f6-7890-abcd-000000000024', 'crm_activities', 'Activities', 'ListTodo', '/admin/crm/activities', 'crm', 5, true, true, NULL, 'crm', NULL, 'Calls, meetings, and tasks', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000020', 'crm_dashboard', 'Dashboard', 'LayoutDashboard', '/admin/crm', 'crm', 1, true, false, NULL, 'crm', NULL, 'CRM overview and metrics', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000021', 'crm_pipelines', 'Pipelines', 'GitBranch', '/admin/crm/pipelines', 'crm', 2, true, false, NULL, 'crm', NULL, 'Sales pipeline management', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000022', 'crm_deals', 'Deals', 'Handshake', '/admin/crm/deals', 'crm', 3, true, false, NULL, 'crm', NULL, 'Opportunities and sales tracking', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000023', 'crm_leads', 'Leads', 'UserPlus', '/admin/crm/leads', 'crm', 4, true, false, NULL, 'crm', NULL, 'Lead management and scoring', NULL, NOW(), NOW(), 'standard'),
+  ('a1b2c3d4-e5f6-7890-abcd-000000000024', 'crm_activities', 'Activities', 'ListTodo', '/admin/crm/activities', 'crm', 5, true, false, NULL, 'crm', NULL, 'Calls, meetings, and tasks', NULL, NOW(), NOW(), 'standard'),
 
   -- =============================================
   -- IMPORT & EXPORT CHILDREN (parent: import_export, order: 1, 2, 3...)
   -- =============================================
-  ('571cf04b-2b04-428a-ad55-9192a56f7976', 'marketplace_hub', 'Marketplace Hub', 'ShoppingCart', '/admin/marketplace-hub', 'import_export', 1, true, true, NULL, 'import_export', NULL, 'Unified marketplace management: Amazon, eBay, and more with AI optimization', '{"text":"New","color":"blue","variant":"default"}'::jsonb, NOW(), NOW(), 'new'),
+  ('571cf04b-2b04-428a-ad55-9192a56f7976', 'marketplace_hub', 'Marketplace Hub', 'ShoppingCart', '/admin/marketplace-hub', 'import_export', 1, true, false, NULL, 'import_export', NULL, 'Unified marketplace management: Amazon, eBay, and more with AI optimization', '{"text":"New","color":"blue","variant":"default"}'::jsonb, NOW(), NOW(), 'new'),
   ('0162fe04-d1b3-4871-a92a-be7d54afd002', 'shopify_integration', 'Shopify', 'ShoppingBag', '/admin/shopify-integration', 'import_export', 2, true, true, NULL, 'import_export', NULL, NULL, NULL, NOW(), NOW(), NULL),
   ('4a706191-0c65-48c4-8efa-f355454fab8e', 'akeneo_integration', 'Akeneo', 'Database', '/admin/akeneo-integration', 'import_export', 3, true, true, NULL, 'import_export', NULL, NULL, NULL, NOW(), NOW(), 'beta'),
   ('5415ee5a-1276-4883-ac01-33d3dfcb1c2b', 'import_export_jobs', 'Jobs & Analytics', 'BarChart3', '/admin/import-export-jobs', 'import_export', 4, true, true, NULL, 'import_export', NULL, 'Monitor import/export jobs and view performance analytics', NULL, NOW(), NOW(), NULL),
