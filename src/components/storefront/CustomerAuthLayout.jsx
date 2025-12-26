@@ -187,51 +187,24 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
               />
 
               <p className="text-xs text-center text-gray-500 mt-3">
-                {(() => {
-                  const text = t(
-                    isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
-                    isLogin
-                      ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
-                      : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
-                  );
-
-                  console.log('Agreement text:', text);
-
-                  const parts = text.split(/(\{termsLink\}|\{privacyLink\})/);
-                  console.log('Split parts:', parts);
-
-                  return parts.map((part, index) => {
-                    if (part === '{termsLink}') {
-                      console.log('Rendering termsLink');
-                      return (
-                        <a
-                          key={`link-${index}`}
-                          href="/cms/terms-of-service"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          Terms of Service
-                        </a>
-                      );
-                    }
-                    if (part === '{privacyLink}') {
-                      console.log('Rendering privacyLink');
-                      return (
-                        <a
-                          key={`link-${index}`}
-                          href="/cms/privacy-policy"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          Privacy Policy
-                        </a>
-                      );
-                    }
-                    return <span key={`text-${index}`}>{part}</span>;
-                  });
-                })()}
+                By {isLogin ? 'signing in' : 'creating an account'}, you agree to our{' '}
+                <a
+                  href="/cms/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Terms of Service
+                </a>
+                {' '}and{' '}
+                <a
+                  href="/cms/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Privacy Policy
+                </a>.
               </p>
             </form>
 
