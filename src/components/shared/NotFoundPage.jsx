@@ -21,19 +21,13 @@ const NotFoundPage = () => {
       }
 
       try {
-        // Try to find a CMS page with 404 in slug for this store
-        // This handles both '404' and '404-{store-slug}' patterns
-        const allPages = await CmsPage.filter({ 
-          is_active: true, 
-          store_id: store.id 
+        // Try to find a CMS page with slug '404-page-not-found' for this store
+        const pages = await CmsPage.filter({
+          slug: '404-page-not-found',
+          is_active: true,
+          store_id: store.id
         });
-        
-        const pages = allPages.filter(page => 
-          page.slug === '404' || 
-          page.slug === `404-${store.slug}` ||
-          page.slug.includes('404')
-        );
-        
+
         if (pages && pages.length > 0) {
           setPage(pages[0]);
         }

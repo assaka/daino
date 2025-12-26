@@ -15,6 +15,7 @@ import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import storefrontApiClient from '@/api/storefront-client';
+import { SaveButton } from '@/components/ui/save-button';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -419,14 +420,13 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               {t('account.forgot_password', 'Forgot password?')}
             </button>
           </div>
-          <button
+          <SaveButton
             type="submit"
-            disabled={loading}
-            className="w-full btn-themed text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-            style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-          >
-            {loading ? t('common.signing_in', 'Signing in...') : t('common.sign_in', 'Sign In')}
-          </button>
+            loading={loading}
+            defaultText={t('common.sign_in', 'Sign In')}
+            loadingText={t('common.signing_in', 'Signing in...')}
+            className="w-full font-medium py-2.5 rounded-md"
+          />
         </form>
 
         {/* Forgot Password Modal */}
@@ -482,14 +482,13 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                   >
                     {t('common.cancel', 'Cancel')}
                   </button>
-                  <button
+                  <SaveButton
                     type="submit"
-                    disabled={forgotPasswordLoading}
-                    className="flex-1 btn-themed text-white font-medium py-2.5 rounded-md disabled:bg-gray-400"
-                    style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-                  >
-                    {forgotPasswordLoading ? t('common.sending', 'Sending...') : t('account.send_reset_link', 'Send Reset Link')}
-                  </button>
+                    loading={forgotPasswordLoading}
+                    defaultText={t('account.send_reset_link', 'Send Reset Link')}
+                    loadingText={t('common.sending', 'Sending...')}
+                    className="flex-1 font-medium py-2.5 rounded-md"
+                  />
                 </div>
               </form>
             )}
@@ -825,14 +824,13 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
             </button>
           </div>
         </div>
-        <button
+        <SaveButton
           type="submit"
-          disabled={loading}
-          className="w-full btn-themed text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-          style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
-        >
-          {loading ? t('common.creating', 'Creating...') : t('common.create_account', 'Create My Account')}
-        </button>
+          loading={loading}
+          defaultText={t('common.create_account', 'Create My Account')}
+          loadingText={t('common.creating', 'Creating...')}
+          className="w-full font-medium py-2.5 rounded-md"
+        />
       </form>
 
       {/* Email Not Configured Modal - Shows in preview mode when email provider is not set up */}

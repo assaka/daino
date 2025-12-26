@@ -37,6 +37,10 @@ const CmsBlock = sequelize.define('CmsBlock', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  is_system: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
   // Foreign key
   store_id: {
     type: DataTypes.UUID,

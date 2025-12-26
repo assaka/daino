@@ -72,7 +72,7 @@ export default function SitemapPublic() {
                 const categoryData = htmlSitemapSettings.include_categories ? (storeCategories || []) : [];
 
                 // Filter out only 404 page from sitemap - other system pages like privacy policy should be included
-                const sitemapPages = (pageData || []).filter(page => page.slug !== '404' && page.slug !== 'not-found');
+                const sitemapPages = (pageData || []).filter(page => page.slug !== '404-page-not-found');
 
                 console.log('Sitemap data fetched:', {
                     categories: categoryData,

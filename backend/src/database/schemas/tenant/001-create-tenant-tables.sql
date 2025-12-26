@@ -1473,7 +1473,8 @@ CREATE TABLE IF NOT EXISTS cms_blocks (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   placement JSONB DEFAULT '["content"]'::jsonb,
-  demo BOOLEAN DEFAULT false
+  demo BOOLEAN DEFAULT false,
+  is_system BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS cms_page_seo (

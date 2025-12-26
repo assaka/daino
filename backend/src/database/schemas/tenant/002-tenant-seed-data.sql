@@ -8,6 +8,8 @@
 --   - admin_navigation_registry
 --   - categories
 --   - category_translations
+--   - cms_blocks
+--   - cms_block_translations
 --   - cms_pages
 --   - cms_page_translations
 --   - cookie_consent_settings
@@ -311,6 +313,52 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
   </div>
 </div>
 ', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00');
+
+-- cms_blocks (1 rows)
+INSERT INTO cms_blocks (id, identifier, is_active, sort_order, meta_title, meta_description, meta_keywords, store_id, created_at, updated_at, placement, demo, is_system)
+VALUES
+  ('f1e2d3c4-b5a6-9788-0123-456789abcdef', 'footer', true, 0, NULL, NULL, NULL, '{{STORE_ID}}', NOW(), NOW(), '["footer"]'::jsonb, false, true)
+ON CONFLICT DO NOTHING;
+
+-- cms_block_translations (1 rows)
+INSERT INTO cms_block_translations (cms_block_id, language_code, title, content, created_at, updated_at)
+VALUES
+  ('f1e2d3c4-b5a6-9788-0123-456789abcdef', 'en', 'Footer', '<footer class="bg-gray-800 text-white">
+  <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div>
+        <h3 class="text-sm font-semibold tracking-wider uppercase">Shop</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Categories</a></li>
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">New Arrivals</a></li>
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Best Sellers</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold tracking-wider uppercase">About</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Our Story</a></li>
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold tracking-wider uppercase">Support</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Contact Us</a></li>
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Shipping &amp; Returns</a></li>
+          <li><a href="#" class="text-base text-gray-300 hover:text-white">Sitemap</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold tracking-wider uppercase">Connect</h3>
+      </div>
+    </div>
+    <div class="mt-8 border-t border-gray-700 pt-8 text-center">
+      <p class="text-base text-gray-400">&copy; 2025 {{store_name}}. All rights reserved.</p>
+    </div>
+  </div>
+</footer>', NOW(), NOW())
+ON CONFLICT DO NOTHING;
 
 -- cookie_consent_settings (1 rows)
 -- Note: privacy_policy_url uses {{STORE_SLUG}} placeholder which is replaced during provisioning
@@ -2392,16 +2440,14 @@ INSERT INTO "public"."pdf_template_translations" ("id", "pdf_template_id", "lang
 -- shipping_methods (3 rows)
 INSERT INTO shipping_methods (id, name, description, is_active, type, flat_rate_cost, free_shipping_min_order, weight_ranges, price_ranges, availability, countries, min_delivery_days, max_delivery_days, store_id, sort_order, created_at, updated_at, translations, conditions)
 VALUES
-  ('96ead2f0-d957-4c08-8685-4d0e41f4a4d4', 'Freeshipping', NULL, true, 'flat_rate', '0.00', '0.00', '[]'::jsonb, '[]'::jsonb, 'all', '[]'::jsonb, 1, 7, '{{STORE_ID}}', 0, '2025-07-27T17:37:18.979Z', '2025-10-23T05:01:37.173Z', '{"en":{"name":"Freeshipping","description":""}}'::jsonb, '{}'::jsonb),
-  ('34dfa5d3-f709-4c54-bad8-0bd9a8ae3dc4', 'DHL', '', true, 'flat_rate', '7.00', '0.00', '[]'::jsonb, '[]'::jsonb, 'all', '[]'::jsonb, 1, 7, '{{STORE_ID}}', 0, '2025-07-27T17:36:59.081Z', '2025-10-25T21:31:17.657Z', '{"en":{"name":"DHL-en","description":"dddd"},"nl":{"name":"dhl-nl","description":""}}'::jsonb, '{"skus":[],"categories":["702e7f39-e6f0-43f3-9ed1-f704c2c656fb"],"attribute_sets":[],"attribute_conditions":[]}'::jsonb)
+  ('96ead2f0-d957-4c08-8685-4d0e41f4a4d4', 'Freeshipping', NULL, true, 'flat_rate', '0.00', '0.00', '[]'::jsonb, '[]'::jsonb, 'all', '[]'::jsonb, 1, 7, '{{STORE_ID}}', 0, '2025-07-27T17:37:18.979Z', '2025-10-23T05:01:37.173Z', '{"en":{"name":"Freeshipping","description":""}}'::jsonb, '{}'::jsonb)
 ON CONFLICT DO NOTHING;
 
 
 -- shipping_method_translations (4 rows)
 INSERT INTO shipping_method_translations (shipping_method_id, language_code, name, description, created_at, updated_at)
 VALUES
-  ('96ead2f0-d957-4c08-8685-4d0e41f4a4d4', 'en', 'Freeshipping', '', '2025-10-24T16:42:27.634Z', '2025-10-24T16:42:27.634Z'),
-  ('34dfa5d3-f709-4c54-bad8-0bd9a8ae3dc4', 'en', 'DHL', '', '2025-10-24T16:42:27.715Z', '2025-10-25T23:31:17.657Z')
+  ('96ead2f0-d957-4c08-8685-4d0e41f4a4d4', 'en', 'Freeshipping', '', '2025-10-24T16:42:27.634Z', '2025-10-24T16:42:27.634Z')
 ON CONFLICT DO NOTHING;
 
 

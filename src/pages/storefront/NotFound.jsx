@@ -25,8 +25,8 @@ export default function NotFound() {
 
       try {
         setLoading(true);
-        // Try to fetch a CMS page with slug '404' or 'not-found' for this specific store
-        let pages = await CmsPage.filter({ slug: '404', is_active: true, store_id: store.id });
+        // Try to fetch a CMS page with slug '404-page-not-found' for this specific store
+        let pages = await CmsPage.filter({ slug: '404-page-not-found', is_active: true, store_id: store.id });
         setCmsPage(pages[0]);
       } catch (error) {
         console.error("Error fetching 404 CMS page:", error);

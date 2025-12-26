@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { SaveButton } from "@/components/ui/save-button";
 
 export default function CustomerAuthLayout({ loading, error, success, onAuth, onGoogleAuth }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -175,13 +176,13 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                 </div>
               )}
 
-              <Button
+              <SaveButton
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5"
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create My Account')}
-              </Button>
+                className="w-full font-medium py-2.5"
+                loading={loading}
+                defaultText={isLogin ? 'Sign In' : 'Create My Account'}
+                loadingText='Processing...'
+              />
             </form>
 
             <div className="mt-6">
