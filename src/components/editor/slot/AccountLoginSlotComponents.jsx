@@ -17,6 +17,40 @@ import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import storefrontApiClient from '@/api/storefront-client';
 import { SaveButton } from '@/components/ui/save-button';
 
+// Helper function to replace placeholders with React components
+const replacePlaceholders = (text, replacements) => {
+  const placeholderRegex = /\{(\w+)\}/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = placeholderRegex.exec(text)) !== null) {
+    // Add text before placeholder
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+
+    // Add replacement component
+    const placeholderName = match[1];
+    if (replacements[placeholderName]) {
+      parts.push(replacements[placeholderName]);
+    } else {
+      parts.push(match[0]); // Keep original if no replacement
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.map((part, index) =>
+    typeof part === 'string' ? <span key={index}>{part}</span> : React.cloneElement(part, { key: index })
+  );
+};
+
 /**
  * UserProfileSlot - User profile display with avatar and info
  */
@@ -420,6 +454,35 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               {t('account.forgot_password', 'Forgot password?')}
             </button>
           </div>
+
+          <p className="text-xs text-center text-gray-500">
+            {replacePlaceholders(
+              t('auth.agree_signin_with_links', 'By signing in, you agree to our {termsLink} and {privacyLink}.'),
+              {
+                termsLink: (
+                  <a
+                    href="/cms/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {t('common.terms_of_service', 'Terms of Service')}
+                  </a>
+                ),
+                privacyLink: (
+                  <a
+                    href="/cms/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {t('common.privacy_policy', 'Privacy Policy')}
+                  </a>
+                )
+              }
+            )}
+          </p>
+
           <SaveButton
             type="submit"
             loading={loading}
@@ -826,6 +889,35 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
             </button>
           </div>
         </div>
+
+        <p className="text-xs text-center text-gray-500">
+          {replacePlaceholders(
+            t('auth.agree_signup_with_links', 'By creating an account, you agree to our {termsLink} and {privacyLink}.'),
+            {
+              termsLink: (
+                <a
+                  href="/cms/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('common.terms_of_service', 'Terms of Service')}
+                </a>
+              ),
+              privacyLink: (
+                <a
+                  href="/cms/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('common.privacy_policy', 'Privacy Policy')}
+                </a>
+              )
+            }
+          )}
+        </p>
+
         <SaveButton
           type="submit"
           loading={loading}
