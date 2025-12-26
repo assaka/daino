@@ -9,6 +9,40 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { SaveButton } from "@/components/ui/save-button";
 import { useTranslation } from "@/contexts/TranslationContext";
 
+// Helper function to replace placeholders with React components
+const replacePlaceholders = (text, replacements) => {
+  const placeholderRegex = /\{(\w+)\}/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = placeholderRegex.exec(text)) !== null) {
+    // Add text before placeholder
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+
+    // Add replacement component
+    const placeholderName = match[1];
+    if (replacements[placeholderName]) {
+      parts.push(replacements[placeholderName]);
+    } else {
+      parts.push(match[0]); // Keep original if no replacement
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.map((part, index) =>
+    typeof part === 'string' ? <span key={index}>{part}</span> : React.cloneElement(part, { key: index })
+  );
+};
+
 export default function CustomerAuthLayout({ loading, error, success, onAuth, onGoogleAuth }) {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
@@ -187,24 +221,36 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
               />
 
               <p className="text-xs text-center text-gray-500 mt-3">
-                By {isLogin ? 'signing in' : 'creating an account'}, you agree to our{' '}
-                <a
-                  href="/cms/terms-of-service"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Terms of Service
-                </a>
-                {' '}and{' '}
-                <a
-                  href="/cms/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Privacy Policy
-                </a>.
+                {replacePlaceholders(
+                  t(
+                    isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
+                    isLogin
+                      ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
+                      : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
+                  ),
+                  {
+                    termsLink: (
+                      <a
+                        href="/cms/terms-of-service"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Terms of Service
+                      </a>
+                    ),
+                    privacyLink: (
+                      <a
+                        href="/cms/privacy-policy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Privacy Policy
+                      </a>
+                    )
+                  }
+                )}
               </p>
             </form>
 
