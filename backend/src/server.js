@@ -1114,7 +1114,7 @@ app.use('/api/orders', publicOrderRouter);
 app.use('/api/orders', authMiddleware, orderRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/attributes', authMiddleware, attributeRoutes);
-app.use('/api/cms-pages', authMiddleware, cmsRoutes);
+app.use('/api/cms-pages', cmsRoutes); // GET is public, other operations require auth (handled in route)
 app.use('/api/cms-blocks', authMiddleware, cmsBlockRoutes);
 app.use('/api/shipping', authMiddleware, shippingRoutes);
 app.use('/api/tax', authMiddleware, taxRoutes);

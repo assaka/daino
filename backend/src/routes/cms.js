@@ -321,7 +321,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
 // @route   POST /api/cms-pages/:id/translate
 // @desc    AI translate a single CMS page to target language
 // @access  Private
-router.post('/:id/translate', [
+router.post('/:id/translate', authMiddleware, [
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
 ], async (req, res) => {
@@ -395,7 +395,7 @@ router.post('/:id/translate', [
 // @route   POST /api/cms-pages/bulk-translate
 // @desc    AI translate all CMS pages in a store to target language
 // @access  Private
-router.post('/bulk-translate', [
+router.post('/bulk-translate', authMiddleware, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
@@ -550,66 +550,6 @@ router.post('/bulk-translate', [
     });
   } catch (error) {
     console.error('Bulk translate CMS pages error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error'
-    });
-  }
-});
-
-// @route   POST /api/cms-pages/create-system-pages
-// @desc    Create system pages (404, Privacy Policy) for a store
-// @access  Private (requires store access)
-router.post('/create-system-pages', async (req, res) => {
-  try {
-    const { store_id, store_name } = req.body;
-
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Store ID is required'
-      });
-    }
-
-    // Check store access
-    if (req.user.role !== 'admin') {
-      const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store_id);
-
-      if (!access) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied'
-        });
-      }
-    }
-
-    // Get store name if not provided
-    let storeName = store_name;
-    if (!storeName) {
-      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-      // Query by is_active rather than by ID - store_id is tenant identifier, not store UUID
-      const { data: storeData } = await tenantDb
-        .from('stores')
-        .select('name')
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
-
-      storeName = storeData?.name || 'Our Store';
-    }
-
-    // Create system pages using the utility function
-    const { createSystemPagesForTenant } = require('../utils/createSystemPages');
-    const createdPages = await createSystemPagesForTenant(store_id, storeName);
-
-    res.json({
-      success: true,
-      message: `Created ${createdPages.length} system page(s)`,
-      data: createdPages
-    });
-  } catch (error) {
-    console.error('Error creating system pages:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'

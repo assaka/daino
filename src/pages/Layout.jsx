@@ -188,8 +188,9 @@ function LayoutInner({ children, currentPageName }) {
         const isCustomerPath = location.pathname.startsWith('/customerdashboard');
         const isLandingPath = location.pathname === '/' || location.pathname === '/landing';
 
-        // Load navigation only if we're in admin area
-        if (!isStorefrontPath && !isCustomerPath && !isLandingPath) {
+        // Load navigation only if we're in admin area (check both path and page type)
+        // Exclude storefront pages like NotFound (404) from loading admin navigation
+        if (!isStorefrontPath && !isCustomerPath && !isLandingPath && !isStorefrontPageType) {
           await loadDynamicNavigation();
         }
     }
@@ -357,6 +358,9 @@ function LayoutInner({ children, currentPageName }) {
 
   // Use centralized config to check for pages that skip store context
   const skipStoreContext = shouldSkipStoreContext(location.pathname);
+
+  // Check if current page is a storefront page (used early in useEffect to prevent admin API calls)
+  const isStorefrontPageType = storefrontPages.includes(currentPageName);
 
   const isPublicPage = publicPages.includes(currentPageName) || skipStoreContext;
   const isStorefrontPage = storefrontPages.includes(currentPageName) && !skipStoreContext;
