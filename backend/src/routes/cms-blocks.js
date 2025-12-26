@@ -130,6 +130,15 @@ router.get('/', async (req, res) => {
       });
     }
 
+    // Sort by is_system (system blocks first), then by sort_order
+    filteredBlocks.sort((a, b) => {
+      // System blocks first
+      if (a.is_system && !b.is_system) return -1;
+      if (!a.is_system && b.is_system) return 1;
+      // Then by sort_order
+      return (a.sort_order || 0) - (b.sort_order || 0);
+    });
+
     // Apply pagination
     const total = filteredBlocks.length;
     const paginatedBlocks = filteredBlocks.slice(offset, offset + parseInt(limit));
