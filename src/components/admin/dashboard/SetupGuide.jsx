@@ -232,7 +232,7 @@ export const SetupGuide = ({ store }) => {
                 <ul className="space-y-4">
                     <li className="flex items-center justify-between">
                         <div className="flex items-center">
-                            {isDomainConnected ? (
+                            {hasCustomDomains ? (
                                 <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
                             ) : (
                                 <AlertCircle className="w-5 h-5 text-amber-600 mr-3" />
