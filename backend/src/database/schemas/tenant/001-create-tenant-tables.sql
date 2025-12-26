@@ -1737,6 +1737,69 @@ CREATE TABLE IF NOT EXISTS cron_jobs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS custom_domains (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+
+  -- Domain details
+  domain VARCHAR(255) NOT NULL,
+  subdomain VARCHAR(255),
+  is_primary BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT false,
+
+  -- Redirect configuration
+  is_redirect BOOLEAN DEFAULT false,
+  redirect_to VARCHAR(255),
+
+  -- DNS Configuration
+  dns_configured BOOLEAN DEFAULT false,
+  dns_provider VARCHAR(100),
+
+  -- Verification
+  verification_status VARCHAR(50) DEFAULT 'pending',
+  verification_method VARCHAR(50) DEFAULT 'txt',
+  verification_token VARCHAR(255),
+  verification_record_name VARCHAR(255),
+  verification_record_value VARCHAR(500),
+  verified_at TIMESTAMP WITH TIME ZONE,
+
+  -- SSL/TLS Certificate
+  ssl_status VARCHAR(50) DEFAULT 'pending',
+  ssl_provider VARCHAR(50) DEFAULT 'letsencrypt',
+  ssl_certificate_id VARCHAR(255),
+  ssl_issued_at TIMESTAMP WITH TIME ZONE,
+  ssl_expires_at TIMESTAMP WITH TIME ZONE,
+  ssl_auto_renew BOOLEAN DEFAULT true,
+
+  -- DNS Records
+  dns_records JSONB DEFAULT '[]',
+  cname_target VARCHAR(255),
+
+  -- Redirect configuration
+  redirect_to_https BOOLEAN DEFAULT true,
+  redirect_to_primary BOOLEAN DEFAULT false,
+
+  -- Custom configuration
+  custom_headers JSONB DEFAULT '{}',
+  custom_rewrites JSONB DEFAULT '[]',
+
+  -- CDN Configuration
+  cdn_enabled BOOLEAN DEFAULT false,
+  cdn_provider VARCHAR(50),
+  cdn_config JSONB DEFAULT '{}',
+
+  -- Analytics
+  last_accessed_at TIMESTAMP WITH TIME ZONE,
+  access_count INTEGER DEFAULT 0,
+
+  -- Metadata
+  notes TEXT,
+  metadata JSONB DEFAULT '{}',
+
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS custom_analytics_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,

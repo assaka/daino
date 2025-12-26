@@ -29,6 +29,32 @@ export const SetupGuide = ({ store }) => {
     const [showRestoreModal, setShowRestoreModal] = useState(false);
     const [restoringDemo, setRestoringDemo] = useState(false);
 
+    // Custom domains state (fetched from tenant DB)
+    const [customDomains, setCustomDomains] = useState([]);
+    const [loadingDomains, setLoadingDomains] = useState(true);
+
+    // Load custom domains from tenant database
+    useEffect(() => {
+        const loadCustomDomains = async () => {
+            if (!store?.id) return;
+
+            setLoadingDomains(true);
+            try {
+                const response = await apiClient.get('custom-domains');
+                if (response.success && response.domains) {
+                    setCustomDomains(response.domains);
+                }
+            } catch (error) {
+                console.error('Error loading custom domains:', error);
+                setCustomDomains([]);
+            } finally {
+                setLoadingDomains(false);
+            }
+        };
+
+        loadCustomDomains();
+    }, [store?.id]);
+
     // Load Stripe Connect status
     useEffect(() => {
         const loadStripeStatus = async () => {
@@ -55,8 +81,11 @@ export const SetupGuide = ({ store }) => {
         return null;
     }
 
-    const isDomainConnected = store.custom_domain && store.domain_status === 'active';
-    const hasCustomDomains = store.active_domain_count > 0;
+    // Check custom domains from tenant DB
+    const hasCustomDomains = customDomains.length > 0;
+    const activeDomains = customDomains.filter(d => d.verification_status === 'verified' || d.is_active);
+    const pendingDomains = customDomains.filter(d => d.verification_status === 'pending' && !d.is_active);
+    const isDomainConnected = activeDomains.some(d => d.is_primary && d.is_active);
     // Check if Stripe is connected from IntegrationConfig via API
     const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
     const stripeAccountId = stripeStatus?.account_id; // API returns account_id not accountId
@@ -243,9 +272,9 @@ export const SetupGuide = ({ store }) => {
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     {isDomainConnected
-                                        ? `Connected: ${store.custom_domain}`
+                                        ? `Connected: ${activeDomains.find(d => d.is_primary)?.domain || activeDomains[0]?.domain}`
                                         : hasCustomDomains
-                                            ? `You have ${store.active_domain_count} active domain${store.active_domain_count !== 1 ? 's' : ''}${store.pending_domain_count > 0 ? ` and ${store.pending_domain_count} pending` : ''}.`
+                                            ? `You have ${activeDomains.length} active domain${activeDomains.length !== 1 ? 's' : ''}${pendingDomains.length > 0 ? ` and ${pendingDomains.length} pending` : ''}.`
                                             : 'Make your store accessible at your own URL.'
                                     }
                                 </p>
