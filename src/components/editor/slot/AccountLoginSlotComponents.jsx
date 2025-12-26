@@ -892,7 +892,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
 
         <p className="text-xs text-center text-gray-500">
           {replacePlaceholders(
-            t('auth.agree_signup_with_links', 'fallbackBy creating an account, you agree to our {termsLink} and {privacyLink}.'),
+            t('auth.agree_signup_with_links', 'By creating an account, you agree to our {termsLink} and {privacyLink}.'),
             {
               termsLink: (
                 <a
@@ -1069,7 +1069,7 @@ const AuthAgreementSlotComponent = ({ slot }) => {
     <div className={slot?.className || 'text-center text-sm text-gray-600'} style={slot?.styles}>
       <p className="text-xs">
         {replacePlaceholders(
-          t('auth.agree_signup_with_links', 'fallback slot By creating an account, you agree to our {termsLink} and {privacyLink}.'),
+          t('common.terms_agreement', 'View our {termsLink} and {privacyLink}.'),
           {
             termsLink: (
               <a
