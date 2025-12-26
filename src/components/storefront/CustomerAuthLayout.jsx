@@ -187,23 +187,27 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
               />
 
               <p className="text-xs text-center text-gray-500 mt-3">
-                <span dangerouslySetInnerHTML={{
-                  __html: (() => {
-                    const text = t(
-                      isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
-                      isLogin
-                        ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
-                        : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
-                    );
-
-                    const result = text
-                      .replace('{termsLink}', '<a href="/cms/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Terms of Service</a>')
-                      .replace('{privacyLink}', '<a href="/cms/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>');
-
-                    console.log('Agreement text:', { original: text, result });
-                    return result;
-                  })()
-                }} />
+                {t(
+                  isLogin ? 'auth.agree_signin' : 'auth.agree_signup',
+                  isLogin ? 'By signing in, you agree to our' : 'By creating an account, you agree to our'
+                )}{' '}
+                <a
+                  href="/cms/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('auth.terms_of_service', 'Terms of Service')}
+                </a>
+                {' '}{t('common.and', 'and')}{' '}
+                <a
+                  href="/cms/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('auth.privacy_policy', 'Privacy Policy')}
+                </a>.
               </p>
             </form>
 
