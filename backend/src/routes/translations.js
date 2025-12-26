@@ -1207,72 +1207,105 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           throw new Error(`No translation table mapping for ${entityType.type}`);
         }
 
-        // Get entities with all language translations using raw SQL for performance
-        // Check for actual content, not just row existence
-        // Each entity type has different primary translation columns
-        const contentCheckMap = {
-          product_tab: `AND t.name IS NOT NULL AND t.name != ''`,
-          product: `AND t.name IS NOT NULL AND t.name != ''`,
-          category: `AND t.name IS NOT NULL AND t.name != ''`,
-          attribute: `AND t.label IS NOT NULL AND t.label != ''`,  // Attributes use 'label', not 'name'
-          cms_page: `AND t.title IS NOT NULL AND t.title != ''`,   // CMS Pages use 'title', not 'name'
-          cms_block: `AND t.title IS NOT NULL AND t.title != ''`,  // CMS Blocks use 'title', not 'name'
-          product_label: `AND t.text IS NOT NULL AND t.text != ''`, // Product Labels use 'text'
-          cookie_consent: `AND t.banner_text IS NOT NULL AND t.banner_text != ''`, // Cookie consent uses 'banner_text'
-          'email-template': `AND t.subject IS NOT NULL AND t.subject != ''`, // Email templates use 'subject'
-          'pdf-template': `AND t.html_template IS NOT NULL AND t.html_template != ''` // PDF templates use 'html_template'
+        // Map of primary content fields to check for non-empty values
+        const contentFieldMap = {
+          product_tab: 'name',
+          product: 'name',
+          category: 'name',
+          attribute: 'label',
+          cms_page: 'title',
+          cms_block: 'title',
+          product_label: 'text',
+          cookie_consent: 'banner_text',
+          'email-template': 'subject',
+          'pdf-template': 'html_template'
         };
 
-        const contentCheck = contentCheckMap[entityType.type] || `AND t.name IS NOT NULL AND t.name != ''`;
+        const contentField = contentFieldMap[entityType.type] || 'name';
 
-        const query = `
-          SELECT e.id
-          FROM ${entityType.table} e
-          WHERE e.store_id = $1
-          AND (
-            SELECT COUNT(DISTINCT t.language_code)
-            FROM ${translationTable} t
-            WHERE t.${entityIdColumn} = e.id
-            AND t.language_code = ANY($2)
-            ${contentCheck}
-          ) = $3
-        `;
-
+        // Get all entity IDs for this store
         let translatedCount = 0;
         try {
-          const translatedEntities = await tenantDb.raw(query, [store_id, languageCodes, languageCodes.length]);
-          translatedCount = translatedEntities?.rows?.length || 0;
+          const { data: entities, error: entitiesError } = await tenantDb
+            .from(entityType.table)
+            .select('id')
+            .eq('store_id', store_id);
+
+          if (entitiesError) throw entitiesError;
+
+          if (entities && entities.length > 0) {
+            const entityIds = entities.map(e => e.id);
+
+            // Get all translations for these entities with required languages and non-empty content
+            const { data: translations, error: transError } = await tenantDb
+              .from(translationTable)
+              .select(`${entityIdColumn}, language_code`)
+              .in(entityIdColumn, entityIds)
+              .in('language_code', languageCodes)
+              .not(contentField, 'is', null)
+              .neq(contentField, '');
+
+            if (transError) throw transError;
+
+            // Group translations by entity and count languages per entity
+            const languagesPerEntity = {};
+            for (const trans of (translations || [])) {
+              const entityId = trans[entityIdColumn];
+              if (!languagesPerEntity[entityId]) {
+                languagesPerEntity[entityId] = new Set();
+              }
+              languagesPerEntity[entityId].add(trans.language_code);
+            }
+
+            // Count entities that have ALL required languages
+            translatedCount = Object.values(languagesPerEntity).filter(
+              langSet => langSet.size === languageCodes.length
+            ).length;
+          }
         } catch (queryError) {
           console.error(`   ❌ Error querying translated entities for ${entityType.type}:`, queryError.message);
-          console.error(`   📋 Query was:`, query);
           // Continue with translatedCount = 0
         }
 
         // Find which languages are missing across all entities (with actual content)
         const missingLanguages = [];
-        for (const langCode of languageCodes) {
-          const missingQuery = `
-            SELECT COUNT(*) as missing_count
-            FROM ${entityType.table} e
-            WHERE e.store_id = $1
-            AND NOT EXISTS (
-              SELECT 1
-              FROM ${translationTable} t
-              WHERE t.${entityIdColumn} = e.id
-              AND t.language_code = $2
-              ${contentCheck}
-            )
-          `;
+        try {
+          // Get all entity IDs for this store
+          const { data: allEntities, error: allEntitiesError } = await tenantDb
+            .from(entityType.table)
+            .select('id')
+            .eq('store_id', store_id);
 
-          try {
-            const result = await tenantDb.raw(missingQuery, [store_id, langCode]);
+          if (allEntitiesError) throw allEntitiesError;
 
-            if (result?.rows?.[0] && parseInt(result.rows[0].missing_count) > 0) {
-              missingLanguages.push(langCode);
+          const allEntityIds = (allEntities || []).map(e => e.id);
+
+          if (allEntityIds.length > 0) {
+            for (const langCode of languageCodes) {
+              // Get translations for this language with non-empty content
+              const { data: langTranslations, error: langTransError } = await tenantDb
+                .from(translationTable)
+                .select(entityIdColumn)
+                .in(entityIdColumn, allEntityIds)
+                .eq('language_code', langCode)
+                .not(contentField, 'is', null)
+                .neq(contentField, '');
+
+              if (langTransError) throw langTransError;
+
+              // Create a set of entity IDs that have translations for this language
+              const translatedEntityIds = new Set((langTranslations || []).map(t => t[entityIdColumn]));
+
+              // Count entities missing this language
+              const missingCount = allEntityIds.filter(id => !translatedEntityIds.has(id)).length;
+
+              if (missingCount > 0) {
+                missingLanguages.push(langCode);
+              }
             }
-          } catch (err) {
-            console.error(`Error checking missing translations for ${langCode}:`, err);
           }
+        } catch (err) {
+          console.error(`Error checking missing translations for ${entityType.type}:`, err);
         }
 
         const completionPercentage = totalItems > 0
@@ -1333,55 +1366,74 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           missingLanguages: []
         });
       } else {
-        // Get total count of attribute values
-        const countQuery = `
-          SELECT COUNT(*) as count
-          FROM attribute_values
-          WHERE attribute_id = ANY($1)
-        `;
+        // Get total count of attribute values using Supabase query
+        const { count: totalItems, error: countError } = await tenantDb
+          .from('attribute_values')
+          .select('*', { count: 'exact', head: true })
+          .in('attribute_id', attributeIds);
 
-        const countResult = await tenantDb.raw(countQuery, [attributeIds]);
-        const totalItems = parseInt(countResult?.rows?.[0]?.count || 0);
+        if (countError) throw countError;
 
-        // Get count of attribute values with all translations
-        const translatedQuery = `
-          SELECT COUNT(DISTINCT av.id) as count
-          FROM attribute_values av
-          WHERE av.attribute_id = ANY($1)
-          AND (
-            SELECT COUNT(DISTINCT t.language_code)
-            FROM attribute_value_translations t
-            WHERE t.attribute_value_id = av.id
-            AND t.language_code = ANY($2)
-          ) = $3
-        `;
+        // Get all attribute value IDs
+        const { data: allAttrValues, error: attrValuesError } = await tenantDb
+          .from('attribute_values')
+          .select('id')
+          .in('attribute_id', attributeIds);
 
-        const translatedResult = await tenantDb.raw(translatedQuery, [attributeIds, languageCodes, languageCodes.length]);
-        const translatedCount = parseInt(translatedResult?.rows?.[0]?.count || 0);
+        if (attrValuesError) throw attrValuesError;
 
-        // Find missing languages for attribute values
+        const attrValueIds = (allAttrValues || []).map(av => av.id);
+        let translatedCount = 0;
         const missingLanguages = [];
-        for (const langCode of languageCodes) {
-          const missingQuery = `
-            SELECT COUNT(*) as missing_count
-            FROM attribute_values av
-            WHERE av.attribute_id = ANY($1)
-            AND NOT EXISTS (
-              SELECT 1
-              FROM attribute_value_translations t
-              WHERE t.attribute_value_id = av.id
-              AND t.language_code = $2
-            )
-          `;
 
-          try {
-            const result = await tenantDb.raw(missingQuery, [attributeIds, langCode]);
+        if (attrValueIds.length > 0) {
+          // Get all translations for these attribute values with required languages
+          const { data: translations, error: transError } = await tenantDb
+            .from('attribute_value_translations')
+            .select('attribute_value_id, language_code')
+            .in('attribute_value_id', attrValueIds)
+            .in('language_code', languageCodes);
 
-            if (result?.rows?.[0] && parseInt(result.rows[0].missing_count) > 0) {
+          if (transError) throw transError;
+
+          // Group translations by attribute value and count languages per value
+          const languagesPerValue = {};
+          for (const trans of (translations || [])) {
+            const valueId = trans.attribute_value_id;
+            if (!languagesPerValue[valueId]) {
+              languagesPerValue[valueId] = new Set();
+            }
+            languagesPerValue[valueId].add(trans.language_code);
+          }
+
+          // Count attribute values that have ALL required languages
+          translatedCount = Object.values(languagesPerValue).filter(
+            langSet => langSet.size === languageCodes.length
+          ).length;
+
+          // Find missing languages for attribute values
+          for (const langCode of languageCodes) {
+            // Get translations for this language
+            const { data: langTranslations, error: langTransError } = await tenantDb
+              .from('attribute_value_translations')
+              .select('attribute_value_id')
+              .in('attribute_value_id', attrValueIds)
+              .eq('language_code', langCode);
+
+            if (langTransError) {
+              console.error(`Error checking attribute value translations for ${langCode}:`, langTransError);
+              continue;
+            }
+
+            // Create a set of attribute value IDs that have translations for this language
+            const translatedValueIds = new Set((langTranslations || []).map(t => t.attribute_value_id));
+
+            // Count attribute values missing this language
+            const missingCount = attrValueIds.filter(id => !translatedValueIds.has(id)).length;
+
+            if (missingCount > 0) {
               missingLanguages.push(langCode);
             }
-          } catch (err) {
-            console.error(`Error checking missing attribute value translations for ${langCode}:`, err);
           }
         }
 
@@ -2013,13 +2065,13 @@ router.post('/preview', authMiddleware, async (req, res) => {
           if (attributeIds.length === 0) {
             entityCount = 0;
           } else {
-            const countQuery = `
-              SELECT COUNT(*) as count
-              FROM attribute_values
-              WHERE attribute_id = ANY($1)
-            `;
-            const countResult = await tenantDb.raw(countQuery, [attributeIds]);
-            entityCount = parseInt(countResult?.rows?.[0]?.count || 0);
+            const { count: attrValueCount, error: attrValueCountError } = await tenantDb
+              .from('attribute_values')
+              .select('*', { count: 'exact', head: true })
+              .in('attribute_id', attributeIds);
+
+            if (attrValueCountError) throw attrValueCountError;
+            entityCount = attrValueCount || 0;
           }
         } else if (entityType === 'custom-option') {
           if (!store_id) continue;
