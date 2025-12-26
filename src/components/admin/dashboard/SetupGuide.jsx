@@ -226,8 +226,7 @@ export const SetupGuide = ({ store }) => {
         <>
         <Card className="mb-8 bg-blue-50 border-blue-200 material-elevation-1">
             <CardHeader>
-                <CardTitle className="text-blue-900">Finish Setting Up Your Store</CardTitle>
-                <CardDescription className="text-blue-700">Complete these steps to start selling.</CardDescription>
+                <CardTitle className="text-blue-900">Set Up Your Store</CardTitle>
             </CardHeader>
             <CardContent>
                 <ul className="space-y-4">
