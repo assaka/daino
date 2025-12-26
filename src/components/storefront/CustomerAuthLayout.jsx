@@ -221,36 +221,48 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
               />
 
               <p className="text-xs text-center text-gray-500 mt-3">
-                {replacePlaceholders(
-                  t(
-                    isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
-                    isLogin
-                      ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
-                      : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
-                  ),
-                  {
-                    termsLink: (
-                      <a
-                        href="/cms/terms-of-service"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline"
-                      >
-                        {t('common.terms_of_service', 'Terms of Service')}
-                      </a>
-                    ),
-                    privacyLink: (
-                      <a
-                        href="/cms/privacy-policy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline"
-                      >
-                        {t('common.privacy_policy', 'Privacy Policy')}
-                      </a>
-                    )
-                  }
-                )}
+                {(() => {
+                  const key = isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links';
+                  const fallback = isLogin
+                    ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
+                    : 'By creating an account, you agree to our {termsLink} and {privacyLink}.';
+
+                  const translatedText = t(key, fallback);
+                  console.log('🔍 Translation Debug:', {
+                    key,
+                    fallback,
+                    translatedText,
+                    hasPlaceholders: translatedText.includes('{termsLink}') || translatedText.includes('{privacyLink}'),
+                    termsOfService: t('common.terms_of_service', 'Terms of Service'),
+                    privacyPolicy: t('common.privacy_policy', 'Privacy Policy')
+                  });
+
+                  return replacePlaceholders(
+                    translatedText,
+                    {
+                      termsLink: (
+                        <a
+                          href="/cms/terms-of-service"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {t('common.terms_of_service', 'Terms of Service')}
+                        </a>
+                      ),
+                      privacyLink: (
+                        <a
+                          href="/cms/privacy-policy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {t('common.privacy_policy', 'Privacy Policy')}
+                        </a>
+                      )
+                    }
+                  );
+                })()}
               </p>
             </form>
 
