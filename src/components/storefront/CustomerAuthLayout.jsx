@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { SaveButton } from "@/components/ui/save-button";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function CustomerAuthLayout({ loading, error, success, onAuth, onGoogleAuth }) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -183,6 +185,30 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                 defaultText={isLogin ? 'Sign In' : 'Create My Account'}
                 loadingText='Processing...'
               />
+
+              <p className="text-xs text-center text-gray-500 mt-3">
+                {t(
+                  isLogin ? 'auth.agree_signin' : 'auth.agree_signup',
+                  isLogin ? 'By signing in, you agree to our' : 'By creating an account, you agree to our'
+                )}{' '}
+                <a
+                  href="/cms/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('auth.terms_of_service', 'Terms of Service')}
+                </a>
+                {' '}{t('common.and', 'and')}{' '}
+                <a
+                  href="/cms/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('auth.privacy_policy', 'Privacy Policy')}
+                </a>
+              </p>
             </form>
 
             <div className="mt-6">

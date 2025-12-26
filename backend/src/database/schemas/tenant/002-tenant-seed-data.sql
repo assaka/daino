@@ -161,15 +161,16 @@ INSERT INTO category_translations (category_id, language_code, name, description
 SELECT id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()
 FROM categories WHERE slug = 'root-catalog';
 
--- cms_pages (3 rows)
+-- cms_pages (4 rows)
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)
 VALUES
   ('bbb26804-4ff2-4e8b-ba2b-e8c203704176', '404-page-not-found', true, '404 - Page Not Found | {{store_name}}', 'Sorry, we couldn''t find the page you''re looking for. Browse our products or contact us for assistance.', '404, page not found, error, help', 'noindex, nofollow', '{{STORE_ID}}', '[]'::jsonb, NULL, 0, '2025-08-03T13:25:59.349Z', '2025-10-23T14:32:28.325Z', true, '{}'::jsonb),
-  ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'privacy-policy', true, 'Privacy Policy | {{store_name}}', 'Learn how {{store_name}} collects, uses, and protects your personal information. Read our privacy policy for details on data protection and your rights.', 'privacy policy, data protection, personal information, privacy rights, GDPR', 'index, follow', '{{STORE_ID}}', '[]'::jsonb, NULL, 9998, '2025-10-23T15:34:30.823Z', '2025-10-23T15:34:30.823Z', true, '{}'::jsonb)
+  ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'privacy-policy', true, 'Privacy Policy | {{store_name}}', 'Learn how {{store_name}} collects, uses, and protects your personal information. Read our privacy policy for details on data protection and your rights.', 'privacy policy, data protection, personal information, privacy rights, GDPR', 'index, follow', '{{STORE_ID}}', '[]'::jsonb, NULL, 9998, '2025-10-23T15:34:30.823Z', '2025-10-23T15:34:30.823Z', true, '{}'::jsonb),
+  ('c90291e1-764b-47f4-a73c-2bcc0189c9da', 'terms-of-service', true, 'Terms of Service | {{store_name}}', 'Read the terms and conditions for using {{store_name}}. Understand your rights and responsibilities when shopping with us.', 'terms of service, terms and conditions, user agreement, terms of use', 'index, follow', '{{STORE_ID}}', '[]'::jsonb, NULL, 9997, NOW(), NOW(), true, '{}'::jsonb)
 ON CONFLICT DO NOTHING;
 
 
--- cms_page_translations (6 rows)
+-- cms_page_translations (7 rows)
 INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "title", "content", "excerpt", "created_at", "updated_at") VALUES ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'en', 'Privacy Policy', '<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
   <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
     Privacy Policy
@@ -312,7 +313,151 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
     </p>
   </div>
 </div>
-', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00');
+', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00'), ('c90291e1-764b-47f4-a73c-2bcc0189c9da', 'en', 'Terms of Service', '<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+  <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
+    Terms of Service
+  </h1>
+
+  <p style="color: #6B7280; margin-bottom: 2rem; font-size: 0.95rem;">
+    <em>Last updated: 26/12/2025</em>
+  </p>
+
+  <div style="line-height: 1.8; color: #374151;">
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Agreement to Terms</h2>
+      <p style="margin-bottom: 1rem;">
+        Welcome to {{store_name}}. By accessing or using our website and services, you agree to be bound by these Terms of Service.
+        If you do not agree with any part of these terms, you may not access our services.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Use of Our Services</h2>
+      <p style="margin-bottom: 0.5rem;">By using our services, you agree to:</p>
+      <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+        <li style="margin-bottom: 0.5rem;">Provide accurate and complete information when creating an account</li>
+        <li style="margin-bottom: 0.5rem;">Maintain the security of your account credentials</li>
+        <li style="margin-bottom: 0.5rem;">Use our services only for lawful purposes</li>
+        <li style="margin-bottom: 0.5rem;">Not engage in any activity that interferes with or disrupts our services</li>
+        <li style="margin-bottom: 0.5rem;">Comply with all applicable laws and regulations</li>
+      </ul>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Products and Orders</h2>
+      <p style="margin-bottom: 1rem;">
+        All product descriptions, prices, and availability are subject to change without notice. We reserve the right to
+        limit quantities, refuse orders, or discontinue products at any time. Prices do not include applicable taxes
+        or shipping charges unless otherwise stated.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        By placing an order, you are making an offer to purchase products. We reserve the right to accept or decline
+        your order for any reason. Order confirmation does not constitute acceptance of your order.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Payment Terms</h2>
+      <p style="margin-bottom: 1rem;">
+        Payment must be received in full before products are shipped. We accept various payment methods as indicated
+        during checkout. You agree to provide current, complete, and accurate payment information.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        You are responsible for all charges incurred under your account, including applicable taxes and shipping fees.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Shipping and Delivery</h2>
+      <p style="margin-bottom: 1rem;">
+        We will make reasonable efforts to deliver products within the estimated timeframe. However, delivery times
+        are estimates only and we are not liable for delays caused by circumstances beyond our control.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Risk of loss and title for products pass to you upon delivery to the shipping carrier.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Returns and Refunds</h2>
+      <p style="margin-bottom: 1rem;">
+        Please refer to our Returns Policy for detailed information about returns, exchanges, and refunds.
+        Generally, products must be returned in their original condition within the specified return period.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Refunds will be processed to the original payment method after we receive and inspect the returned items.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Intellectual Property</h2>
+      <p style="margin-bottom: 1rem;">
+        All content on this website, including text, graphics, logos, images, and software, is the property of
+        {{store_name}} or its content suppliers and is protected by copyright and other intellectual property laws.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        You may not reproduce, distribute, modify, or create derivative works from our content without express written permission.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Limitation of Liability</h2>
+      <p style="margin-bottom: 1rem;">
+        To the maximum extent permitted by law, {{store_name}} shall not be liable for any indirect, incidental,
+        special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly
+        or indirectly, or any loss of data, use, goodwill, or other intangible losses.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Warranties and Disclaimers</h2>
+      <p style="margin-bottom: 1rem;">
+        Our services are provided "as is" and "as available" without any warranties of any kind, either express or implied.
+        We do not warrant that our services will be uninterrupted, secure, or error-free.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Indemnification</h2>
+      <p style="margin-bottom: 1rem;">
+        You agree to indemnify and hold harmless {{store_name}} and its affiliates, officers, agents, and employees
+        from any claim or demand, including reasonable attorneys'' fees, made by any third party due to or arising
+        out of your breach of these Terms of Service or your violation of any law or rights of a third party.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Modifications to Terms</h2>
+      <p style="margin-bottom: 1rem;">
+        We reserve the right to modify these Terms of Service at any time. We will notify you of any changes by
+        posting the new Terms of Service on this page and updating the "Last updated" date.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Your continued use of our services after any changes constitutes acceptance of the new Terms of Service.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Governing Law</h2>
+      <p style="margin-bottom: 1rem;">
+        These Terms of Service shall be governed by and construed in accordance with the laws of the jurisdiction
+        in which {{store_name}} operates, without regard to its conflict of law provisions.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Contact Us</h2>
+      <p style="margin-bottom: 1rem;">
+        If you have any questions about these Terms of Service, please contact us at:
+      </p>
+      <div style="background-color: #F3F4F6; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+        <p style="margin: 0; color: #374151;">
+          <strong>Email:</strong> <a href="mailto:{{store_email}}" style="color: #2563EB; text-decoration: none;">{{store_email}}</a>
+        </p>
+      </div>
+    </section>
+  </div>
+</div>', null, NOW(), NOW());
 
 -- cms_blocks (1 rows)
 INSERT INTO cms_blocks (id, identifier, is_active, sort_order, meta_title, meta_description, meta_keywords, store_id, created_at, updated_at, placement, demo, is_system)
@@ -2451,7 +2596,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 
--- translations (378 rows)
+-- translations (383 rows)
 INSERT INTO translations (id, key, language_code, value, category, created_at, updated_at, type, store_id)
 VALUES
   ('a12568dd-1415-4fe7-808e-a300640683c7', 'customer_auth.error.store_not_available', 'en', 'Store information not available. Please refresh the page.', 'customer_auth', '2025-11-12T19:47:07.088Z', '2025-11-12T19:47:07.088Z', 'system', '{{STORE_ID}}'),
@@ -2478,6 +2623,11 @@ VALUES
   ('51d93783-702a-4a52-9ccd-ed9d57954422', 'auth.success.verification_sent', 'en', 'Verification code sent! Please check your email.', 'auth', '2025-11-12T19:02:35.990Z', '2025-11-12T20:08:48.241Z', 'system', '{{STORE_ID}}'),
   ('164b73a9-9269-4a54-9af0-ddf084370240', 'auth.error.server', 'en', 'Server error', 'auth', '2025-11-12T19:02:35.990Z', '2025-11-12T20:08:48.241Z', 'system', '{{STORE_ID}}'),
   ('c8bdc23f-03e6-4adc-a128-4be6da1ff277', 'auth.error.user_exists', 'en', 'User with this email already exists in the {tableName} table', 'auth', '2025-11-12T19:02:35.990Z', '2025-11-12T20:08:48.241Z', 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd01', 'auth.agree_signin', 'en', 'By signing in, you agree to our', 'auth', NOW(), NOW(), 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd02', 'auth.agree_signup', 'en', 'By creating an account, you agree to our', 'auth', NOW(), NOW(), 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd03', 'auth.terms_of_service', 'en', 'Terms of Service', 'auth', NOW(), NOW(), 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd04', 'auth.privacy_policy', 'en', 'Privacy Policy', 'auth', NOW(), NOW(), 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd05', 'common.and', 'en', 'and', 'common', NOW(), NOW(), 'system', '{{STORE_ID}}'),
   ('1d66644a-cf2f-4cc8-b5a9-1e63cdd73069', 'checkout.login_for_faster_checkout', 'en', 'Already have an account? Login for faster checkout', 'checkout', '2025-11-12T18:32:09.157Z', '2025-11-12T18:32:09.157Z', 'system', '{{STORE_ID}}'),
   ('5da0a9fa-d622-47af-aa08-e015d02581c3', 'checkout.special_instructions_placeholder', 'en', 'Enter any special instructions', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
   ('b427de52-6824-4352-bf1f-a5cf42ebf889', 'checkout.fee', 'en', 'Fee', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '{{STORE_ID}}'),
