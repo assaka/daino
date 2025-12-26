@@ -37,9 +37,17 @@ const SaveButton = React.forwardRef(({
   className,
   successTimeout = 2000,
   icon = null,
+  style,
   ...props
 }, ref) => {
   const isDisabled = disabled || loading || success;
+
+  // Default blue color when no style/backgroundColor is provided
+  const defaultBgColor = '#2563EB';
+  const buttonStyle = {
+    backgroundColor: success ? '#16a34a' : defaultBgColor,
+    ...style,
+  };
 
   return (
     <Button
@@ -48,11 +56,10 @@ const SaveButton = React.forwardRef(({
       disabled={isDisabled}
       size={size}
       className={cn(
-        success
-          ? "bg-green-600 hover:bg-green-700 text-white"
-          : "bg-blue-600 hover:bg-blue-700 text-white",
+        "btn-themed text-white",
         className
       )}
+      style={buttonStyle}
       {...props}
     >
       {loading ? (

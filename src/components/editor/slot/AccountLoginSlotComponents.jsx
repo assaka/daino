@@ -426,6 +426,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
             defaultText={t('common.sign_in', 'Sign In')}
             loadingText={t('common.signing_in', 'Signing in...')}
             className="w-full font-medium py-2.5 rounded-md"
+            style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
           />
         </form>
 
@@ -488,6 +489,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                     defaultText={t('account.send_reset_link', 'Send Reset Link')}
                     loadingText={t('common.sending', 'Sending...')}
                     className="flex-1 font-medium py-2.5 rounded-md"
+                    style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
                   />
                 </div>
               </form>
@@ -830,6 +832,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           defaultText={t('common.create_account', 'Create My Account')}
           loadingText={t('common.creating', 'Creating...')}
           className="w-full font-medium py-2.5 rounded-md"
+          style={{ backgroundColor: settings?.theme?.primary_button_color || getThemeDefaults().primary_button_color }}
         />
       </form>
 

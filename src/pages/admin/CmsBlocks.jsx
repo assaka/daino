@@ -338,6 +338,11 @@ export default function CmsBlocks() {
                         <Badge variant={block.is_active ? "default" : "secondary"}>
                           {block.is_active ? "Active" : "Inactive"}
                         </Badge>
+                        {block.is_system && (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                            System
+                          </Badge>
+                        )}
                         {block.demo && (
                           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
                             Demo

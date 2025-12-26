@@ -203,7 +203,8 @@ export default function StoreOwnerAuthLayout({ loading, error, success, onAuth, 
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full text-white transition-all hover:brightness-110"
+                style={{ backgroundColor: '#2563EB' }}
               >
                 {loading ? "Processing..." : (isLogin ? "Sign In" : "Sign Up")}
               </Button>

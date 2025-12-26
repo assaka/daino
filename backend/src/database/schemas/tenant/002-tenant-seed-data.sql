@@ -462,7 +462,7 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
 -- cms_blocks (1 rows)
 INSERT INTO cms_blocks (id, identifier, is_active, sort_order, meta_title, meta_description, meta_keywords, store_id, created_at, updated_at, placement, demo, is_system)
 VALUES
-  ('f1e2d3c4-b5a6-9788-0123-456789abcdef', 'footer', true, 0, NULL, NULL, NULL, '{{STORE_ID}}', NOW(), NOW(), '["footer"]'::jsonb, false, true)
+  ('f1e2d3c4-b5a6-9788-0123-456789abcdef', 'footer', true, 999999, NULL, NULL, NULL, '{{STORE_ID}}', NOW(), NOW(), '["footer"]'::jsonb, false, true)
 ON CONFLICT DO NOTHING;
 
 -- cms_block_translations (1 rows)
