@@ -31,11 +31,12 @@ router.get('/', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Get pages
+    // Get pages (system pages first, then by created_at)
     const { data: pages, error: pagesError, count } = await tenantDb
       .from('cms_pages')
       .select('*', { count: 'exact' })
       .eq('store_id', store_id)
+      .order('is_system', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .range(offset, offset + parseInt(limit) - 1);
 
