@@ -191,9 +191,11 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                   __html: t(
                     isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links',
                     isLogin
-                      ? 'By signing in, you agree to our <a href="/cms/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Terms of Service</a> and <a href="/cms/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>.'
-                      : 'By creating an account, you agree to our <a href="/cms/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Terms of Service</a> and <a href="/cms/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>.'
+                      ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
+                      : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
                   )
+                    .replace('{termsLink}', '<a href="/cms/terms-of-service" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Terms of Service</a>')
+                    .replace('{privacyLink}', '<a href="/cms/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>')
                 }} />
               </p>
             </form>
