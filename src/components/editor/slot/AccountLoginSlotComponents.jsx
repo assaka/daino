@@ -456,31 +456,45 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
           </div>
 
           <p className="text-xs text-center text-gray-500">
-            {replacePlaceholders(
-              t('auth.agree_signin_with_links', 'By signing in, you agree to our {termsLink} and {privacyLink}.'),
-              {
-                termsLink: (
-                  <a
-                    href="/cms/terms-of-service"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    {t('common.terms_of_service', 'Terms of Service')}
-                  </a>
-                ),
-                privacyLink: (
-                  <a
-                    href="/cms/privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    {t('common.privacy_policy', 'Privacy Policy')}
-                  </a>
-                )
-              }
-            )}
+            {(() => {
+              const hostname = window.location.hostname;
+              const protocol = window.location.protocol;
+              const isCustomDomain = !hostname.includes('dainostore.com') && !hostname.includes('localhost');
+
+              const termsUrl = isCustomDomain
+                ? `${protocol}//${hostname}/cms-page/terms-of-service`
+                : `${protocol}//${hostname}/public/${store?.slug || 'default'}/cms-page/terms-of-service`;
+
+              const privacyUrl = isCustomDomain
+                ? `${protocol}//${hostname}/cms-page/privacy-policy`
+                : `${protocol}//${hostname}/public/${store?.slug || 'default'}/cms-page/privacy-policy`;
+
+              return replacePlaceholders(
+                t('auth.agree_signin_with_links', 'By signing in, you agree to our {termsLink} and {privacyLink}.'),
+                {
+                  termsLink: (
+                    <a
+                      href={termsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {t('common.terms_of_service', 'Terms of Service')}
+                    </a>
+                  ),
+                  privacyLink: (
+                    <a
+                      href={privacyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {t('common.privacy_policy', 'Privacy Policy')}
+                    </a>
+                  )
+                }
+              );
+            })()}
           </p>
 
           <SaveButton
@@ -891,31 +905,45 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         </div>
 
         <p className="text-xs text-center text-gray-500">
-          {replacePlaceholders(
-            t('auth.agree_signup_with_links', 'By creating an account, you agree to our {termsLink} and {privacyLink}.'),
-            {
-              termsLink: (
-                <a
-                  href="/cms/terms-of-service"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  {t('common.terms_of_service', 'Terms of Service')}
-                </a>
-              ),
-              privacyLink: (
-                <a
-                  href="/cms/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  {t('common.privacy_policy', 'Privacy Policy')}
-                </a>
-              )
-            }
-          )}
+          {(() => {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const isCustomDomain = !hostname.includes('dainostore.com') && !hostname.includes('localhost');
+
+            const termsUrl = isCustomDomain
+              ? `${protocol}//${hostname}/cms-page/terms-of-service`
+              : `${protocol}//${hostname}/public/${store?.slug || 'default'}/cms-page/terms-of-service`;
+
+            const privacyUrl = isCustomDomain
+              ? `${protocol}//${hostname}/cms-page/privacy-policy`
+              : `${protocol}//${hostname}/public/${store?.slug || 'default'}/cms-page/privacy-policy`;
+
+            return replacePlaceholders(
+              t('auth.agree_signup_with_links', 'By creating an account, you agree to our {termsLink} and {privacyLink}.'),
+              {
+                termsLink: (
+                  <a
+                    href={termsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {t('common.terms_of_service', 'Terms of Service')}
+                  </a>
+                ),
+                privacyLink: (
+                  <a
+                    href={privacyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {t('common.privacy_policy', 'Privacy Policy')}
+                  </a>
+                )
+              }
+            );
+          })()}
         </p>
 
         <SaveButton
@@ -1064,6 +1092,20 @@ const AccountCTASlot = createSlotComponent({
  */
 const AuthAgreementSlotComponent = ({ slot }) => {
   const { t } = useTranslation();
+  const { store } = useStore();
+
+  // Build URLs based on current domain
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  const isCustomDomain = !hostname.includes('dainostore.com') && !hostname.includes('localhost');
+
+  const termsUrl = isCustomDomain
+    ? `${protocol}//${hostname}/cms-page/terms-of-service`
+    : `${protocol}//${hostname}/public/${store?.slug || 'default'}/cms-page/terms-of-service`;
+
+  const privacyUrl = isCustomDomain
+    ? `${protocol}//${hostname}/cms-page/privacy-policy`
+    : `${protocol}//${hostname}/public/${store?.slug || 'default'}/cms-page/privacy-policy`;
 
   return (
     <div className={slot?.className || 'text-center text-sm text-gray-600'} style={slot?.styles}>
@@ -1073,7 +1115,7 @@ const AuthAgreementSlotComponent = ({ slot }) => {
           {
             termsLink: (
               <a
-                href="/cms/terms-of-service"
+                href={termsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-800 underline"
@@ -1083,7 +1125,7 @@ const AuthAgreementSlotComponent = ({ slot }) => {
             ),
             privacyLink: (
               <a
-                href="/cms/privacy-policy"
+                href={privacyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-800 underline"
