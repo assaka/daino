@@ -2765,6 +2765,8 @@ VALUES
   ('da304738-eb36-4a6c-a3b9-a2fd7c65807b', 'common.subtotal', 'en', 'Subtotal', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('e6c16764-56e2-46f5-a03a-9cf3074d5f54', 'common.tax', 'en', 'Tax', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('a0b7d960-4672-4179-bdd6-e3a621239a1d', 'common.terms_agreement', 'en', 'By signing in, you agree to our Terms of Service and Privacy Policy', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd03', 'common.terms_of_service', 'en', 'Terms of Service', 'common', NOW(), NOW(), 'system', '{{STORE_ID}}'),
+  ('e1f2d3c4-b5a6-9788-0123-456789abcd04', 'common.privacy_policy', 'en', 'Privacy Policy', 'common', NOW(), NOW(), 'system', '{{STORE_ID}}'),
   ('9dee1130-2bd0-4bb0-87c0-edc0c85e2af3', 'common.total', 'en', 'Total', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('4a443dfe-0264-405f-9926-7673c68ba05e', 'common.welcome_back', 'en', 'Welcome Back', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),
   ('4a443dfe-0264-405f-9926-7673c68ba05e', 'common.welcome_back', 'en', 'Welcome Back', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '{{STORE_ID}}'),

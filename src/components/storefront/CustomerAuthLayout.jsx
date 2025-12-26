@@ -236,7 +236,7 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 underline"
                       >
-                        Terms of Service
+                        {t('common.terms_of_service', 'Terms of Service')}
                       </a>
                     ),
                     privacyLink: (
@@ -246,7 +246,7 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 underline"
                       >
-                        Privacy Policy
+                        {t('common.privacy_policy', 'Privacy Policy')}
                       </a>
                     )
                   }
