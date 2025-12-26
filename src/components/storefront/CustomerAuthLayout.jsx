@@ -45,6 +45,9 @@ const replacePlaceholders = (text, replacements) => {
 
 export default function CustomerAuthLayout({ loading, error, success, onAuth, onGoogleAuth }) {
   const { t } = useTranslation();
+
+  console.log('🚀 CustomerAuthLayout mounted, t function:', typeof t);
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -222,10 +225,14 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
 
               <p className="text-xs text-center text-gray-500 mt-3">
                 {(() => {
+                  console.log('📝 Agreement text rendering started');
+
                   const key = isLogin ? 'auth.agree_signin_with_links' : 'auth.agree_signup_with_links';
                   const fallback = isLogin
                     ? 'By signing in, you agree to our {termsLink} and {privacyLink}.'
                     : 'By creating an account, you agree to our {termsLink} and {privacyLink}.';
+
+                  console.log('🔑 Translation key:', key);
 
                   const translatedText = t(key, fallback);
                   console.log('🔍 Translation Debug:', {
@@ -237,31 +244,40 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                     privacyPolicy: t('common.privacy_policy', 'Privacy Policy')
                   });
 
-                  return replacePlaceholders(
-                    translatedText,
-                    {
-                      termsLink: (
-                        <a
-                          href="/cms/terms-of-service"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          {t('common.terms_of_service', 'Terms of Service')}
-                        </a>
-                      ),
-                      privacyLink: (
-                        <a
-                          href="/cms/privacy-policy"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          {t('common.privacy_policy', 'Privacy Policy')}
-                        </a>
-                      )
-                    }
-                  );
+                  console.log('🔧 Calling replacePlaceholders...');
+
+                  try {
+                    const result = replacePlaceholders(
+                      translatedText,
+                      {
+                        termsLink: (
+                          <a
+                            href="/cms/terms-of-service"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                          >
+                            {t('common.terms_of_service', 'Terms of Service')}
+                          </a>
+                        ),
+                        privacyLink: (
+                          <a
+                            href="/cms/privacy-policy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                          >
+                            {t('common.privacy_policy', 'Privacy Policy')}
+                          </a>
+                        )
+                      }
+                    );
+                    console.log('✅ replacePlaceholders succeeded');
+                    return result;
+                  } catch (error) {
+                    console.error('❌ replacePlaceholders error:', error);
+                    return translatedText;
+                  }
                 })()}
               </p>
             </form>
