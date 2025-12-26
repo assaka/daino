@@ -45,8 +45,9 @@ const SaveButton = React.forwardRef(({
   // Default blue color when no style/backgroundColor is provided
   const defaultBgColor = '#2563EB';
   const buttonStyle = {
-    backgroundColor: success ? '#16a34a' : defaultBgColor,
     ...style,
+    // Success state always shows green, overriding any passed backgroundColor
+    backgroundColor: success ? '#16a34a' : (style?.backgroundColor || defaultBgColor),
   };
 
   return (
