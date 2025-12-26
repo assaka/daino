@@ -7,19 +7,20 @@ This document analyzes all API calls made on storefront pages and provides recom
 ## Issues Found & Fixed ✅
 
 ### 1. Admin Navigation Called on Storefront (FIXED)
-**Issue:** `/api/admin/navigation` was being called on every page, including public storefront pages.
+**Issue:** `/api/admin/navigation` was being called on every page, including public storefront pages and 404 pages.
 
-**Root Cause:** Layout.jsx's `loadDynamicNavigation()` was called unconditionally in useEffect.
+**Root Cause:** Layout.jsx's `loadDynamicNavigation()` was called based only on URL path, not page type. This caused 404 pages to incorrectly load admin navigation.
 
-**Solution:** Added path checking to only load navigation on admin pages:
+**Solution:** Added both path and page type checking to only load navigation on admin pages:
 ```javascript
-// Only load navigation if we're in admin area
-if (!isStorefrontPath && !isCustomerPath && !isLandingPath) {
+// Load navigation only if we're in admin area (check both path and page type)
+// Exclude storefront pages like NotFound (404) from loading admin navigation
+if (!isStorefrontPath && !isCustomerPath && !isLandingPath && !isStorefrontPageType) {
   await loadDynamicNavigation();
 }
 ```
 
-**Impact:** Eliminates 1 unnecessary API call per storefront page load.
+**Impact:** Eliminates 1 unnecessary API call per storefront page load, including 404 pages.
 
 ---
 
