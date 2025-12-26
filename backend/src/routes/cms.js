@@ -26,16 +26,30 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, slug, is_active } = req.query;
     const offset = (page - 1) * limit;
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Get pages (system pages first, then by created_at)
-    const { data: pages, error: pagesError, count } = await tenantDb
+    // Build query with filters
+    let query = tenantDb
       .from('cms_pages')
       .select('*', { count: 'exact' })
-      .eq('store_id', store_id)
+      .eq('store_id', store_id);
+
+    // Add slug filter if provided
+    if (slug) {
+      query = query.eq('slug', slug);
+    }
+
+    // Add is_active filter if provided
+    if (is_active !== undefined) {
+      const isActiveValue = is_active === 'true' || is_active === true;
+      query = query.eq('is_active', isActiveValue);
+    }
+
+    // Get pages (system pages first, then by created_at)
+    const { data: pages, error: pagesError, count } = await query
       .order('is_system', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .range(offset, offset + parseInt(limit) - 1);
