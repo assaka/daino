@@ -56,17 +56,7 @@ export default function NotFound() {
         pageTitle={pageTitle || "Page Not Found"}
       />
       <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
-        <h1>{pageTitle || "404 - Page Not Found"}</h1>
         <div dangerouslySetInnerHTML={{ __html: pageContent }} />
-
-        <div className="flex gap-4 mt-8 not-prose">
-          <Link to={homeUrl}>
-            <Button>
-              <Home className="w-4 h-4 mr-2" />
-              Go to Homepage
-            </Button>
-          </Link>
-        </div>
       </article>
     </div>
   );
