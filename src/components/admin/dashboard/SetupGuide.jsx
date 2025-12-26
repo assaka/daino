@@ -56,7 +56,7 @@ export const SetupGuide = ({ store }) => {
     }
 
     const isDomainConnected = store.custom_domain && store.domain_status === 'active';
-    const needsPrimaryDomain = store.has_domains_without_primary && store.active_domain_count > 0;
+    const hasCustomDomains = store.active_domain_count > 0;
     // Check if Stripe is connected from IntegrationConfig via API
     const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
     const stripeAccountId = stripeStatus?.account_id; // API returns account_id not accountId
@@ -179,8 +179,7 @@ export const SetupGuide = ({ store }) => {
     const canProvisionDemo = store?.status === 'active' && !store?.published;
 
     // Only hide the setup guide if domain, Stripe, and email are connected
-    // Keep showing if any is incomplete, or if domains exist but no primary is set
-    if (isDomainConnected && !needsPrimaryDomain && isStripeConnected && emailConfigured) {
+    if (isDomainConnected && isStripeConnected && emailConfigured) {
         // Show a condensed version when everything is set up
         return (
             <Card className="mb-8 bg-green-50 border-green-200 material-elevation-1">
@@ -236,33 +235,31 @@ export const SetupGuide = ({ store }) => {
                         <div className="flex items-center">
                             {isDomainConnected ? (
                                 <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-                            ) : needsPrimaryDomain ? (
-                                <AlertCircle className="w-5 h-5 text-orange-500 mr-3" />
                             ) : (
                                 <AlertCircle className="w-5 h-5 text-amber-600 mr-3" />
                             )}
                             <div>
                                 <p className="font-semibold text-gray-800">
-                                    {isDomainConnected ? 'Domain Connected' : needsPrimaryDomain ? 'Set Primary Domain' : 'Connect Your Domain'}
+                                    {isDomainConnected ? 'Domain Connected' : hasCustomDomains ? 'Configure Custom Domain' : 'Add Custom Domain'}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     {isDomainConnected
                                         ? `Connected: ${store.custom_domain}`
-                                        : needsPrimaryDomain
-                                            ? `You have ${store.active_domain_count} active domain${store.active_domain_count > 1 ? 's' : ''} but no primary is set.`
+                                        : hasCustomDomains
+                                            ? `You have ${store.active_domain_count} active domain${store.active_domain_count !== 1 ? 's' : ''}${store.pending_domain_count > 0 ? ` and ${store.pending_domain_count} pending` : ''}.`
                                             : 'Make your store accessible at your own URL.'
                                     }
                                 </p>
                             </div>
                         </div>
                         <Button
-                            variant={isDomainConnected ? "secondary" : needsPrimaryDomain ? "default" : "default"}
+                            variant={isDomainConnected ? "secondary" : "default"}
                             size="sm"
                             onClick={() => navigate(createPageUrl('custom-domains'))}
-                            className={needsPrimaryDomain ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
+                            className="w-28"
                         >
                             <Globe className="w-4 h-4 mr-1" />
-                            {isDomainConnected ? 'Manage' : needsPrimaryDomain ? 'Set Primary' : 'Connect'}
+                            {isDomainConnected ? 'Manage' : hasCustomDomains ? 'Configure' : 'Add'}
                         </Button>
                     </li>
                     <li className="flex items-center justify-between">
@@ -293,6 +290,7 @@ export const SetupGuide = ({ store }) => {
                                     size="sm"
                                     onClick={() => navigate('/admin/payment-methods')}
                                     title="Manage payment settings"
+                                    className="w-28"
                                 >
                                     <Settings className="w-4 h-4 mr-1" />
                                     Manage
@@ -302,7 +300,7 @@ export const SetupGuide = ({ store }) => {
                                     variant="default"
                                     size="sm"
                                     onClick={() => navigate('/admin/payment-methods')}
-                                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                                    className="w-28 bg-orange-600 hover:bg-orange-700 text-white"
                                 >
                                     <CreditCard className="w-4 h-4 mr-2" />
                                     Connect
@@ -334,6 +332,7 @@ export const SetupGuide = ({ store }) => {
                             size="sm"
                             onClick={() => navigate(createPageUrl('email'))}
                             disabled={loadingEmail}
+                            className="w-28"
                         >
                             {loadingEmail ? (
                                 <>
@@ -375,7 +374,7 @@ export const SetupGuide = ({ store }) => {
                                 setSelectedPreset(store?.theme_preset || 'default');
                                 setShowThemeModal(true);
                             }}
-                            className={!hasThemePreset ? "border-violet-200 text-violet-600 hover:bg-violet-50" : ""}
+                            className={`w-28 ${!hasThemePreset ? "border-violet-200 text-violet-600 hover:bg-violet-50" : ""}`}
                         >
                             <Palette className="w-4 h-4 mr-1" />
                             {hasThemePreset ? 'Change' : 'Select'}
@@ -407,7 +406,7 @@ export const SetupGuide = ({ store }) => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setShowRestoreModal(true)}
-                                    className="border-amber-200 text-amber-600 hover:bg-amber-50"
+                                    className="w-28 border-amber-200 text-amber-600 hover:bg-amber-50"
                                 >
                                     <RefreshCw className="w-4 h-4 mr-1" />
                                     Clear Demo
@@ -417,7 +416,7 @@ export const SetupGuide = ({ store }) => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setShowDemoModal(true)}
-                                    className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                                    className="w-28 border-purple-200 text-purple-600 hover:bg-purple-50"
                                 >
                                     <Database className="w-4 h-4 mr-1" />
                                     Provision
