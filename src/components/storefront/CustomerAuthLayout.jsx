@@ -195,13 +195,17 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                       : 'By creating an account, you agree to our {termsLink} and {privacyLink}.'
                   );
 
+                  console.log('Agreement text:', text);
+
                   const parts = text.split(/(\{termsLink\}|\{privacyLink\})/);
+                  console.log('Split parts:', parts);
 
                   return parts.map((part, index) => {
                     if (part === '{termsLink}') {
+                      console.log('Rendering termsLink');
                       return (
                         <a
-                          key={index}
+                          key={`link-${index}`}
                           href="/cms/terms-of-service"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -212,9 +216,10 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                       );
                     }
                     if (part === '{privacyLink}') {
+                      console.log('Rendering privacyLink');
                       return (
                         <a
-                          key={index}
+                          key={`link-${index}`}
                           href="/cms/privacy-policy"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -224,7 +229,7 @@ export default function CustomerAuthLayout({ loading, error, success, onAuth, on
                         </a>
                       );
                     }
-                    return part;
+                    return <span key={`text-${index}`}>{part}</span>;
                   });
                 })()}
               </p>
