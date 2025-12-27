@@ -394,19 +394,23 @@ export default function DeliverySettings() { // Renamed the function component f
             <CardContent className="space-y-4">
               {deliverySettings.delivery_time_slots.map((slot, index) => ( // Updated to deliverySettings
                 <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                  <Input
-                    type="time"
-                    value={slot.start_time}
-                    onChange={(e) => updateTimeSlot(index, 'start_time', e.target.value)}
-                    className="w-32"
-                  />
-                  <span>to</span>
-                  <Input
-                    type="time"
-                    value={slot.end_time}
-                    onChange={(e) => updateTimeSlot(index, 'end_time', e.target.value)}
-                    className="w-32"
-                  />
+                  <div className="sm:flex">
+                    <div>
+                      <Input
+                        type="time"
+                        value={slot.start_time}
+                        onChange={(e) => updateTimeSlot(index, 'start_time', e.target.value)}
+                        className="w-32"
+                      />
+                      <span>to</span>
+                    </div>
+                    <Input
+                      type="time"
+                      value={slot.end_time}
+                      onChange={(e) => updateTimeSlot(index, 'end_time', e.target.value)}
+                      className="w-32"
+                    />
+                  </div>
                   <Switch
                     checked={slot.is_active}
                     onCheckedChange={(checked) => updateTimeSlot(index, 'is_active', checked)}

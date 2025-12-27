@@ -107,7 +107,7 @@ const SupabasePage = () => {
               : 'Connect your Supabase account for database and storage management'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-3 sm:pt-0">
           <Button
             onClick={handleSetAsDefaultDatabase}
             disabled={settingDefaultDatabase || isDefaultDatabase || !connectionStatus?.connected}

@@ -322,7 +322,7 @@ export default function TaxPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Name</th>
+                      <th className="text-left py-3 sm:px-4 font-medium text-gray-900">Name</th>
                       <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Description</th>
                       <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Countries</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Default</th>
@@ -332,9 +332,9 @@ export default function TaxPage() {
                   <tbody>
                     {filteredTaxes.map((tax) => (
                       <tr key={tax.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-4 px-4">
+                        <td className="py-4 sm:px-4">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <div className="hidden w-10 h-10 bg-blue-100 rounded-lg md:flex items-center justify-center">
                               <Receipt className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
@@ -357,7 +357,7 @@ export default function TaxPage() {
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          <div className="flex items-center gap-1.5">
+                          <div className="md:flex items-center gap-1.5">
                             {tax.is_default && (
                               <Badge className="bg-green-100 text-green-700">
                                 Default
