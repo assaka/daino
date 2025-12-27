@@ -2069,9 +2069,29 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
+    // Determine payment provider and method type
+    const paymentProvider = paymentMethodRecord?.provider || 'stripe';
+    let providerPaymentType = 'card'; // default
+
+    if (paymentProvider === 'stripe' && paymentMethodRecord?.settings?.stripe_type) {
+      providerPaymentType = paymentMethodRecord.settings.stripe_type;
+      console.log(`🔧 Using Stripe payment method type: ${providerPaymentType}`);
+    }
+    // Future: Add Adyen, Mollie handling here
+    // else if (paymentProvider === 'adyen') { ... }
+    // else if (paymentProvider === 'mollie') { ... }
+
+    // For now, only Stripe checkout is implemented
+    if (paymentProvider !== 'stripe') {
+      return res.status(400).json({
+        success: false,
+        message: `Payment provider '${paymentProvider}' is not yet supported for online checkout`
+      });
+    }
+
     // Build checkout session configuration
     const sessionConfig = {
-      payment_method_types: ['card'],
+      payment_method_types: [providerPaymentType],
       line_items: line_items,
       mode: 'payment',
       success_url: success_url || `${process.env.CORS_ORIGIN}/order-success?session_id={CHECKOUT_SESSION_ID}`,
