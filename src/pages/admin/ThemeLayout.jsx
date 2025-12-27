@@ -1253,7 +1253,7 @@ export default function ThemeLayout() {
 
                 <div className="space-y-8" onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); } }}>
                     <Card className="material-elevation-1 border-0">
-                        <CardHeader className="flex flex-row items-center justify-between">
+                        <CardHeader className="sm:flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
                                 <CardDescription>Customize colors and fonts, or select a preset theme.</CardDescription>
