@@ -992,7 +992,7 @@ export default function Products() {
             <h1 className="text-3xl font-bold text-gray-900">Products</h1>
             <p className="text-gray-600 mt-1">Manage your product catalog</p>
           </div>
-          <div className="sm:flex items-center gap-2">
+          <div className="sm:flex items-center gap-2 space-y-2">
             <Button
               onClick={() => setTranslationMode(!translationMode)}
               variant={translationMode ? "default" : "outline"}
