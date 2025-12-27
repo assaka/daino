@@ -205,6 +205,80 @@ async function insertStripePaymentMethods(storeId, stripeAccountId) {
 }
 
 /**
+ * Insert ALL Stripe payment methods regardless of capabilities
+ * Used for Standard accounts where capabilities aren't exposed
+ * @param {string} storeId - Store ID
+ */
+async function insertAllStripePaymentMethods(storeId) {
+  try {
+    console.log(`🔧 Inserting ALL Stripe payment methods for store ${storeId}...`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Ensure provider column exists
+    await ensureProviderColumn(tenantDb);
+
+    // Get existing payment methods to avoid duplicates
+    const { data: existingMethods } = await tenantDb
+      .from('payment_methods')
+      .select('code, provider')
+      .eq('store_id', storeId);
+
+    const existingCodes = new Set((existingMethods || []).map(m => `${m.provider || ''}:${m.code}`));
+
+    // Prepare payment methods to insert - ALL of them
+    const methodsToInsert = [];
+    let sortOrder = 0;
+
+    for (const pm of STRIPE_PAYMENT_METHODS) {
+      // Skip if already exists
+      if (existingCodes.has(`stripe:${pm.code}`)) {
+        console.log(`⏭️ Skipping ${pm.code} - already exists for Stripe provider`);
+        continue;
+      }
+
+      methodsToInsert.push({
+        name: pm.name,
+        code: pm.code,
+        type: 'stripe',
+        payment_flow: 'online',
+        description: pm.description,
+        settings: { stripe_type: pm.stripeType, icon: pm.icon },
+        provider: 'stripe',
+        is_active: true,
+        sort_order: sortOrder++,
+        store_id: storeId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+
+    if (methodsToInsert.length === 0) {
+      console.log('ℹ️ No new Stripe payment methods to insert');
+      return { inserted: 0 };
+    }
+
+    // Insert all payment methods
+    const { data: inserted, error } = await tenantDb
+      .from('payment_methods')
+      .insert(methodsToInsert)
+      .select();
+
+    if (error) {
+      console.error('Error inserting Stripe payment methods:', error);
+      throw error;
+    }
+
+    console.log(`✅ Inserted ${inserted.length} Stripe payment methods for store ${storeId}`);
+    return { inserted: inserted.length, methods: inserted };
+
+  } catch (error) {
+    console.error('Failed to insert all Stripe payment methods:', error);
+    return { inserted: 0, error: error.message };
+  }
+}
+
+/**
  * Hide/deactivate Stripe payment methods when disconnecting
  * @param {string} storeId - Store ID
  */
@@ -646,7 +720,7 @@ router.delete('/disconnect-stripe', authMiddleware, authorize(['admin', 'store_o
 // @access  Private
 router.post('/sync-stripe-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { store_id } = req.body;
+    const { store_id, force_all } = req.body;
 
     if (!store_id) {
       return res.status(400).json({
@@ -670,15 +744,25 @@ router.post('/sync-stripe-methods', authMiddleware, authorize(['admin', 'store_o
     const account = await stripe.accounts.retrieve(stripeAccountId);
     const capabilities = account.capabilities || {};
 
+    console.log('🔍 Stripe account type:', account.type);
+    console.log('🔍 Stripe capabilities:', JSON.stringify(capabilities, null, 2));
+
     // Insert/update payment methods
-    const result = await insertStripePaymentMethods(store_id, stripeAccountId);
+    // For Standard accounts (OAuth), force_all=true inserts all methods since capabilities aren't exposed
+    const result = force_all
+      ? await insertAllStripePaymentMethods(store_id)
+      : await insertStripePaymentMethods(store_id, stripeAccountId);
 
     res.json({
       success: true,
       message: `Synced Stripe payment methods`,
       data: {
         inserted: result.inserted,
+        accountType: account.type,
         capabilities: capabilities,
+        hint: account.type === 'standard'
+          ? 'Standard accounts do not expose payment method capabilities. Use force_all=true to insert all methods.'
+          : null,
         availablePaymentMethods: STRIPE_PAYMENT_METHODS.map(pm => ({
           code: pm.code,
           name: pm.name,

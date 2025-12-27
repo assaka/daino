@@ -285,7 +285,8 @@ export default function PaymentMethods() {
     setSyncingMethods(true);
     try {
       const response = await apiClient.post('payments/sync-stripe-methods', {
-        store_id: selectedStore.id
+        store_id: selectedStore.id,
+        force_all: true // Insert all methods for Standard accounts (OAuth connected)
       });
       const data = response.data?.data || response.data;
 
