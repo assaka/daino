@@ -1241,10 +1241,10 @@ export default function Products() {
                         {!translationMode && (
                           <>
                             <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">SKU</th>
-                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900">Price</th>
+                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900 text-sm md:text-base">Price</th>
                             <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Stock</th>
-                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900">Status</th>
-                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900 w-16 md:w-auto">Actions</th>
+                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900 text-sm md:text-base">Status</th>
+                            <th className="text-left py-3 px-1 md:px-4 font-medium text-gray-900 w-10 md:w-auto"></th>
                           </>
                         )}
                         {translationMode && (
@@ -1273,11 +1273,11 @@ export default function Products() {
                                 </button>
                               </td>
                             )}
-                            <td className="py-4 px-4">
+                            <td className="py-3 md:py-4 px-2 md:px-4">
                               {translationMode ? (
                                 <div className="space-y-3">
                                   <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
-                                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                       {product.images && product.images.length > 0 && !failedImages.has(product.id) ? (
                                         <img
                                           src={getPrimaryImageUrl(product.images)}
@@ -1348,8 +1348,8 @@ export default function Products() {
                                   })}
                                 </div>
                               ) : (
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div className="flex items-center space-x-2 md:space-x-3">
+                                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                     {product.images && product.images.length > 0 && !failedImages.has(product.id) ? (
                                       <img
                                         src={getPrimaryImageUrl(product.images)}
@@ -1358,12 +1358,12 @@ export default function Products() {
                                         onError={() => handleImageError(product.id)}
                                       />
                                     ) : (
-                                      <Package className="w-6 h-6 text-gray-400" />
+                                      <Package className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="font-medium text-gray-900">{getProductName(product)}</p>
-                                    <p className="text-sm text-gray-500 truncate max-w-xs">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-gray-900 text-sm md:text-base truncate">{getProductName(product)}</p>
+                                    <p className="hidden md:block text-sm text-gray-500 truncate max-w-xs">
                                       {getProductShortDescription(product)}
                                     </p>
                                   </div>
@@ -1375,8 +1375,8 @@ export default function Products() {
                                 <td className="hidden md:table-cell py-4 px-4">
                                   <span className="font-mono text-sm text-gray-600">{product.sku}</span>
                                 </td>
-                                <td className="py-4 px-2 md:px-4">
-                                  <span className="font-medium text-gray-900 text-sm md:text-base">${product.price}</span>
+                                <td className="py-3 md:py-4 px-2 md:px-4 whitespace-nowrap">
+                                  <span className="font-medium text-gray-900 text-sm">${product.price}</span>
                                   {product.compare_price && (
                                     <span className="hidden md:block text-sm text-green-600">
                                       Sale: ${product.compare_price}
@@ -1390,24 +1390,17 @@ export default function Products() {
                                     {product.stock_quantity}
                                   </span>
                                 </td>
-                                <td className="py-4 px-2 md:px-4">
-                                  <div className="flex items-center gap-1">
-                                    <Badge variant="outline" className={`text-xs md:text-sm ${statusColors[product.status]}`}>
-                                      {product.status}
-                                    </Badge>
-                                    {product.demo && (
-                                      <Badge variant="outline" className="hidden md:inline-flex bg-amber-50 text-amber-700 border-amber-300">
-                                        Demo
-                                      </Badge>
-                                    )}
-                                    {product.visibility === 'not_visible' && (
-                                      <EyeOff className="w-4 h-4 text-gray-500" />
-                                    )}
-                                  </div>
+                                <td className="py-3 md:py-4 px-2 md:px-4">
+                                  <Badge variant="outline" className={`text-xs ${statusColors[product.status]}`}>
+                                    {product.status}
+                                  </Badge>
+                                  {product.visibility === 'not_visible' && (
+                                    <EyeOff className="hidden md:inline w-4 h-4 text-gray-500 ml-1" />
+                                  )}
                                 </td>
                               </>
                             )}
-                            <td className="py-4 px-2 md:px-4">
+                            <td className="py-3 md:py-4 px-1 md:px-4">
                               {translationMode ? (
                                 <div className="flex items-center gap-2">
                                   <Button
