@@ -75,7 +75,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 variant="ghost"
                 size="sm"
                 onClick={switchToPlugins}
-                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                className={`hidden sm:block px-3 py-1 text-xs font-medium rounded transition-colors ${
                   currentMode === 'plugins'
                     ? 'bg-white shadow-sm text-gray-900'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -90,7 +90,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 variant="ghost"
                 size="sm"
                 onClick={switchToAIWorkspace}
-                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                className={`hidden sm:block px-3 py-1 text-xs font-medium rounded transition-colors ${
                   currentMode === 'aiworkspace'
                     ? 'bg-white shadow-sm text-gray-900'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
