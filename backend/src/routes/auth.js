@@ -916,29 +916,74 @@ router.patch('/me', require('../middleware/authMiddleware').authMiddleware, asyn
   }
 });
 
-// TODO: Google OAuth endpoints need refactoring for TENANT ONLY architecture
-// They currently depend on master DB User model and need to be updated to:
-// 1. Accept store_id in the OAuth flow
-// 2. Create/update users in tenant DB instead of master DB
-// 3. Update passport configuration to work with tenant databases
+// Google OAuth for Store Owners
+// Uses master database since store owners are not tenant-specific
+// They can own multiple stores across different tenants
 //
 // @route   GET /api/auth/google
-// @desc    Initiate Google OAuth (DISABLED - needs tenant refactoring)
+// @desc    Initiate Google OAuth for store owners
 // @access  Public
-router.get('/google', (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Google OAuth is temporarily disabled during tenant migration. Please use email/password login.'
-  });
+router.get('/google', (req, res, next) => {
+  // Check if Google OAuth is configured
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.status(503).json({
+      success: false,
+      message: 'Google OAuth is not configured. Please contact support.'
+    });
+  }
+
+  // Store the redirect URL in session for after callback
+  const redirectUrl = req.query.redirect || '/admin/onboarding';
+  req.session = req.session || {};
+  req.session.oauthRedirect = redirectUrl;
+
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+  })(req, res, next);
 });
 
 // @route   GET /api/auth/google/callback
-// @desc    Google OAuth callback (DISABLED - needs tenant refactoring)
+// @desc    Google OAuth callback - creates/updates user and redirects with token
 // @access  Public
-router.get('/google/callback', (req, res) => {
-  const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
-  res.redirect(`${corsOrigin}/auth?error=oauth_disabled`);
-});
+router.get('/google/callback',
+  passport.authenticate('google', { failureRedirect: '/admin/auth?error=oauth_failed', session: false }),
+  async (req, res) => {
+    try {
+      const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+      const user = req.user;
+
+      if (!user) {
+        console.error('❌ Google OAuth callback: No user returned');
+        return res.redirect(`${corsOrigin}/admin/auth?error=oauth_failed`);
+      }
+
+      // Generate JWT token for the user
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role || 'store_owner',
+          first_name: user.first_name,
+          last_name: user.last_name
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      console.log('✅ Google OAuth successful for:', user.email);
+
+      // Redirect to frontend with token
+      // Frontend will store the token and redirect appropriately
+      const redirectPath = req.session?.oauthRedirect || '/admin/onboarding';
+      res.redirect(`${corsOrigin}/admin/auth?token=${token}&oauth=success&redirect=${encodeURIComponent(redirectPath)}`);
+    } catch (error) {
+      console.error('❌ Google OAuth callback error:', error);
+      const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+      res.redirect(`${corsOrigin}/admin/auth?error=oauth_failed`);
+    }
+  }
+);
 
 // @route   POST /api/auth/logout
 // @desc    Logout user and log the event in tenant database
