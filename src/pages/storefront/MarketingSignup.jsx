@@ -139,8 +139,8 @@ export default function MarketingSignup() {
           className="relative z-10"
         >
           <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-8 transition-colors">
-            <Store className="w-6 h-6" />
-            <span className="font-bold text-xl">Catalyst</span>
+            <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
+            <span className="font-bold text-xl">DainoStore</span>
           </Link>
 
           <h1 className="text-4xl xl:text-5xl font-black text-white mb-6 leading-tight">
@@ -201,8 +201,8 @@ export default function MarketingSignup() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             {/* Mobile logo */}
             <div className="lg:hidden flex items-center gap-2 mb-6">
-              <Store className="w-6 h-6 text-indigo-600" />
-              <span className="font-bold text-xl text-slate-900">Catalyst</span>
+              <img src="/logo_red.svg" alt="DainoStore" className="h-12" />
+              <span className="font-bold text-xl text-slate-900">DainoStore</span>
             </div>
 
             <div className="text-center mb-8">
