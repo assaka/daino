@@ -706,9 +706,9 @@ export default function Categories() {
                 )}
                 <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
                   {category.hide_in_menu ? (
-                    <Folder className="w-4 h-4 text-white" />
+                    <Folder className="hidden sm:block w-4 h-4 text-white" />
                   ) : (
-                    <FolderOpen className="w-4 h-4 text-white" />
+                    <FolderOpen className="hidden sm:block w-4 h-4 text-white" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -726,7 +726,7 @@ export default function Categories() {
                     <span className="text-xs text-gray-500 font-mono">/{category.slug}</span>
                   </div>
                   {getCategoryDescription(category) && (
-                    <p className="text-xs text-gray-600 truncate mt-0.5">
+                    <p className="hidden sm:block text-xs text-gray-600 truncate mt-0.5">
                       {getCategoryDescription(category)}
                     </p>
                   )}
@@ -1006,11 +1006,11 @@ export default function Categories() {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="sm:flex space-y-2 sm:space-y-0 gap-2">
             <Button
               onClick={() => setShowDeleteAllConfirm(true)}
               variant="outline"
-              className="border-red-600 text-red-600 hover:bg-red-50"
+              className="mr-2border-red-600 text-red-600 hover:bg-red-50"
               disabled={!selectedStore || totalItems === 0}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -1019,7 +1019,7 @@ export default function Categories() {
             <Button
               onClick={() => setShowBulkTranslateDialog(true)}
               variant="outline"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              className="mr-2border-blue-600 text-blue-600 hover:bg-blue-50"
               disabled={!selectedStore || categories.length === 0}
             >
               <Languages className="w-4 h-4 mr-2" />
@@ -1104,7 +1104,7 @@ export default function Categories() {
 
                 {/* Manage Root Categories */}
                 <div className="mt-6 pt-6 border-t">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="sm:flex items-center justify-between mb-4">
                     <h4 className="text-md font-semibold">Manage Root Categories</h4>
                     <Button
                       onClick={() => {
