@@ -393,8 +393,8 @@ export default function DeliverySettings() { // Renamed the function component f
             </CardHeader>
             <CardContent className="space-y-4">
               {deliverySettings.delivery_time_slots.map((slot, index) => ( // Updated to deliverySettings
-                <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                  <div className="sm:flex space-y-2 sm:space-y-0">
+                <div key={index} className="flex items-center justify-between gap-4 p-4 border rounded-lg">
+                  <div className="sm:flex space-y-2 sm:space-y-0 sm:space-x-4">
                     <div className="flex items-center space-x-4 ">
                       <Input
                         type="time"
@@ -411,18 +411,20 @@ export default function DeliverySettings() { // Renamed the function component f
                       className="w-32"
                     />
                   </div>
-                  <Switch
-                    checked={slot.is_active}
-                    onCheckedChange={(checked) => updateTimeSlot(index, 'is_active', checked)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeTimeSlot(index)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex">
+                    <Switch
+                      checked={slot.is_active}
+                      onCheckedChange={(checked) => updateTimeSlot(index, 'is_active', checked)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeTimeSlot(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
               <Button type="button" variant="outline" onClick={addTimeSlot}>
