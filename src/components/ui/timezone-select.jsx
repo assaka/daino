@@ -65,17 +65,19 @@ export function TimezoneSelect({ value, onChange, placeholder = "Select timezone
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
         >
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 opacity-50" />
+          <div className="flex items-center gap-2 min-w-0">
+            <Clock className="h-4 w-4 opacity-50 shrink-0" />
             {selectedTimezone ? (
-              <div className="flex flex-col items-start">
-                <span className="font-medium">{selectedTimezone.label}</span>
-                <span className="text-xs text-muted-foreground">
+              <div className="flex flex-col items-start min-w-0">
+                {/* Show short label on mobile, full label on desktop */}
+                <span className="font-medium md:hidden truncate">{selectedTimezone.short}</span>
+                <span className="font-medium hidden md:block truncate">{selectedTimezone.label}</span>
+                <span className="text-xs text-muted-foreground hidden md:block">
                   {getCurrentTimeInTimezone(selectedTimezone.value)} • {selectedTimezone.offset}
                 </span>
               </div>
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-muted-foreground truncate">{placeholder}</span>
             )}
           </div>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
