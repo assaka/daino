@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from 'lucide-react';
+import {createPageUrl} from "@/utils/index.js";
 
 const getPlans = (freeCredits) => [
     {
@@ -139,17 +140,19 @@ export default function Pricing() {
                                 ))}
                             </ul>
 
-                            <Button
-                                className={`
-                                    w-full py-6 text-lg rounded-full font-bold transition-all duration-300
-                                    ${plan.popular
-                                    ? 'bg-white hover:bg-neutral-100 text-neutral-900'
-                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                }
-                                `}
-                            >
-                                {plan.name === "Free Setup" ? "START FREE" : plan.name === "Go Live" ? "GO LIVE" : "EXPLORE AI"}
-                            </Button>
+                            <Link to={createPageUrl("Onboarding")}>
+                                <Button
+                                    className={`
+                                        w-full py-6 text-lg rounded-full font-bold transition-all duration-300
+                                        ${plan.popular
+                                        ? 'bg-white hover:bg-neutral-100 text-neutral-900'
+                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                    }
+                                    `}
+                                >
+                                    {plan.name === "Free Setup" ? "START FREE" : plan.name === "Go Live" ? "GO LIVE" : "EXPLORE AI"}
+                                </Button>
+                            </Link>
                         </motion.div>
                     ))}
                 </div>

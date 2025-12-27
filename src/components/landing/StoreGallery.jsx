@@ -63,18 +63,6 @@ export default function StoreGallery() {
                         </motion.div>
                     ))}
                 </div>
-
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="text-center mt-12"
-                >
-                    <button className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors">
-                        View all stores →
-                    </button>
-                </motion.div>
             </div>
         </section>
     );
