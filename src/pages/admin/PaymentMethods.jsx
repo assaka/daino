@@ -62,6 +62,7 @@ export default function PaymentMethods() {
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [connectingExistingAccount, setConnectingExistingAccount] = useState(false);
   const [showStripeGuideModal, setShowStripeGuideModal] = useState(false);
+  const [syncingMethods, setSyncingMethods] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -275,6 +276,31 @@ export default function PaymentMethods() {
       setFlashMessage({ type: 'error', message: 'Failed to add payment method: ' + error.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSyncStripeMethods = async () => {
+    if (!selectedStore?.id) return;
+
+    setSyncingMethods(true);
+    try {
+      const response = await apiClient.post('payments/sync-stripe-methods', {
+        store_id: selectedStore.id
+      });
+      const data = response.data?.data || response.data;
+
+      if (data?.inserted > 0) {
+        setFlashMessage({ type: 'success', message: `Synced ${data.inserted} new Stripe payment methods!` });
+      } else {
+        setFlashMessage({ type: 'info', message: 'Payment methods are already up to date.' });
+      }
+
+      // Reload payment methods to show any new ones
+      loadPaymentMethods();
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to sync payment methods: ' + error.message });
+    } finally {
+      setSyncingMethods(false);
     }
   };
 
@@ -668,15 +694,34 @@ export default function PaymentMethods() {
                                 {stripeStatus.email}
                               </p>
                             )}
-                            {!hasStripeMethod && (
-                              <Button
-                                size="sm"
-                                onClick={handleAddStripeMethod}
-                                disabled={saving}
-                              >
-                                Add Method
-                              </Button>
-                            )}
+                            <div className="flex items-center justify-center gap-2">
+                              {!hasStripeMethod && (
+                                <Button
+                                  size="sm"
+                                  onClick={handleAddStripeMethod}
+                                  disabled={saving}
+                                >
+                                  Add Method
+                                </Button>
+                              )}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={handleSyncStripeMethods}
+                                      disabled={syncingMethods}
+                                    >
+                                      <RefreshCw className={`w-4 h-4 ${syncingMethods ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Sync payment methods from Stripe</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
                           </div>
                         ) : stripeStatus?.connected && !stripeStatus?.onboardingComplete ? (
                           <div className="space-y-3">
