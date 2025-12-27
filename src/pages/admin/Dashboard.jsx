@@ -608,7 +608,7 @@ export default function Dashboard() {
               <CardTitle className="text-xl font-bold text-gray-900">Store Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className={`w-16 h-16 ${performanceMetrics.salesGrowth >= 0 ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <TrendingUp className={`w-8 h-8 ${performanceMetrics.salesGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`} />
