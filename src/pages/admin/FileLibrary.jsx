@@ -377,7 +377,6 @@ const FileLibrary = () => {
             </div>
           </div>
         )}
-      </div>
 
       {/* Upload Area */}
       <div 
