@@ -641,6 +641,65 @@ router.delete('/disconnect-stripe', authMiddleware, authorize(['admin', 'store_o
   }
 });
 
+// @route   POST /api/payments/sync-stripe-methods
+// @desc    Sync/refresh Stripe payment methods based on current account capabilities
+// @access  Private
+router.post('/sync-stripe-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get Stripe config
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    if (!stripeConfig?.config_data?.accountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'No Stripe account connected to this store'
+      });
+    }
+
+    const stripeAccountId = stripeConfig.config_data.accountId;
+
+    // Get account capabilities for debugging
+    const account = await stripe.accounts.retrieve(stripeAccountId);
+    const capabilities = account.capabilities || {};
+
+    // Insert/update payment methods
+    const result = await insertStripePaymentMethods(store_id, stripeAccountId);
+
+    res.json({
+      success: true,
+      message: `Synced Stripe payment methods`,
+      data: {
+        inserted: result.inserted,
+        capabilities: capabilities,
+        availablePaymentMethods: STRIPE_PAYMENT_METHODS.map(pm => ({
+          code: pm.code,
+          name: pm.name,
+          stripeType: pm.stripeType,
+          enabled: capabilities[`${pm.stripeType}_payments`] === 'active' ||
+                   (pm.stripeType === 'card' && capabilities.card_payments === 'active') ||
+                   (pm.stripeType === 'apple_pay' && capabilities.card_payments === 'active') ||
+                   (pm.stripeType === 'google_pay' && capabilities.card_payments === 'active')
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Sync Stripe methods error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync Stripe payment methods',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/payments/link-existing-account
 // @desc    Link an existing Stripe account (for testing/development)
 // @access  Private
