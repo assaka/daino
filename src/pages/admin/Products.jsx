@@ -1189,7 +1189,7 @@ export default function Products() {
                     <thead>
                       <tr className="border-b border-gray-200">
                         {!translationMode && (
-                          <th className="text-left py-3 px-4 font-medium text-gray-900 w-12">
+                          <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900 w-12">
                             <button
                               onClick={handleSelectAll}
                               className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1204,7 +1204,7 @@ export default function Products() {
                             </button>
                           </th>
                         )}
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">
+                        <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900">
                           {translationMode ? (
                             <div className="space-y-2">
                               <div className="text-sm font-semibold text-gray-900">Product Translations</div>
@@ -1233,10 +1233,10 @@ export default function Products() {
                         {!translationMode && (
                           <>
                             <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">SKU</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-900">Price</th>
+                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900">Price</th>
                             <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Stock</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900">Status</th>
+                            <th className="text-left py-3 px-2 md:px-4 font-medium text-gray-900 w-16 md:w-auto">Actions</th>
                           </>
                         )}
                         {translationMode && (
@@ -1252,7 +1252,7 @@ export default function Products() {
                         return (
                           <tr key={product.id} className={`border-b border-gray-100 hover:bg-gray-50 ${selectedProducts.has(product.id) ? 'bg-blue-50' : ''}`}>
                             {!translationMode && (
-                              <td className="py-4 px-4">
+                              <td className="hidden md:table-cell py-4 px-4">
                                 <button
                                   onClick={() => handleSelectProduct(product.id)}
                                   className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1367,10 +1367,10 @@ export default function Products() {
                                 <td className="hidden md:table-cell py-4 px-4">
                                   <span className="font-mono text-sm text-gray-600">{product.sku}</span>
                                 </td>
-                                <td className="py-4 px-4">
-                                  <span className="font-medium text-gray-900">${product.price}</span>
+                                <td className="py-4 px-2 md:px-4">
+                                  <span className="font-medium text-gray-900 text-sm md:text-base">${product.price}</span>
                                   {product.compare_price && (
-                                    <span className="block text-sm text-green-600">
+                                    <span className="hidden md:block text-sm text-green-600">
                                       Sale: ${product.compare_price}
                                     </span>
                                   )}
@@ -1382,13 +1382,13 @@ export default function Products() {
                                     {product.stock_quantity}
                                   </span>
                                 </td>
-                                <td className="py-4 px-4">
-                                  <div className="flex items-center gap-1.5">
-                                    <Badge variant="outline" className={statusColors[product.status]}>
+                                <td className="py-4 px-2 md:px-4">
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className={`text-xs md:text-sm ${statusColors[product.status]}`}>
                                       {product.status}
                                     </Badge>
                                     {product.demo && (
-                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                                      <Badge variant="outline" className="hidden md:inline-flex bg-amber-50 text-amber-700 border-amber-300">
                                         Demo
                                       </Badge>
                                     )}
@@ -1399,7 +1399,7 @@ export default function Products() {
                                 </td>
                               </>
                             )}
-                            <td className="py-4 px-4">
+                            <td className="py-4 px-2 md:px-4">
                               {translationMode ? (
                                 <div className="flex items-center gap-2">
                                   <Button

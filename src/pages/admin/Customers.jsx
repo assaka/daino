@@ -463,14 +463,14 @@ export default function Customers() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="text-left py-3 px-4 font-medium">Name</th>
-                                    <th className="text-left py-3 px-4 font-medium">Email</th>
+                                    <th className="text-left py-3 px-2 md:px-4 font-medium">Name</th>
+                                    <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Email</th>
                                     <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Type</th>
-                                    <th className="text-left py-3 px-4 font-medium">Status</th>
+                                    <th className="text-left py-3 px-2 md:px-4 font-medium">Status</th>
                                     <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Total Orders</th>
                                     <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Total Spent</th>
                                     <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Last Order</th>
-                                    <th className="text-left py-3 px-4 font-medium">Actions</th>
+                                    <th className="text-left py-3 px-2 md:px-4 font-medium w-16 md:w-auto">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -478,8 +478,8 @@ export default function Customers() {
                                     const isGuest = customer.customer_type === 'guest';
                                     return (
                                         <tr key={customer.id} className="border-b hover:bg-gray-50">
-                                            <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
-                                            <td className="py-3 px-4">{customer.email}</td>
+                                            <td className="py-3 px-2 md:px-4 text-sm md:text-base">{customer.first_name} {customer.last_name}</td>
+                                            <td className="hidden md:table-cell py-3 px-4">{customer.email}</td>
                                             <td className="hidden md:table-cell py-3 px-4">
                                                 <div className="flex items-center gap-1.5">
                                                     <Badge variant="outline" className={isGuest
@@ -495,15 +495,15 @@ export default function Customers() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="py-3 px-4">
+                                            <td className="py-3 px-2 md:px-4">
                                                 {customer.is_blacklisted ? (
-                                                    <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-                                                        <Ban className="h-3 w-3 mr-1" />
-                                                        Blacklisted
+                                                    <Badge variant="outline" className="text-xs md:text-sm bg-red-100 text-red-800 border-red-200">
+                                                        <Ban className="h-3 w-3 mr-1 hidden md:inline" />
+                                                        Blocked
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                    <Badge variant="outline" className="text-xs md:text-sm bg-green-100 text-green-800 border-green-200">
+                                                        <CheckCircle className="h-3 w-3 mr-1 hidden md:inline" />
                                                         Active
                                                     </Badge>
                                                 )}
@@ -514,8 +514,8 @@ export default function Customers() {
                                                 return isNaN(totalSpent) ? '0.00' : totalSpent.toFixed(2);
                                             })()}</td>
                                             <td className="hidden md:table-cell py-3 px-4">{customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex space-x-2">
+                                            <td className="py-3 px-2 md:px-4">
+                                                <div className="flex space-x-1 md:space-x-2">
                                                     <Button
                                                         size="sm"
                                                         variant="outline"

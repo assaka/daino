@@ -595,13 +595,13 @@ export default function Orders() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12"></TableHead>
-                        <TableHead>Order #</TableHead>
+                        <TableHead className="w-8 md:w-12 px-2 md:px-4"></TableHead>
+                        <TableHead className="px-2 md:px-4">Order #</TableHead>
                         <TableHead className="hidden md:table-cell">Date</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-20">Actions</TableHead>
+                        <TableHead className="hidden md:table-cell">Customer</TableHead>
+                        <TableHead className="px-2 md:px-4">Total</TableHead>
+                        <TableHead className="px-2 md:px-4">Status</TableHead>
+                        <TableHead className="w-12 md:w-20 px-2 md:px-4">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -610,24 +610,24 @@ export default function Orders() {
                           <>
                             <CollapsibleTrigger asChild>
                               <TableRow className="cursor-pointer hover:bg-gray-50">
-                                <TableCell>
+                                <TableCell className="px-2 md:px-4">
                                   {openOrderId === order.id ? (
                                     <ChevronUp className="w-4 h-4" />
                                   ) : (
                                     <ChevronDown className="w-4 h-4" />
                                   )}
                                 </TableCell>
-                                <TableCell className="font-medium">
+                                <TableCell className="font-medium px-2 md:px-4 text-sm md:text-base">
                                   #{order.order_number || order.id.slice(-8)}
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">{formatDate(order.created_date || order.createdAt)}</TableCell>
-                                <TableCell>
+                                <TableCell className="hidden md:table-cell">
                                   <div>
                                     <p className="font-medium">
-                                      {users[order.user_id]?.full_name || 
-                                       order.customer_name || 
-                                       order.billing_address?.name || 
-                                       order.shipping_address?.name || 
+                                      {users[order.user_id]?.full_name ||
+                                       order.customer_name ||
+                                       order.billing_address?.name ||
+                                       order.shipping_address?.name ||
                                        'Guest Customer'}
                                     </p>
                                     <p className="text-sm text-gray-500">
@@ -635,22 +635,22 @@ export default function Orders() {
                                     </p>
                                   </div>
                                 </TableCell>
-                                <TableCell className="font-medium">
+                                <TableCell className="font-medium px-2 md:px-4 text-sm md:text-base">
                                   {safeFormatPrice(order.total_amount)}
                                 </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1.5">
-                                    <Badge variant="outline" className={getStatusBadge(order.status)}>
+                                <TableCell className="px-2 md:px-4">
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className={`text-xs md:text-sm ${getStatusBadge(order.status)}`}>
                                       {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
                                     </Badge>
                                     {order.demo && (
-                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                                      <Badge variant="outline" className="hidden md:inline-flex bg-amber-50 text-amber-700 border-amber-300">
                                         Demo
                                       </Badge>
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                <TableCell className="px-2 md:px-4" onClick={(e) => e.stopPropagation()}>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
