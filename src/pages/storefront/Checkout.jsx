@@ -1150,8 +1150,18 @@ export default function Checkout() {
   const getEligiblePaymentMethods = () => {
     const country = getBillingCountry();
     return paymentMethods.filter(method => {
-      if (!method.countries || method.countries.length === 0) return true;
-      return method.countries.includes(country);
+      // Check manual availability countries (if configured)
+      if (method.countries && method.countries.length > 0) {
+        if (!method.countries.includes(country)) return false;
+      }
+
+      // Check provider's supported countries (e.g., iDEAL only for NL, Bancontact only for BE)
+      const supportedCountries = method.settings?.supported_countries;
+      if (supportedCountries && supportedCountries.length > 0) {
+        if (!supportedCountries.includes(country)) return false;
+      }
+
+      return true;
     });
   };
 
