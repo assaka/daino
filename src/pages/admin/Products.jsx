@@ -992,14 +992,14 @@ export default function Products() {
             <h1 className="text-3xl font-bold text-gray-900">Products</h1>
             <p className="text-gray-600 mt-1">Manage your product catalog</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="sm:flex items-center gap-2">
             <Button
               onClick={() => setTranslationMode(!translationMode)}
               variant={translationMode ? "default" : "outline"}
-              className={translationMode
+              className={`p-3 rounded-lg bordermr-2 ${translationMode
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "border-blue-600 text-blue-600 hover:bg-blue-50"
-              }
+              }`}
               disabled={!selectedStore || products.length === 0}
             >
               <Languages className="w-4 h-4 mr-2" />
@@ -1008,7 +1008,7 @@ export default function Products() {
             <Button
               onClick={() => setShowBulkTranslateDialog(true)}
               variant="outline"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              className="mr-2 border-blue-600 text-blue-600 hover:bg-blue-50"
               disabled={!selectedStore || products.length === 0}
             >
               <Languages className="w-4 h-4 mr-2" />
@@ -1361,7 +1361,7 @@ export default function Products() {
                                       <Package className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
                                     )}
                                   </div>
-                                  <div className="min-w-0 flex-1">
+                                  <div className="min-w-0 flex-1 max-w-[120px] md:max-w-none">
                                     <p className="font-medium text-gray-900 text-sm md:text-base truncate">{getProductName(product)}</p>
                                     <p className="hidden md:block text-sm text-gray-500 truncate max-w-xs">
                                       {getProductShortDescription(product)}
