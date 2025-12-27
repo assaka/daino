@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { ChevronsUpDown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -55,15 +56,26 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
     ? (Array.isArray(value) ? value : (value ? [value] : []))
     : value;
 
-  const selectedLabels = multiple
+  // Get selected countries with their data for badge display
+  const selectedCountries = multiple
     ? (Array.isArray(safeValue) ? safeValue : [])
-        .map((v) => filteredCountries.find((country) => country && country.value === v)?.label)
+        .map((v) => countryData.find((country) => country && country.value === v))
         .filter(Boolean)
-        .join(", ")
-    : filteredCountries.find((country) => country && country.value === value)?.label;
+    : [];
 
-  // Ensure selectedLabels is always a string or undefined, never an object
-  const safeSelectedLabels = typeof selectedLabels === 'string' ? selectedLabels : (selectedLabels ? String(selectedLabels) : undefined);
+  const selectedLabel = !multiple
+    ? filteredCountries.find((country) => country && country.value === value)?.label
+    : null;
+
+  // Handle removing a country from selection
+  const handleRemove = (e, countryValue) => {
+    e.stopPropagation();
+    if (multiple) {
+      const currentValues = Array.isArray(value) ? value : [];
+      const newValues = currentValues.filter((v) => v !== countryValue);
+      handleChange(newValues);
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -72,10 +84,31 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className={`w-full justify-between ${multiple ? 'h-auto min-h-[40px]' : ''}`}
           style={style}
         >
-          {(multiple ? (Array.isArray(safeValue) && safeValue.length > 0) : value) ? safeSelectedLabels : placeholder}
+          {multiple ? (
+            <div className="flex gap-1 flex-wrap flex-1">
+              {selectedCountries.length > 0 ? (
+                selectedCountries.map((country) => (
+                  <Badge
+                    key={country.value}
+                    variant="outline"
+                    className="bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                    onClick={(e) => handleRemove(e, country.value)}
+                  >
+                    <span className="mr-1">{country.flag}</span>
+                    {country.label}
+                    <X className="ml-1 h-3 w-3 cursor-pointer" />
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-muted-foreground">{placeholder}</span>
+              )}
+            </div>
+          ) : (
+            <span>{value ? selectedLabel : placeholder}</span>
+          )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -97,10 +130,12 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
                     key={country.value}
                     value={country.label}
                     onSelect={() => handleSelect(country.value)}
-                    className={` ${
-                        isSelected ? "bg-gray-200" : ""
-                    }`}
                   >
+                    <Check
+                      className={`mr-2 h-4 w-4 ${
+                        isSelected ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
                     <span className="mr-2">{country.flag}</span>
                     {country.label}
                   </CommandItem>
