@@ -575,7 +575,7 @@ export default function Attributes() {
 
           {/* Attributes Tab */}
           <TabsContent value="attributes">
-            <div className="flex justify-between items-center mb-6">
+            <div className="md:flex space-y-2 md:space-y-0 justify-between items-center mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Attributes ({filteredAttributes.length})</h2>
                 {filteredAttributes.length > 0 && (
@@ -584,7 +584,7 @@ export default function Attributes() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="sm:flex space-x-2 space-y-2 sm:space-y-0 items-center gap-2">
                 <Button
                   onClick={() => setShowDeleteAllConfirm(true)}
                   variant="outline"
