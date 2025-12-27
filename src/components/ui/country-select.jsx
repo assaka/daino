@@ -93,8 +93,8 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
                 selectedCountries.map((country) => (
                   <Badge
                     key={country.value}
-                    variant="outline"
-                    className="bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                    variant="secondary"
+                    className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     onClick={(e) => handleRemove(e, country.value)}
                   >
                     <span className="mr-1">{country.flag}</span>
