@@ -45,22 +45,26 @@ function convertToStripeAmount(amount, currency) {
 
 /**
  * Stripe payment methods configuration
- * Each payment method has its display info and Stripe capability requirement
+ * Each payment method has its display info, Stripe type, and country availability
+ * countries: null = available globally, array = only available for these countries
  */
 const STRIPE_PAYMENT_METHODS = [
-  { code: 'stripe_card', name: 'Credit/Debit Card', stripeType: 'card', icon: 'credit-card', description: 'Pay securely with your credit or debit card' },
-  { code: 'stripe_apple_pay', name: 'Apple Pay', stripeType: 'apple_pay', icon: 'apple', description: 'Pay with Apple Pay' },
-  { code: 'stripe_google_pay', name: 'Google Pay', stripeType: 'google_pay', icon: 'google', description: 'Pay with Google Pay' },
-  { code: 'stripe_link', name: 'Link', stripeType: 'link', icon: 'link', description: 'Fast checkout with Link by Stripe' },
-  { code: 'stripe_klarna', name: 'Klarna', stripeType: 'klarna', icon: 'klarna', description: 'Buy now, pay later with Klarna' },
-  { code: 'stripe_afterpay', name: 'Afterpay / Clearpay', stripeType: 'afterpay_clearpay', icon: 'afterpay', description: 'Buy now, pay later with Afterpay' },
-  { code: 'stripe_ideal', name: 'iDEAL', stripeType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL (Netherlands)' },
-  { code: 'stripe_bancontact', name: 'Bancontact', stripeType: 'bancontact', icon: 'bancontact', description: 'Pay with Bancontact (Belgium)' },
-  { code: 'stripe_giropay', name: 'Giropay', stripeType: 'giropay', icon: 'giropay', description: 'Pay with Giropay (Germany)' },
-  { code: 'stripe_sepa', name: 'SEPA Direct Debit', stripeType: 'sepa_debit', icon: 'bank', description: 'Pay via SEPA bank transfer' },
-  { code: 'stripe_sofort', name: 'Sofort', stripeType: 'sofort', icon: 'sofort', description: 'Pay with Sofort (Europe)' },
-  { code: 'stripe_eps', name: 'EPS', stripeType: 'eps', icon: 'eps', description: 'Pay with EPS (Austria)' },
-  { code: 'stripe_p24', name: 'Przelewy24', stripeType: 'p24', icon: 'p24', description: 'Pay with Przelewy24 (Poland)' },
+  // Global payment methods (available everywhere)
+  { code: 'stripe_card', name: 'Credit/Debit Card', stripeType: 'card', icon: 'credit-card', description: 'Pay securely with your credit or debit card', countries: null },
+  { code: 'stripe_apple_pay', name: 'Apple Pay', stripeType: 'apple_pay', icon: 'apple', description: 'Pay with Apple Pay', countries: null },
+  { code: 'stripe_google_pay', name: 'Google Pay', stripeType: 'google_pay', icon: 'google', description: 'Pay with Google Pay', countries: null },
+  { code: 'stripe_link', name: 'Link', stripeType: 'link', icon: 'link', description: 'Fast checkout with Link by Stripe', countries: null },
+
+  // Regional payment methods (country-specific)
+  { code: 'stripe_klarna', name: 'Klarna', stripeType: 'klarna', icon: 'klarna', description: 'Buy now, pay later with Klarna', countries: ['AT', 'BE', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'IE', 'IT', 'NL', 'NO', 'PL', 'PT', 'SE', 'US'] },
+  { code: 'stripe_afterpay', name: 'Afterpay / Clearpay', stripeType: 'afterpay_clearpay', icon: 'afterpay', description: 'Buy now, pay later with Afterpay', countries: ['AU', 'CA', 'GB', 'NZ', 'US'] },
+  { code: 'stripe_ideal', name: 'iDEAL', stripeType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL', countries: ['NL'] },
+  { code: 'stripe_bancontact', name: 'Bancontact', stripeType: 'bancontact', icon: 'bancontact', description: 'Pay with Bancontact', countries: ['BE'] },
+  { code: 'stripe_giropay', name: 'Giropay', stripeType: 'giropay', icon: 'giropay', description: 'Pay with Giropay', countries: ['DE'] },
+  { code: 'stripe_sepa', name: 'SEPA Direct Debit', stripeType: 'sepa_debit', icon: 'bank', description: 'Pay via SEPA bank transfer', countries: ['AT', 'BE', 'DE', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT'] },
+  { code: 'stripe_sofort', name: 'Sofort', stripeType: 'sofort', icon: 'sofort', description: 'Pay with Sofort', countries: ['AT', 'BE', 'DE', 'ES', 'IT', 'NL'] },
+  { code: 'stripe_eps', name: 'EPS', stripeType: 'eps', icon: 'eps', description: 'Pay with EPS', countries: ['AT'] },
+  { code: 'stripe_p24', name: 'Przelewy24', stripeType: 'p24', icon: 'p24', description: 'Pay with Przelewy24', countries: ['PL'] },
 ];
 
 /**
@@ -205,18 +209,44 @@ async function insertStripePaymentMethods(storeId, stripeAccountId) {
 }
 
 /**
- * Insert ALL Stripe payment methods regardless of capabilities
+ * Check if a payment method is applicable for the store's allowed countries
+ * @param {Object} pm - Payment method config
+ * @param {Array} storeCountries - Store's allowed countries
+ * @returns {boolean} - Whether to include this payment method
+ */
+function isPaymentMethodApplicable(pm, storeCountries) {
+  // Global methods (countries: null) are always applicable
+  if (pm.countries === null) {
+    return true;
+  }
+
+  // If store has no countries configured, include all
+  if (!storeCountries || storeCountries.length === 0) {
+    return true;
+  }
+
+  // Check if any of the store's countries match the payment method's countries
+  return pm.countries.some(country => storeCountries.includes(country));
+}
+
+/**
+ * Insert applicable Stripe payment methods based on store's allowed countries
  * Used for Standard accounts where capabilities aren't exposed
  * @param {string} storeId - Store ID
  */
 async function insertAllStripePaymentMethods(storeId) {
   try {
-    console.log(`🔧 Inserting ALL Stripe payment methods for store ${storeId}...`);
+    console.log(`🔧 Inserting applicable Stripe payment methods for store ${storeId}...`);
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Ensure provider column exists
     await ensureProviderColumn(tenantDb);
+
+    // Get store's allowed countries from master DB
+    const store = await getMasterStore(storeId);
+    const storeCountries = store?.settings?.allowed_countries || [];
+    console.log(`📍 Store allowed countries:`, storeCountries);
 
     // Get existing payment methods to avoid duplicates
     const { data: existingMethods } = await tenantDb
@@ -226,7 +256,7 @@ async function insertAllStripePaymentMethods(storeId) {
 
     const existingCodes = new Set((existingMethods || []).map(m => `${m.provider || ''}:${m.code}`));
 
-    // Prepare payment methods to insert - ALL of them
+    // Prepare payment methods to insert - only applicable ones
     const methodsToInsert = [];
     let sortOrder = 0;
 
@@ -237,13 +267,19 @@ async function insertAllStripePaymentMethods(storeId) {
         continue;
       }
 
+      // Skip if not applicable for store's countries
+      if (!isPaymentMethodApplicable(pm, storeCountries)) {
+        console.log(`⏭️ Skipping ${pm.code} - not applicable for store countries (requires: ${pm.countries?.join(', ')})`);
+        continue;
+      }
+
       methodsToInsert.push({
         name: pm.name,
         code: pm.code,
         type: 'stripe',
         payment_flow: 'online',
         description: pm.description,
-        settings: { stripe_type: pm.stripeType, icon: pm.icon },
+        settings: { stripe_type: pm.stripeType, icon: pm.icon, supported_countries: pm.countries },
         provider: 'stripe',
         is_active: true,
         sort_order: sortOrder++,
@@ -273,7 +309,7 @@ async function insertAllStripePaymentMethods(storeId) {
     return { inserted: inserted.length, methods: inserted };
 
   } catch (error) {
-    console.error('Failed to insert all Stripe payment methods:', error);
+    console.error('Failed to insert Stripe payment methods:', error);
     return { inserted: 0, error: error.message };
   }
 }
