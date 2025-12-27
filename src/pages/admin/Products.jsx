@@ -866,14 +866,14 @@ export default function Products() {
     };
 
     return (
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
         <p className="text-sm text-gray-700">
           {getProductCountText()}
         </p>
 
         {/* Only show navigation when there are multiple pages */}
         {totalPages > 1 && (
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {/* Previous Button */}
             <Button
               variant="outline"
@@ -881,36 +881,44 @@ export default function Products() {
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              Previous
+              <span className="hidden md:inline">Previous</span>
+              <span className="md:hidden">Prev</span>
             </Button>
 
-            {/* Page Numbers */}
-            {visiblePages.map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                onClick={currentPage === page ? undefined : () => onPageChange(page)}
-                disabled={currentPage === page}
-                className={currentPage === page ? "bg-blue-600 text-white cursor-default" : ""}
-              >
-                {page}
-              </Button>
-            ))}
+            {/* Mobile: Show current page indicator */}
+            <span className="md:hidden text-sm text-gray-600">
+              {currentPage} / {totalPages}
+            </span>
 
-            {/* Show ellipsis and last page if there are more pages */}
-            {currentPage + 3 < totalPages && (
-              <>
-                <span className="px-2 text-gray-500">...</span>
+            {/* Desktop: Page Numbers */}
+            <div className="hidden md:flex items-center gap-2">
+              {visiblePages.map((page) => (
                 <Button
-                  variant="outline"
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
                   size="sm"
-                  onClick={() => onPageChange(totalPages)}
+                  onClick={currentPage === page ? undefined : () => onPageChange(page)}
+                  disabled={currentPage === page}
+                  className={currentPage === page ? "bg-blue-600 text-white cursor-default" : ""}
                 >
-                  {totalPages}
+                  {page}
                 </Button>
-              </>
-            )}
+              ))}
+
+              {/* Show ellipsis and last page if there are more pages */}
+              {currentPage + 3 < totalPages && (
+                <>
+                  <span className="px-2 text-gray-500">...</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(totalPages)}
+                  >
+                    {totalPages}
+                  </Button>
+                </>
+              )}
+            </div>
 
             {/* Next Button */}
             <Button
@@ -922,8 +930,8 @@ export default function Products() {
               Next
             </Button>
 
-            {/* Page Dropdown */}
-            <div className="ml-4">
+            {/* Page Dropdown - Desktop only */}
+            <div className="hidden md:block ml-2">
               <Select
                 value={currentPage.toString()}
                 onValueChange={(value) => onPageChange(parseInt(value))}
@@ -941,8 +949,8 @@ export default function Products() {
               </Select>
             </div>
 
-            {/* Page Info */}
-            <span className="ml-4 text-sm text-gray-600">
+            {/* Page Info - Desktop only */}
+            <span className="hidden md:inline ml-2 text-sm text-gray-600">
               of {totalPages} {totalPages === 1 ? t('common.page', 'page') : t('common.pages', 'pages')}
             </span>
           </div>

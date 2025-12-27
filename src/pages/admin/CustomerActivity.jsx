@@ -284,7 +284,7 @@ export default function CustomerActivityPage() {
     const getVisiblePages = () => {
       const pages = [];
       const showEllipsis = totalPages > 7;
-      
+
       if (!showEllipsis) {
         for (let i = 1; i <= totalPages; i++) {
           pages.push(i);
@@ -310,11 +310,11 @@ export default function CustomerActivityPage() {
     };
 
     return (
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
         <div className="text-sm text-gray-700">
           Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} activities
         </div>
-        <div className="flex items-center space-x-1">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -323,26 +323,35 @@ export default function CustomerActivityPage() {
             className="flex items-center gap-1"
           >
             <ChevronLeft className="w-4 h-4" />
-            Previous
+            <span className="hidden md:inline">Previous</span>
+            <span className="md:hidden">Prev</span>
           </Button>
-          
-          {getVisiblePages().map((page, index) => (
-            <React.Fragment key={index}>
-              {page === 'ellipsis' ? (
-                <span className="px-3 py-1 text-gray-500">...</span>
-              ) : (
-                <Button
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(page)}
-                  className="min-w-[2.5rem]"
-                >
-                  {page}
-                </Button>
-              )}
-            </React.Fragment>
-          ))}
-          
+
+          {/* Mobile: Show current page indicator */}
+          <span className="md:hidden text-sm text-gray-600">
+            {currentPage} / {totalPages}
+          </span>
+
+          {/* Desktop: Page Numbers */}
+          <div className="hidden md:flex items-center gap-1">
+            {getVisiblePages().map((page, index) => (
+              <React.Fragment key={index}>
+                {page === 'ellipsis' ? (
+                  <span className="px-3 py-1 text-gray-500">...</span>
+                ) : (
+                  <Button
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                    className="min-w-[2.5rem]"
+                  >
+                    {page}
+                  </Button>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -350,7 +359,8 @@ export default function CustomerActivityPage() {
             disabled={currentPage === totalPages}
             className="flex items-center gap-1"
           >
-            Next
+            <span className="hidden md:inline">Next</span>
+            <span className="md:hidden">Next</span>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
