@@ -529,6 +529,8 @@ function App() {
           <Route path="/public/:storeCode/sitemap" element={<PageWrapper Component={Pages.SitemapPublic} pageName="SitemapPublic" />} />
           <Route path="/public/:storeCode" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />
           <Route path="/landing" element={<PageWrapper Component={Pages.Landing} pageName="Landing" />} />
+          <Route path="/signup" element={<Pages.MarketingSignup />} />
+          <Route path="/get-started" element={<Pages.MarketingSignup />} />
 
           {/* Blog routes */}
           <Route path="/blog" element={<Pages.Blog />} />

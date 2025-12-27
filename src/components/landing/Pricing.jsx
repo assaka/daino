@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from 'lucide-react';
-import {createPageUrl} from "@/utils/index.js";
+import { Link } from 'react-router-dom';
 
 const getPlans = (freeCredits) => [
     {
@@ -140,7 +140,7 @@ export default function Pricing() {
                                 ))}
                             </ul>
 
-                            <Link to={createPageUrl("Onboarding")}>
+                            <Link to="/signup">
                                 <Button
                                     className={`
                                         w-full py-6 text-lg rounded-full font-bold transition-all duration-300

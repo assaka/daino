@@ -2,8 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from 'lucide-react';
-import {Link} from "react-router-dom";
-import {createPageUrl} from "@/utils/index.js";
+import { Link } from "react-router-dom";
 
 export default function CTA() {
     return (
@@ -33,14 +32,14 @@ export default function CTA() {
                             Battle-tested templates + AI customization + Plugin generator = Your dream store in minutes
                         </p>
                         <div className="flex flex-col sm:flex-row items-center gap-4 mb-12">
-                            <Link to={createPageUrl("Onboarding")}>
+                            <Link to="/signup">
                                 <Button
                                     size="lg"
                                     className="bg-white hover:bg-indigo-50 text-indigo-900 px-12 py-8 text-xl rounded-full font-bold transition-all group w-full sm:w-auto shadow-xl"
                                 >
                                     START FREE TRIAL
                                     <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform"/>
-                                </Button>`
+                                </Button>
                             </Link>
                         </div>
 

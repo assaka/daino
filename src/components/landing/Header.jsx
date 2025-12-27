@@ -112,7 +112,7 @@ export default function Header() {
                                         Sign In
                                     </Button>
                                 </Link>
-                                <Link to={createPageUrl("Onboarding")}>
+                                <Link to="/signup">
                                     <Button className="bg-green-500 text-white">
                                         Try Now
                                     </Button>
