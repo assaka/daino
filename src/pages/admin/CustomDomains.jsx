@@ -397,7 +397,7 @@ const CustomDomains = () => {
       case 'active':
         return <Badge className="bg-green-500"><Shield className="w-3 h-3 mr-1" />Active</Badge>;
       case 'pending':
-        return <Badge className="hidden sm:flex bg-yellow-500"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
       case 'failed':
         return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
       default:
@@ -533,6 +533,7 @@ const CustomDomains = () => {
                   <TableHead>Domain</TableHead>
                   <TableHead className="hidden md:table-cell">Store URL</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="hidden md:table-cell">SSL</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -581,6 +582,8 @@ const CustomDomains = () => {
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {getSSLBadge(domain.ssl_status)}
+                    </TableCell>
+                    <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         {/* Settings button - always show */}
                         <Button
@@ -597,7 +600,7 @@ const CustomDomains = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDebugDNS(domain.id)}
-                              className="hidden sm:flex bg-blue-50"
+                              className="bg-blue-50"
                             >
                               <RefreshCw className="w-3 h-3 mr-1 text-blue-600" />
                               Check DNS
