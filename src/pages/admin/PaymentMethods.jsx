@@ -926,6 +926,13 @@ export default function PaymentMethods() {
                             {method.countries.length} Country{method.countries.length !== 1 ? 's' : ''}
                           </Badge>
                         )}
+                        {method.settings?.supported_countries && method.settings.supported_countries.length > 0 && (
+                          <span className="text-base" title={method.settings.supported_countries.join(', ')}>
+                            {method.settings.supported_countries.map(code =>
+                              String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 - 65 + c.charCodeAt(0)))
+                            ).join(' ')}
+                          </span>
+                        )}
                         {(method.min_amount || method.max_amount) && (
                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                             {method.min_amount && method.max_amount
