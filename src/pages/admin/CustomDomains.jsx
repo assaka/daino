@@ -527,27 +527,31 @@ const CustomDomains = () => {
               <p className="text-sm mt-1">Click "Add Domain" to get started.</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Domain</TableHead>
+                  <TableHead className="min-w-[120px]">Domain</TableHead>
                   <TableHead className="hidden md:table-cell">Store URL</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="px-2 md:px-4">Status</TableHead>
                   <TableHead className="hidden md:table-cell">SSL</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right px-2 md:px-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {domains.map((domain) => (
                   <TableRow key={domain.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
-                        {domain.domain}
+                    <TableCell className="font-medium px-2 md:px-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate text-sm">{domain.domain}</span>
+                        </div>
                         {domain.is_redirect && (
-                          <Badge variant="secondary" className="text-orange-600 bg-orange-50">
+                          <Badge variant="secondary" className="text-orange-600 bg-orange-50 text-xs w-fit">
                             <ArrowRight className="w-3 h-3 mr-1" />
-                            Redirects to {domain.redirect_to}
+                            <span className="hidden md:inline">Redirects to {domain.redirect_to}</span>
+                            <span className="md:hidden">Redirect</span>
                           </Badge>
                         )}
                       </div>
@@ -577,21 +581,23 @@ const CustomDomains = () => {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-2 md:px-4">
                       {getStatusBadge(domain)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {getSSLBadge(domain.ssl_status)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="text-right px-2 md:px-4">
+                      <div className="flex items-center justify-end gap-1 md:gap-2">
                         {/* Settings button - always show */}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => showDNSInstructions(domain)}
+                          className="px-2 md:px-3"
                         >
-                          Settings
+                          <Info className="w-3 h-3 md:mr-1" />
+                          <span className="hidden md:inline">Settings</span>
                         </Button>
 
                         {domain.verification_status === 'pending' && (
@@ -600,7 +606,7 @@ const CustomDomains = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDebugDNS(domain.id)}
-                              className="bg-blue-50"
+                              className="bg-blue-50 hidden md:flex"
                             >
                               <RefreshCw className="w-3 h-3 mr-1 text-blue-600" />
                               Check DNS
@@ -609,16 +615,14 @@ const CustomDomains = () => {
                               size="sm"
                               onClick={() => handleVerifyDomain(domain.id)}
                               disabled={verifying}
+                              className="px-2 md:px-3"
                             >
                               {verifying ? (
-                                <>
-                                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                                  Verifying...
-                                </>
+                                <RefreshCw className="w-3 h-3 animate-spin" />
                               ) : (
                                 <>
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Verify
+                                  <CheckCircle className="w-3 h-3 md:mr-1" />
+                                  <span className="hidden md:inline">Verify</span>
                                 </>
                               )}
                             </Button>
@@ -631,16 +635,14 @@ const CustomDomains = () => {
                             size="sm"
                             onClick={() => handleCheckSSL(domain.id)}
                             disabled={checkingSSL}
+                            className="px-2 md:px-3"
                           >
                             {checkingSSL ? (
-                              <>
-                                <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                                Checking...
-                              </>
+                              <RefreshCw className="w-3 h-3 animate-spin" />
                             ) : (
                               <>
-                                <Shield className="w-3 h-3 mr-1" />
-                                Check SSL
+                                <Shield className="w-3 h-3 md:mr-1" />
+                                <span className="hidden md:inline">Check SSL</span>
                               </>
                             )}
                           </Button>
@@ -650,6 +652,7 @@ const CustomDomains = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveDomain(domain.id, domain.domain)}
+                          className="px-2"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
@@ -659,6 +662,7 @@ const CustomDomains = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
