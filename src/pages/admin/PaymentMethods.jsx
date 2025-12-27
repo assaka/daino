@@ -879,7 +879,7 @@ export default function PaymentMethods() {
 
             return (
               <Card key={method.id} className="material-elevation-1 border-0">
-                <CardContent className="p-6">
+                <CardContent className="p-3 sm:p-6">
                   <div className="sm:flex space-y-4 sm:space-y-0 items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`hidden sm:flex items-center justify-center w-12 h-12 ${getIconBgColor()} rounded-lg`}>

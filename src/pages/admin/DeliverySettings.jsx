@@ -395,7 +395,7 @@ export default function DeliverySettings() { // Renamed the function component f
               {deliverySettings.delivery_time_slots.map((slot, index) => ( // Updated to deliverySettings
                 <div key={index} className="flex items-center justify-between gap-4 p-4 border rounded-lg">
                   <div className="sm:flex space-y-2 sm:space-y-0 sm:space-x-4">
-                    <div className="flex items-center space-x-4 ">
+                    <div className="sm:flex items-center space-x-4">
                       <Input
                         type="time"
                         value={slot.start_time}
