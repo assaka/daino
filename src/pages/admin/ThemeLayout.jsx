@@ -1427,7 +1427,7 @@ export default function ThemeLayout() {
                                         Get fonts from <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Fonts</a> (click a font → "Get embed code" → copy the CSS URL).
                                         Font name is auto-detected from Google Fonts URLs.
                                     </p>
-                                    <div className="flex gap-3">
+                                    <div className="sm:flex gap-3 space-y-2 sm:space-y-0">
                                         <div className="flex-1">
                                             <Label className="text-xs text-gray-500 mb-1 block">Font URL</Label>
                                             <Input
@@ -1446,7 +1446,7 @@ export default function ThemeLayout() {
                                                 className={newFontUrl.includes('fonts.googleapis.com') ? 'bg-gray-100 cursor-not-allowed' : ''}
                                             />
                                         </div>
-                                        <div className="flex items-end">
+                                        <div className="flex items-end pt-3">
                                             <Button onClick={handleAddCustomFont} variant="outline">
                                                 Add Font
                                             </Button>
@@ -1983,8 +1983,8 @@ export default function ThemeLayout() {
 
                                 {/* Custom Breakpoints */}
                                 <div className="border-t pt-4">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <Label className="text-base font-medium">Custom Breakpoints</Label>
+                                    <div className="sm:flex items-center justify-between mb-4 space-y-2 sm:space-y-0">
+                                        <div className="text-base font-medium">Custom Breakpoints</div>
                                         <Button type="button" variant="outline" size="sm" onClick={handleAddCustomBreakpoint}>
                                             + Add Custom Breakpoint
                                         </Button>
@@ -2410,7 +2410,7 @@ export default function ThemeLayout() {
                                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                             >
                                                 <Languages className="w-4 h-4 mr-2" />
-                                                Manage Stock Label Translations
+                                                Manage Translations
                                                 <ArrowRight className="w-4 h-4 ml-2" />
                                             </Button>
                                         </Link>
@@ -2449,8 +2449,8 @@ export default function ThemeLayout() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="horizontal">Horizontal (Main image with thumbnails below)</SelectItem>
-                                            <SelectItem value="vertical">Vertical (Main image with thumbnails on side)</SelectItem>
+                                            <SelectItem value="horizontal">Horizontal (Thumbnails below)</SelectItem>
+                                            <SelectItem value="vertical">Vertical (Thumbnails on side)</SelectItem>
                                         </SelectContent>
                                     </Select>
 
@@ -2488,8 +2488,8 @@ export default function ThemeLayout() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="above">Above (Thumbnails above main image)</SelectItem>
-                                                <SelectItem value="below">Below (Thumbnails below main image)</SelectItem>
+                                                <SelectItem value="above">Above (Thumbnails above)</SelectItem>
+                                                <SelectItem value="below">Below (Thumbnails image)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -2863,9 +2863,9 @@ export default function ThemeLayout() {
 
                                         {/* Step Name Translations */}
                                         <div className="mt-4">
-                                            <div className="flex items-center justify-between mb-2">
+                                            <div className="sm:flex space-y-2 sm:space-y-0 items-center justify-between mb-2">
                                                 <Label className="text-sm font-medium">Step Name Translations</Label>
-                                                <div className="flex gap-2">
+                                                <div className="sm:flex space-y-2 sm:space-y-0 gap-2">
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowStepTranslations(!showStepTranslations)}

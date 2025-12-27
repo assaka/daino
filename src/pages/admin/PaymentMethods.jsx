@@ -880,9 +880,9 @@ export default function PaymentMethods() {
             return (
               <Card key={method.id} className="material-elevation-1 border-0">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="sm:flex space-y-4 sm:space-y-0 items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 ${getIconBgColor()} rounded-lg flex items-center justify-center`}>
+                      <div className={`hidden sm:flex items-center justify-center w-12 h-12 ${getIconBgColor()} rounded-lg`}>
                         {getMethodIcon()}
                       </div>
                       <div>
@@ -938,7 +938,7 @@ export default function PaymentMethods() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 justify-end">
                     <Button
                       variant="outline"
                       size="sm"
