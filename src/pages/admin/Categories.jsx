@@ -704,11 +704,11 @@ export default function Categories() {
                     {depth > 0 && <div className="w-1.5 h-1.5 bg-gray-300 rounded-full" />}
                   </div>
                 )}
-                <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
+                <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md hidden sm:flex items-center justify-center">
                   {category.hide_in_menu ? (
-                    <Folder className="hidden sm:block w-4 h-4 text-white" />
+                    <Folder className="w-4 h-4 text-white" />
                   ) : (
-                    <FolderOpen className="hidden sm:block w-4 h-4 text-white" />
+                    <FolderOpen className="w-4 h-4 text-white" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1006,11 +1006,11 @@ export default function Categories() {
               </p>
             )}
           </div>
-          <div className="sm:flex space-y-2 sm:space-y-0 gap-2">
+          <div className="md:flex space-y-2 md:space-y-0 gap-2">
             <Button
               onClick={() => setShowDeleteAllConfirm(true)}
               variant="outline"
-              className="mr-2border-red-600 text-red-600 hover:bg-red-50"
+              className="mr-2 border-red-600 text-red-600 hover:bg-red-50"
               disabled={!selectedStore || totalItems === 0}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -1111,7 +1111,7 @@ export default function Categories() {
                         setSelectedCategory(null);
                         setShowCategoryForm(true);
                       }}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 mt sm:mt:0"
                       size="sm"
                     >
                       <Plus className="w-4 h-4" />

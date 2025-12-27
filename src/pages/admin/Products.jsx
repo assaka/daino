@@ -996,7 +996,7 @@ export default function Products() {
             <Button
               onClick={() => setTranslationMode(!translationMode)}
               variant={translationMode ? "default" : "outline"}
-              className={`p-3 rounded-lg bordermr-2 ${translationMode
+              className={`mr-2 ${translationMode
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "border-blue-600 text-blue-600 hover:bg-blue-50"
               }`}

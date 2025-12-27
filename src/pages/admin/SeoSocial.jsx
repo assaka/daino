@@ -243,9 +243,9 @@ export default function SeoSocial() {
       <Tabs defaultValue="opengraph">
         <TabsList>
           <TabsTrigger value="opengraph">Open Graph</TabsTrigger>
-          <TabsTrigger value="twitter">Twitter Card</TabsTrigger>
-          <TabsTrigger value="social">Social Profiles</TabsTrigger>
-          <TabsTrigger value="schema">Schema Markup</TabsTrigger>
+          <TabsTrigger value="twitter">Twitter <span className="hidden sm:block">Card</span></TabsTrigger>
+          <TabsTrigger value="social">Social <span className="hidden sm:block">Profiles</span></TabsTrigger>
+          <TabsTrigger value="schema"> Schema <span className="hidden sm:block">Markup</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="opengraph" className="space-y-4">
