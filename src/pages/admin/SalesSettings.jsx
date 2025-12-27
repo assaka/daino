@@ -317,10 +317,7 @@ export default function SalesSettings() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="manual_review">
-                    <div className="flex flex-col">
                       <span className="font-medium">Manual Review</span>
-                      <span className="text-xs text-gray-500">Flag order for review, notify customer and store owner</span>
-                    </div>
                   </SelectItem>
                   <SelectItem value="auto_refund">
                     <div className="flex flex-col">

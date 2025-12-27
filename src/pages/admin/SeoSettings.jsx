@@ -209,13 +209,13 @@ export default function SeoSettings() {
                 <SelectValue placeholder="Select robots directive" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="index, follow">index, follow (Default - Allow indexing and following links)</SelectItem>
-                <SelectItem value="noindex, nofollow">noindex, nofollow (Block indexing and following links)</SelectItem>
-                <SelectItem value="index, nofollow">index, nofollow (Allow indexing but don't follow links)</SelectItem>
-                <SelectItem value="noindex, follow">noindex, follow (Block indexing but follow links)</SelectItem>
+                <SelectItem value="index, follow">index, follow (Allow indexing, follow links)</SelectItem>
+                <SelectItem value="noindex, nofollow">noindex, nofollow (Block indexing, follow links)</SelectItem>
+                <SelectItem value="index, nofollow">index, nofollow (Allow indexing, do not follow links)</SelectItem>
+                <SelectItem value="noindex, follow">noindex, follow (Block indexing, follow links)</SelectItem>
                 <SelectItem value="none">none (Same as noindex, nofollow)</SelectItem>
                 <SelectItem value="noarchive">noarchive (Prevent cached copy)</SelectItem>
-                <SelectItem value="nosnippet">nosnippet (Prevent text snippets in search results)</SelectItem>
+                <SelectItem value="nosnippet">nosnippet (No text snippets in search results)</SelectItem>
                 <SelectItem value="noimageindex">noimageindex (Don't index images on this page)</SelectItem>
               </SelectContent>
             </Select>
