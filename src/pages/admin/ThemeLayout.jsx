@@ -2234,16 +2234,6 @@ export default function ThemeLayout() {
                                                 borderColor: store.settings.pagination?.buttonBorderColor || '#D1D5DB'
                                             }}
                                         >
-                                            3
-                                        </button>
-                                        <button
-                                            className="px-3 py-1.5 border rounded text-sm"
-                                            style={{
-                                                backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
-                                                color: store.settings.pagination?.buttonTextColor || '#374151',
-                                                borderColor: store.settings.pagination?.buttonBorderColor || '#D1D5DB'
-                                            }}
-                                        >
                                             Next
                                         </button>
                                     </div>
