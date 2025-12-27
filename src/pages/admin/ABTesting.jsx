@@ -219,7 +219,7 @@ export default function ABTesting() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <FlaskConical className="w-8 h-8" />
@@ -236,7 +236,7 @@ export default function ABTesting() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -324,9 +324,9 @@ export default function ABTesting() {
                   <TableRow>
                     <TableHead>Test Name</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Variants</TableHead>
-                    <TableHead>Primary Metric</TableHead>
-                    <TableHead>Start Date</TableHead>
+                    <TableHead className="hidden md:table-cell">Variants</TableHead>
+                    <TableHead className="hidden md:table-cell">Primary Metric</TableHead>
+                    <TableHead className="hidden md:table-cell">Start Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -344,16 +344,16 @@ export default function ABTesting() {
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(test.status)}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4 text-muted-foreground" />
                           <span>{test.variants?.length || 0} variants</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">{test.primary_metric}</Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {test.start_date
                           ? format(new Date(test.start_date), 'MMM d, yyyy')
                           : '-'}

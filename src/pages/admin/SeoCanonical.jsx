@@ -220,9 +220,11 @@ export default function SeoCanonical() {
     <div className="container mx-auto p-6 space-y-6">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
-      <div className="flex items-center gap-2 mb-6">
-        <Link2 className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">Canonical URLs</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <Link2 className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Canonical URLs</h1>
+        </div>
       </div>
 
       <Alert className="bg-blue-50 border-blue-200">
@@ -354,7 +356,7 @@ export default function SeoCanonical() {
             <TableHeader>
               <TableRow>
                 <TableHead>Page URL</TableHead>
-                <TableHead>Canonical URL</TableHead>
+                <TableHead className="hidden md:table-cell">Canonical URL</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -376,7 +378,7 @@ export default function SeoCanonical() {
                 canonicalUrls.map(item => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-sm">{item.page_url}</TableCell>
-                    <TableCell className="font-mono text-sm">{item.canonical_url}</TableCell>
+                    <TableCell className="font-mono text-sm hidden md:table-cell">{item.canonical_url}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 text-xs rounded ${
                         item.is_active

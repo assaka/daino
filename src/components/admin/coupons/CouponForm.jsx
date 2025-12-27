@@ -197,7 +197,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           <CardTitle>Basic Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
@@ -302,7 +302,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           <CardTitle>Discount Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discount_type">Discount Type</Label>
               <Select
@@ -340,7 +340,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           </div>
 
           {formData.discount_type === 'buy_x_get_y' && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="buy_quantity">Buy Quantity *</Label>
                 <Input
@@ -422,7 +422,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="start_date">Start Date (Optional)</Label>
               <Input

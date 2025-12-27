@@ -456,9 +456,11 @@ Sitemap: ${sitemapUrl}`;
     <div className="container mx-auto p-6 space-y-6">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
-      <div className="flex items-center gap-2 mb-6">
-        <Bot className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">Robots.txt Configuration</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <Bot className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Robots.txt Configuration</h1>
+        </div>
       </div>
 
       <Alert>

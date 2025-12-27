@@ -233,9 +233,11 @@ export default function SeoSocial() {
         onClose={() => setFlashMessage(null)}
       />
 
-      <div className="flex items-center gap-2 mb-6">
-        <Share2 className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">Social Media & Schema</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <Share2 className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Social Media & Schema</h1>
+        </div>
       </div>
 
       <Tabs defaultValue="opengraph">

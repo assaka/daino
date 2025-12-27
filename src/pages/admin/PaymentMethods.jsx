@@ -625,7 +625,7 @@ export default function PaymentMethods() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {paymentProviders.map(provider => {
                 const isComingSoon = provider.status === 'coming_soon';
                 const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
@@ -773,7 +773,7 @@ export default function PaymentMethods() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h2 className="text-xl font-semibold">Configured Payment Methods</h2>
           <Button
             onClick={() => {

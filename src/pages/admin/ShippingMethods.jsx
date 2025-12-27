@@ -227,7 +227,7 @@ export default function ShippingMethodsPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Shipping Methods</h1>
             <p className="text-gray-600 mt-1">Manage how you ship orders to your customers.</p>

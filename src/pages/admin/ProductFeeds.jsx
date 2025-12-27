@@ -221,14 +221,17 @@ export default function ProductFeeds() {
         onClose={() => setFlashMessage(null)}
       />
 
-      <div className="flex items-center gap-2 mb-6">
-        <Rss className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">Product Feeds</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <Rss className="h-6 w-6" />
+            <h1 className="text-3xl font-bold">Product Feeds</h1>
+          </div>
+          <p className="text-muted-foreground mt-1">
+            Generate product feeds for Google Shopping, Microsoft Ads, AI assistants, and more.
+          </p>
+        </div>
       </div>
-
-      <p className="text-muted-foreground -mt-4 mb-6">
-        Generate product feeds for Google Shopping, Microsoft Ads, AI assistants, and more.
-      </p>
 
       <Tabs defaultValue="feeds" className="space-y-6">
         <TabsList>

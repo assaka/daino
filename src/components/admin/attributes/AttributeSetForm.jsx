@@ -58,7 +58,7 @@ export default function AttributeSetForm({ attributeSet, attributes, onSubmit, o
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="name">Name *</Label>
           <Input
@@ -113,7 +113,7 @@ export default function AttributeSetForm({ attributeSet, attributes, onSubmit, o
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto border rounded-lg p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto border rounded-lg p-4">
           {attributes.length === 0 ? (
             <div className="col-span-2 text-center text-gray-500 py-8">
               No Attributes created yet

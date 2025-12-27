@@ -181,12 +181,12 @@ const JobScheduler = () => {
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Job Scheduler</h1>
           <p className="text-gray-600 mt-1">Schedule recurring tasks and cron jobs</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button onClick={() => setShowCreateForm(!showCreateForm)}>
             <Plus className="w-4 h-4 mr-2" />
             New Cron Job

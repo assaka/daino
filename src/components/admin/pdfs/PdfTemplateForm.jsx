@@ -250,7 +250,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
           <CardTitle>PDF Template Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Template Name</Label>
               <p className="text-sm font-medium text-gray-900 mt-1">{template?.name || 'New Template'}</p>
@@ -321,7 +321,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
           <CardTitle>PDF Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Page Size</Label>
               <select
@@ -425,7 +425,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
             <CardTitle>Available Variables</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {variables.map((variable) => (
                 <div
                   key={variable.key}

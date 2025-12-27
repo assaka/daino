@@ -389,7 +389,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
           <CardTitle>Available Variables</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {selectedType.variables.map((variable) => (
               <div
                 key={variable.key}

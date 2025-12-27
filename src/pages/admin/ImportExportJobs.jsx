@@ -162,7 +162,7 @@ const ImportExportJobs = () => {
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Import & Export Jobs</h1>
           <p className="text-gray-600 mt-1">Monitor marketplace integrations and track performance</p>
@@ -175,7 +175,7 @@ const ImportExportJobs = () => {
 
       {/* Analytics Cards */}
       {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">

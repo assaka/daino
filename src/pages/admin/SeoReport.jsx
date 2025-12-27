@@ -17,7 +17,7 @@ export default function SeoReport() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-6 w-6" />
           <h1 className="text-3xl font-bold">SEO Report</h1>
@@ -28,7 +28,7 @@ export default function SeoReport() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Overall SEO Score</CardTitle>

@@ -226,14 +226,16 @@ export default function InstagramShopping() {
         </div>
       )}
 
-      <div className="flex items-center gap-3 mb-6">
-        <Instagram className="w-8 h-8 text-pink-600" />
-        <div>
-          <h1 className="text-2xl font-bold">Instagram Shopping</h1>
-          <p className="text-muted-foreground">Sync products to Instagram Shopping via Meta Commerce Manager</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <Instagram className="w-8 h-8 text-pink-600" />
+          <div>
+            <h1 className="text-2xl font-bold">Instagram Shopping</h1>
+            <p className="text-muted-foreground">Sync products to Instagram Shopping via Meta Commerce Manager</p>
+          </div>
         </div>
         {status?.connected && (
-          <Badge variant="success" className="ml-auto">Connected</Badge>
+          <Badge variant="success">Connected</Badge>
         )}
       </div>
 

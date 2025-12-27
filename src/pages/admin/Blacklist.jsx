@@ -360,7 +360,7 @@ export default function Blacklist() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Blacklist Management</h1>
                     <p className="text-gray-600 mt-1">Block access by IP address, country, or email</p>
@@ -472,8 +472,8 @@ export default function Blacklist() {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="text-left py-3 px-4 font-medium">IP Address</th>
-                                            <th className="text-left py-3 px-4 font-medium">Reason</th>
-                                            <th className="text-left py-3 px-4 font-medium">Date Added</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Reason</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Date Added</th>
                                             <th className="text-left py-3 px-4 font-medium">Actions</th>
                                         </tr>
                                     </thead>
@@ -481,8 +481,8 @@ export default function Blacklist() {
                                         {ips.map(ip => (
                                             <tr key={ip.id} className="border-t hover:bg-gray-50">
                                                 <td className="py-3 px-4 font-mono">{ip.ip_address}</td>
-                                                <td className="py-3 px-4">{ip.reason || '-'}</td>
-                                                <td className="py-3 px-4">{new Date(ip.created_at).toLocaleDateString()}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{ip.reason || '-'}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{new Date(ip.created_at).toLocaleDateString()}</td>
                                                 <td className="py-3 px-4">
                                                     <Button
                                                         size="sm"
@@ -528,9 +528,9 @@ export default function Blacklist() {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="text-left py-3 px-4 font-medium">Country Code</th>
-                                            <th className="text-left py-3 px-4 font-medium">Country Name</th>
-                                            <th className="text-left py-3 px-4 font-medium">Reason</th>
-                                            <th className="text-left py-3 px-4 font-medium">Date Added</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Country Name</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Reason</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Date Added</th>
                                             <th className="text-left py-3 px-4 font-medium">Actions</th>
                                         </tr>
                                     </thead>
@@ -538,9 +538,9 @@ export default function Blacklist() {
                                         {countries.map(country => (
                                             <tr key={country.id} className="border-t hover:bg-gray-50">
                                                 <td className="py-3 px-4 font-mono">{country.country_code}</td>
-                                                <td className="py-3 px-4">{country.country_name || '-'}</td>
-                                                <td className="py-3 px-4">{country.reason || '-'}</td>
-                                                <td className="py-3 px-4">{new Date(country.created_at).toLocaleDateString()}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{country.country_name || '-'}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{country.reason || '-'}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{new Date(country.created_at).toLocaleDateString()}</td>
                                                 <td className="py-3 px-4">
                                                     <Button
                                                         size="sm"
@@ -586,8 +586,8 @@ export default function Blacklist() {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="text-left py-3 px-4 font-medium">Email Address</th>
-                                            <th className="text-left py-3 px-4 font-medium">Reason</th>
-                                            <th className="text-left py-3 px-4 font-medium">Date Added</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Reason</th>
+                                            <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Date Added</th>
                                             <th className="text-left py-3 px-4 font-medium">Actions</th>
                                         </tr>
                                     </thead>
@@ -595,8 +595,8 @@ export default function Blacklist() {
                                         {emails.map(email => (
                                             <tr key={email.id} className="border-t hover:bg-gray-50">
                                                 <td className="py-3 px-4">{email.email}</td>
-                                                <td className="py-3 px-4">{email.reason || '-'}</td>
-                                                <td className="py-3 px-4">{new Date(email.created_at).toLocaleDateString()}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{email.reason || '-'}</td>
+                                                <td className="py-3 px-4 hidden md:table-cell">{new Date(email.created_at).toLocaleDateString()}</td>
                                                 <td className="py-3 px-4">
                                                     <Button
                                                         size="sm"

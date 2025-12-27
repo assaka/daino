@@ -324,11 +324,14 @@ const FileLibrary = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">File Library</h1>
-        <p className="text-gray-600">
-          Upload and manage files for your store. Copy URLs to use in CMS blocks, pages, or anywhere else.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">File Library</h1>
+          <p className="text-gray-600">
+            Upload and manage files for your store. Copy URLs to use in CMS blocks, pages, or anywhere else.
+          </p>
+        </div>
+      </div>
         
         {/* Storage Status */}
         {storageProvider && storageConnected && (
@@ -416,8 +419,8 @@ const FileLibrary = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -429,7 +432,7 @@ const FileLibrary = () => {
             />
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-200' : 'hover:bg-gray-100'}`}

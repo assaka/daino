@@ -354,7 +354,7 @@ export default function Activities() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Activities</h1>
           <p className="text-gray-600 mt-1">Track calls, meetings, tasks, and notes</p>
@@ -473,7 +473,7 @@ export default function Activities() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="dueDate">Due Date</Label>
                 <Input
@@ -494,7 +494,7 @@ export default function Activities() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="dealId">Related Deal</Label>
                 <Select

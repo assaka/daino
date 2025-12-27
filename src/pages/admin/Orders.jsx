@@ -532,7 +532,7 @@ export default function Orders() {
 
         <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
               <Card className="material-elevation-1 border-0">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -597,7 +597,7 @@ export default function Orders() {
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
                         <TableHead>Order #</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead className="hidden md:table-cell">Date</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Status</TableHead>
@@ -620,7 +620,7 @@ export default function Orders() {
                                 <TableCell className="font-medium">
                                   #{order.order_number || order.id.slice(-8)}
                                 </TableCell>
-                                <TableCell>{formatDate(order.created_date || order.createdAt)}</TableCell>
+                                <TableCell className="hidden md:table-cell">{formatDate(order.created_date || order.createdAt)}</TableCell>
                                 <TableCell>
                                   <div>
                                     <p className="font-medium">

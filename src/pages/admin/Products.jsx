@@ -1093,7 +1093,7 @@ export default function Products() {
                           </button>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm">
@@ -1232,9 +1232,9 @@ export default function Products() {
                         </th>
                         {!translationMode && (
                           <>
-                            <th className="text-left py-3 px-4 font-medium text-gray-900">SKU</th>
+                            <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">SKU</th>
                             <th className="text-left py-3 px-4 font-medium text-gray-900">Price</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-900">Stock</th>
+                            <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Stock</th>
                             <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
                             <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
                           </>
@@ -1364,7 +1364,7 @@ export default function Products() {
                             </td>
                             {!translationMode && (
                               <>
-                                <td className="py-4 px-4">
+                                <td className="hidden md:table-cell py-4 px-4">
                                   <span className="font-mono text-sm text-gray-600">{product.sku}</span>
                                 </td>
                                 <td className="py-4 px-4">
@@ -1375,7 +1375,7 @@ export default function Products() {
                                     </span>
                                   )}
                                 </td>
-                                <td className="py-4 px-4">
+                                <td className="hidden md:table-cell py-4 px-4">
                                   <span className={`font-medium ${
                                     product.stock_quantity < 10 ? 'text-red-600' : 'text-gray-900'
                                   }`}>

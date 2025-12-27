@@ -356,12 +356,12 @@ export default function Automations() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Marketing Automations</h1>
           <p className="text-gray-600 mt-1">Create automated workflows to engage customers</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleCreateFromTemplate}>
             <GitBranch className="w-4 h-4 mr-2" />
             From Template
@@ -486,7 +486,7 @@ export default function Automations() {
                 {expandedWorkflow === workflow.id && workflowStats[workflow.id] && (
                   <div className="border-t bg-gray-50 p-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Performance Stats</h4>
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-white p-3 rounded border text-center">
                         <div className="text-2xl font-bold text-indigo-600">
                           {workflowStats[workflow.id].totalEnrolled || 0}
@@ -565,8 +565,8 @@ export default function Automations() {
           </DialogHeader>
 
           <form onSubmit={handleSaveWorkflow} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-1 md:col-span-2">
                 <Label htmlFor="name">Automation Name *</Label>
                 <Input
                   id="name"
@@ -577,7 +577,7 @@ export default function Automations() {
                 />
               </div>
 
-              <div className="col-span-2">
+              <div className="col-span-1 md:col-span-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -588,7 +588,7 @@ export default function Automations() {
                 />
               </div>
 
-              <div className="col-span-2">
+              <div className="col-span-1 md:col-span-2">
                 <Label htmlFor="triggerType">Trigger</Label>
                 <Select
                   value={formData.triggerType}

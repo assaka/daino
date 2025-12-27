@@ -408,7 +408,7 @@ const CustomDomains = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Globe className="w-8 h-8" />
@@ -531,9 +531,9 @@ const CustomDomains = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Domain</TableHead>
-                  <TableHead>Store URL</TableHead>
+                  <TableHead className="hidden md:table-cell">Store URL</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>SSL</TableHead>
+                  <TableHead className="hidden md:table-cell">SSL</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -552,7 +552,7 @@ const CustomDomains = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <div className="flex items-center gap-2">
                         <a
                           href={getStoreUrl(domain)}
@@ -580,7 +580,7 @@ const CustomDomains = () => {
                     <TableCell>
                       {getStatusBadge(domain)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {getSSLBadge(domain.ssl_status)}
                     </TableCell>
                     <TableCell className="text-right">

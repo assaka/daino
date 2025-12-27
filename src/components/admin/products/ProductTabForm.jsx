@@ -248,7 +248,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                     </Label>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3">
                 {attributes.length > 0 ? (
                   attributes.map((attribute) => (
                     <div key={attribute.id} className="flex items-center space-x-2">

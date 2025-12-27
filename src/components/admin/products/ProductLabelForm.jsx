@@ -295,7 +295,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="background_color">Background Color</Label>
               <div className="flex items-center space-x-2">
@@ -334,7 +334,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="sort_order">Sort Order</Label>
               <Input

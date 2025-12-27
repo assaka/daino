@@ -221,13 +221,15 @@ const MediaStorage = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Media Storage</h1>
-        <p className="text-gray-600 mt-1">
-          {activeTab === 'supabase' && connectionStatus?.connected
-            ? 'View storage statistics, manage buckets, and upload media files'
-            : 'Manage your store\'s media files across multiple cloud storage providers'}
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Media Storage</h1>
+          <p className="text-gray-600 mt-1">
+            {activeTab === 'supabase' && connectionStatus?.connected
+              ? 'View storage statistics, manage buckets, and upload media files'
+              : 'Manage your store\'s media files across multiple cloud storage providers'}
+          </p>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

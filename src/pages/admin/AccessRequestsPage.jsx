@@ -7,9 +7,11 @@ export default function AccessRequestsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Access Requests</h1>
-        <p className="text-gray-600 mt-1">Manage access requests for your paused store</p>
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Access Requests</h1>
+          <p className="text-gray-600 mt-1">Manage access requests for your paused store</p>
+        </div>
       </div>
 
       <AccessRequestsManagement storeId={selectedStore?.id} storeName={selectedStore?.name} />

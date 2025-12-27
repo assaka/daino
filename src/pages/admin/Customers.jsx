@@ -429,7 +429,7 @@ export default function Customers() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
                     <p className="text-gray-600 mt-1">View and manage your store's customers</p>
@@ -465,11 +465,11 @@ export default function Customers() {
                                 <tr className="border-b">
                                     <th className="text-left py-3 px-4 font-medium">Name</th>
                                     <th className="text-left py-3 px-4 font-medium">Email</th>
-                                    <th className="text-left py-3 px-4 font-medium">Type</th>
+                                    <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Type</th>
                                     <th className="text-left py-3 px-4 font-medium">Status</th>
-                                    <th className="text-left py-3 px-4 font-medium">Total Orders</th>
-                                    <th className="text-left py-3 px-4 font-medium">Total Spent</th>
-                                    <th className="text-left py-3 px-4 font-medium">Last Order</th>
+                                    <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Total Orders</th>
+                                    <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Total Spent</th>
+                                    <th className="hidden md:table-cell text-left py-3 px-4 font-medium">Last Order</th>
                                     <th className="text-left py-3 px-4 font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -480,7 +480,7 @@ export default function Customers() {
                                         <tr key={customer.id} className="border-b hover:bg-gray-50">
                                             <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
                                             <td className="py-3 px-4">{customer.email}</td>
-                                            <td className="py-3 px-4">
+                                            <td className="hidden md:table-cell py-3 px-4">
                                                 <div className="flex items-center gap-1.5">
                                                     <Badge variant="outline" className={isGuest
                                                         ? 'bg-gray-100 text-gray-800 border-gray-200'
@@ -508,12 +508,12 @@ export default function Customers() {
                                                     </Badge>
                                                 )}
                                             </td>
-                                            <td className="py-3 px-4">{customer.total_orders}</td>
-                                            <td className="py-3 px-4">${(() => {
+                                            <td className="hidden md:table-cell py-3 px-4">{customer.total_orders}</td>
+                                            <td className="hidden md:table-cell py-3 px-4">${(() => {
                                                 const totalSpent = parseFloat(customer.total_spent || 0);
                                                 return isNaN(totalSpent) ? '0.00' : totalSpent.toFixed(2);
                                             })()}</td>
-                                            <td className="py-3 px-4">{customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
+                                            <td className="hidden md:table-cell py-3 px-4">{customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex space-x-2">
                                                     <Button
@@ -573,7 +573,7 @@ export default function Customers() {
                     </DialogHeader>
                     {editingCustomer && (
                         <form onSubmit={handleSaveCustomer} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <Label htmlFor="first_name">First Name</Label>
                                     <Input
@@ -717,7 +717,7 @@ export default function Customers() {
                                         disabled={isViewOnly}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <Label htmlFor="city">City</Label>
                                         <Input
@@ -737,7 +737,7 @@ export default function Customers() {
                                         />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <Label htmlFor="postal_code">Postal Code</Label>
                                         <Input

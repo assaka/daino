@@ -146,12 +146,12 @@ const BackgroundJobs = () => {
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Background Jobs</h1>
           <p className="text-gray-600 mt-1">Monitor and manage all background job processing</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={autoRefresh ? 'default' : 'outline'}
             size="sm"
@@ -168,7 +168,7 @@ const BackgroundJobs = () => {
       </div>
 
       {/* Queue Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-600">Queue Status</CardTitle>

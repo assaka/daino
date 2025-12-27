@@ -323,8 +323,8 @@ export default function TaxPage() {
                   <thead>
                     <tr className="border-b border-gray-200">
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Name</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Description</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Countries</th>
+                      <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Description</th>
+                      <th className="hidden md:table-cell text-left py-3 px-4 font-medium text-gray-900">Countries</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Default</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
                     </tr>
@@ -342,12 +342,12 @@ export default function TaxPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="hidden md:table-cell py-4 px-4">
                           <p className="text-gray-600 truncate max-w-xs">
                             {tax.description || "No description"}
                           </p>
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="hidden md:table-cell py-4 px-4">
                           <div className="flex flex-wrap gap-1">
                             {tax.country_rates && tax.country_rates.map((rate, index) => (
                               <Badge key={index} className="bg-gray-100 text-gray-700">

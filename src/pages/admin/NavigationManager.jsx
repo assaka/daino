@@ -545,9 +545,11 @@ const NavigationManager = () => {
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Navigation Manager</h1>
-        <p className="text-gray-600">Manage the order and visibility of admin sidebar items</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Navigation Manager</h1>
+          <p className="text-gray-600">Manage the order and visibility of admin sidebar items</p>
+        </div>
       </div>
 
       {hasChanges && (

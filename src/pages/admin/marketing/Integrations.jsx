@@ -283,11 +283,13 @@ export default function Integrations() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Marketing Integrations</h1>
-        <p className="text-gray-600 mt-1">
-          Connect third-party marketing platforms to sync customers and track campaigns
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Marketing Integrations</h1>
+          <p className="text-gray-600 mt-1">
+            Connect third-party marketing platforms to sync customers and track campaigns
+          </p>
+        </div>
       </div>
 
       {/* Info Section - When to use integrations */}

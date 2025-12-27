@@ -1150,7 +1150,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </AlertDescription>
                 </Alert>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="price">Price *</Label>
                     <Input
@@ -1183,7 +1183,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="cost_price">Cost Price</Label>
                   <Input
@@ -1228,7 +1228,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select value={formData.status} onValueChange={(v) => handleInputChange("status", v)}>
@@ -1283,7 +1283,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   <div className="space-y-4">
                     <h4 className="font-medium">Inventory & Stock</h4>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="manage_stock"
@@ -1308,7 +1308,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                     {formData.manage_stock && !formData.infinite_stock && (
                       <>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <Label htmlFor="stock_quantity" className="text-sm">Stock Quantity</Label>
                             <Input
@@ -1397,7 +1397,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Product Identifiers</Label>
                 <p className="text-sm text-gray-500">Required for Google Shopping, Microsoft Ads, and AI assistants</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="gtin">GTIN (UPC/EAN/ISBN)</Label>
                     <Input
@@ -3117,7 +3117,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 <p className="text-sm text-blue-800 mb-2">
                   You can use these variables in your meta title and description templates:
                 </p>
-                <div className="grid grid-cols-2 gap-2 text-sm text-blue-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-700">
                   <div><code>{'{{store_name}}'}</code> - Your store name</div>
                   <div><code>{'{{page_title}}'}</code> - Current page title</div>
                   <div><code>{'{{product_name}}'}</code> - Product name</div>

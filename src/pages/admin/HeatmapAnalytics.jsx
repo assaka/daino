@@ -62,14 +62,16 @@ export default function HeatmapAnalytics() {
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <BarChart3 className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900">Heatmaps</h1>
+          <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <BarChart3 className="w-8 h-8 text-blue-600" />
+                <h1 className="text-3xl font-bold text-gray-900">Heatmaps</h1>
+              </div>
+              <p className="text-gray-600">
+                Visualize customer interactions and movement patterns on your store pages
+              </p>
             </div>
-            <p className="text-gray-600">
-              Visualize customer interactions and movement patterns on your store pages
-            </p>
           </div>
 
           {/* Alpha Disclaimer Banner */}

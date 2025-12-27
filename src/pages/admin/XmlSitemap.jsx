@@ -459,9 +459,11 @@ export default function XmlSitemap() {
         <div className="container mx-auto p-6 space-y-6">
             <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
-            <div className="flex items-center gap-2 mb-6">
-                <FileText className="h-6 w-6" />
-                <h1 className="text-3xl font-bold">XML Sitemap</h1>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                    <FileText className="h-6 w-6" />
+                    <h1 className="text-3xl font-bold">XML Sitemap</h1>
+                </div>
             </div>
 
             {/* Statistics Card */}
@@ -470,7 +472,7 @@ export default function XmlSitemap() {
                     <CardTitle>Sitemap Statistics</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                         <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
                             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalUrls}</div>
                             <div className="text-sm text-muted-foreground">Total URLs</div>
@@ -642,7 +644,7 @@ export default function XmlSitemap() {
             </Card>
 
             {/* Actions */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap gap-2">
                 <Button
                     onClick={generateSitemap}
                     disabled={generating}

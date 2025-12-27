@@ -724,7 +724,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               <p className="text-sm text-blue-800 mb-2">
                 You can use these variables in your meta title and description templates:
               </p>
-              <div className="grid grid-cols-2 gap-2 text-sm text-blue-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-700">
                 <div><code>{'{{category_name}}'}</code> - Category name</div>
                 <div><code>{'{{category_description}}'}</code> - Category description</div>
                 <div><code>{'{{store_name}}'}</code> - Your store name</div>

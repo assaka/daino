@@ -178,9 +178,11 @@ export default function SeoRedirects() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-      <div className="flex items-center gap-2 mb-6">
-        <RefreshCw className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">URL Redirects</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">URL Redirects</h1>
+        </div>
       </div>
 
       <Card>
@@ -260,9 +262,9 @@ export default function SeoRedirects() {
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <CardTitle>Active Redirects</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm">
                 <Upload className="h-4 w-4 mr-2" />
                 Import CSV
@@ -280,8 +282,8 @@ export default function SeoRedirects() {
               <TableRow>
                 <TableHead>From</TableHead>
                 <TableHead>To</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Hits</TableHead>
+                <TableHead className="hidden md:table-cell">Type</TableHead>
+                <TableHead className="hidden md:table-cell">Hits</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -304,8 +306,8 @@ export default function SeoRedirects() {
                   <TableRow key={redirect.id}>
                     <TableCell className="font-mono text-sm">{redirect.from_url}</TableCell>
                     <TableCell className="font-mono text-sm">{redirect.to_url}</TableCell>
-                    <TableCell>{redirect.type}</TableCell>
-                    <TableCell>{redirect.hit_count || 0}</TableCell>
+                    <TableCell className="hidden md:table-cell">{redirect.type}</TableCell>
+                    <TableCell className="hidden md:table-cell">{redirect.hit_count || 0}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 text-xs rounded ${
                         redirect.is_active
