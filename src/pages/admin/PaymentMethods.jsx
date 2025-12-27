@@ -819,7 +819,7 @@ export default function PaymentMethods() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <h2 className="text-xl font-semibold">Configured Payment Methods</h2>
           <Button
             onClick={() => {
@@ -834,6 +834,11 @@ export default function PaymentMethods() {
             Add Custom Method
           </Button>
         </div>
+
+        <p className="text-sm text-gray-500 mb-6 flex items-center gap-1">
+          <Info className="w-4 h-4" />
+          At checkout, payment methods are shown based on the customer's billing country. Configure available countries in Settings → Allowed Countries.
+        </p>
 
         <div className="grid gap-4">
           {paymentMethods.map(method => {
