@@ -514,7 +514,7 @@ const CustomDomains = () => {
             </AlertDescription>
           </Alert>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">
               <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
@@ -527,7 +527,7 @@ const CustomDomains = () => {
               <p className="text-sm mt-1">Click "Add Domain" to get started.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-6 px-6">
+            <div className="overflow-x-auto">
             <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
