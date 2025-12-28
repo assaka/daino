@@ -50,6 +50,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import { useCheckoutPageBootstrap } from '@/hooks/usePageBootstrap';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
+import { paymentMethodSupportsCurrency } from '@/utils/countryUtils';
 
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
@@ -1159,6 +1160,11 @@ export default function Checkout() {
       const supportedCountries = method.settings?.supported_countries;
       if (supportedCountries && supportedCountries.length > 0) {
         if (!supportedCountries.includes(country)) return false;
+      }
+
+      // Check provider's supported currencies (e.g., iDEAL only for EUR)
+      if (!paymentMethodSupportsCurrency(method, country)) {
+        return false;
       }
 
       return true;

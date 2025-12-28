@@ -45,26 +45,27 @@ function convertToStripeAmount(amount, currency) {
 
 /**
  * Stripe payment methods configuration
- * Each payment method has its display info, Stripe type, and country availability
+ * Each payment method has its display info, Stripe type, country and currency availability
  * countries: null = available globally, array = only available for these countries
+ * currencies: null = all currencies, array = only these currencies supported
  */
 const STRIPE_PAYMENT_METHODS = [
-  // Global payment methods (available everywhere)
-  { code: 'stripe_card', name: 'Credit/Debit Card', stripeType: 'card', icon: 'credit-card', description: 'Pay securely with your credit or debit card', countries: null },
-  { code: 'stripe_apple_pay', name: 'Apple Pay', stripeType: 'apple_pay', icon: 'apple', description: 'Pay with Apple Pay', countries: null },
-  { code: 'stripe_google_pay', name: 'Google Pay', stripeType: 'google_pay', icon: 'google', description: 'Pay with Google Pay', countries: null },
-  { code: 'stripe_link', name: 'Link', stripeType: 'link', icon: 'link', description: 'Fast checkout with Link by Stripe', countries: null },
+  // Global payment methods (available everywhere, all currencies)
+  { code: 'stripe_card', name: 'Credit/Debit Card', stripeType: 'card', icon: 'credit-card', description: 'Pay securely with your credit or debit card', countries: null, currencies: null },
+  { code: 'stripe_apple_pay', name: 'Apple Pay', stripeType: 'apple_pay', icon: 'apple', description: 'Pay with Apple Pay', countries: null, currencies: null },
+  { code: 'stripe_google_pay', name: 'Google Pay', stripeType: 'google_pay', icon: 'google', description: 'Pay with Google Pay', countries: null, currencies: null },
+  { code: 'stripe_link', name: 'Link', stripeType: 'link', icon: 'link', description: 'Fast checkout with Link by Stripe', countries: null, currencies: ['USD'] },
 
-  // Regional payment methods (country-specific)
-  { code: 'stripe_klarna', name: 'Klarna', stripeType: 'klarna', icon: 'klarna', description: 'Buy now, pay later with Klarna', countries: ['AT', 'BE', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'IE', 'IT', 'NL', 'NO', 'PL', 'PT', 'SE', 'US'] },
-  { code: 'stripe_afterpay', name: 'Afterpay / Clearpay', stripeType: 'afterpay_clearpay', icon: 'afterpay', description: 'Buy now, pay later with Afterpay', countries: ['AU', 'CA', 'GB', 'NZ', 'US'] },
-  { code: 'stripe_ideal', name: 'iDEAL', stripeType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL', countries: ['NL'] },
-  { code: 'stripe_bancontact', name: 'Bancontact', stripeType: 'bancontact', icon: 'bancontact', description: 'Pay with Bancontact', countries: ['BE'] },
-  { code: 'stripe_giropay', name: 'Giropay', stripeType: 'giropay', icon: 'giropay', description: 'Pay with Giropay', countries: ['DE'] },
-  { code: 'stripe_sepa', name: 'SEPA Direct Debit', stripeType: 'sepa_debit', icon: 'bank', description: 'Pay via SEPA bank transfer', countries: ['AT', 'BE', 'DE', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT'] },
-  { code: 'stripe_sofort', name: 'Sofort', stripeType: 'sofort', icon: 'sofort', description: 'Pay with Sofort', countries: ['AT', 'BE', 'DE', 'ES', 'IT', 'NL'] },
-  { code: 'stripe_eps', name: 'EPS', stripeType: 'eps', icon: 'eps', description: 'Pay with EPS', countries: ['AT'] },
-  { code: 'stripe_p24', name: 'Przelewy24', stripeType: 'p24', icon: 'p24', description: 'Pay with Przelewy24', countries: ['PL'] },
+  // Regional payment methods (country and currency specific)
+  { code: 'stripe_klarna', name: 'Klarna', stripeType: 'klarna', icon: 'klarna', description: 'Buy now, pay later with Klarna', countries: ['AT', 'BE', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'IE', 'IT', 'NL', 'NO', 'PL', 'PT', 'SE', 'US'], currencies: ['AUD', 'CAD', 'CHF', 'CZK', 'DKK', 'EUR', 'GBP', 'NOK', 'NZD', 'PLN', 'SEK', 'USD'] },
+  { code: 'stripe_afterpay', name: 'Afterpay / Clearpay', stripeType: 'afterpay_clearpay', icon: 'afterpay', description: 'Buy now, pay later with Afterpay', countries: ['AU', 'CA', 'GB', 'NZ', 'US'], currencies: ['AUD', 'CAD', 'GBP', 'NZD', 'USD'] },
+  { code: 'stripe_ideal', name: 'iDEAL', stripeType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL', countries: ['NL'], currencies: ['EUR'] },
+  { code: 'stripe_bancontact', name: 'Bancontact', stripeType: 'bancontact', icon: 'bancontact', description: 'Pay with Bancontact', countries: ['BE'], currencies: ['EUR'] },
+  { code: 'stripe_giropay', name: 'Giropay', stripeType: 'giropay', icon: 'giropay', description: 'Pay with Giropay', countries: ['DE'], currencies: ['EUR'] },
+  { code: 'stripe_sepa', name: 'SEPA Direct Debit', stripeType: 'sepa_debit', icon: 'bank', description: 'Pay via SEPA bank transfer', countries: ['AT', 'BE', 'DE', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT'], currencies: ['EUR'] },
+  { code: 'stripe_sofort', name: 'Sofort', stripeType: 'sofort', icon: 'sofort', description: 'Pay with Sofort', countries: ['AT', 'BE', 'DE', 'ES', 'IT', 'NL'], currencies: ['EUR'] },
+  { code: 'stripe_eps', name: 'EPS', stripeType: 'eps', icon: 'eps', description: 'Pay with EPS', countries: ['AT'], currencies: ['EUR'] },
+  { code: 'stripe_p24', name: 'Przelewy24', stripeType: 'p24', icon: 'p24', description: 'Pay with Przelewy24', countries: ['PL'], currencies: ['EUR', 'PLN'] },
 ];
 
 /**
@@ -279,7 +280,7 @@ async function insertAllStripePaymentMethods(storeId) {
         type: 'stripe',
         payment_flow: 'online',
         description: pm.description,
-        settings: { stripe_type: pm.stripeType, icon: pm.icon, supported_countries: pm.countries },
+        settings: { stripe_type: pm.stripeType, icon: pm.icon, supported_countries: pm.countries, supported_currencies: pm.currencies },
         provider: 'stripe',
         is_active: true,
         sort_order: sortOrder++,
