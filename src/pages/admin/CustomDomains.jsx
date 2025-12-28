@@ -514,7 +514,7 @@ const CustomDomains = () => {
             </AlertDescription>
           </Alert>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 md:p-6 md:pt-0">
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">
               <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
@@ -527,127 +527,63 @@ const CustomDomains = () => {
               <p className="text-sm mt-1">Click "Add Domain" to get started.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-            <Table className="min-w-[600px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[150px]">Domain</TableHead>
-                  <TableHead className="min-w-[200px]">Store URL</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="min-w-[80px]">SSL</TableHead>
-                  <TableHead className="text-right min-w-[120px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Grid View */}
+              <div className="md:hidden divide-y">
                 {domains.map((domain) => (
-                  <TableRow key={domain.id}>
-                    <TableCell className="font-medium px-2 md:px-4">
-                      <div className="flex flex-col gap-1">
+                  <div key={domain.id} className="p-4 space-y-3">
+                    {/* Domain & Actions Row */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          <span className="truncate text-sm">{domain.domain}</span>
+                          <span className="font-medium text-sm truncate">{domain.domain}</span>
                         </div>
                         {domain.is_redirect && (
-                          <Badge variant="secondary" className="text-orange-600 bg-orange-50 text-xs w-fit">
+                          <Badge variant="secondary" className="text-orange-600 bg-orange-50 text-xs w-fit mt-1">
                             <ArrowRight className="w-3 h-3 mr-1" />
-                            <span className="hidden md:inline">Redirects to {domain.redirect_to}</span>
-                            <span className="md:hidden">Redirect</span>
+                            Redirect
                           </Badge>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={getStoreUrl(domain)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline text-sm font-mono flex items-center gap-1 whitespace-nowrap"
-                        >
-                          {getStoreUrl(domain)}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(getStoreUrl(domain))}
-                          className="h-6 w-6 p-0"
-                        >
-                          {copiedText === getStoreUrl(domain) ? (
-                            <Check className="w-3 h-3 text-green-600" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(domain)}
-                    </TableCell>
-                    <TableCell>
-                      {getSSLBadge(domain.ssl_status)}
-                    </TableCell>
-                    <TableCell className="text-right px-2 md:px-4">
-                      <div className="flex items-center justify-end gap-1 md:gap-2">
-                        {/* Settings button - always show */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => showDNSInstructions(domain)}
-                          className="px-2 md:px-3"
+                          className="px-2"
                         >
-                          <Info className="w-3 h-3 md:mr-1" />
-                          <span className="hidden md:inline">Settings</span>
+                          <Info className="w-3 h-3" />
                         </Button>
-
                         {domain.verification_status === 'pending' && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDebugDNS(domain.id)}
-                              className="bg-blue-50 hidden md:flex"
-                            >
-                              <RefreshCw className="w-3 h-3 mr-1 text-blue-600" />
-                              Check DNS
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleVerifyDomain(domain.id)}
-                              disabled={verifying}
-                              className="px-2 md:px-3"
-                            >
-                              {verifying ? (
-                                <RefreshCw className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <>
-                                  <CheckCircle className="w-3 h-3 md:mr-1" />
-                                  <span className="hidden md:inline">Verify</span>
-                                </>
-                              )}
-                            </Button>
-                          </>
+                          <Button
+                            size="sm"
+                            onClick={() => handleVerifyDomain(domain.id)}
+                            disabled={verifying}
+                            className="px-2"
+                          >
+                            {verifying ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <CheckCircle className="w-3 h-3" />
+                            )}
+                          </Button>
                         )}
-
                         {domain.verification_status === 'verified' && domain.ssl_status !== 'active' && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleCheckSSL(domain.id)}
                             disabled={checkingSSL}
-                            className="px-2 md:px-3"
+                            className="px-2"
                           >
                             {checkingSSL ? (
                               <RefreshCw className="w-3 h-3 animate-spin" />
                             ) : (
-                              <>
-                                <Shield className="w-3 h-3 md:mr-1" />
-                                <span className="hidden md:inline">Check SSL</span>
-                              </>
+                              <Shield className="w-3 h-3" />
                             )}
                           </Button>
                         )}
-
                         <Button
                           variant="ghost"
                           size="sm"
@@ -657,12 +593,146 @@ const CustomDomains = () => {
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    {/* Badges Row */}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(domain)}
+                      {getSSLBadge(domain.ssl_status)}
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-            </div>
+              </div>
+
+              {/* Desktop Table View */}
+              <Table className="hidden md:table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Domain</TableHead>
+                    <TableHead>Store URL</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>SSL</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {domains.map((domain) => (
+                    <TableRow key={domain.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-sm">{domain.domain}</span>
+                          </div>
+                          {domain.is_redirect && (
+                            <Badge variant="secondary" className="text-orange-600 bg-orange-50 text-xs w-fit">
+                              <ArrowRight className="w-3 h-3 mr-1" />
+                              Redirects to {domain.redirect_to}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={getStoreUrl(domain)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm font-mono flex items-center gap-1"
+                          >
+                            {getStoreUrl(domain)}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(getStoreUrl(domain))}
+                            className="h-6 w-6 p-0"
+                          >
+                            {copiedText === getStoreUrl(domain) ? (
+                              <Check className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(domain)}
+                      </TableCell>
+                      <TableCell>
+                        {getSSLBadge(domain.ssl_status)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => showDNSInstructions(domain)}
+                          >
+                            <Info className="w-3 h-3 mr-1" />
+                            Settings
+                          </Button>
+
+                          {domain.verification_status === 'pending' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDebugDNS(domain.id)}
+                                className="bg-blue-50"
+                              >
+                                <RefreshCw className="w-3 h-3 mr-1 text-blue-600" />
+                                Check DNS
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleVerifyDomain(domain.id)}
+                                disabled={verifying}
+                              >
+                                {verifying ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Verify
+                                  </>
+                                )}
+                              </Button>
+                            </>
+                          )}
+
+                          {domain.verification_status === 'verified' && domain.ssl_status !== 'active' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCheckSSL(domain.id)}
+                              disabled={checkingSSL}
+                            >
+                              {checkingSSL ? (
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Shield className="w-3 h-3 mr-1" />
+                                  Check SSL
+                                </>
+                              )}
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveDomain(domain.id, domain.domain)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </CardContent>
       </Card>
