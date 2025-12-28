@@ -340,17 +340,30 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
     );
     const existingCodes = new Set(existingStripeMethods.map(m => m.code));
 
-    // Deactivate existing Stripe methods that are NOT enabled in Stripe dashboard
+    // Sync existing Stripe methods with Stripe dashboard status
     let deactivated = 0;
+    let reactivated = 0;
     for (const method of existingStripeMethods) {
       const stripeType = method.settings?.stripe_type;
-      if (stripeType && !enabledTypes.has(stripeType) && method.is_active) {
-        console.log(`🔴 Deactivating ${method.code} - not enabled in Stripe dashboard (${stripeType})`);
+      if (!stripeType) continue;
+
+      const isEnabledInStripe = enabledTypes.has(stripeType);
+
+      // Deactivate if enabled in DB but not in Stripe
+      if (!isEnabledInStripe && method.is_active) {
         await tenantDb
           .from('payment_methods')
           .update({ is_active: false, updated_at: new Date().toISOString() })
           .eq('id', method.id);
         deactivated++;
+      }
+      // Re-activate if disabled in DB but enabled in Stripe
+      else if (isEnabledInStripe && !method.is_active) {
+        await tenantDb
+          .from('payment_methods')
+          .update({ is_active: true, updated_at: new Date().toISOString() })
+          .eq('id', method.id);
+        reactivated++;
       }
     }
 
@@ -413,7 +426,7 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
       console.log(`🔴 Deactivated ${deactivated} Stripe payment methods not enabled in dashboard`);
     }
 
-    return { inserted: insertedCount, deactivated };
+    return { inserted: insertedCount, deactivated, reactivated };
 
   } catch (error) {
     console.error('Failed to insert Stripe payment methods:', error);
@@ -902,6 +915,7 @@ router.post('/sync-stripe-methods', authMiddleware, authorize(['admin', 'store_o
       data: {
         inserted: result.inserted,
         deactivated: result.deactivated || 0,
+        reactivated: result.reactivated || 0,
         accountType: account.type,
         capabilities: capabilities,
         hint: account.type === 'standard'

@@ -318,10 +318,13 @@ export default function PaymentMethods() {
       // Build message based on what happened
       const messages = [];
       if (data?.inserted > 0) {
-        messages.push(`Added ${data.inserted} new`);
+        messages.push(`added ${data.inserted} new`);
+      }
+      if (data?.reactivated > 0) {
+        messages.push(`enabled ${data.reactivated}`);
       }
       if (data?.deactivated > 0) {
-        messages.push(`deactivated ${data.deactivated} (not enabled in Stripe)`);
+        messages.push(`disabled ${data.deactivated}`);
       }
 
       if (messages.length > 0) {
