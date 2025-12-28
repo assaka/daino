@@ -617,7 +617,7 @@ export default function Orders() {
                                     <ChevronDown className="w-4 h-4" />
                                   )}
                                 </TableCell>
-                                <TableCell className="font-medium px-2 md:px-4 text-sm md:text-base">
+                                <TableCell className="font-medium px-2 md:px-4 text-sm md:text-base max-w-[100px] md:max-w-none truncate">
                                   #{order.order_number || order.id.slice(-8)}
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">{formatDate(order.created_date || order.createdAt)}</TableCell>
