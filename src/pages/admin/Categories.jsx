@@ -723,7 +723,7 @@ export default function Categories() {
                     >
                       {getCategoryName(category)}
                     </h3>
-                    <span className="text-xs text-gray-500 font-mono">/{category.slug}</span>
+                    <span className="hidden sm:block text-xs text-gray-500 font-mono">/{category.slug}</span>
                   </div>
                   {getCategoryDescription(category) && (
                     <p className="hidden sm:block text-xs text-gray-600 truncate mt-0.5">

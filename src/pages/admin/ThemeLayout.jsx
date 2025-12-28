@@ -1952,7 +1952,7 @@ export default function ThemeLayout() {
 
                                 {/* Rows Configuration */}
                                 <div className="border-t pt-4">
-                                    <div className="flex items-center gap-4">
+                                    <div className="sm:flex items-center gap-4">
                                         <div>
                                             <Label htmlFor="grid_rows">Number of Rows</Label>
                                             <p className="text-sm text-gray-500">How many rows of products to show per page (0 = infinite scroll)</p>
@@ -2400,7 +2400,7 @@ export default function ThemeLayout() {
                                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                             >
                                                 <Languages className="w-4 h-4 mr-2" />
-                                                Manage Translations
+                                                Manage
                                                 <ArrowRight className="w-4 h-4 ml-2" />
                                             </Button>
                                         </Link>
@@ -2439,8 +2439,8 @@ export default function ThemeLayout() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="horizontal">Horizontal (Thumbnails below)</SelectItem>
-                                            <SelectItem value="vertical">Vertical (Thumbnails on side)</SelectItem>
+                                            <SelectItem value="horizontal">Horizontal <span className="hidden sm:block">(Thumbnails below)</span></SelectItem>
+                                            <SelectItem value="vertical">Vertical <span className="hidden sm:block">(Thumbnails on side)</span></SelectItem>
                                         </SelectContent>
                                     </Select>
 
@@ -2458,8 +2458,8 @@ export default function ThemeLayout() {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="left">Left (Thumbnails on left side)</SelectItem>
-                                                    <SelectItem value="right">Right (Thumbnails on right side)</SelectItem>
+                                                    <SelectItem value="left">Left <span className="hidden sm:block">(Thumbnails on left side)</span></SelectItem>
+                                                    <SelectItem value="right">Right <span className="hidden sm:block">(Thumbnails on right side)</span></SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>

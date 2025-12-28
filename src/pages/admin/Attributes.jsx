@@ -584,11 +584,11 @@ export default function Attributes() {
                   </p>
                 )}
               </div>
-              <div className="sm:flex space-x-2 space-y-2 sm:space-y-0 items-center gap-2">
+              <div className="sm:flex space-y-2 sm:space-y-0 items-center gap-2">
                 <Button
                   onClick={() => setShowDeleteAllConfirm(true)}
                   variant="outline"
-                  className="border-red-600 text-red-600 hover:bg-red-50"
+                  className="mr-2border-red-600 text-red-600 hover:bg-red-50"
                   disabled={!selectedStore || attributesTotalItems === 0}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -597,7 +597,7 @@ export default function Attributes() {
                 <Button
                   onClick={() => setShowBulkTranslateDialog(true)}
                   variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  className="mr-2 border-blue-600 text-blue-600 hover:bg-blue-50"
                   disabled={!selectedStore || attributes.length === 0}
                 >
                   <Languages className="w-4 h-4 mr-2" />

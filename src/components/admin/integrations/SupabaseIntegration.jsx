@@ -523,10 +523,10 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         onClose={() => setFlashMessage(null)}
       />
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hidden sm:p-6">
         <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-green-100 rounded-lg">
+          <div className="hidden sm:block p-2 bg-green-100 rounded-lg">
             <Cloud className="w-8 h-8 text-green-600" />
           </div>
           <div>
@@ -537,7 +537,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="sm:flex items-center space-x-2">
           {status?.connected ? (
             <>
               <button
@@ -575,7 +575,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         <div className="space-y-6">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-amber-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-amber-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-amber-900 mb-1">
                   OAuth Token Expired
@@ -599,7 +599,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                   ) : (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Reconnect with OAuth
+                      Reconnect
                     </>
                   )}
                 </button>
@@ -610,7 +610,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           {/* Show current connection info */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-green-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-green-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-green-900 mb-1">
                   Storage Access Available
@@ -628,7 +628,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       ) : status?.oauthConfigured === false ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <div className="flex items-start space-x-3">
-            <Cloud className="w-6 h-6 text-yellow-600 mt-0.5" />
+            <Cloud className="hidden sm:block w-6 h-6 text-yellow-600 mt-0.5" />
             <div>
               <h3 className="text-lg font-medium text-yellow-900 mb-2">
                 Supabase OAuth Not Configured
@@ -661,7 +661,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         <div className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-blue-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-blue-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-blue-900 mb-1">
                   Connection Automatically Removed
@@ -699,7 +699,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         <div className="space-y-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-red-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-red-600 mt-0.5" />
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -725,7 +725,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         <div className="space-y-6">
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-gray-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-gray-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-gray-900 mb-1">
                   Ready to Reconnect
@@ -763,7 +763,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         <div className="space-y-6">
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-orange-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-orange-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-orange-900 mb-1">
                   Authorization May Still Be Active
@@ -809,7 +809,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         <div className="space-y-6">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-amber-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-amber-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-amber-900 mb-1">
                   Connection Expired
@@ -907,7 +907,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             status.limitedScope) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
               <div className="flex items-start space-x-3">
-                <Cloud className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <Cloud className="hidden sm:block w-5 h-5 text-yellow-600 mt-0.5" />
                 <div className="flex-1">
                   <h4 className="text-sm font-medium text-yellow-900 mb-1">
                     Connection Needs Update
@@ -935,7 +935,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           {/* Connection Details */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <Cloud className="w-5 h-5 text-green-600 mt-0.5" />
+              <Cloud className="hidden sm:block w-5 h-5 text-green-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-green-900 mb-1">
                   Connected to Supabase Project
