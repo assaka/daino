@@ -274,6 +274,8 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
       { stripeAccount: stripeAccountId }
     );
 
+    console.log('🔍 Stripe PM configs count:', configs?.data?.length || 0);
+
     if (configs?.data && configs.data.length > 0) {
       for (const config of configs.data) {
         const pmTypes = [
@@ -283,6 +285,9 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
 
         for (const pmType of pmTypes) {
           const pmConfig = config[pmType];
+          if (pmConfig) {
+            console.log(`  ${pmType}: available=${pmConfig.available}, pref=${pmConfig.display_preference?.preference}`);
+          }
           // Only consider enabled if display_preference is explicitly 'on'
           if (pmConfig?.display_preference?.preference === 'on') {
             enabledTypes.add(pmType);
@@ -290,8 +295,10 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
         }
       }
     }
+
+    console.log('✅ Final enabled:', Array.from(enabledTypes));
   } catch (error) {
-    // On error, only return card as the safe default
+    console.error('❌ Stripe config error:', error.message);
   }
 
   return enabledTypes;
