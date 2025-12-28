@@ -165,10 +165,13 @@ export default function PaymentMethods() {
     if (!selectedStore?.id) return;
 
     try {
+      console.log('🔍 Fetching Stripe enabled methods for store:', selectedStore.id);
       const response = await apiClient.get(`payments/stripe-enabled-methods?store_id=${selectedStore.id}`);
-      const data = response.data?.data || response.data;
+      console.log('🔍 Full API response object:', response);
 
-      console.log('🔍 Stripe enabled methods API response:', data);
+      // Try different response structures
+      const data = response?.data?.data || response?.data || response;
+      console.log('🔍 Extracted data:', data);
 
       if (data?.methods) {
         // Create a map of code -> enabled status
@@ -178,9 +181,11 @@ export default function PaymentMethods() {
         });
         console.log('🔍 Stripe enabled map:', enabledMap);
         setStripeEnabledMethods(enabledMap);
+      } else {
+        console.warn('🔍 No methods in response');
       }
     } catch (error) {
-      console.warn('Could not fetch Stripe enabled methods:', error);
+      console.error('Could not fetch Stripe enabled methods:', error);
       setStripeEnabledMethods(null);
     }
   };

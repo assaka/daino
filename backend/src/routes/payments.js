@@ -949,6 +949,8 @@ router.get('/stripe-enabled-methods', authMiddleware, authorize(['admin', 'store
       enabled: enabledTypes.has(pm.stripeType)
     }));
 
+    console.log('📋 Returning Stripe enabled methods:', methodStatus.map(m => `${m.code}: ${m.enabled}`).join(', '));
+
     res.json({
       success: true,
       connected: true,
