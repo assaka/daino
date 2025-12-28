@@ -80,9 +80,36 @@ export function useCartPageBootstrap(storeId, language = 'en', enabled = true) {
 /**
  * Hook for checkout page bootstrap
  * Returns: taxes, shippingMethods, paymentMethods, deliverySettings
+ * Note: Uses shorter cache time since payment/shipping methods can change
  */
 export function useCheckoutPageBootstrap(storeId, language = 'en', enabled = true) {
-  return usePageBootstrap('checkout', storeId, language, enabled);
+  return useQuery({
+    queryKey: ['page-bootstrap', 'checkout', storeId, language],
+    queryFn: async () => {
+      if (!storeId) {
+        throw new Error('Store ID is required');
+      }
+
+      const params = new URLSearchParams({
+        page_type: 'checkout',
+        store_id: storeId,
+        lang: language
+      });
+
+      const result = await storefrontApiClient.getPublic(`page-bootstrap?${params.toString()}`);
+
+      if (!result.success) {
+        throw new Error(result.message || 'Checkout bootstrap failed');
+      }
+
+      return result.data;
+    },
+    staleTime: 30000, // 30 seconds - checkout data can change (payment methods enabled/disabled)
+    gcTime: 60000, // 1 minute
+    refetchOnMount: true, // Always refetch when checkout page loads
+    refetchOnWindowFocus: false,
+    enabled: enabled && !!storeId,
+  });
 }
 
 /**
