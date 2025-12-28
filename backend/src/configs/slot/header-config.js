@@ -158,6 +158,25 @@ const headerConfig = {
       }
     },
 
+    mobile_search_toggle: {
+      id: 'mobile_search_toggle',
+      type: 'component',
+      component: 'MobileSearchToggle',
+      content: '',
+      className: 'md:hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 1, row: 1 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Mobile Search Toggle',
+        component: 'MobileSearchToggle'
+      }
+    },
+
     cart_icon: {
       id: 'cart_icon',
       type: 'component',
@@ -174,6 +193,83 @@ const headerConfig = {
         hierarchical: false,
         displayName: 'Shopping Cart Icon',
         component: 'MiniCart'
+      }
+    },
+
+    mobile_menu_toggle: {
+      id: 'mobile_menu_toggle',
+      type: 'component',
+      component: 'MobileMenuToggle',
+      content: '',
+      className: 'md:hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 3, row: 1 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Mobile Menu Toggle (Hamburger)',
+        component: 'MobileMenuToggle'
+      }
+    },
+
+    mobile_menu: {
+      id: 'mobile_menu',
+      type: 'container',
+      content: '',
+      className: 'md:hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50',
+      parentClassName: '',
+      styles: {
+        backgroundColor: '#ffffff',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      },
+      parentId: 'header_main',
+      position: { col: 1, row: 2 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'Mobile Menu Container'
+      }
+    },
+
+    mobile_navigation: {
+      id: 'mobile_navigation',
+      type: 'component',
+      component: 'MobileNavigation',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: 'mobile_menu',
+      position: { col: 1, row: 1 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Mobile Category Navigation',
+        component: 'MobileNavigation'
+      }
+    },
+
+    mobile_search_bar: {
+      id: 'mobile_search_bar',
+      type: 'component',
+      component: 'HeaderSearch',
+      content: '',
+      className: 'md:hidden px-4 py-2 border-b border-gray-200',
+      parentClassName: '',
+      styles: {},
+      parentId: 'header_main',
+      position: { col: 1, row: 3 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Mobile Search Bar',
+        component: 'HeaderSearch'
       }
     },
 

@@ -5,6 +5,7 @@ const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
 const jwt = require('jsonwebtoken');
+const { headerConfig } = require('../configs/slot/header-config');
 const router = express.Router();
 
 /**
@@ -737,6 +738,44 @@ router.get('/', cacheMiddleware({
     const categoriesFlat = categoriesResult.rows || [];
     const categoryTree = buildCategoryTree(categoriesFlat);
 
+    // Auto-merge missing mobile slots into header config
+    // This ensures mobile navigation works even for older configurations
+    let finalHeaderConfig = headerSlotConfigResult;
+    if (headerSlotConfigResult?.configuration?.slots) {
+      const existingSlots = headerSlotConfigResult.configuration.slots;
+      const defaultSlots = headerConfig.slots || {};
+
+      // Mobile slots that should be auto-merged if missing
+      const mobileSlotIds = [
+        'mobile_menu_toggle',
+        'mobile_menu',
+        'mobile_navigation',
+        'mobile_search_toggle',
+        'mobile_search_bar'
+      ];
+
+      let mergedSlots = { ...existingSlots };
+      let addedSlots = [];
+
+      for (const slotId of mobileSlotIds) {
+        if (!existingSlots[slotId] && defaultSlots[slotId]) {
+          mergedSlots[slotId] = defaultSlots[slotId];
+          addedSlots.push(slotId);
+        }
+      }
+
+      if (addedSlots.length > 0) {
+        console.log(`📱 Bootstrap: Auto-merged ${addedSlots.length} mobile slots for store ${store.id}:`, addedSlots);
+        finalHeaderConfig = {
+          ...headerSlotConfigResult,
+          configuration: {
+            ...headerSlotConfigResult.configuration,
+            slots: mergedSlots
+          }
+        };
+      }
+    }
+
     // Apply cache headers based on store settings
     await applyCacheHeaders(res, store.id);
 
@@ -762,7 +801,7 @@ router.get('/', cacheMiddleware({
         categories: categoryTree,
         wishlist: wishlistResult || [],
         user: authenticatedUser || null,
-        headerSlotConfig: headerSlotConfigResult || null,
+        headerSlotConfig: finalHeaderConfig || null,
         seoSettings: seoSettingsResult || null,
         seoTemplates: seoTemplatesResult || [],
         themeDefaults: themeDefaultsResult || null,
