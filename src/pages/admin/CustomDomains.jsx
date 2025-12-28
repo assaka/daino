@@ -531,11 +531,11 @@ const CustomDomains = () => {
             <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Domain</TableHead>
-                  <TableHead className="hidden md:table-cell">Store URL</TableHead>
-                  <TableHead className="sm:px-2 md:px-4">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">SSL</TableHead>
-                  <TableHead className="text-right sm:px-2 md:px-4">Actions</TableHead>
+                  <TableHead className="min-w-[150px]">Domain</TableHead>
+                  <TableHead className="min-w-[200px]">Store URL</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[80px]">SSL</TableHead>
+                  <TableHead className="text-right min-w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -556,13 +556,13 @@ const CustomDomains = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <a
                           href={getStoreUrl(domain)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline text-sm font-mono flex items-center gap-1"
+                          className="text-blue-600 hover:underline text-sm font-mono flex items-center gap-1 whitespace-nowrap"
                         >
                           {getStoreUrl(domain)}
                           <ExternalLink className="w-3 h-3" />
@@ -581,10 +581,10 @@ const CustomDomains = () => {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 md:px-4">
+                    <TableCell>
                       {getStatusBadge(domain)}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell>
                       {getSSLBadge(domain.ssl_status)}
                     </TableCell>
                     <TableCell className="text-right px-2 md:px-4">
