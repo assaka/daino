@@ -501,7 +501,8 @@ export default function PaymentMethods() {
 
   const handleToggleActive = async (method) => {
     // Check if trying to activate a Stripe method that is not enabled in Stripe dashboard
-    if (!method.is_active && method.provider === 'stripe' && stripeEnabledMethods && stripeEnabledMethods[method.code] === false) {
+    const isStripeMethod = method.provider === 'stripe' || method.code?.startsWith('stripe_');
+    if (!method.is_active && isStripeMethod && stripeEnabledMethods && stripeEnabledMethods[method.code] === false) {
       setFlashMessage({
         type: 'error',
         message: `Cannot enable "${method.name}" - this payment method is not enabled in your Stripe dashboard. Enable it at dashboard.stripe.com → Settings → Payment methods.`
@@ -955,7 +956,7 @@ export default function PaymentMethods() {
                             )}
                           </Badge>
                         )}
-                        {method.provider === 'stripe' && stripeEnabledMethods && stripeEnabledMethods[method.code] === false && (
+                        {(method.provider === 'stripe' || method.code?.startsWith('stripe_')) && stripeEnabledMethods && stripeEnabledMethods[method.code] === false && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
