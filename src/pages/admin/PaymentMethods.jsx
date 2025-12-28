@@ -325,10 +325,19 @@ export default function PaymentMethods() {
       });
       const data = response.data?.data || response.data;
 
+      // Build message based on what happened
+      const messages = [];
       if (data?.inserted > 0) {
-        setFlashMessage({ type: 'success', message: `Synced ${data.inserted} new Stripe payment methods!` });
+        messages.push(`Added ${data.inserted} new`);
+      }
+      if (data?.deactivated > 0) {
+        messages.push(`deactivated ${data.deactivated} (not enabled in Stripe)`);
+      }
+
+      if (messages.length > 0) {
+        setFlashMessage({ type: 'success', message: `Synced: ${messages.join(', ')}` });
       } else {
-        setFlashMessage({ type: 'success', message: 'Payment methods are already up to date.' });
+        setFlashMessage({ type: 'info', message: 'Payment methods are already up to date.' });
       }
 
       // Reload payment methods and enabled status

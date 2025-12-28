@@ -344,13 +344,30 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
       enabledTypes = await getEnabledStripePaymentMethods(stripeAccountId);
     }
 
-    // Get existing payment methods to avoid duplicates
+    // Get existing Stripe payment methods
     const { data: existingMethods } = await tenantDb
       .from('payment_methods')
-      .select('code, provider')
+      .select('id, code, provider, is_active, settings')
       .eq('store_id', storeId);
 
-    const existingCodes = new Set((existingMethods || []).map(m => `${m.provider || ''}:${m.code}`));
+    const existingStripeMethods = (existingMethods || []).filter(m =>
+      m.provider === 'stripe' || m.code?.startsWith('stripe_')
+    );
+    const existingCodes = new Set(existingStripeMethods.map(m => m.code));
+
+    // Deactivate existing Stripe methods that are NOT enabled in Stripe dashboard
+    let deactivated = 0;
+    for (const method of existingStripeMethods) {
+      const stripeType = method.settings?.stripe_type;
+      if (stripeType && !enabledTypes.has(stripeType) && method.is_active) {
+        console.log(`🔴 Deactivating ${method.code} - not enabled in Stripe dashboard (${stripeType})`);
+        await tenantDb
+          .from('payment_methods')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('id', method.id);
+        deactivated++;
+      }
+    }
 
     // Prepare payment methods to insert - only applicable AND enabled ones
     const methodsToInsert = [];
@@ -358,7 +375,7 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
 
     for (const pm of STRIPE_PAYMENT_METHODS) {
       // Skip if already exists
-      if (existingCodes.has(`stripe:${pm.code}`)) {
+      if (existingCodes.has(pm.code)) {
         console.log(`⏭️ Skipping ${pm.code} - already exists for Stripe provider`);
         continue;
       }
@@ -391,24 +408,27 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
       });
     }
 
-    if (methodsToInsert.length === 0) {
-      console.log('ℹ️ No new Stripe payment methods to insert');
-      return { inserted: 0 };
+    let insertedCount = 0;
+    if (methodsToInsert.length > 0) {
+      // Insert all payment methods
+      const { data: inserted, error } = await tenantDb
+        .from('payment_methods')
+        .insert(methodsToInsert)
+        .select();
+
+      if (error) {
+        console.error('Error inserting Stripe payment methods:', error);
+        throw error;
+      }
+      insertedCount = inserted.length;
+      console.log(`✅ Inserted ${insertedCount} Stripe payment methods for store ${storeId}`);
     }
 
-    // Insert all payment methods
-    const { data: inserted, error } = await tenantDb
-      .from('payment_methods')
-      .insert(methodsToInsert)
-      .select();
-
-    if (error) {
-      console.error('Error inserting Stripe payment methods:', error);
-      throw error;
+    if (deactivated > 0) {
+      console.log(`🔴 Deactivated ${deactivated} Stripe payment methods not enabled in dashboard`);
     }
 
-    console.log(`✅ Inserted ${inserted.length} Stripe payment methods for store ${storeId}`);
-    return { inserted: inserted.length, methods: inserted };
+    return { inserted: insertedCount, deactivated };
 
   } catch (error) {
     console.error('Failed to insert Stripe payment methods:', error);
@@ -896,6 +916,7 @@ router.post('/sync-stripe-methods', authMiddleware, authorize(['admin', 'store_o
       message: `Synced Stripe payment methods`,
       data: {
         inserted: result.inserted,
+        deactivated: result.deactivated || 0,
         accountType: account.type,
         capabilities: capabilities,
         hint: account.type === 'standard'
