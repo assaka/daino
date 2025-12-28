@@ -523,7 +523,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         onClose={() => setFlashMessage(null)}
       />
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hidden sm:p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 sm:p-6">
         <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="hidden sm:block p-2 bg-green-100 rounded-lg">
