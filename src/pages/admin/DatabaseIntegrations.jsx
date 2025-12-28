@@ -180,7 +180,7 @@ const DatabaseIntegrations = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="supabase" className="space-y-6">
+        <TabsContent value="supabase" className="space-y-6 pt-4">
           {/* Render the Supabase page content directly without wrapper */}
           {storeId ? (
             <>
@@ -198,7 +198,7 @@ const DatabaseIntegrations = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="neon" className="space-y-6">
+        <TabsContent value="neon" className="space-y-6 pt-4">
           {storeId ? (
             <NeonPage />
           ) : (
@@ -212,7 +212,7 @@ const DatabaseIntegrations = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="planetscale" className="space-y-6">
+        <TabsContent value="planetscale" className="space-y-6 pt-4">
           {storeId ? (
             <PlanetScalePage />
           ) : (
@@ -226,7 +226,7 @@ const DatabaseIntegrations = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="enterprise" className="space-y-6">
+        <TabsContent value="enterprise" className="space-y-6  pt-4">
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Enterprise Database Options</h2>
             <p className="text-gray-600 text-sm">
