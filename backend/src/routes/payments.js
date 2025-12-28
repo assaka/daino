@@ -340,7 +340,7 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
     );
     const existingCodes = new Set(existingStripeMethods.map(m => m.code));
 
-    // Sync existing Stripe methods with Stripe dashboard status
+    // Sync existing Stripe methods with Stripe dashboard status and update settings
     let deactivated = 0;
     let reactivated = 0;
     for (const method of existingStripeMethods) {
@@ -349,22 +349,35 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
 
       const isEnabledInStripe = enabledTypes.has(stripeType);
 
-      // Deactivate if enabled in DB but not in Stripe
+      // Find the corresponding payment method config to get countries/currencies
+      const pmConfig = STRIPE_PAYMENT_METHODS.find(pm => pm.stripeType === stripeType);
+
+      // Build update object
+      const updates = { updated_at: new Date().toISOString() };
+
+      // Update is_active based on Stripe status
       if (!isEnabledInStripe && method.is_active) {
-        await tenantDb
-          .from('payment_methods')
-          .update({ is_active: false, updated_at: new Date().toISOString() })
-          .eq('id', method.id);
+        updates.is_active = false;
         deactivated++;
-      }
-      // Re-activate if disabled in DB but enabled in Stripe
-      else if (isEnabledInStripe && !method.is_active) {
-        await tenantDb
-          .from('payment_methods')
-          .update({ is_active: true, updated_at: new Date().toISOString() })
-          .eq('id', method.id);
+      } else if (isEnabledInStripe && !method.is_active) {
+        updates.is_active = true;
         reactivated++;
       }
+
+      // Update settings if missing supported_countries/currencies
+      if (pmConfig && (!method.settings?.supported_countries || !method.settings?.supported_currencies)) {
+        updates.settings = {
+          ...method.settings,
+          supported_countries: pmConfig.countries,
+          supported_currencies: pmConfig.currencies
+        };
+      }
+
+      // Apply updates
+      await tenantDb
+        .from('payment_methods')
+        .update(updates)
+        .eq('id', method.id);
     }
 
     // Prepare payment methods to insert - only applicable AND enabled ones
