@@ -566,11 +566,11 @@ const CustomDomains = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Domain</TableHead>
+                  <TableHead className="min-w-[100px]">Domain</TableHead>
                   <TableHead className="hidden md:table-cell">Store URL</TableHead>
-                  <TableHead className="px-2 md:px-4">Status</TableHead>
+                  <TableHead className="sm:px-2 md:px-4">Status</TableHead>
                   <TableHead className="hidden md:table-cell">SSL</TableHead>
-                  <TableHead className="text-right px-2 md:px-4">Actions</TableHead>
+                  <TableHead className="text-right sm:px-2 md:px-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

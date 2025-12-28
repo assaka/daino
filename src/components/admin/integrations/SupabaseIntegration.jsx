@@ -524,7 +524,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       />
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 sm:p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="sm:flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="hidden sm:block p-2 bg-green-100 rounded-lg">
             <Cloud className="w-8 h-8 text-green-600" />

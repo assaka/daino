@@ -97,7 +97,7 @@ const SupabasePage = () => {
 
   // Show the main Supabase integration page with both database and storage features
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto sm:p-6 space-y-6">
       <div className="sm:flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Supabase Integration</h1>
