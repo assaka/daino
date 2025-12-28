@@ -150,32 +150,33 @@ const DatabaseIntegrations = () => {
       </div>
 
       <Tabs defaultValue="supabase" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="supabase" className="flex items-center space-x-2 relative">
             <Database className="w-4 h-4" />
             <span>Supabase</span>
             {defaultProvider === 'supabase' && (
-              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+              <Badge variant="secondary" className="ml-2 text-xs hidden sm:inline-flex">Default</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="neon" className="flex items-center space-x-2 relative">
             <Database className="w-4 h-4" />
             <span>Neon</span>
             {defaultProvider === 'neon' && (
-              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+              <Badge variant="secondary" className="ml-2 text-xs hidden sm:inline-flex">Default</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="planetscale" className="flex items-center space-x-2 relative">
             <Database className="w-4 h-4" />
-            <span>PlanetScale</span>
+            <span className="hidden sm:inline">PlanetScale</span>
+            <span className="sm:hidden">Planet</span>
             {defaultProvider === 'planetscale' && (
-              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+              <Badge variant="secondary" className="ml-2 text-xs hidden sm:inline-flex">Default</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="enterprise" className="flex items-center space-x-2">
             <Cloud className="w-4 h-4" />
             <span>Enterprise</span>
-            <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
+            <Badge variant="outline" className="ml-2 text-xs hidden sm:inline-flex">Soon</Badge>
           </TabsTrigger>
         </TabsList>
 
