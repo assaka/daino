@@ -323,7 +323,7 @@ export default function PaymentMethods() {
       if (data?.inserted > 0) {
         setFlashMessage({ type: 'success', message: `Synced ${data.inserted} new Stripe payment methods!` });
       } else {
-        setFlashMessage({ type: 'info', message: 'Payment methods are already up to date.' });
+        setFlashMessage({ type: 'success', message: 'Payment methods are already up to date.' });
       }
 
       // Reload payment methods and enabled status
