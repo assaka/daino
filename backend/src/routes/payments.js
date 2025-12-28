@@ -25,6 +25,35 @@ const ZERO_DECIMAL_CURRENCIES = [
   'XOF', 'XPF'
 ];
 
+// Country to currency mapping for multi-currency checkout
+const COUNTRY_TO_CURRENCY = {
+  // Europe - Euro zone
+  DE: 'EUR', AT: 'EUR', BE: 'EUR', CY: 'EUR', EE: 'EUR', ES: 'EUR', FI: 'EUR',
+  FR: 'EUR', GR: 'EUR', IE: 'EUR', IT: 'EUR', LT: 'EUR', LU: 'EUR', LV: 'EUR',
+  MT: 'EUR', NL: 'EUR', PT: 'EUR', SI: 'EUR', SK: 'EUR',
+  // Europe - Non-Euro
+  GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', CZ: 'CZK',
+  HU: 'HUF', RO: 'RON', BG: 'BGN', HR: 'EUR',
+  // Americas
+  US: 'USD', CA: 'CAD', MX: 'MXN', BR: 'BRL',
+  // Asia-Pacific
+  JP: 'JPY', CN: 'CNY', KR: 'KRW', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD',
+  IN: 'INR', TH: 'THB', MY: 'MYR', ID: 'IDR', PH: 'PHP', VN: 'VND',
+  // Middle East & Africa
+  AE: 'AED', SA: 'SAR', IL: 'ILS', ZA: 'ZAR', TR: 'TRY', RU: 'RUB',
+};
+
+/**
+ * Get currency for a country code
+ * @param {string} countryCode - ISO country code
+ * @param {string} fallback - Fallback currency if country not found
+ * @returns {string} Currency code
+ */
+function getCurrencyForCountry(countryCode, fallback = 'USD') {
+  if (!countryCode) return fallback;
+  return COUNTRY_TO_CURRENCY[countryCode.toUpperCase()] || fallback;
+}
+
 /**
  * Convert amount to Stripe format based on currency
  * @param {number} amount - Amount in standard units (e.g., dollars, yen)
@@ -1880,8 +1909,11 @@ router.post('/create-checkout', async (req, res) => {
       }
     }
 
-    // Get store currency
-    const storeCurrency = store.currency || 'usd';
+    // Determine checkout currency based on billing country (for multi-currency support)
+    // This allows customers from Netherlands to pay in EUR with iDEAL, etc.
+    const billingCountry = shipping_address?.country || 'US';
+    const checkoutCurrency = getCurrencyForCountry(billingCountry, store.currency || 'USD');
+    console.log(`💱 Checkout currency: ${checkoutCurrency} (billing country: ${billingCountry}, store default: ${store.currency})`);
     
     // Calculate amounts and prepare additional charges
     const taxAmountNum = parseFloat(tax_amount) || 0;
@@ -1976,7 +2008,7 @@ router.post('/create-checkout', async (req, res) => {
     items.forEach(item => {
       // Main product line item
       const basePrice = item.price || 0;
-      const unit_amount = convertToStripeAmount(basePrice, storeCurrency); // Convert based on currency type
+      const unit_amount = convertToStripeAmount(basePrice, checkoutCurrency); // Convert based on currency type
       
       // Handle different name formats from frontend with database lookup
       let productName = item.product_name || 
@@ -2002,7 +2034,7 @@ router.post('/create-checkout', async (req, res) => {
       // Add main product line item
       const productLineItem = {
         price_data: {
-          currency: storeCurrency.toLowerCase(),
+          currency: checkoutCurrency.toLowerCase(),
           product_data: {
             name: productName,
             description: item.description || item.product?.description || undefined,
@@ -2029,11 +2061,11 @@ router.post('/create-checkout', async (req, res) => {
       if (item.selected_options && item.selected_options.length > 0) {
         item.selected_options.forEach(option => {
           if (option.price && option.price > 0) {
-            const optionUnitAmount = convertToStripeAmount(option.price, storeCurrency); // Convert based on currency type
+            const optionUnitAmount = convertToStripeAmount(option.price, checkoutCurrency); // Convert based on currency type
             
             const optionLineItem = {
               price_data: {
-                currency: storeCurrency.toLowerCase(),
+                currency: checkoutCurrency.toLowerCase(),
                 product_data: {
                   name: `${option.name}`,
                   description: `Custom option for ${productName}`,
@@ -2062,7 +2094,7 @@ router.post('/create-checkout', async (req, res) => {
 
     // Add payment fee as line item (no direct rate support like shipping)
     if (paymentFeeNum > 0) {
-      const paymentFeeStripeAmount = convertToStripeAmount(paymentFeeNum, storeCurrency);
+      const paymentFeeStripeAmount = convertToStripeAmount(paymentFeeNum, checkoutCurrency);
       console.log('💳 Adding payment fee line item:', paymentFeeNum, 'stripe amount:', paymentFeeStripeAmount, 'method:', selected_payment_method, 'name:', selected_payment_method_name);
 
       // Use the payment method name from frontend (e.g., "Bank Transfer", "Credit Card")
@@ -2070,7 +2102,7 @@ router.post('/create-checkout', async (req, res) => {
 
       line_items.push({
         price_data: {
-          currency: storeCurrency.toLowerCase(),
+          currency: checkoutCurrency.toLowerCase(),
           product_data: {
             name: paymentMethodName,
             metadata: {
@@ -2134,8 +2166,8 @@ router.post('/create-checkout', async (req, res) => {
       try {
         // Create a Stripe coupon for the discount
         const couponParams = {
-          amount_off: convertToStripeAmount(discount_amount, storeCurrency), // Convert based on currency type
-          currency: storeCurrency.toLowerCase(),
+          amount_off: convertToStripeAmount(discount_amount, checkoutCurrency), // Convert based on currency type
+          currency: checkoutCurrency.toLowerCase(),
           duration: 'once',
           name: `Discount: ${applied_coupon.code}`,
           metadata: {
@@ -2171,8 +2203,8 @@ router.post('/create-checkout', async (req, res) => {
       const shippingRateData = {
         type: 'fixed_amount',
         fixed_amount: {
-          amount: convertToStripeAmount(shipping_cost || 0, storeCurrency), // Convert based on currency type
-          currency: storeCurrency.toLowerCase(),
+          amount: convertToStripeAmount(shipping_cost || 0, checkoutCurrency), // Convert based on currency type
+          currency: checkoutCurrency.toLowerCase(),
         },
         display_name: shipping_method.name || selected_shipping_method || 'Selected Shipping',
       };
@@ -2208,14 +2240,14 @@ router.post('/create-checkout', async (req, res) => {
         // Fallback to line item for shipping
         sessionConfig.line_items.push({
           price_data: {
-            currency: storeCurrency.toLowerCase(),
+            currency: checkoutCurrency.toLowerCase(),
             product_data: {
               name: `Shipping: ${shipping_method.name || selected_shipping_method}`,
               metadata: {
                 item_type: 'shipping'
               }
             },
-            unit_amount: convertToStripeAmount(shipping_cost || 0, storeCurrency),
+            unit_amount: convertToStripeAmount(shipping_cost || 0, checkoutCurrency),
           },
           quantity: 1,
         });
@@ -2224,14 +2256,14 @@ router.post('/create-checkout', async (req, res) => {
       // If we have shipping cost but no method, add as line item
       sessionConfig.line_items.push({
         price_data: {
-          currency: storeCurrency.toLowerCase(),
+          currency: checkoutCurrency.toLowerCase(),
           product_data: {
             name: 'Shipping',
             metadata: {
               item_type: 'shipping'
             }
           },
-          unit_amount: convertToStripeAmount(shipping_cost || 0, storeCurrency),
+          unit_amount: convertToStripeAmount(shipping_cost || 0, checkoutCurrency),
         },
         quantity: 1,
       });

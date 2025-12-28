@@ -50,7 +50,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import { useCheckoutPageBootstrap } from '@/hooks/usePageBootstrap';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
-import { paymentMethodSupportsCurrency } from '@/utils/countryUtils';
+import { paymentMethodSupportsCurrency, getCurrencyForCountry } from '@/utils/countryUtils';
 
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
@@ -1150,7 +1150,9 @@ export default function Checkout() {
 
   const getEligiblePaymentMethods = () => {
     const country = getBillingCountry();
-    const storeCurrency = store?.currency || settings?.currency_code || 'USD';
+    // Use billing country's currency (multi-currency checkout)
+    // This allows NL customers to use iDEAL (EUR), US customers to use Klarna (USD), etc.
+    const billingCurrency = getCurrencyForCountry(country);
 
     return paymentMethods.filter(method => {
       // Check manual availability countries (if configured)
@@ -1164,9 +1166,9 @@ export default function Checkout() {
         if (!supportedCountries.includes(country)) return false;
       }
 
-      // Check provider's supported currencies against STORE currency (not billing country)
-      // Stripe uses the store's currency for checkout, so payment method must support it
-      if (!paymentMethodSupportsCurrency(method, storeCurrency)) {
+      // Check provider's supported currencies against billing country's currency
+      // Checkout will use the billing country's currency for the transaction
+      if (!paymentMethodSupportsCurrency(method, billingCurrency)) {
         return false;
       }
 
