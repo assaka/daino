@@ -1944,22 +1944,24 @@ router.post('/create-checkout', async (req, res) => {
     // Pre-fetch product data with translations for all items
     const productIds = [...new Set(items.map(item => item.product_id).filter(Boolean))];
     const productMap = new Map();
+    const selectedLanguage = req.headers['x-language'] || 'en';
 
     if (productIds.length > 0) {
       try {
         // Fetch products with their translations
         const { data: products, error } = await tenantDb
           .from('products')
-          .select('id, sku, name, product_translations(language_code, name)')
+          .select('id, sku, product_translations(language_code, name)')
           .in('id', productIds);
 
         if (!error && products) {
           products.forEach(product => {
-            // Get name from translations (prefer 'en', then first available, then product.name)
-            let name = product.name;
+            // Get name from translations: selected language first, then English fallback
+            let name = null;
             if (product.product_translations && product.product_translations.length > 0) {
+              const selectedTranslation = product.product_translations.find(t => t.language_code === selectedLanguage);
               const enTranslation = product.product_translations.find(t => t.language_code === 'en');
-              name = enTranslation?.name || product.product_translations[0]?.name || product.name;
+              name = selectedTranslation?.name || enTranslation?.name;
             }
             productMap.set(product.id, { ...product, name });
           });
