@@ -1150,6 +1150,8 @@ export default function Checkout() {
 
   const getEligiblePaymentMethods = () => {
     const country = getBillingCountry();
+    const storeCurrency = store?.currency || settings?.currency_code || 'USD';
+
     return paymentMethods.filter(method => {
       // Check manual availability countries (if configured)
       if (method.countries && method.countries.length > 0) {
@@ -1162,8 +1164,9 @@ export default function Checkout() {
         if (!supportedCountries.includes(country)) return false;
       }
 
-      // Check provider's supported currencies (e.g., iDEAL only for EUR)
-      if (!paymentMethodSupportsCurrency(method, country)) {
+      // Check provider's supported currencies against STORE currency (not billing country)
+      // Stripe uses the store's currency for checkout, so payment method must support it
+      if (!paymentMethodSupportsCurrency(method, storeCurrency)) {
         return false;
       }
 

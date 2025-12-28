@@ -31,12 +31,12 @@ export function getCurrencyForCountry(countryCode) {
 }
 
 /**
- * Check if a payment method supports a country's currency
+ * Check if a payment method supports a specific currency
  * @param {Object} paymentMethod - Payment method with settings.supported_currencies
- * @param {string} countryCode - ISO country code
- * @returns {boolean} - Whether the payment method supports the country's currency
+ * @param {string} currencyCode - Currency code (e.g., 'USD', 'EUR')
+ * @returns {boolean} - Whether the payment method supports the currency
  */
-export function paymentMethodSupportsCurrency(paymentMethod, countryCode) {
+export function paymentMethodSupportsCurrency(paymentMethod, currencyCode) {
   const supportedCurrencies = paymentMethod?.settings?.supported_currencies;
 
   // If no currency restriction, it supports all currencies
@@ -44,6 +44,7 @@ export function paymentMethodSupportsCurrency(paymentMethod, countryCode) {
     return true;
   }
 
-  const countryCurrency = getCurrencyForCountry(countryCode);
-  return supportedCurrencies.includes(countryCurrency);
+  if (!currencyCode) return true;
+
+  return supportedCurrencies.includes(currencyCode.toUpperCase());
 }
