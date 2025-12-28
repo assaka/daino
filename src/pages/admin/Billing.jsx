@@ -346,7 +346,7 @@ export default function Billing() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="sm:flex items-center justify-between space-y-2 sm:space-y-0">
                 <div>
                   <CardTitle>Purchase Credits</CardTitle>
                   <CardDescription>

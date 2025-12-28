@@ -335,7 +335,7 @@ export default function TeamManagement({ storeId, storeName }) {
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <Card className="material-elevation-1 border-0">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="sm:flex items-center justify-between space-y-2">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
@@ -450,7 +450,7 @@ export default function TeamManagement({ storeId, storeName }) {
                     return (
                       <div
                         key={invitation.id}
-                        className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
+                        className="sm:flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg space-y-2"
                       >
                         <div className="flex items-center gap-3">
                           <Avatar>
