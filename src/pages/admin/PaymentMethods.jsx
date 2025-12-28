@@ -168,12 +168,15 @@ export default function PaymentMethods() {
       const response = await apiClient.get(`payments/stripe-enabled-methods?store_id=${selectedStore.id}`);
       const data = response.data?.data || response.data;
 
+      console.log('🔍 Stripe enabled methods API response:', data);
+
       if (data?.methods) {
         // Create a map of code -> enabled status
         const enabledMap = {};
         data.methods.forEach(m => {
           enabledMap[m.code] = m.enabled;
         });
+        console.log('🔍 Stripe enabled map:', enabledMap);
         setStripeEnabledMethods(enabledMap);
       }
     } catch (error) {
@@ -880,6 +883,7 @@ export default function PaymentMethods() {
 
         <div className="grid gap-4">
           {paymentMethods.map(method => {
+            console.log('🔍 Payment method:', method.code, 'provider:', method.provider, 'enabled:', stripeEnabledMethods?.[method.code]);
             // Determine icon and color based on payment method type
             const getMethodIcon = () => {
               if (method.icon_url) {
