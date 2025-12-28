@@ -2503,7 +2503,7 @@ export default function Checkout() {
                 </Accordion>
               </div>
 
-              <div className="border-t pt-4 space-y-2">
+              <div className="pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span>{t('common.subtotal', 'Subtotal')}</span>
                   <span>{formatPrice(calculateSubtotal())}</span>
