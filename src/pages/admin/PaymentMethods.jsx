@@ -1085,6 +1085,7 @@ export default function PaymentMethods() {
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                       required
+                      disabled={!!editingMethod}
                     />
                   </div>
                 </div>
@@ -1116,7 +1117,7 @@ export default function PaymentMethods() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="type">Payment Type</Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })} disabled={!!editingMethod}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1134,7 +1135,7 @@ export default function PaymentMethods() {
 
                   <div>
                     <Label htmlFor="payment_flow">Payment Flow</Label>
-                    <Select value={formData.payment_flow} onValueChange={(value) => setFormData({ ...formData, payment_flow: value })}>
+                    <Select value={formData.payment_flow} onValueChange={(value) => setFormData({ ...formData, payment_flow: value })} disabled={!!editingMethod}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
