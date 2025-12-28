@@ -1941,22 +1941,29 @@ router.post('/create-checkout', async (req, res) => {
     // Create line items for Stripe - separate main product and custom options
     const line_items = [];
     
-    // Pre-fetch product data for all items to get actual product names
+    // Pre-fetch product data with translations for all items
     const productIds = [...new Set(items.map(item => item.product_id).filter(Boolean))];
     const productMap = new Map();
-    
+
     if (productIds.length > 0) {
       try {
+        // Fetch products with their translations
         const { data: products, error } = await tenantDb
           .from('products')
-          .select('*')
+          .select('id, sku, name, product_translations(language_code, name)')
           .in('id', productIds);
 
         if (!error && products) {
           products.forEach(product => {
-            productMap.set(product.id, product);
+            // Get name from translations (prefer 'en', then first available, then product.name)
+            let name = product.name;
+            if (product.product_translations && product.product_translations.length > 0) {
+              const enTranslation = product.product_translations.find(t => t.language_code === 'en');
+              name = enTranslation?.name || product.product_translations[0]?.name || product.name;
+            }
+            productMap.set(product.id, { ...product, name });
           });
-          console.log('Pre-fetched product data for', products.length, 'products');
+          console.log('Pre-fetched product data with translations for', products.length, 'products');
         }
       } catch (error) {
         console.warn('Could not pre-fetch product data:', error.message);
@@ -1977,10 +1984,16 @@ router.post('/create-checkout', async (req, res) => {
       // Look up actual product name from database if needed
       if ((!productName || productName === 'Product') && item.product_id) {
         const product = productMap.get(item.product_id);
-        if (product) {
+        if (product && product.name) {
           productName = product.name;
           console.log('Using database product name for Stripe:', productName);
         }
+      }
+
+      // Final fallback - ensure we always have a name
+      if (!productName) {
+        productName = `Product #${item.product_id || 'Unknown'}`;
+        console.warn('Product name missing, using fallback:', productName);
       }
       
       // Add main product line item
