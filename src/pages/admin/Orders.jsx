@@ -24,7 +24,11 @@ import {
   X,
   RefreshCw,
   Info,
-  Sparkles
+  Sparkles,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SaveButton } from "@/components/ui/save-button";
@@ -196,6 +200,23 @@ export default function Orders() {
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="w-5 h-5 text-yellow-600" />;
+      case "processing":
+        return <Loader2 className="w-5 h-5 text-blue-600" />;
+      case "shipped":
+        return <Truck className="w-5 h-5 text-purple-600" />;
+      case "complete":
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case "cancelled":
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      default:
+        return <Clock className="w-5 h-5 text-gray-600" />;
     }
   };
 
@@ -640,7 +661,10 @@ export default function Orders() {
                                 </TableCell>
                                 <TableCell className="px-2 md:px-4">
                                   <div className="flex items-center gap-1">
-                                    <Badge variant="outline" className={`text-xs md:text-sm ${getStatusBadge(order.status)}`}>
+                                    <span className="md:hidden" title={order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}>
+                                      {getStatusIcon(order.status)}
+                                    </span>
+                                    <Badge variant="outline" className={`hidden md:inline-flex text-sm ${getStatusBadge(order.status)}`}>
                                       {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
                                     </Badge>
                                     {order.demo && (
