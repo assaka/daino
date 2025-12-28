@@ -191,26 +191,27 @@ export default function AccessRequestsManagement({ storeId, storeName }) {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="pending" className="gap-2">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="pending" className="flex items-center space-x-1 sm:space-x-2">
                 <Clock className="h-4 w-4" />
-                Pending
+                <span className="hidden sm:inline">Pending</span>
                 {pendingCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">{pendingCount}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">{pendingCount}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="approved" className="gap-2">
+              <TabsTrigger value="approved" className="flex items-center space-x-1 sm:space-x-2">
                 <Check className="h-4 w-4" />
-                Approved
+                <span className="hidden sm:inline">Approved</span>
                 {approvedCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">{approvedCount}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">{approvedCount}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="other" className="gap-2">
+              <TabsTrigger value="other" className="flex items-center space-x-1 sm:space-x-2">
                 <X className="h-4 w-4" />
-                Rejected/Revoked
+                <span className="hidden sm:inline">Rejected/Revoked</span>
+                <span className="sm:hidden">Other</span>
                 {otherCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">{otherCount}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">{otherCount}</Badge>
                 )}
               </TabsTrigger>
             </TabsList>
