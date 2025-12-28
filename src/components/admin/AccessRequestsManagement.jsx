@@ -226,92 +226,170 @@ export default function AccessRequestsManagement({ storeId, storeName }) {
                   No {activeTab === 'other' ? 'rejected or revoked' : activeTab} requests
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Requested</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile Card View */}
+                  <div className="md:hidden divide-y">
                     {filteredRequests.map((request) => {
                       const StatusIcon = STATUS_CONFIG[request.status]?.icon || Clock;
                       return (
-                        <TableRow key={request.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{request.email}</span>
+                        <div key={request.id} className="py-4 space-y-3">
+                          {/* Email & Actions Row */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium text-sm truncate">{request.email}</span>
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground line-clamp-2 max-w-xs">
-                              {request.message || '-'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(request.requested_at)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={`${STATUS_CONFIG[request.status]?.color} gap-1`}>
-                              <StatusIcon className="h-3 w-3" />
-                              {STATUS_CONFIG[request.status]?.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {request.status === 'pending' && (
-                              <div className="flex justify-end gap-2">
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {request.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 px-2"
+                                    onClick={() => openConfirmDialog('approve', request)}
+                                    disabled={actionLoading === request.id}
+                                  >
+                                    {actionLoading === request.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Check className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
+                                    onClick={() => openConfirmDialog('reject', request)}
+                                    disabled={actionLoading === request.id}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              {request.status === 'approved' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={() => openConfirmDialog('approve', request)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
+                                  onClick={() => openConfirmDialog('revoke', request)}
                                   disabled={actionLoading === request.id}
                                 >
                                   {actionLoading === request.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                   ) : (
-                                    <Check className="h-4 w-4" />
+                                    <Ban className="h-4 w-4" />
                                   )}
-                                  <span className="ml-1">Approve</span>
                                 </Button>
+                              )}
+                            </div>
+                          </div>
+                          {/* Message */}
+                          {request.message && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{request.message}</p>
+                          )}
+                          {/* Status & Date Row */}
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge className={`${STATUS_CONFIG[request.status]?.color} gap-1`}>
+                              <StatusIcon className="h-3 w-3" />
+                              {STATUS_CONFIG[request.status]?.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{formatDate(request.requested_at)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <Table className="hidden md:table">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Message</TableHead>
+                        <TableHead>Requested</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRequests.map((request) => {
+                        const StatusIcon = STATUS_CONFIG[request.status]?.icon || Clock;
+                        return (
+                          <TableRow key={request.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{request.email}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground line-clamp-2 max-w-xs">
+                                {request.message || '-'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDate(request.requested_at)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={`${STATUS_CONFIG[request.status]?.color} gap-1`}>
+                                <StatusIcon className="h-3 w-3" />
+                                {STATUS_CONFIG[request.status]?.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {request.status === 'pending' && (
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    onClick={() => openConfirmDialog('approve', request)}
+                                    disabled={actionLoading === request.id}
+                                  >
+                                    {actionLoading === request.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Check className="h-4 w-4" />
+                                    )}
+                                    <span className="ml-1">Approve</span>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => openConfirmDialog('reject', request)}
+                                    disabled={actionLoading === request.id}
+                                  >
+                                    <X className="h-4 w-4" />
+                                    <span className="ml-1">Reject</span>
+                                  </Button>
+                                </div>
+                              )}
+                              {request.status === 'approved' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => openConfirmDialog('reject', request)}
+                                  onClick={() => openConfirmDialog('revoke', request)}
                                   disabled={actionLoading === request.id}
                                 >
-                                  <X className="h-4 w-4" />
-                                  <span className="ml-1">Reject</span>
+                                  {actionLoading === request.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Ban className="h-4 w-4" />
+                                  )}
+                                  <span className="ml-1">Revoke</span>
                                 </Button>
-                              </div>
-                            )}
-                            {request.status === 'approved' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => openConfirmDialog('revoke', request)}
-                                disabled={actionLoading === request.id}
-                              >
-                                {actionLoading === request.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Ban className="h-4 w-4" />
-                                )}
-                                <span className="ml-1">Revoke</span>
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </>
               )}
             </TabsContent>
           </Tabs>
