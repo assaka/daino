@@ -496,7 +496,7 @@ const CustomDomains = () => {
         <Info className="h-4 w-4" />
         <AlertDescription>
           Custom domains allow you to use your own domain name (e.g., www.myshop.com) instead of /public/storecode URLs.<br/>
-          <strong> Costs {customDomainCost} credits per day</strong>
+          <strong> Costs {customDomainCost} credits per day only for top-level domains like *.example.com. Additional subdomains will not be charged</strong>
         </AlertDescription>
       </Alert>
 
