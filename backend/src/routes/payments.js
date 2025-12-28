@@ -269,17 +269,13 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
 
   try {
     // For connected accounts, check their payment method configurations
-    // Using the connected account context to get THEIR settings
     const configs = await stripe.paymentMethodConfigurations.list(
       { limit: 100 },
       { stripeAccount: stripeAccountId }
     );
 
-    console.log(`🔍 Stripe configs for ${stripeAccountId}:`, JSON.stringify(configs?.data?.length || 0), 'configurations found');
-
     if (configs?.data && configs.data.length > 0) {
       for (const config of configs.data) {
-        // Check each payment method type in the configuration
         const pmTypes = [
           'card', 'ideal', 'bancontact', 'giropay', 'sepa_debit', 'sofort',
           'eps', 'p24', 'klarna', 'afterpay_clearpay', 'link', 'apple_pay', 'google_pay'
@@ -288,24 +284,13 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
         for (const pmType of pmTypes) {
           const pmConfig = config[pmType];
           // Only consider enabled if display_preference is explicitly 'on'
-          // 'available' just means it CAN be enabled, not that it IS enabled
           if (pmConfig?.display_preference?.preference === 'on') {
-            console.log(`  ✅ ${pmType}: enabled (display_preference: on)`);
             enabledTypes.add(pmType);
-          } else if (pmConfig) {
-            console.log(`  ❌ ${pmType}: available=${pmConfig.available}, preference=${pmConfig.display_preference?.preference}`);
           }
         }
       }
-    } else {
-      // No configurations found - for Standard accounts this might mean they haven't customized
-      // In this case, we can't determine what's enabled, so only return card
-      console.log('⚠️ No payment method configurations found for connected account');
     }
-
-    console.log(`✅ Final enabled Stripe payment methods:`, Array.from(enabledTypes));
   } catch (error) {
-    console.warn('Could not fetch payment method configurations:', error.message);
     // On error, only return card as the safe default
   }
 
@@ -980,8 +965,6 @@ router.get('/stripe-enabled-methods', authMiddleware, authorize(['admin', 'store
       name: pm.name,
       enabled: enabledTypes.has(pm.stripeType)
     }));
-
-    console.log('📋 Returning Stripe enabled methods:', methodStatus.map(m => `${m.code}: ${m.enabled}`).join(', '));
 
     res.json({
       success: true,
