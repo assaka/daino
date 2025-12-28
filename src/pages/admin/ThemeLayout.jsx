@@ -2193,11 +2193,11 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Preview */}
-                                <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="bg-gray-50 p-2 sm:px-4 rounded-lg">
                                     <Label className="text-sm font-medium mb-3 block">Preview</Label>
                                     <div className="flex justify-center items-center gap-1">
                                         <button
-                                            className="px-3 py-1.5 border rounded text-sm"
+                                            className="px-1 sm:px-3 py-1.5 border rounded text-sm"
                                             style={{
                                                 backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
                                                 color: store.settings.pagination?.buttonTextColor || '#374151',
@@ -2207,7 +2207,7 @@ export default function ThemeLayout() {
                                             Previous
                                         </button>
                                         <button
-                                            className="px-3 py-1.5 border rounded text-sm"
+                                            className="px-2 sm:px-3 py-1.5 border rounded text-sm"
                                             style={{
                                                 backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
                                                 color: store.settings.pagination?.buttonTextColor || '#374151',
@@ -2217,7 +2217,7 @@ export default function ThemeLayout() {
                                             1
                                         </button>
                                         <button
-                                            className="px-3 py-1.5 border rounded text-sm"
+                                            className="px-2 sm:px-3 py-1.5 border rounded text-sm"
                                             style={{
                                                 backgroundColor: store.settings.pagination?.activeBgColor || '#3B82F6',
                                                 color: store.settings.pagination?.activeTextColor || '#FFFFFF',
@@ -2227,7 +2227,7 @@ export default function ThemeLayout() {
                                             2
                                         </button>
                                         <button
-                                            className="px-3 py-1.5 border rounded text-sm"
+                                            className="px-1 sm:px-3 py-1.5 border rounded text-sm"
                                             style={{
                                                 backgroundColor: store.settings.pagination?.buttonBgColor || '#FFFFFF',
                                                 color: store.settings.pagination?.buttonTextColor || '#374151',
