@@ -268,13 +268,16 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
   const enabledTypes = new Set(['card']); // Card is always available
 
   try {
-    // Try to get payment method configurations from the connected account
+    // For connected accounts, check their payment method configurations
+    // Using the connected account context to get THEIR settings
     const configs = await stripe.paymentMethodConfigurations.list(
       { limit: 100 },
       { stripeAccount: stripeAccountId }
     );
 
-    if (configs?.data) {
+    console.log(`🔍 Stripe configs for ${stripeAccountId}:`, JSON.stringify(configs?.data?.length || 0), 'configurations found');
+
+    if (configs?.data && configs.data.length > 0) {
       for (const config of configs.data) {
         // Check each payment method type in the configuration
         const pmTypes = [
@@ -283,19 +286,27 @@ async function getEnabledStripePaymentMethods(stripeAccountId) {
         ];
 
         for (const pmType of pmTypes) {
-          if (config[pmType]?.available === true || config[pmType]?.display_preference?.preference === 'on') {
+          const pmConfig = config[pmType];
+          // Only consider enabled if display_preference is explicitly 'on'
+          // 'available' just means it CAN be enabled, not that it IS enabled
+          if (pmConfig?.display_preference?.preference === 'on') {
+            console.log(`  ✅ ${pmType}: enabled (display_preference: on)`);
             enabledTypes.add(pmType);
+          } else if (pmConfig) {
+            console.log(`  ❌ ${pmType}: available=${pmConfig.available}, preference=${pmConfig.display_preference?.preference}`);
           }
         }
       }
+    } else {
+      // No configurations found - for Standard accounts this might mean they haven't customized
+      // In this case, we can't determine what's enabled, so only return card
+      console.log('⚠️ No payment method configurations found for connected account');
     }
 
-    console.log(`✅ Enabled Stripe payment methods:`, Array.from(enabledTypes));
+    console.log(`✅ Final enabled Stripe payment methods:`, Array.from(enabledTypes));
   } catch (error) {
     console.warn('Could not fetch payment method configurations:', error.message);
-    // Fallback: return common types that are usually available
-    enabledTypes.add('apple_pay');
-    enabledTypes.add('google_pay');
+    // On error, only return card as the safe default
   }
 
   return enabledTypes;
