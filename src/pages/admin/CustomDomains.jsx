@@ -381,13 +381,33 @@ const CustomDomains = () => {
 
   const getStatusBadge = (domain) => {
     if (domain.verification_status === 'verified' && domain.ssl_status === 'active') {
-      return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
+      return (
+        <>
+          <CheckCircle className="w-4 h-4 text-green-500 md:hidden" />
+          <Badge className="bg-green-500 hidden md:flex"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>
+        </>
+      );
     } else if (domain.verification_status === 'verified') {
-      return <Badge className="bg-blue-500"><Clock className="w-3 h-3 mr-1" />SSL Pending</Badge>;
+      return (
+        <>
+          <Clock className="w-4 h-4 text-blue-500 md:hidden" />
+          <Badge className="bg-blue-500 hidden md:flex"><Clock className="w-3 h-3 mr-1" />SSL Pending</Badge>
+        </>
+      );
     } else if (domain.verification_status === 'pending') {
-      return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+      return (
+        <>
+          <Clock className="w-4 h-4 text-gray-500 md:hidden" />
+          <Badge variant="outline" className="hidden md:flex"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+        </>
+      );
     } else if (domain.verification_status === 'failed') {
-      return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
+      return (
+        <>
+          <XCircle className="w-4 h-4 text-red-500 md:hidden" />
+          <Badge variant="destructive" className="hidden md:flex"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>
+        </>
+      );
     }
     return <Badge variant="secondary">Unknown</Badge>;
   };
@@ -395,13 +415,28 @@ const CustomDomains = () => {
   const getSSLBadge = (sslStatus) => {
     switch (sslStatus) {
       case 'active':
-        return <Badge className="bg-green-500"><Shield className="w-3 h-3 mr-1" />Active</Badge>;
+        return (
+          <>
+            <Shield className="w-4 h-4 text-green-500 md:hidden" />
+            <Badge className="bg-green-500 hidden md:flex"><Shield className="w-3 h-3 mr-1" />Active</Badge>
+          </>
+        );
       case 'pending':
-        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+        return (
+          <>
+            <Clock className="w-4 h-4 text-yellow-500 md:hidden" />
+            <Badge className="bg-yellow-500 hidden md:flex"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+          </>
+        );
       case 'failed':
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
+        return (
+          <>
+            <XCircle className="w-4 h-4 text-red-500 md:hidden" />
+            <Badge variant="destructive" className="hidden md:flex"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>
+          </>
+        );
       default:
-        return <Badge variant="outline">Not Issued</Badge>;
+        return <Badge variant="outline" className="hidden md:flex">Not Issued</Badge>;
     }
   };
 
