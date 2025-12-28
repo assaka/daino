@@ -63,6 +63,7 @@ export default function PaymentMethods() {
   const [connectingExistingAccount, setConnectingExistingAccount] = useState(false);
   const [showStripeGuideModal, setShowStripeGuideModal] = useState(false);
   const [syncingMethods, setSyncingMethods] = useState(false);
+  const [stripeEnabledMethods, setStripeEnabledMethods] = useState(null); // null = not loaded, object = { code: enabled }
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -148,10 +149,36 @@ export default function PaymentMethods() {
       const response = await checkStripeConnectStatus(selectedStore.id);
       const status = response.data?.data || response.data || null;
       setStripeStatus(status);
+
+      // If connected, also fetch enabled payment methods
+      if (status?.connected) {
+        loadStripeEnabledMethods();
+      }
     } catch (error) {
       setStripeStatus(null);
     } finally {
       setLoadingStripeStatus(false);
+    }
+  };
+
+  const loadStripeEnabledMethods = async () => {
+    if (!selectedStore?.id) return;
+
+    try {
+      const response = await apiClient.get(`payments/stripe-enabled-methods?store_id=${selectedStore.id}`);
+      const data = response.data?.data || response.data;
+
+      if (data?.methods) {
+        // Create a map of code -> enabled status
+        const enabledMap = {};
+        data.methods.forEach(m => {
+          enabledMap[m.code] = m.enabled;
+        });
+        setStripeEnabledMethods(enabledMap);
+      }
+    } catch (error) {
+      console.warn('Could not fetch Stripe enabled methods:', error);
+      setStripeEnabledMethods(null);
     }
   };
 
@@ -296,8 +323,9 @@ export default function PaymentMethods() {
         setFlashMessage({ type: 'info', message: 'Payment methods are already up to date.' });
       }
 
-      // Reload payment methods to show any new ones
+      // Reload payment methods and enabled status
       loadPaymentMethods();
+      loadStripeEnabledMethods();
     } catch (error) {
       setFlashMessage({ type: 'error', message: 'Failed to sync payment methods: ' + error.message });
     } finally {
@@ -472,6 +500,15 @@ export default function PaymentMethods() {
   };
 
   const handleToggleActive = async (method) => {
+    // Check if trying to activate a Stripe method that is not enabled in Stripe dashboard
+    if (!method.is_active && method.provider === 'stripe' && stripeEnabledMethods && stripeEnabledMethods[method.code] === false) {
+      setFlashMessage({
+        type: 'error',
+        message: `Cannot enable "${method.name}" - this payment method is not enabled in your Stripe dashboard. Enable it at dashboard.stripe.com → Settings → Payment methods.`
+      });
+      return;
+    }
+
     try {
       await PaymentMethod.update(method.id, { is_active: !method.is_active });
       setFlashMessage({
@@ -917,6 +954,21 @@ export default function PaymentMethods() {
                               <><AlertCircle className="w-3 h-3 mr-1" /> Not Connected</>
                             )}
                           </Badge>
+                        )}
+                        {method.provider === 'stripe' && stripeEnabledMethods && stripeEnabledMethods[method.code] === false && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                                  <AlertCircle className="w-3 h-3 mr-1" /> Not Enabled in Stripe
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>This payment method is not enabled in your Stripe dashboard.</p>
+                                <p className="text-xs mt-1">Enable it at dashboard.stripe.com → Settings → Payment methods</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                         {method.fee_type && method.fee_type !== 'none' && (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">

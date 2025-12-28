@@ -260,11 +260,54 @@ function isPaymentMethodApplicable(pm, storeCountries) {
 }
 
 /**
- * Insert applicable Stripe payment methods based on store's allowed countries
- * Used for Standard accounts where capabilities aren't exposed
- * @param {string} storeId - Store ID
+ * Get enabled payment method types from Stripe account
+ * @param {string} stripeAccountId - Connected Stripe account ID
+ * @returns {Set} - Set of enabled payment method types
  */
-async function insertAllStripePaymentMethods(storeId) {
+async function getEnabledStripePaymentMethods(stripeAccountId) {
+  const enabledTypes = new Set(['card']); // Card is always available
+
+  try {
+    // Try to get payment method configurations from the connected account
+    const configs = await stripe.paymentMethodConfigurations.list(
+      { limit: 100 },
+      { stripeAccount: stripeAccountId }
+    );
+
+    if (configs?.data) {
+      for (const config of configs.data) {
+        // Check each payment method type in the configuration
+        const pmTypes = [
+          'card', 'ideal', 'bancontact', 'giropay', 'sepa_debit', 'sofort',
+          'eps', 'p24', 'klarna', 'afterpay_clearpay', 'link', 'apple_pay', 'google_pay'
+        ];
+
+        for (const pmType of pmTypes) {
+          if (config[pmType]?.available === true || config[pmType]?.display_preference?.preference === 'on') {
+            enabledTypes.add(pmType);
+          }
+        }
+      }
+    }
+
+    console.log(`✅ Enabled Stripe payment methods:`, Array.from(enabledTypes));
+  } catch (error) {
+    console.warn('Could not fetch payment method configurations:', error.message);
+    // Fallback: return common types that are usually available
+    enabledTypes.add('apple_pay');
+    enabledTypes.add('google_pay');
+  }
+
+  return enabledTypes;
+}
+
+/**
+ * Insert applicable Stripe payment methods based on store's allowed countries
+ * Only inserts methods that are actually enabled in the Stripe account
+ * @param {string} storeId - Store ID
+ * @param {string} stripeAccountId - Connected Stripe account ID (optional)
+ */
+async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
   try {
     console.log(`🔧 Inserting applicable Stripe payment methods for store ${storeId}...`);
 
@@ -278,6 +321,18 @@ async function insertAllStripePaymentMethods(storeId) {
     const storeCountries = store?.settings?.allowed_countries || [];
     console.log(`📍 Store allowed countries:`, storeCountries);
 
+    // Get Stripe account ID if not provided
+    if (!stripeAccountId) {
+      const stripeConfig = await IntegrationConfig.findByStoreAndType(storeId, STRIPE_INTEGRATION_TYPE);
+      stripeAccountId = stripeConfig?.config_data?.accountId;
+    }
+
+    // Get enabled payment methods from Stripe
+    let enabledTypes = new Set(['card', 'apple_pay', 'google_pay']); // defaults
+    if (stripeAccountId) {
+      enabledTypes = await getEnabledStripePaymentMethods(stripeAccountId);
+    }
+
     // Get existing payment methods to avoid duplicates
     const { data: existingMethods } = await tenantDb
       .from('payment_methods')
@@ -286,7 +341,7 @@ async function insertAllStripePaymentMethods(storeId) {
 
     const existingCodes = new Set((existingMethods || []).map(m => `${m.provider || ''}:${m.code}`));
 
-    // Prepare payment methods to insert - only applicable ones
+    // Prepare payment methods to insert - only applicable AND enabled ones
     const methodsToInsert = [];
     let sortOrder = 0;
 
@@ -300,6 +355,12 @@ async function insertAllStripePaymentMethods(storeId) {
       // Skip if not applicable for store's countries
       if (!isPaymentMethodApplicable(pm, storeCountries)) {
         console.log(`⏭️ Skipping ${pm.code} - not applicable for store countries (requires: ${pm.countries?.join(', ')})`);
+        continue;
+      }
+
+      // Skip if not enabled in Stripe account
+      if (!enabledTypes.has(pm.stripeType)) {
+        console.log(`⏭️ Skipping ${pm.code} - not enabled in Stripe dashboard (${pm.stripeType})`);
         continue;
       }
 
@@ -845,6 +906,60 @@ router.post('/sync-stripe-methods', authMiddleware, authorize(['admin', 'store_o
     res.status(500).json({
       success: false,
       message: 'Failed to sync Stripe payment methods',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/payments/stripe-enabled-methods
+// @desc    Get list of enabled payment methods from Stripe dashboard
+// @access  Private
+router.get('/stripe-enabled-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get Stripe config
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    if (!stripeConfig?.config_data?.accountId) {
+      return res.json({
+        success: true,
+        connected: false,
+        enabledTypes: [],
+        message: 'No Stripe account connected'
+      });
+    }
+
+    const stripeAccountId = stripeConfig.config_data.accountId;
+
+    // Get enabled payment methods from Stripe
+    const enabledTypes = await getEnabledStripePaymentMethods(stripeAccountId);
+
+    // Map to include all configured methods with their enabled status
+    const methodStatus = STRIPE_PAYMENT_METHODS.map(pm => ({
+      code: pm.code,
+      stripeType: pm.stripeType,
+      name: pm.name,
+      enabled: enabledTypes.has(pm.stripeType)
+    }));
+
+    res.json({
+      success: true,
+      connected: true,
+      enabledTypes: Array.from(enabledTypes),
+      methods: methodStatus
+    });
+  } catch (error) {
+    console.error('Get Stripe enabled methods error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check Stripe payment methods status',
       error: error.message
     });
   }
