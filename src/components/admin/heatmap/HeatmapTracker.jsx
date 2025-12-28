@@ -196,11 +196,13 @@ class HeatmapTracker {
       const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
       const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
       const scrollDepth = documentHeight > 0 ? (scrollPosition / documentHeight) * 100 : 0;
+      // Clamp to 0-100 to handle edge cases (resize, dynamic content, browser quirks)
+      const clampedScrollDepth = Math.min(100, Math.max(0, scrollDepth));
 
       this.trackInteraction({
         interaction_type: 'scroll',
         scroll_position: scrollPosition,
-        scroll_depth_percent: Math.round(scrollDepth * 100) / 100
+        scroll_depth_percent: Math.round(clampedScrollDepth * 100) / 100
       });
 
       this.scrollTimer = null;
