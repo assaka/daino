@@ -1296,16 +1296,17 @@ export function UnifiedSlotRenderer({
                             translations['en']?.common?.added ||
                             'Added!';
 
-          // WYSIWYG: Apply button styling from settings.theme directly (overrides saved slot styles)
+          // WYSIWYG: Slot styles (user customization) take priority, then theme defaults
           // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
           const theme = variableContext?.settings?.theme || {};
           const finalButtonStyles = {
             ...buttonStyles,
             display: 'flex', // Override inline-block from saved styles
             width: '100%', // Full width for add to cart button
-            backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
-            color: theme.add_to_cart_button_text_color || buttonStyles?.color,
-            borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
+            // Priority: 1. Slot styles (explicit user customization), 2. Theme defaults
+            backgroundColor: buttonStyles?.backgroundColor || theme.add_to_cart_button_bg_color,
+            color: buttonStyles?.color || theme.add_to_cart_button_text_color,
+            borderRadius: buttonStyles?.borderRadius || theme.add_to_cart_button_border_radius,
           };
 
           return (
@@ -1343,7 +1344,7 @@ export function UnifiedSlotRenderer({
       } else {
         // Editor: Use same SaveButton component as storefront for WYSIWYG parity
         if (isAddToCartButton) {
-          // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
+          // WYSIWYG: Slot styles (user customization) take priority, then theme defaults
           const theme = variableContext?.settings?.theme || {};
 
           // Ensure button starts with full width - force 100% width for add_to_cart
@@ -1355,9 +1356,10 @@ export function UnifiedSlotRenderer({
           const finalButtonStyles = {
             ...cleanedButtonStyles,
             display: 'flex', // Override inline-block from editor styles
-            backgroundColor: theme.add_to_cart_button_bg_color || cleanedButtonStyles?.backgroundColor,
-            color: theme.add_to_cart_button_text_color || cleanedButtonStyles?.color,
-            borderRadius: theme.add_to_cart_button_border_radius || cleanedButtonStyles?.borderRadius,
+            // Priority: 1. Slot styles (explicit user customization), 2. Theme defaults
+            backgroundColor: cleanedButtonStyles?.backgroundColor || theme.add_to_cart_button_bg_color,
+            color: cleanedButtonStyles?.color || theme.add_to_cart_button_text_color,
+            borderRadius: cleanedButtonStyles?.borderRadius || theme.add_to_cart_button_border_radius,
           };
 
           const buttonElement = (
