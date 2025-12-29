@@ -23,12 +23,12 @@ const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
         <div className="flex items-center gap-2 mt-1">
           <input
             type="color"
-            value={styles.activeFilterTitleColor}
+            value={styles.activeFilterTitleColor || '#374151'}
             onChange={(e) => onStyleChange('titleColor', e.target.value, 'active_filter_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
-            value={styles.activeFilterTitleColor}
+            value={styles.activeFilterTitleColor || '#374151'}
             onChange={(e) => onStyleChange('titleColor', e.target.value, 'active_filter_styles')}
             className="text-xs h-7"
           />
@@ -38,7 +38,7 @@ const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
       <div>
         <Label className="text-xs font-medium">Title Font Size</Label>
         <Input
-          value={styles.activeFilterTitleFontSize}
+          value={styles.activeFilterTitleFontSize || '0.875rem'}
           onChange={(e) => onStyleChange('titleFontSize', e.target.value, 'active_filter_styles')}
           className="text-xs h-7 mt-1"
           placeholder="0.875rem"
@@ -48,7 +48,7 @@ const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
       <div>
         <Label className="text-xs font-medium">Title Font Weight</Label>
         <select
-          value={styles.activeFilterTitleFontWeight}
+          value={styles.activeFilterTitleFontWeight || '600'}
           onChange={(e) => onStyleChange('titleFontWeight', e.target.value, 'active_filter_styles')}
           className="w-full mt-1 h-7 text-xs border border-gray-300 rounded-md"
         >
@@ -64,12 +64,12 @@ const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
         <div className="flex items-center gap-2 mt-1">
           <input
             type="color"
-            value={styles.activeFilterBgColor}
+            value={styles.activeFilterBgColor || '#DBEAFE'}
             onChange={(e) => onStyleChange('backgroundColor', e.target.value, 'active_filter_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
-            value={styles.activeFilterBgColor}
+            value={styles.activeFilterBgColor || '#DBEAFE'}
             onChange={(e) => onStyleChange('backgroundColor', e.target.value, 'active_filter_styles')}
             className="text-xs h-7"
           />
@@ -81,12 +81,12 @@ const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
         <div className="flex items-center gap-2 mt-1">
           <input
             type="color"
-            value={styles.activeFilterTextColor}
+            value={styles.activeFilterTextColor || '#1E40AF'}
             onChange={(e) => onStyleChange('textColor', e.target.value, 'active_filter_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
-            value={styles.activeFilterTextColor}
+            value={styles.activeFilterTextColor || '#1E40AF'}
             onChange={(e) => onStyleChange('textColor', e.target.value, 'active_filter_styles')}
             className="text-xs h-7"
           />
@@ -98,12 +98,12 @@ const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
         <div className="flex items-center gap-2 mt-1">
           <input
             type="color"
-            value={styles.activeFilterClearAllColor}
+            value={styles.activeFilterClearAllColor || '#DC2626'}
             onChange={(e) => onStyleChange('clearAllColor', e.target.value, 'active_filter_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
-            value={styles.activeFilterClearAllColor}
+            value={styles.activeFilterClearAllColor || '#DC2626'}
             onChange={(e) => onStyleChange('clearAllColor', e.target.value, 'active_filter_styles')}
             className="text-xs h-7"
           />
