@@ -54,9 +54,6 @@ import { createProductUrl, createPublicUrl } from './urlUtils';
  * @param {Object} options - Additional options (translations, taxes, etc.)
  * @returns {Object} Preprocessed data ready for slot rendering
  */
-// Export enrichSettings for use in UnifiedSlotRenderer to ensure WYSIWYG
-export { enrichSettings };
-
 export function preprocessSlotData(pageType, rawData, store, settings, options = {}) {
   const { translations = {}, taxes = [], selectedCountry = null, productLabels = [] } = options;
   const currentLanguage = getCurrentLanguage();
