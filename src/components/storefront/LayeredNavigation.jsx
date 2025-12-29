@@ -427,9 +427,26 @@ export default function LayeredNavigation({
             );
         }
 
+        // Get title text from active_filter_styles slot or use default
+        const activeFilterTitleText = activeStyles.titleText || t('filters.active_filters', 'Active Filters');
+
         return activeFilterElements.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-                {activeFilterElements}
+            <div className="space-y-2">
+                {/* Active Filters Title */}
+                <h4
+                    className="text-sm font-semibold"
+                    style={{
+                        color: activeFilterTitleColor,
+                        fontSize: activeFilterTitleFontSize,
+                        fontWeight: activeFilterTitleFontWeight
+                    }}
+                >
+                    {activeFilterTitleText}
+                </h4>
+                {/* Active Filter Badges */}
+                <div className="flex flex-wrap gap-2">
+                    {activeFilterElements}
+                </div>
             </div>
         ) : null;
     };
