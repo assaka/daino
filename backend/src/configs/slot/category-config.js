@@ -455,7 +455,7 @@ const categoryConfig = {
       id: 'filters_container',
       type: 'container',
       content: '',
-      className: 'hidden sm:block lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto',
+      className: 'lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto',
       parentClassName: '',
       styles: {
         backgroundColor: 'transparent',
