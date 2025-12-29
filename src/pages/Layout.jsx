@@ -813,7 +813,7 @@ function LayoutInner({ children, currentPageName }) {
                 onClick={async () => {
                   if (!confirm('This will delete and re-create all slot configurations. Continue?')) return;
                   try {
-                    const response = await apiClient.post(`/database/reprovision-slots?storeId=${selectedStore.id}`);
+                    const response = await apiClient.post(`/database-provisioning/reprovision-slots?storeId=${selectedStore.id}`);
                     if (response.success) {
                       alert(`Success! Seeded: ${response.dataSeeded?.join(', ') || 'slot configs'}`);
                     } else {
