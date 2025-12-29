@@ -107,56 +107,46 @@ function getBorderRadiusCss(preset) {
 
 /**
  * Enrich settings with defaults for slot rendering
- * All theme-related settings are stored under settings.theme
+ * All theme-related settings use FLAT naming (consistent with product_tabs_*, breadcrumb_*)
  */
 function enrichSettings(settings) {
   const theme = settings?.theme || {};
 
-  // Get add_to_cart_button settings with defaults (from settings.theme.add_to_cart_button)
-  const buttonSettings = theme.add_to_cart_button || {};
-  const enrichedButton = {
-    backgroundColor: buttonSettings.backgroundColor || theme.add_to_cart_button_color || '#3B82F6',
-    textColor: buttonSettings.textColor || '#FFFFFF',
-    hoverBackgroundColor: buttonSettings.hoverBackgroundColor || '#2563EB',
-    borderRadius: getBorderRadiusCss(buttonSettings.borderRadius || 'md')
-  };
+  // Build enriched theme with FLAT settings
+  const enrichedTheme = {
+    ...theme,
 
-  // Get layered_navigation settings with defaults (from settings.theme.layered_navigation)
-  const layeredNavSettings = theme.layered_navigation || {};
-  const enrichedLayeredNav = {
-    cardBgColor: layeredNavSettings.cardBgColor || '#FFFFFF',
-    headerTextColor: layeredNavSettings.headerTextColor || '#1F2937',
-    filterLabelColor: layeredNavSettings.filterLabelColor || '#374151',
-    optionTextColor: layeredNavSettings.optionTextColor || '#374151',
-    optionHoverColor: layeredNavSettings.optionHoverColor || '#1F2937',
-    optionCountColor: layeredNavSettings.optionCountColor || '#9CA3AF',
-    checkboxColor: layeredNavSettings.checkboxColor || '#3B82F6',
-    activeFilterBgColor: layeredNavSettings.activeFilterBgColor || '#DBEAFE',
-    activeFilterTextColor: layeredNavSettings.activeFilterTextColor || '#1E40AF'
-  };
+    // Add to Cart Button (FLAT)
+    add_to_cart_button_bg_color: theme.add_to_cart_button_bg_color || '#3B82F6',
+    add_to_cart_button_text_color: theme.add_to_cart_button_text_color || '#FFFFFF',
+    add_to_cart_button_hover_color: theme.add_to_cart_button_hover_color || '#2563EB',
+    add_to_cart_button_border_radius: getBorderRadiusCss(theme.add_to_cart_button_border_radius || 'md'),
 
-  // Get stock_settings with defaults (from settings.theme.stock_settings)
-  const stockSettings = theme.stock_settings || {};
-  const enrichedStockSettings = {
-    in_stock_text_color: stockSettings.in_stock_text_color || '#166534',
-    in_stock_bg_color: stockSettings.in_stock_bg_color || '#dcfce7',
-    out_of_stock_text_color: stockSettings.out_of_stock_text_color || '#991b1b',
-    out_of_stock_bg_color: stockSettings.out_of_stock_bg_color || '#fee2e2',
-    low_stock_text_color: stockSettings.low_stock_text_color || '#92400e',
-    low_stock_bg_color: stockSettings.low_stock_bg_color || '#fef3c7',
+    // Layered Navigation (FLAT)
+    layered_nav_card_bg_color: theme.layered_nav_card_bg_color || '#FFFFFF',
+    layered_nav_header_text_color: theme.layered_nav_header_text_color || '#1F2937',
+    layered_nav_filter_label_color: theme.layered_nav_filter_label_color || '#374151',
+    layered_nav_option_text_color: theme.layered_nav_option_text_color || '#374151',
+    layered_nav_option_hover_color: theme.layered_nav_option_hover_color || '#1F2937',
+    layered_nav_option_count_color: theme.layered_nav_option_count_color || '#9CA3AF',
+    layered_nav_checkbox_color: theme.layered_nav_checkbox_color || '#3B82F6',
+    layered_nav_active_filter_bg_color: theme.layered_nav_active_filter_bg_color || '#DBEAFE',
+    layered_nav_active_filter_text_color: theme.layered_nav_active_filter_text_color || '#1E40AF',
+
+    // Stock Settings (FLAT)
+    stock_in_stock_text_color: theme.stock_in_stock_text_color || '#166534',
+    stock_in_stock_bg_color: theme.stock_in_stock_bg_color || '#dcfce7',
+    stock_out_of_stock_text_color: theme.stock_out_of_stock_text_color || '#991b1b',
+    stock_out_of_stock_bg_color: theme.stock_out_of_stock_bg_color || '#fee2e2',
+    stock_low_stock_text_color: theme.stock_low_stock_text_color || '#92400e',
+    stock_low_stock_bg_color: theme.stock_low_stock_bg_color || '#fef3c7',
   };
 
   return {
     ...settings,
     collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
     max_visible_attributes: settings?.max_visible_attributes || 5,
-    // Theme settings with enriched values
-    theme: {
-      ...theme,
-      add_to_cart_button: enrichedButton,
-      layered_navigation: enrichedLayeredNav,
-      stock_settings: enrichedStockSettings,
-    },
+    theme: enrichedTheme,
   };
 }
 

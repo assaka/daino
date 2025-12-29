@@ -207,47 +207,42 @@ export function getCachedThemeDefaults() {
 
 /**
  * Hardcoded fallback defaults (ultimate safety net when DB unavailable)
+ * NOTE: All settings are FLAT (no nested objects) for consistency
  */
 const HARDCODED_THEME_DEFAULTS = {
   // Button colors
   primary_button_color: '#007bff',
   secondary_button_color: '#6c757d',
-  add_to_cart_button_color: '#28a745',
+  add_to_cart_button_color: '#28a745', // Legacy flat setting (still supported)
   view_cart_button_color: '#17a2b8',
   checkout_button_color: '#007bff',
   place_order_button_color: '#28a745',
   font_family: 'Inter',
 
-  // Add to Cart button styling (nested under theme)
-  add_to_cart_button: {
-    backgroundColor: '#28a745',
-    textColor: '#FFFFFF',
-    hoverBackgroundColor: '#218838',
-    borderRadius: 'md'
-  },
+  // Add to Cart button styling (FLAT - consistent with product_tabs_*, breadcrumb_*)
+  add_to_cart_button_bg_color: '#28a745',
+  add_to_cart_button_text_color: '#FFFFFF',
+  add_to_cart_button_hover_color: '#218838',
+  add_to_cart_button_border_radius: 'md',
 
-  // Layered navigation / filter styling (nested under theme)
-  layered_navigation: {
-    cardBgColor: '#FFFFFF',
-    headerTextColor: '#1F2937',
-    filterLabelColor: '#374151',
-    optionTextColor: '#374151',
-    optionHoverColor: '#1F2937',
-    optionCountColor: '#9CA3AF',
-    checkboxColor: '#3B82F6',
-    activeFilterBgColor: '#DBEAFE',
-    activeFilterTextColor: '#1E40AF'
-  },
+  // Layered navigation / filter styling (FLAT - consistent with other settings)
+  layered_nav_card_bg_color: '#FFFFFF',
+  layered_nav_header_text_color: '#1F2937',
+  layered_nav_filter_label_color: '#374151',
+  layered_nav_option_text_color: '#374151',
+  layered_nav_option_hover_color: '#1F2937',
+  layered_nav_option_count_color: '#9CA3AF',
+  layered_nav_checkbox_color: '#3B82F6',
+  layered_nav_active_filter_bg_color: '#DBEAFE',
+  layered_nav_active_filter_text_color: '#1E40AF',
 
-  // Stock label styling (nested under theme)
-  stock_settings: {
-    in_stock_text_color: '#166534',
-    in_stock_bg_color: '#dcfce7',
-    out_of_stock_text_color: '#991b1b',
-    out_of_stock_bg_color: '#fee2e2',
-    low_stock_text_color: '#92400e',
-    low_stock_bg_color: '#fef3c7'
-  },
+  // Stock label styling (FLAT)
+  stock_in_stock_text_color: '#166534',
+  stock_in_stock_bg_color: '#dcfce7',
+  stock_out_of_stock_text_color: '#991b1b',
+  stock_out_of_stock_bg_color: '#fee2e2',
+  stock_low_stock_text_color: '#92400e',
+  stock_low_stock_bg_color: '#fef3c7',
 
   // Product Tabs defaults
   product_tabs_title_color: '#DC2626',
@@ -291,55 +286,20 @@ const HARDCODED_THEME_DEFAULTS = {
 /**
  * Get theme default settings
  * Priority: 1. themeSettings (user overrides), 2. Bootstrap/API defaults, 3. Hardcoded fallbacks
+ * All settings are FLAT (no nested objects)
+ *
  * @param {Object} themeSettings - User's custom theme settings
- * @returns {Object} Merged theme settings
+ * @returns {Object} Merged theme settings (all flat)
  */
 export function getThemeDefaults(themeSettings = {}) {
-  // First, do shallow merge for flat settings
+  // Merge all settings (flat)
   const merged = {
     // 1. Hardcoded fallbacks (lowest priority)
     ...HARDCODED_THEME_DEFAULTS,
     // 2. Bootstrap/API defaults from master DB (middle priority)
     ...(cachedThemeDefaults || {}),
-    // 3. User's saved settings (highest priority)
+    // 3. User's flat settings (highest priority)
     ...themeSettings
-  };
-
-  // Now build nested objects that inherit from flat settings when no nested values exist
-  // This ensures theme presets with flat settings (e.g., add_to_cart_button_color) work correctly
-
-  // Add to Cart Button - inherit backgroundColor from add_to_cart_button_color if no nested object
-  const userButton = themeSettings.add_to_cart_button || {};
-  merged.add_to_cart_button = {
-    backgroundColor: userButton.backgroundColor || merged.add_to_cart_button_color || HARDCODED_THEME_DEFAULTS.add_to_cart_button.backgroundColor,
-    textColor: userButton.textColor || HARDCODED_THEME_DEFAULTS.add_to_cart_button.textColor,
-    hoverBackgroundColor: userButton.hoverBackgroundColor || HARDCODED_THEME_DEFAULTS.add_to_cart_button.hoverBackgroundColor,
-    borderRadius: userButton.borderRadius || HARDCODED_THEME_DEFAULTS.add_to_cart_button.borderRadius
-  };
-
-  // Layered Navigation - use user's nested settings or hardcoded defaults
-  const userNav = themeSettings.layered_navigation || {};
-  merged.layered_navigation = {
-    cardBgColor: userNav.cardBgColor || HARDCODED_THEME_DEFAULTS.layered_navigation.cardBgColor,
-    headerTextColor: userNav.headerTextColor || HARDCODED_THEME_DEFAULTS.layered_navigation.headerTextColor,
-    filterLabelColor: userNav.filterLabelColor || HARDCODED_THEME_DEFAULTS.layered_navigation.filterLabelColor,
-    optionTextColor: userNav.optionTextColor || HARDCODED_THEME_DEFAULTS.layered_navigation.optionTextColor,
-    optionHoverColor: userNav.optionHoverColor || HARDCODED_THEME_DEFAULTS.layered_navigation.optionHoverColor,
-    optionCountColor: userNav.optionCountColor || HARDCODED_THEME_DEFAULTS.layered_navigation.optionCountColor,
-    checkboxColor: userNav.checkboxColor || HARDCODED_THEME_DEFAULTS.layered_navigation.checkboxColor,
-    activeFilterBgColor: userNav.activeFilterBgColor || HARDCODED_THEME_DEFAULTS.layered_navigation.activeFilterBgColor,
-    activeFilterTextColor: userNav.activeFilterTextColor || HARDCODED_THEME_DEFAULTS.layered_navigation.activeFilterTextColor
-  };
-
-  // Stock Settings - use user's nested settings or hardcoded defaults
-  const userStock = themeSettings.stock_settings || {};
-  merged.stock_settings = {
-    in_stock_text_color: userStock.in_stock_text_color || HARDCODED_THEME_DEFAULTS.stock_settings.in_stock_text_color,
-    in_stock_bg_color: userStock.in_stock_bg_color || HARDCODED_THEME_DEFAULTS.stock_settings.in_stock_bg_color,
-    out_of_stock_text_color: userStock.out_of_stock_text_color || HARDCODED_THEME_DEFAULTS.stock_settings.out_of_stock_text_color,
-    out_of_stock_bg_color: userStock.out_of_stock_bg_color || HARDCODED_THEME_DEFAULTS.stock_settings.out_of_stock_bg_color,
-    low_stock_text_color: userStock.low_stock_text_color || HARDCODED_THEME_DEFAULTS.stock_settings.low_stock_text_color,
-    low_stock_bg_color: userStock.low_stock_bg_color || HARDCODED_THEME_DEFAULTS.stock_settings.low_stock_bg_color
   };
 
   return merged;

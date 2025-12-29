@@ -1269,13 +1269,13 @@ export function UnifiedSlotRenderer({
                             'Added!';
 
           // WYSIWYG: Apply button styling from settings.theme directly (overrides saved slot styles)
-          // This ensures editor and storefront always show the same button appearance
-          const buttonSettingsStyles = variableContext?.settings?.theme?.add_to_cart_button || {};
+          // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
+          const theme = variableContext?.settings?.theme || {};
           const finalButtonStyles = {
             ...buttonStyles,
-            backgroundColor: buttonSettingsStyles.backgroundColor || buttonStyles?.backgroundColor,
-            color: buttonSettingsStyles.textColor || buttonStyles?.color,
-            borderRadius: buttonSettingsStyles.borderRadius || buttonStyles?.borderRadius,
+            backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
+            color: theme.add_to_cart_button_text_color || buttonStyles?.color,
+            borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
           };
 
           return (
@@ -1289,7 +1289,7 @@ export function UnifiedSlotRenderer({
               successText={successText}
               className={buttonClassName}
               style={finalButtonStyles}
-              hoverBackgroundColor={buttonSettingsStyles.hoverBackgroundColor}
+              hoverBackgroundColor={theme.add_to_cart_button_hover_color}
               icon={<ShoppingCart className="w-4 h-4 mr-2" />}
             />
           );
@@ -1311,7 +1311,43 @@ export function UnifiedSlotRenderer({
           </Button>
         );
       } else {
-        // Editor: Visual preview only - add click handler for element selection
+        // Editor: Use same SaveButton component as storefront for WYSIWYG parity
+        if (isAddToCartButton) {
+          // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
+          const theme = variableContext?.settings?.theme || {};
+          const finalButtonStyles = {
+            ...buttonStyles,
+            backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
+            color: theme.add_to_cart_button_text_color || buttonStyles?.color,
+            borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
+          };
+
+          const buttonElement = (
+            <SaveButton
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onElementClick) {
+                  onElementClick(id, e.currentTarget);
+                }
+              }}
+              loading={false}
+              success={false}
+              disabled={isOutOfStock}
+              defaultText={buttonContent !== 'Button' ? buttonContent : 'Add to Cart'}
+              loadingText="Adding..."
+              successText="Added!"
+              className={buttonClassName}
+              style={finalButtonStyles}
+              hoverBackgroundColor={theme.add_to_cart_button_hover_color}
+              icon={<ShoppingCart className="w-4 h-4 mr-2" />}
+              data-slot-id={id}
+              data-editable="true"
+            />
+          );
+          return wrapWithResize(buttonElement, slot, 50, 20);
+        }
+
+        // Other buttons in editor
         const buttonElement = (
           <button
             className={buttonClassName}

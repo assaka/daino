@@ -432,8 +432,8 @@ export default function StorefrontLayout({ children }) {
         if (theme.secondary_button_color) {
           root.style.setProperty('--theme-secondary-button', theme.secondary_button_color);
         }
-        if (theme.add_to_cart_button_color) {
-          root.style.setProperty('--theme-add-to-cart-button', theme.add_to_cart_button_color);
+        if (theme.add_to_cart_button_bg_color) {
+          root.style.setProperty('--theme-add-to-cart-button', theme.add_to_cart_button_bg_color);
         }
         if (theme.font_family) {
           root.style.setProperty('--theme-font-family', `'${theme.font_family}', sans-serif`);
@@ -638,7 +638,7 @@ export default function StorefrontLayout({ children }) {
       :root {
         --theme-primary-button: ${settings?.theme?.primary_button_color || defaults.primary_button_color};
         --theme-secondary-button: ${settings?.theme?.secondary_button_color || defaults.secondary_button_color};
-        --theme-add-to-cart-button: ${settings?.theme?.add_to_cart_button_color || defaults.add_to_cart_button_color};
+        --theme-add-to-cart-button: ${settings?.theme?.add_to_cart_button_bg_color || defaults.add_to_cart_button_bg_color};
         --theme-view-cart-button: ${settings?.theme?.view_cart_button_color || defaults.view_cart_button_color};
         --theme-checkout-button: ${settings?.theme?.checkout_button_color || defaults.checkout_button_color};
         --theme-place-order-button: ${settings?.theme?.place_order_button_color || defaults.place_order_button_color};
