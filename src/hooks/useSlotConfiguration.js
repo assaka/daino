@@ -1656,6 +1656,9 @@ export function useSlotConfiguration({
       const templateContent = templateSlot?.content || '';
       const templateParentClassName = templateSlot?.parentClassName || '';
 
+      // Extract parentId from metadata if provided (for specialized sidebars)
+      const parentId = metadata?.parentId || templateSlot?.parentId || null;
+
       updatedSlots[slotId] = {
         id: slotId,
         type: templateType,
@@ -1663,6 +1666,7 @@ export function useSlotConfiguration({
         className: templateClassName, // Inherit from template
         parentClassName: templateParentClassName, // Inherit from template
         styles: templateStyles, // Inherit styles from template
+        ...(parentId && { parentId }), // Set parentId if provided
         metadata: metadata || {}
       };
 

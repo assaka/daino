@@ -62,10 +62,7 @@ const LayeredNavigationSidebar = ({
     activeFilterClearAllColor: '#DC2626',
 
     // Container & Card
-    cardBgColor: '#FFFFFF',
-    containerBg: 'transparent',
-    containerPadding: '1rem',
-    containerBorderRadius: '0.5rem'
+    cardBgColor: '#FFFFFF'
   });
 
   // Load existing styles from child slots
@@ -123,14 +120,6 @@ const LayeredNavigationSidebar = ({
       if (activeFilterStylesSlot.styles.clearAllColor) updates.activeFilterClearAllColor = activeFilterStylesSlot.styles.clearAllColor;
     }
 
-    // Container (from filters_container slot)
-    const filtersContainer = allSlots['filters_container'];
-    if (filtersContainer && filtersContainer.styles) {
-      if (filtersContainer.styles.backgroundColor) updates.containerBg = filtersContainer.styles.backgroundColor;
-      if (filtersContainer.styles.padding) updates.containerPadding = filtersContainer.styles.padding;
-      if (filtersContainer.styles.borderRadius) updates.containerBorderRadius = filtersContainer.styles.borderRadius;
-    }
-
     if (Object.keys(updates).length > 0) {
       setFilterStyles(prev => ({ ...prev, ...updates }));
     }
@@ -141,10 +130,6 @@ const LayeredNavigationSidebar = ({
   };
 
   const handleStyleChange = (property, value, targetSlotId) => {
-    console.log('[LayeredNav] handleStyleChange called:', { property, value, targetSlotId });
-    console.log('[LayeredNav] allSlots keys:', Object.keys(allSlots || {}));
-    console.log('[LayeredNav] target slot exists:', !!allSlots?.[targetSlotId], allSlots?.[targetSlotId]);
-
     // Update local state
     setFilterStyles(prev => ({ ...prev, [property]: value }));
 
@@ -155,21 +140,29 @@ const LayeredNavigationSidebar = ({
       headingFontWeight: 'fontWeight',
       labelColor: 'color',
       labelFontSize: 'fontSize',
-      labelFontWeight: 'fontWeight',
-      containerBg: 'backgroundColor',
-      containerPadding: 'padding',
-      containerBorderRadius: 'borderRadius'
+      labelFontWeight: 'fontWeight'
     };
 
     // Determine CSS property name - use mapping for standard slots, direct property for style slots
     const isStyleSlot = targetSlotId === 'filter_option_styles' || targetSlotId === 'active_filter_styles';
     const cssProperty = isStyleSlot ? property : (cssPropertyMap[property] || property);
 
-    // CRITICAL: If slot doesn't exist in allSlots, create it for the save
+    // CRITICAL: If slot doesn't exist in allSlots, create it with proper parentId
     if (targetSlotId && !allSlots[targetSlotId]) {
       const newStyles = { [cssProperty]: value };
+
+      // Determine parentId based on slot type
+      let parentId = 'layered_navigation';
+      if (targetSlotId === 'filters_container') {
+        parentId = 'layered_navigation';
+      }
+
       if (onClassChange) {
-        onClassChange(targetSlotId, '', newStyles, { displayName: targetSlotId });
+        // Pass full slot structure including parentId for proper slot creation
+        onClassChange(targetSlotId, '', newStyles, {
+          displayName: targetSlotId,
+          parentId: parentId
+        });
       }
       return;
     }
@@ -181,14 +174,10 @@ const LayeredNavigationSidebar = ({
       // Set the CSS property
       styles[cssProperty] = value;
 
-      console.log('[LayeredNav] Updating existing slot:', targetSlotId, 'with styles:', styles);
-
       // Call onClassChange to update database
       if (onClassChange) {
         onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
       }
-    } else {
-      console.log('[LayeredNav] Slot not found, will be created:', targetSlotId);
     }
   };
 
