@@ -439,7 +439,8 @@ const EditorSidebar = ({
           if (storedClassName) {
             const storedClasses = storedClassName.split(' ').filter(Boolean);
             for (const child of element.children) {
-              if (child.className) {
+              // Check typeof to handle SVG elements which have SVGAnimatedString instead of string
+              if (typeof child.className === 'string' && child.className) {
                 const childClasses = child.className.split(' ').filter(Boolean);
                 // Check if child has any of the stored classes (like text-4xl, font-bold, italic)
                 const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
@@ -492,6 +493,8 @@ const EditorSidebar = ({
           'text-red-200': '#fecaca' // Example with number for testing
         };
 
+        // Handle non-string className (e.g., SVGAnimatedString for SVG elements)
+        if (typeof className !== 'string') return null;
         const classes = className.split(' ');
 
         for (const cls of classes) {
@@ -1077,7 +1080,8 @@ const EditorSidebar = ({
         if (storedClassName) {
           const storedClasses = storedClassName.split(' ').filter(Boolean);
           for (const child of element.children) {
-            if (child.className) {
+            // Check typeof to handle SVG elements which have SVGAnimatedString instead of string
+            if (typeof child.className === 'string' && child.className) {
               const childClasses = child.className.split(' ').filter(Boolean);
               const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
               if (hasStoredClasses) {

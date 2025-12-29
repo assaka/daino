@@ -66,7 +66,9 @@ class SimpleStyleManager {
 
   // Handle class-based styling (Tailwind)
   updateClassName(element, property, value) {
-    const currentClasses = element.className.split(' ').filter(Boolean);
+    // Handle non-string className (e.g., SVGAnimatedString for SVG elements)
+    const classNameStr = typeof element.className === 'string' ? element.className : '';
+    const currentClasses = classNameStr.split(' ').filter(Boolean);
     let newClasses = [...currentClasses];
 
     switch (property) {
