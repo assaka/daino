@@ -159,7 +159,13 @@ const EditorSidebar = ({
       // For text slots, traverse up to find grid cell with col-span
       // Structure: text -> wrapper div -> grid cell (cleaner without ResizeWrapper)
       targetElement = selectedElement.parentElement;
-      while (targetElement && !targetElement.className.includes('col-span')) {
+      // Helper to safely check className (handles SVG elements with SVGAnimatedString)
+      const hasColSpan = (el) => {
+        if (!el || !el.className) return false;
+        const cn = typeof el.className === 'string' ? el.className : (el.className.baseVal || '');
+        return cn.includes('col-span');
+      };
+      while (targetElement && !hasColSpan(targetElement)) {
         targetElement = targetElement.parentElement;
         // Safety check to avoid infinite loop
         if (targetElement === document.body) {
@@ -171,7 +177,10 @@ const EditorSidebar = ({
 
     if (!targetElement) return 'left';
 
-    const parentClassName = targetElement.className || '';
+    // Handle SVG elements which have SVGAnimatedString instead of string
+    const parentClassName = typeof targetElement.className === 'string'
+      ? targetElement.className
+      : (targetElement.className?.baseVal || '');
     const alignment = getCurrentAlign(parentClassName, true);
     console.log('🎯 Using alignment from DOM:', alignment, parentClassName);
     return alignment;
@@ -323,7 +332,11 @@ const EditorSidebar = ({
     });
 
     // Remove editor-specific classes
-    const cleanClasses = clonedElement.className
+    // Handle SVG elements which have SVGAnimatedString instead of string for className
+    const clonedClassName = typeof clonedElement.className === 'string'
+      ? clonedElement.className
+      : (clonedElement.className?.baseVal || '');
+    const cleanClasses = clonedClassName
       .split(' ')
       .filter(cls =>
         cls &&
@@ -352,8 +365,12 @@ const EditorSidebar = ({
       setIsInitializing(true);
       
       // Check if this is a button element for persistent selection
-      const isButton = selectedElement.tagName?.toLowerCase() === 'button' || 
-                      selectedElement.className?.includes('btn') ||
+      // Handle SVG elements which have SVGAnimatedString instead of string for className
+      const elemClassName = typeof selectedElement.className === 'string'
+        ? selectedElement.className
+        : (selectedElement.className?.baseVal || '');
+      const isButton = selectedElement.tagName?.toLowerCase() === 'button' ||
+                      elemClassName.includes('btn') ||
                       selectedElement.getAttribute('role') === 'button';
       
       if (isButton) {
@@ -469,7 +486,10 @@ const EditorSidebar = ({
       // CRITICAL: For text slots with HTML content, the styling classes are on the INNER element (h1, p, etc.),
       // not on the outer wrapper. We need to read from the actual styledElement's className.
       // But we must filter out wrapper/editor classes first.
-      const actualElementClassName = styledElement?.className || '';
+      // Handle SVG elements which have SVGAnimatedString instead of string for className
+      const actualElementClassName = styledElement?.className
+        ? (typeof styledElement.className === 'string' ? styledElement.className : (styledElement.className.baseVal || ''))
+        : '';
       const cleanActualClasses = actualElementClassName
         .split(' ')
         .filter(cls =>
@@ -634,7 +654,10 @@ const EditorSidebar = ({
 
             // Extract color from Tailwind classes if no inline color is set
             // Primary source: content element (styledElement) which has actual styling classes
-            const contentClassName = styledElement.className || '';
+            // Handle SVG elements which have SVGAnimatedString instead of string for className
+            const contentClassName = styledElement.className
+              ? (typeof styledElement.className === 'string' ? styledElement.className : (styledElement.className.baseVal || ''))
+              : '';
             const storedClassNames = storedClassName || '';
 
             // For color detection, prioritize content element over stored classes
@@ -1144,8 +1167,13 @@ const EditorSidebar = ({
     } else {
       // For text slots, traverse up to find grid cell with gridColumn style or data-slot-id
       targetElement = selectedElement.parentElement;
+      // Helper to safely check className (handles SVG elements with SVGAnimatedString)
+      const getClassNameStr = (el) => {
+        if (!el || !el.className) return '';
+        return typeof el.className === 'string' ? el.className : (el.className.baseVal || '');
+      };
       while (targetElement &&
-             !targetElement.className.includes('col-span') &&
+             !getClassNameStr(targetElement).includes('col-span') &&
              !targetElement.style.gridColumn &&
              !targetElement.getAttribute('data-slot-id')) {
         targetElement = targetElement.parentElement;
@@ -1716,7 +1744,9 @@ const EditorSidebar = ({
             )}
           </p>
           <p className="text-xs text-blue-600">
-            {selectedElement.className || 'No classes'}
+            {typeof selectedElement.className === 'string'
+              ? (selectedElement.className || 'No classes')
+              : (selectedElement.className?.baseVal || 'No classes')}
           </p>
           {lastSelectedButton && lastSelectedButton.slotId === slotId && (
             <p className="text-xs text-green-600 mt-1">
