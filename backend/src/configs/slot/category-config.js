@@ -377,9 +377,9 @@ const categoryConfig = {
       className: 'w-full mt-3 py-2 px-4 text-sm font-medium transition-colors',
       parentClassName: '',
       styles: {
-        backgroundColor: '{{settings.add_to_cart_button.backgroundColor}}',
-        color: '{{settings.add_to_cart_button.textColor}}',
-        borderRadius: '{{settings.add_to_cart_button.borderRadius}}'
+        backgroundColor: '{{settings.theme.add_to_cart_button.backgroundColor}}',
+        color: '{{settings.theme.add_to_cart_button.textColor}}',
+        borderRadius: '{{settings.theme.add_to_cart_button.borderRadius}}'
       },
       parentId: 'product_card_content',
       position: { col: 1, row: 4 },
@@ -390,7 +390,7 @@ const categoryConfig = {
         displayName: 'Add to Cart Button',
         isTemplate: true,
         action: 'addToCart',
-        hoverBackgroundColor: '{{settings.add_to_cart_button.hoverBackgroundColor}}'
+        hoverBackgroundColor: '{{settings.theme.add_to_cart_button.hoverBackgroundColor}}'
       }
     },
 

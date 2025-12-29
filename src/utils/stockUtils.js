@@ -206,8 +206,8 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
       : 'en';
   }
 
-  // Stock settings are required - no fallbacks needed as StockSettings.jsx handles defaults
-  const stockSettings = settings?.stock_settings || {};
+  // Stock settings are under settings.theme.stock_settings
+  const stockSettings = settings?.theme?.stock_settings || {};
 
   // Helper function to get translated label from translations table only
   const getTranslatedLabel = (labelField) => {

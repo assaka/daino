@@ -92,9 +92,9 @@ export default function LayeredNavigation({
     } = slotConfig;
 
     // Extract custom styling for filter options
-    // Priority: settings.layered_navigation > slotConfig.filter_option_styles > defaults
+    // Priority: settings.theme.layered_navigation > slotConfig.filter_option_styles > defaults
     const optionStyles = filter_option_styles.styles || {};
-    const layeredNavSettings = settings.layered_navigation || {};
+    const layeredNavSettings = settings.theme?.layered_navigation || {};
     const {
         cardBgColor = '#FFFFFF',
         headerTextColor = '#1F2937',

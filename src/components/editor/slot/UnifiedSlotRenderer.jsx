@@ -1268,9 +1268,9 @@ export function UnifiedSlotRenderer({
                             translations['en']?.common?.added ||
                             'Added!';
 
-          // WYSIWYG: Apply button styling from settings directly (overrides saved slot styles)
+          // WYSIWYG: Apply button styling from settings.theme directly (overrides saved slot styles)
           // This ensures editor and storefront always show the same button appearance
-          const buttonSettingsStyles = variableContext?.settings?.add_to_cart_button || {};
+          const buttonSettingsStyles = variableContext?.settings?.theme?.add_to_cart_button || {};
           const finalButtonStyles = {
             ...buttonStyles,
             backgroundColor: buttonSettingsStyles.backgroundColor || buttonStyles?.backgroundColor,

@@ -400,36 +400,9 @@ export default function ThemeLayout() {
                 collapse_filters: fullStore?.settings?.collapse_filters ?? false,
                 mobile_filter_mode: fullStore?.settings?.mobile_filter_mode ?? 'collapse',
                 max_visible_attributes: fullStore?.settings?.max_visible_attributes ?? 5,
-                // Layered navigation styling defaults
-                layered_navigation: fullStore?.settings?.layered_navigation ?? {
-                    cardBgColor: '#FFFFFF',
-                    headerTextColor: '#1F2937',
-                    filterLabelColor: '#374151',
-                    optionTextColor: '#374151',
-                    optionHoverColor: '#1F2937',
-                    optionCountColor: '#9CA3AF',
-                    checkboxColor: '#3B82F6',
-                    activeFilterBgColor: '#DBEAFE',
-                    activeFilterTextColor: '#1E40AF'
-                },
-                // Add to Cart button styling defaults
-                add_to_cart_button: fullStore?.settings?.add_to_cart_button ?? {
-                    backgroundColor: fullStore?.settings?.theme?.add_to_cart_button_color || '#3B82F6',
-                    textColor: '#FFFFFF',
-                    hoverBackgroundColor: '#2563EB',
-                    borderRadius: 'md'
-                },
                 // Stock display settings
                 show_stock_label: fullStore?.settings?.show_stock_label ?? true,
                 hide_stock_quantity: fullStore?.settings?.hide_stock_quantity ?? false,
-                stock_settings: {
-                    in_stock_text_color: fullStore?.settings?.stock_settings?.in_stock_text_color || '#166534',
-                    in_stock_bg_color: fullStore?.settings?.stock_settings?.in_stock_bg_color || '#dcfce7',
-                    out_of_stock_text_color: fullStore?.settings?.stock_settings?.out_of_stock_text_color || '#991b1b',
-                    out_of_stock_bg_color: fullStore?.settings?.stock_settings?.out_of_stock_bg_color || '#fee2e2',
-                    low_stock_text_color: fullStore?.settings?.stock_settings?.low_stock_text_color || '#92400e',
-                    low_stock_bg_color: fullStore?.settings?.stock_settings?.low_stock_bg_color || '#fef3c7',
-                },
                 enable_view_mode_toggle: fullStore?.settings?.enable_view_mode_toggle ?? true,
                 default_view_mode: fullStore?.settings?.default_view_mode || 'grid',
                 // Header defaults
@@ -472,6 +445,34 @@ export default function ThemeLayout() {
                     // Use centralized defaults from storeSettingsDefaults.js
                     ...getThemeDefaults(),
                     custom_fonts: [], // Custom fonts array
+                    // Layered navigation styling defaults
+                    layered_navigation: fullStore?.settings?.theme?.layered_navigation ?? {
+                        cardBgColor: '#FFFFFF',
+                        headerTextColor: '#1F2937',
+                        filterLabelColor: '#374151',
+                        optionTextColor: '#374151',
+                        optionHoverColor: '#1F2937',
+                        optionCountColor: '#9CA3AF',
+                        checkboxColor: '#3B82F6',
+                        activeFilterBgColor: '#DBEAFE',
+                        activeFilterTextColor: '#1E40AF'
+                    },
+                    // Add to Cart button styling defaults
+                    add_to_cart_button: fullStore?.settings?.theme?.add_to_cart_button ?? {
+                        backgroundColor: fullStore?.settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                        textColor: '#FFFFFF',
+                        hoverBackgroundColor: '#2563EB',
+                        borderRadius: 'md'
+                    },
+                    // Stock label styling defaults
+                    stock_settings: fullStore?.settings?.theme?.stock_settings ?? {
+                        in_stock_text_color: '#166534',
+                        in_stock_bg_color: '#dcfce7',
+                        out_of_stock_text_color: '#991b1b',
+                        out_of_stock_bg_color: '#fee2e2',
+                        low_stock_text_color: '#92400e',
+                        low_stock_bg_color: '#fef3c7',
+                    },
                     // Override with existing settings if they exist
                     ...((fullStore?.settings || {}).theme || {})
                 },
@@ -1239,7 +1240,7 @@ export default function ThemeLayout() {
                 }
 
                 // 4. Layered Navigation Styling - sync to category page filter_option_styles slot
-                const layeredNavSettings = store.settings.layered_navigation;
+                const layeredNavSettings = store.settings.theme?.layered_navigation;
                 if (layeredNavSettings) {
                     try {
                         await api.patch(`/slot-configurations/${store.id}/category/slot/filter_option_styles`, {
@@ -2087,14 +2088,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
-                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, backgroundColor: e.target.value })}
+                                                value={store.settings.theme?.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
+                                                onChange={(e) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, backgroundColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
-                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, backgroundColor: e.target.value })}
+                                                value={store.settings.theme?.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
+                                                onChange={(e) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, backgroundColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#3B82F6"
                                             />
@@ -2105,14 +2106,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.add_to_cart_button?.textColor || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, textColor: e.target.value })}
+                                                value={store.settings.theme?.add_to_cart_button?.textColor || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, textColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.add_to_cart_button?.textColor || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, textColor: e.target.value })}
+                                                value={store.settings.theme?.add_to_cart_button?.textColor || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, textColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#FFFFFF"
                                             />
@@ -2123,14 +2124,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
-                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, hoverBackgroundColor: e.target.value })}
+                                                value={store.settings.theme?.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, hoverBackgroundColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
-                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, hoverBackgroundColor: e.target.value })}
+                                                value={store.settings.theme?.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, hoverBackgroundColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#2563EB"
                                             />
@@ -2139,8 +2140,8 @@ export default function ThemeLayout() {
                                     <div className="space-y-2">
                                         <Label>Border Radius</Label>
                                         <Select
-                                            value={store.settings.add_to_cart_button?.borderRadius || 'md'}
-                                            onValueChange={(value) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, borderRadius: value })}
+                                            value={store.settings.theme?.add_to_cart_button?.borderRadius || 'md'}
+                                            onValueChange={(value) => handleThemeChange('add_to_cart_button', { ...store.settings.theme?.add_to_cart_button, borderRadius: value })}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
@@ -2164,8 +2165,8 @@ export default function ThemeLayout() {
                                         <button
                                             className="w-48 py-2 px-4 text-sm font-medium transition-colors"
                                             style={{
-                                                backgroundColor: store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6',
-                                                color: store.settings.add_to_cart_button?.textColor || '#FFFFFF',
+                                                backgroundColor: store.settings.theme?.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6',
+                                                color: store.settings.theme?.add_to_cart_button?.textColor || '#FFFFFF',
                                                 borderRadius: {
                                                     'none': '0px',
                                                     'sm': '2px',
@@ -2173,10 +2174,10 @@ export default function ThemeLayout() {
                                                     'lg': '8px',
                                                     'xl': '12px',
                                                     'full': '9999px'
-                                                }[store.settings.add_to_cart_button?.borderRadius || 'md']
+                                                }[store.settings.theme?.add_to_cart_button?.borderRadius || 'md']
                                             }}
-                                            onMouseEnter={(e) => e.target.style.backgroundColor = store.settings.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
-                                            onMouseLeave={(e) => e.target.style.backgroundColor = store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = store.settings.theme?.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = store.settings.theme?.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
                                         >
                                             Add to Cart
                                         </button>
@@ -2262,14 +2263,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.cardBgColor || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, cardBgColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.cardBgColor || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, cardBgColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.cardBgColor || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, cardBgColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.cardBgColor || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, cardBgColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#FFFFFF"
                                             />
@@ -2280,14 +2281,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.headerTextColor || '#1F2937'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, headerTextColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.headerTextColor || '#1F2937'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, headerTextColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.headerTextColor || '#1F2937'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, headerTextColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.headerTextColor || '#1F2937'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, headerTextColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#1F2937"
                                             />
@@ -2298,14 +2299,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.filterLabelColor || '#374151'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, filterLabelColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.filterLabelColor || '#374151'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, filterLabelColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.filterLabelColor || '#374151'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, filterLabelColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.filterLabelColor || '#374151'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, filterLabelColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#374151"
                                             />
@@ -2320,14 +2321,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.optionTextColor || '#374151'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionTextColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.optionTextColor || '#374151'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, optionTextColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.optionTextColor || '#374151'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionTextColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.optionTextColor || '#374151'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, optionTextColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#374151"
                                             />
@@ -2338,14 +2339,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.optionCountColor || '#9CA3AF'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionCountColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.optionCountColor || '#9CA3AF'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, optionCountColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.optionCountColor || '#9CA3AF'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionCountColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.optionCountColor || '#9CA3AF'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, optionCountColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#9CA3AF"
                                             />
@@ -2360,14 +2361,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.checkboxColor || '#3B82F6'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, checkboxColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.checkboxColor || '#3B82F6'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, checkboxColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.checkboxColor || '#3B82F6'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, checkboxColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.checkboxColor || '#3B82F6'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, checkboxColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#3B82F6"
                                             />
@@ -2378,14 +2379,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.optionHoverColor || '#1F2937'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionHoverColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.optionHoverColor || '#1F2937'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, optionHoverColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.optionHoverColor || '#1F2937'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionHoverColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.optionHoverColor || '#1F2937'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, optionHoverColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#1F2937"
                                             />
@@ -2400,14 +2401,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.activeFilterBgColor || '#DBEAFE'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterBgColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.activeFilterBgColor || '#DBEAFE'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, activeFilterBgColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.activeFilterBgColor || '#DBEAFE'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterBgColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.activeFilterBgColor || '#DBEAFE'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, activeFilterBgColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#DBEAFE"
                                             />
@@ -2418,14 +2419,14 @@ export default function ThemeLayout() {
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="color"
-                                                value={store.settings.layered_navigation?.activeFilterTextColor || '#1E40AF'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterTextColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.activeFilterTextColor || '#1E40AF'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, activeFilterTextColor: e.target.value })}
                                                 className="w-12 h-10 p-1 cursor-pointer"
                                             />
                                             <Input
                                                 type="text"
-                                                value={store.settings.layered_navigation?.activeFilterTextColor || '#1E40AF'}
-                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterTextColor: e.target.value })}
+                                                value={store.settings.theme?.layered_navigation?.activeFilterTextColor || '#1E40AF'}
+                                                onChange={(e) => handleThemeChange('layered_navigation', { ...store.settings.theme?.layered_navigation, activeFilterTextColor: e.target.value })}
                                                 className="flex-1"
                                                 placeholder="#1E40AF"
                                             />
@@ -2438,18 +2439,18 @@ export default function ThemeLayout() {
                                     <Label className="text-sm font-medium mb-3 block">Preview</Label>
                                     <div
                                         className="border rounded-lg p-4 space-y-3"
-                                        style={{ backgroundColor: store.settings.layered_navigation?.cardBgColor || '#FFFFFF' }}
+                                        style={{ backgroundColor: store.settings.theme?.layered_navigation?.cardBgColor || '#FFFFFF' }}
                                     >
                                         <h3
                                             className="font-semibold"
-                                            style={{ color: store.settings.layered_navigation?.headerTextColor || '#1F2937' }}
+                                            style={{ color: store.settings.theme?.layered_navigation?.headerTextColor || '#1F2937' }}
                                         >
                                             Filter By
                                         </h3>
                                         <div className="space-y-2">
                                             <p
                                                 className="font-medium text-sm"
-                                                style={{ color: store.settings.layered_navigation?.filterLabelColor || '#374151' }}
+                                                style={{ color: store.settings.theme?.layered_navigation?.filterLabelColor || '#374151' }}
                                             >
                                                 Brand
                                             </p>
@@ -2459,17 +2460,17 @@ export default function ThemeLayout() {
                                                     checked
                                                     readOnly
                                                     className="h-4 w-4"
-                                                    style={{ accentColor: store.settings.layered_navigation?.checkboxColor || '#3B82F6' }}
+                                                    style={{ accentColor: store.settings.theme?.layered_navigation?.checkboxColor || '#3B82F6' }}
                                                 />
                                                 <span
                                                     className="text-sm"
-                                                    style={{ color: store.settings.layered_navigation?.optionTextColor || '#374151' }}
+                                                    style={{ color: store.settings.theme?.layered_navigation?.optionTextColor || '#374151' }}
                                                 >
                                                     Sample Brand
                                                 </span>
                                                 <span
                                                     className="text-xs"
-                                                    style={{ color: store.settings.layered_navigation?.optionCountColor || '#9CA3AF' }}
+                                                    style={{ color: store.settings.theme?.layered_navigation?.optionCountColor || '#9CA3AF' }}
                                                 >
                                                     (12)
                                                 </span>
@@ -2479,8 +2480,8 @@ export default function ThemeLayout() {
                                             <span
                                                 className="inline-flex items-center px-2 py-1 rounded-full text-xs"
                                                 style={{
-                                                    backgroundColor: store.settings.layered_navigation?.activeFilterBgColor || '#DBEAFE',
-                                                    color: store.settings.layered_navigation?.activeFilterTextColor || '#1E40AF'
+                                                    backgroundColor: store.settings.theme?.layered_navigation?.activeFilterBgColor || '#DBEAFE',
+                                                    color: store.settings.theme?.layered_navigation?.activeFilterTextColor || '#1E40AF'
                                                 }}
                                             >
                                                 Brand: Sample
@@ -2715,8 +2716,8 @@ export default function ThemeLayout() {
                                                 <Input
                                                     type="color"
                                                     className="w-12 h-8 p-0.5 cursor-pointer"
-                                                    value={store.settings.stock_settings?.in_stock_text_color || '#166534'}
-                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, in_stock_text_color: e.target.value })}
+                                                    value={store.settings.theme?.stock_settings?.in_stock_text_color || '#166534'}
+                                                    onChange={(e) => handleThemeChange('stock_settings', { ...store.settings.theme?.stock_settings, in_stock_text_color: e.target.value })}
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -2724,15 +2725,15 @@ export default function ThemeLayout() {
                                                 <Input
                                                     type="color"
                                                     className="w-12 h-8 p-0.5 cursor-pointer"
-                                                    value={store.settings.stock_settings?.in_stock_bg_color || '#dcfce7'}
-                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, in_stock_bg_color: e.target.value })}
+                                                    value={store.settings.theme?.stock_settings?.in_stock_bg_color || '#dcfce7'}
+                                                    onChange={(e) => handleThemeChange('stock_settings', { ...store.settings.theme?.stock_settings, in_stock_bg_color: e.target.value })}
                                                 />
                                             </div>
                                             <div
                                                 className="px-3 py-1 rounded text-xs font-medium"
                                                 style={{
-                                                    backgroundColor: store.settings.stock_settings?.in_stock_bg_color || '#dcfce7',
-                                                    color: store.settings.stock_settings?.in_stock_text_color || '#166534'
+                                                    backgroundColor: store.settings.theme?.stock_settings?.in_stock_bg_color || '#dcfce7',
+                                                    color: store.settings.theme?.stock_settings?.in_stock_text_color || '#166534'
                                                 }}
                                             >
                                                 Preview
@@ -2749,8 +2750,8 @@ export default function ThemeLayout() {
                                                 <Input
                                                     type="color"
                                                     className="w-12 h-8 p-0.5 cursor-pointer"
-                                                    value={store.settings.stock_settings?.out_of_stock_text_color || '#991b1b'}
-                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, out_of_stock_text_color: e.target.value })}
+                                                    value={store.settings.theme?.stock_settings?.out_of_stock_text_color || '#991b1b'}
+                                                    onChange={(e) => handleThemeChange('stock_settings', { ...store.settings.theme?.stock_settings, out_of_stock_text_color: e.target.value })}
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -2758,15 +2759,15 @@ export default function ThemeLayout() {
                                                 <Input
                                                     type="color"
                                                     className="w-12 h-8 p-0.5 cursor-pointer"
-                                                    value={store.settings.stock_settings?.out_of_stock_bg_color || '#fee2e2'}
-                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, out_of_stock_bg_color: e.target.value })}
+                                                    value={store.settings.theme?.stock_settings?.out_of_stock_bg_color || '#fee2e2'}
+                                                    onChange={(e) => handleThemeChange('stock_settings', { ...store.settings.theme?.stock_settings, out_of_stock_bg_color: e.target.value })}
                                                 />
                                             </div>
                                             <div
                                                 className="px-3 py-1 mb-1 rounded text-xs font-medium"
                                                 style={{
-                                                    backgroundColor: store.settings.stock_settings?.out_of_stock_bg_color || '#fee2e2',
-                                                    color: store.settings.stock_settings?.out_of_stock_text_color || '#991b1b'
+                                                    backgroundColor: store.settings.theme?.stock_settings?.out_of_stock_bg_color || '#fee2e2',
+                                                    color: store.settings.theme?.stock_settings?.out_of_stock_text_color || '#991b1b'
                                                 }}
                                             >
                                                 Preview
@@ -2783,8 +2784,8 @@ export default function ThemeLayout() {
                                                 <Input
                                                     type="color"
                                                     className="w-12 h-8 p-0.5 cursor-pointer"
-                                                    value={store.settings.stock_settings?.low_stock_text_color || '#92400e'}
-                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, low_stock_text_color: e.target.value })}
+                                                    value={store.settings.theme?.stock_settings?.low_stock_text_color || '#92400e'}
+                                                    onChange={(e) => handleThemeChange('stock_settings', { ...store.settings.theme?.stock_settings, low_stock_text_color: e.target.value })}
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -2792,15 +2793,15 @@ export default function ThemeLayout() {
                                                 <Input
                                                     type="color"
                                                     className="w-12 h-8 p-0.5 cursor-pointer"
-                                                    value={store.settings.stock_settings?.low_stock_bg_color || '#fef3c7'}
-                                                    onChange={(e) => handleSettingsChange('stock_settings', { ...store.settings.stock_settings, low_stock_bg_color: e.target.value })}
+                                                    value={store.settings.theme?.stock_settings?.low_stock_bg_color || '#fef3c7'}
+                                                    onChange={(e) => handleThemeChange('stock_settings', { ...store.settings.theme?.stock_settings, low_stock_bg_color: e.target.value })}
                                                 />
                                             </div>
                                             <div
                                                 className="px-3 py-1 rounded text-xs font-medium"
                                                 style={{
-                                                    backgroundColor: store.settings.stock_settings?.low_stock_bg_color || '#fef3c7',
-                                                    color: store.settings.stock_settings?.low_stock_text_color || '#92400e'
+                                                    backgroundColor: store.settings.theme?.stock_settings?.low_stock_bg_color || '#fef3c7',
+                                                    color: store.settings.theme?.stock_settings?.low_stock_text_color || '#92400e'
                                                 }}
                                             >
                                                 Preview
