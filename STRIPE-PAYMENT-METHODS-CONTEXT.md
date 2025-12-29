@@ -106,10 +106,17 @@ if (pmConfig?.display_preference?.preference === 'on') {
   3. Billing country at checkout
   4. Currency support
 
+## Important Notes
+
+- **Store Allowed Countries**: Payment methods like iDEAL (NL), Bancontact (BE), Przelewy24 (PL) require the respective country to be in the store's "Allowed Countries for Shipping/Billing" settings
+- **Billing Country at Checkout**: These methods only show when the customer selects the matching billing country
+- **Sync Updates Settings**: Sync also updates `supported_countries` and `supported_currencies` for existing methods
+
 ## Related Commits
 
 - "Check Stripe dashboard status before allowing payment method activation"
 - "Deactivate Stripe payment methods not enabled in dashboard on sync"
 - "Reduce checkout bootstrap cache time to 30 seconds"
-- "Remove debug logging for Stripe enabled methods"
 - "Re-activate Stripe payment methods when enabled in dashboard"
+- "Update existing payment method settings during sync"
+- "Remove debug logging from payment methods sync and checkout"
