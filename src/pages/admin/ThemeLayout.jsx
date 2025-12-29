@@ -400,6 +400,18 @@ export default function ThemeLayout() {
                 collapse_filters: fullStore?.settings?.collapse_filters ?? false,
                 mobile_filter_mode: fullStore?.settings?.mobile_filter_mode ?? 'collapse',
                 max_visible_attributes: fullStore?.settings?.max_visible_attributes ?? 5,
+                // Layered navigation styling defaults
+                layered_navigation: fullStore?.settings?.layered_navigation ?? {
+                    cardBgColor: '#FFFFFF',
+                    headerTextColor: '#1F2937',
+                    filterLabelColor: '#374151',
+                    optionTextColor: '#374151',
+                    optionHoverColor: '#1F2937',
+                    optionCountColor: '#9CA3AF',
+                    checkboxColor: '#3B82F6',
+                    activeFilterBgColor: '#DBEAFE',
+                    activeFilterTextColor: '#1E40AF'
+                },
                 // Stock display settings
                 show_stock_label: fullStore?.settings?.show_stock_label ?? true,
                 hide_stock_quantity: fullStore?.settings?.hide_stock_quantity ?? false,
@@ -1216,6 +1228,39 @@ export default function ThemeLayout() {
                         });
                     } catch (paginationErr) {
                         console.debug('Could not update pagination_container:', paginationErr.message);
+                    }
+                }
+
+                // 4. Layered Navigation Styling - sync to category page filter_option_styles slot
+                const layeredNavSettings = store.settings.layered_navigation;
+                if (layeredNavSettings) {
+                    try {
+                        await api.patch(`/slot-configurations/${store.id}/category/slot/filter_option_styles`, {
+                            styles: {
+                                cardBgColor: layeredNavSettings.cardBgColor || '#FFFFFF',
+                                optionTextColor: layeredNavSettings.optionTextColor || '#374151',
+                                optionHoverColor: layeredNavSettings.optionHoverColor || '#1F2937',
+                                optionCountColor: layeredNavSettings.optionCountColor || '#9CA3AF',
+                                checkboxColor: layeredNavSettings.checkboxColor || '#3B82F6',
+                                sliderColor: layeredNavSettings.checkboxColor || '#3B82F6', // Same as checkbox
+                                activeFilterBgColor: layeredNavSettings.activeFilterBgColor || '#DBEAFE',
+                                activeFilterTextColor: layeredNavSettings.activeFilterTextColor || '#1E40AF'
+                            }
+                        });
+                        // Also sync header styles to filter_by_label slot
+                        await api.patch(`/slot-configurations/${store.id}/category/slot/filter_heading`, {
+                            styles: {
+                                color: layeredNavSettings.headerTextColor || '#1F2937'
+                            }
+                        });
+                        // Sync filter label color to attribute_filter_label slot
+                        await api.patch(`/slot-configurations/${store.id}/category/slot/attribute_filter_label`, {
+                            styles: {
+                                color: layeredNavSettings.filterLabelColor || '#374151'
+                            }
+                        });
+                    } catch (layeredNavErr) {
+                        console.debug('Could not update filter_option_styles:', layeredNavErr.message);
                     }
                 }
             } catch (syncErr) {
@@ -2079,6 +2124,251 @@ export default function ThemeLayout() {
                                             </div>
                                         );
                                     })()}
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Layered Navigation Styling */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Filter Styling</Label>
+                                    <p className="text-sm text-gray-500">Customize the appearance of product filters on category pages</p>
+                                </div>
+
+                                {/* Card Background */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Card Background</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.cardBgColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, cardBgColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.cardBgColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, cardBgColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Header Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.headerTextColor || '#1F2937'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, headerTextColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.headerTextColor || '#1F2937'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, headerTextColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#1F2937"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Filter Label Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.filterLabelColor || '#374151'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, filterLabelColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.filterLabelColor || '#374151'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, filterLabelColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#374151"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Option Colors */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Option Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.optionTextColor || '#374151'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionTextColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.optionTextColor || '#374151'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionTextColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#374151"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Option Count Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.optionCountColor || '#9CA3AF'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionCountColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.optionCountColor || '#9CA3AF'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionCountColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#9CA3AF"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Accent Colors */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Checkbox/Slider Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.checkboxColor || '#3B82F6'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, checkboxColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.checkboxColor || '#3B82F6'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, checkboxColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#3B82F6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hover Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.optionHoverColor || '#1F2937'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionHoverColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.optionHoverColor || '#1F2937'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, optionHoverColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#1F2937"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Active Filter Badge Colors */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Active Filter Background</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.activeFilterBgColor || '#DBEAFE'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterBgColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.activeFilterBgColor || '#DBEAFE'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterBgColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#DBEAFE"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Active Filter Text</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.layered_navigation?.activeFilterTextColor || '#1E40AF'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterTextColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.layered_navigation?.activeFilterTextColor || '#1E40AF'}
+                                                onChange={(e) => handleSettingsChange('layered_navigation', { ...store.settings.layered_navigation, activeFilterTextColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#1E40AF"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Preview */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <Label className="text-sm font-medium mb-3 block">Preview</Label>
+                                    <div
+                                        className="border rounded-lg p-4 space-y-3"
+                                        style={{ backgroundColor: store.settings.layered_navigation?.cardBgColor || '#FFFFFF' }}
+                                    >
+                                        <h3
+                                            className="font-semibold"
+                                            style={{ color: store.settings.layered_navigation?.headerTextColor || '#1F2937' }}
+                                        >
+                                            Filter By
+                                        </h3>
+                                        <div className="space-y-2">
+                                            <p
+                                                className="font-medium text-sm"
+                                                style={{ color: store.settings.layered_navigation?.filterLabelColor || '#374151' }}
+                                            >
+                                                Brand
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    checked
+                                                    readOnly
+                                                    className="h-4 w-4"
+                                                    style={{ accentColor: store.settings.layered_navigation?.checkboxColor || '#3B82F6' }}
+                                                />
+                                                <span
+                                                    className="text-sm"
+                                                    style={{ color: store.settings.layered_navigation?.optionTextColor || '#374151' }}
+                                                >
+                                                    Sample Brand
+                                                </span>
+                                                <span
+                                                    className="text-xs"
+                                                    style={{ color: store.settings.layered_navigation?.optionCountColor || '#9CA3AF' }}
+                                                >
+                                                    (12)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 mt-3">
+                                            <span
+                                                className="inline-flex items-center px-2 py-1 rounded-full text-xs"
+                                                style={{
+                                                    backgroundColor: store.settings.layered_navigation?.activeFilterBgColor || '#DBEAFE',
+                                                    color: store.settings.layered_navigation?.activeFilterTextColor || '#1E40AF'
+                                                }}
+                                            >
+                                                Brand: Sample
+                                                <span className="ml-1">×</span>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

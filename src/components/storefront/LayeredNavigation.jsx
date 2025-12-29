@@ -92,8 +92,13 @@ export default function LayeredNavigation({
     } = slotConfig;
 
     // Extract custom styling for filter options
+    // Priority: settings.layered_navigation > slotConfig.filter_option_styles > defaults
     const optionStyles = filter_option_styles.styles || {};
+    const layeredNavSettings = settings.layered_navigation || {};
     const {
+        cardBgColor = '#FFFFFF',
+        headerTextColor = '#1F2937',
+        filterLabelColor = '#374151',
         optionTextColor = '#374151',
         optionHoverColor = '#1F2937',
         optionCountColor = '#9CA3AF',
@@ -101,7 +106,7 @@ export default function LayeredNavigation({
         sliderColor = '#3B82F6',
         activeFilterBgColor = '#DBEAFE',
         activeFilterTextColor = '#1E40AF'
-    } = optionStyles;
+    } = { ...optionStyles, ...layeredNavSettings };
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
@@ -426,13 +431,14 @@ export default function LayeredNavigation({
 
             {/* Slide Panel */}
             <div
-                className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out sm:hidden ${
+                className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] shadow-xl z-50 transform transition-transform duration-300 ease-in-out sm:hidden ${
                     isFilterVisible ? 'translate-x-0' : 'translate-x-full'
                 }`}
+                style={{ backgroundColor: cardBgColor }}
             >
                 {/* Panel Header */}
                 <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-lg font-semibold" style={{ color: headerTextColor }}>
                         {filter_by_label.content || filter_card_header.content || t('common.filters', 'Filters')}
                     </h2>
                     <button
@@ -464,7 +470,7 @@ export default function LayeredNavigation({
                 </div>
 
                 {/* Panel Footer */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t" style={{ backgroundColor: cardBgColor }}>
                     <div className="flex gap-2">
                         {hasActiveFilters && (
                             <Button
@@ -496,7 +502,7 @@ export default function LayeredNavigation({
             <AccordionTrigger
                 className="font-semibold"
                 style={{
-                    color: isEditMode ? 'inherit' : (filter_price_title.styles?.color || '#374151'),
+                    color: isEditMode ? 'inherit' : (filter_price_title.styles?.color || filterLabelColor),
                     ...(!isEditMode ? filter_price_title.styles : {})
                 }}
             >
@@ -554,7 +560,7 @@ export default function LayeredNavigation({
                             color: isEditMode ? 'inherit' : (
                                 filter_attribute_titles.attribute_filter_label?.styles?.color ||
                                 filter_attribute_titles[code]?.styles?.color ||
-                                '#374151'
+                                filterLabelColor
                             ),
                             ...(!isEditMode ? (
                                 filter_attribute_titles.attribute_filter_label?.styles ||
@@ -725,11 +731,14 @@ export default function LayeredNavigation({
             {/* Layered Navigation Card */}
             {/* For collapse mode: hidden on mobile unless toggled, always visible on sm+ */}
             {/* For slide mode: always hidden on mobile (uses slide panel), always visible on sm+ */}
-            <Card className={`w-full ${
-                mobileFilterMode === 'slide'
-                    ? 'hidden sm:block'
-                    : (isFilterVisible ? 'block' : 'hidden') + ' sm:block'
-            }`}>
+            <Card
+                className={`w-full ${
+                    mobileFilterMode === 'slide'
+                        ? 'hidden sm:block'
+                        : (isFilterVisible ? 'block' : 'hidden') + ' sm:block'
+                }`}
+                style={{ backgroundColor: cardBgColor }}
+            >
                 <CardHeader>
                     <div className="flex justify-between items-center h-5">
                         {isEditMode ? (
@@ -745,7 +754,7 @@ export default function LayeredNavigation({
                             <CardTitle
                                 className="text-lg font-semibold"
                                 style={{
-                                    color: filter_by_label.styles?.color || filter_card_header.styles?.color || '#1F2937',
+                                    color: filter_by_label.styles?.color || filter_card_header.styles?.color || headerTextColor,
                                     ...filter_by_label.styles,
                                     ...filter_card_header.styles
                                 }}
