@@ -794,7 +794,7 @@ function LayoutInner({ children, currentPageName }) {
             {!isPendingDatabase && (
               <Link
                 to="/admin/navigation-manager"
-                className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-6 ${
+                className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-2 ${
                   location.pathname === '/admin/navigation-manager'
                     ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -805,6 +805,29 @@ function LayoutInner({ children, currentPageName }) {
                 <span className="flex-1">Manage Navigation</span>
                 {location.pathname === '/admin/navigation-manager' && <ChevronRight className="w-4 h-4 ml-auto" />}
               </Link>
+            )}
+
+            {/* TEMPORARY: Reprovision Slot Configs Button for Testing */}
+            {!isPendingDatabase && selectedStore?.id && (
+              <button
+                onClick={async () => {
+                  if (!confirm('This will delete and re-create all slot configurations. Continue?')) return;
+                  try {
+                    const response = await apiClient.post(`/database/reprovision-slots?storeId=${selectedStore.id}`);
+                    if (response.success) {
+                      alert(`Success! Seeded: ${response.dataSeeded?.join(', ') || 'slot configs'}`);
+                    } else {
+                      alert(`Error: ${response.message}`);
+                    }
+                  } catch (err) {
+                    alert(`Failed: ${err.message}`);
+                  }
+                }}
+                className="flex items-center space-x-3 py-1 px-3 rounded-lg text-sm font-medium transition-colors mb-6 text-orange-700 hover:bg-orange-100 bg-orange-50 border border-orange-200 w-full"
+              >
+                <RefreshCw className="w-5 h-5" />
+                <span className="flex-1 text-left">Reprovision Slots</span>
+              </button>
             )}
 
             {navigationGroups.map((group) => (

@@ -144,6 +144,63 @@ router.post('/reprovision', authMiddleware, checkStoreOwnership, async (req, res
 });
 
 /**
+ * Re-provision slot configurations only (for testing)
+ */
+router.post('/reprovision-slots', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const TenantProvisioningService = require('../services/database/TenantProvisioningService');
+
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId, false);
+
+    if (!tenantDb) {
+      return res.status(400).json({
+        success: false,
+        message: 'Could not connect to tenant database'
+      });
+    }
+
+    // Delete existing slot configurations first
+    console.log(`🗑️ Deleting existing slot_configurations for store ${req.storeId}...`);
+    const { error: deleteError } = await tenantDb
+      .from('slot_configurations')
+      .delete()
+      .eq('store_id', req.storeId);
+
+    if (deleteError) {
+      console.warn('⚠️ Error deleting slot configurations:', deleteError.message);
+    }
+
+    // Re-seed slot configurations
+    console.log(`🔄 Re-seeding slot_configurations for store ${req.storeId}...`);
+    const result = {
+      storeId: req.storeId,
+      dataSeeded: [],
+      errors: []
+    };
+
+    await TenantProvisioningService.seedSlotConfigurations(tenantDb, req.storeId, {
+      userId: req.user.id
+    }, result);
+
+    res.json({
+      success: result.errors.length === 0,
+      message: result.errors.length === 0
+        ? 'Slot configurations reprovisioned successfully'
+        : 'Reprovisioning completed with errors',
+      dataSeeded: result.dataSeeded,
+      errors: result.errors
+    });
+  } catch (error) {
+    console.error('Slot reprovision error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
  * Get store subscription info
  */
 router.get('/subscription', authMiddleware, checkStoreOwnership, async (req, res) => {
