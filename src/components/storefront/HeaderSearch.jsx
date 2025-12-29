@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createPublicUrl } from '@/utils/urlUtils';
+import { createPublicUrl, createProductUrl } from '@/utils/urlUtils';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Search, X } from 'lucide-react';
@@ -139,7 +139,7 @@ export default function HeaderSearch({ styles = {} }) {
 
   const handleProductClick = (product) => {
     if (storeCode) {
-      const productUrl = createPublicUrl(storeCode, 'PRODUCT_DETAIL', { id: product.id });
+      const productUrl = createProductUrl(storeCode, product.slug);
       navigate(productUrl);
       setShowResults(false);
       setSearchQuery('');
