@@ -252,7 +252,7 @@ const LayeredNavigation = createSlotComponent({
 // Sort Selector Component - React-based for proper translations
 const SortSelector = createSlotComponent({
   name: 'SortSelector',
-  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, onElementClick }) => {
     const { t } = useTranslation();
     const currentSort = variableContext?.sorting?.current || categoryContext?.sortOption || '';
 
@@ -273,8 +273,21 @@ const SortSelector = createSlotComponent({
       }
     };
 
+    // Handle click on wrapper for editor selection
+    const handleWrapperClick = (e) => {
+      if (context === 'editor' && onElementClick) {
+        onElementClick('sort_selector', e.currentTarget);
+      }
+    };
+
     return (
-      <div className={className || slot.className} style={styles || slot.styles}>
+      <div
+        className={className || slot.className}
+        style={styles || slot.styles}
+        data-slot-id="sort_selector"
+        data-editable="true"
+        onClick={handleWrapperClick}
+      >
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-700 font-medium">
             {t('common.sort_by', 'Sort by:')}
@@ -537,7 +550,7 @@ const getGridClasses = (storeSettings) => {
 // Product Count Info Component
 const ProductCountInfo = createSlotComponent({
   name: 'ProductCountInfo',
-  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, onElementClick }) => {
     // Use pre-formatted countText from variableContext.pagination or categoryContext
     let countText = variableContext?.pagination?.countText || categoryContext?.pagination?.countText || '';
 
@@ -571,8 +584,21 @@ const ProductCountInfo = createSlotComponent({
       }
     }
 
+    // Handle click on wrapper for editor selection
+    const handleWrapperClick = (e) => {
+      if (context === 'editor' && onElementClick) {
+        onElementClick('product_count_info', e.currentTarget);
+      }
+    };
+
     return (
-      <div className={className || slot?.className} style={styles || slot?.styles}>
+      <div
+        className={className || slot?.className}
+        style={styles || slot?.styles}
+        data-slot-id="product_count_info"
+        data-editable="true"
+        onClick={handleWrapperClick}
+      >
         <div className="text-sm text-gray-600">
           {countText}
         </div>
@@ -926,16 +952,29 @@ const ProductItemsGrid = createSlotComponent({
 // View Mode Toggle Component
 const ViewModeToggle = createSlotComponent({
   name: 'ViewModeToggle',
-  render: ({ slot, className, styles, categoryContext, context, viewMode: parentViewMode }) => {
+  render: ({ slot, className, styles, categoryContext, context, viewMode: parentViewMode, onElementClick }) => {
     const containerRef = useRef(null);
 
     // Use viewMode from parent (Category.jsx) or default to 'grid'
     const currentViewMode = parentViewMode || 'grid';
 
+    // Handle click on wrapper for editor selection
+    const handleWrapperClick = (e) => {
+      if (context === 'editor' && onElementClick) {
+        onElementClick('view_mode_toggle', e.currentTarget);
+      }
+    };
+
     // In editor mode, just show the static UI
     if (context === 'editor') {
       return (
-        <div className={className || slot.className} style={styles || slot.styles}>
+        <div
+          className={className || slot.className}
+          style={styles || slot.styles}
+          data-slot-id="view_mode_toggle"
+          data-editable="true"
+          onClick={handleWrapperClick}
+        >
           <div className="inline-flex sm:bg-gray-100 sm:rounded-lg sm:p-1 space-x-1">
             <button className="sm:px-3 sm:py-2 rounded-md text-sm font-medium sm:bg-white text-gray-900 sm:shadow-sm sm:border border-gray-200 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -967,7 +1006,13 @@ const ViewModeToggle = createSlotComponent({
     };
 
       return (
-      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}>
+      <div
+        ref={containerRef}
+        className={className || slot.className}
+        style={styles || slot.styles}
+        data-slot-id="view_mode_toggle"
+        data-editable="true"
+      >
         <div className="inline-flex sm:bg-gray-100 sm:rounded-lg sm:p-1 space-x-1">
           <button
             onClick={() => handleViewModeChange('grid')}
