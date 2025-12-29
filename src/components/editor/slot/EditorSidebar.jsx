@@ -1662,10 +1662,13 @@ const EditorSidebar = ({
 
   // Dynamically load the specialized sidebar component
   useEffect(() => {
+    console.log('[EditorSidebar] useEffect for sidebar loading:', { specializedSidebarName, hasComponent: !!SIDEBAR_COMPONENTS[specializedSidebarName] });
     if (specializedSidebarName && SIDEBAR_COMPONENTS[specializedSidebarName]) {
       const loadSidebar = async () => {
         try {
+          console.log('[EditorSidebar] Loading sidebar:', specializedSidebarName);
           const module = await SIDEBAR_COMPONENTS[specializedSidebarName]();
+          console.log('[EditorSidebar] Sidebar loaded:', module);
           setSpecializedSidebar(() => module.default);
         } catch (error) {
           console.error(`Failed to load sidebar: ${specializedSidebarName}`, error);
@@ -1679,6 +1682,7 @@ const EditorSidebar = ({
   }, [specializedSidebarName]);
 
   // Only show sidebar when a slot element is selected
+  console.log('[EditorSidebar] Visibility check:', { isVisible, isSlotElement, specializedSidebarName, SpecializedSidebar: !!SpecializedSidebar });
   if (!isVisible || !isSlotElement) return null;
 
   // Render specialized sidebar if configured and loaded

@@ -94,19 +94,16 @@ export default function LayeredNavigation({
     } = slotConfig;
 
     // Extract custom styling for filter options
-    // In EDITOR mode: slot styles take priority (so sidebar edits are visible)
-    // In STOREFRONT mode: theme settings take priority (for global consistency)
+    // Slot styles (from sidebar) take priority over theme settings
+    // This ensures explicit user customizations are applied in both editor and storefront
     const optionStyles = filter_option_styles.styles || {};
     const activeStyles = active_filter_styles.styles || {};
     const theme = settings.theme || {};
     const defaults = getThemeDefaults();
 
-    // Helper: in editor mode, prefer slot styles over theme; in storefront, prefer theme
+    // Helper: slot styles take priority (user explicitly set them), then theme, then defaults
     const getStyle = (slotValue, themeValue, defaultValue) => {
-        if (isEditMode) {
-            return slotValue || themeValue || defaultValue;
-        }
-        return themeValue || slotValue || defaultValue;
+        return slotValue || themeValue || defaultValue;
     };
 
     const cardBgColor = getStyle(optionStyles.cardBgColor, theme.layered_nav_card_bg_color, defaults.layered_nav_card_bg_color);
