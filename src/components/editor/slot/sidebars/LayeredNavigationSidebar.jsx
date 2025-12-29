@@ -51,14 +51,13 @@ const LayeredNavigationSidebar = ({
     optionFontSize: '0.875rem',
     optionFontWeight: '400',
     checkboxColor: '#3B82F6',
+
+    // Active Filter Badges (from active_filter_styles slot)
     activeFilterBgColor: '#DBEAFE',
     activeFilterTextColor: '#1E40AF',
-
-    // Active Filters (from active_filter_styles slot)
-    activeFilterTitleText: 'Active Filters',
-    activeFilterTitleColor: '#374151',
-    activeFilterTitleFontSize: '0.875rem',
-    activeFilterTitleFontWeight: '600',
+    activeFilterFontSize: '0.75rem',
+    activeFilterFontWeight: '400',
+    activeFilterBorderRadius: 'full',
     activeFilterClearAllColor: '#DC2626',
 
     // Container & Card
@@ -105,18 +104,14 @@ const LayeredNavigationSidebar = ({
       if (filterOptionStyles.styles.activeFilterTextColor) updates.activeFilterTextColor = filterOptionStyles.styles.activeFilterTextColor;
     }
 
-    // Active Filters (from active_filter_styles slot)
+    // Active Filter Badges (from active_filter_styles slot)
     const activeFilterStylesSlot = allSlots['active_filter_styles'];
     if (activeFilterStylesSlot && activeFilterStylesSlot.styles) {
-      // Only update activeFilterTitleText if user is not actively editing
-      if (activeFilterStylesSlot.styles.titleText && !isEditingTextRef.current) {
-        updates.activeFilterTitleText = activeFilterStylesSlot.styles.titleText;
-      }
-      if (activeFilterStylesSlot.styles.titleColor) updates.activeFilterTitleColor = activeFilterStylesSlot.styles.titleColor;
-      if (activeFilterStylesSlot.styles.titleFontSize) updates.activeFilterTitleFontSize = activeFilterStylesSlot.styles.titleFontSize;
-      if (activeFilterStylesSlot.styles.titleFontWeight) updates.activeFilterTitleFontWeight = activeFilterStylesSlot.styles.titleFontWeight;
       if (activeFilterStylesSlot.styles.backgroundColor) updates.activeFilterBgColor = activeFilterStylesSlot.styles.backgroundColor;
       if (activeFilterStylesSlot.styles.textColor) updates.activeFilterTextColor = activeFilterStylesSlot.styles.textColor;
+      if (activeFilterStylesSlot.styles.fontSize) updates.activeFilterFontSize = activeFilterStylesSlot.styles.fontSize;
+      if (activeFilterStylesSlot.styles.fontWeight) updates.activeFilterFontWeight = activeFilterStylesSlot.styles.fontWeight;
+      if (activeFilterStylesSlot.styles.borderRadius) updates.activeFilterBorderRadius = activeFilterStylesSlot.styles.borderRadius;
       if (activeFilterStylesSlot.styles.clearAllColor) updates.activeFilterClearAllColor = activeFilterStylesSlot.styles.clearAllColor;
     }
 
@@ -269,7 +264,6 @@ const LayeredNavigationSidebar = ({
           <ActiveFiltersSection
             styles={filterStyles}
             onStyleChange={handleStyleChange}
-            onTextChange={handleTextChange}
           />
         </SectionHeader>
 

@@ -114,15 +114,16 @@ export default function LayeredNavigation({
     const optionCountColor = getStyle(optionStyles.optionCountColor, theme.layered_nav_option_count_color, defaults.layered_nav_option_count_color);
     const checkboxColor = getStyle(optionStyles.checkboxColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
     const sliderColor = getStyle(optionStyles.sliderColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
-    // Active filter tag styles - read from active_filter_styles slot (backgroundColor/textColor)
+    // Active filter badge styles - read from active_filter_styles slot
     const activeFilterBgColor = getStyle(activeStyles.backgroundColor, theme.layered_nav_active_filter_bg_color, defaults.layered_nav_active_filter_bg_color);
     const activeFilterTextColor = getStyle(activeStyles.textColor, theme.layered_nav_active_filter_text_color, defaults.layered_nav_active_filter_text_color);
-
-    // Active filter title/section styles (from active_filter_styles slot)
-    const activeFilterTitleColor = activeStyles.titleColor || '#374151';
-    const activeFilterTitleFontSize = activeStyles.titleFontSize || '0.875rem';
-    const activeFilterTitleFontWeight = activeStyles.titleFontWeight || '600';
+    const activeFilterFontSize = activeStyles.fontSize || '0.75rem';
+    const activeFilterFontWeight = activeStyles.fontWeight || '400';
     const activeFilterClearAllColor = activeStyles.clearAllColor || '#DC2626';
+
+    // Convert border radius preset to CSS value
+    const borderRadiusMap = { none: '0px', sm: '2px', md: '6px', lg: '8px', full: '9999px' };
+    const activeFilterBorderRadius = borderRadiusMap[activeStyles.borderRadius] || activeStyles.borderRadius || '9999px';
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
@@ -371,17 +372,23 @@ export default function LayeredNavigation({
         };
 
         // Add active attribute filters
+        // Badge styles shared by all active filters
+        const badgeStyle = {
+            backgroundColor: activeFilterBgColor,
+            color: activeFilterTextColor,
+            fontSize: activeFilterFontSize,
+            fontWeight: activeFilterFontWeight,
+            borderRadius: activeFilterBorderRadius
+        };
+
         Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
             if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
                 filterValues.forEach(value => {
                     activeFilterElements.push(
                         <span
                             key={`${isMobile ? 'mobile-' : ''}${filterKey}-${value}`}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-xs"
-                            style={{
-                                backgroundColor: activeFilterBgColor,
-                                color: activeFilterTextColor
-                            }}
+                            className="inline-flex items-center px-3 py-1"
+                            style={badgeStyle}
                         >
                             {getAttrLabel(filterKey)}: {getValueLabel(filterKey, value)}
                             <button
@@ -407,19 +414,21 @@ export default function LayeredNavigation({
             }
         });
 
-        // Add price range filter if active
+        // Add price range filter if active (uses same badge styles)
         if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
             const [min, max] = priceRange;
             activeFilterElements.push(
                 <span
                     key={`${isMobile ? 'mobile-' : ''}price-range`}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                    className="inline-flex items-center px-3 py-1"
+                    style={badgeStyle}
                 >
                     {t('common.price', 'Price')}: ${min} - ${max}
                     <button
                         onClick={isEditMode ? () => {} : clearPriceFilter}
                         disabled={isEditMode}
-                        className={`text-lg ml-2 text-green-600 hover:text-green-800 ${isEditMode ? "pointer-events-none" : ""}`}
+                        className={`text-lg ml-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
+                        style={{ color: activeFilterTextColor }}
                     >
                         ×
                     </button>
@@ -427,26 +436,9 @@ export default function LayeredNavigation({
             );
         }
 
-        // Get title text from active_filter_styles slot or use default
-        const activeFilterTitleText = activeStyles.titleText || t('filters.active_filters', 'Active Filters');
-
         return activeFilterElements.length > 0 ? (
-            <div className="space-y-2">
-                {/* Active Filters Title */}
-                <h4
-                    className="text-sm font-semibold"
-                    style={{
-                        color: activeFilterTitleColor,
-                        fontSize: activeFilterTitleFontSize,
-                        fontWeight: activeFilterTitleFontWeight
-                    }}
-                >
-                    {activeFilterTitleText}
-                </h4>
-                {/* Active Filter Badges */}
-                <div className="flex flex-wrap gap-2">
-                    {activeFilterElements}
-                </div>
+            <div className="flex flex-wrap gap-2">
+                {activeFilterElements}
             </div>
         ) : null;
     };
