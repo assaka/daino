@@ -132,20 +132,21 @@ const categoryCustomSlotRenderer = (slot, context) => {
 // Note: Category editor config is now created inline in CategorySlotsEditor
 // to support real category/product data fetching
 
-const CategorySlotsEditor = ({
-  mode = 'edit',
+/**
+ * Inner component that uses useStore() - MUST be rendered as a child of EditorStoreProvider
+ * This ensures useStore() gets the correct context from EditorStoreProvider
+ */
+const CategorySlotsEditorInner = ({
+  mode,
   onSave,
-  viewMode = 'grid',
-  initialItemSlug = null
+  viewMode,
+  initialCategorySlug
 }) => {
-  // Get initial category from prop (from AI Workspace) or URL params
-  const [searchParams] = useSearchParams();
-  const initialCategorySlug = initialItemSlug || searchParams.get('category');
-
-  // Get store context for settings and filterableAttributes
-  // Handle null case when StoreProvider is not available in editor context
+  // CRITICAL: useStore() must be called INSIDE EditorStoreProvider's children
+  // This ensures we get the context with full bootstrap settings (including theme)
   const storeContext = useStore();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  // Prefer storeContext.settings (from EditorStoreProvider with full bootstrap data)
   const storeSettings = storeContext?.settings || selectedStore?.settings || null;
   const storeId = getSelectedStoreId();
 
@@ -488,16 +489,39 @@ const CategorySlotsEditor = ({
   };
 
   return (
+    <UnifiedSlotsEditor
+      config={enhancedConfig}
+      mode={mode}
+      onSave={onSave}
+      viewMode={viewMode}
+    />
+  );
+};
+
+/**
+ * Outer component that provides EditorStoreProvider context
+ * This ensures CategorySlotsEditorInner can use useStore() with bootstrap data
+ */
+const CategorySlotsEditor = ({
+  mode = 'edit',
+  onSave,
+  viewMode = 'grid',
+  initialItemSlug = null
+}) => {
+  // Get initial category from prop (from AI Workspace) or URL params
+  const [searchParams] = useSearchParams();
+  const initialCategorySlug = initialItemSlug || searchParams.get('category');
+
+  return (
     <EditorStoreProvider>
-      <UnifiedSlotsEditor
-        config={enhancedConfig}
+      <CategorySlotsEditorInner
         mode={mode}
         onSave={onSave}
         viewMode={viewMode}
+        initialCategorySlug={initialCategorySlug}
       />
     </EditorStoreProvider>
   );
 };
-
 
 export default CategorySlotsEditor;
