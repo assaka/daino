@@ -398,6 +398,7 @@ export default function ThemeLayout() {
                 // Category page defaults - use nullish coalescing to preserve saved values
                 enable_product_filters: fullStore?.settings?.enable_product_filters ?? true,
                 collapse_filters: fullStore?.settings?.collapse_filters ?? false,
+                mobile_filter_mode: fullStore?.settings?.mobile_filter_mode ?? 'collapse',
                 max_visible_attributes: fullStore?.settings?.max_visible_attributes ?? 5,
                 // Stock display settings
                 show_stock_label: fullStore?.settings?.show_stock_label ?? true,
@@ -1768,6 +1769,24 @@ export default function ThemeLayout() {
                                     checked={!!store.settings.enable_product_filters}
                                     onCheckedChange={(c) => handleSettingsChange('enable_product_filters', c)}
                                 />
+                            </div>
+                            <div className="p-3 border rounded-lg space-y-3">
+                                <div>
+                                    <Label htmlFor="mobile_filter_mode">Mobile Filter Display</Label>
+                                    <p className="text-sm text-gray-500">How filters appear on mobile devices.</p>
+                                </div>
+                                <Select
+                                    value={store.settings.mobile_filter_mode || 'collapse'}
+                                    onValueChange={(value) => handleSettingsChange('mobile_filter_mode', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="collapse">Collapse (expand in place)</SelectItem>
+                                        <SelectItem value="slide">Slide (panel from right)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>

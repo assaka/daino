@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { X, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getCurrentLanguage } from '@/utils/translationUtils';
 
@@ -106,6 +107,7 @@ export default function LayeredNavigation({
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
     const collapseFilters = settings.collapse_filters !== false
     const maxVisibleAttributes = settings.max_visible_attributes || 5;
+    const mobileFilterMode = settings.mobile_filter_mode || 'collapse'; // 'collapse' or 'slide'
 
     // FIXED: Calculate price range from products considering compare_price
     const { minPrice, maxPrice } = useMemo(() => {
@@ -328,6 +330,368 @@ export default function LayeredNavigation({
         );
     }
 
+    // Helper to render active filter badges (used in both modes)
+    const renderActiveFilterBadges = (isMobile = false) => {
+        if (!showActiveFilters || !hasActiveFilters) return null;
+
+        const activeFilterElements = [];
+
+        // Helper to get translated attribute label
+        const getAttrLabel = (attrCode) => {
+            const attr = attributes?.find(a => a.code === attrCode);
+            return attr?.label || filterOptions[attrCode]?.name || attrCode;
+        };
+
+        // Helper to get translated value label
+        const getValueLabel = (attrCode, valueCode) => {
+            const attrOption = filterOptions[attrCode];
+            const valueObj = attrOption?.values?.find(v => v.code === valueCode);
+            return valueObj?.label || valueCode;
+        };
+
+        // Add active attribute filters
+        Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
+            if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
+                filterValues.forEach(value => {
+                    activeFilterElements.push(
+                        <span
+                            key={`${isMobile ? 'mobile-' : ''}${filterKey}-${value}`}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-xs"
+                            style={{
+                                backgroundColor: activeFilterBgColor,
+                                color: activeFilterTextColor
+                            }}
+                        >
+                            {getAttrLabel(filterKey)}: {getValueLabel(filterKey, value)}
+                            <button
+                                onClick={isEditMode ? () => {} : () => {
+                                    const newValues = filterValues.filter(v => v !== value);
+                                    const newFilters = { ...selectedFilters };
+                                    if (newValues.length > 0) {
+                                        newFilters[filterKey] = newValues;
+                                    } else {
+                                        delete newFilters[filterKey];
+                                    }
+                                    setSelectedFilters(newFilters);
+                                }}
+                                disabled={isEditMode}
+                                className={`text-lg ml-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
+                                style={{ color: activeFilterTextColor }}
+                            >
+                                ×
+                            </button>
+                        </span>
+                    );
+                });
+            }
+        });
+
+        // Add price range filter if active
+        if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
+            const [min, max] = priceRange;
+            activeFilterElements.push(
+                <span
+                    key={`${isMobile ? 'mobile-' : ''}price-range`}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                >
+                    {t('common.price', 'Price')}: ${min} - ${max}
+                    <button
+                        onClick={isEditMode ? () => {} : clearPriceFilter}
+                        disabled={isEditMode}
+                        className={`text-lg ml-2 text-green-600 hover:text-green-800 ${isEditMode ? "pointer-events-none" : ""}`}
+                    >
+                        ×
+                    </button>
+                </span>
+            );
+        }
+
+        return activeFilterElements.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+                {activeFilterElements}
+            </div>
+        ) : null;
+    };
+
+    // Slide panel for mobile (when mobileFilterMode === 'slide')
+    const renderSlidePanel = () => (
+        <>
+            {/* Overlay */}
+            <div
+                className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 sm:hidden ${
+                    isFilterVisible ? 'opacity-50' : 'opacity-0 pointer-events-none'
+                }`}
+                onClick={() => setIsFilterVisible(false)}
+            />
+
+            {/* Slide Panel */}
+            <div
+                className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out sm:hidden ${
+                    isFilterVisible ? 'translate-x-0' : 'translate-x-full'
+                }`}
+            >
+                {/* Panel Header */}
+                <div className="flex items-center justify-between p-4 border-b">
+                    <h2 className="text-lg font-semibold">
+                        {filter_by_label.content || filter_card_header.content || t('common.filters', 'Filters')}
+                    </h2>
+                    <button
+                        onClick={() => setIsFilterVisible(false)}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Panel Content - Scrollable */}
+                <div className="overflow-y-auto h-[calc(100%-130px)] p-4">
+                    {/* Active Filters in Panel */}
+                    {renderActiveFilterBadges(true) && (
+                        <div className="mb-4">
+                            {renderActiveFilterBadges(true)}
+                        </div>
+                    )}
+
+                    {/* Filter Accordion */}
+                    <Accordion
+                        type="multiple"
+                        defaultValue={collapseFilters ? [] : ['price', ...Object.keys(filterOptions)]}
+                        className="w-full"
+                    >
+                        {renderPriceFilter()}
+                        {renderAttributeFilters()}
+                    </Accordion>
+                </div>
+
+                {/* Panel Footer */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+                    <div className="flex gap-2">
+                        {hasActiveFilters && (
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    clearAllFilters();
+                                    setIsFilterVisible(false);
+                                }}
+                            >
+                                {t('common.clear_all', 'Clear All')}
+                            </Button>
+                        )}
+                        <Button
+                            className="flex-1"
+                            onClick={() => setIsFilterVisible(false)}
+                        >
+                            {t('common.apply', 'Apply')}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+
+    // Helper to render price filter accordion item
+    const renderPriceFilter = () => (
+        <AccordionItem value="price">
+            <AccordionTrigger
+                className="font-semibold"
+                style={{
+                    color: isEditMode ? 'inherit' : (filter_price_title.styles?.color || '#374151'),
+                    ...(!isEditMode ? filter_price_title.styles : {})
+                }}
+            >
+                {isEditMode ? (
+                    <EditableSlotElement
+                        slotKey="price_filter_label"
+                        slot={childSlots?.price_filter_label || { content: 'Price' }}
+                        onElementClick={onElementClick}
+                        className="font-semibold"
+                    >
+                        Price
+                    </EditableSlotElement>
+                ) : (
+                    filter_price_title.content || t('common.price', 'Price')
+                )}
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="space-y-4">
+                    <div className="px-2">
+                        <Slider
+                            min={minPrice}
+                            max={maxPrice}
+                            step={1}
+                            value={priceRange}
+                            onValueChange={isEditMode ? () => {} : handlePriceRangeChange}
+                            disabled={isEditMode}
+                            className={`w-full ${isEditMode ? "pointer-events-none" : ""}`}
+                            style={{ accentColor: sliderColor }}
+                        />
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                        <span>${priceRange[0]}</span>
+                        <span>${priceRange[1]}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                        <span>Min: ${minPrice}</span>
+                        <span>Max: ${maxPrice}</span>
+                    </div>
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+    );
+
+    // Helper to render attribute filter accordion items
+    const renderAttributeFilters = () => (
+        Object.entries(filterOptions).map(([code, { name, values, filterType }]) => {
+            const isRadioFilter = filterType === 'select';
+            if (!values || values.length === 0) return null;
+
+            return (
+                <AccordionItem key={code} value={code}>
+                    <AccordionTrigger
+                        className="font-semibold"
+                        style={{
+                            color: isEditMode ? 'inherit' : (
+                                filter_attribute_titles.attribute_filter_label?.styles?.color ||
+                                filter_attribute_titles[code]?.styles?.color ||
+                                '#374151'
+                            ),
+                            ...(!isEditMode ? (
+                                filter_attribute_titles.attribute_filter_label?.styles ||
+                                filter_attribute_titles[code]?.styles ||
+                                {}
+                            ) : {})
+                        }}
+                    >
+                        {isEditMode ? (
+                            <EditableSlotElement
+                                slotKey={`${code}_filter_label`}
+                                slot={childSlots?.[`${code}_filter_label`] || childSlots?.attribute_filter_label || { content: name }}
+                                onElementClick={onElementClick}
+                                className="font-semibold"
+                                style={{
+                                    ...(childSlots?.attribute_filter_label?.styles || {}),
+                                    ...(childSlots?.[`${code}_filter_label`]?.styles || {})
+                                }}
+                            >
+                                {name}
+                            </EditableSlotElement>
+                        ) : (
+                            filter_attribute_titles[code]?.content || name
+                        )}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <div className="space-y-2">
+                            {(() => {
+                                const isExpanded = expandedAttributes[code];
+                                const visibleValues = isExpanded ? values : values.slice(0, maxVisibleAttributes);
+                                const hasMoreValues = values.length > maxVisibleAttributes;
+
+                                return (
+                                    <>
+                                        <div className={hasMoreValues && !isExpanded ? "max-h-48 overflow-hidden" : "max-h-48 overflow-y-auto"}>
+                                            {visibleValues.map(valueObj => {
+                                                const valueCode = valueObj.code;
+                                                const valueLabel = valueObj.label;
+                                                const productCount = valueObj.count;
+
+                                                if (productCount === 0) return null;
+
+                                                return (
+                                                    <div key={valueCode} className="flex items-center justify-between">
+                                                        <div className="flex items-center space-x-2">
+                                                            {isEditMode ? (
+                                                                <EditableSlotElement
+                                                                    slotKey="filter_option_styles"
+                                                                    slot={childSlots?.filter_option_styles}
+                                                                    onElementClick={onElementClick}
+                                                                >
+                                                                    {isRadioFilter ? (
+                                                                        <input
+                                                                            type="radio"
+                                                                            id={`attr-${code}-${valueCode}`}
+                                                                            name={`attr-${code}`}
+                                                                            checked={selectedFilters[code]?.includes(valueCode) || false}
+                                                                            onChange={() => {}}
+                                                                            disabled={true}
+                                                                            className="pointer-events-none h-4 w-4"
+                                                                            style={{ accentColor: checkboxColor }}
+                                                                        />
+                                                                    ) : (
+                                                                        <Checkbox
+                                                                            id={`attr-${code}-${valueCode}`}
+                                                                            checked={selectedFilters[code]?.includes(valueCode) || false}
+                                                                            onCheckedChange={() => {}}
+                                                                            disabled={true}
+                                                                            className="pointer-events-none"
+                                                                            style={{ accentColor: checkboxColor }}
+                                                                        />
+                                                                    )}
+                                                                </EditableSlotElement>
+                                                            ) : (
+                                                                isRadioFilter ? (
+                                                                    <input
+                                                                        type="radio"
+                                                                        id={`attr-${code}-${valueCode}`}
+                                                                        name={`attr-${code}`}
+                                                                        checked={selectedFilters[code]?.includes(valueCode) || false}
+                                                                        onChange={(e) => handleAttributeChange(code, valueCode, e.target.checked, filterType)}
+                                                                        className="h-4 w-4 cursor-pointer"
+                                                                        style={{ accentColor: checkboxColor }}
+                                                                    />
+                                                                ) : (
+                                                                    <Checkbox
+                                                                        id={`attr-${code}-${valueCode}`}
+                                                                        checked={selectedFilters[code]?.includes(valueCode) || false}
+                                                                        onCheckedChange={(checked) => handleAttributeChange(code, valueCode, checked, filterType)}
+                                                                        className=""
+                                                                        style={{ accentColor: checkboxColor }}
+                                                                    />
+                                                                )
+                                                            )}
+                                                            <Label
+                                                                htmlFor={`attr-${code}-${valueCode}`}
+                                                                className="text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                                                                style={{ color: optionTextColor }}
+                                                                onMouseEnter={(e) => { e.target.style.color = optionHoverColor; }}
+                                                                onMouseLeave={(e) => { e.target.style.color = optionTextColor; }}
+                                                            >
+                                                                {valueLabel}
+                                                            </Label>
+                                                        </div>
+                                                        <span className="text-xs" style={{ color: optionCountColor }}>
+                                                            ({productCount})
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        {hasMoreValues && (
+                                            <button
+                                                onClick={isEditMode ? () => {} : () => setExpandedAttributes(prev => ({
+                                                    ...prev,
+                                                    [code]: !prev[code]
+                                                }))}
+                                                disabled={isEditMode}
+                                                className={`text-sm font-medium mt-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
+                                                style={{ color: checkboxColor }}
+                                            >
+                                                {isExpanded
+                                                    ? t('common.show_less', 'Show Less')
+                                                    : `${t('common.show_more', 'Show More')} (${values.length - maxVisibleAttributes} ${t('common.more', 'more')})`
+                                                }
+                                            </button>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            );
+        })
+    );
+
     return (
         <>
             {/* Mobile Filter Toggle - visible only on screens smaller than sm */}
@@ -336,99 +700,36 @@ export default function LayeredNavigation({
                     variant="outline"
                     onClick={isEditMode ? () => {} : () => setIsFilterVisible(!isFilterVisible)}
                     disabled={isEditMode}
-                    className={`w-full ${isEditMode ? "pointer-events-none" : ""}`}
+                    className={`w-full flex items-center justify-center gap-2 ${isEditMode ? "pointer-events-none" : ""}`}
                 >
-                    {isFilterVisible ? 'Hide Filters' : 'Filters'}
+                    <SlidersHorizontal className="w-4 h-4" />
+                    {isFilterVisible && mobileFilterMode === 'collapse' ? t('common.hide_filters', 'Hide Filters') : t('common.filters', 'Filters')}
+                    {hasActiveFilters && (
+                        <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            {Object.keys(selectedFilters).length + (priceRange[0] !== minPrice || priceRange[1] !== maxPrice ? 1 : 0)}
+                        </span>
+                    )}
                 </Button>
             </div>
 
-            {/* Active Filters on Mobile - visible only on mobile screens below Filter button */}
-            {showActiveFilters && hasActiveFilters && (
+            {/* Active Filters on Mobile (collapse mode only) - visible only on mobile screens below Filter button */}
+            {mobileFilterMode === 'collapse' && (
                 <div className="sm:hidden mb-4">
-                    <div className="flex flex-wrap gap-2">
-                        {(() => {
-                            const activeFilterElements = [];
-
-                            // Helper to get translated attribute label
-                            const getAttrLabel = (attrCode) => {
-                                const attr = attributes?.find(a => a.code === attrCode);
-                                return attr?.label || filterOptions[attrCode]?.name || attrCode;
-                            };
-
-                            // Helper to get translated value label
-                            const getValueLabel = (attrCode, valueCode) => {
-                                const attrOption = filterOptions[attrCode];
-                                const valueObj = attrOption?.values?.find(v => v.code === valueCode);
-                                return valueObj?.label || valueCode;
-                            };
-
-                            // Add active attribute filters
-                            Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
-                                if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
-                                    filterValues.forEach(value => {
-                                        activeFilterElements.push(
-                                            <span
-                                                key={`mobile-${filterKey}-${value}`}
-                                                className="inline-flex items-center px-3 py-1 rounded-full text-xs"
-                                                style={{
-                                                    backgroundColor: activeFilterBgColor,
-                                                    color: activeFilterTextColor
-                                                }}
-                                            >
-                                                {getAttrLabel(filterKey)}: {getValueLabel(filterKey, value)}
-                                                <button
-                                                    onClick={isEditMode ? () => {} : () => {
-                                                        const newValues = filterValues.filter(v => v !== value);
-                                                        const newFilters = { ...selectedFilters };
-                                                        if (newValues.length > 0) {
-                                                            newFilters[filterKey] = newValues;
-                                                        } else {
-                                                            delete newFilters[filterKey];
-                                                        }
-                                                        setSelectedFilters(newFilters);
-                                                    }}
-                                                    disabled={isEditMode}
-                                                    className={`text-lg ml-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
-                                                    style={{
-                                                        color: activeFilterTextColor
-                                                    }}
-                                                >
-                                                    ×
-                                                </button>
-                                            </span>
-                                        );
-                                    });
-                                }
-                            });
-
-                            // Add price range filter if active
-                            if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
-                                const [min, max] = priceRange;
-                                activeFilterElements.push(
-                                    <span
-                                        key="mobile-price-range"
-                                        className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800"
-                                    >
-                                        {t('common.price', 'Price')}: ${min} - ${max}
-                                        <button
-                                            onClick={isEditMode ? () => {} : clearPriceFilter}
-                                            disabled={isEditMode}
-                                            className={`text-lg ml-2 text-green-600 hover:text-green-800 ${isEditMode ? "pointer-events-none" : ""}`}
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                );
-                            }
-
-                            return activeFilterElements;
-                        })()}
-                    </div>
+                    {renderActiveFilterBadges(true)}
                 </div>
             )}
 
-            {/* Layered Navigation - hidden on mobile unless toggled, always visible on sm+ */}
-            <Card className={`w-full ${isFilterVisible ? 'block' : 'hidden'} sm:block`}>
+            {/* Slide Panel (when mobileFilterMode === 'slide') */}
+            {mobileFilterMode === 'slide' && renderSlidePanel()}
+
+            {/* Layered Navigation Card */}
+            {/* For collapse mode: hidden on mobile unless toggled, always visible on sm+ */}
+            {/* For slide mode: always hidden on mobile (uses slide panel), always visible on sm+ */}
+            <Card className={`w-full ${
+                mobileFilterMode === 'slide'
+                    ? 'hidden sm:block'
+                    : (isFilterVisible ? 'block' : 'hidden') + ' sm:block'
+            }`}>
                 <CardHeader>
                     <div className="flex justify-between items-center h-5">
                         {isEditMode ? (
@@ -469,83 +770,7 @@ export default function LayeredNavigation({
                 {/* Active Filters - below Filter By title */}
                 {showActiveFilters && hasActiveFilters && (
                     <div className="mb-4 p-2">
-                        <div className="flex flex-wrap items-center">
-                            {(() => {
-                                const activeFilterElements = [];
-
-                                // Helper to get translated attribute label
-                                const getAttrLabel = (attrCode) => {
-                                    const attr = attributes?.find(a => a.code === attrCode);
-                                    return attr?.label || filterOptions[attrCode]?.name || attrCode;
-                                };
-
-                                // Helper to get translated value label
-                                const getValueLabel = (attrCode, valueCode) => {
-                                    const attrOption = filterOptions[attrCode];
-                                    const valueObj = attrOption?.values?.find(v => v.code === valueCode);
-                                    return valueObj?.label || valueCode;
-                                };
-
-                                // Add active attribute filters
-                                Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
-                                    if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
-                                        filterValues.forEach(value => {
-                                            activeFilterElements.push(
-                                                <span
-                                                    key={`${filterKey}-${value}`}
-                                                    className="inline-flex items-center px-2 rounded-full text-xs mr-2 mb-2"
-                                                    style={{
-                                                        backgroundColor: activeFilterBgColor,
-                                                        color: activeFilterTextColor
-                                                    }}
-                                                >
-                                                    {getAttrLabel(filterKey)}: {getValueLabel(filterKey, value)}
-                                                    <button
-                                                        onClick={() => {
-                                                            const newValues = filterValues.filter(v => v !== value);
-                                                            const newFilters = { ...selectedFilters };
-                                                            if (newValues.length > 0) {
-                                                                newFilters[filterKey] = newValues;
-                                                            } else {
-                                                                delete newFilters[filterKey];
-                                                            }
-                                                            setSelectedFilters(newFilters);
-                                                        }}
-                                                        className="text-xl ml-2 hover:opacity-80 transition-opacity"
-                                                        style={{
-                                                            color: activeFilterTextColor
-                                                        }}
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </span>
-                                            );
-                                        });
-                                    }
-                                });
-
-                                // Add price range filter if active
-                                if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
-                                    const [min, max] = priceRange;
-                                    activeFilterElements.push(
-                                        <span
-                                            key="price-range"
-                                            className="inline-flex items-center px-2 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
-                                        >
-                                            {t('common.price', 'Price')}: ${min} - ${max}
-                                            <button
-                                                onClick={clearPriceFilter}
-                                                className="text-xl ml-2 text-green-600 hover:text-green-800"
-                                            >
-                                                ×
-                                            </button>
-                                        </span>
-                                    );
-                                }
-
-                                return activeFilterElements;
-                            })()}
-                        </div>
+                        {renderActiveFilterBadges(false)}
                     </div>
                 )}
                 <Accordion
@@ -553,241 +778,11 @@ export default function LayeredNavigation({
                     defaultValue={collapseFilters ? [] : ['price', ...Object.keys(filterOptions)]}
                     className="w-full"
                 >
-                    {/* FIXED: Price Slider */}
-                    <AccordionItem value="price">
-                        <AccordionTrigger
-                            className="font-semibold"
-                            style={{
-                                color: isEditMode ? 'inherit' : (filter_price_title.styles?.color || '#374151'),
-                                ...(!isEditMode ? filter_price_title.styles : {})
-                            }}
-                        >
-                            {isEditMode ? (
-                                <EditableSlotElement
-                                    slotKey="price_filter_label"
-                                    slot={childSlots?.price_filter_label || { content: 'Price' }}
-                                    onElementClick={onElementClick}
-                                    className="font-semibold"
-                                >
-                                    Price
-                                </EditableSlotElement>
-                            ) : (
-                                filter_price_title.content || "Price"
-                            )}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                            <div className="space-y-4">
-                                <div className="px-2">
-                                    <Slider
-                                        min={minPrice}
-                                        max={maxPrice}
-                                        step={1}
-                                        value={priceRange}
-                                        onValueChange={isEditMode ? () => {} : handlePriceRangeChange}
-                                        disabled={isEditMode}
-                                        className={`w-full ${isEditMode ? "pointer-events-none" : ""}`}
-                                        style={{ accentColor: sliderColor }}
-                                    />
-                                </div>
-                                <div className="flex justify-between text-sm text-gray-600">
-                                    <span>${priceRange[0]}</span>
-                                    <span>${priceRange[1]}</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-gray-400">
-                                    <span>Min: ${minPrice}</span>
-                                    <span>Max: ${maxPrice}</span>
-                                </div>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
+                    {/* Price Slider */}
+                    {renderPriceFilter()}
 
-                    {/* FIXED: Attribute Filters with all options */}
-                    {Object.entries(filterOptions).map(([code, { name, values, filterType }]) => {
-                        // Determine if this is a single-select (radio) or multi-select (checkbox) filter
-                        const isRadioFilter = filterType === 'select';
-                        // Only render attribute sections that have values
-                        if (!values || values.length === 0) {
-                            return null;
-                        }
-
-                        return (
-                            <AccordionItem key={code} value={code}>
-                                <AccordionTrigger
-                                    className="font-semibold"
-                                    style={{
-                                        color: isEditMode ? 'inherit' : (
-                                            // Try shared attribute_filter_label first, then individual label, then default
-                                            filter_attribute_titles.attribute_filter_label?.styles?.color ||
-                                            filter_attribute_titles[code]?.styles?.color ||
-                                            '#374151'
-                                        ),
-                                        ...(!isEditMode ? (
-                                            filter_attribute_titles.attribute_filter_label?.styles ||
-                                            filter_attribute_titles[code]?.styles ||
-                                            {}
-                                        ) : {})
-                                    }}
-                                >
-                                    {isEditMode ? (
-                                        <EditableSlotElement
-                                            slotKey={`${code}_filter_label`}
-                                            slot={childSlots?.[`${code}_filter_label`] || childSlots?.attribute_filter_label || { content: name }}
-                                            onElementClick={onElementClick}
-                                            className="font-semibold"
-                                            style={{
-                                                // Apply shared styles from attribute_filter_label or individual label
-                                                ...(childSlots?.attribute_filter_label?.styles || {}),
-                                                ...(childSlots?.[`${code}_filter_label`]?.styles || {})
-                                            }}
-                                        >
-                                            {name}
-                                        </EditableSlotElement>
-                                    ) : (
-                                        filter_attribute_titles[code]?.content || name
-                                    )}
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                <div
-                                    className="space-y-2"
-                                >
-                                    {(() => {
-                                        const isExpanded = expandedAttributes[code];
-                                        const visibleValues = isExpanded ? values : values.slice(0, maxVisibleAttributes);
-                                        const hasMoreValues = values.length > maxVisibleAttributes;
-
-                                        return (
-                                            <>
-                                                <div className={hasMoreValues && !isExpanded ? "max-h-48 overflow-hidden" : "max-h-48 overflow-y-auto"}>
-                                                    {visibleValues.map(valueObj => {
-                                        // valueObj is { code, label, count, sortOrder }
-                                        const valueCode = valueObj.code;
-                                        const valueLabel = valueObj.label;
-                                        const productCount = valueObj.count;
-
-                                        // Only render if there are products with this attribute value
-                                        if (productCount === 0) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <div
-                                                key={valueCode}
-                                                className="flex items-center justify-between"
-                                            >
-                                                <div className="flex items-center space-x-2">
-                                                    {isEditMode ? (
-                                                        <EditableSlotElement
-                                                            slotKey="filter_option_styles"
-                                                            slot={childSlots?.filter_option_styles}
-                                                            onElementClick={onElementClick}
-                                                            className=""
-                                                        >
-                                                            {isRadioFilter ? (
-                                                                <input
-                                                                    type="radio"
-                                                                    id={`attr-${code}-${valueCode}`}
-                                                                    name={`attr-${code}`}
-                                                                    checked={selectedFilters[code]?.includes(valueCode) || false}
-                                                                    onChange={() => {}}
-                                                                    disabled={true}
-                                                                    className="pointer-events-none h-4 w-4"
-                                                                    style={{
-                                                                        accentColor: checkboxColor
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <Checkbox
-                                                                    id={`attr-${code}-${valueCode}`}
-                                                                    checked={selectedFilters[code]?.includes(valueCode) || false}
-                                                                    onCheckedChange={() => {}}
-                                                                    disabled={true}
-                                                                    className="pointer-events-none"
-                                                                    style={{
-                                                                        accentColor: checkboxColor
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        </EditableSlotElement>
-                                                    ) : (
-                                                        isRadioFilter ? (
-                                                            <input
-                                                                type="radio"
-                                                                id={`attr-${code}-${valueCode}`}
-                                                                name={`attr-${code}`}
-                                                                checked={selectedFilters[code]?.includes(valueCode) || false}
-                                                                onChange={(e) => handleAttributeChange(code, valueCode, e.target.checked, filterType)}
-                                                                className="h-4 w-4 cursor-pointer"
-                                                                style={{
-                                                                    accentColor: checkboxColor
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <Checkbox
-                                                                id={`attr-${code}-${valueCode}`}
-                                                                checked={selectedFilters[code]?.includes(valueCode) || false}
-                                                                onCheckedChange={(checked) => handleAttributeChange(code, valueCode, checked, filterType)}
-                                                                disabled={false}
-                                                                className=""
-                                                                style={{
-                                                                    accentColor: checkboxColor
-                                                                }}
-                                                            />
-                                                        )
-                                                    )}
-                                                    <Label
-                                                        htmlFor={`attr-${code}-${valueCode}`}
-                                                        className="text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                                                        style={{
-                                                            color: optionTextColor
-                                                        }}
-                                                        onMouseEnter={(e) => {
-                                                            e.target.style.color = optionHoverColor;
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.target.style.color = optionTextColor;
-                                                        }}
-                                                    >
-                                                        {valueLabel}
-                                                    </Label>
-                                                </div>
-                                                <span
-                                                    className="text-xs"
-                                                    style={{
-                                                        color: optionCountColor
-                                                    }}
-                                                >
-                                                    ({productCount})
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                                </div>
-                                                {hasMoreValues && (
-                                                    <button
-                                                        onClick={isEditMode ? () => {} : () => setExpandedAttributes(prev => ({
-                                                            ...prev,
-                                                            [code]: !prev[code]
-                                                        }))}
-                                                        disabled={isEditMode}
-                                                        className={`text-sm font-medium mt-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
-                                                        style={{
-                                                            color: checkboxColor
-                                                        }}
-                                                    >
-                                                        {isExpanded
-                                                            ? t('common.show_less', 'Show Less')
-                                                            : `${t('common.show_more', 'Show More')} (${values.length - maxVisibleAttributes} ${t('common.more', 'more')})`
-                                                        }
-                                                    </button>
-                                                )}
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                        );
-                    })}
+                    {/* Attribute Filters */}
+                    {renderAttributeFilters()}
                 </Accordion>
             </CardContent>
         </Card>
