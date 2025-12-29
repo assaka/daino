@@ -300,7 +300,7 @@ const SortSelector = createSlotComponent({
 // Pagination Component - React-based with customizable styles from settings
 const PaginationComponent = createSlotComponent({
   name: 'PaginationComponent',
-  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, onElementClick }) => {
     // Get pagination data - check variableContext first (from preprocessedData), then categoryContext
     const totalPages = variableContext?.pagination?.totalPages || variableContext?.totalPages || categoryContext?.pagination?.totalPages || categoryContext?.totalPages || 0;
     const currentPage = variableContext?.pagination?.currentPage || variableContext?.currentPage || categoryContext?.pagination?.currentPage || categoryContext?.currentPage || 1;
@@ -411,8 +411,20 @@ const PaginationComponent = createSlotComponent({
 
     const pageNumbers = buildPageNumbers();
 
+    // Handle click on wrapper for editor selection
+    const handleWrapperClick = (e) => {
+      if (context === 'editor' && onElementClick) {
+        onElementClick('pagination_container', e.currentTarget);
+      }
+    };
+
     return (
-      <div className={finalClassName}>
+      <div
+        className={finalClassName}
+        data-slot-id="pagination_container"
+        data-editable="true"
+        onClick={handleWrapperClick}
+      >
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
             <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
