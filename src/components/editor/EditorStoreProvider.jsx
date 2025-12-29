@@ -201,6 +201,16 @@ export function EditorStoreProvider({ children }) {
     return <>{children}</>;
   }
 
+  // Wait for bootstrap to load before rendering editor with settings
+  // This ensures editor preview has the correct theme settings from the database
+  if (bootstrapLoading && !bootstrap) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <StoreContext.Provider value={storeContextValue}>
       <TranslationContext.Provider value={translationContextValue}>
