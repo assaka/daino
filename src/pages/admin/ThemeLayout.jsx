@@ -2372,18 +2372,17 @@ export default function ThemeLayout() {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                        </CardContent>
+                    </Card>
 
-                            <Separator />
-
-                            {/* Pagination Styling */}
-                            <div className="p-4 border rounded-lg space-y-4">
-                                <div>
-                                    <Label className="text-base font-medium">Pagination Styling</Label>
-                                    <p className="text-sm text-gray-500">Customize the appearance of pagination buttons on category pages</p>
-                                </div>
-
-                                {/* Button Colors */}
+                    {/* Pagination Styling Card */}
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" /> Pagination Styling</CardTitle>
+                            <CardDescription>Customize the appearance of pagination buttons on category pages.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Button Colors */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Button Background</Label>
@@ -2549,7 +2548,6 @@ export default function ThemeLayout() {
                                         </button>
                                     </div>
                                 </div>
-                            </div>
                         </CardContent>
                     </Card>
 
