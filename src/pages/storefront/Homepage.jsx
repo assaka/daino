@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { createCategoryUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
-import ProductItemCard from "@/components/storefront/ProductItemCard";
+import SlotBasedProductCard from "@/components/storefront/SlotBasedProductCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { Package, Search as SearchIcon, ChevronLeft, ChevronRight } from "lucide-react";
@@ -237,17 +237,14 @@ export default function Homepage() {
                 // Grid layout for search results
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {filteredProducts.map((product) => (
-                    <ProductItemCard
+                    <SlotBasedProductCard
                       key={product.id}
                       product={product}
                       settings={settings}
                       store={store}
-                      taxes={taxes}
-                      selectedCountry={selectedCountry}
                       productLabels={productLabels}
                       className="hover:shadow-lg transition-shadow rounded-lg"
                       viewMode="grid"
-                      slotConfig={{}}
                     />
                   ))}
                 </div>
@@ -275,16 +272,13 @@ export default function Homepage() {
                   >
                     {filteredProducts.slice(0, 12).map((product) => (
                       <div key={product.id} className="flex-shrink-0 w-[280px]">
-                        <ProductItemCard
+                        <SlotBasedProductCard
                           product={product}
                           settings={settings}
                           store={store}
-                          taxes={taxes}
-                          selectedCountry={selectedCountry}
                           productLabels={productLabels}
                           className="hover:shadow-lg transition-shadow rounded-lg h-full"
                           viewMode="grid"
-                          slotConfig={{}}
                         />
                       </div>
                     ))}

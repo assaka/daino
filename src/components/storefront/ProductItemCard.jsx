@@ -15,8 +15,16 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 /**
- * ProductItemCard - Reusable product card component
- * Can be used in ProductCard, CategorySlotRenderer, and other components
+ * @deprecated This component is deprecated. Use SlotBasedProductCard instead.
+ *
+ * ProductItemCard has been replaced by SlotBasedProductCard which uses the unified
+ * slot-based rendering system. This ensures consistent styling between editor and
+ * storefront, and all settings flow through the theme system.
+ *
+ * Migration: Replace imports of ProductItemCard with SlotBasedProductCard
+ * import SlotBasedProductCard from '@/components/storefront/SlotBasedProductCard';
+ *
+ * TODO: Remove this file after confirming all usages have been migrated.
  */
 const ProductItemCard = ({
   product,
@@ -368,11 +376,11 @@ const ProductItemCard = ({
 
             {/* Add to Cart Button */}
             {(() => {
-              // Get button styling from new settings or fall back to legacy theme setting
-              const buttonStyles = settings?.add_to_cart_button || {};
-              const bgColor = buttonStyles.backgroundColor || settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color;
-              const textColor = buttonStyles.textColor || '#FFFFFF';
-              const hoverBgColor = buttonStyles.hoverBackgroundColor || '#2563EB';
+              // Get button styling from theme (FLAT settings - consistent with UnifiedSlotRenderer)
+              const theme = settings?.theme || {};
+              const bgColor = theme.add_to_cart_button_bg_color || getThemeDefaults().add_to_cart_button_bg_color || '#3B82F6';
+              const textColor = theme.add_to_cart_button_text_color || '#FFFFFF';
+              const hoverBgColor = theme.add_to_cart_button_hover_color || '#2563EB';
               const borderRadiusMap = {
                 'none': '0px',
                 'sm': '2px',
@@ -381,7 +389,9 @@ const ProductItemCard = ({
                 'xl': '12px',
                 'full': '9999px'
               };
-              const borderRadius = borderRadiusMap[buttonStyles.borderRadius] || '6px';
+              // Handle both preset names (e.g., 'md') and direct CSS values (e.g., '6px')
+              const borderRadiusValue = theme.add_to_cart_button_border_radius || 'md';
+              const borderRadius = borderRadiusMap[borderRadiusValue] || borderRadiusValue || '6px';
 
               const buttonStyle = {
                 display: 'flex', // Override inline-block from any saved styles

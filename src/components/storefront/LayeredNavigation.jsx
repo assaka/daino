@@ -114,8 +114,9 @@ export default function LayeredNavigation({
     const optionCountColor = getStyle(optionStyles.optionCountColor, theme.layered_nav_option_count_color, defaults.layered_nav_option_count_color);
     const checkboxColor = getStyle(optionStyles.checkboxColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
     const sliderColor = getStyle(optionStyles.sliderColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
-    const activeFilterBgColor = getStyle(optionStyles.activeFilterBgColor, theme.layered_nav_active_filter_bg_color, defaults.layered_nav_active_filter_bg_color);
-    const activeFilterTextColor = getStyle(optionStyles.activeFilterTextColor, theme.layered_nav_active_filter_text_color, defaults.layered_nav_active_filter_text_color);
+    // Active filter tag styles - read from active_filter_styles slot (backgroundColor/textColor)
+    const activeFilterBgColor = getStyle(activeStyles.backgroundColor, theme.layered_nav_active_filter_bg_color, defaults.layered_nav_active_filter_bg_color);
+    const activeFilterTextColor = getStyle(activeStyles.textColor, theme.layered_nav_active_filter_text_color, defaults.layered_nav_active_filter_text_color);
 
     // Active filter title/section styles (from active_filter_styles slot)
     const activeFilterTitleColor = activeStyles.titleColor || '#374151';
