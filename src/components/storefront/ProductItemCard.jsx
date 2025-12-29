@@ -384,6 +384,7 @@ const ProductItemCard = ({
               const borderRadius = borderRadiusMap[buttonStyles.borderRadius] || '6px';
 
               const buttonStyle = {
+                display: 'flex', // Override inline-block from any saved styles
                 backgroundColor: bgColor,
                 color: textColor,
                 borderRadius: borderRadius,

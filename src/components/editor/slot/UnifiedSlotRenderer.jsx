@@ -1296,6 +1296,7 @@ export function UnifiedSlotRenderer({
           const theme = variableContext?.settings?.theme || {};
           const finalButtonStyles = {
             ...buttonStyles,
+            display: 'flex', // Override inline-block from saved styles
             backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
             color: theme.add_to_cart_button_text_color || buttonStyles?.color,
             borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
@@ -1347,6 +1348,7 @@ export function UnifiedSlotRenderer({
 
           const finalButtonStyles = {
             ...cleanedButtonStyles,
+            display: 'flex', // Override inline-block from editor styles
             backgroundColor: theme.add_to_cart_button_bg_color || cleanedButtonStyles?.backgroundColor,
             color: theme.add_to_cart_button_text_color || cleanedButtonStyles?.color,
             borderRadius: theme.add_to_cart_button_border_radius || cleanedButtonStyles?.borderRadius,
