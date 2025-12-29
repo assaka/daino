@@ -150,11 +150,17 @@ export function HeaderSlotRenderer({
           }
         }
 
+        // Ensure header_main has relative positioning for mobile_menu absolute positioning
+        let containerClassName = className || '';
+        if (id === 'header_main' && !containerClassName.includes('relative')) {
+          containerClassName = `${containerClassName} relative`.trim();
+        }
+
         // Render container with children
         return (
           <div
             key={id}
-            className={className}
+            className={containerClassName}
             style={customStyles}
             data-slot-id={id}
           >

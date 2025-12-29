@@ -10,14 +10,11 @@ const headerConfig = {
       id: 'header_main',
       type: 'container',
       content: '',
-      className: 'bg-white shadow-md sticky top-0 z-40',
+      className: 'bg-white shadow-md sticky top-0 z-40 relative',
       parentClassName: '',
       styles: {
         backgroundColor: '#ffffff',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-        position: 'sticky',
-        top: '0',
-        zIndex: '40'
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
       },
       parentId: null,
       position: { col: 1, row: 1 },
