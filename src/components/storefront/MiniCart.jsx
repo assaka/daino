@@ -478,7 +478,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                 })}
               </div>
               
-              <div className="border-t pt-3">
+              <div className="pt-3">
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-semibold">{t('common.total', 'Total')}: {formatPrice(getTotalPrice())}</span>
                 </div>

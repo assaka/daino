@@ -8,6 +8,7 @@ import { createSlotComponent, registerSlotComponent } from './SlotComponentRegis
 import { formatPrice } from '@/utils/priceUtils';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { useTranslation } from '@/contexts/TranslationContext';
+import {AccordionItem} from "@/components/ui/accordion.jsx";
 
 /**
  * CheckoutStepsSlot - Checkout progress steps
@@ -93,7 +94,7 @@ const PaymentFormSlot = createSlotComponent({
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Payment Information</h2>
           <form className="space-y-4">
-            <div>
+            <div>AccordionItem
               <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
               <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="1234 5678 9012 3456" />
             </div>
