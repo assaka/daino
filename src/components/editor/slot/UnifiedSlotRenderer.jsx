@@ -1089,6 +1089,10 @@ export function UnifiedSlotRenderer({
               width: shouldUseStoredWidth ? storedWidth : 'fit-content'
             },
             onClick: (e) => {
+              // Prevent link navigation in editor mode
+              if (e.target.tagName === 'A' || e.target.closest('a')) {
+                e.preventDefault();
+              }
               e.stopPropagation();
               if (onElementClick) {
                 onElementClick(id, e.currentTarget);
@@ -1335,14 +1339,11 @@ export function UnifiedSlotRenderer({
           // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
           const theme = variableContext?.settings?.theme || {};
 
-          // Ensure button starts with full width - remove any percentage width < 100%
+          // Ensure button starts with full width - force 100% width for add_to_cart
+          // ResizeWrapper auto-calculates percentage from natural size, so we must explicitly set 100%
           const cleanedButtonStyles = { ...buttonStyles };
-          if (cleanedButtonStyles.width && typeof cleanedButtonStyles.width === 'string' && cleanedButtonStyles.width.endsWith('%')) {
-            const widthValue = parseFloat(cleanedButtonStyles.width);
-            if (widthValue < 100) {
-              delete cleanedButtonStyles.width; // Remove, let w-full class handle it
-            }
-          }
+          // Always set to 100% for add_to_cart_button to ensure full width start
+          cleanedButtonStyles.width = '100%';
 
           const finalButtonStyles = {
             ...cleanedButtonStyles,
