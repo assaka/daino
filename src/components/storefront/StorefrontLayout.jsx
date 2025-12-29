@@ -798,7 +798,7 @@ export default function StorefrontLayout({ children }) {
                                         {!showPermanentSearch && !settings?.hide_header_search && (
                                             <Button
                                                 variant="ghost"
-                                                size="icon"
+                                                className="h-11 w-11 p-0 flex items-center justify-center"
                                                 onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
                                             >
                                                 <Search className="w-5 h-5" />
@@ -809,7 +809,7 @@ export default function StorefrontLayout({ children }) {
                                                 <DropdownMenuTrigger asChild>
                                                     <Button
                                                         variant="ghost"
-                                                        size="icon"
+                                                        className="h-11 w-11 p-0 flex items-center justify-center"
                                                         disabled={userLoading}
                                                     >
                                                         <UserIcon className="w-5 h-5" />
@@ -854,9 +854,9 @@ export default function StorefrontLayout({ children }) {
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         ) : (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
+                                            <Button
+                                                variant="ghost"
+                                                className="h-11 w-11 p-0 flex items-center justify-center"
                                                 onClick={() => {
                                                     // Save store info for redirect after login
                                                     localStorage.setItem('customer_auth_store_id', store.id);
@@ -963,8 +963,7 @@ export default function StorefrontLayout({ children }) {
 
                                      <Button
                                         variant="ghost"
-                                        size="icon"
-                                        className="md:hidden"
+                                        className="md:hidden h-11 w-11 p-0 flex items-center justify-center"
                                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                                     >
                                         {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

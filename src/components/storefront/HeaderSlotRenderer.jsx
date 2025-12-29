@@ -239,8 +239,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            size="icon"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="h-11 w-11 p-0 flex items-center justify-center"
             onClick={() => setMobileSearchOpen?.(!mobileSearchOpen)}
             data-slot-id={id}
           >
@@ -270,8 +269,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            size="icon"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="h-11 w-11 p-0 flex items-center justify-center"
             onClick={() => {
               if (user) {
                 // Show dropdown or navigate to account
@@ -428,8 +426,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            size="icon"
-            className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="md:hidden h-11 w-11 p-0 flex items-center justify-center"
             onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
             data-slot-id={id}
           >

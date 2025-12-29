@@ -353,7 +353,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+        <Button variant="ghost" className="relative h-11 w-11 p-0 flex items-center justify-center">
           {getCartIcon()}
           {totalItems > 0 && (
             <Badge
