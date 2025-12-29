@@ -420,14 +420,23 @@ const categoryConfig = {
       content: '',
       className: '',
       parentClassName: '',
-      styles: {},
+      styles: {
+        buttonBgColor: '#FFFFFF',
+        buttonTextColor: '#374151',
+        buttonBorderColor: '#D1D5DB',
+        buttonHoverBgColor: '#F3F4F6',
+        activeBgColor: '#3B82F6',
+        activeTextColor: '#FFFFFF'
+      },
       parentId: 'products_container',
       position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
-        component: 'PaginationComponent'
+        component: 'PaginationComponent',
+        editorSidebar: 'PaginationSidebar',
+        displayName: 'Pagination'
       }
     },
 

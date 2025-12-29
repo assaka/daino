@@ -32,6 +32,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 const SIDEBAR_COMPONENTS = {
   LayeredNavigationSidebar: () => import('./sidebars/LayeredNavigationSidebar'),
   HeaderEditorSidebar: () => import('./sidebars/HeaderEditorSidebar'),
+  PaginationSidebar: () => import('./sidebars/PaginationSidebar'),
   // Add more specialized sidebars here as needed
   // ProductGridSidebar: () => import('./sidebars/ProductGridSidebar'),
 };
