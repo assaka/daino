@@ -111,7 +111,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative min-h-[44px] min-w-[44px] flex items-center justify-center">
           {getWishlistIcon()}
           {wishlistItems.length > 0 && (
             <Badge

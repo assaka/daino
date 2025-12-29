@@ -349,7 +349,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 e.preventDefault();
                                 toggleCategory(category.id);
                             }}
-                            className="p-1 h-auto touch-manipulation float-right transition-colors"
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation transition-colors"
                             style={{ color: linkStyles.color }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = hoverBgColor;
@@ -360,9 +360,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             aria-label={isExpanded ? `Collapse ${getCategoryName(category, getCurrentLanguage())}` : `Expand ${getCategoryName(category, getCurrentLanguage())}`}
                         >
                             {isExpanded ? (
-                                <ChevronDown className="w-3 h-3" />
+                                <ChevronDown className="w-5 h-5" />
                             ) : (
-                                <ChevronRight className="w-3 h-3" />
+                                <ChevronRight className="w-5 h-5" />
                             )}
                         </Button>
                     )}
