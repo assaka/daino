@@ -89,13 +89,15 @@ export default function LayeredNavigation({
         filter_by_label = { content: 'Filter By' },
         filter_price_title = { content: 'Price' },
         filter_attribute_titles = {},
-        filter_option_styles = { styles: {} }
+        filter_option_styles = { styles: {} },
+        active_filter_styles = { styles: {} }
     } = slotConfig;
 
     // Extract custom styling for filter options
     // In EDITOR mode: slot styles take priority (so sidebar edits are visible)
     // In STOREFRONT mode: theme settings take priority (for global consistency)
     const optionStyles = filter_option_styles.styles || {};
+    const activeStyles = active_filter_styles.styles || {};
     const theme = settings.theme || {};
     const defaults = getThemeDefaults();
 
@@ -117,6 +119,12 @@ export default function LayeredNavigation({
     const sliderColor = getStyle(optionStyles.sliderColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
     const activeFilterBgColor = getStyle(optionStyles.activeFilterBgColor, theme.layered_nav_active_filter_bg_color, defaults.layered_nav_active_filter_bg_color);
     const activeFilterTextColor = getStyle(optionStyles.activeFilterTextColor, theme.layered_nav_active_filter_text_color, defaults.layered_nav_active_filter_text_color);
+
+    // Active filter title/section styles (from active_filter_styles slot)
+    const activeFilterTitleColor = activeStyles.titleColor || '#374151';
+    const activeFilterTitleFontSize = activeStyles.titleFontSize || '0.875rem';
+    const activeFilterTitleFontWeight = activeStyles.titleFontWeight || '600';
+    const activeFilterClearAllColor = activeStyles.clearAllColor || '#DC2626';
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
@@ -779,6 +787,7 @@ export default function LayeredNavigation({
                                 onClick={isEditMode ? () => {} : clearAllFilters}
                                 disabled={isEditMode}
                                 className={`text-xs ${isEditMode ? "pointer-events-none" : ""}`}
+                                style={{ color: activeFilterClearAllColor, borderColor: activeFilterClearAllColor }}
                             >
                                 Clear All
                             </Button>

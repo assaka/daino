@@ -195,6 +195,7 @@ const LayeredNavigation = createSlotComponent({
       filter_card_header: childSlots.filter_heading || { content: 'Filter By' },
       filter_price_title: childSlots.price_filter_label || { content: 'Price' },
       filter_option_styles: childSlots.filter_option_styles || { styles: {} },
+      active_filter_styles: childSlots.active_filter_styles || { styles: {} },
       filter_attribute_titles: {
         attribute_filter_label: childSlots.attribute_filter_label || {}
       }
