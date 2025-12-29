@@ -295,7 +295,8 @@ const HARDCODED_THEME_DEFAULTS = {
  * @returns {Object} Merged theme settings
  */
 export function getThemeDefaults(themeSettings = {}) {
-  return {
+  // First, do shallow merge for flat settings
+  const merged = {
     // 1. Hardcoded fallbacks (lowest priority)
     ...HARDCODED_THEME_DEFAULTS,
     // 2. Bootstrap/API defaults from master DB (middle priority)
@@ -303,6 +304,45 @@ export function getThemeDefaults(themeSettings = {}) {
     // 3. User's saved settings (highest priority)
     ...themeSettings
   };
+
+  // Now build nested objects that inherit from flat settings when no nested values exist
+  // This ensures theme presets with flat settings (e.g., add_to_cart_button_color) work correctly
+
+  // Add to Cart Button - inherit backgroundColor from add_to_cart_button_color if no nested object
+  const userButton = themeSettings.add_to_cart_button || {};
+  merged.add_to_cart_button = {
+    backgroundColor: userButton.backgroundColor || merged.add_to_cart_button_color || HARDCODED_THEME_DEFAULTS.add_to_cart_button.backgroundColor,
+    textColor: userButton.textColor || HARDCODED_THEME_DEFAULTS.add_to_cart_button.textColor,
+    hoverBackgroundColor: userButton.hoverBackgroundColor || HARDCODED_THEME_DEFAULTS.add_to_cart_button.hoverBackgroundColor,
+    borderRadius: userButton.borderRadius || HARDCODED_THEME_DEFAULTS.add_to_cart_button.borderRadius
+  };
+
+  // Layered Navigation - use user's nested settings or hardcoded defaults
+  const userNav = themeSettings.layered_navigation || {};
+  merged.layered_navigation = {
+    cardBgColor: userNav.cardBgColor || HARDCODED_THEME_DEFAULTS.layered_navigation.cardBgColor,
+    headerTextColor: userNav.headerTextColor || HARDCODED_THEME_DEFAULTS.layered_navigation.headerTextColor,
+    filterLabelColor: userNav.filterLabelColor || HARDCODED_THEME_DEFAULTS.layered_navigation.filterLabelColor,
+    optionTextColor: userNav.optionTextColor || HARDCODED_THEME_DEFAULTS.layered_navigation.optionTextColor,
+    optionHoverColor: userNav.optionHoverColor || HARDCODED_THEME_DEFAULTS.layered_navigation.optionHoverColor,
+    optionCountColor: userNav.optionCountColor || HARDCODED_THEME_DEFAULTS.layered_navigation.optionCountColor,
+    checkboxColor: userNav.checkboxColor || HARDCODED_THEME_DEFAULTS.layered_navigation.checkboxColor,
+    activeFilterBgColor: userNav.activeFilterBgColor || HARDCODED_THEME_DEFAULTS.layered_navigation.activeFilterBgColor,
+    activeFilterTextColor: userNav.activeFilterTextColor || HARDCODED_THEME_DEFAULTS.layered_navigation.activeFilterTextColor
+  };
+
+  // Stock Settings - use user's nested settings or hardcoded defaults
+  const userStock = themeSettings.stock_settings || {};
+  merged.stock_settings = {
+    in_stock_text_color: userStock.in_stock_text_color || HARDCODED_THEME_DEFAULTS.stock_settings.in_stock_text_color,
+    in_stock_bg_color: userStock.in_stock_bg_color || HARDCODED_THEME_DEFAULTS.stock_settings.in_stock_bg_color,
+    out_of_stock_text_color: userStock.out_of_stock_text_color || HARDCODED_THEME_DEFAULTS.stock_settings.out_of_stock_text_color,
+    out_of_stock_bg_color: userStock.out_of_stock_bg_color || HARDCODED_THEME_DEFAULTS.stock_settings.out_of_stock_bg_color,
+    low_stock_text_color: userStock.low_stock_text_color || HARDCODED_THEME_DEFAULTS.stock_settings.low_stock_text_color,
+    low_stock_bg_color: userStock.low_stock_bg_color || HARDCODED_THEME_DEFAULTS.stock_settings.low_stock_bg_color
+  };
+
+  return merged;
 }
 
 /**

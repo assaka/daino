@@ -441,40 +441,12 @@ export default function ThemeLayout() {
                     customBreakpoints: fullStore?.settings?.product_grid?.customBreakpoints || [],
                     rows: fullStore?.settings?.product_grid?.rows ?? 4
                 },
+                // Use centralized defaults from storeSettingsDefaults.js
+                // getThemeDefaults() handles all nested objects (layered_navigation, add_to_cart_button, stock_settings)
                 theme: {
-                    // Use centralized defaults from storeSettingsDefaults.js
-                    ...getThemeDefaults(),
-                    custom_fonts: [], // Custom fonts array
-                    // Layered navigation styling defaults
-                    layered_navigation: fullStore?.settings?.theme?.layered_navigation ?? {
-                        cardBgColor: '#FFFFFF',
-                        headerTextColor: '#1F2937',
-                        filterLabelColor: '#374151',
-                        optionTextColor: '#374151',
-                        optionHoverColor: '#1F2937',
-                        optionCountColor: '#9CA3AF',
-                        checkboxColor: '#3B82F6',
-                        activeFilterBgColor: '#DBEAFE',
-                        activeFilterTextColor: '#1E40AF'
-                    },
-                    // Add to Cart button styling defaults
-                    add_to_cart_button: fullStore?.settings?.theme?.add_to_cart_button ?? {
-                        backgroundColor: fullStore?.settings?.theme?.add_to_cart_button_color || '#3B82F6',
-                        textColor: '#FFFFFF',
-                        hoverBackgroundColor: '#2563EB',
-                        borderRadius: 'md'
-                    },
-                    // Stock label styling defaults
-                    stock_settings: fullStore?.settings?.theme?.stock_settings ?? {
-                        in_stock_text_color: '#166534',
-                        in_stock_bg_color: '#dcfce7',
-                        out_of_stock_text_color: '#991b1b',
-                        out_of_stock_bg_color: '#fee2e2',
-                        low_stock_text_color: '#92400e',
-                        low_stock_bg_color: '#fef3c7',
-                    },
-                    // Override with existing settings if they exist
-                    ...((fullStore?.settings || {}).theme || {})
+                    ...getThemeDefaults(fullStore?.settings?.theme),
+                    // Preserve custom_fonts from saved settings
+                    custom_fonts: fullStore?.settings?.theme?.custom_fonts || [],
                 },
             };
             

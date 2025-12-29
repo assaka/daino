@@ -740,11 +740,27 @@ export function processTemplateVariables(template, context) {
     processed = processed.replace(/\{\{user\.email\}\}/g, context.user_email || '');
   }
 
-  // Replace settings.theme variables
+  // Replace settings.theme variables (both flat and nested)
   if (context.settings?.theme) {
+    // Handle flat settings like {{settings.theme.add_to_cart_button_color}}
     Object.keys(context.settings.theme).forEach(key => {
-      const regex = new RegExp(`\\{\\{settings\\.theme\\.${key}\\}\\}`, 'g');
-      processed = processed.replace(regex, context.settings.theme[key] || '');
+      const value = context.settings.theme[key];
+      if (typeof value !== 'object') {
+        const regex = new RegExp(`\\{\\{settings\\.theme\\.${key}\\}\\}`, 'g');
+        processed = processed.replace(regex, value || '');
+      }
+    });
+
+    // Handle nested settings like {{settings.theme.add_to_cart_button.backgroundColor}}
+    const nestedKeys = ['add_to_cart_button', 'layered_navigation', 'stock_settings'];
+    nestedKeys.forEach(nestedKey => {
+      const nestedObj = context.settings.theme[nestedKey];
+      if (nestedObj && typeof nestedObj === 'object') {
+        Object.keys(nestedObj).forEach(prop => {
+          const regex = new RegExp(`\\{\\{settings\\.theme\\.${nestedKey}\\.${prop}\\}\\}`, 'g');
+          processed = processed.replace(regex, nestedObj[prop] || '');
+        });
+      }
     });
   }
 

@@ -18,7 +18,8 @@ import TranslationContext from '@/contexts/TranslationContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useCategories, useFilterableAttributes, useProductLabels, useTaxes, useTranslations } from '@/hooks/useApiQueries';
 import { useSlotConfiguration } from '@/hooks/useApiQueries';
-import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
+import { mergeStoreSettings, setThemeDefaultsFromBootstrap } from '@/utils/storeSettingsDefaults';
+import { useStoreBootstrap } from '@/hooks/useStoreBootstrap';
 
 /**
  * Hook to get store context value for passing to context bridge
@@ -44,6 +45,7 @@ export const useEditorTranslationContext = () => {
 export function EditorStoreProvider({ children }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
+  const storeSlug = selectedStore?.slug;
 
   const [selectedCountry, setSelectedCountry] = useState(() => {
     return localStorage.getItem('selectedCountry') || 'US';
@@ -54,12 +56,41 @@ export function EditorStoreProvider({ children }) {
     ? localStorage.getItem('daino_language') || 'en'
     : 'en';
 
-  // Fetch additional data using React Query hooks
-  const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
+  // CRITICAL: Fetch bootstrap data to get full store settings (including theme settings)
+  // This ensures editor preview uses the same settings as the live storefront
+  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap } = useStoreBootstrap(storeSlug, currentLanguage);
+
+  // Set theme defaults from bootstrap (same as StoreProvider)
+  useEffect(() => {
+    if (bootstrap?.themeDefaults) {
+      setThemeDefaultsFromBootstrap(bootstrap.themeDefaults);
+    }
+  }, [bootstrap?.themeDefaults]);
+
+  // Listen for settings updates from admin panel (e.g., ThemeLayout changes)
+  // Refetch bootstrap to get latest settings without page reload
+  useEffect(() => {
+    try {
+      const channel = new BroadcastChannel('store_settings_update');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'clear_cache' || event.data.type === 'settings_updated') {
+          console.log('[EditorStoreProvider] Settings updated, refetching bootstrap');
+          refetchBootstrap();
+        }
+      };
+      return () => channel.close();
+    } catch (e) {
+      // BroadcastChannel not supported in some browsers
+      console.warn('BroadcastChannel not supported:', e);
+    }
+  }, [refetchBootstrap]);
+
+  // Fetch additional data using React Query hooks (as fallback if not in bootstrap)
+  const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId && !bootstrap?.categories });
   const { data: filterableAttributes = [] } = useFilterableAttributes(storeId, { enabled: !!storeId });
-  const { data: productLabels = [] } = useProductLabels(storeId, { enabled: !!storeId });
+  const { data: productLabels = [] } = useProductLabels(storeId, { enabled: !!storeId && !bootstrap?.productLabels });
   const { data: taxes = [] } = useTaxes(storeId, { enabled: !!storeId });
-  const { data: translations = {} } = useTranslations(storeId, currentLanguage, { enabled: !!storeId });
+  const { data: translations = {} } = useTranslations(storeId, currentLanguage, { enabled: !!storeId && !bootstrap?.translations });
 
   // Build the store context value
   const storeContextValue = useMemo(() => {
@@ -67,39 +98,42 @@ export function EditorStoreProvider({ children }) {
       return null;
     }
 
-    // Merge settings with defaults
-    const mergedSettings = selectedStore.settings
-      ? mergeStoreSettings({ ...selectedStore, settings: selectedStore.settings })
+    // Use bootstrap data if available, otherwise fall back to selectedStore
+    const storeData = bootstrap?.store || selectedStore;
+
+    // Merge settings with defaults - prioritize bootstrap settings (full settings from API)
+    const mergedSettings = storeData.settings
+      ? mergeStoreSettings({ ...storeData, settings: storeData.settings })
       : {};
 
     return {
       store: {
-        ...selectedStore,
+        ...storeData,
         settings: mergedSettings
       },
       settings: mergedSettings,
-      loading: false,
+      loading: bootstrapLoading,
 
-      // Categories and attributes
-      categories,
+      // Categories and attributes - prefer bootstrap data
+      categories: bootstrap?.categories || categories,
       filterableAttributes,
 
       // Product labels and taxes
-      productLabels,
+      productLabels: bootstrap?.productLabels || productLabels,
       taxes,
 
-      // Languages - minimal for editor
-      languages: [],
+      // Languages - from bootstrap or minimal for editor
+      languages: bootstrap?.languages || [],
 
-      // User - not logged in for editor preview
-      user: null,
+      // User - from bootstrap or not logged in for editor preview
+      user: bootstrap?.user || null,
 
-      // Wishlist - empty for editor
-      wishlist: [],
+      // Wishlist - from bootstrap or empty for editor
+      wishlist: bootstrap?.wishlist || [],
 
       // SEO
-      seoSettings: {},
-      seoTemplates: [],
+      seoSettings: bootstrap?.seoSettings || {},
+      seoTemplates: bootstrap?.seoTemplates || [],
 
       // Attributes
       attributes: [],
@@ -113,15 +147,21 @@ export function EditorStoreProvider({ children }) {
       },
 
       // Storefront variant
-      storefront: null,
+      storefront: bootstrap?.storefront || null,
       isPreviewMode: false,
 
-      // Header slot config - will be fetched separately by editors
-      headerSlotConfig: null
+      // Header slot config - from bootstrap
+      headerSlotConfig: bootstrap?.headerSlotConfig || null,
+
+      // Translations from bootstrap
+      translations: bootstrap?.translations || null,
     };
-  }, [selectedStore, categories, filterableAttributes, productLabels, taxes, selectedCountry]);
+  }, [selectedStore, bootstrap, bootstrapLoading, categories, filterableAttributes, productLabels, taxes, selectedCountry]);
 
   // Build translation context value with fetched translations
+  // Prefer bootstrap translations over separate translations fetch
+  const effectiveTranslations = bootstrap?.translations?.labels || translations;
+
   const translationContextValue = useMemo(() => {
     // Helper to get nested value from dotted key
     const getNestedValue = (obj, key) => {
@@ -140,13 +180,13 @@ export function EditorStoreProvider({ children }) {
 
     return {
       t: (key, fallback) => {
-        const value = getNestedValue(translations, key);
+        const value = getNestedValue(effectiveTranslations, key);
         return value || fallback || key;
       },
       currentLanguage,
-      availableLanguages: [],
-      translations,
-      loading: false,
+      availableLanguages: bootstrap?.languages || [],
+      translations: effectiveTranslations,
+      loading: bootstrapLoading,
       isRTL: false,
       changeLanguage: () => {},
       getEntityTranslation: () => '',
@@ -154,7 +194,7 @@ export function EditorStoreProvider({ children }) {
       formatCurrency: (amount, currency = 'USD') => `${currency} ${amount.toFixed(2)}`,
       formatDate: (date) => new Date(date).toLocaleDateString()
     };
-  }, [translations, currentLanguage]);
+  }, [effectiveTranslations, currentLanguage, bootstrap?.languages, bootstrapLoading]);
 
   // If no store selected, just render children without context
   if (!storeId || !storeContextValue) {
