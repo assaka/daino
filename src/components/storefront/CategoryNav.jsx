@@ -369,6 +369,24 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                 </div>
                 {hasChildren && isExpanded && (
                     <div className="ml-4">
+                        {/* View All link - shows all products from this category and subcategories */}
+                        <Link
+                            to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
+                            className="text-sm font-medium transition-colors px-2 py-2 rounded-md block touch-manipulation"
+                            style={{
+                                marginLeft: `${(depth + 1) * 16}px`,
+                                color: hoverColor
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = hoverBgColor;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                            onClick={() => onLinkClick?.()}
+                        >
+                            {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
+                        </Link>
                         {category.children.map(child => renderExpandedCategory(child, depth + 1))}
                     </div>
                 )}
