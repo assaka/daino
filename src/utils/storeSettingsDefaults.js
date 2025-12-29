@@ -235,6 +235,9 @@ const HARDCODED_THEME_DEFAULTS = {
   layered_nav_checkbox_color: '#3B82F6',
   layered_nav_active_filter_bg_color: '#DBEAFE',
   layered_nav_active_filter_text_color: '#1E40AF',
+  layered_nav_active_filter_font_size: '0.75rem',
+  layered_nav_active_filter_font_weight: '400',
+  layered_nav_active_filter_border_radius: 'full',
 
   // Stock label styling (FLAT)
   stock_in_stock_text_color: '#166534',

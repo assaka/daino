@@ -2404,6 +2404,46 @@ export default function ThemeLayout() {
                                     </div>
                                 </div>
 
+                                {/* Active Filter Badge Typography & Shape */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Badge Font Size</Label>
+                                        <Input
+                                            type="text"
+                                            value={store.settings.theme?.layered_nav_active_filter_font_size || '0.75rem'}
+                                            onChange={(e) => handleThemeChange('layered_nav_active_filter_font_size', e.target.value)}
+                                            placeholder="0.75rem"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Badge Font Weight</Label>
+                                        <select
+                                            value={store.settings.theme?.layered_nav_active_filter_font_weight || '400'}
+                                            onChange={(e) => handleThemeChange('layered_nav_active_filter_font_weight', e.target.value)}
+                                            className="w-full h-10 px-3 border border-gray-300 rounded-md"
+                                        >
+                                            <option value="400">Normal</option>
+                                            <option value="500">Medium</option>
+                                            <option value="600">Semibold</option>
+                                            <option value="700">Bold</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Badge Border Radius</Label>
+                                        <select
+                                            value={store.settings.theme?.layered_nav_active_filter_border_radius || 'full'}
+                                            onChange={(e) => handleThemeChange('layered_nav_active_filter_border_radius', e.target.value)}
+                                            className="w-full h-10 px-3 border border-gray-300 rounded-md"
+                                        >
+                                            <option value="none">None</option>
+                                            <option value="sm">Small</option>
+                                            <option value="md">Medium</option>
+                                            <option value="lg">Large</option>
+                                            <option value="full">Full (Pill)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 {/* Preview */}
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <Label className="text-sm font-medium mb-3 block">Preview</Label>
@@ -2448,10 +2488,13 @@ export default function ThemeLayout() {
                                         </div>
                                         <div className="flex gap-2 mt-3">
                                             <span
-                                                className="inline-flex items-center px-2 py-1 rounded-full text-xs"
+                                                className="inline-flex items-center px-2 py-1"
                                                 style={{
                                                     backgroundColor: store.settings.theme?.layered_nav_active_filter_bg_color || '#DBEAFE',
-                                                    color: store.settings.theme?.layered_nav_active_filter_text_color || '#1E40AF'
+                                                    color: store.settings.theme?.layered_nav_active_filter_text_color || '#1E40AF',
+                                                    fontSize: store.settings.theme?.layered_nav_active_filter_font_size || '0.75rem',
+                                                    fontWeight: store.settings.theme?.layered_nav_active_filter_font_weight || '400',
+                                                    borderRadius: { none: '0px', sm: '2px', md: '6px', lg: '8px', full: '9999px' }[store.settings.theme?.layered_nav_active_filter_border_radius] || '9999px'
                                                 }}
                                             >
                                                 Brand: Sample

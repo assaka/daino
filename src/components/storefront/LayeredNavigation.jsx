@@ -114,16 +114,17 @@ export default function LayeredNavigation({
     const optionCountColor = getStyle(optionStyles.optionCountColor, theme.layered_nav_option_count_color, defaults.layered_nav_option_count_color);
     const checkboxColor = getStyle(optionStyles.checkboxColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
     const sliderColor = getStyle(optionStyles.sliderColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
-    // Active filter badge styles - read from active_filter_styles slot
+    // Active filter badge styles - slot styles take priority, then theme, then defaults
     const activeFilterBgColor = getStyle(activeStyles.backgroundColor, theme.layered_nav_active_filter_bg_color, defaults.layered_nav_active_filter_bg_color);
     const activeFilterTextColor = getStyle(activeStyles.textColor, theme.layered_nav_active_filter_text_color, defaults.layered_nav_active_filter_text_color);
-    const activeFilterFontSize = activeStyles.fontSize || '0.75rem';
-    const activeFilterFontWeight = activeStyles.fontWeight || '400';
+    const activeFilterFontSize = getStyle(activeStyles.fontSize, theme.layered_nav_active_filter_font_size, defaults.layered_nav_active_filter_font_size);
+    const activeFilterFontWeight = getStyle(activeStyles.fontWeight, theme.layered_nav_active_filter_font_weight, defaults.layered_nav_active_filter_font_weight);
     const activeFilterClearAllColor = activeStyles.clearAllColor || '#DC2626';
 
     // Convert border radius preset to CSS value
     const borderRadiusMap = { none: '0px', sm: '2px', md: '6px', lg: '8px', full: '9999px' };
-    const activeFilterBorderRadius = borderRadiusMap[activeStyles.borderRadius] || activeStyles.borderRadius || '9999px';
+    const borderRadiusPreset = getStyle(activeStyles.borderRadius, theme.layered_nav_active_filter_border_radius, defaults.layered_nav_active_filter_border_radius);
+    const activeFilterBorderRadius = borderRadiusMap[borderRadiusPreset] || borderRadiusPreset || '9999px';
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
