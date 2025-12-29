@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search, Package, ArrowRight } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search, Package, ArrowRight, LayoutGrid } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import SaveButton from '@/components/ui/save-button';
@@ -1800,73 +1800,15 @@ export default function ThemeLayout() {
 
                     <Card className="material-elevation-1 border-0">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5" /> Category Page</CardTitle>
-                            <CardDescription>Settings for category and filtering pages.</CardDescription>
+                            <CardTitle className="flex items-center gap-2"><LayoutGrid className="w-5 h-5" /> Product Grid</CardTitle>
+                            <CardDescription>Configure product grid layout on category pages.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <Label htmlFor="enable_product_filters">Enable Product Filters</Label>
-                                    <p className="text-sm text-gray-500">Show filter sidebar on category pages.</p>
-                                </div>
-                                <Switch
-                                    id="enable_product_filters"
-                                    checked={!!store.settings.enable_product_filters}
-                                    onCheckedChange={(c) => handleSettingsChange('enable_product_filters', c)}
-                                />
-                            </div>
-                            <div className="p-3 border rounded-lg space-y-3">
-                                <div>
-                                    <Label htmlFor="mobile_filter_mode">Mobile Filter Display</Label>
-                                    <p className="text-sm text-gray-500">How filters appear on mobile devices.</p>
-                                </div>
-                                <Select
-                                    value={store.settings.mobile_filter_mode || 'collapse'}
-                                    onValueChange={(value) => handleSettingsChange('mobile_filter_mode', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="collapse">Collapse (expand in place)</SelectItem>
-                                        <SelectItem value="slide">Slide (panel from right)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <Label htmlFor="collapse_filters">Collapse Filters</Label>
-                                    <p className="text-sm text-gray-500">Start with filter sections collapsed by default.</p>
-                                </div>
-                                <Switch
-                                    id="collapse_filters"
-                                    checked={!!store.settings.collapse_filters}
-                                    onCheckedChange={(c) => handleSettingsChange('collapse_filters', c)}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <Label htmlFor="max_visible_attributes">Max Visible Attributes</Label>
-                                    <p className="text-sm text-gray-500">Show this many filter options before "Show More" button.</p>
-                                </div>
-                                <div className="w-20">
-                                    <Input
-                                        id="max_visible_attributes"
-                                        type="number"
-                                        min="1"
-                                        max="20"
-                                        value={store.settings.max_visible_attributes || 5}
-                                        onChange={(e) => handleSettingsChange('max_visible_attributes', parseInt(e.target.value) || 5)}
-                                        className="text-center"
-                                    />
-                                </div>
-                            </div>
-
                             <div className="p-3 border rounded-lg space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label htmlFor="enable_view_mode_toggle">Enable Grid/List View Toggle</Label>
-                                        <p className="text-sm text-gray-500">Show toggle button to switch between grid and list view on category pages.</p>
+                                        <p className="text-sm text-gray-500">Show toggle button to switch between grid and list view.</p>
                                     </div>
                                     <Switch
                                         id="enable_view_mode_toggle"
@@ -1896,8 +1838,6 @@ export default function ThemeLayout() {
                                     </div>
                                 )}
                             </div>
-
-                            <Separator />
 
                             <div className="p-4 border rounded-lg space-y-6">
                                 <div>
@@ -2126,14 +2066,76 @@ export default function ThemeLayout() {
                                     })()}
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <Separator />
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5" /> Category Filters</CardTitle>
+                            <CardDescription>Configure product filters on category pages.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Filter Behavior Settings */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <Label htmlFor="enable_product_filters">Enable Product Filters</Label>
+                                            <p className="text-sm text-gray-500">Show filter sidebar on category pages.</p>
+                                        </div>
+                                        <Switch
+                                            id="enable_product_filters"
+                                            checked={!!store.settings.enable_product_filters}
+                                            onCheckedChange={(c) => handleSettingsChange('enable_product_filters', c)}
+                                        />
+                                    </div>
 
-                            {/* Layered Navigation Styling */}
-                            <div className="p-4 border rounded-lg space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                                            <Label htmlFor="mobile_filter_mode">Mobile Filter Display</Label>
+                                            <Select
+                                                value={store.settings.mobile_filter_mode || 'collapse'}
+                                                onValueChange={(value) => handleSettingsChange('mobile_filter_mode', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="collapse">Collapse (expand in place)</SelectItem>
+                                                    <SelectItem value="slide">Slide (panel from right)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                                            <Label htmlFor="max_visible_attributes">Max Visible Options</Label>
+                                            <Input
+                                                id="max_visible_attributes"
+                                                type="number"
+                                                min="1"
+                                                max="20"
+                                                value={store.settings.max_visible_attributes || 5}
+                                                onChange={(e) => handleSettingsChange('max_visible_attributes', parseInt(e.target.value) || 5)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <Label htmlFor="collapse_filters">Collapse Filters by Default</Label>
+                                            <p className="text-sm text-gray-500">Start with filter sections collapsed.</p>
+                                        </div>
+                                        <Switch
+                                            id="collapse_filters"
+                                            checked={!!store.settings.collapse_filters}
+                                            onCheckedChange={(c) => handleSettingsChange('collapse_filters', c)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <Separator />
+
                                 <div>
-                                    <Label className="text-base font-medium">Filter Styling</Label>
-                                    <p className="text-sm text-gray-500">Customize the appearance of product filters on category pages</p>
+                                    <Label className="text-sm font-medium">Filter Colors</Label>
                                 </div>
 
                                 {/* Card Background */}
