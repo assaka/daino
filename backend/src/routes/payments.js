@@ -391,24 +391,32 @@ async function insertAllStripePaymentMethods(storeId, stripeAccountId = null) {
     const methodsToInsert = [];
     let sortOrder = 0;
 
+    console.log('🔍 Processing STRIPE_PAYMENT_METHODS for insertion...');
+    console.log('🔍 Existing codes:', Array.from(existingCodes));
+    console.log('🔍 Enabled types:', Array.from(enabledTypes));
+
     for (const pm of STRIPE_PAYMENT_METHODS) {
+      console.log(`\n🔍 Checking ${pm.code} (stripeType: ${pm.stripeType}, countries: ${pm.countries?.join(',') || 'null'})`);
+
       // Skip if already exists
       if (existingCodes.has(pm.code)) {
-        console.log(`⏭️ Skipping ${pm.code} - already exists for Stripe provider`);
+        console.log(`  ⏭️ Already exists`);
         continue;
       }
 
       // Skip if not applicable for store's countries
       if (!isPaymentMethodApplicable(pm, storeCountries)) {
-        console.log(`⏭️ Skipping ${pm.code} - not applicable for store countries (requires: ${pm.countries?.join(', ')})`);
+        console.log(`  ⏭️ Not applicable for store countries`);
         continue;
       }
 
       // Skip if not enabled in Stripe account
       if (!enabledTypes.has(pm.stripeType)) {
-        console.log(`⏭️ Skipping ${pm.code} - not enabled in Stripe dashboard (${pm.stripeType})`);
+        console.log(`  ⏭️ Not enabled in Stripe`);
         continue;
       }
+
+      console.log(`  ✅ Will insert`);
 
       methodsToInsert.push({
         name: pm.name,
