@@ -392,18 +392,33 @@ const ProductItemCard = ({
               };
 
               if (isEditorMode) {
+                // Use SaveButton in editor for WYSIWYG parity with storefront
                 return (
-                  <Button
-                    onClick={(e) => handleSlotClick(e, 'add_to_cart_button')}
-                    variant="themed"
-                    className={addToCartConfig.className || "w-full border-0 btn-add-to-cart transition-all duration-200"}
+                  <SaveButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSlotClick(e, 'add_to_cart_button');
+                    }}
+                    loading={false}
+                    success={false}
+                    disabled={isProductOutOfStock(product)}
+                    defaultText={isProductOutOfStock(product)
+                      ? t('product.out_of_stock', 'Out of Stock')
+                      : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
+                    loadingText={t('common.adding', 'Adding...')}
+                    successText={t('common.added', 'Added!')}
                     size="sm"
-                    style={buttonStyle}
+                    className={addToCartConfig.className || "w-full border-0 btn-add-to-cart transition-all duration-200"}
+                    style={{
+                      ...buttonStyle,
+                      opacity: isProductOutOfStock(product) ? 0.5 : 1,
+                      cursor: 'pointer'
+                    }}
+                    hoverBackgroundColor={hoverBgColor}
+                    icon={<ShoppingCart className="w-4 h-4 mr-2" />}
                     data-slot-id="add_to_cart_button"
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    {addToCartConfig.content || t('product.add_to_cart', 'Add to Cart')}
-                  </Button>
+                    data-editable="true"
+                  />
                 );
               }
 
