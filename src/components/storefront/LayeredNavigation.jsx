@@ -13,6 +13,7 @@ import {
 import { X, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getCurrentLanguage } from '@/utils/translationUtils';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 // Helper component to render editable slot elements in edit mode
 const EditableSlotElement = ({ slotKey, slot, onElementClick, children, className = "", style = {} }) => {
@@ -92,19 +93,30 @@ export default function LayeredNavigation({
     } = slotConfig;
 
     // Extract custom styling for filter options
-    // Priority: settings.theme flat settings > slotConfig.filter_option_styles > defaults
+    // In EDITOR mode: slot styles take priority (so sidebar edits are visible)
+    // In STOREFRONT mode: theme settings take priority (for global consistency)
     const optionStyles = filter_option_styles.styles || {};
     const theme = settings.theme || {};
-    const cardBgColor = theme.layered_nav_card_bg_color || optionStyles.cardBgColor || '#FFFFFF';
-    const headerTextColor = theme.layered_nav_header_text_color || optionStyles.headerTextColor || '#1F2937';
-    const filterLabelColor = theme.layered_nav_filter_label_color || optionStyles.filterLabelColor || '#374151';
-    const optionTextColor = theme.layered_nav_option_text_color || optionStyles.optionTextColor || '#374151';
-    const optionHoverColor = theme.layered_nav_option_hover_color || optionStyles.optionHoverColor || '#1F2937';
-    const optionCountColor = theme.layered_nav_option_count_color || optionStyles.optionCountColor || '#9CA3AF';
-    const checkboxColor = theme.layered_nav_checkbox_color || optionStyles.checkboxColor || '#3B82F6';
-    const sliderColor = theme.layered_nav_checkbox_color || optionStyles.sliderColor || '#3B82F6';
-    const activeFilterBgColor = theme.layered_nav_active_filter_bg_color || optionStyles.activeFilterBgColor || '#DBEAFE';
-    const activeFilterTextColor = theme.layered_nav_active_filter_text_color || optionStyles.activeFilterTextColor || '#1E40AF';
+    const defaults = getThemeDefaults();
+
+    // Helper: in editor mode, prefer slot styles over theme; in storefront, prefer theme
+    const getStyle = (slotValue, themeValue, defaultValue) => {
+        if (context === 'editor') {
+            return slotValue || themeValue || defaultValue;
+        }
+        return themeValue || slotValue || defaultValue;
+    };
+
+    const cardBgColor = getStyle(optionStyles.cardBgColor, theme.layered_nav_card_bg_color, defaults.layered_nav_card_bg_color);
+    const headerTextColor = getStyle(optionStyles.headerTextColor, theme.layered_nav_header_text_color, defaults.layered_nav_header_text_color);
+    const filterLabelColor = getStyle(optionStyles.filterLabelColor, theme.layered_nav_filter_label_color, defaults.layered_nav_filter_label_color);
+    const optionTextColor = getStyle(optionStyles.optionTextColor, theme.layered_nav_option_text_color, defaults.layered_nav_option_text_color);
+    const optionHoverColor = getStyle(optionStyles.optionHoverColor, theme.layered_nav_option_hover_color, defaults.layered_nav_option_hover_color);
+    const optionCountColor = getStyle(optionStyles.optionCountColor, theme.layered_nav_option_count_color, defaults.layered_nav_option_count_color);
+    const checkboxColor = getStyle(optionStyles.checkboxColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
+    const sliderColor = getStyle(optionStyles.sliderColor, theme.layered_nav_checkbox_color, defaults.layered_nav_checkbox_color);
+    const activeFilterBgColor = getStyle(optionStyles.activeFilterBgColor, theme.layered_nav_active_filter_bg_color, defaults.layered_nav_active_filter_bg_color);
+    const activeFilterTextColor = getStyle(optionStyles.activeFilterTextColor, theme.layered_nav_active_filter_text_color, defaults.layered_nav_active_filter_text_color);
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true

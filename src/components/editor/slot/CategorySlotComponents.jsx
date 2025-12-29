@@ -320,9 +320,14 @@ const PaginationComponent = createSlotComponent({
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < totalPages;
 
+    // In storefront mode, hide pagination if only 1 page
+    // In editor mode, always show pagination for editing
     if (totalPages <= 1 && context !== 'editor') {
       return null;
     }
+
+    // Editor mode: ensure we show something even with no data
+    const displayTotalPages = context === 'editor' && totalPages <= 1 ? 3 : totalPages;
 
     const handlePageChange = (page) => {
       if (categoryContext?.handlePageChange) {
@@ -427,9 +432,13 @@ const PaginationComponent = createSlotComponent({
     // Handle click on wrapper for editor selection
     const handleWrapperClick = (e) => {
       if (context === 'editor' && onElementClick) {
+        e.stopPropagation();
         onElementClick('pagination_container', e.currentTarget);
       }
     };
+
+    // In editor mode, show pagination even with 0 pages for editing purposes
+    const showPagination = totalPages > 1 || context === 'editor';
 
     return (
       <div
@@ -437,8 +446,9 @@ const PaginationComponent = createSlotComponent({
         data-slot-id="pagination_container"
         data-editable="true"
         onClick={handleWrapperClick}
+        style={{ cursor: context === 'editor' ? 'pointer' : 'default' }}
       >
-        {totalPages > 1 && (
+        {showPagination && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
             <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               {/* Previous Button */}

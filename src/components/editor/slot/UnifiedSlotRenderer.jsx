@@ -340,6 +340,25 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   const elementRef = useRef(null);
   const cleanupRef = useRef(null);
 
+  // In editor mode, prevent link navigation
+  useEffect(() => {
+    if (context !== 'editor') return;
+
+    const element = elementRef.current;
+    if (!element) return;
+
+    const preventNavigation = (e) => {
+      // Prevent navigation for any link clicks in editor mode
+      if (e.target.tagName === 'A' || e.target.closest('a')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    element.addEventListener('click', preventNavigation, true);
+    return () => element.removeEventListener('click', preventNavigation, true);
+  }, [context]);
+
   // Execute script after render (only in storefront)
   useEffect(() => {
     if (context !== 'storefront' || !slot.script) {
@@ -1315,11 +1334,21 @@ export function UnifiedSlotRenderer({
         if (isAddToCartButton) {
           // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
           const theme = variableContext?.settings?.theme || {};
+
+          // Ensure button starts with full width - remove any percentage width < 100%
+          const cleanedButtonStyles = { ...buttonStyles };
+          if (cleanedButtonStyles.width && typeof cleanedButtonStyles.width === 'string' && cleanedButtonStyles.width.endsWith('%')) {
+            const widthValue = parseFloat(cleanedButtonStyles.width);
+            if (widthValue < 100) {
+              delete cleanedButtonStyles.width; // Remove, let w-full class handle it
+            }
+          }
+
           const finalButtonStyles = {
-            ...buttonStyles,
-            backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
-            color: theme.add_to_cart_button_text_color || buttonStyles?.color,
-            borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
+            ...cleanedButtonStyles,
+            backgroundColor: theme.add_to_cart_button_bg_color || cleanedButtonStyles?.backgroundColor,
+            color: theme.add_to_cart_button_text_color || cleanedButtonStyles?.color,
+            borderRadius: theme.add_to_cart_button_border_radius || cleanedButtonStyles?.borderRadius,
           };
 
           const buttonElement = (
