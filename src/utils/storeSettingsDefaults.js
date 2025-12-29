@@ -218,6 +218,37 @@ const HARDCODED_THEME_DEFAULTS = {
   place_order_button_color: '#28a745',
   font_family: 'Inter',
 
+  // Add to Cart button styling (nested under theme)
+  add_to_cart_button: {
+    backgroundColor: '#28a745',
+    textColor: '#FFFFFF',
+    hoverBackgroundColor: '#218838',
+    borderRadius: 'md'
+  },
+
+  // Layered navigation / filter styling (nested under theme)
+  layered_navigation: {
+    cardBgColor: '#FFFFFF',
+    headerTextColor: '#1F2937',
+    filterLabelColor: '#374151',
+    optionTextColor: '#374151',
+    optionHoverColor: '#1F2937',
+    optionCountColor: '#9CA3AF',
+    checkboxColor: '#3B82F6',
+    activeFilterBgColor: '#DBEAFE',
+    activeFilterTextColor: '#1E40AF'
+  },
+
+  // Stock label styling (nested under theme)
+  stock_settings: {
+    in_stock_text_color: '#166534',
+    in_stock_bg_color: '#dcfce7',
+    out_of_stock_text_color: '#991b1b',
+    out_of_stock_bg_color: '#fee2e2',
+    low_stock_text_color: '#92400e',
+    low_stock_bg_color: '#fef3c7'
+  },
+
   // Product Tabs defaults
   product_tabs_title_color: '#DC2626',
   product_tabs_title_size: '1rem',
