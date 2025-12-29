@@ -1150,39 +1150,25 @@ export default function Checkout() {
 
   const getEligiblePaymentMethods = () => {
     const country = getBillingCountry();
-    // Use billing country's currency (multi-currency checkout)
-    // This allows NL customers to use iDEAL (EUR), US customers to use Klarna (USD), etc.
     const billingCurrency = getCurrencyForCountry(country);
-
-    console.log('🔍 Payment filtering - billing country:', country, 'currency:', billingCurrency);
-    console.log('🔍 All payment methods:', paymentMethods.map(m => ({ code: m.code, active: m.is_active, countries: m.settings?.supported_countries })));
 
     return paymentMethods.filter(method => {
       // Check manual availability countries (if configured)
       if (method.countries && method.countries.length > 0) {
-        if (!method.countries.includes(country)) {
-          console.log(`🔍 ${method.code} filtered out - manual countries restriction`);
-          return false;
-        }
+        if (!method.countries.includes(country)) return false;
       }
 
       // Check provider's supported countries (e.g., iDEAL only for NL, Bancontact only for BE)
       const supportedCountries = method.settings?.supported_countries;
       if (supportedCountries && supportedCountries.length > 0) {
-        if (!supportedCountries.includes(country)) {
-          console.log(`🔍 ${method.code} filtered out - supported_countries:`, supportedCountries, 'billing:', country);
-          return false;
-        }
+        if (!supportedCountries.includes(country)) return false;
       }
 
       // Check provider's supported currencies against billing country's currency
-      // Checkout will use the billing country's currency for the transaction
       if (!paymentMethodSupportsCurrency(method, billingCurrency)) {
-        console.log(`🔍 ${method.code} filtered out - currency not supported`);
         return false;
       }
 
-      console.log(`✅ ${method.code} passed all filters`);
       return true;
     });
   };
