@@ -101,7 +101,7 @@ export default function LayeredNavigation({
 
     // Helper: in editor mode, prefer slot styles over theme; in storefront, prefer theme
     const getStyle = (slotValue, themeValue, defaultValue) => {
-        if (context === 'editor') {
+        if (isEditMode) {
             return slotValue || themeValue || defaultValue;
         }
         return themeValue || slotValue || defaultValue;
