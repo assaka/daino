@@ -54,6 +54,9 @@ import { createProductUrl, createPublicUrl } from './urlUtils';
  * @param {Object} options - Additional options (translations, taxes, etc.)
  * @returns {Object} Preprocessed data ready for slot rendering
  */
+// Export enrichSettings for use in UnifiedSlotRenderer to ensure WYSIWYG
+export { enrichSettings };
+
 export function preprocessSlotData(pageType, rawData, store, settings, options = {}) {
   const { translations = {}, taxes = [], selectedCountry = null, productLabels = [] } = options;
   const currentLanguage = getCurrentLanguage();
@@ -91,20 +94,39 @@ export function preprocessSlotData(pageType, rawData, store, settings, options =
 }
 
 /**
+ * Convert border radius preset to CSS value
+ */
+function getBorderRadiusCss(preset) {
+  const map = {
+    'none': '0px',
+    'sm': '2px',
+    'md': '6px',
+    'lg': '8px',
+    'xl': '12px',
+    'full': '9999px'
+  };
+  return map[preset] || preset || '6px';
+}
+
+/**
  * Enrich settings with defaults for slot rendering
  */
 function enrichSettings(settings) {
+  // Get add_to_cart_button settings with defaults
+  const buttonSettings = settings?.add_to_cart_button || {};
+  const enrichedButton = {
+    backgroundColor: buttonSettings.backgroundColor || settings?.theme?.add_to_cart_button_color || '#3B82F6',
+    textColor: buttonSettings.textColor || '#FFFFFF',
+    hoverBackgroundColor: buttonSettings.hoverBackgroundColor || '#2563EB',
+    borderRadius: getBorderRadiusCss(buttonSettings.borderRadius || 'md')
+  };
+
   return {
     ...settings,
     collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
     max_visible_attributes: settings?.max_visible_attributes || 5,
-    // Add to Cart button styling defaults
-    add_to_cart_button: settings?.add_to_cart_button || {
-      backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
-      textColor: '#FFFFFF',
-      hoverBackgroundColor: '#2563EB',
-      borderRadius: 'md'
-    },
+    // Add to Cart button styling - with CSS values ready for templates
+    add_to_cart_button: enrichedButton,
     // Layered navigation styling defaults
     layered_navigation: settings?.layered_navigation || {
       cardBgColor: '#FFFFFF',

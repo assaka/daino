@@ -153,6 +153,7 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice, formatPriceNumber, safeNumber } from '@/utils/priceUtils';
 import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/components/storefront/ProductLabel';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { enrichSettings } from '@/utils/slotDataPreprocessor';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
@@ -691,7 +692,10 @@ export function UnifiedSlotRenderer({
   });
 
   // Extract full settings object - keep ui_translations for template processing
-  const fullSettings = productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {};
+  // CRITICAL: Use enrichSettings to ensure add_to_cart_button, layered_navigation defaults are applied
+  // This ensures WYSIWYG between editor and storefront (both get enriched settings)
+  const rawSettings = productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {};
+  const fullSettings = enrichSettings(rawSettings);
 
   // Add translations from TranslationContext to settings for {{t "key"}} processing
   // variableProcessor expects ui_translations in format: { en: { common: { my_cart: "My Cart" } } }
