@@ -139,22 +139,13 @@ const LayeredNavigationSidebar = ({
   };
 
   const handleStyleChange = (property, value, targetSlotId) => {
-    console.log('[LayeredNavigationSidebar] handleStyleChange:', { property, value, targetSlotId });
-
     // Update local state
     setFilterStyles(prev => ({ ...prev, [property]: value }));
 
-    // Update the target slot via onClassChange (only if targetSlotId is provided)
-    console.log('[LayeredNavigationSidebar] allSlots keys:', Object.keys(allSlots || {}));
-    console.log('[LayeredNavigationSidebar] allSlots[targetSlotId]:', allSlots?.[targetSlotId]);
-
     // CRITICAL: If slot doesn't exist in allSlots, create it for the save
     if (targetSlotId && !allSlots[targetSlotId]) {
-      console.warn('[LayeredNavigationSidebar] Slot not found in allSlots, creating new slot');
-      // Create the slot with the new style
       const newStyles = { [property]: value };
       if (onClassChange) {
-        console.log('[LayeredNavigationSidebar] Creating new slot with styles:', newStyles);
         onClassChange(targetSlotId, '', newStyles, { displayName: targetSlotId });
       }
       return;
@@ -183,11 +174,7 @@ const LayeredNavigationSidebar = ({
 
         // Call onClassChange to update database
         if (onClassChange) {
-          console.log('[LayeredNavigationSidebar] Calling onClassChange with:', { targetSlotId, styles });
           onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
-          console.log('[LayeredNavigationSidebar] onClassChange called successfully');
-        } else {
-          console.error('[LayeredNavigationSidebar] onClassChange is undefined!');
         }
       } else {
         // For other slots, use CSS property mapping
