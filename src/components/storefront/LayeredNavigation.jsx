@@ -761,8 +761,8 @@ export default function LayeredNavigation({
                     <div className="flex justify-between items-center h-5">
                         {isEditMode ? (
                             <EditableSlotElement
-                                slotKey="filter_by_label"
-                                slot={childSlots?.filter_by_label || { content: 'Filter By' }}
+                                slotKey="filter_heading"
+                                slot={childSlots?.filter_heading || childSlots?.filter_by_label || { content: 'Filter By' }}
                                 onElementClick={onElementClick}
                                 className="text-lg font-semibold"
                             >

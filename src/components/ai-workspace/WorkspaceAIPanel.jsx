@@ -553,9 +553,11 @@ const WorkspaceAIPanel = () => {
       // Auto-refresh preview and editor after styling or layout changes
       const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
       console.log('🎨 Response data type check:', response.data?.type, 'in refreshTypes:', refreshTypes.includes(response.data?.type));
+      console.log('🎨 refreshPreview available:', !!refreshPreview, 'triggerConfigurationRefresh available:', !!triggerConfigurationRefresh);
       if (refreshTypes.includes(response.data?.type)) {
         console.log('🎨 Triggering preview refresh for type:', response.data?.type);
         setTimeout(() => {
+          console.log('🎨 Calling refreshPreview and triggerConfigurationRefresh NOW');
           refreshPreview?.();
           triggerConfigurationRefresh?.();
 
@@ -569,6 +571,7 @@ const WorkspaceAIPanel = () => {
             key: 'slot_config_updated',
             newValue: JSON.stringify({ storeId, pageType: response.data?.pageType || selectedPageType, timestamp: Date.now() })
           }));
+          console.log('🎨 localStorage and StorageEvent dispatched');
         }, 500);
       }
 

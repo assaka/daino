@@ -385,11 +385,11 @@ const ProductItemCard = ({
 
               const buttonStyle = {
                 display: 'flex', // Override inline-block from any saved styles
+                width: '100%', // Full width for add to cart button
                 backgroundColor: bgColor,
                 color: textColor,
                 borderRadius: borderRadius,
-                '--hover-bg-color': hoverBgColor,
-                ...addToCartConfig.styles
+                '--hover-bg-color': hoverBgColor
               };
 
               if (isEditorMode) {

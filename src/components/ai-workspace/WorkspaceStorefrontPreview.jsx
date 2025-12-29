@@ -24,8 +24,22 @@ const WorkspaceStorefrontPreview = () => {
   // Refresh preview when trigger changes (e.g., after AI styling changes)
   useEffect(() => {
     if (previewRefreshTrigger > 0) {
+      console.log('🔄 Refreshing storefront preview after AI update');
       setRefreshKey(Date.now());
       setIsLoading(true);
+
+      // Force iframe to reload if it exists (more reliable than just changing URL)
+      if (iframeRef.current) {
+        try {
+          // Post message to iframe to trigger config reload
+          iframeRef.current.contentWindow?.postMessage({
+            type: 'SLOT_CONFIG_UPDATED',
+            timestamp: Date.now()
+          }, '*');
+        } catch (e) {
+          console.warn('Could not post message to iframe:', e);
+        }
+      }
     }
   }, [previewRefreshTrigger]);
   const [firstProductSlug, setFirstProductSlug] = useState(null);

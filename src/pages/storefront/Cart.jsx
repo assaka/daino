@@ -186,22 +186,36 @@ export default function Cart() {
 
         loadCartLayoutConfig();
 
-        // Listen for configuration updates from editor
+        // Listen for configuration updates from editor (storage events)
         const handleStorageChange = (e) => {
-            if (e.key === 'slot_config_updated' && e.newValue) {
-                const updateData = JSON.parse(e.newValue);
-                if (updateData.storeId === store?.id && updateData.pageType === 'cart') {
-                    loadCartLayoutConfig();
-                    // Clear the notification
-                    localStorage.removeItem('slot_config_updated');
+            if (e.key === 'slot_config_updated' && e.newValue && shouldLoadDraft) {
+                try {
+                    const updateData = JSON.parse(e.newValue);
+                    if (updateData.storeId === store?.id && updateData.pageType === 'cart') {
+                        console.log('🔄 Reloading cart config after AI update (storage)');
+                        loadCartLayoutConfig();
+                        localStorage.removeItem('slot_config_updated');
+                    }
+                } catch (err) {
+                    console.warn('Failed to parse slot_config_updated:', err);
                 }
             }
         };
 
+        // Listen for postMessage from AI workspace iframe parent
+        const handlePostMessage = (e) => {
+            if (e.data?.type === 'SLOT_CONFIG_UPDATED' && shouldLoadDraft) {
+                console.log('🔄 Reloading cart config after AI update (postMessage)');
+                loadCartLayoutConfig();
+            }
+        };
+
         window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('message', handlePostMessage);
 
         return () => {
             window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('message', handlePostMessage);
         };
     }, [store?.id, pageBootstrap, shouldLoadDraft]);
     

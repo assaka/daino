@@ -618,6 +618,11 @@ export function UnifiedSlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug: Log what slots are being rendered
+  if (parentId === 'products_container' || parentId === null) {
+    console.log('[UnifiedSlotRenderer] Rendering slots for parentId:', parentId, 'childSlots:', childSlots.map(s => s.id));
+  }
+
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
@@ -1297,6 +1302,7 @@ export function UnifiedSlotRenderer({
           const finalButtonStyles = {
             ...buttonStyles,
             display: 'flex', // Override inline-block from saved styles
+            width: '100%', // Full width for add to cart button
             backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
             color: theme.add_to_cart_button_text_color || buttonStyles?.color,
             borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
@@ -1564,6 +1570,10 @@ export function UnifiedSlotRenderer({
     // Component Element
     if (type === 'component') {
       const componentName = slot.component || slot.metadata?.component;
+
+      if (id === 'pagination_container') {
+        console.log('[UnifiedSlotRenderer] Found pagination_container! componentName:', componentName, 'hasInRegistry:', ComponentRegistry.has(componentName));
+      }
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);

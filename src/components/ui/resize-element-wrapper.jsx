@@ -109,10 +109,18 @@ const ResizeWrapper = ({
   const isButtonElement = (element) => {
     if (!element || !element.type) return false;
 
+    const displayName = element.type?.displayName || '';
+    const typeName = element.type?.name || '';
+
     const isButton = element.type === 'button' ||
            element.props?.type === 'button' ||
-           element.type?.displayName === 'Button' ||
-           element.type?.name === 'Button' ||
+           displayName === 'Button' ||
+           displayName === 'SaveButton' ||
+           typeName === 'Button' ||
+           typeName === 'SaveButton' ||
+           // Check for button-like displayNames
+           displayName.toLowerCase().includes('button') ||
+           typeName.toLowerCase().includes('button') ||
            (element.props?.role === 'button') ||
            // Check if element has data-slot-id and is a button-like element
            (element.props?.['data-slot-id'] && element.type === 'button') ||

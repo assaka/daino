@@ -250,6 +250,38 @@ export default function ProductDetail() {
     if (!storeLoading) {
       loadProductLayoutConfig();
     }
+
+    // Listen for AI-triggered configuration updates (from WorkspaceAIPanel)
+    const handleStorageChange = (e) => {
+      if (e.key === 'slot_config_updated' && e.newValue && shouldLoadDraft) {
+        try {
+          const updateData = JSON.parse(e.newValue);
+          if (updateData.storeId === store?.id && updateData.pageType === 'product') {
+            console.log('🔄 Reloading product config after AI update (storage)');
+            loadProductLayoutConfig();
+            localStorage.removeItem('slot_config_updated');
+          }
+        } catch (err) {
+          console.warn('Failed to parse slot_config_updated:', err);
+        }
+      }
+    };
+
+    // Listen for postMessage from AI workspace iframe parent
+    const handlePostMessage = (e) => {
+      if (e.data?.type === 'SLOT_CONFIG_UPDATED' && shouldLoadDraft) {
+        console.log('🔄 Reloading product config after AI update (postMessage)');
+        loadProductLayoutConfig();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('message', handlePostMessage);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('message', handlePostMessage);
+    };
   }, [store?.id, storeLoading, shouldLoadDraft]);
 
   // Apply A/B test overrides to loaded config

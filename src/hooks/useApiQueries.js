@@ -5,6 +5,7 @@
  * to significantly reduce the number of API calls made by the application.
  */
 
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryClient';
 import { User } from '@/api/entities';
@@ -391,6 +392,8 @@ export const useCategory = (slug, storeId, options = {}) => {
  * When version=published, always loads published regardless of other params
  */
 export const useSlotConfiguration = (storeId, pageType, options = {}) => {
+  const queryClient = useQueryClient();
+
   // Use context for preview mode (persists across navigation)
   const { isPublishedPreview, isWorkspaceMode } = usePreviewMode();
 
@@ -402,6 +405,47 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
 
   // Only load draft when in workspace mode AND NOT viewing published version
   const shouldLoadDraft = !isViewingPublished && (isWorkspaceMode || urlWorkspaceMode);
+
+  // Listen for AI-triggered configuration updates (from WorkspaceAIPanel)
+  useEffect(() => {
+    if (!shouldLoadDraft) return;
+
+    // Handler for storage events (cross-tab communication)
+    const handleStorageChange = (e) => {
+      if (e.key === 'slot_config_updated' && e.newValue) {
+        try {
+          const updateData = JSON.parse(e.newValue);
+          if (updateData.storeId === storeId && updateData.pageType === pageType) {
+            console.log('🔄 Invalidating slot config query after AI update (storage):', pageType);
+            queryClient.invalidateQueries({
+              queryKey: [...queryKeys.slot.config(storeId, pageType), 'draft']
+            });
+            localStorage.removeItem('slot_config_updated');
+          }
+        } catch (err) {
+          console.warn('Failed to parse slot_config_updated:', err);
+        }
+      }
+    };
+
+    // Handler for postMessage events (iframe communication from AI workspace)
+    const handlePostMessage = (e) => {
+      if (e.data?.type === 'SLOT_CONFIG_UPDATED') {
+        console.log('🔄 Invalidating slot config query after AI update (postMessage):', pageType);
+        queryClient.invalidateQueries({
+          queryKey: [...queryKeys.slot.config(storeId, pageType), 'draft']
+        });
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('message', handlePostMessage);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('message', handlePostMessage);
+    };
+  }, [storeId, pageType, shouldLoadDraft, queryClient]);
 
   return useQuery({
     // Use different query key for draft mode to avoid cache conflicts

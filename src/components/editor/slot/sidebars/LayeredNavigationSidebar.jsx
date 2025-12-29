@@ -61,7 +61,8 @@ const LayeredNavigationSidebar = ({
     activeFilterTitleFontWeight: '600',
     activeFilterClearAllColor: '#DC2626',
 
-    // Container
+    // Container & Card
+    cardBgColor: '#FFFFFF',
     containerBg: 'transparent',
     containerPadding: '1rem',
     containerBorderRadius: '0.5rem'
@@ -96,6 +97,7 @@ const LayeredNavigationSidebar = ({
     // Filter Options (from filter_option_styles slot)
     const filterOptionStyles = allSlots['filter_option_styles'];
     if (filterOptionStyles && filterOptionStyles.styles) {
+      if (filterOptionStyles.styles.cardBgColor) updates.cardBgColor = filterOptionStyles.styles.cardBgColor;
       if (filterOptionStyles.styles.optionTextColor) updates.optionTextColor = filterOptionStyles.styles.optionTextColor;
       if (filterOptionStyles.styles.optionHoverColor) updates.optionHoverColor = filterOptionStyles.styles.optionHoverColor;
       if (filterOptionStyles.styles.optionCountColor) updates.optionCountColor = filterOptionStyles.styles.optionCountColor;
@@ -139,12 +141,33 @@ const LayeredNavigationSidebar = ({
   };
 
   const handleStyleChange = (property, value, targetSlotId) => {
+    console.log('[LayeredNav] handleStyleChange called:', { property, value, targetSlotId });
+    console.log('[LayeredNav] allSlots keys:', Object.keys(allSlots || {}));
+    console.log('[LayeredNav] target slot exists:', !!allSlots?.[targetSlotId], allSlots?.[targetSlotId]);
+
     // Update local state
     setFilterStyles(prev => ({ ...prev, [property]: value }));
 
+    // Map property to CSS property for label slots
+    const cssPropertyMap = {
+      headingColor: 'color',
+      headingFontSize: 'fontSize',
+      headingFontWeight: 'fontWeight',
+      labelColor: 'color',
+      labelFontSize: 'fontSize',
+      labelFontWeight: 'fontWeight',
+      containerBg: 'backgroundColor',
+      containerPadding: 'padding',
+      containerBorderRadius: 'borderRadius'
+    };
+
+    // Determine CSS property name - use mapping for standard slots, direct property for style slots
+    const isStyleSlot = targetSlotId === 'filter_option_styles' || targetSlotId === 'active_filter_styles';
+    const cssProperty = isStyleSlot ? property : (cssPropertyMap[property] || property);
+
     // CRITICAL: If slot doesn't exist in allSlots, create it for the save
     if (targetSlotId && !allSlots[targetSlotId]) {
-      const newStyles = { [property]: value };
+      const newStyles = { [cssProperty]: value };
       if (onClassChange) {
         onClassChange(targetSlotId, '', newStyles, { displayName: targetSlotId });
       }
@@ -155,39 +178,17 @@ const LayeredNavigationSidebar = ({
       const targetSlot = allSlots[targetSlotId];
       const styles = { ...targetSlot.styles };
 
-      // Map property to CSS property for label slots
-      const cssPropertyMap = {
-        headingColor: 'color',
-        headingFontSize: 'fontSize',
-        headingFontWeight: 'fontWeight',
-        labelColor: 'color',
-        labelFontSize: 'fontSize',
-        labelFontWeight: 'fontWeight',
-        containerBg: 'backgroundColor',
-        containerPadding: 'padding',
-        containerBorderRadius: 'borderRadius'
-      };
+      // Set the CSS property
+      styles[cssProperty] = value;
 
-      // For filter_option_styles and active_filter_styles, store the property directly (not mapped to CSS property)
-      if (targetSlotId === 'filter_option_styles' || targetSlotId === 'active_filter_styles') {
-        styles[property] = value;
+      console.log('[LayeredNav] Updating existing slot:', targetSlotId, 'with styles:', styles);
 
-        // Call onClassChange to update database
-        if (onClassChange) {
-          onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
-        }
-      } else {
-        // For other slots, use CSS property mapping
-        const cssProperty = cssPropertyMap[property];
-        if (cssProperty) {
-          styles[cssProperty] = value;
-
-          // Call onClassChange to update database
-          if (onClassChange) {
-            onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
-          }
-        }
+      // Call onClassChange to update database
+      if (onClassChange) {
+        onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
       }
+    } else {
+      console.log('[LayeredNav] Slot not found, will be created:', targetSlotId);
     }
   };
 

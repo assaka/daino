@@ -315,6 +315,7 @@ const SortSelector = createSlotComponent({
 const PaginationComponent = createSlotComponent({
   name: 'PaginationComponent',
   render: ({ slot, className, styles, categoryContext, variableContext, context, onElementClick }) => {
+    console.log('[PaginationComponent] render called:', { context, hasOnElementClick: !!onElementClick, slotId: slot?.id });
     // Get pagination data - check variableContext first (from preprocessedData), then categoryContext
     const totalPages = variableContext?.pagination?.totalPages || variableContext?.totalPages || categoryContext?.pagination?.totalPages || categoryContext?.totalPages || 0;
     const currentPage = variableContext?.pagination?.currentPage || variableContext?.currentPage || categoryContext?.pagination?.currentPage || categoryContext?.currentPage || 1;
@@ -432,8 +433,10 @@ const PaginationComponent = createSlotComponent({
 
     // Handle click on wrapper for editor selection
     const handleWrapperClick = (e) => {
+      console.log('[PaginationComponent] handleWrapperClick:', { context, hasOnElementClick: !!onElementClick });
       if (context === 'editor' && onElementClick) {
         e.stopPropagation();
+        console.log('[PaginationComponent] Calling onElementClick with pagination_container');
         onElementClick('pagination_container', e.currentTarget);
       }
     };

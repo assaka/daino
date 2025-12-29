@@ -87,6 +87,38 @@ export default function CustomerAuth() {
     };
 
     loadLoginLayoutConfig();
+
+    // Listen for AI-triggered configuration updates (from WorkspaceAIPanel)
+    const handleStorageChange = (e) => {
+      if (e.key === 'slot_config_updated' && e.newValue && shouldLoadDraft) {
+        try {
+          const updateData = JSON.parse(e.newValue);
+          if (updateData.storeId === store?.id && updateData.pageType === 'login') {
+            console.log('🔄 Reloading login config after AI update (storage)');
+            loadLoginLayoutConfig();
+            localStorage.removeItem('slot_config_updated');
+          }
+        } catch (err) {
+          console.warn('Failed to parse slot_config_updated:', err);
+        }
+      }
+    };
+
+    // Listen for postMessage from AI workspace iframe parent
+    const handlePostMessage = (e) => {
+      if (e.data?.type === 'SLOT_CONFIG_UPDATED' && shouldLoadDraft) {
+        console.log('🔄 Reloading login config after AI update (postMessage)');
+        loadLoginLayoutConfig();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('message', handlePostMessage);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('message', handlePostMessage);
+    };
   }, [store, shouldLoadDraft]);
 
   useEffect(() => {
