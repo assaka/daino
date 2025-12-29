@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
  * - Success state with checkmark (auto-clears after timeout)
  * - Customizable text labels
  * - Blue default → Green success color scheme
+ * - Hover background color support
  *
  * @param {Object} props
  * @param {Function} props.onClick - Save handler function
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
  * @param {string} props.className - Additional CSS classes
  * @param {number} props.successTimeout - Auto-clear success timeout in ms (default: 2000, set to 0 to disable)
  * @param {React.ReactNode} props.icon - Custom icon for default state (replaces Save icon)
+ * @param {string} props.hoverBackgroundColor - Background color on hover
  */
 const SaveButton = React.forwardRef(({
   onClick,
@@ -38,16 +40,27 @@ const SaveButton = React.forwardRef(({
   successTimeout = 2000,
   icon = null,
   style,
+  hoverBackgroundColor,
   ...props
 }, ref) => {
+  const [isHovered, setIsHovered] = React.useState(false);
   const isDisabled = disabled || loading || success;
 
   // Default blue color when no style/backgroundColor is provided
   const defaultBgColor = '#2563EB';
+  const baseBgColor = style?.backgroundColor || defaultBgColor;
+
+  // Determine background color based on state
+  let bgColor = baseBgColor;
+  if (success) {
+    bgColor = '#16a34a'; // Green for success
+  } else if (isHovered && hoverBackgroundColor && !isDisabled) {
+    bgColor = hoverBackgroundColor;
+  }
+
   const buttonStyle = {
     ...style,
-    // Success state always shows green, overriding any passed backgroundColor
-    backgroundColor: success ? '#16a34a' : (style?.backgroundColor || defaultBgColor),
+    backgroundColor: bgColor,
   };
 
   return (
@@ -61,6 +74,8 @@ const SaveButton = React.forwardRef(({
         className
       )}
       style={buttonStyle}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       {...props}
     >
       {loading ? (

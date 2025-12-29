@@ -412,6 +412,13 @@ export default function ThemeLayout() {
                     activeFilterBgColor: '#DBEAFE',
                     activeFilterTextColor: '#1E40AF'
                 },
+                // Add to Cart button styling defaults
+                add_to_cart_button: fullStore?.settings?.add_to_cart_button ?? {
+                    backgroundColor: fullStore?.settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                    textColor: '#FFFFFF',
+                    hoverBackgroundColor: '#2563EB',
+                    borderRadius: 'md'
+                },
                 // Stock display settings
                 show_stock_label: fullStore?.settings?.show_stock_label ?? true,
                 hide_stock_quantity: fullStore?.settings?.hide_stock_quantity ?? false,
@@ -2066,6 +2073,116 @@ export default function ThemeLayout() {
                                     })()}
                                 </div>
                             </div>
+
+                            {/* Add to Cart Button Styling */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Add to Cart Button</Label>
+                                    <p className="text-sm text-gray-500">Customize the Add to Cart button on product cards</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
+                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, backgroundColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
+                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, backgroundColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#3B82F6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.add_to_cart_button?.textColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, textColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.add_to_cart_button?.textColor || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, textColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hover Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
+                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, hoverBackgroundColor: e.target.value })}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
+                                                onChange={(e) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, hoverBackgroundColor: e.target.value })}
+                                                className="flex-1"
+                                                placeholder="#2563EB"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Border Radius</Label>
+                                        <Select
+                                            value={store.settings.add_to_cart_button?.borderRadius || 'md'}
+                                            onValueChange={(value) => handleSettingsChange('add_to_cart_button', { ...store.settings.add_to_cart_button, borderRadius: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None (0px)</SelectItem>
+                                                <SelectItem value="sm">Small (2px)</SelectItem>
+                                                <SelectItem value="md">Medium (6px)</SelectItem>
+                                                <SelectItem value="lg">Large (8px)</SelectItem>
+                                                <SelectItem value="xl">Extra Large (12px)</SelectItem>
+                                                <SelectItem value="full">Full (9999px)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Preview */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <Label className="text-sm font-medium mb-3 block">Preview</Label>
+                                    <div className="flex justify-center">
+                                        <button
+                                            className="w-48 py-2 px-4 text-sm font-medium transition-colors"
+                                            style={{
+                                                backgroundColor: store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6',
+                                                color: store.settings.add_to_cart_button?.textColor || '#FFFFFF',
+                                                borderRadius: {
+                                                    'none': '0px',
+                                                    'sm': '2px',
+                                                    'md': '6px',
+                                                    'lg': '8px',
+                                                    'xl': '12px',
+                                                    'full': '9999px'
+                                                }[store.settings.add_to_cart_button?.borderRadius || 'md']
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = store.settings.add_to_cart_button?.hoverBackgroundColor || '#2563EB'}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = store.settings.add_to_cart_button?.backgroundColor || store.settings.theme?.add_to_cart_button_color || '#3B82F6'}
+                                        >
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -2101,7 +2218,7 @@ export default function ThemeLayout() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="collapse">Collapse (expand in place)</SelectItem>
-                                                    <SelectItem value="slide">Slide (panel from right)</SelectItem>
+                                                    <SelectItem value="slide">Slide (panel from left)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>

@@ -27,14 +27,14 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
 
   const [wishlistItems, setWishlistItems] = useState([]);
 
-  // Choose icon based on variant
+  // Choose icon based on variant - pointer-events-none ensures clicks go to button
   const getWishlistIcon = () => {
     switch (iconVariant) {
       case 'filled':
-        return <Heart className="w-5 h-5 fill-current" />;
+        return <Heart className="w-5 h-5 fill-current pointer-events-none" />;
       case 'outline':
       default:
-        return <Heart className="w-5 h-5" />;
+        return <Heart className="w-5 h-5 pointer-events-none" />;
     }
   };
 
@@ -116,7 +116,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
           {wishlistItems.length > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0 pointer-events-none"
             >
               {wishlistItems.length}
             </Badge>

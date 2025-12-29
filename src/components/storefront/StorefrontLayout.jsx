@@ -801,7 +801,7 @@ export default function StorefrontLayout({ children }) {
                                                 className="h-11 w-11 p-0 flex items-center justify-center"
                                                 onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
                                             >
-                                                <Search className="w-5 h-5" />
+                                                <Search className="w-5 h-5 pointer-events-none" />
                                             </Button>
                                         )}
                                         {user ? (
@@ -812,7 +812,7 @@ export default function StorefrontLayout({ children }) {
                                                         className="h-11 w-11 p-0 flex items-center justify-center"
                                                         disabled={userLoading}
                                                     >
-                                                        <UserIcon className="w-5 h-5" />
+                                                        <UserIcon className="w-5 h-5 pointer-events-none" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="w-48">
@@ -865,7 +865,7 @@ export default function StorefrontLayout({ children }) {
                                                 }}
                                                 disabled={userLoading}
                                             >
-                                                <UserIcon className="w-5 h-5" />
+                                                <UserIcon className="w-5 h-5 pointer-events-none" />
                                             </Button>
                                         )}
                                         <WishlistDropdown />
@@ -966,7 +966,7 @@ export default function StorefrontLayout({ children }) {
                                         className="md:hidden h-11 w-11 p-0 flex items-center justify-center"
                                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                                     >
-                                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                                        {mobileMenuOpen ? <X className="w-5 h-5 pointer-events-none" /> : <Menu className="w-5 h-5 pointer-events-none" />}
                                     </Button>
                                 </div>
                             </div>

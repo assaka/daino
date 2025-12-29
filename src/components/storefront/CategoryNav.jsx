@@ -360,9 +360,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             aria-label={isExpanded ? `Collapse ${getCategoryName(category, getCurrentLanguage())}` : `Expand ${getCategoryName(category, getCurrentLanguage())}`}
                         >
                             {isExpanded ? (
-                                <ChevronDown className="w-5 h-5" />
+                                <ChevronDown className="w-5 h-5 pointer-events-none" />
                             ) : (
-                                <ChevronRight className="w-5 h-5" />
+                                <ChevronRight className="w-5 h-5 pointer-events-none" />
                             )}
                         </Button>
                     )}

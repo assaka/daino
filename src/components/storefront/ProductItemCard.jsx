@@ -367,45 +367,69 @@ const ProductItemCard = ({
             </div>
 
             {/* Add to Cart Button */}
-            {isEditorMode ? (
-              <Button
-                onClick={(e) => handleSlotClick(e, 'add_to_cart_button')}
-                variant="themed"
-                className={addToCartConfig.className || "w-full text-white border-0 btn-add-to-cart transition-all duration-200"}
-                size="sm"
-                style={{
-                  backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
-                  color: 'white',
-                  ...addToCartConfig.styles
-                }}
-                data-slot-id="add_to_cart_button"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                {addToCartConfig.content || t('product.add_to_cart', 'Add to Cart')}
-              </Button>
-            ) : (
-              <SaveButton
-                onClick={handleAddToCart}
-                loading={addingToCart}
-                success={addToCartSuccess}
-                disabled={isProductOutOfStock(product)}
-                defaultText={isProductOutOfStock(product)
-                  ? t('product.out_of_stock', 'Out of Stock')
-                  : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
-                loadingText={t('common.adding', 'Adding...')}
-                successText={t('common.added', 'Added!')}
-                size="sm"
-                className={addToCartConfig.className || "w-full text-white border-0 btn-add-to-cart transition-all duration-200"}
-                style={{
-                  backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
-                  color: 'white',
-                  opacity: isProductOutOfStock(product) ? 0.5 : 1,
-                  cursor: isProductOutOfStock(product) ? 'not-allowed' : 'pointer',
-                  ...addToCartConfig.styles
-                }}
-                icon={<ShoppingCart className="w-4 h-4 mr-2" />}
-              />
-            )}
+            {(() => {
+              // Get button styling from new settings or fall back to legacy theme setting
+              const buttonStyles = settings?.add_to_cart_button || {};
+              const bgColor = buttonStyles.backgroundColor || settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color;
+              const textColor = buttonStyles.textColor || '#FFFFFF';
+              const hoverBgColor = buttonStyles.hoverBackgroundColor || '#2563EB';
+              const borderRadiusMap = {
+                'none': '0px',
+                'sm': '2px',
+                'md': '6px',
+                'lg': '8px',
+                'xl': '12px',
+                'full': '9999px'
+              };
+              const borderRadius = borderRadiusMap[buttonStyles.borderRadius] || '6px';
+
+              const buttonStyle = {
+                backgroundColor: bgColor,
+                color: textColor,
+                borderRadius: borderRadius,
+                '--hover-bg-color': hoverBgColor,
+                ...addToCartConfig.styles
+              };
+
+              if (isEditorMode) {
+                return (
+                  <Button
+                    onClick={(e) => handleSlotClick(e, 'add_to_cart_button')}
+                    variant="themed"
+                    className={addToCartConfig.className || "w-full border-0 btn-add-to-cart transition-all duration-200"}
+                    size="sm"
+                    style={buttonStyle}
+                    data-slot-id="add_to_cart_button"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    {addToCartConfig.content || t('product.add_to_cart', 'Add to Cart')}
+                  </Button>
+                );
+              }
+
+              return (
+                <SaveButton
+                  onClick={handleAddToCart}
+                  loading={addingToCart}
+                  success={addToCartSuccess}
+                  disabled={isProductOutOfStock(product)}
+                  defaultText={isProductOutOfStock(product)
+                    ? t('product.out_of_stock', 'Out of Stock')
+                    : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
+                  loadingText={t('common.adding', 'Adding...')}
+                  successText={t('common.added', 'Added!')}
+                  size="sm"
+                  className={addToCartConfig.className || "w-full border-0 btn-add-to-cart transition-all duration-200"}
+                  style={{
+                    ...buttonStyle,
+                    opacity: isProductOutOfStock(product) ? 0.5 : 1,
+                    cursor: isProductOutOfStock(product) ? 'not-allowed' : 'pointer'
+                  }}
+                  hoverBackgroundColor={hoverBgColor}
+                  icon={<ShoppingCart className="w-4 h-4 mr-2" />}
+                />
+              );
+            })()}
 
             {/* Stock status for list view */}
             {viewMode === 'list' && (() => {

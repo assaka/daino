@@ -24,18 +24,18 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore();
   const { t } = useTranslation();
 
-  // Choose icon based on variant
+  // Choose icon based on variant - pointer-events-none ensures clicks go to button
   const getCartIcon = () => {
     switch (iconVariant) {
       case 'filled':
-        return <ShoppingCart className="w-5 h-5 fill-current" />;
+        return <ShoppingCart className="w-5 h-5 fill-current pointer-events-none" />;
       case 'bag':
-        return <ShoppingBag className="w-5 h-5" />;
+        return <ShoppingBag className="w-5 h-5 pointer-events-none" />;
       case 'bag-filled':
-        return <ShoppingBag className="w-5 h-5 fill-current" />;
+        return <ShoppingBag className="w-5 h-5 fill-current pointer-events-none" />;
       case 'outline':
       default:
-        return <ShoppingCart className="w-5 h-5" />;
+        return <ShoppingCart className="w-5 h-5 pointer-events-none" />;
     }
   };
   const [cartItems, setCartItems] = useState([]);
@@ -358,7 +358,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           {totalItems > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0 pointer-events-none"
             >
               {totalItems}
             </Badge>

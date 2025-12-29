@@ -374,10 +374,12 @@ const categoryConfig = {
       id: 'add_to_cart_button',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-full mt-3 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors',
+      className: 'w-full mt-3 py-2 px-4 text-sm font-medium transition-colors',
       parentClassName: '',
       styles: {
-        backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
+        backgroundColor: '{{settings.add_to_cart_button.backgroundColor}}',
+        color: '{{settings.add_to_cart_button.textColor}}',
+        borderRadius: '{{settings.add_to_cart_button.borderRadius}}'
       },
       parentId: 'product_card_content',
       position: { col: 1, row: 4 },
@@ -387,7 +389,8 @@ const categoryConfig = {
         hierarchical: false,
         displayName: 'Add to Cart Button',
         isTemplate: true,
-        action: 'addToCart'
+        action: 'addToCart',
+        hoverBackgroundColor: '{{settings.add_to_cart_button.hoverBackgroundColor}}'
       }
     },
 
