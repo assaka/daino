@@ -98,6 +98,25 @@ function enrichSettings(settings) {
     ...settings,
     collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
     max_visible_attributes: settings?.max_visible_attributes || 5,
+    // Add to Cart button styling defaults
+    add_to_cart_button: settings?.add_to_cart_button || {
+      backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
+      textColor: '#FFFFFF',
+      hoverBackgroundColor: '#2563EB',
+      borderRadius: 'md'
+    },
+    // Layered navigation styling defaults
+    layered_navigation: settings?.layered_navigation || {
+      cardBgColor: '#FFFFFF',
+      headerTextColor: '#1F2937',
+      filterLabelColor: '#374151',
+      optionTextColor: '#374151',
+      optionHoverColor: '#1F2937',
+      optionCountColor: '#9CA3AF',
+      checkboxColor: '#3B82F6',
+      activeFilterBgColor: '#DBEAFE',
+      activeFilterTextColor: '#1E40AF'
+    },
   };
 }
 

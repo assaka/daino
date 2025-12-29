@@ -11,6 +11,11 @@ import {
 export function Toaster() {
   const { toasts } = useToast();
 
+  // Don't render container when there are no toasts
+  if (toasts.length === 0) {
+    return null;
+  }
+
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
