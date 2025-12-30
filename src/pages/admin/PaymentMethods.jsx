@@ -89,6 +89,10 @@ export default function PaymentMethods() {
   const [syncingAdyenMethods, setSyncingAdyenMethods] = useState(false);
   const [adyenEnabledMethods, setAdyenEnabledMethods] = useState(null);
 
+  // Guide modals
+  const [showMollieGuideModal, setShowMollieGuideModal] = useState(false);
+  const [showAdyenGuideModal, setShowAdyenGuideModal] = useState(false);
+
   // Conditions data
   const [categories, setCategories] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
@@ -471,7 +475,7 @@ export default function PaymentMethods() {
       if (messages.length > 0) {
         setFlashMessage({ type: 'success', message: `Mollie synced: ${messages.join(', ')}` });
       } else {
-        setFlashMessage({ type: 'info', message: 'Mollie payment methods are up to date.' });
+        setFlashMessage({ type: 'success', message: 'Mollie payment methods are up to date.' });
       }
 
       loadPaymentMethods();
@@ -1163,12 +1167,22 @@ export default function PaymentMethods() {
                             </div>
                           </div>
                         ) : (
-                          <Button
-                            onClick={() => setShowMollieConnectModal(true)}
-                            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-                          >
-                            <Link2 className="w-4 h-4 mr-2" /> Connect
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              onClick={() => setShowMollieConnectModal(true)}
+                              className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 flex-1"
+                            >
+                              <Link2 className="w-4 h-4 mr-2" /> Connect
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="px-2 h-9"
+                              onClick={() => setShowMollieGuideModal(true)}
+                            >
+                              <Info className="w-4 h-4 text-gray-400" />
+                            </Button>
+                          </div>
                         )}
                       </>
                     )}
@@ -1222,12 +1236,22 @@ export default function PaymentMethods() {
                             </div>
                           </div>
                         ) : (
-                          <Button
-                            onClick={() => setShowAdyenConnectModal(true)}
-                            className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
-                          >
-                            <Link2 className="w-4 h-4 mr-2" /> Connect
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              onClick={() => setShowAdyenConnectModal(true)}
+                              className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 flex-1"
+                            >
+                              <Link2 className="w-4 h-4 mr-2" /> Connect
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="px-2 h-9"
+                              onClick={() => setShowAdyenGuideModal(true)}
+                            >
+                              <Info className="w-4 h-4 text-gray-400" />
+                            </Button>
+                          </div>
                         )}
                       </>
                     )}
@@ -2230,6 +2254,178 @@ export default function PaymentMethods() {
                     Connect
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mollie Guide Modal */}
+        <Dialog open={showMollieGuideModal} onOpenChange={setShowMollieGuideModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-orange-600" />
+                How to Get Your Mollie API Key
+              </DialogTitle>
+              <DialogDescription>
+                Follow these steps to obtain your Mollie API key
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-medium">1</div>
+                <div>
+                  <p className="font-medium">Log in to Mollie Dashboard</p>
+                  <p className="text-sm text-gray-600">
+                    Go to <a href="https://my.mollie.com" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">my.mollie.com</a> and sign in to your account.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-medium">2</div>
+                <div>
+                  <p className="font-medium">Navigate to API Keys</p>
+                  <p className="text-sm text-gray-600">
+                    Go to <strong>Developers</strong> → <strong>API keys</strong> in the left sidebar.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-medium">3</div>
+                <div>
+                  <p className="font-medium">Copy Your API Key</p>
+                  <p className="text-sm text-gray-600">
+                    Copy either the <strong>Test API key</strong> (starts with <code className="bg-gray-100 px-1 rounded">test_</code>) for testing,
+                    or the <strong>Live API key</strong> (starts with <code className="bg-gray-100 px-1 rounded">live_</code>) for production.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800">
+                  <strong>Tip:</strong> Start with the Test API key to verify your integration works correctly before switching to Live mode.
+                </p>
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Direct link:</strong>{' '}
+                  <a href="https://my.mollie.com/dashboard/developers/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                    my.mollie.com/dashboard/developers/api-keys
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowMollieGuideModal(false)}>
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowMollieGuideModal(false);
+                  setShowMollieConnectModal(true);
+                }}
+                className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Connect Now
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Adyen Guide Modal */}
+        <Dialog open={showAdyenGuideModal} onOpenChange={setShowAdyenGuideModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-green-600" />
+                How to Get Your Adyen API Credentials
+              </DialogTitle>
+              <DialogDescription>
+                Follow these steps to obtain your Adyen API key and merchant account
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-medium">1</div>
+                <div>
+                  <p className="font-medium">Log in to Adyen Customer Area</p>
+                  <p className="text-sm text-gray-600">
+                    Go to <a href="https://ca-test.adyen.com" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">ca-test.adyen.com</a> (test)
+                    or <a href="https://ca-live.adyen.com" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">ca-live.adyen.com</a> (live).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-medium">2</div>
+                <div>
+                  <p className="font-medium">Create an API Credential</p>
+                  <p className="text-sm text-gray-600">
+                    Navigate to <strong>Developers</strong> → <strong>API credentials</strong> → Click <strong>Create new credential</strong>.
+                    Select <strong>Web service user</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-medium">3</div>
+                <div>
+                  <p className="font-medium">Generate API Key</p>
+                  <p className="text-sm text-gray-600">
+                    In the credential settings, go to <strong>Server settings</strong> → <strong>Authentication</strong> → Click <strong>Generate API key</strong>.
+                    Copy the key immediately (it won't be shown again).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-medium">4</div>
+                <div>
+                  <p className="font-medium">Find Your Merchant Account</p>
+                  <p className="text-sm text-gray-600">
+                    Your merchant account name is shown in the top-left of the Customer Area, or go to <strong>Account</strong> → <strong>Merchant accounts</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
+                  <strong>Important:</strong> Make sure to enable the required permissions for your API credential:
+                  "Checkout webservice role" and "Management API" roles.
+                </p>
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Direct link:</strong>{' '}
+                  <a href="https://ca-test.adyen.com/ca/ca/config/api_credentials_new.shtml" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                    Adyen API Credentials (Test)
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAdyenGuideModal(false)}>
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowAdyenGuideModal(false);
+                  setShowAdyenConnectModal(true);
+                }}
+                className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Connect Now
               </Button>
             </DialogFooter>
           </DialogContent>
