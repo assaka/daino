@@ -2578,9 +2578,31 @@ export default function ThemeLayout() {
 
                                 {/* Live Preview */}
                                 <div className="bg-gray-50 p-3 rounded space-y-4">
+                                    {/* Visual Grid Preview */}
                                     <div>
-                                        <Label className="text-sm font-medium">Generated Classes Preview:</Label>
-                                        <div className="mt-2 text-xs text-gray-700 font-mono break-all">
+                                        <Label className="text-sm font-medium">Grid Preview:</Label>
+                                        <p className="text-xs text-gray-500 mb-3">Resize your browser to see how the grid responds at different breakpoints</p>
+                                        <div className={`grid gap-3 ${generateGridClassesPreview(store.settings.product_grid)}`}>
+                                            {Array.from({ length: Math.min((store.settings.product_grid?.breakpoints?.lg || 2) * (store.settings.product_grid?.rows || 4), 12) }).map((_, i) => (
+                                                <div key={i} className="bg-white border rounded-lg p-2 shadow-sm">
+                                                    <div className="aspect-square bg-gray-200 rounded mb-2 flex items-center justify-center">
+                                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                                                        <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                                                        <div className="h-4 bg-blue-100 rounded w-1/3 mt-2"></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t pt-3">
+                                        <Label className="text-sm font-medium">Generated Classes:</Label>
+                                        <div className="mt-2 text-xs text-gray-700 font-mono break-all bg-white p-2 rounded border">
                                             {generateGridClassesPreview(store.settings.product_grid)}
                                         </div>
                                     </div>
@@ -2588,7 +2610,7 @@ export default function ThemeLayout() {
                                     {(() => {
                                         const calculation = calculateProductsPerPage(store.settings.product_grid);
                                         return (
-                                            <div>
+                                            <div className="border-t pt-3">
                                                 <Label className="text-sm font-medium">Products Per Page by Breakpoint:</Label>
                                                 <div className="mt-2 text-sm text-gray-700">
                                                     {calculation.description}

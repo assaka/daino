@@ -653,33 +653,15 @@ export function UnifiedSlotRenderer({
   const sortedSlots = sortSlotsByGridCoordinates(conditionFilteredSlots);
 
   // SIMPLIFIED: Use same data structure for both editor and storefront
-  // Get filter option styles from slots for both editor and storefront
-  const filterOptionStyles = slots?.filter_option_styles?.styles || {
-    optionTextColor: '#374151',
-    optionHoverColor: '#1F2937',
-    optionCountColor: '#9CA3AF',
-    checkboxColor: '#3B82F6',
-    sliderColor: '#3B82F6',
-    activeFilterBgColor: '#DBEAFE',
-    activeFilterTextColor: '#1E40AF'
-  };
+  // Get filter option styles from slots - use empty object as fallback so theme settings can apply
+  // Theme settings are applied in LayeredNavigation component via getStyle() fallback logic
+  const filterOptionStyles = slots?.filter_option_styles?.styles || {};
 
-  // Get attribute label styles (also used for Price label)
-  const attributeLabelStyles = slots?.attribute_filter_label?.styles || {
-    color: '#374151',
-    fontSize: '1rem',
-    fontWeight: '600'
-  };
+  // Get attribute label styles (also used for Price label) - empty fallback for theme settings
+  const attributeLabelStyles = slots?.attribute_filter_label?.styles || {};
 
-  // Get active filter styles
-  const activeFilterStyles = slots?.active_filter_styles?.styles || {
-    titleColor: '#374151',
-    titleFontSize: '0.875rem',
-    titleFontWeight: '600',
-    backgroundColor: '#DBEAFE',
-    textColor: '#1E40AF',
-    clearAllColor: '#DC2626'
-  };
+  // Get active filter styles - empty fallback for theme settings
+  const activeFilterStyles = slots?.active_filter_styles?.styles || {};
 
   // Format products for category templates (same format as CategorySlotRenderer)
   const currencySymbol = categoryData?.settings?.currency_symbol || productData?.settings?.currency_symbol;
