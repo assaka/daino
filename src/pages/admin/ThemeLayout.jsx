@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search, Package, ArrowRight, LayoutGrid } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type, Loader2, Search, Package, ArrowRight, LayoutGrid, Smartphone, Tablet, Monitor } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import SaveButton from '@/components/ui/save-button';
@@ -131,6 +131,7 @@ export default function ThemeLayout() {
     const [newFontName, setNewFontName] = useState('');
     const [newFontUrl, setNewFontUrl] = useState('');
     const [fontSearch, setFontSearch] = useState('');
+    const [gridPreviewViewport, setGridPreviewViewport] = useState('desktop');
     const [showCreateThemeDialog, setShowCreateThemeDialog] = useState(false);
     const [newThemeName, setNewThemeName] = useState('');
     const [newThemeDescription, setNewThemeDescription] = useState('');
@@ -2577,56 +2578,82 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Live Preview */}
-                                <div className="bg-gray-50 p-3 rounded space-y-4">
-                                    {/* Visual Grid Preview */}
-                                    <div>
-                                        <Label className="text-sm font-medium">Grid Preview:</Label>
-                                        <p className="text-xs text-gray-500 mb-3">Resize your browser to see how the grid responds at different breakpoints</p>
-                                        <div className={`grid gap-3 ${generateGridClassesPreview(store.settings.product_grid)}`}>
-                                            {Array.from({ length: Math.min((store.settings.product_grid?.breakpoints?.lg || 2) * (store.settings.product_grid?.rows || 4), 12) }).map((_, i) => (
-                                                <div key={i} className="bg-white border rounded-lg p-2 shadow-sm">
-                                                    <div className="aspect-square bg-gray-200 rounded mb-2 flex items-center justify-center">
-                                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                        </svg>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <div className="h-3 bg-gray-300 rounded w-3/4"></div>
-                                                        <div className="h-2 bg-gray-200 rounded w-1/2"></div>
-                                                        <div className="h-4 bg-blue-100 rounded w-1/3 mt-2"></div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Label className="text-sm font-medium">Preview</Label>
+                                        <div className="flex items-center gap-1 bg-white rounded-lg border p-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setGridPreviewViewport('mobile')}
+                                                className={`p-1.5 rounded ${gridPreviewViewport === 'mobile' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                title="Mobile"
+                                            >
+                                                <Smartphone className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGridPreviewViewport('tablet')}
+                                                className={`p-1.5 rounded ${gridPreviewViewport === 'tablet' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                title="Tablet"
+                                            >
+                                                <Tablet className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGridPreviewViewport('desktop')}
+                                                className={`p-1.5 rounded ${gridPreviewViewport === 'desktop' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                title="Desktop"
+                                            >
+                                                <Monitor className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <div className="border-t pt-3">
-                                        <Label className="text-sm font-medium">Generated Classes:</Label>
-                                        <div className="mt-2 text-xs text-gray-700 font-mono break-all bg-white p-2 rounded border">
-                                            {generateGridClassesPreview(store.settings.product_grid)}
-                                        </div>
-                                    </div>
-
-                                    {(() => {
-                                        const calculation = calculateProductsPerPage(store.settings.product_grid);
-                                        return (
-                                            <div className="border-t pt-3">
-                                                <Label className="text-sm font-medium">Products Per Page by Breakpoint:</Label>
-                                                <div className="mt-2 text-sm text-gray-700">
-                                                    {calculation.description}
-                                                </div>
-                                                {calculation.breakdowns.length > 0 && (
-                                                    <div className="mt-2 space-y-1">
-                                                        {calculation.breakdowns.map((breakdown) => (
-                                                            <div key={breakdown.breakpoint} className="text-xs text-gray-600">
-                                                                <span className="font-medium">{breakdown.label}:</span> {breakdown.columns} cols × {breakdown.rows} rows = <span className="font-medium text-blue-600">{breakdown.total} products</span>
-                                                            </div>
-                                                        ))}
+                                    <div className="flex justify-center">
+                                        <div
+                                            className={`bg-white border rounded-lg p-3 transition-all ${
+                                                gridPreviewViewport === 'mobile' ? 'w-[200px]' :
+                                                gridPreviewViewport === 'tablet' ? 'w-[400px]' : 'w-full'
+                                            }`}
+                                        >
+                                            <div
+                                                className="grid gap-2"
+                                                style={{
+                                                    gridTemplateColumns: `repeat(${
+                                                        gridPreviewViewport === 'mobile'
+                                                            ? (store.settings.product_grid?.breakpoints?.default || 1)
+                                                            : gridPreviewViewport === 'tablet'
+                                                            ? (store.settings.product_grid?.breakpoints?.sm || 2)
+                                                            : (store.settings.product_grid?.breakpoints?.lg || 2)
+                                                    }, minmax(0, 1fr))`
+                                                }}
+                                            >
+                                                {Array.from({ length: (() => {
+                                                    const cols = gridPreviewViewport === 'mobile'
+                                                        ? (store.settings.product_grid?.breakpoints?.default || 1)
+                                                        : gridPreviewViewport === 'tablet'
+                                                        ? (store.settings.product_grid?.breakpoints?.sm || 2)
+                                                        : (store.settings.product_grid?.breakpoints?.lg || 2);
+                                                    return Math.min(cols * 2, 8);
+                                                })() }).map((_, i) => (
+                                                    <div key={i} className="bg-gray-50 border rounded p-1.5">
+                                                        <div className="aspect-square bg-gray-200 rounded mb-1.5 flex items-center justify-center">
+                                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <div className="h-2 bg-gray-300 rounded w-3/4"></div>
+                                                            <div className="h-1.5 bg-gray-200 rounded w-1/2"></div>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
-                                        );
-                                    })()}
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-3 border-t text-xs text-gray-600">
+                                        <span className="font-medium">Classes:</span>{' '}
+                                        <code className="bg-white px-1.5 py-0.5 rounded border">{generateGridClassesPreview(store.settings.product_grid)}</code>
+                                    </div>
                                 </div>
                             </div>
 
