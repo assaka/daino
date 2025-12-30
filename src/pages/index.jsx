@@ -115,6 +115,7 @@ export { default as RobotsTxtHandler } from './RobotsTxtHandler';
 export { default as SitemapPublic } from './storefront/SitemapPublic';
 export { default as Landing } from './storefront/Landing';
 export { default as MarketingSignup } from './storefront/MarketingSignup';
+export { default as MarketingLogin } from './storefront/MarketingLogin';
 export { default as Blog } from './storefront/Blog';
 export { default as NotFound } from '@/components/shared/NotFoundPage';
 

@@ -4,7 +4,7 @@ import { StoreSelectionProvider } from "@/contexts/StoreSelectionContext"
 import { AIProvider } from "@/contexts/AIContext"
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/pages/Layout'
-import Auth from '@/pages/Auth'
+// Auth is now using MarketingLogin from Pages
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/config/queryClient'
@@ -468,7 +468,7 @@ function App() {
           <Route path="/admin/verify-email" element={<Pages.StoreOwnerEmailVerification />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/translations" element={<PageWrapper Component={Pages.Translations} pageName="Translations" />} />
-          <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
+          <Route path="/admin/auth" element={<Pages.MarketingLogin />} />
           <Route path="/admin/forgotpassword" element={<Pages.AdminForgotPassword />} />
           <Route path="/admin/reset-password" element={<Pages.AdminResetPassword />} />
 
