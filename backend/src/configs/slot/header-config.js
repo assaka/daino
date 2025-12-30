@@ -370,7 +370,7 @@ const headerConfig = {
       type: 'component',
       component: 'HeaderSearch',
       content: '',
-      className: 'md:hidden px-4 py-2 border-b border-gray-200',
+      className: 'md:hidden px-4 py-2',
       parentClassName: '',
       styles: {},
       parentId: 'header_main',

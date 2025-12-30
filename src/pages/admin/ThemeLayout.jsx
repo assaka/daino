@@ -1385,8 +1385,8 @@ export default function ThemeLayout() {
                         styles: {
                             backgroundColor: theme?.header_bg_color || '#FFFFFF',
                             iconColor: theme?.header_icon_color || '#374151',
-                            paddingTop: theme?.header_padding_top || '16',
-                            paddingBottom: theme?.header_padding_bottom || '16'
+                            paddingTop: theme?.header_padding_top || '0',
+                            paddingBottom: theme?.header_padding_bottom || '0'
                         }
                     });
 
