@@ -196,6 +196,12 @@ export function HeaderSlotRenderer({
           containerClassName = `${containerClassName} relative`.trim();
         }
 
+        // Force header_inner to be full width (remove max-w-7xl constraint)
+        if (id === 'header_inner') {
+          containerClassName = containerClassName.replace(/max-w-\S+/g, '').replace(/mx-auto/g, '').trim();
+          containerClassName = `w-full ${containerClassName}`.trim();
+        }
+
         // Apply header theme styles to header containers
         let containerStyles = { ...customStyles };
         if (id === 'header_main') {
