@@ -769,9 +769,11 @@ router.get('/', cacheMiddleware({
       if (mergedSlots.header_inner) {
         const currentClassName = mergedSlots.header_inner.className || '';
         if (currentClassName.includes('max-w-') || currentClassName.includes('mx-auto')) {
+          // Remove max-w-* and mx-auto, then prepend w-full
+          const cleanedClassName = currentClassName.replace(/max-w-\S+/g, '').replace(/mx-auto/g, '').trim();
           mergedSlots.header_inner = {
             ...mergedSlots.header_inner,
-            className: currentClassName.replace(/max-w-\S+/g, '').replace(/mx-auto/g, '').trim() || 'w-full px-2 md:px-4 lg:px-8',
+            className: `w-full ${cleanedClassName}`.trim(),
             styles: {
               ...mergedSlots.header_inner.styles,
               width: '100%'
