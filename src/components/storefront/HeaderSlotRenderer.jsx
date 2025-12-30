@@ -302,8 +302,9 @@ export function HeaderSlotRenderer({
         );
 
       case 'MobileSearchToggle':
-        if (settings?.hide_header_search) return null;
-        // Don't show toggle if search is permanently visible (from store settings)
+        // Show toggle on mobile when:
+        // - hide_header_search is true (desktop search hidden, need mobile toggle)
+        // - show_permanent_search is false (if permanent, no need for toggle)
         if (settings?.show_permanent_search) return null;
 
         return (
@@ -368,9 +369,9 @@ export function HeaderSlotRenderer({
 
       case 'LanguageSelector':
         // Hide if setting is disabled (default: false/hidden)
-        // Only show if explicitly enabled
-        console.log('🌐 LanguageSelector check:', { show_language_selector: settings?.show_language_selector, languages_count: languages?.length });
-        if (settings?.show_language_selector !== true) return null;
+        // Only show if explicitly enabled (handle both boolean and string "true")
+        const showLangSelector = settings?.show_language_selector === true || settings?.show_language_selector === 'true';
+        if (!showLangSelector) return null;
         if (!languages || languages.length <= 1) return null;
 
         return (

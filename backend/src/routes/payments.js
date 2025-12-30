@@ -4807,11 +4807,15 @@ router.post('/mollie/sync-methods', authMiddleware, authorize(['admin', 'store_o
           supported_currencies: pm.currencies
         };
 
-        await tenantDb.from('payment_methods').update(updates).eq('id', existing.id);
-        updated++;
+        const { error: updateError } = await tenantDb.from('payment_methods').update(updates).eq('id', existing.id);
+        if (updateError) {
+          console.error(`Failed to update Mollie method ${pm.code}:`, updateError);
+        } else {
+          updated++;
+        }
       } else if (isEnabled) {
         // Insert new method only if enabled in Mollie
-        await tenantDb.from('payment_methods').insert({
+        const { error: insertError } = await tenantDb.from('payment_methods').insert({
           id: uuidv4(),
           store_id,
           name: pm.name,
@@ -4831,7 +4835,11 @@ router.post('/mollie/sync-methods', authMiddleware, authorize(['admin', 'store_o
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
-        inserted++;
+        if (insertError) {
+          console.error(`Failed to insert Mollie method ${pm.code}:`, insertError);
+        } else {
+          inserted++;
+        }
       }
     }
 
@@ -5146,10 +5154,14 @@ router.post('/adyen/sync-methods', authMiddleware, authorize(['admin', 'store_ow
           supported_currencies: pm.currencies
         };
 
-        await tenantDb.from('payment_methods').update(updates).eq('id', existing.id);
-        updated++;
+        const { error: updateError } = await tenantDb.from('payment_methods').update(updates).eq('id', existing.id);
+        if (updateError) {
+          console.error(`Failed to update Adyen method ${pm.code}:`, updateError);
+        } else {
+          updated++;
+        }
       } else if (isEnabled) {
-        await tenantDb.from('payment_methods').insert({
+        const { error: insertError } = await tenantDb.from('payment_methods').insert({
           id: uuidv4(),
           store_id,
           name: pm.name,
@@ -5169,7 +5181,11 @@ router.post('/adyen/sync-methods', authMiddleware, authorize(['admin', 'store_ow
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
-        inserted++;
+        if (insertError) {
+          console.error(`Failed to insert Adyen method ${pm.code}:`, insertError);
+        } else {
+          inserted++;
+        }
       }
     }
 

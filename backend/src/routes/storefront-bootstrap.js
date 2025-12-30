@@ -764,6 +764,22 @@ router.get('/', cacheMiddleware({
         }
       }
 
+      // Fix header_inner to be full width (remove max-w-7xl constraint)
+      if (mergedSlots.header_inner) {
+        const currentClassName = mergedSlots.header_inner.className || '';
+        if (currentClassName.includes('max-w-')) {
+          mergedSlots.header_inner = {
+            ...mergedSlots.header_inner,
+            className: currentClassName.replace(/max-w-\S+/g, '').replace(/mx-auto/g, '').trim() || 'w-full px-2 md:px-4 lg:px-8',
+            styles: {
+              ...mergedSlots.header_inner.styles,
+              width: '100%'
+            }
+          };
+          addedSlots.push('header_inner (full width fix)');
+        }
+      }
+
       if (addedSlots.length > 0) {
         console.log(`📱 Bootstrap: Auto-merged ${addedSlots.length} mobile slots for store ${store.id}:`, addedSlots);
         finalHeaderConfig = {
