@@ -143,6 +143,9 @@ function getGeneralDefaults(settings) {
     hide_header_checkout: settings?.hide_header_checkout !== undefined
       ? settings.hide_header_checkout
       : false,
+    hide_header_search: settings?.hide_header_search !== undefined
+      ? settings.hide_header_search
+      : false,
     hide_quantity_selector: settings?.hide_quantity_selector !== undefined
       ? settings.hide_quantity_selector
       : false,
