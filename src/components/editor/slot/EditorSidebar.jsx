@@ -75,6 +75,7 @@ const EditorSidebar = ({
   onClassChange,  // New prop for class changes
   onInlineClassChange, // Prop for inline class changes (alignment, etc.)
   onTextChange,   // New prop for text content changes
+  onThemeChange,  // Prop for theme settings changes (saves to settings.theme.*)
   slotId,        // Current slot ID
   slotConfig,    // Current slot configuration from database
   allSlots = {}, // All slots configuration to check for product_items
@@ -1514,6 +1515,25 @@ const EditorSidebar = ({
         isButtonBackgroundColor: elementSlotId === 'add_to_cart_button' && property === 'backgroundColor'
       });
 
+      // UNIFIED THEME SETTINGS: For add_to_cart_button colors, save to settings.theme.*
+      // This ensures editor sidebar and Theme & Layout share the same setting
+      const themePropertyMap = {
+        'backgroundColor': 'add_to_cart_button_bg_color',
+        'color': 'add_to_cart_button_text_color',
+        'borderRadius': 'add_to_cart_button_border_radius',
+      };
+
+      if (elementSlotId === 'add_to_cart_button' && themePropertyMap[property] && onThemeChange) {
+        console.log(`🎨 THEME SETTING - Saving add_to_cart_button ${property} to theme:`, {
+          themeKey: themePropertyMap[property],
+          value: formattedValue
+        });
+        // Save to theme settings
+        onThemeChange(themePropertyMap[property], formattedValue);
+        // Continue to also update slot styles for immediate visual feedback
+        // The slot will read from theme settings on next load
+      }
+
       if (onInlineClassChange) {
         // Include auto-set border properties in save data
         // CRITICAL: Also filter out grid wrapper inline styles before saving!
@@ -1585,7 +1605,7 @@ const EditorSidebar = ({
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
     }
-  }, [selectedElement, handleAlignmentChange, onInlineClassChange, isWrapperOrEditorClass, slotId, slotConfig, allSlots]);
+  }, [selectedElement, handleAlignmentChange, onInlineClassChange, onThemeChange, isWrapperOrEditorClass, slotId, slotConfig, allSlots]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">

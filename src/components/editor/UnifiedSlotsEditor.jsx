@@ -61,6 +61,7 @@ import '@/components/editor/slot/AccountLoginSlotComponents'; // Register accoun
 import '@/components/editor/slot/CheckoutSlotComponents'; // Register checkout components
 import '@/components/editor/slot/SuccessSlotComponents'; // Register success/order confirmation components
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { Store } from '@/api/entities';
 
 /**
  * UnifiedSlotsEditor - Core editor component
@@ -396,6 +397,38 @@ const UnifiedSlotsEditor = ({
     setSelectedElement(null);
     setIsSidebarVisible(false);
   }, []);
+
+  // Theme change handler - saves to settings.theme.* for unified settings
+  // Used by EditorSidebar for add_to_cart_button colors to share with ThemeLayout
+  const handleThemeChange = useCallback(async (key, value) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.error('No store selected for theme change');
+      return;
+    }
+
+    try {
+      // Get current store settings
+      const currentSettings = selectedStore?.settings || {};
+      const currentTheme = currentSettings.theme || {};
+
+      // Update theme settings
+      const updatedSettings = {
+        ...currentSettings,
+        theme: {
+          ...currentTheme,
+          [key]: value
+        }
+      };
+
+      // Save to API
+      await Store.updateSettings(storeId, { settings: updatedSettings });
+
+      console.log(`Theme setting updated: ${key} = ${value}`);
+    } catch (error) {
+      console.error('Failed to save theme setting:', error);
+    }
+  }, [getSelectedStoreId, selectedStore]);
 
   // Header-specific handlers for inline editing
   // UnifiedSlotRenderer calls onElementClick(slotId, element) - not with an event
@@ -886,6 +919,7 @@ const UnifiedSlotsEditor = ({
           onClassChange={activeEditSection === 'header' ? handleHeaderClassChange : handleClassChange}
           onInlineClassChange={activeEditSection === 'header' ? handleHeaderClassChange : handleClassChange}
           onTextChange={activeEditSection === 'header' ? handleHeaderTextChange : handleTextChange}
+          onThemeChange={handleThemeChange}
           isVisible={isSidebarVisible}
           sectionLabel={activeEditSection === 'header' ? 'Header' : pageName}
         />

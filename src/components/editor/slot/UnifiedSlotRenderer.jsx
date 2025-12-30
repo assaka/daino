@@ -1296,17 +1296,18 @@ export function UnifiedSlotRenderer({
                             translations['en']?.common?.added ||
                             'Added!';
 
-          // WYSIWYG: Slot styles (user customization) take priority, then theme defaults
-          // Uses FLAT settings (add_to_cart_button_bg_color, etc.) for consistency
+          // UNIFIED THEME SETTINGS: Use theme settings directly for add_to_cart_button colors
+          // Both editor sidebar and Theme & Layout save to settings.theme.*, so we use theme settings as source of truth
           const theme = variableContext?.settings?.theme || {};
           const finalButtonStyles = {
             ...buttonStyles,
             display: 'flex', // Override inline-block from saved styles
             width: '100%', // Full width for add to cart button
-            // Priority: 1. Slot styles (explicit user customization), 2. Theme defaults
-            backgroundColor: buttonStyles?.backgroundColor || theme.add_to_cart_button_bg_color,
-            color: buttonStyles?.color || theme.add_to_cart_button_text_color,
-            borderRadius: buttonStyles?.borderRadius || theme.add_to_cart_button_border_radius,
+            // UNIFIED: Theme settings are the single source of truth for button colors
+            // This ensures editor sidebar and Theme & Layout share the same settings
+            backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
+            color: theme.add_to_cart_button_text_color || buttonStyles?.color,
+            borderRadius: theme.add_to_cart_button_border_radius || buttonStyles?.borderRadius,
           };
 
           return (
@@ -1344,7 +1345,8 @@ export function UnifiedSlotRenderer({
       } else {
         // Editor: Use same SaveButton component as storefront for WYSIWYG parity
         if (isAddToCartButton) {
-          // WYSIWYG: Slot styles (user customization) take priority, then theme defaults
+          // UNIFIED THEME SETTINGS: Use theme settings directly for add_to_cart_button colors
+          // Both editor sidebar and Theme & Layout save to settings.theme.*, so we use theme settings as source of truth
           const theme = variableContext?.settings?.theme || {};
 
           // Ensure button starts with full width - force 100% width for add_to_cart
@@ -1356,10 +1358,11 @@ export function UnifiedSlotRenderer({
           const finalButtonStyles = {
             ...cleanedButtonStyles,
             display: 'flex', // Override inline-block from editor styles
-            // Priority: 1. Slot styles (explicit user customization), 2. Theme defaults
-            backgroundColor: cleanedButtonStyles?.backgroundColor || theme.add_to_cart_button_bg_color,
-            color: cleanedButtonStyles?.color || theme.add_to_cart_button_text_color,
-            borderRadius: cleanedButtonStyles?.borderRadius || theme.add_to_cart_button_border_radius,
+            // UNIFIED: Theme settings are the single source of truth for button colors
+            // This ensures editor sidebar and Theme & Layout share the same settings
+            backgroundColor: theme.add_to_cart_button_bg_color || cleanedButtonStyles?.backgroundColor,
+            color: theme.add_to_cart_button_text_color || cleanedButtonStyles?.color,
+            borderRadius: theme.add_to_cart_button_border_radius || cleanedButtonStyles?.borderRadius,
           };
 
           const buttonElement = (
