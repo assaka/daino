@@ -669,24 +669,19 @@ router.patch('/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Find the published (active) configuration for this page type
+    // Find the draft configuration for this page type (theme changes go to draft)
     const { data: existing, error: findError } = await tenantDb
       .from('slot_configurations')
       .select('*')
       .eq('store_id', storeId)
-      .eq('is_active', true)
+      .eq('page_type', pageType)
+      .eq('status', 'draft')
+      .order('version_number', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (findError) {
       throw findError;
-    }
-
-    // Check if this is the right page type
-    if (existing && existing.configuration?.metadata?.pageType !== pageType) {
-      return res.status(404).json({
-        success: false,
-        error: `No active configuration found for page type: ${pageType}`
-      });
     }
 
     if (!existing) {
