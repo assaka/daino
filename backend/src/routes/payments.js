@@ -14,8 +14,10 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { masterDbClient } = require('../database/masterConnection');
 const paymentProviderService = require('../services/payment-provider-service');
 
-// Stripe integration type constant
+// Integration type constants
 const STRIPE_INTEGRATION_TYPE = 'stripe-connect';
+const MOLLIE_INTEGRATION_TYPE = 'mollie-connect';
+const ADYEN_INTEGRATION_TYPE = 'adyen-connect';
 
 // Zero-decimal currencies (currencies without decimal places)
 // These should NOT be multiplied by 100 for Stripe
@@ -95,6 +97,45 @@ const STRIPE_PAYMENT_METHODS = [
   { code: 'stripe_sofort', name: 'Sofort', stripeType: 'sofort', icon: 'sofort', description: 'Pay with Sofort', countries: ['AT', 'BE', 'DE', 'ES', 'IT', 'NL'], currencies: ['EUR'] },
   { code: 'stripe_eps', name: 'EPS', stripeType: 'eps', icon: 'eps', description: 'Pay with EPS', countries: ['AT'], currencies: ['EUR'] },
   { code: 'stripe_p24', name: 'Przelewy24', stripeType: 'p24', icon: 'p24', description: 'Pay with Przelewy24', countries: ['PL'], currencies: ['EUR', 'PLN'] },
+];
+
+/**
+ * Mollie payment methods configuration
+ * Each payment method has its display info, Mollie type, country and currency availability
+ */
+const MOLLIE_PAYMENT_METHODS = [
+  { code: 'mollie_creditcard', name: 'Credit Card', mollieType: 'creditcard', icon: 'credit-card', description: 'Pay with credit card via Mollie', countries: null, currencies: null },
+  { code: 'mollie_ideal', name: 'iDEAL', mollieType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL (Dutch banks)', countries: ['NL'], currencies: ['EUR'] },
+  { code: 'mollie_bancontact', name: 'Bancontact', mollieType: 'bancontact', icon: 'bancontact', description: 'Pay with Bancontact', countries: ['BE'], currencies: ['EUR'] },
+  { code: 'mollie_sofort', name: 'Sofort', mollieType: 'sofort', icon: 'sofort', description: 'Pay with Sofort', countries: ['AT', 'BE', 'DE', 'IT', 'NL', 'ES'], currencies: ['EUR'] },
+  { code: 'mollie_klarna_paylater', name: 'Klarna Pay Later', mollieType: 'klarnapaylater', icon: 'klarna', description: 'Buy now, pay later with Klarna', countries: ['AT', 'BE', 'DE', 'ES', 'FI', 'FR', 'IT', 'NL'], currencies: ['EUR'] },
+  { code: 'mollie_klarna_sliceit', name: 'Klarna Slice It', mollieType: 'klarnasliceit', icon: 'klarna', description: 'Pay in installments with Klarna', countries: ['DE', 'AT', 'FI', 'NL'], currencies: ['EUR'] },
+  { code: 'mollie_paypal', name: 'PayPal', mollieType: 'paypal', icon: 'paypal', description: 'Pay with PayPal via Mollie', countries: null, currencies: null },
+  { code: 'mollie_banktransfer', name: 'Bank Transfer', mollieType: 'banktransfer', icon: 'bank', description: 'Pay via bank transfer', countries: null, currencies: ['EUR'] },
+  { code: 'mollie_eps', name: 'EPS', mollieType: 'eps', icon: 'eps', description: 'Pay with EPS', countries: ['AT'], currencies: ['EUR'] },
+  { code: 'mollie_giropay', name: 'Giropay', mollieType: 'giropay', icon: 'giropay', description: 'Pay with Giropay', countries: ['DE'], currencies: ['EUR'] },
+  { code: 'mollie_kbc', name: 'KBC/CBC', mollieType: 'kbc', icon: 'kbc', description: 'Pay with KBC/CBC', countries: ['BE'], currencies: ['EUR'] },
+  { code: 'mollie_belfius', name: 'Belfius', mollieType: 'belfius', icon: 'belfius', description: 'Pay with Belfius', countries: ['BE'], currencies: ['EUR'] },
+  { code: 'mollie_applepay', name: 'Apple Pay', mollieType: 'applepay', icon: 'apple', description: 'Pay with Apple Pay via Mollie', countries: null, currencies: null },
+];
+
+/**
+ * Adyen payment methods configuration
+ * Each payment method has its display info, Adyen type, country and currency availability
+ */
+const ADYEN_PAYMENT_METHODS = [
+  { code: 'adyen_card', name: 'Credit/Debit Card', adyenType: 'scheme', icon: 'credit-card', description: 'Pay with card via Adyen', countries: null, currencies: null },
+  { code: 'adyen_ideal', name: 'iDEAL', adyenType: 'ideal', icon: 'ideal', description: 'Pay with iDEAL', countries: ['NL'], currencies: ['EUR'] },
+  { code: 'adyen_bancontact', name: 'Bancontact', adyenType: 'bcmc', icon: 'bancontact', description: 'Pay with Bancontact', countries: ['BE'], currencies: ['EUR'] },
+  { code: 'adyen_klarna', name: 'Klarna', adyenType: 'klarna', icon: 'klarna', description: 'Pay with Klarna', countries: ['AT', 'BE', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'IT', 'NL', 'NO', 'SE', 'US'], currencies: null },
+  { code: 'adyen_klarna_paynow', name: 'Klarna Pay Now', adyenType: 'klarna_paynow', icon: 'klarna', description: 'Pay now with Klarna', countries: ['AT', 'BE', 'DE', 'NL'], currencies: ['EUR'] },
+  { code: 'adyen_paypal', name: 'PayPal', adyenType: 'paypal', icon: 'paypal', description: 'Pay with PayPal', countries: null, currencies: null },
+  { code: 'adyen_applepay', name: 'Apple Pay', adyenType: 'applepay', icon: 'apple', description: 'Pay with Apple Pay', countries: null, currencies: null },
+  { code: 'adyen_googlepay', name: 'Google Pay', adyenType: 'googlepay', icon: 'google', description: 'Pay with Google Pay', countries: null, currencies: null },
+  { code: 'adyen_giropay', name: 'Giropay', adyenType: 'giropay', icon: 'giropay', description: 'Pay with Giropay', countries: ['DE'], currencies: ['EUR'] },
+  { code: 'adyen_sofort', name: 'Sofort', adyenType: 'directEbanking', icon: 'sofort', description: 'Pay with Sofort', countries: ['AT', 'BE', 'CH', 'DE', 'IT', 'NL', 'PL', 'ES'], currencies: ['EUR'] },
+  { code: 'adyen_sepa', name: 'SEPA Direct Debit', adyenType: 'sepadirectdebit', icon: 'bank', description: 'Pay via SEPA', countries: ['AT', 'BE', 'DE', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT'], currencies: ['EUR'] },
+  { code: 'adyen_eps', name: 'EPS', adyenType: 'eps', icon: 'eps', description: 'Pay with EPS', countries: ['AT'], currencies: ['EUR'] },
 ];
 
 /**
@@ -4509,6 +4550,724 @@ router.get('/test-auto-invoice-deployment', (req, res) => {
     test_instructions: 'Place a Stripe checkout order and search Render logs for: 💥 (webhook hit), 🎉 (order email), 🔍 (settings check), 📧 (invoice email)',
     timestamp: new Date().toISOString()
   });
+});
+
+// ============================================================================
+// MOLLIE PAYMENT PROVIDER ROUTES
+// ============================================================================
+
+/**
+ * Hide/deactivate Mollie payment methods when disconnecting
+ */
+async function hideMolliePaymentMethods(storeId) {
+  try {
+    console.log(`🔧 Hiding Mollie payment methods for store ${storeId}...`);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const { data: updated, error } = await tenantDb
+      .from('payment_methods')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('store_id', storeId)
+      .eq('provider', 'mollie')
+      .select();
+    if (error) throw error;
+    console.log(`✅ Deactivated ${updated?.length || 0} Mollie payment methods`);
+    return { deactivated: updated?.length || 0 };
+  } catch (error) {
+    console.error('Failed to hide Mollie payment methods:', error);
+    return { deactivated: 0, error: error.message };
+  }
+}
+
+/**
+ * Get enabled payment methods from Mollie API
+ */
+async function getMollieEnabledMethods(apiKey) {
+  try {
+    const response = await fetch('https://api.mollie.com/v2/methods', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch Mollie methods');
+    }
+    const data = await response.json();
+    // Return set of enabled method IDs
+    return new Set((data._embedded?.methods || []).map(m => m.id));
+  } catch (error) {
+    console.error('Error fetching Mollie methods:', error);
+    throw error;
+  }
+}
+
+// @route   POST /api/payments/mollie/connect
+// @desc    Connect Mollie account with API key
+// @access  Private
+router.post('/mollie/connect', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id, api_key } = req.body;
+
+    if (!store_id || !api_key) {
+      return res.status(400).json({ success: false, message: 'store_id and api_key are required' });
+    }
+
+    // Test the API key by fetching methods
+    let enabledMethods;
+    let orgName = 'Mollie Account';
+    try {
+      const response = await fetch('https://api.mollie.com/v2/methods', {
+        headers: { 'Authorization': `Bearer ${api_key}` }
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        return res.status(400).json({
+          success: false,
+          message: error.detail || 'Invalid Mollie API key'
+        });
+      }
+      const data = await response.json();
+      enabledMethods = (data._embedded?.methods || []).map(m => m.id);
+
+      // Try to get organization info
+      const orgResponse = await fetch('https://api.mollie.com/v2/organizations/me', {
+        headers: { 'Authorization': `Bearer ${api_key}` }
+      });
+      if (orgResponse.ok) {
+        const orgData = await orgResponse.json();
+        orgName = orgData.name || 'Mollie Account';
+      }
+    } catch (fetchError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Could not connect to Mollie API: ' + fetchError.message
+      });
+    }
+
+    // Determine if test or live mode
+    const isLiveMode = api_key.startsWith('live_');
+
+    // Save to integration_configs
+    await IntegrationConfig.createOrUpdate({
+      store_id,
+      integration_type: MOLLIE_INTEGRATION_TYPE,
+      config_data: {
+        apiKey: api_key,
+        organizationName: orgName,
+        livemode: isLiveMode,
+        connectedAt: new Date().toISOString()
+      },
+      is_active: true,
+      connection_status: 'success',
+      connection_tested_at: new Date().toISOString()
+    });
+
+    console.log(`✅ Mollie connected for store ${store_id} (${isLiveMode ? 'live' : 'test'} mode)`);
+
+    res.json({
+      success: true,
+      data: {
+        connected: true,
+        mode: isLiveMode ? 'live' : 'test',
+        organizationName: orgName,
+        enabledMethods
+      }
+    });
+  } catch (error) {
+    console.error('Mollie connect error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/payments/mollie/status
+// @desc    Get Mollie connection status
+// @access  Private
+router.get('/mollie/status', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const mollieConfig = await IntegrationConfig.findByStoreAndType(store_id, MOLLIE_INTEGRATION_TYPE);
+
+    if (!mollieConfig?.config_data?.apiKey) {
+      return res.json({
+        success: true,
+        data: { connected: false }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        connected: true,
+        mode: mollieConfig.config_data.livemode ? 'live' : 'test',
+        organizationName: mollieConfig.config_data.organizationName || 'Mollie Account',
+        connectedAt: mollieConfig.config_data.connectedAt
+      }
+    });
+  } catch (error) {
+    console.error('Mollie status error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/payments/mollie/enabled-methods
+// @desc    Get enabled payment methods from Mollie dashboard
+// @access  Private
+router.get('/mollie/enabled-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const mollieConfig = await IntegrationConfig.findByStoreAndType(store_id, MOLLIE_INTEGRATION_TYPE);
+    if (!mollieConfig?.config_data?.apiKey) {
+      return res.json({
+        success: true,
+        connected: false,
+        enabledTypes: [],
+        message: 'No Mollie account connected'
+      });
+    }
+
+    const enabledTypes = await getMollieEnabledMethods(mollieConfig.config_data.apiKey);
+
+    // Map to include all configured methods with their enabled status
+    const methodStatus = MOLLIE_PAYMENT_METHODS.map(pm => ({
+      code: pm.code,
+      mollieType: pm.mollieType,
+      name: pm.name,
+      enabled: enabledTypes.has(pm.mollieType)
+    }));
+
+    res.json({
+      success: true,
+      connected: true,
+      enabledTypes: Array.from(enabledTypes),
+      methods: methodStatus
+    });
+  } catch (error) {
+    console.error('Mollie enabled-methods error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   POST /api/payments/mollie/sync-methods
+// @desc    Sync Mollie payment methods to local database
+// @access  Private
+router.post('/mollie/sync-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.body;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const mollieConfig = await IntegrationConfig.findByStoreAndType(store_id, MOLLIE_INTEGRATION_TYPE);
+    if (!mollieConfig?.config_data?.apiKey) {
+      return res.status(400).json({ success: false, message: 'No Mollie account connected' });
+    }
+
+    const enabledTypes = await getMollieEnabledMethods(mollieConfig.config_data.apiKey);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get existing Mollie methods
+    const { data: existingMethods } = await tenantDb
+      .from('payment_methods')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('provider', 'mollie');
+
+    const existingCodes = new Set((existingMethods || []).map(m => m.code));
+    let inserted = 0, updated = 0, deactivated = 0, reactivated = 0;
+    let sortOrder = (existingMethods?.length || 0) + 100;
+
+    // Update existing and add new methods
+    for (const pm of MOLLIE_PAYMENT_METHODS) {
+      const isEnabled = enabledTypes.has(pm.mollieType);
+      const existing = existingMethods?.find(m => m.code === pm.code);
+
+      if (existing) {
+        // Update existing method
+        const updates = { updated_at: new Date().toISOString() };
+
+        // If enabled in Mollie but inactive locally, reactivate
+        if (isEnabled && !existing.is_active) {
+          updates.is_active = true;
+          reactivated++;
+        }
+        // If not enabled in Mollie but active locally, deactivate
+        if (!isEnabled && existing.is_active) {
+          updates.is_active = false;
+          deactivated++;
+        }
+
+        // Update settings
+        updates.settings = {
+          ...existing.settings,
+          mollie_type: pm.mollieType,
+          icon: pm.icon,
+          supported_countries: pm.countries,
+          supported_currencies: pm.currencies
+        };
+
+        await tenantDb.from('payment_methods').update(updates).eq('id', existing.id);
+        updated++;
+      } else if (isEnabled) {
+        // Insert new method only if enabled in Mollie
+        await tenantDb.from('payment_methods').insert({
+          id: uuidv4(),
+          store_id,
+          name: pm.name,
+          code: pm.code,
+          type: 'mollie',
+          payment_flow: 'online',
+          description: pm.description,
+          settings: {
+            mollie_type: pm.mollieType,
+            icon: pm.icon,
+            supported_countries: pm.countries,
+            supported_currencies: pm.currencies
+          },
+          provider: 'mollie',
+          is_active: true,
+          sort_order: sortOrder++,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        inserted++;
+      }
+    }
+
+    // Update sync status
+    await IntegrationConfig.createOrUpdate({
+      store_id,
+      integration_type: MOLLIE_INTEGRATION_TYPE,
+      config_data: {
+        ...mollieConfig.config_data,
+        lastSyncAt: new Date().toISOString()
+      },
+      last_sync_at: new Date().toISOString(),
+      sync_status: 'success'
+    });
+
+    console.log(`✅ Mollie sync for store ${store_id}: ${inserted} inserted, ${updated} updated, ${reactivated} reactivated, ${deactivated} deactivated`);
+
+    res.json({
+      success: true,
+      data: { inserted, updated, reactivated, deactivated }
+    });
+  } catch (error) {
+    console.error('Mollie sync error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   DELETE /api/payments/mollie/disconnect
+// @desc    Disconnect Mollie account
+// @access  Private
+router.delete('/mollie/disconnect', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const deleted = await IntegrationConfig.deleteByStoreAndType(store_id, MOLLIE_INTEGRATION_TYPE);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'No Mollie connection found' });
+    }
+
+    const hideResult = await hideMolliePaymentMethods(store_id);
+    console.log(`Disconnected Mollie for store ${store_id}, deactivated ${hideResult.deactivated} payment methods`);
+
+    res.json({ success: true, message: 'Mollie disconnected successfully' });
+  } catch (error) {
+    console.error('Mollie disconnect error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   POST /api/payments/mollie/webhook
+// @desc    Handle Mollie payment webhooks
+// @access  Public (no auth - Mollie sends webhooks)
+router.post('/mollie/webhook', express.urlencoded({ extended: true }), async (req, res) => {
+  try {
+    const { id } = req.body; // Mollie sends payment ID in body as 'id'
+    console.log('💥 Mollie webhook received for payment:', id);
+
+    if (!id) {
+      return res.status(400).send('Missing payment ID');
+    }
+
+    // TODO: Implement payment status update logic
+    // 1. Look up which store this payment belongs to
+    // 2. Fetch payment details from Mollie API
+    // 3. Update order status based on payment status
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Mollie webhook error:', error);
+    res.status(500).send('Webhook processing error');
+  }
+});
+
+// ============================================================================
+// ADYEN PAYMENT PROVIDER ROUTES
+// ============================================================================
+
+/**
+ * Hide/deactivate Adyen payment methods when disconnecting
+ */
+async function hideAdyenPaymentMethods(storeId) {
+  try {
+    console.log(`🔧 Hiding Adyen payment methods for store ${storeId}...`);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const { data: updated, error } = await tenantDb
+      .from('payment_methods')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('store_id', storeId)
+      .eq('provider', 'adyen')
+      .select();
+    if (error) throw error;
+    console.log(`✅ Deactivated ${updated?.length || 0} Adyen payment methods`);
+    return { deactivated: updated?.length || 0 };
+  } catch (error) {
+    console.error('Failed to hide Adyen payment methods:', error);
+    return { deactivated: 0, error: error.message };
+  }
+}
+
+/**
+ * Get enabled payment methods from Adyen API
+ */
+async function getAdyenEnabledMethods(apiKey, merchantAccount, environment = 'test') {
+  try {
+    const baseUrl = environment === 'live'
+      ? 'https://checkout-live.adyen.com/v71'
+      : 'https://checkout-test.adyen.com/v71';
+
+    const response = await fetch(`${baseUrl}/paymentMethods`, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        merchantAccount,
+        countryCode: 'NL', // Default country for method discovery
+        amount: { value: 1000, currency: 'EUR' }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch Adyen methods');
+    }
+
+    const data = await response.json();
+    // Return set of enabled method types
+    return new Set((data.paymentMethods || []).map(m => m.type));
+  } catch (error) {
+    console.error('Error fetching Adyen methods:', error);
+    throw error;
+  }
+}
+
+// @route   POST /api/payments/adyen/connect
+// @desc    Connect Adyen account with API credentials
+// @access  Private
+router.post('/adyen/connect', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id, api_key, merchant_account, environment = 'test', client_key } = req.body;
+
+    if (!store_id || !api_key || !merchant_account) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id, api_key, and merchant_account are required'
+      });
+    }
+
+    // Test the credentials by fetching payment methods
+    let enabledMethods;
+    try {
+      enabledMethods = await getAdyenEnabledMethods(api_key, merchant_account, environment);
+    } catch (fetchError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Could not connect to Adyen API: ' + fetchError.message
+      });
+    }
+
+    // Save to integration_configs
+    await IntegrationConfig.createOrUpdate({
+      store_id,
+      integration_type: ADYEN_INTEGRATION_TYPE,
+      config_data: {
+        apiKey: api_key,
+        merchantAccount: merchant_account,
+        environment,
+        clientKey: client_key || null,
+        connectedAt: new Date().toISOString()
+      },
+      is_active: true,
+      connection_status: 'success',
+      connection_tested_at: new Date().toISOString()
+    });
+
+    console.log(`✅ Adyen connected for store ${store_id} (${environment} mode)`);
+
+    res.json({
+      success: true,
+      data: {
+        connected: true,
+        environment,
+        merchantAccount: merchant_account,
+        enabledMethods: Array.from(enabledMethods)
+      }
+    });
+  } catch (error) {
+    console.error('Adyen connect error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/payments/adyen/status
+// @desc    Get Adyen connection status
+// @access  Private
+router.get('/adyen/status', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const adyenConfig = await IntegrationConfig.findByStoreAndType(store_id, ADYEN_INTEGRATION_TYPE);
+
+    if (!adyenConfig?.config_data?.apiKey) {
+      return res.json({
+        success: true,
+        data: { connected: false }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        connected: true,
+        environment: adyenConfig.config_data.environment || 'test',
+        merchantAccount: adyenConfig.config_data.merchantAccount,
+        connectedAt: adyenConfig.config_data.connectedAt
+      }
+    });
+  } catch (error) {
+    console.error('Adyen status error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/payments/adyen/enabled-methods
+// @desc    Get enabled payment methods from Adyen merchant account
+// @access  Private
+router.get('/adyen/enabled-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const adyenConfig = await IntegrationConfig.findByStoreAndType(store_id, ADYEN_INTEGRATION_TYPE);
+    if (!adyenConfig?.config_data?.apiKey) {
+      return res.json({
+        success: true,
+        connected: false,
+        enabledTypes: [],
+        message: 'No Adyen account connected'
+      });
+    }
+
+    const { apiKey, merchantAccount, environment } = adyenConfig.config_data;
+    const enabledTypes = await getAdyenEnabledMethods(apiKey, merchantAccount, environment);
+
+    // Map to include all configured methods with their enabled status
+    const methodStatus = ADYEN_PAYMENT_METHODS.map(pm => ({
+      code: pm.code,
+      adyenType: pm.adyenType,
+      name: pm.name,
+      enabled: enabledTypes.has(pm.adyenType)
+    }));
+
+    res.json({
+      success: true,
+      connected: true,
+      enabledTypes: Array.from(enabledTypes),
+      methods: methodStatus
+    });
+  } catch (error) {
+    console.error('Adyen enabled-methods error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   POST /api/payments/adyen/sync-methods
+// @desc    Sync Adyen payment methods to local database
+// @access  Private
+router.post('/adyen/sync-methods', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.body;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const adyenConfig = await IntegrationConfig.findByStoreAndType(store_id, ADYEN_INTEGRATION_TYPE);
+    if (!adyenConfig?.config_data?.apiKey) {
+      return res.status(400).json({ success: false, message: 'No Adyen account connected' });
+    }
+
+    const { apiKey, merchantAccount, environment } = adyenConfig.config_data;
+    const enabledTypes = await getAdyenEnabledMethods(apiKey, merchantAccount, environment);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get existing Adyen methods
+    const { data: existingMethods } = await tenantDb
+      .from('payment_methods')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('provider', 'adyen');
+
+    let inserted = 0, updated = 0, deactivated = 0, reactivated = 0;
+    let sortOrder = (existingMethods?.length || 0) + 200;
+
+    // Update existing and add new methods
+    for (const pm of ADYEN_PAYMENT_METHODS) {
+      const isEnabled = enabledTypes.has(pm.adyenType);
+      const existing = existingMethods?.find(m => m.code === pm.code);
+
+      if (existing) {
+        const updates = { updated_at: new Date().toISOString() };
+
+        if (isEnabled && !existing.is_active) {
+          updates.is_active = true;
+          reactivated++;
+        }
+        if (!isEnabled && existing.is_active) {
+          updates.is_active = false;
+          deactivated++;
+        }
+
+        updates.settings = {
+          ...existing.settings,
+          adyen_type: pm.adyenType,
+          icon: pm.icon,
+          supported_countries: pm.countries,
+          supported_currencies: pm.currencies
+        };
+
+        await tenantDb.from('payment_methods').update(updates).eq('id', existing.id);
+        updated++;
+      } else if (isEnabled) {
+        await tenantDb.from('payment_methods').insert({
+          id: uuidv4(),
+          store_id,
+          name: pm.name,
+          code: pm.code,
+          type: 'adyen',
+          payment_flow: 'online',
+          description: pm.description,
+          settings: {
+            adyen_type: pm.adyenType,
+            icon: pm.icon,
+            supported_countries: pm.countries,
+            supported_currencies: pm.currencies
+          },
+          provider: 'adyen',
+          is_active: true,
+          sort_order: sortOrder++,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        inserted++;
+      }
+    }
+
+    // Update sync status
+    await IntegrationConfig.createOrUpdate({
+      store_id,
+      integration_type: ADYEN_INTEGRATION_TYPE,
+      config_data: {
+        ...adyenConfig.config_data,
+        lastSyncAt: new Date().toISOString()
+      },
+      last_sync_at: new Date().toISOString(),
+      sync_status: 'success'
+    });
+
+    console.log(`✅ Adyen sync for store ${store_id}: ${inserted} inserted, ${updated} updated, ${reactivated} reactivated, ${deactivated} deactivated`);
+
+    res.json({
+      success: true,
+      data: { inserted, updated, reactivated, deactivated }
+    });
+  } catch (error) {
+    console.error('Adyen sync error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   DELETE /api/payments/adyen/disconnect
+// @desc    Disconnect Adyen account
+// @access  Private
+router.delete('/adyen/disconnect', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const deleted = await IntegrationConfig.deleteByStoreAndType(store_id, ADYEN_INTEGRATION_TYPE);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'No Adyen connection found' });
+    }
+
+    const hideResult = await hideAdyenPaymentMethods(store_id);
+    console.log(`Disconnected Adyen for store ${store_id}, deactivated ${hideResult.deactivated} payment methods`);
+
+    res.json({ success: true, message: 'Adyen disconnected successfully' });
+  } catch (error) {
+    console.error('Adyen disconnect error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   POST /api/payments/adyen/webhook
+// @desc    Handle Adyen payment webhooks
+// @access  Public (no auth - Adyen sends webhooks)
+router.post('/adyen/webhook', express.json(), async (req, res) => {
+  try {
+    const { notificationItems } = req.body;
+    console.log('💥 Adyen webhook received:', notificationItems?.length || 0, 'notifications');
+
+    if (!notificationItems || notificationItems.length === 0) {
+      return res.json({ notificationResponse: '[accepted]' });
+    }
+
+    // TODO: Implement webhook verification with HMAC
+    // TODO: Process notification items and update order status
+
+    for (const item of notificationItems) {
+      const notification = item.NotificationRequestItem;
+      console.log('Adyen notification:', notification.eventCode, notification.pspReference);
+    }
+
+    // Adyen requires this specific response
+    res.json({ notificationResponse: '[accepted]' });
+  } catch (error) {
+    console.error('Adyen webhook error:', error);
+    res.json({ notificationResponse: '[accepted]' }); // Still accept to prevent retries
+  }
 });
 
 module.exports = router;

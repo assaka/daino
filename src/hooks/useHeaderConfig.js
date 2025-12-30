@@ -41,15 +41,19 @@ export function useHeaderConfig(store) {
 
   useEffect(() => {
     // Priority 1: Use bootstrap data if available (no API call!) - but not in workspace mode
-    if (!shouldLoadDraft && bootstrapHeaderConfig?.slots) {
-      setHeaderSlots(bootstrapHeaderConfig.slots);
+    // Bootstrap returns full record: { configuration: { slots: {...} } }
+    const bootstrapSlots = bootstrapHeaderConfig?.configuration?.slots || bootstrapHeaderConfig?.slots;
+    if (!shouldLoadDraft && bootstrapSlots) {
+      setHeaderSlots(bootstrapSlots);
       setHeaderConfigLoaded(true);
       return;
     }
 
     // Priority 2: Use fetched layout config (always used in workspace mode)
-    if (configLoaded && layoutConfig?.slots) {
-      setHeaderSlots(layoutConfig.slots);
+    // layoutConfig may have slots directly or nested in configuration
+    const fetchedSlots = layoutConfig?.configuration?.slots || layoutConfig?.slots;
+    if (configLoaded && fetchedSlots) {
+      setHeaderSlots(fetchedSlots);
       setHeaderConfigLoaded(true);
     }
   }, [configLoaded, layoutConfig, bootstrapHeaderConfig, shouldLoadDraft]);

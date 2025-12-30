@@ -5,6 +5,7 @@
  */
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const IntegrationConfig = require('../models/IntegrationConfig');
 
 class PaymentProviderService {
   /**
@@ -102,14 +103,15 @@ class PaymentProviderService {
   }
 
   /**
-   * Mollie refund implementation (placeholder)
-   * TODO: Implement when Mollie integration is added
+   * Mollie refund implementation
    */
   async refundMollie({ order, amount, reason, store }) {
-    console.log('💳 Mollie refund requested for order:', order.order_number);
+    console.log('💳 Processing Mollie refund for order:', order.order_number);
 
-    // Check if Mollie is configured
-    if (!store?.mollie_api_key) {
+    // Get Mollie config from IntegrationConfig
+    const mollieConfig = await IntegrationConfig.findByStoreAndType(store.id, 'mollie-connect');
+
+    if (!mollieConfig?.config_data?.apiKey) {
       return {
         success: false,
         error: 'Mollie not configured for this store',
@@ -118,30 +120,77 @@ class PaymentProviderService {
       };
     }
 
-    // TODO: Implement Mollie refund
-    // const mollie = require('@mollie/api-client')({ apiKey: store.mollie_api_key });
-    // const refund = await mollie.paymentRefunds.create({
-    //   paymentId: order.payment_reference,
-    //   amount: { currency: order.currency, value: amount || order.total_amount }
-    // });
+    const apiKey = mollieConfig.config_data.apiKey;
+    const paymentId = order.payment_reference;
 
-    return {
-      success: false,
-      error: 'Mollie refund integration coming soon. Please process refund manually.',
-      provider: 'mollie',
-      requiresManualRefund: true
-    };
+    if (!paymentId || !paymentId.startsWith('tr_')) {
+      return {
+        success: false,
+        error: 'Invalid Mollie payment reference',
+        provider: 'mollie',
+        requiresManualRefund: true
+      };
+    }
+
+    try {
+      // Create refund via Mollie API
+      const refundAmount = amount || order.total_amount;
+      const response = await fetch(`https://api.mollie.com/v2/payments/${paymentId}/refunds`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: {
+            currency: order.currency || 'EUR',
+            value: refundAmount.toFixed(2)
+          },
+          description: reason || 'Refund requested'
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Mollie refund error:', error);
+        return {
+          success: false,
+          error: error.detail || error.title || 'Mollie refund failed',
+          provider: 'mollie',
+          requiresManualRefund: true
+        };
+      }
+
+      const refund = await response.json();
+      console.log('✅ Mollie refund created:', refund.id);
+
+      return {
+        success: true,
+        refundId: refund.id,
+        provider: 'mollie',
+        status: refund.status
+      };
+    } catch (error) {
+      console.error('Mollie refund error:', error);
+      return {
+        success: false,
+        error: error.message,
+        provider: 'mollie',
+        requiresManualRefund: true
+      };
+    }
   }
 
   /**
-   * Adyen refund implementation (placeholder)
-   * TODO: Implement when Adyen integration is added
+   * Adyen refund implementation
    */
   async refundAdyen({ order, amount, reason, store }) {
-    console.log('💳 Adyen refund requested for order:', order.order_number);
+    console.log('💳 Processing Adyen refund for order:', order.order_number);
 
-    // Check if Adyen is configured
-    if (!store?.adyen_api_key) {
+    // Get Adyen config from IntegrationConfig
+    const adyenConfig = await IntegrationConfig.findByStoreAndType(store.id, 'adyen-connect');
+
+    if (!adyenConfig?.config_data?.apiKey || !adyenConfig?.config_data?.merchantAccount) {
       return {
         success: false,
         error: 'Adyen not configured for this store',
@@ -150,21 +199,71 @@ class PaymentProviderService {
       };
     }
 
-    // TODO: Implement Adyen refund
-    // const { Client, CheckoutAPI } = require('@adyen/api-library');
-    // const client = new Client({ apiKey: store.adyen_api_key, environment: 'live' });
-    // const checkout = new CheckoutAPI(client);
-    // const refund = await checkout.refunds({
-    //   paymentPspReference: order.payment_reference,
-    //   amount: { currency: order.currency, value: Math.round((amount || order.total_amount) * 100) }
-    // });
+    const { apiKey, merchantAccount, environment = 'test' } = adyenConfig.config_data;
+    const pspReference = order.payment_reference;
 
-    return {
-      success: false,
-      error: 'Adyen refund integration coming soon. Please process refund manually.',
-      provider: 'adyen',
-      requiresManualRefund: true
-    };
+    if (!pspReference) {
+      return {
+        success: false,
+        error: 'Invalid Adyen payment reference',
+        provider: 'adyen',
+        requiresManualRefund: true
+      };
+    }
+
+    try {
+      // Determine base URL based on environment
+      const baseUrl = environment === 'live'
+        ? 'https://checkout-live.adyen.com/v71'
+        : 'https://checkout-test.adyen.com/v71';
+
+      // Create refund via Adyen API
+      const refundAmount = amount || order.total_amount;
+      const response = await fetch(`${baseUrl}/payments/${pspReference}/refunds`, {
+        method: 'POST',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          merchantAccount,
+          amount: {
+            currency: order.currency || 'EUR',
+            value: Math.round(refundAmount * 100) // Adyen uses minor units
+          },
+          reference: `refund-${order.order_number}-${Date.now()}`
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Adyen refund error:', error);
+        return {
+          success: false,
+          error: error.message || error.errorType || 'Adyen refund failed',
+          provider: 'adyen',
+          requiresManualRefund: true
+        };
+      }
+
+      const refund = await response.json();
+      console.log('✅ Adyen refund created:', refund.pspReference);
+
+      return {
+        success: true,
+        refundId: refund.pspReference,
+        provider: 'adyen',
+        status: refund.status
+      };
+    } catch (error) {
+      console.error('Adyen refund error:', error);
+      return {
+        success: false,
+        error: error.message,
+        provider: 'adyen',
+        requiresManualRefund: true
+      };
+    }
   }
 
   /**

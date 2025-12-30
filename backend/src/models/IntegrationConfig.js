@@ -96,7 +96,12 @@ IntegrationConfig.getSensitiveFields = (integrationType) => {
 
     // Meta Commerce / Instagram Shopping
     'meta-commerce': ['accessToken', 'refreshToken'],
-    'instagram-shopping': ['accessToken', 'refreshToken']
+    'instagram-shopping': ['accessToken', 'refreshToken'],
+
+    // Payment providers
+    'stripe-connect': [],
+    'mollie-connect': ['apiKey'],
+    'adyen-connect': ['apiKey', 'hmacKey']
   };
 
   return sensitiveFieldsMap[integrationType] || [];
