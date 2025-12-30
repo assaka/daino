@@ -304,7 +304,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            className="h-11 w-11 p-0 flex items-center justify-center"
+            className={`h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
             onClick={() => setMobileSearchOpen?.(!mobileSearchOpen)}
             data-slot-id={id}
             style={{ color: headerIconColor }}
@@ -335,7 +335,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            className="h-11 w-11 p-0 flex items-center justify-center"
+            className={`h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
             onClick={() => {
               if (user) {
                 // Show dropdown or navigate to account
@@ -493,7 +493,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            className="md:hidden h-11 w-11 p-0 flex items-center justify-center"
+            className={`h-11 w-11 p-0 flex items-center justify-center ${className || 'md:hidden'}`}
             onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
             data-slot-id={id}
             style={{ color: headerIconColor }}
