@@ -1569,7 +1569,8 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Find ALL configurations for this page type (both published AND draft)
+    // Find configurations for this page type - only latest published + drafts
+    // Previous published versions are immutable for versioning
     const { data: configs, error: findError } = await tenantDb
       .from('slot_configurations')
       .select('*')
@@ -1579,10 +1580,10 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
       throw findError;
     }
 
-    // Find configs matching the page type (both published and draft)
-    const matchingConfigs = configs?.filter(c => c.configuration?.metadata?.pageType === pageType) || [];
+    // Find configs matching the page type
+    const allMatchingConfigs = configs?.filter(c => c.configuration?.metadata?.pageType === pageType) || [];
 
-    if (matchingConfigs.length === 0) {
+    if (allMatchingConfigs.length === 0) {
       // No configuration exists - that's okay, the default config will be used
       // which already has the template variable {{settings.theme.add_to_cart_button_color}}
       return res.json({
@@ -1592,7 +1593,21 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
       });
     }
 
-    // Update ALL matching configurations (both published and draft)
+    // Separate by status and find only the ones we should update:
+    // 1. Latest published (highest version_number) - previous published are immutable
+    // 2. All drafts (init or draft status)
+    const publishedConfigs = allMatchingConfigs.filter(c => c.status === 'published');
+    const draftConfigs = allMatchingConfigs.filter(c => c.status === 'init' || c.status === 'draft');
+
+    // Get only the latest published (by version_number)
+    const latestPublished = publishedConfigs.length > 0
+      ? publishedConfigs.sort((a, b) => (b.version_number || 0) - (a.version_number || 0))[0]
+      : null;
+
+    // Configs to update: latest published + all drafts
+    const matchingConfigs = [...(latestPublished ? [latestPublished] : []), ...draftConfigs];
+
+    // Update only latest published and drafts (previous published versions are immutable)
     const updatedConfigs = [];
     for (const existing of matchingConfigs) {
       const currentConfig = existing.configuration || {};
@@ -1647,7 +1662,7 @@ router.patch('/slot-configurations/:storeId/:pageType/slot/:slotId', authMiddlew
 
     res.json({
       success: true,
-      message: `Updated ${updatedConfigs.length} configurations (published and draft)`,
+      message: `Updated ${updatedConfigs.length} configurations (latest published + drafts)`,
       updated: updatedConfigs
     });
   } catch (error) {
