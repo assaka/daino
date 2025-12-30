@@ -78,7 +78,7 @@ const headerConfig = {
       styles: {},
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
-      colSpan: { mobile: 6, desktop: 2 },
+      colSpan: { mobile: 6, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -114,7 +114,7 @@ const headerConfig = {
       styles: {},
       parentId: 'header_top_row',
       position: { col: 3, row: 1 },
-      colSpan: { desktop: 7 },
+      colSpan: { desktop: 6 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -152,7 +152,7 @@ const headerConfig = {
       styles: {},
       parentId: 'header_top_row',
       position: { col: 10, row: 1 },
-      colSpan: { mobile: 6, desktop: 3 },
+      colSpan: { mobile: 6, desktop: 5 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
