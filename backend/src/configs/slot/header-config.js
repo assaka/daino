@@ -52,10 +52,11 @@ const headerConfig = {
       id: 'header_top_row',
       type: 'flex',
       content: '',
-      className: 'flex items-center gap-2 h-16',
+      className: 'flex items-center justify-between gap-2 h-16',
       parentClassName: 'w-full',
       styles: {
         display: 'flex',
+        justifyContent: 'space-between',
         gap: '0.5rem',
         alignItems: 'center',
         height: '4rem'
