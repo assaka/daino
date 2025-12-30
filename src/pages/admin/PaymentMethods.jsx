@@ -21,6 +21,8 @@ import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Lan
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import apiClient from "@/api/client";
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, getStripeConnectOAuthUrl } from "@/api/functions";
+import { connectMollie, checkMollieStatus, getMollieEnabledMethods, syncMollieMethods, disconnectMollie } from "@/api/functions";
+import { connectAdyen, checkAdyenStatus, getAdyenEnabledMethods, syncAdyenMethods, disconnectAdyen } from "@/api/functions";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +67,28 @@ export default function PaymentMethods() {
   const [syncingMethods, setSyncingMethods] = useState(false);
   const [stripeEnabledMethods, setStripeEnabledMethods] = useState(null); // null = not loaded, object = { code: enabled }
 
+  // Mollie Connect state
+  const [mollieStatus, setMollieStatus] = useState(null);
+  const [loadingMollieStatus, setLoadingMollieStatus] = useState(true);
+  const [connectingMollie, setConnectingMollie] = useState(false);
+  const [disconnectingMollie, setDisconnectingMollie] = useState(false);
+  const [mollieDisconnectDialogOpen, setMollieDisconnectDialogOpen] = useState(false);
+  const [showMollieConnectModal, setShowMollieConnectModal] = useState(false);
+  const [mollieApiKey, setMollieApiKey] = useState('');
+  const [syncingMollieMethods, setSyncingMollieMethods] = useState(false);
+  const [mollieEnabledMethods, setMollieEnabledMethods] = useState(null);
+
+  // Adyen Connect state
+  const [adyenStatus, setAdyenStatus] = useState(null);
+  const [loadingAdyenStatus, setLoadingAdyenStatus] = useState(true);
+  const [connectingAdyen, setConnectingAdyen] = useState(false);
+  const [disconnectingAdyen, setDisconnectingAdyen] = useState(false);
+  const [adyenDisconnectDialogOpen, setAdyenDisconnectDialogOpen] = useState(false);
+  const [showAdyenConnectModal, setShowAdyenConnectModal] = useState(false);
+  const [adyenCredentials, setAdyenCredentials] = useState({ apiKey: '', merchantAccount: '', environment: 'test' });
+  const [syncingAdyenMethods, setSyncingAdyenMethods] = useState(false);
+  const [adyenEnabledMethods, setAdyenEnabledMethods] = useState(null);
+
   // Conditions data
   const [categories, setCategories] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
@@ -107,8 +131,8 @@ export default function PaymentMethods() {
   // Payment providers configuration
   const paymentProviders = [
     { id: 'stripe', name: 'Stripe', description: 'Credit cards, Apple Pay, Google Pay', status: 'available' },
-    { id: 'adyen', name: 'Adyen', description: 'Enterprise payment processing', status: 'coming_soon' },
-    { id: 'mollie', name: 'Mollie', description: 'European payment methods', status: 'coming_soon' },
+    { id: 'mollie', name: 'Mollie', description: 'European payment methods', status: 'available' },
+    { id: 'adyen', name: 'Adyen', description: 'Enterprise payment processing', status: 'available' },
     { id: 'paypal', name: 'PayPal', description: 'Pay with PayPal account', status: 'coming_soon' }
   ];
 
@@ -117,6 +141,8 @@ export default function PaymentMethods() {
       loadPaymentMethods();
       loadConditionsData();
       loadStripeConnectStatus();
+      loadMollieConnectStatus();
+      loadAdyenConnectStatus();
     }
   }, [selectedStore, currentLanguage]);
 
@@ -340,6 +366,239 @@ export default function PaymentMethods() {
       setFlashMessage({ type: 'error', message: 'Failed to sync payment methods: ' + error.message });
     } finally {
       setSyncingMethods(false);
+    }
+  };
+
+  // ============================================================================
+  // MOLLIE CONNECTION FUNCTIONS
+  // ============================================================================
+
+  const loadMollieConnectStatus = async () => {
+    if (!selectedStore?.id) return;
+
+    setLoadingMollieStatus(true);
+    try {
+      const response = await checkMollieStatus(selectedStore.id);
+      const status = response.data?.data || response.data || null;
+      setMollieStatus(status);
+
+      if (status?.connected) {
+        loadMollieEnabledMethodsData();
+      }
+    } catch (error) {
+      setMollieStatus(null);
+    } finally {
+      setLoadingMollieStatus(false);
+    }
+  };
+
+  const loadMollieEnabledMethodsData = async () => {
+    if (!selectedStore?.id) return;
+
+    try {
+      const response = await getMollieEnabledMethods(selectedStore.id);
+      const data = response.data?.data || response.data || response;
+
+      if (data?.methods) {
+        const enabledMap = {};
+        data.methods.forEach(m => {
+          enabledMap[m.code] = m.enabled;
+        });
+        setMollieEnabledMethods(enabledMap);
+      }
+    } catch (error) {
+      setMollieEnabledMethods(null);
+    }
+  };
+
+  const handleConnectMollie = async () => {
+    if (!selectedStore?.id || !mollieApiKey) return;
+
+    setConnectingMollie(true);
+    try {
+      const response = await connectMollie(selectedStore.id, mollieApiKey);
+      const data = response.data?.data || response.data;
+
+      if (data?.connected) {
+        setFlashMessage({ type: 'success', message: `Mollie connected successfully (${data.mode} mode)` });
+        setShowMollieConnectModal(false);
+        setMollieApiKey('');
+        loadMollieConnectStatus();
+        // Auto-sync methods
+        handleSyncMollieMethods();
+      } else {
+        setFlashMessage({ type: 'error', message: 'Failed to connect Mollie account' });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      setFlashMessage({ type: 'error', message: 'Error connecting Mollie: ' + errorMessage });
+    } finally {
+      setConnectingMollie(false);
+    }
+  };
+
+  const handleDisconnectMollie = async () => {
+    if (!selectedStore?.id) return;
+
+    setDisconnectingMollie(true);
+    try {
+      await disconnectMollie(selectedStore.id);
+      setFlashMessage({ type: 'success', message: 'Mollie account disconnected successfully.' });
+      setMollieStatus(null);
+      setMollieDisconnectDialogOpen(false);
+      loadMollieConnectStatus();
+      loadPaymentMethods();
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Error disconnecting Mollie: ' + error.message });
+    } finally {
+      setDisconnectingMollie(false);
+    }
+  };
+
+  const handleSyncMollieMethods = async () => {
+    if (!selectedStore?.id) return;
+
+    setSyncingMollieMethods(true);
+    try {
+      const response = await syncMollieMethods(selectedStore.id);
+      const data = response.data?.data || response.data;
+
+      const messages = [];
+      if (data?.inserted > 0) messages.push(`added ${data.inserted} new`);
+      if (data?.reactivated > 0) messages.push(`enabled ${data.reactivated}`);
+      if (data?.deactivated > 0) messages.push(`disabled ${data.deactivated}`);
+
+      if (messages.length > 0) {
+        setFlashMessage({ type: 'success', message: `Mollie synced: ${messages.join(', ')}` });
+      } else {
+        setFlashMessage({ type: 'info', message: 'Mollie payment methods are up to date.' });
+      }
+
+      loadPaymentMethods();
+      loadMollieEnabledMethodsData();
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to sync Mollie methods: ' + error.message });
+    } finally {
+      setSyncingMollieMethods(false);
+    }
+  };
+
+  // ============================================================================
+  // ADYEN CONNECTION FUNCTIONS
+  // ============================================================================
+
+  const loadAdyenConnectStatus = async () => {
+    if (!selectedStore?.id) return;
+
+    setLoadingAdyenStatus(true);
+    try {
+      const response = await checkAdyenStatus(selectedStore.id);
+      const status = response.data?.data || response.data || null;
+      setAdyenStatus(status);
+
+      if (status?.connected) {
+        loadAdyenEnabledMethodsData();
+      }
+    } catch (error) {
+      setAdyenStatus(null);
+    } finally {
+      setLoadingAdyenStatus(false);
+    }
+  };
+
+  const loadAdyenEnabledMethodsData = async () => {
+    if (!selectedStore?.id) return;
+
+    try {
+      const response = await getAdyenEnabledMethods(selectedStore.id);
+      const data = response.data?.data || response.data || response;
+
+      if (data?.methods) {
+        const enabledMap = {};
+        data.methods.forEach(m => {
+          enabledMap[m.code] = m.enabled;
+        });
+        setAdyenEnabledMethods(enabledMap);
+      }
+    } catch (error) {
+      setAdyenEnabledMethods(null);
+    }
+  };
+
+  const handleConnectAdyen = async () => {
+    if (!selectedStore?.id || !adyenCredentials.apiKey || !adyenCredentials.merchantAccount) return;
+
+    setConnectingAdyen(true);
+    try {
+      const response = await connectAdyen(
+        selectedStore.id,
+        adyenCredentials.apiKey,
+        adyenCredentials.merchantAccount,
+        adyenCredentials.environment
+      );
+      const data = response.data?.data || response.data;
+
+      if (data?.connected) {
+        setFlashMessage({ type: 'success', message: `Adyen connected successfully (${data.environment} mode)` });
+        setShowAdyenConnectModal(false);
+        setAdyenCredentials({ apiKey: '', merchantAccount: '', environment: 'test' });
+        loadAdyenConnectStatus();
+        // Auto-sync methods
+        handleSyncAdyenMethods();
+      } else {
+        setFlashMessage({ type: 'error', message: 'Failed to connect Adyen account' });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      setFlashMessage({ type: 'error', message: 'Error connecting Adyen: ' + errorMessage });
+    } finally {
+      setConnectingAdyen(false);
+    }
+  };
+
+  const handleDisconnectAdyen = async () => {
+    if (!selectedStore?.id) return;
+
+    setDisconnectingAdyen(true);
+    try {
+      await disconnectAdyen(selectedStore.id);
+      setFlashMessage({ type: 'success', message: 'Adyen account disconnected successfully.' });
+      setAdyenStatus(null);
+      setAdyenDisconnectDialogOpen(false);
+      loadAdyenConnectStatus();
+      loadPaymentMethods();
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Error disconnecting Adyen: ' + error.message });
+    } finally {
+      setDisconnectingAdyen(false);
+    }
+  };
+
+  const handleSyncAdyenMethods = async () => {
+    if (!selectedStore?.id) return;
+
+    setSyncingAdyenMethods(true);
+    try {
+      const response = await syncAdyenMethods(selectedStore.id);
+      const data = response.data?.data || response.data;
+
+      const messages = [];
+      if (data?.inserted > 0) messages.push(`added ${data.inserted} new`);
+      if (data?.reactivated > 0) messages.push(`enabled ${data.reactivated}`);
+      if (data?.deactivated > 0) messages.push(`disabled ${data.deactivated}`);
+
+      if (messages.length > 0) {
+        setFlashMessage({ type: 'success', message: `Adyen synced: ${messages.join(', ')}` });
+      } else {
+        setFlashMessage({ type: 'info', message: 'Adyen payment methods are up to date.' });
+      }
+
+      loadPaymentMethods();
+      loadAdyenEnabledMethodsData();
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to sync Adyen methods: ' + error.message });
+    } finally {
+      setSyncingAdyenMethods(false);
     }
   };
 
@@ -851,6 +1110,124 @@ export default function PaymentMethods() {
                               )}
                             </Button>
                           </div>
+                        )}
+                      </>
+                    )}
+
+                    {provider.id === 'mollie' && (
+                      <>
+                        {loadingMollieStatus ? (
+                          <RefreshCw className="w-4 h-4 mx-auto animate-spin text-gray-400" />
+                        ) : mollieStatus?.connected ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle className="w-3 h-3 mr-1" /> Connected
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {mollieStatus.mode}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setMollieDisconnectDialogOpen(true)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
+                                title="Disconnect Mollie"
+                              >
+                                <Unlink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            {mollieStatus?.organizationName && (
+                              <p className="text-xs text-gray-500 text-center">
+                                {mollieStatus.organizationName}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-center gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={handleSyncMollieMethods}
+                                      disabled={syncingMollieMethods}
+                                    >
+                                      <RefreshCw className={`w-4 h-4 ${syncingMollieMethods ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Sync payment methods from Mollie</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => setShowMollieConnectModal(true)}
+                            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                          >
+                            <Link2 className="w-4 h-4 mr-2" /> Connect
+                          </Button>
+                        )}
+                      </>
+                    )}
+
+                    {provider.id === 'adyen' && (
+                      <>
+                        {loadingAdyenStatus ? (
+                          <RefreshCw className="w-4 h-4 mx-auto animate-spin text-gray-400" />
+                        ) : adyenStatus?.connected ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle className="w-3 h-3 mr-1" /> Connected
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {adyenStatus.environment}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setAdyenDisconnectDialogOpen(true)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
+                                title="Disconnect Adyen"
+                              >
+                                <Unlink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            {adyenStatus?.merchantAccount && (
+                              <p className="text-xs text-gray-500 text-center">
+                                {adyenStatus.merchantAccount}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-center gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={handleSyncAdyenMethods}
+                                      disabled={syncingAdyenMethods}
+                                    >
+                                      <RefreshCw className={`w-4 h-4 ${syncingAdyenMethods ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Sync payment methods from Adyen</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => setShowAdyenConnectModal(true)}
+                            className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                          >
+                            <Link2 className="w-4 h-4 mr-2" /> Connect
+                          </Button>
                         )}
                       </>
                     )}
@@ -1667,6 +2044,188 @@ export default function PaymentMethods() {
               >
                 <Link2 className="w-4 h-4 mr-2" />
                 Connect Now
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mollie Disconnect Dialog */}
+        <DeleteConfirmationDialog
+          open={mollieDisconnectDialogOpen}
+          onOpenChange={setMollieDisconnectDialogOpen}
+          onConfirm={handleDisconnectMollie}
+          title="Disconnect Mollie"
+          description="Are you sure you want to disconnect your Mollie account? This will disable Mollie payment methods for your store. You can reconnect at any time."
+          confirmText="Disconnect"
+          loading={disconnectingMollie}
+          icon={Unlink}
+          iconClassName="text-orange-600"
+          iconBgClassName="bg-orange-100"
+        />
+
+        {/* Mollie Connect Modal */}
+        <Dialog open={showMollieConnectModal} onOpenChange={setShowMollieConnectModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-orange-600" />
+                Connect Mollie Account
+              </DialogTitle>
+              <DialogDescription>
+                Enter your Mollie API key to connect your account
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="mollie-api-key">API Key</Label>
+                <div className="mt-1 relative">
+                  <Input
+                    id="mollie-api-key"
+                    type="password"
+                    placeholder="test_xxx or live_xxx"
+                    value={mollieApiKey}
+                    onChange={(e) => setMollieApiKey(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Get your API key from <a href="https://my.mollie.com/dashboard/developers/api-keys" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">Mollie Dashboard</a>
+                </p>
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Note:</strong> Use a test key (test_xxx) for testing, and a live key (live_xxx) for production.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowMollieConnectModal(false);
+                setMollieApiKey('');
+              }}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConnectMollie}
+                disabled={connectingMollie || !mollieApiKey}
+                className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+              >
+                {connectingMollie ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-4 h-4 mr-2" />
+                    Connect
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Adyen Disconnect Dialog */}
+        <DeleteConfirmationDialog
+          open={adyenDisconnectDialogOpen}
+          onOpenChange={setAdyenDisconnectDialogOpen}
+          onConfirm={handleDisconnectAdyen}
+          title="Disconnect Adyen"
+          description="Are you sure you want to disconnect your Adyen account? This will disable Adyen payment methods for your store. You can reconnect at any time."
+          confirmText="Disconnect"
+          loading={disconnectingAdyen}
+          icon={Unlink}
+          iconClassName="text-orange-600"
+          iconBgClassName="bg-orange-100"
+        />
+
+        {/* Adyen Connect Modal */}
+        <Dialog open={showAdyenConnectModal} onOpenChange={setShowAdyenConnectModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-green-600" />
+                Connect Adyen Account
+              </DialogTitle>
+              <DialogDescription>
+                Enter your Adyen API credentials to connect your account
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="adyen-api-key">API Key</Label>
+                <Input
+                  id="adyen-api-key"
+                  type="password"
+                  placeholder="AQE..."
+                  value={adyenCredentials.apiKey}
+                  onChange={(e) => setAdyenCredentials(prev => ({ ...prev, apiKey: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="adyen-merchant">Merchant Account</Label>
+                <Input
+                  id="adyen-merchant"
+                  type="text"
+                  placeholder="YourMerchantAccount"
+                  value={adyenCredentials.merchantAccount}
+                  onChange={(e) => setAdyenCredentials(prev => ({ ...prev, merchantAccount: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="adyen-env">Environment</Label>
+                <Select
+                  value={adyenCredentials.environment}
+                  onValueChange={(value) => setAdyenCredentials(prev => ({ ...prev, environment: value }))}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="test">Test</SelectItem>
+                    <SelectItem value="live">Live</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Get your API credentials from <a href="https://ca-test.adyen.com/ca/ca/config/api_credentials_new.shtml" target="_blank" rel="noopener noreferrer" className="underline font-medium">Adyen Customer Area</a> → Developers → API credentials
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowAdyenConnectModal(false);
+                setAdyenCredentials({ apiKey: '', merchantAccount: '', environment: 'test' });
+              }}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConnectAdyen}
+                disabled={connectingAdyen || !adyenCredentials.apiKey || !adyenCredentials.merchantAccount}
+                className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+              >
+                {connectingAdyen ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-4 h-4 mr-2" />
+                    Connect
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -227,3 +227,124 @@ export const getStripePublishableKey = async () => {
     };
   }
 };
+
+// ============================================================================
+// MOLLIE PAYMENT FUNCTIONS
+// ============================================================================
+
+export const connectMollie = async (storeId, apiKey) => {
+  try {
+    const response = await apiClient.post('payments/mollie/connect', {
+      store_id: storeId,
+      api_key: apiKey
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error connecting Mollie:', error);
+    throw error;
+  }
+};
+
+export const checkMollieStatus = async (storeId) => {
+  try {
+    const response = await apiClient.get(`payments/mollie/status?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error checking Mollie status:', error);
+    throw error;
+  }
+};
+
+export const getMollieEnabledMethods = async (storeId) => {
+  try {
+    const response = await apiClient.get(`payments/mollie/enabled-methods?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error getting Mollie enabled methods:', error);
+    throw error;
+  }
+};
+
+export const syncMollieMethods = async (storeId) => {
+  try {
+    const response = await apiClient.post('payments/mollie/sync-methods', {
+      store_id: storeId
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error syncing Mollie methods:', error);
+    throw error;
+  }
+};
+
+export const disconnectMollie = async (storeId) => {
+  try {
+    const response = await apiClient.delete(`payments/mollie/disconnect?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error disconnecting Mollie:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// ADYEN PAYMENT FUNCTIONS
+// ============================================================================
+
+export const connectAdyen = async (storeId, apiKey, merchantAccount, environment = 'test', clientKey = null) => {
+  try {
+    const response = await apiClient.post('payments/adyen/connect', {
+      store_id: storeId,
+      api_key: apiKey,
+      merchant_account: merchantAccount,
+      environment,
+      client_key: clientKey
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error connecting Adyen:', error);
+    throw error;
+  }
+};
+
+export const checkAdyenStatus = async (storeId) => {
+  try {
+    const response = await apiClient.get(`payments/adyen/status?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error checking Adyen status:', error);
+    throw error;
+  }
+};
+
+export const getAdyenEnabledMethods = async (storeId) => {
+  try {
+    const response = await apiClient.get(`payments/adyen/enabled-methods?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error getting Adyen enabled methods:', error);
+    throw error;
+  }
+};
+
+export const syncAdyenMethods = async (storeId) => {
+  try {
+    const response = await apiClient.post('payments/adyen/sync-methods', {
+      store_id: storeId
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error syncing Adyen methods:', error);
+    throw error;
+  }
+};
+
+export const disconnectAdyen = async (storeId) => {
+  try {
+    const response = await apiClient.delete(`payments/adyen/disconnect?store_id=${storeId}`);
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error disconnecting Adyen:', error);
+    throw error;
+  }
+};

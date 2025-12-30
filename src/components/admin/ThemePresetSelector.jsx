@@ -195,22 +195,22 @@ export function ThemePresetSelector({
               {/* Color preview */}
               <div className="flex gap-2 mb-2">
                 <div
-                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  className="w-8 h-8 rounded-md shadow-sm"
                   style={{ backgroundColor: theme.primary_button_color || '#007bff' }}
                   title="Primary Button"
                 />
                 <div
-                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  className="w-8 h-8 rounded-md shadow-sm"
                   style={{ backgroundColor: theme.add_to_cart_button_bg_color || '#28a745' }}
                   title="Add to Cart"
                 />
                 <div
-                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  className="w-8 h-8 rounded-md shadow-sm"
                   style={{ backgroundColor: theme.checkout_button_color || '#007bff' }}
                   title="Checkout"
                 />
                 <div
-                  className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
+                  className="w-8 h-8 rounded-md shadow-sm"
                   style={{ backgroundColor: theme.secondary_button_color || '#6c757d' }}
                   title="Secondary"
                 />

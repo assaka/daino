@@ -308,8 +308,8 @@ class PaymentProviderService {
   supportsAutoRefund(paymentMethod) {
     const supported = {
       stripe: true,
-      mollie: false,  // Coming soon
-      adyen: false,   // Coming soon
+      mollie: true,
+      adyen: true,
       paypal: false   // Coming soon
     };
     return supported[paymentMethod?.toLowerCase()] || false;
@@ -321,8 +321,8 @@ class PaymentProviderService {
   getSupportedProviders() {
     return [
       { id: 'stripe', name: 'Stripe', autoRefund: true },
-      { id: 'mollie', name: 'Mollie', autoRefund: false },
-      { id: 'adyen', name: 'Adyen', autoRefund: false },
+      { id: 'mollie', name: 'Mollie', autoRefund: true },
+      { id: 'adyen', name: 'Adyen', autoRefund: true },
       { id: 'paypal', name: 'PayPal', autoRefund: false }
     ];
   }

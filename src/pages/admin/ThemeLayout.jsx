@@ -1377,6 +1377,59 @@ export default function ThemeLayout() {
                 } catch (layeredNavErr) {
                     console.debug('Could not update filter_option_styles:', layeredNavErr.message);
                 }
+
+                // 5. Header Styling - sync to header slots
+                try {
+                    // Header main container
+                    await api.patch(`/slot-configurations/${store.id}/header/slot/header_main`, {
+                        styles: {
+                            backgroundColor: theme?.header_bg_color || '#FFFFFF',
+                            iconColor: theme?.header_icon_color || '#374151',
+                            paddingTop: theme?.header_padding_top || '16',
+                            paddingBottom: theme?.header_padding_bottom || '16'
+                        }
+                    });
+
+                    // Navigation bar
+                    await api.patch(`/slot-configurations/${store.id}/header/slot/navigation_bar`, {
+                        styles: {
+                            backgroundColor: theme?.header_nav_bg_color || '#F9FAFB'
+                        }
+                    });
+
+                    // Search bar
+                    await api.patch(`/slot-configurations/${store.id}/header/slot/search_bar`, {
+                        styles: {
+                            backgroundColor: theme?.header_search_bg_color || '#FFFFFF',
+                            borderColor: theme?.header_search_border_color || '#D1D5DB',
+                            borderRadius: theme?.header_search_border_radius || 'lg',
+                            color: theme?.header_search_text_color || '#374151'
+                        }
+                    });
+
+                    // Category navigation
+                    await api.patch(`/slot-configurations/${store.id}/header/slot/category_navigation`, {
+                        styles: {
+                            color: theme?.header_nav_text_color || '#374151',
+                            hoverColor: theme?.header_nav_hover_color || '#111827',
+                            hoverBackgroundColor: theme?.header_nav_hover_bg_color || '#F3F4F6',
+                            activeColor: theme?.header_nav_active_color || '#111827',
+                            activeBackgroundColor: theme?.header_nav_active_bg_color || '#E5E7EB',
+                            paddingX: theme?.header_nav_padding_x || '12',
+                            paddingY: theme?.header_nav_padding_y || '8',
+                            expandIcon: theme?.header_nav_expand_icon || 'chevron-right',
+                            collapseIcon: theme?.header_nav_collapse_icon || 'chevron-down'
+                        },
+                        metadata: {
+                            subcategoryBgColor: theme?.header_subnav_bg_color || '#FFFFFF',
+                            subcategoryLinkColor: theme?.header_subnav_text_color || '#374151',
+                            subcategoryLinkHoverColor: theme?.header_subnav_hover_color || '#111827',
+                            subcategoryBgHoverColor: theme?.header_subnav_hover_bg_color || '#F3F4F6'
+                        }
+                    });
+                } catch (headerErr) {
+                    console.debug('Could not update header slots:', headerErr.message);
+                }
             } catch (syncErr) {
                 console.warn('Could not sync theme settings to slot configs:', syncErr);
             }

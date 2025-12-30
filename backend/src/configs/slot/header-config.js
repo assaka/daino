@@ -175,6 +175,106 @@ const headerConfig = {
       }
     },
 
+    // Mobile user menu (shows on mobile only)
+    mobile_user_menu: {
+      id: 'mobile_user_menu',
+      type: 'component',
+      component: 'MobileUserMenu',
+      content: '',
+      className: 'md:hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 2, row: 1 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Mobile User Menu',
+        component: 'MobileUserMenu'
+      }
+    },
+
+    // Wishlist dropdown
+    wishlist_icon: {
+      id: 'wishlist_icon',
+      type: 'component',
+      component: 'WishlistDropdown',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 3, row: 1 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Wishlist Icon',
+        component: 'WishlistDropdown'
+      }
+    },
+
+    // Language selector (desktop only, shown if enabled in settings)
+    language_selector: {
+      id: 'language_selector',
+      type: 'component',
+      component: 'LanguageSelector',
+      content: '',
+      className: 'hidden md:block',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 4, row: 1 },
+      colSpan: { desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Language Selector',
+        component: 'LanguageSelector'
+      }
+    },
+
+    // Country selector (desktop only, shown if multiple countries configured)
+    country_selector: {
+      id: 'country_selector',
+      type: 'component',
+      component: 'CountrySelect',
+      content: '',
+      className: 'hidden md:block',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 5, row: 1 },
+      colSpan: { desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Country Selector',
+        component: 'CountrySelect'
+      }
+    },
+
+    // User account menu (desktop - shows sign in button or user dropdown)
+    user_account_menu: {
+      id: 'user_account_menu',
+      type: 'component',
+      component: 'UserAccountMenu',
+      content: '',
+      className: 'hidden md:block',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 6, row: 1 },
+      colSpan: { desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'User Account Menu',
+        component: 'UserAccountMenu'
+      }
+    },
+
     cart_icon: {
       id: 'cart_icon',
       type: 'component',
@@ -184,7 +284,7 @@ const headerConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
-      position: { col: 2, row: 1 },
+      position: { col: 7, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
       viewMode: ['default'],
       metadata: {
@@ -203,7 +303,7 @@ const headerConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
-      position: { col: 3, row: 1 },
+      position: { col: 8, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
       viewMode: ['default'],
       metadata: {
