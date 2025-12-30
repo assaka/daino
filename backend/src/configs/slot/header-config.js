@@ -13,7 +13,8 @@ const headerConfig = {
       className: 'bg-white shadow-md sticky top-0 z-40 relative',
       parentClassName: '',
       styles: {
-        backgroundColor: '#ffffff',
+        // Empty backgroundColor - use theme settings (settings.theme.header_bg_color)
+        // Theme settings are applied in HeaderSlotRenderer via headerBgColor fallback
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
       },
       parentId: null,
@@ -219,7 +220,7 @@ const headerConfig = {
       className: 'md:hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50',
       parentClassName: '',
       styles: {
-        backgroundColor: '#ffffff',
+        // Empty backgroundColor - use theme settings (settings.theme.header_bg_color)
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
       },
       parentId: 'header_main',
@@ -277,7 +278,7 @@ const headerConfig = {
       className: 'hidden md:block bg-gray-50 border-b border-gray-200',
       parentClassName: '',
       styles: {
-        backgroundColor: '#F9FAFB',
+        // Empty backgroundColor - use theme settings (settings.theme.header_nav_bg_color)
         borderBottom: '1px solid #E5E7EB'
       },
       parentId: null,

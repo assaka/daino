@@ -422,12 +422,8 @@ const categoryConfig = {
       className: '',
       parentClassName: '',
       styles: {
-        buttonBgColor: '#FFFFFF',
-        buttonTextColor: '#374151',
-        buttonBorderColor: '#D1D5DB',
-        buttonHoverBgColor: '#F3F4F6',
-        activeBgColor: '#3B82F6',
-        activeTextColor: '#FFFFFF'
+        // Empty - use theme settings (settings.pagination)
+        // Theme settings are applied in PaginationComponent via storeSettings fallback
       },
       parentId: 'products_container',
       position: { col: 1, row: 5 },
@@ -559,14 +555,8 @@ const categoryConfig = {
       content: '',
       className: '',
       styles: {
-        optionTextColor: '#374151',
-        optionHoverColor: '#1F2937',
-        optionCountColor: '#9CA3AF',
-        optionFontSize: '0.875rem',
-        optionFontWeight: '400',
-        checkboxColor: '#3B82F6',
-        activeFilterBgColor: '#DBEAFE',
-        activeFilterTextColor: '#1E40AF'
+        // Empty - use theme settings (settings.theme.layered_nav_*)
+        // Theme settings are applied in LayeredNavigation component via getStyle() fallback
       },
       parentId: 'layered_navigation',
       position: { col: 1, row: 3 },
@@ -580,13 +570,9 @@ const categoryConfig = {
       content: '',
       className: '',
       styles: {
-        titleText: 'Active Filters',
-        titleColor: '#374151',
-        titleFontSize: '0.875rem',
-        titleFontWeight: '600',
-        backgroundColor: '#DBEAFE',
-        textColor: '#1E40AF',
-        clearAllColor: '#DC2626'
+        // Empty - use theme settings (settings.theme.layered_nav_active_filter_*)
+        // Theme settings are applied in LayeredNavigation component via getStyle() fallback
+        titleText: 'Active Filters'
       },
       parentId: 'layered_navigation',
       position: { col: 1, row: 4 },

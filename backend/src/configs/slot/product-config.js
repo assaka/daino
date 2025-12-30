@@ -551,7 +551,9 @@ const productConfig = {
       className: 'w-fit h-12 text-lg text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2 transition-colors duration-200',
       parentClassName: '',
       styles: {
-        backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
+        backgroundColor: '{{settings.theme.add_to_cart_button_bg_color}}',
+        color: '{{settings.theme.add_to_cart_button_text_color}}',
+        borderRadius: '{{settings.theme.add_to_cart_button_border_radius}}'
       },
       parentId: 'buttons_container',
       position: { col: 1, row: 1 },
@@ -560,7 +562,8 @@ const productConfig = {
       metadata: {
         hierarchical: true,
         action: 'addToCart',
-        stockAware: true
+        stockAware: true,
+        hoverBackgroundColor: '{{settings.theme.add_to_cart_button_hover_color}}'
       }
     },
 
