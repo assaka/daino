@@ -42,6 +42,7 @@ import { formatPrice, formatPriceNumber, getPriceDisplay, calculateItemTotal } f
 import { getStockLabel, getStockLabelStyle, isProductOutOfStock } from './stockUtils';
 import { getProductName, getCategoryName, getCurrentLanguage } from './translationUtils';
 import { createProductUrl, createPublicUrl } from './urlUtils';
+import { getThemeDefaults } from './storeSettingsDefaults';
 
 /**
  * Main entry point for preprocessing slot data
@@ -108,38 +109,42 @@ function getBorderRadiusCss(preset) {
 /**
  * Enrich settings with defaults for slot rendering
  * All theme-related settings use FLAT naming (consistent with product_tabs_*, breadcrumb_*)
+ * Uses getThemeDefaults() to ensure consistent fallback values across the codebase
  */
 function enrichSettings(settings) {
   const theme = settings?.theme || {};
 
-  // Build enriched theme with FLAT settings
+  // Get centralized defaults - ensures consistency with storeSettingsDefaults.js
+  const defaults = getThemeDefaults();
+
+  // Build enriched theme with FLAT settings using centralized defaults
   const enrichedTheme = {
     ...theme,
 
-    // Add to Cart Button (FLAT)
-    add_to_cart_button_bg_color: theme.add_to_cart_button_bg_color || '#3B82F6',
-    add_to_cart_button_text_color: theme.add_to_cart_button_text_color || '#FFFFFF',
-    add_to_cart_button_hover_color: theme.add_to_cart_button_hover_color || '#2563EB',
-    add_to_cart_button_border_radius: getBorderRadiusCss(theme.add_to_cart_button_border_radius || 'md'),
+    // Add to Cart Button (FLAT) - use centralized defaults
+    add_to_cart_button_bg_color: theme.add_to_cart_button_bg_color || defaults.add_to_cart_button_bg_color,
+    add_to_cart_button_text_color: theme.add_to_cart_button_text_color || defaults.add_to_cart_button_text_color,
+    add_to_cart_button_hover_color: theme.add_to_cart_button_hover_color || defaults.add_to_cart_button_hover_color,
+    add_to_cart_button_border_radius: getBorderRadiusCss(theme.add_to_cart_button_border_radius || defaults.add_to_cart_button_border_radius),
 
-    // Layered Navigation (FLAT)
-    layered_nav_card_bg_color: theme.layered_nav_card_bg_color || '#FFFFFF',
-    layered_nav_header_text_color: theme.layered_nav_header_text_color || '#1F2937',
-    layered_nav_filter_label_color: theme.layered_nav_filter_label_color || '#374151',
-    layered_nav_option_text_color: theme.layered_nav_option_text_color || '#374151',
-    layered_nav_option_hover_color: theme.layered_nav_option_hover_color || '#1F2937',
-    layered_nav_option_count_color: theme.layered_nav_option_count_color || '#9CA3AF',
-    layered_nav_checkbox_color: theme.layered_nav_checkbox_color || '#3B82F6',
-    layered_nav_active_filter_bg_color: theme.layered_nav_active_filter_bg_color || '#DBEAFE',
-    layered_nav_active_filter_text_color: theme.layered_nav_active_filter_text_color || '#1E40AF',
+    // Layered Navigation (FLAT) - use centralized defaults
+    layered_nav_card_bg_color: theme.layered_nav_card_bg_color || defaults.layered_nav_card_bg_color,
+    layered_nav_header_text_color: theme.layered_nav_header_text_color || defaults.layered_nav_header_text_color,
+    layered_nav_filter_label_color: theme.layered_nav_filter_label_color || defaults.layered_nav_filter_label_color,
+    layered_nav_option_text_color: theme.layered_nav_option_text_color || defaults.layered_nav_option_text_color,
+    layered_nav_option_hover_color: theme.layered_nav_option_hover_color || defaults.layered_nav_option_hover_color,
+    layered_nav_option_count_color: theme.layered_nav_option_count_color || defaults.layered_nav_option_count_color,
+    layered_nav_checkbox_color: theme.layered_nav_checkbox_color || defaults.layered_nav_checkbox_color,
+    layered_nav_active_filter_bg_color: theme.layered_nav_active_filter_bg_color || defaults.layered_nav_active_filter_bg_color,
+    layered_nav_active_filter_text_color: theme.layered_nav_active_filter_text_color || defaults.layered_nav_active_filter_text_color,
 
-    // Stock Settings (FLAT)
-    stock_in_stock_text_color: theme.stock_in_stock_text_color || '#166534',
-    stock_in_stock_bg_color: theme.stock_in_stock_bg_color || '#dcfce7',
-    stock_out_of_stock_text_color: theme.stock_out_of_stock_text_color || '#991b1b',
-    stock_out_of_stock_bg_color: theme.stock_out_of_stock_bg_color || '#fee2e2',
-    stock_low_stock_text_color: theme.stock_low_stock_text_color || '#92400e',
-    stock_low_stock_bg_color: theme.stock_low_stock_bg_color || '#fef3c7',
+    // Stock Settings (FLAT) - use centralized defaults
+    stock_in_stock_text_color: theme.stock_in_stock_text_color || defaults.stock_in_stock_text_color,
+    stock_in_stock_bg_color: theme.stock_in_stock_bg_color || defaults.stock_in_stock_bg_color,
+    stock_out_of_stock_text_color: theme.stock_out_of_stock_text_color || defaults.stock_out_of_stock_text_color,
+    stock_out_of_stock_bg_color: theme.stock_out_of_stock_bg_color || defaults.stock_out_of_stock_bg_color,
+    stock_low_stock_text_color: theme.stock_low_stock_text_color || defaults.stock_low_stock_text_color,
+    stock_low_stock_bg_color: theme.stock_low_stock_bg_color || defaults.stock_low_stock_bg_color,
   };
 
   return {
