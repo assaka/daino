@@ -37,11 +37,27 @@ export default function HeaderSearch({ styles = {} }) {
 
   const storeCode = getStoreCode();
 
-  // Extract input styles from slot configuration
+  // Convert border radius from theme value to CSS
+  const getBorderRadius = (value) => {
+    const radiusMap = {
+      'none': '0px',
+      'sm': '2px',
+      'md': '6px',
+      'lg': '8px',
+      'xl': '12px',
+      'full': '9999px'
+    };
+    return radiusMap[value] || value;
+  };
+
+  // Extract input styles from slot/theme configuration
   const inputStyles = {
     backgroundColor: styles?.backgroundColor,
     borderColor: styles?.borderColor,
-    borderRadius: styles?.borderRadius,
+    borderRadius: getBorderRadius(styles?.borderRadius),
+    color: styles?.color,
+    borderWidth: styles?.borderColor ? '1px' : undefined,
+    borderStyle: styles?.borderColor ? 'solid' : undefined,
   };
   
   const [searchQuery, setSearchQuery] = useState('');

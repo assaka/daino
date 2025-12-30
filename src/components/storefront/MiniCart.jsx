@@ -20,22 +20,23 @@ import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
-export default function MiniCart({ iconVariant = 'outline' }) {
+export default function MiniCart({ iconVariant = 'outline', iconColor }) {
   const { store, settings, taxes, selectedCountry } = useStore();
   const { t } = useTranslation();
 
   // Choose icon based on variant - pointer-events-none ensures clicks go to button
   const getCartIcon = () => {
+    const iconStyle = iconColor ? { color: iconColor } : {};
     switch (iconVariant) {
       case 'filled':
-        return <ShoppingCart className="w-5 h-5 fill-current pointer-events-none" />;
+        return <ShoppingCart className="w-5 h-5 fill-current pointer-events-none" style={iconStyle} />;
       case 'bag':
-        return <ShoppingBag className="w-5 h-5 pointer-events-none" />;
+        return <ShoppingBag className="w-5 h-5 pointer-events-none" style={iconStyle} />;
       case 'bag-filled':
-        return <ShoppingBag className="w-5 h-5 fill-current pointer-events-none" />;
+        return <ShoppingBag className="w-5 h-5 fill-current pointer-events-none" style={iconStyle} />;
       case 'outline':
       default:
-        return <ShoppingCart className="w-5 h-5 pointer-events-none" />;
+        return <ShoppingCart className="w-5 h-5 pointer-events-none" style={iconStyle} />;
     }
   };
   const [cartItems, setCartItems] = useState([]);

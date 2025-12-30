@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Minus, ArrowRight, ArrowDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +18,13 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const storeContext = useStore();
     const store = storeProp || storeContext?.store;
     const { t } = useTranslation();
+    const location = useLocation();
 
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(isMobileProp !== null ? isMobileProp : false);
     const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
 
-    // Extract styles from slot configuration
+    // Extract styles from slot configuration (now includes theme settings)
     const linkStyles = {
         color: styles?.color || '#374151',
         fontSize: styles?.fontSize || '0.875rem',
@@ -32,6 +33,47 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
 
     const hoverColor = styles?.hoverColor || '#2563EB';
     const hoverBgColor = styles?.hoverBackgroundColor || '#f3f4f6';
+
+    // Active category styles
+    const activeColor = styles?.activeColor || '#2563EB';
+    const activeBgColor = styles?.activeBackgroundColor || '#EFF6FF';
+
+    // Padding settings
+    const paddingX = styles?.paddingX || '12';
+    const paddingY = styles?.paddingY || '8';
+
+    // Expand/collapse icon settings
+    const expandIconType = styles?.expandIcon || 'chevron-right';
+    const collapseIconType = styles?.collapseIcon || 'chevron-down';
+
+    // Get icon component based on type
+    const getExpandIcon = (size = 'w-3 h-3') => {
+        switch (expandIconType) {
+            case 'plus': return <Plus className={size} />;
+            case 'arrow-right': return <ArrowRight className={size} />;
+            case 'caret-right': return <span className={size}>▸</span>;
+            case 'chevron-right':
+            default: return <ChevronRight className={size} />;
+        }
+    };
+
+    const getCollapseIcon = (size = 'w-3 h-3') => {
+        switch (collapseIconType) {
+            case 'minus': return <Minus className={size} />;
+            case 'arrow-down': return <ArrowDown className={size} />;
+            case 'caret-down': return <span className={size}>▾</span>;
+            case 'chevron-down':
+            default: return <ChevronDown className={size} />;
+        }
+    };
+
+    // Check if a category is currently active
+    const isCategoryActive = (category) => {
+        if (!category?.slug) return false;
+        const currentPath = location.pathname;
+        const categoryPath = createCategoryUrl(store?.slug, category.slug);
+        return currentPath === categoryPath || currentPath.includes(`/category/${category.slug}`);
+    };
 
     // Subcategory styles from metadata
     const subcategoryLinkColor = metadata?.subcategoryLinkColor || '#6B7280';
@@ -359,11 +401,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             }}
                             aria-label={isExpanded ? `Collapse ${getCategoryName(category, getCurrentLanguage())}` : `Expand ${getCategoryName(category, getCurrentLanguage())}`}
                         >
-                            {isExpanded ? (
-                                <ChevronDown className="w-5 h-5 pointer-events-none" />
-                            ) : (
-                                <ChevronRight className="w-5 h-5 pointer-events-none" />
-                            )}
+                            <span className="pointer-events-none">
+                                {isExpanded ? getCollapseIcon('w-5 h-5') : getExpandIcon('w-5 h-5')}
+                            </span>
                         </Button>
                     )}
                 </div>

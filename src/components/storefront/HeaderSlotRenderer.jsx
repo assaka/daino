@@ -56,6 +56,46 @@ export function HeaderSlotRenderer({
     location
   } = headerContext;
 
+  // Get theme settings with defaults
+  const themeDefaults = getThemeDefaults();
+  const theme = settings?.theme || {};
+
+  // Header theme settings
+  const headerIconColor = theme.header_icon_color || themeDefaults.header_icon_color;
+  const headerBgColor = theme.header_bg_color || themeDefaults.header_bg_color;
+  const headerPaddingTop = theme.header_padding_top || themeDefaults.header_padding_top;
+  const headerPaddingBottom = theme.header_padding_bottom || themeDefaults.header_padding_bottom;
+
+  // Search bar theme settings
+  const searchThemeStyles = {
+    backgroundColor: theme.header_search_bg_color || themeDefaults.header_search_bg_color,
+    borderColor: theme.header_search_border_color || themeDefaults.header_search_border_color,
+    borderRadius: theme.header_search_border_radius || themeDefaults.header_search_border_radius,
+    color: theme.header_search_text_color || themeDefaults.header_search_text_color,
+  };
+
+  // Navigation theme settings
+  const navThemeStyles = {
+    color: theme.header_nav_text_color || themeDefaults.header_nav_text_color,
+    backgroundColor: theme.header_nav_bg_color || themeDefaults.header_nav_bg_color,
+    hoverColor: theme.header_nav_hover_color || themeDefaults.header_nav_hover_color,
+    hoverBackgroundColor: theme.header_nav_hover_bg_color || themeDefaults.header_nav_hover_bg_color,
+    activeColor: theme.header_nav_active_color || themeDefaults.header_nav_active_color,
+    activeBackgroundColor: theme.header_nav_active_bg_color || themeDefaults.header_nav_active_bg_color,
+    paddingX: theme.header_nav_padding_x || themeDefaults.header_nav_padding_x,
+    paddingY: theme.header_nav_padding_y || themeDefaults.header_nav_padding_y,
+    expandIcon: theme.header_nav_expand_icon || themeDefaults.header_nav_expand_icon,
+    collapseIcon: theme.header_nav_collapse_icon || themeDefaults.header_nav_collapse_icon,
+  };
+
+  // Subcategory theme settings
+  const subnavThemeStyles = {
+    subcategoryBgColor: theme.header_subnav_bg_color || themeDefaults.header_subnav_bg_color,
+    subcategoryLinkColor: theme.header_subnav_text_color || themeDefaults.header_subnav_text_color,
+    subcategoryLinkHoverColor: theme.header_subnav_hover_color || themeDefaults.header_subnav_hover_color,
+    subcategoryBgHoverColor: theme.header_subnav_hover_bg_color || themeDefaults.header_subnav_hover_bg_color,
+  };
+
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -156,12 +196,23 @@ export function HeaderSlotRenderer({
           containerClassName = `${containerClassName} relative`.trim();
         }
 
+        // Apply header theme styles to header_main container
+        let containerStyles = { ...customStyles };
+        if (id === 'header_main') {
+          containerStyles = {
+            ...containerStyles,
+            backgroundColor: containerStyles.backgroundColor || headerBgColor,
+            paddingTop: containerStyles.paddingTop || `${headerPaddingTop}px`,
+            paddingBottom: containerStyles.paddingBottom || `${headerPaddingBottom}px`,
+          };
+        }
+
         // Render container with children
         return (
           <div
             key={id}
             className={containerClassName}
-            style={customStyles}
+            style={containerStyles}
             data-slot-id={id}
           >
             <HeaderSlotRenderer
@@ -224,9 +275,11 @@ export function HeaderSlotRenderer({
 
       case 'HeaderSearch':
         if (settings?.hide_header_search) return null;
+        // Merge slot styles with theme styles (slot styles take priority)
+        const mergedSearchStyles = { ...searchThemeStyles, ...styles };
         return (
           <div key={id} className={className} style={styles} data-slot-id={id}>
-            <HeaderSearch styles={styles} />
+            <HeaderSearch styles={mergedSearchStyles} />
           </div>
         );
 
@@ -242,8 +295,9 @@ export function HeaderSlotRenderer({
             className="h-11 w-11 p-0 flex items-center justify-center"
             onClick={() => setMobileSearchOpen?.(!mobileSearchOpen)}
             data-slot-id={id}
+            style={{ color: headerIconColor }}
           >
-            <Search className="w-5 h-5 pointer-events-none" />
+            <Search className="w-5 h-5 pointer-events-none" style={{ color: headerIconColor }} />
           </Button>
         );
 
@@ -252,16 +306,16 @@ export function HeaderSlotRenderer({
         const getMobileUserIcon = () => {
           switch (mobileIconVariant) {
             case 'filled':
-              return <User className="w-5 h-5 fill-current pointer-events-none" />;
+              return <User className="w-5 h-5 fill-current pointer-events-none" style={{ color: headerIconColor }} />;
             case 'circle':
               return (
-                <svg className="w-5 h-5 pointer-events-none" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 pointer-events-none" fill={headerIconColor} viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                 </svg>
               );
             case 'outline':
             default:
-              return <User className="w-5 h-5 pointer-events-none" />;
+              return <User className="w-5 h-5 pointer-events-none" style={{ color: headerIconColor }} />;
           }
         };
 
@@ -281,6 +335,7 @@ export function HeaderSlotRenderer({
             }}
             disabled={userLoading}
             data-slot-id={id}
+            style={{ color: headerIconColor }}
           >
             {getMobileUserIcon()}
           </Button>
@@ -289,7 +344,7 @@ export function HeaderSlotRenderer({
       case 'WishlistDropdown':
         return (
           <div key={id} data-slot-id={id}>
-            <WishlistDropdown iconVariant={metadata?.iconVariant} />
+            <WishlistDropdown iconVariant={metadata?.iconVariant} iconColor={headerIconColor} />
           </div>
         );
 
@@ -417,7 +472,7 @@ export function HeaderSlotRenderer({
       case 'MiniCart':
         return (
           <div key={id} data-slot-id={id}>
-            <MiniCart iconVariant={metadata?.iconVariant} />
+            <MiniCart iconVariant={metadata?.iconVariant} iconColor={headerIconColor} />
           </div>
         );
 
@@ -429,19 +484,23 @@ export function HeaderSlotRenderer({
             className="md:hidden h-11 w-11 p-0 flex items-center justify-center"
             onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
             data-slot-id={id}
+            style={{ color: headerIconColor }}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5 pointer-events-none" /> : <Menu className="w-5 h-5 pointer-events-none" />}
+            {mobileMenuOpen ? <X className="w-5 h-5 pointer-events-none" style={{ color: headerIconColor }} /> : <Menu className="w-5 h-5 pointer-events-none" style={{ color: headerIconColor }} />}
           </Button>
         );
 
       case 'MobileNavigation':
         // Use CategoryNav component for mobile menu (same as desktop but styled for mobile)
+        // Merge slot styles with theme styles
+        const mobileNavStyles = { ...navThemeStyles, ...styles };
+        const mobileNavMetadata = { ...subnavThemeStyles, ...metadata };
         return (
           <div key={id} className={className} data-slot-id={id}>
             <CategoryNav
               categories={categories}
-              styles={styles}
-              metadata={metadata}
+              styles={mobileNavStyles}
+              metadata={mobileNavMetadata}
               isMobile={true}
               onLinkClick={() => setMobileMenuOpen?.(false)}
             />
@@ -449,9 +508,12 @@ export function HeaderSlotRenderer({
         );
 
       case 'CategoryNav':
+        // Merge slot styles with theme styles (slot styles take priority)
+        const desktopNavStyles = { ...navThemeStyles, ...styles };
+        const desktopNavMetadata = { ...subnavThemeStyles, ...metadata };
         return (
           <div key={id} className={className} style={styles} data-slot-id={id}>
-            <CategoryNav categories={categories} styles={styles} metadata={metadata} />
+            <CategoryNav categories={categories} styles={desktopNavStyles} metadata={desktopNavMetadata} />
           </div>
         );
 

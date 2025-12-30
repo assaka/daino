@@ -13,7 +13,7 @@ import { getPrimaryImageUrl } from '@/utils/imageUtils';
 // React Query hooks for optimized wishlist management
 import { useWishlist, useRemoveFromWishlist } from '@/hooks/useApiQueries';
 
-export default function WishlistDropdown({ iconVariant = 'outline' }) {
+export default function WishlistDropdown({ iconVariant = 'outline', iconColor }) {
   const { t } = useTranslation();
   const { store, wishlist: bootstrapWishlist } = useStore();
 
@@ -29,12 +29,13 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
 
   // Choose icon based on variant - pointer-events-none ensures clicks go to button
   const getWishlistIcon = () => {
+    const iconStyle = iconColor ? { color: iconColor } : {};
     switch (iconVariant) {
       case 'filled':
-        return <Heart className="w-5 h-5 fill-current pointer-events-none" />;
+        return <Heart className="w-5 h-5 fill-current pointer-events-none" style={iconStyle} />;
       case 'outline':
       default:
-        return <Heart className="w-5 h-5 pointer-events-none" />;
+        return <Heart className="w-5 h-5 pointer-events-none" style={iconStyle} />;
     }
   };
 
