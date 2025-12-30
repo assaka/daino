@@ -78,7 +78,7 @@ const headerConfig = {
       styles: {},
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
-      colSpan: { mobile: 6, desktop: 3 },
+      colSpan: { mobile: 6, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -147,7 +147,7 @@ const headerConfig = {
       id: 'actions_section',
       type: 'container',
       content: '',
-      className: 'flex items-center space-x-1 md:space-x-2',
+      className: 'flex items-center justify-end space-x-1 md:space-x-2',
       parentClassName: '',
       styles: {},
       parentId: 'header_top_row',
