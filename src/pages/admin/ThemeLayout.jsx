@@ -881,6 +881,90 @@ export default function ThemeLayout() {
                 settings: { ...store.settings, theme: newThemeSettings, pagination: paginationSettings },
                 theme_preset: theme.preset_name
             });
+
+            // Sync slot configurations so they match the new theme settings
+            // This ensures slot-level overrides are updated to reflect the preset colors
+            try {
+                // 1. Header slot - sync header background color
+                await api.patch(`/slot-configurations/${store.id}/header/slot/header_main`, {
+                    styles: {
+                        backgroundColor: newThemeSettings.header_bg_color || baseDefaults.header_bg_color
+                    }
+                });
+
+                // 2. Navigation bar slot - sync nav background color
+                await api.patch(`/slot-configurations/${store.id}/header/slot/navigation_bar`, {
+                    styles: {
+                        backgroundColor: newThemeSettings.header_nav_bg_color || baseDefaults.header_nav_bg_color
+                    }
+                });
+
+                // 3. Search bar slot - sync search styling
+                await api.patch(`/slot-configurations/${store.id}/header/slot/search_bar`, {
+                    styles: {
+                        backgroundColor: newThemeSettings.header_search_bg_color || baseDefaults.header_search_bg_color,
+                        borderColor: newThemeSettings.header_search_border_color || baseDefaults.header_search_border_color,
+                        borderRadius: newThemeSettings.header_search_border_radius || baseDefaults.header_search_border_radius
+                    }
+                });
+
+                // 4. Category navigation slot - sync nav link colors
+                await api.patch(`/slot-configurations/${store.id}/header/slot/category_navigation`, {
+                    styles: {
+                        color: newThemeSettings.header_nav_text_color || baseDefaults.header_nav_text_color,
+                        hoverColor: newThemeSettings.header_nav_hover_color || baseDefaults.header_nav_hover_color
+                    },
+                    metadata: {
+                        subcategoryBgColor: newThemeSettings.header_subnav_bg_color || baseDefaults.header_subnav_bg_color,
+                        subcategoryLinkColor: newThemeSettings.header_subnav_text_color || baseDefaults.header_subnav_text_color,
+                        subcategoryLinkHoverColor: newThemeSettings.header_subnav_hover_color || baseDefaults.header_subnav_hover_color,
+                        subcategoryBgHoverColor: newThemeSettings.header_subnav_hover_bg_color || baseDefaults.header_subnav_hover_bg_color
+                    }
+                });
+
+                // 5. Pagination slot - sync pagination styling
+                await api.patch(`/slot-configurations/${store.id}/category/slot/pagination_container`, {
+                    styles: {
+                        buttonBgColor: paginationSettings.buttonBgColor,
+                        buttonTextColor: paginationSettings.buttonTextColor,
+                        buttonHoverBgColor: paginationSettings.buttonHoverBgColor,
+                        buttonBorderColor: paginationSettings.buttonBorderColor,
+                        activeBgColor: paginationSettings.activeBgColor,
+                        activeTextColor: paginationSettings.activeTextColor
+                    }
+                });
+
+                // 6. Layered Navigation slots - sync filter styling
+                await api.patch(`/slot-configurations/${store.id}/category/slot/filter_option_styles`, {
+                    styles: {
+                        cardBgColor: newThemeSettings.layered_nav_card_bg_color || baseDefaults.layered_nav_card_bg_color,
+                        optionTextColor: newThemeSettings.layered_nav_option_text_color || baseDefaults.layered_nav_option_text_color,
+                        optionHoverColor: newThemeSettings.layered_nav_option_hover_color || baseDefaults.layered_nav_option_hover_color,
+                        optionCountColor: newThemeSettings.layered_nav_option_count_color || baseDefaults.layered_nav_option_count_color,
+                        checkboxColor: newThemeSettings.layered_nav_checkbox_color || baseDefaults.layered_nav_checkbox_color,
+                        sliderColor: newThemeSettings.layered_nav_checkbox_color || baseDefaults.layered_nav_checkbox_color,
+                        activeFilterBgColor: newThemeSettings.layered_nav_active_filter_bg_color || baseDefaults.layered_nav_active_filter_bg_color,
+                        activeFilterTextColor: newThemeSettings.layered_nav_active_filter_text_color || baseDefaults.layered_nav_active_filter_text_color
+                    }
+                });
+
+                // 7. Filter heading slot - sync header text color
+                await api.patch(`/slot-configurations/${store.id}/category/slot/filter_heading`, {
+                    styles: {
+                        color: newThemeSettings.layered_nav_header_text_color || baseDefaults.layered_nav_header_text_color
+                    }
+                });
+
+                // 8. Attribute filter label slot - sync filter label color
+                await api.patch(`/slot-configurations/${store.id}/category/slot/attribute_filter_label`, {
+                    styles: {
+                        color: newThemeSettings.layered_nav_filter_label_color || baseDefaults.layered_nav_filter_label_color
+                    }
+                });
+            } catch (slotSyncErr) {
+                console.debug('Could not sync some slot configurations:', slotSyncErr.message);
+            }
+
             setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" applied and saved.` });
         } catch (error) {
             console.error('Failed to save theme:', error);
