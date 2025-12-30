@@ -1260,10 +1260,14 @@ export default function PaymentMethods() {
           </Button>
         </div>
 
-        <p className="text-sm text-gray-500 mb-6 flex items-center gap-1">
-          <Info className="w-4 h-4" />
-          At checkout, payment methods are shown based on the customer's billing country. Configure available countries in Settings → Allowed Countries.
-        </p>
+        <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-blue-700">
+              At checkout, payment methods are shown based on the customer's billing country. Configure available countries in Settings → Allowed Countries.
+            </p>
+          </div>
+        </div>
 
         <div className="grid gap-4">
           {paymentMethods.map(method => {
