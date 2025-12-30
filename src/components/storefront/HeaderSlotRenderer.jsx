@@ -200,6 +200,8 @@ export function HeaderSlotRenderer({
         if (id === 'header_inner') {
           containerClassName = containerClassName.replace(/max-w-\S+/g, '').replace(/mx-auto/g, '').trim();
           containerClassName = `w-full ${containerClassName}`.trim();
+          customStyles.width = '100%';
+          customStyles.maxWidth = 'none';
         }
 
         // Apply header theme styles to header containers
