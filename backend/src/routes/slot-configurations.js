@@ -669,23 +669,20 @@ router.patch('/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Find the draft configuration for this page type (theme changes go to draft)
-    const { data: existing, error: findError } = await tenantDb
+    // Find ALL configurations for this page type (both draft and published)
+    // Theme changes should apply to both immediately
+    const { data: configs, error: findError } = await tenantDb
       .from('slot_configurations')
       .select('*')
       .eq('store_id', storeId)
-      .eq('page_type', pageType)
-      .eq('status', 'draft')
-      .order('version_number', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('page_type', pageType);
 
     if (findError) {
       throw findError;
     }
 
-    if (!existing) {
-      // No published configuration exists yet - create one with defaults
+    if (!configs || configs.length === 0) {
+      // No configuration exists yet - create draft and published with defaults
       const defaultConfig = await loadPageConfig(pageType);
       if (!defaultConfig) {
         return res.status(404).json({
@@ -723,8 +720,12 @@ router.patch('/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res
         .insert({
           user_id: req.user.id,
           store_id: storeId,
+          page_type: pageType,
           configuration: newConfiguration,
           is_active: true,
+          status: 'published',
+          version: '1.0',
+          version_number: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -738,56 +739,61 @@ router.patch('/:storeId/:pageType/slot/:slotId', authMiddleware, async (req, res
       return res.json({ success: true, data: created, created: true });
     }
 
-    // Update existing configuration
-    const currentConfig = existing.configuration || {};
-    const currentSlots = currentConfig.slots || {};
+    // Update ALL existing configurations (both draft and published)
+    const updatedConfigs = [];
+    for (const existing of configs) {
+      const currentConfig = existing.configuration || {};
+      const currentSlots = { ...(currentConfig.slots || {}) };
 
-    // Update the specific slot
-    if (!currentSlots[slotId]) {
-      // Slot doesn't exist in saved config - load from default and add
-      const defaultConfig = await loadPageConfig(pageType);
-      if (defaultConfig?.slots?.[slotId]) {
-        currentSlots[slotId] = { ...defaultConfig.slots[slotId] };
+      // Update the specific slot
+      if (!currentSlots[slotId]) {
+        // Slot doesn't exist in saved config - load from default and add
+        const defaultConfig = await loadPageConfig(pageType);
+        if (defaultConfig?.slots?.[slotId]) {
+          currentSlots[slotId] = { ...defaultConfig.slots[slotId] };
+        } else {
+          currentSlots[slotId] = { id: slotId };
+        }
+      }
+
+      // Apply updates
+      if (styles) {
+        currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
+      }
+      if (className !== undefined) {
+        currentSlots[slotId].className = className;
+      }
+      if (content !== undefined) {
+        currentSlots[slotId].content = content;
+      }
+
+      const updatedConfiguration = {
+        ...currentConfig,
+        slots: currentSlots,
+        metadata: {
+          ...currentConfig.metadata,
+          updatedAt: new Date().toISOString()
+        }
+      };
+
+      const { data: updated, error: updateError } = await tenantDb
+        .from('slot_configurations')
+        .update({
+          configuration: updatedConfiguration,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error(`Error updating ${existing.status} config:`, updateError);
       } else {
-        currentSlots[slotId] = { id: slotId };
+        updatedConfigs.push(updated);
       }
     }
 
-    // Apply updates
-    if (styles) {
-      currentSlots[slotId].styles = { ...currentSlots[slotId].styles, ...styles };
-    }
-    if (className !== undefined) {
-      currentSlots[slotId].className = className;
-    }
-    if (content !== undefined) {
-      currentSlots[slotId].content = content;
-    }
-
-    const updatedConfiguration = {
-      ...currentConfig,
-      slots: currentSlots,
-      metadata: {
-        ...currentConfig.metadata,
-        updatedAt: new Date().toISOString()
-      }
-    };
-
-    const { data: updated, error: updateError } = await tenantDb
-      .from('slot_configurations')
-      .update({
-        configuration: updatedConfiguration,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existing.id)
-      .select()
-      .single();
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    res.json({ success: true, data: updated });
+    res.json({ success: true, data: updatedConfigs, updatedCount: updatedConfigs.length });
   } catch (error) {
     console.error('Error patching slot configuration:', error);
     res.status(500).json({ success: false, error: error.message });
