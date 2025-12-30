@@ -213,7 +213,6 @@ const HARDCODED_THEME_DEFAULTS = {
   // Button colors
   primary_button_color: '#007bff',
   secondary_button_color: '#6c757d',
-  add_to_cart_button_color: '#28a745', // Legacy flat setting (still supported)
   view_cart_button_color: '#17a2b8',
   checkout_button_color: '#007bff',
   place_order_button_color: '#28a745',

@@ -110,7 +110,7 @@ export function ThemePresetSelector({
           />
           <div
             className="w-3 h-3 rounded-full border border-gray-200"
-            style={{ backgroundColor: theme.add_to_cart_button_color || '#28a745' }}
+            style={{ backgroundColor: theme.add_to_cart_button_bg_color || '#28a745' }}
             title="Add to Cart"
           />
         </div>
@@ -201,7 +201,7 @@ export function ThemePresetSelector({
                 />
                 <div
                   className="w-8 h-8 rounded-md shadow-sm border border-gray-200"
-                  style={{ backgroundColor: theme.add_to_cart_button_color || '#28a745' }}
+                  style={{ backgroundColor: theme.add_to_cart_button_bg_color || '#28a745' }}
                   title="Add to Cart"
                 />
                 <div
@@ -282,7 +282,7 @@ export function ThemePresetBadge({
         />
         <div
           className={cn(dotSize, "rounded-full border border-white/50")}
-          style={{ backgroundColor: theme.add_to_cart_button_color || '#28a745' }}
+          style={{ backgroundColor: theme.add_to_cart_button_bg_color || '#28a745' }}
         />
       </div>
       {showName && (

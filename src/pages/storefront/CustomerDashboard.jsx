@@ -455,13 +455,13 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
                     {formatPriceWithTax(item.product?.price)}
                   </p>
                   <div className="flex gap-2 w-full">
-                    <Button 
-                      size="sm" 
-                      className="flex-1 text-white border-0 hover:brightness-90 transition-all duration-200" 
+                    <Button
+                      size="sm"
+                      className="flex-1 border-0 hover:brightness-90 transition-all duration-200"
                       onClick={() => handleAddToCart(item.product)}
-                      style={{ 
-                        backgroundColor: settings?.theme?.add_to_cart_button_color || getThemeDefaults().add_to_cart_button_color,
-                        color: 'white'
+                      style={{
+                        backgroundColor: settings?.theme?.add_to_cart_button_bg_color || getThemeDefaults().add_to_cart_button_bg_color,
+                        color: settings?.theme?.add_to_cart_button_text_color || getThemeDefaults().add_to_cart_button_text_color
                       }}
                     >
                       <ShoppingCart className="w-4 h-4 mr-1" />

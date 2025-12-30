@@ -1108,7 +1108,7 @@ export default function ThemeLayout() {
                 // 1. Button Color Mappings
                 const buttonColorMappings = [
                     {
-                        color: store.settings.theme.add_to_cart_button_color,
+                        color: store.settings.theme.add_to_cart_button_bg_color,
                         slots: [
                             { pageType: 'category', slotId: 'add_to_cart_button' },
                             { pageType: 'product', slotId: 'add_to_cart_button' }
@@ -1518,8 +1518,8 @@ export default function ThemeLayout() {
                                     <Input id="secondary_button_color" type="color" value={store.settings.theme.secondary_button_color} onChange={(e) => handleThemeChange('secondary_button_color', e.target.value)} />
                                 </div>
                                 <div>
-                                    <Label htmlFor="add_to_cart_button_color">'Add to Cart' Button</Label>
-                                    <Input id="add_to_cart_button_color" type="color" value={store.settings.theme.add_to_cart_button_color} onChange={(e) => handleThemeChange('add_to_cart_button_color', e.target.value)} />
+                                    <Label htmlFor="add_to_cart_button_bg_color">'Add to Cart' Button</Label>
+                                    <Input id="add_to_cart_button_bg_color" type="color" value={store.settings.theme.add_to_cart_button_bg_color} onChange={(e) => handleThemeChange('add_to_cart_button_bg_color', e.target.value)} />
                                 </div>
                                 <div>
                                     <Label htmlFor="view_cart_button_color">'View Cart' Button</Label>

@@ -982,7 +982,7 @@ export function UnifiedSlotRenderer({
       return null;
     }
 
-    // Process variables in styles (e.g., {{settings.theme.add_to_cart_button_color}})
+    // Process variables in styles (e.g., {{settings.theme.add_to_cart_button_bg_color}})
     const processedStyles = {};
     if (styles) {
       Object.entries(styles).forEach(([key, value]) => {

@@ -732,7 +732,7 @@ export function processTemplateVariables(template, context) {
 
   // Replace settings.theme variables (both flat and nested)
   if (context.settings?.theme) {
-    // Handle flat settings like {{settings.theme.add_to_cart_button_color}}
+    // Handle flat settings like {{settings.theme.add_to_cart_button_bg_color}}
     Object.keys(context.settings.theme).forEach(key => {
       const value = context.settings.theme[key];
       if (typeof value !== 'object') {
