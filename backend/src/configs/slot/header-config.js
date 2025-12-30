@@ -48,13 +48,12 @@ const headerConfig = {
 
     header_top_row: {
       id: 'header_top_row',
-      type: 'grid',
+      type: 'flex',
       content: '',
-      className: 'grid grid-cols-12 gap-2 items-center h-16',
+      className: 'flex items-center gap-2 h-16',
       parentClassName: 'w-full',
       styles: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
+        display: 'flex',
         gap: '0.5rem',
         alignItems: 'center',
         height: '4rem'
@@ -73,9 +72,11 @@ const headerConfig = {
       id: 'logo_section',
       type: 'container',
       content: '',
-      className: 'flex items-center',
+      className: 'flex items-center flex-shrink-0',
       parentClassName: '',
-      styles: {},
+      styles: {
+        flexShrink: 0
+      },
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 6, desktop: 1 },
@@ -111,7 +112,10 @@ const headerConfig = {
       content: '',
       className: 'hidden md:flex flex-1 justify-center px-4',
       parentClassName: '',
-      styles: {},
+      styles: {
+        flex: '1 1 0%',
+        minWidth: 0
+      },
       parentId: 'header_top_row',
       position: { col: 3, row: 1 },
       colSpan: { desktop: 6 },
@@ -147,9 +151,11 @@ const headerConfig = {
       id: 'actions_section',
       type: 'container',
       content: '',
-      className: 'flex items-center justify-end space-x-1 md:space-x-2',
+      className: 'flex items-center justify-end space-x-1 md:space-x-2 flex-shrink-0',
       parentClassName: '',
-      styles: {},
+      styles: {
+        flexShrink: 0
+      },
       parentId: 'header_top_row',
       position: { col: 10, row: 1 },
       colSpan: { mobile: 6, desktop: 5 },
