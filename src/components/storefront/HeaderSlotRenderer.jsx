@@ -196,7 +196,7 @@ export function HeaderSlotRenderer({
           containerClassName = `${containerClassName} relative`.trim();
         }
 
-        // Apply header theme styles to header_main container
+        // Apply header theme styles to header containers
         let containerStyles = { ...customStyles };
         if (id === 'header_main') {
           containerStyles = {
@@ -204,6 +204,18 @@ export function HeaderSlotRenderer({
             backgroundColor: containerStyles.backgroundColor || headerBgColor,
             paddingTop: containerStyles.paddingTop || `${headerPaddingTop}px`,
             paddingBottom: containerStyles.paddingBottom || `${headerPaddingBottom}px`,
+          };
+        } else if (id === 'navigation_bar') {
+          // Apply nav background color from theme
+          containerStyles = {
+            ...containerStyles,
+            backgroundColor: containerStyles.backgroundColor || navThemeStyles.backgroundColor,
+          };
+        } else if (id === 'mobile_menu') {
+          // Apply header background color to mobile menu (same as header_main)
+          containerStyles = {
+            ...containerStyles,
+            backgroundColor: containerStyles.backgroundColor || headerBgColor,
           };
         }
 

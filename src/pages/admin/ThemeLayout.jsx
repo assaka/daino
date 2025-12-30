@@ -2157,7 +2157,7 @@ export default function ThemeLayout() {
                                     <div className="space-y-2">
                                         <Label>Collapse Icon (Expanded State)</Label>
                                         <Select
-                                            value={store.settings.theme?.header_nav_collapse_icon || 'chevron-down'}
+                                            value={themeDefaults.header_nav_collapse_icon}
                                             onValueChange={(value) => handleThemeChange('header_nav_collapse_icon', value)}
                                         >
                                             <SelectTrigger>

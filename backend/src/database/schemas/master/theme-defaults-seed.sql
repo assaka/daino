@@ -1,6 +1,8 @@
 -- Complete theme presets seed data with ALL required keys
 -- Run this after: DELETE FROM theme_defaults;
 
+DELETE FROM theme_defaults WHERE type = 'system';
+
 INSERT INTO theme_defaults (preset_name, display_name, description, theme_settings, is_system_default, sort_order)
 VALUES
   ('default', 'Default', 'Standard blue/green theme', '{

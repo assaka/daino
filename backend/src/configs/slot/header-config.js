@@ -10,7 +10,7 @@ const headerConfig = {
       id: 'header_main',
       type: 'container',
       content: '',
-      className: 'bg-white shadow-md sticky top-0 z-40 relative',
+      className: 'shadow-md sticky top-0 z-40 relative',
       parentClassName: '',
       styles: {
         // Empty backgroundColor - use theme settings (settings.theme.header_bg_color)
@@ -217,7 +217,7 @@ const headerConfig = {
       id: 'mobile_menu',
       type: 'container',
       content: '',
-      className: 'md:hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50',
+      className: 'md:hidden absolute top-full left-0 right-0 shadow-lg border-t border-gray-200 z-50',
       parentClassName: '',
       styles: {
         // Empty backgroundColor - use theme settings (settings.theme.header_bg_color)
@@ -275,7 +275,7 @@ const headerConfig = {
       id: 'navigation_bar',
       type: 'container',
       content: '',
-      className: 'hidden md:block bg-gray-50 border-b border-gray-200',
+      className: 'hidden md:block border-b border-gray-200',
       parentClassName: '',
       styles: {
         // Empty backgroundColor - use theme settings (settings.theme.header_nav_bg_color)
