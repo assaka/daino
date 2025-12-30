@@ -4820,7 +4820,7 @@ router.post('/mollie/sync-methods', authMiddleware, authorize(['admin', 'store_o
           store_id,
           name: pm.name,
           code: pm.code,
-          type: 'mollie',
+          type: 'other',  // enum doesn't have 'mollie', use 'other' - provider column stores 'mollie'
           payment_flow: 'online',
           description: pm.description,
           settings: {
@@ -5166,7 +5166,7 @@ router.post('/adyen/sync-methods', authMiddleware, authorize(['admin', 'store_ow
           store_id,
           name: pm.name,
           code: pm.code,
-          type: 'adyen',
+          type: 'other',  // enum doesn't have 'adyen', use 'other' - provider column stores 'adyen'
           payment_flow: 'online',
           description: pm.description,
           settings: {
