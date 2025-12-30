@@ -241,8 +241,8 @@ const HARDCODED_THEME_DEFAULTS = {
   // Header styling (FLAT)
   header_bg_color: '#FFFFFF',
   header_icon_color: '#374151',
-  header_padding_top: '16',
-  header_padding_bottom: '16',
+  header_padding_top: '0',
+  header_padding_bottom: '0',
 
   // Header search bar styling
   header_search_bg_color: '#F9FAFB',

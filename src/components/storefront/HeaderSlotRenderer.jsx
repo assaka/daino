@@ -63,6 +63,8 @@ export function HeaderSlotRenderer({
   // Header theme settings
   const headerIconColor = theme.header_icon_color || themeDefaults.header_icon_color;
   const headerBgColor = theme.header_bg_color || themeDefaults.header_bg_color;
+  const headerPaddingTop = theme.header_padding_top ?? themeDefaults.header_padding_top;
+  const headerPaddingBottom = theme.header_padding_bottom ?? themeDefaults.header_padding_bottom;
 
   // Search bar theme settings
   const searchThemeStyles = {
@@ -200,6 +202,8 @@ export function HeaderSlotRenderer({
           containerStyles = {
             ...containerStyles,
             backgroundColor: containerStyles.backgroundColor || headerBgColor,
+            paddingTop: containerStyles.paddingTop || `${headerPaddingTop}px`,
+            paddingBottom: containerStyles.paddingBottom || `${headerPaddingBottom}px`,
           };
         } else if (id === 'navigation_bar') {
           // Apply nav background color from theme
