@@ -1,4 +1,4 @@
--- Add header, navigation, and layered filter color settings to all theme presets
+-- Add header, navigation, layered filter, and add-to-cart button color settings to all theme presets
 -- This ensures consistent color theming across all storefront elements
 
 -- Update 'default' preset (Blue theme)
@@ -34,7 +34,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#9CA3AF",
   "layered_nav_checkbox_color": "#2563EB",
   "layered_nav_active_filter_bg_color": "#DBEAFE",
-  "layered_nav_active_filter_text_color": "#1E40AF"
+  "layered_nav_active_filter_text_color": "#1E40AF",
+  "add_to_cart_button_bg_color": "#2563EB",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#1D4ED8",
+  "add_to_cart_button_border_radius": "md"
 }'::jsonb
 WHERE preset_name = 'default';
 
@@ -71,7 +75,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#9CA3AF",
   "layered_nav_checkbox_color": "#6366F1",
   "layered_nav_active_filter_bg_color": "#E0E7FF",
-  "layered_nav_active_filter_text_color": "#4338CA"
+  "layered_nav_active_filter_text_color": "#4338CA",
+  "add_to_cart_button_bg_color": "#6366F1",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#4F46E5",
+  "add_to_cart_button_border_radius": "lg"
 }'::jsonb
 WHERE preset_name = 'modern';
 
@@ -108,7 +116,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#9CA3AF",
   "layered_nav_checkbox_color": "#16A34A",
   "layered_nav_active_filter_bg_color": "#DCFCE7",
-  "layered_nav_active_filter_text_color": "#166534"
+  "layered_nav_active_filter_text_color": "#166534",
+  "add_to_cart_button_bg_color": "#16A34A",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#15803D",
+  "add_to_cart_button_border_radius": "md"
 }'::jsonb
 WHERE preset_name = 'classic';
 
@@ -145,7 +157,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#9CA3AF",
   "layered_nav_checkbox_color": "#374151",
   "layered_nav_active_filter_bg_color": "#E5E7EB",
-  "layered_nav_active_filter_text_color": "#111827"
+  "layered_nav_active_filter_text_color": "#111827",
+  "add_to_cart_button_bg_color": "#374151",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#1F2937",
+  "add_to_cart_button_border_radius": "sm"
 }'::jsonb
 WHERE preset_name = 'minimal';
 
@@ -182,7 +198,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#9CA3AF",
   "layered_nav_checkbox_color": "#DC2626",
   "layered_nav_active_filter_bg_color": "#FEE2E2",
-  "layered_nav_active_filter_text_color": "#991B1B"
+  "layered_nav_active_filter_text_color": "#991B1B",
+  "add_to_cart_button_bg_color": "#DC2626",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#B91C1C",
+  "add_to_cart_button_border_radius": "lg"
 }'::jsonb
 WHERE preset_name = 'bold';
 
@@ -219,7 +239,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#B45309",
   "layered_nav_checkbox_color": "#D97706",
   "layered_nav_active_filter_bg_color": "#FDE68A",
-  "layered_nav_active_filter_text_color": "#92400E"
+  "layered_nav_active_filter_text_color": "#92400E",
+  "add_to_cart_button_bg_color": "#D97706",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#B45309",
+  "add_to_cart_button_border_radius": "lg"
 }'::jsonb
 WHERE preset_name = 'warm';
 
@@ -256,7 +280,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#14B8A6",
   "layered_nav_checkbox_color": "#0D9488",
   "layered_nav_active_filter_bg_color": "#CCFBF1",
-  "layered_nav_active_filter_text_color": "#0F766E"
+  "layered_nav_active_filter_text_color": "#0F766E",
+  "add_to_cart_button_bg_color": "#0D9488",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#0F766E",
+  "add_to_cart_button_border_radius": "lg"
 }'::jsonb
 WHERE preset_name = 'cool';
 
@@ -293,7 +321,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#A855F7",
   "layered_nav_checkbox_color": "#9333EA",
   "layered_nav_active_filter_bg_color": "#E9D5FF",
-  "layered_nav_active_filter_text_color": "#6B21A8"
+  "layered_nav_active_filter_text_color": "#6B21A8",
+  "add_to_cart_button_bg_color": "#9333EA",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#7C3AED",
+  "add_to_cart_button_border_radius": "full"
 }'::jsonb
 WHERE preset_name = 'elegant';
 
@@ -330,7 +362,11 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#6B7280",
   "layered_nav_checkbox_color": "#60A5FA",
   "layered_nav_active_filter_bg_color": "#1E3A5F",
-  "layered_nav_active_filter_text_color": "#93C5FD"
+  "layered_nav_active_filter_text_color": "#93C5FD",
+  "add_to_cart_button_bg_color": "#3B82F6",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#2563EB",
+  "add_to_cart_button_border_radius": "lg"
 }'::jsonb
 WHERE preset_name = 'dark';
 
@@ -367,9 +403,14 @@ SET theme_settings = theme_settings || '{
   "layered_nav_option_count_color": "#9CA3AF",
   "layered_nav_checkbox_color": "#3B82F6",
   "layered_nav_active_filter_bg_color": "#DBEAFE",
-  "layered_nav_active_filter_text_color": "#1E40AF"
+  "layered_nav_active_filter_text_color": "#1E40AF",
+  "add_to_cart_button_bg_color": "#3B82F6",
+  "add_to_cart_button_text_color": "#FFFFFF",
+  "add_to_cart_button_hover_color": "#2563EB",
+  "add_to_cart_button_border_radius": "md"
 }'::jsonb
 WHERE NOT (
   theme_settings ? 'header_bg_color'
   AND theme_settings ? 'layered_nav_card_bg_color'
+  AND theme_settings ? 'add_to_cart_button_bg_color'
 );
