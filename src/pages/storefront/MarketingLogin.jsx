@@ -206,10 +206,11 @@ export default function MarketingLogin() {
   ];
 
   const whatsNew = [
-    'AI content generation for product descriptions',
-    'Faster checkout with one-click payments',
-    'Advanced inventory tracking & alerts',
-    'New email marketing automation tools'
+    'Theme presets with one-click styling',
+    'Enhanced mobile navigation & filters',
+    'Visual WYSIWYG editor improvements',
+    'Mollie & Adyen payment integrations',
+    'Header & navigation color customization'
   ];
 
   return (
