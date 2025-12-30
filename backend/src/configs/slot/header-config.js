@@ -78,7 +78,7 @@ const headerConfig = {
       styles: {},
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
-      colSpan: { mobile: 6, desktop: 1 },
+      colSpan: { mobile: 6, desktop: 2 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
