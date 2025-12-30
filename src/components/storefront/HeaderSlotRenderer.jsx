@@ -165,11 +165,28 @@ export function HeaderSlotRenderer({
       className = '',
       parentClassName = '',
       styles = {},
-      metadata = {}
+      metadata = {},
+      colSpan = {}
     } = slot;
 
     // Apply custom styles from slot configuration
     const customStyles = { ...styles };
+
+    // Build colSpan classes for grid children
+    // Supports both string format: "col-span-12 md:col-span-6"
+    // And object format: { mobile: 12, desktop: 6 }
+    let colSpanClasses = '';
+    if (typeof colSpan === 'string') {
+      colSpanClasses = colSpan;
+    } else if (typeof colSpan === 'object' && colSpan !== null) {
+      if (colSpan.mobile) {
+        colSpanClasses += `col-span-${colSpan.mobile} `;
+      }
+      if (colSpan.desktop) {
+        colSpanClasses += `md:col-span-${colSpan.desktop} `;
+      }
+      colSpanClasses = colSpanClasses.trim();
+    }
 
     // Handle different slot types
     switch (type) {
@@ -234,6 +251,11 @@ export function HeaderSlotRenderer({
           };
         }
 
+        // Add colSpan classes for grid children
+        if (colSpanClasses) {
+          containerClassName = `${colSpanClasses} ${containerClassName}`.trim();
+        }
+
         // Render container with children
         return (
           <div
@@ -280,13 +302,30 @@ export function HeaderSlotRenderer({
   };
 
   const renderComponent = (slot) => {
-    const { id, component, content, className, styles, metadata } = slot;
+    const { id, component, content, className = '', styles, metadata, colSpan } = slot;
+
+    // Build colSpan classes for grid children
+    // Supports both string format: "col-span-12 md:col-span-6"
+    // And object format: { mobile: 12, desktop: 6 }
+    let colSpanClasses = '';
+    if (typeof colSpan === 'string') {
+      colSpanClasses = colSpan;
+    } else if (typeof colSpan === 'object' && colSpan !== null) {
+      if (colSpan.mobile) {
+        colSpanClasses += `col-span-${colSpan.mobile} `;
+      }
+      if (colSpan.desktop) {
+        colSpanClasses += `md:col-span-${colSpan.desktop} `;
+      }
+      colSpanClasses = colSpanClasses.trim();
+    }
+    const finalClassName = colSpanClasses ? `${colSpanClasses} ${className}`.trim() : className;
 
     // Special component rendering based on component name
     switch (component) {
       case 'StoreLogo':
         return (
-          <div key={id} className={className} style={styles} data-slot-id={id}>
+          <div key={id} className={finalClassName} style={styles} data-slot-id={id}>
             <Link to={createPublicUrl(store?.slug, 'STOREFRONT')} className="flex items-center space-x-1 md:space-x-2">
               {(store?.settings?.store_logo || store?.logo_url) ? (
                 <img src={store?.settings?.store_logo || store.logo_url} alt={store.name || 'Store Logo'} className="h-6 md:h-8 w-6 md:w-8 object-contain" />
@@ -305,7 +344,7 @@ export function HeaderSlotRenderer({
         // Merge slot styles with theme styles (slot styles take priority)
         const mergedSearchStyles = { ...searchThemeStyles, ...styles };
         return (
-          <div key={id} className={className} style={styles} data-slot-id={id}>
+          <div key={id} className={finalClassName} style={styles} data-slot-id={id}>
             <HeaderSearch styles={mergedSearchStyles} />
           </div>
         );
@@ -320,7 +359,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            className={`h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
+            className={`${colSpanClasses}h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
             onClick={() => setMobileSearchOpen?.(!mobileSearchOpen)}
             data-slot-id={id}
             style={{ color: headerIconColor }}
@@ -351,7 +390,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            className={`h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
+            className={`${colSpanClasses}h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
             onClick={() => {
               if (user) {
                 // Show dropdown or navigate to account
@@ -371,7 +410,7 @@ export function HeaderSlotRenderer({
 
       case 'WishlistDropdown':
         return (
-          <div key={id} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             <WishlistDropdown iconVariant={metadata?.iconVariant} iconColor={headerIconColor} />
           </div>
         );
@@ -384,7 +423,7 @@ export function HeaderSlotRenderer({
         if (!languages || languages.length <= 1) return null;
 
         return (
-          <div key={id} className={className} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             <select
               className="border-none bg-transparent text-sm cursor-pointer hover:bg-gray-100 rounded px-2 py-1"
               value={currentLanguage}
@@ -407,7 +446,7 @@ export function HeaderSlotRenderer({
       case 'CountrySelect':
         if (!settings?.allowed_countries || settings.allowed_countries.length <= 1) return null;
         return (
-          <div key={id} className={className} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             <CountrySelect
               value={selectedCountry}
               onValueChange={setSelectedCountry}
@@ -444,7 +483,7 @@ export function HeaderSlotRenderer({
         };
 
         return (
-          <div key={id} className={className} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -499,7 +538,7 @@ export function HeaderSlotRenderer({
 
       case 'MiniCart':
         return (
-          <div key={id} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             <MiniCart iconVariant={metadata?.iconVariant} iconColor={headerIconColor} />
           </div>
         );
@@ -509,7 +548,7 @@ export function HeaderSlotRenderer({
           <Button
             key={id}
             variant="ghost"
-            className={`h-11 w-11 p-0 flex items-center justify-center ${className || 'md:hidden'}`}
+            className={`${colSpanClasses}h-11 w-11 p-0 flex items-center justify-center ${className || 'md:hidden'}`}
             onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
             data-slot-id={id}
             style={{ color: headerIconColor }}
@@ -524,7 +563,7 @@ export function HeaderSlotRenderer({
         const mobileNavStyles = { ...navThemeStyles, ...styles };
         const mobileNavMetadata = { ...subnavThemeStyles, ...metadata };
         return (
-          <div key={id} className={className} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             <CategoryNav
               categories={categories}
               styles={mobileNavStyles}
@@ -540,7 +579,7 @@ export function HeaderSlotRenderer({
         const desktopNavStyles = { ...navThemeStyles, ...styles };
         const desktopNavMetadata = { ...subnavThemeStyles, ...metadata };
         return (
-          <div key={id} className={className} style={styles} data-slot-id={id}>
+          <div key={id} className={finalClassName} style={styles} data-slot-id={id}>
             <CategoryNav categories={categories} styles={desktopNavStyles} metadata={desktopNavMetadata} />
           </div>
         );
@@ -550,7 +589,7 @@ export function HeaderSlotRenderer({
         if (!cmsPosition) return null;
 
         return (
-          <div key={id} className={className} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             <CmsBlockRenderer position={cmsPosition} />
           </div>
         );
@@ -560,7 +599,7 @@ export function HeaderSlotRenderer({
         const RegisteredComponent = ComponentRegistry.get(component);
         if (RegisteredComponent) {
           return (
-            <div key={id} className={className} data-slot-id={id}>
+            <div key={id} className={finalClassName} data-slot-id={id}>
               <RegisteredComponent
                 content={content}
                 headerContext={headerContext}
@@ -576,7 +615,7 @@ export function HeaderSlotRenderer({
           return (
             <div
               key={id}
-              className={className}
+              className={finalClassName}
               style={styles}
               data-slot-id={id}
               dangerouslySetInnerHTML={{ __html: processedContent }}
