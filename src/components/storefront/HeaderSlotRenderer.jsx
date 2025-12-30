@@ -192,8 +192,15 @@ export function HeaderSlotRenderer({
 
         // Ensure header_main has relative positioning for mobile_menu absolute positioning
         let containerClassName = className || '';
-        if (id === 'header_main' && !containerClassName.includes('relative')) {
-          containerClassName = `${containerClassName} relative`.trim();
+        if (id === 'header_main') {
+          if (!containerClassName.includes('relative')) {
+            containerClassName = `${containerClassName} relative`.trim();
+          }
+          // Ensure header_main is full width
+          if (!containerClassName.includes('w-full')) {
+            containerClassName = `w-full ${containerClassName}`.trim();
+          }
+          customStyles.width = '100%';
         }
 
         // Force header_inner to be full width (remove max-w-7xl constraint)
