@@ -1,0 +1,375 @@
+-- Add header, navigation, and layered filter color settings to all theme presets
+-- This ensures consistent color theming across all storefront elements
+
+-- Update 'default' preset (Blue theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#374151",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#F3F4F6",
+  "header_search_border_color": "#E5E7EB",
+  "header_search_border_radius": "lg",
+  "header_search_text_color": "#374151",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#374151",
+  "header_nav_hover_color": "#2563EB",
+  "header_nav_hover_bg_color": "#EFF6FF",
+  "header_nav_active_color": "#2563EB",
+  "header_nav_active_bg_color": "#DBEAFE",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#6B7280",
+  "header_subnav_hover_color": "#2563EB",
+  "header_subnav_hover_bg_color": "#EFF6FF",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#1F2937",
+  "layered_nav_filter_label_color": "#374151",
+  "layered_nav_option_text_color": "#374151",
+  "layered_nav_option_hover_color": "#1F2937",
+  "layered_nav_option_count_color": "#9CA3AF",
+  "layered_nav_checkbox_color": "#2563EB",
+  "layered_nav_active_filter_bg_color": "#DBEAFE",
+  "layered_nav_active_filter_text_color": "#1E40AF"
+}'::jsonb
+WHERE preset_name = 'default';
+
+-- Update 'modern' preset (Purple/Indigo theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#4B5563",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#F9FAFB",
+  "header_search_border_color": "#E5E7EB",
+  "header_search_border_radius": "full",
+  "header_search_text_color": "#374151",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#4B5563",
+  "header_nav_hover_color": "#6366F1",
+  "header_nav_hover_bg_color": "#EEF2FF",
+  "header_nav_active_color": "#6366F1",
+  "header_nav_active_bg_color": "#E0E7FF",
+  "header_nav_padding_x": "16",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#6B7280",
+  "header_subnav_hover_color": "#6366F1",
+  "header_subnav_hover_bg_color": "#EEF2FF",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#1F2937",
+  "layered_nav_filter_label_color": "#4B5563",
+  "layered_nav_option_text_color": "#4B5563",
+  "layered_nav_option_hover_color": "#1F2937",
+  "layered_nav_option_count_color": "#9CA3AF",
+  "layered_nav_checkbox_color": "#6366F1",
+  "layered_nav_active_filter_bg_color": "#E0E7FF",
+  "layered_nav_active_filter_text_color": "#4338CA"
+}'::jsonb
+WHERE preset_name = 'modern';
+
+-- Update 'classic' preset (Green theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#374151",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#F9FAFB",
+  "header_search_border_color": "#D1D5DB",
+  "header_search_border_radius": "md",
+  "header_search_text_color": "#374151",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#374151",
+  "header_nav_hover_color": "#16A34A",
+  "header_nav_hover_bg_color": "#F0FDF4",
+  "header_nav_active_color": "#16A34A",
+  "header_nav_active_bg_color": "#DCFCE7",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#6B7280",
+  "header_subnav_hover_color": "#16A34A",
+  "header_subnav_hover_bg_color": "#F0FDF4",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#1F2937",
+  "layered_nav_filter_label_color": "#374151",
+  "layered_nav_option_text_color": "#374151",
+  "layered_nav_option_hover_color": "#1F2937",
+  "layered_nav_option_count_color": "#9CA3AF",
+  "layered_nav_checkbox_color": "#16A34A",
+  "layered_nav_active_filter_bg_color": "#DCFCE7",
+  "layered_nav_active_filter_text_color": "#166534"
+}'::jsonb
+WHERE preset_name = 'classic';
+
+-- Update 'minimal' preset (Neutral/Gray theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#6B7280",
+  "header_padding_top": "20",
+  "header_padding_bottom": "20",
+  "header_search_bg_color": "#F9FAFB",
+  "header_search_border_color": "#E5E7EB",
+  "header_search_border_radius": "sm",
+  "header_search_text_color": "#374151",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#6B7280",
+  "header_nav_hover_color": "#111827",
+  "header_nav_hover_bg_color": "#F3F4F6",
+  "header_nav_active_color": "#111827",
+  "header_nav_active_bg_color": "#E5E7EB",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#6B7280",
+  "header_subnav_hover_color": "#111827",
+  "header_subnav_hover_bg_color": "#F3F4F6",
+  "header_nav_expand_icon": "plus",
+  "header_nav_collapse_icon": "minus",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#111827",
+  "layered_nav_filter_label_color": "#6B7280",
+  "layered_nav_option_text_color": "#6B7280",
+  "layered_nav_option_hover_color": "#111827",
+  "layered_nav_option_count_color": "#9CA3AF",
+  "layered_nav_checkbox_color": "#374151",
+  "layered_nav_active_filter_bg_color": "#E5E7EB",
+  "layered_nav_active_filter_text_color": "#111827"
+}'::jsonb
+WHERE preset_name = 'minimal';
+
+-- Update 'bold' preset (Red theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#374151",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#FEF2F2",
+  "header_search_border_color": "#FECACA",
+  "header_search_border_radius": "lg",
+  "header_search_text_color": "#374151",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#374151",
+  "header_nav_hover_color": "#DC2626",
+  "header_nav_hover_bg_color": "#FEF2F2",
+  "header_nav_active_color": "#DC2626",
+  "header_nav_active_bg_color": "#FEE2E2",
+  "header_nav_padding_x": "14",
+  "header_nav_padding_y": "10",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#6B7280",
+  "header_subnav_hover_color": "#DC2626",
+  "header_subnav_hover_bg_color": "#FEF2F2",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#1F2937",
+  "layered_nav_filter_label_color": "#374151",
+  "layered_nav_option_text_color": "#374151",
+  "layered_nav_option_hover_color": "#1F2937",
+  "layered_nav_option_count_color": "#9CA3AF",
+  "layered_nav_checkbox_color": "#DC2626",
+  "layered_nav_active_filter_bg_color": "#FEE2E2",
+  "layered_nav_active_filter_text_color": "#991B1B"
+}'::jsonb
+WHERE preset_name = 'bold';
+
+-- Update 'warm' preset (Orange/Amber theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFBEB",
+  "header_icon_color": "#92400E",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#FFFFFF",
+  "header_search_border_color": "#FDE68A",
+  "header_search_border_radius": "lg",
+  "header_search_text_color": "#78350F",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#92400E",
+  "header_nav_hover_color": "#D97706",
+  "header_nav_hover_bg_color": "#FEF3C7",
+  "header_nav_active_color": "#D97706",
+  "header_nav_active_bg_color": "#FDE68A",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFBEB",
+  "header_subnav_text_color": "#92400E",
+  "header_subnav_hover_color": "#D97706",
+  "header_subnav_hover_bg_color": "#FEF3C7",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFBEB",
+  "layered_nav_header_text_color": "#78350F",
+  "layered_nav_filter_label_color": "#92400E",
+  "layered_nav_option_text_color": "#92400E",
+  "layered_nav_option_hover_color": "#78350F",
+  "layered_nav_option_count_color": "#B45309",
+  "layered_nav_checkbox_color": "#D97706",
+  "layered_nav_active_filter_bg_color": "#FDE68A",
+  "layered_nav_active_filter_text_color": "#92400E"
+}'::jsonb
+WHERE preset_name = 'warm';
+
+-- Update 'cool' preset (Teal/Cyan theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#0F766E",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#F0FDFA",
+  "header_search_border_color": "#99F6E4",
+  "header_search_border_radius": "lg",
+  "header_search_text_color": "#134E4A",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#0F766E",
+  "header_nav_hover_color": "#0D9488",
+  "header_nav_hover_bg_color": "#CCFBF1",
+  "header_nav_active_color": "#0D9488",
+  "header_nav_active_bg_color": "#99F6E4",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#0F766E",
+  "header_subnav_hover_color": "#0D9488",
+  "header_subnav_hover_bg_color": "#CCFBF1",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#134E4A",
+  "layered_nav_filter_label_color": "#0F766E",
+  "layered_nav_option_text_color": "#0F766E",
+  "layered_nav_option_hover_color": "#134E4A",
+  "layered_nav_option_count_color": "#14B8A6",
+  "layered_nav_checkbox_color": "#0D9488",
+  "layered_nav_active_filter_bg_color": "#CCFBF1",
+  "layered_nav_active_filter_text_color": "#0F766E"
+}'::jsonb
+WHERE preset_name = 'cool';
+
+-- Update 'elegant' preset (Purple/Rose theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FDFCFE",
+  "header_icon_color": "#7C3AED",
+  "header_padding_top": "20",
+  "header_padding_bottom": "20",
+  "header_search_bg_color": "#FAF5FF",
+  "header_search_border_color": "#E9D5FF",
+  "header_search_border_radius": "full",
+  "header_search_text_color": "#581C87",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#6B21A8",
+  "header_nav_hover_color": "#9333EA",
+  "header_nav_hover_bg_color": "#F3E8FF",
+  "header_nav_active_color": "#9333EA",
+  "header_nav_active_bg_color": "#E9D5FF",
+  "header_nav_padding_x": "16",
+  "header_nav_padding_y": "10",
+  "header_subnav_bg_color": "#FDFCFE",
+  "header_subnav_text_color": "#7C3AED",
+  "header_subnav_hover_color": "#9333EA",
+  "header_subnav_hover_bg_color": "#F3E8FF",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FDFCFE",
+  "layered_nav_header_text_color": "#581C87",
+  "layered_nav_filter_label_color": "#6B21A8",
+  "layered_nav_option_text_color": "#7C3AED",
+  "layered_nav_option_hover_color": "#581C87",
+  "layered_nav_option_count_color": "#A855F7",
+  "layered_nav_checkbox_color": "#9333EA",
+  "layered_nav_active_filter_bg_color": "#E9D5FF",
+  "layered_nav_active_filter_text_color": "#6B21A8"
+}'::jsonb
+WHERE preset_name = 'elegant';
+
+-- Update 'dark' preset (Dark mode theme)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#1F2937",
+  "header_icon_color": "#D1D5DB",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#374151",
+  "header_search_border_color": "#4B5563",
+  "header_search_border_radius": "lg",
+  "header_search_text_color": "#F9FAFB",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#D1D5DB",
+  "header_nav_hover_color": "#60A5FA",
+  "header_nav_hover_bg_color": "#374151",
+  "header_nav_active_color": "#60A5FA",
+  "header_nav_active_bg_color": "#1E3A5F",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#1F2937",
+  "header_subnav_text_color": "#9CA3AF",
+  "header_subnav_hover_color": "#60A5FA",
+  "header_subnav_hover_bg_color": "#374151",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#1F2937",
+  "layered_nav_header_text_color": "#F9FAFB",
+  "layered_nav_filter_label_color": "#D1D5DB",
+  "layered_nav_option_text_color": "#D1D5DB",
+  "layered_nav_option_hover_color": "#F9FAFB",
+  "layered_nav_option_count_color": "#6B7280",
+  "layered_nav_checkbox_color": "#60A5FA",
+  "layered_nav_active_filter_bg_color": "#1E3A5F",
+  "layered_nav_active_filter_text_color": "#93C5FD"
+}'::jsonb
+WHERE preset_name = 'dark';
+
+-- Update any remaining presets with default values (fallback for presets not listed above)
+UPDATE theme_defaults
+SET theme_settings = theme_settings || '{
+  "header_bg_color": "#FFFFFF",
+  "header_icon_color": "#374151",
+  "header_padding_top": "16",
+  "header_padding_bottom": "16",
+  "header_search_bg_color": "#F9FAFB",
+  "header_search_border_color": "#E5E7EB",
+  "header_search_border_radius": "lg",
+  "header_search_text_color": "#374151",
+  "header_nav_bg_color": "transparent",
+  "header_nav_text_color": "#374151",
+  "header_nav_hover_color": "#2563EB",
+  "header_nav_hover_bg_color": "#F3F4F6",
+  "header_nav_active_color": "#2563EB",
+  "header_nav_active_bg_color": "#EFF6FF",
+  "header_nav_padding_x": "12",
+  "header_nav_padding_y": "8",
+  "header_subnav_bg_color": "#FFFFFF",
+  "header_subnav_text_color": "#6B7280",
+  "header_subnav_hover_color": "#2563EB",
+  "header_subnav_hover_bg_color": "#F3F4F6",
+  "header_nav_expand_icon": "chevron-right",
+  "header_nav_collapse_icon": "chevron-down",
+  "layered_nav_card_bg_color": "#FFFFFF",
+  "layered_nav_header_text_color": "#1F2937",
+  "layered_nav_filter_label_color": "#374151",
+  "layered_nav_option_text_color": "#374151",
+  "layered_nav_option_hover_color": "#1F2937",
+  "layered_nav_option_count_color": "#9CA3AF",
+  "layered_nav_checkbox_color": "#3B82F6",
+  "layered_nav_active_filter_bg_color": "#DBEAFE",
+  "layered_nav_active_filter_text_color": "#1E40AF"
+}'::jsonb
+WHERE NOT (
+  theme_settings ? 'header_bg_color'
+  AND theme_settings ? 'layered_nav_card_bg_color'
+);
