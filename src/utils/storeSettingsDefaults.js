@@ -238,6 +238,41 @@ const HARDCODED_THEME_DEFAULTS = {
   layered_nav_active_filter_font_weight: '400',
   layered_nav_active_filter_border_radius: 'full',
 
+  // Header styling (FLAT)
+  header_bg_color: '#FFFFFF',
+  header_icon_color: '#374151',
+  header_padding_top: '16',
+  header_padding_bottom: '16',
+
+  // Header search bar styling
+  header_search_bg_color: '#F9FAFB',
+  header_search_border_color: '#E5E7EB',
+  header_search_border_radius: 'lg',
+  header_search_text_color: '#374151',
+  header_search_placeholder_color: '#9CA3AF',
+
+  // Header navigation styling
+  header_nav_bg_color: 'transparent',
+  header_nav_text_color: '#374151',
+  header_nav_font_size: '0.875rem',
+  header_nav_font_weight: '500',
+  header_nav_hover_color: '#2563EB',
+  header_nav_hover_bg_color: '#F3F4F6',
+  header_nav_active_color: '#2563EB',
+  header_nav_active_bg_color: '#EFF6FF',
+  header_nav_padding_x: '12',
+  header_nav_padding_y: '8',
+
+  // Subcategory dropdown styling
+  header_subnav_bg_color: '#FFFFFF',
+  header_subnav_text_color: '#6B7280',
+  header_subnav_hover_color: '#2563EB',
+  header_subnav_hover_bg_color: '#F3F4F6',
+
+  // Navigation tree icons
+  header_nav_expand_icon: 'chevron-right',
+  header_nav_collapse_icon: 'chevron-down',
+
   // Stock label styling (FLAT)
   stock_in_stock_text_color: '#166534',
   stock_in_stock_bg_color: '#dcfce7',

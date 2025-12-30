@@ -1605,6 +1605,438 @@ export default function ThemeLayout() {
                                 </div>
                                 <Switch id="expand_all_menu_items" checked={!!store.settings.expandAllMenuItems} onCheckedChange={(c) => handleSettingsChange('expandAllMenuItems', c)} />
                             </div>
+
+                            <Separator className="my-4" />
+
+                            {/* Header Styling */}
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Header Styling</Label>
+                                    <p className="text-sm text-gray-500">Customize the header appearance</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('header_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('header_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Icon Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_icon_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('header_icon_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_icon_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('header_icon_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#374151"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Padding Top (px)</Label>
+                                        <Input
+                                            type="number"
+                                            value={store.settings.theme?.header_padding_top || '16'}
+                                            onChange={(e) => handleThemeChange('header_padding_top', e.target.value)}
+                                            className="w-full"
+                                            min="0"
+                                            max="100"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Padding Bottom (px)</Label>
+                                        <Input
+                                            type="number"
+                                            value={store.settings.theme?.header_padding_bottom || '16'}
+                                            onChange={(e) => handleThemeChange('header_padding_bottom', e.target.value)}
+                                            className="w-full"
+                                            min="0"
+                                            max="100"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            {/* Search Bar Styling */}
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Search Bar</Label>
+                                    <p className="text-sm text-gray-500">Customize the search input appearance</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_search_bg_color || '#F9FAFB'}
+                                                onChange={(e) => handleThemeChange('header_search_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_search_bg_color || '#F9FAFB'}
+                                                onChange={(e) => handleThemeChange('header_search_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#F9FAFB"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Border Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_search_border_color || '#E5E7EB'}
+                                                onChange={(e) => handleThemeChange('header_search_border_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_search_border_color || '#E5E7EB'}
+                                                onChange={(e) => handleThemeChange('header_search_border_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#E5E7EB"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_search_text_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('header_search_text_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_search_text_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('header_search_text_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#374151"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Border Radius</Label>
+                                        <Select
+                                            value={store.settings.theme?.header_search_border_radius || 'lg'}
+                                            onValueChange={(value) => handleThemeChange('header_search_border_radius', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None (0px)</SelectItem>
+                                                <SelectItem value="sm">Small (2px)</SelectItem>
+                                                <SelectItem value="md">Medium (6px)</SelectItem>
+                                                <SelectItem value="lg">Large (8px)</SelectItem>
+                                                <SelectItem value="xl">Extra Large (12px)</SelectItem>
+                                                <SelectItem value="full">Full (9999px)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            {/* Navigation Styling */}
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Category Navigation</Label>
+                                    <p className="text-sm text-gray-500">Customize the main navigation menu</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_nav_text_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('header_nav_text_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_nav_text_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('header_nav_text_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#374151"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_nav_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('header_nav_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_nav_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('header_nav_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hover Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_nav_hover_color || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('header_nav_hover_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_nav_hover_color || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('header_nav_hover_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#2563EB"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hover Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_nav_hover_bg_color || '#F3F4F6'}
+                                                onChange={(e) => handleThemeChange('header_nav_hover_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_nav_hover_bg_color || '#F3F4F6'}
+                                                onChange={(e) => handleThemeChange('header_nav_hover_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#F3F4F6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Active Category Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_nav_active_color || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('header_nav_active_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_nav_active_color || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('header_nav_active_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#2563EB"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Active Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_nav_active_bg_color || '#EFF6FF'}
+                                                onChange={(e) => handleThemeChange('header_nav_active_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_nav_active_bg_color || '#EFF6FF'}
+                                                onChange={(e) => handleThemeChange('header_nav_active_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#EFF6FF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Padding Horizontal (px)</Label>
+                                        <Input
+                                            type="number"
+                                            value={store.settings.theme?.header_nav_padding_x || '12'}
+                                            onChange={(e) => handleThemeChange('header_nav_padding_x', e.target.value)}
+                                            className="w-full"
+                                            min="0"
+                                            max="50"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Padding Vertical (px)</Label>
+                                        <Input
+                                            type="number"
+                                            value={store.settings.theme?.header_nav_padding_y || '8'}
+                                            onChange={(e) => handleThemeChange('header_nav_padding_y', e.target.value)}
+                                            className="w-full"
+                                            min="0"
+                                            max="50"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            {/* Subcategory Dropdown Styling */}
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Subcategory Dropdown</Label>
+                                    <p className="text-sm text-gray-500">Customize the dropdown menu for subcategories</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_subnav_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('header_subnav_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_subnav_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleThemeChange('header_subnav_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#FFFFFF"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_subnav_text_color || '#6B7280'}
+                                                onChange={(e) => handleThemeChange('header_subnav_text_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_subnav_text_color || '#6B7280'}
+                                                onChange={(e) => handleThemeChange('header_subnav_text_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#6B7280"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hover Text Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_subnav_hover_color || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('header_subnav_hover_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_subnav_hover_color || '#2563EB'}
+                                                onChange={(e) => handleThemeChange('header_subnav_hover_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#2563EB"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Hover Background Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="color"
+                                                value={store.settings.theme?.header_subnav_hover_bg_color || '#F3F4F6'}
+                                                onChange={(e) => handleThemeChange('header_subnav_hover_bg_color', e.target.value)}
+                                                className="w-12 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.header_subnav_hover_bg_color || '#F3F4F6'}
+                                                onChange={(e) => handleThemeChange('header_subnav_hover_bg_color', e.target.value)}
+                                                className="flex-1"
+                                                placeholder="#F3F4F6"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            {/* Tree Icons */}
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Expand/Collapse Icons</Label>
+                                    <p className="text-sm text-gray-500">Choose icons for expanding and collapsing category trees</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Expand Icon (Collapsed State)</Label>
+                                        <Select
+                                            value={store.settings.theme?.header_nav_expand_icon || 'chevron-right'}
+                                            onValueChange={(value) => handleThemeChange('header_nav_expand_icon', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="chevron-right">Chevron Right ›</SelectItem>
+                                                <SelectItem value="plus">Plus +</SelectItem>
+                                                <SelectItem value="arrow-right">Arrow Right →</SelectItem>
+                                                <SelectItem value="caret-right">Caret Right ▸</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Collapse Icon (Expanded State)</Label>
+                                        <Select
+                                            value={store.settings.theme?.header_nav_collapse_icon || 'chevron-down'}
+                                            onValueChange={(value) => handleThemeChange('header_nav_collapse_icon', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="chevron-down">Chevron Down ˅</SelectItem>
+                                                <SelectItem value="minus">Minus −</SelectItem>
+                                                <SelectItem value="arrow-down">Arrow Down ↓</SelectItem>
+                                                <SelectItem value="caret-down">Caret Down ▾</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
