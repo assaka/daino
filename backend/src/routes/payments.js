@@ -4649,18 +4649,11 @@ router.post('/mollie/connect', authMiddleware, authorize(['admin', 'store_owner'
     const isLiveMode = api_key.startsWith('live_');
 
     // Save to integration_configs
-    await IntegrationConfig.createOrUpdate({
-      store_id,
-      integration_type: MOLLIE_INTEGRATION_TYPE,
-      config_data: {
-        apiKey: api_key,
-        organizationName: orgName,
-        livemode: isLiveMode,
-        connectedAt: new Date().toISOString()
-      },
-      is_active: true,
-      connection_status: 'success',
-      connection_tested_at: new Date().toISOString()
+    await IntegrationConfig.createOrUpdate(store_id, MOLLIE_INTEGRATION_TYPE, {
+      apiKey: api_key,
+      organizationName: orgName,
+      livemode: isLiveMode,
+      connectedAt: new Date().toISOString()
     });
 
     console.log(`✅ Mollie connected for store ${store_id} (${isLiveMode ? 'live' : 'test'} mode)`);
@@ -4843,15 +4836,9 @@ router.post('/mollie/sync-methods', authMiddleware, authorize(['admin', 'store_o
     }
 
     // Update sync status
-    await IntegrationConfig.createOrUpdate({
-      store_id,
-      integration_type: MOLLIE_INTEGRATION_TYPE,
-      config_data: {
-        ...mollieConfig.config_data,
-        lastSyncAt: new Date().toISOString()
-      },
-      last_sync_at: new Date().toISOString(),
-      sync_status: 'success'
+    await IntegrationConfig.createOrUpdate(store_id, MOLLIE_INTEGRATION_TYPE, {
+      ...mollieConfig.config_data,
+      lastSyncAt: new Date().toISOString()
     });
 
     console.log(`✅ Mollie sync for store ${store_id}: ${inserted} inserted, ${updated} updated, ${reactivated} reactivated, ${deactivated} deactivated`);
@@ -5003,19 +4990,12 @@ router.post('/adyen/connect', authMiddleware, authorize(['admin', 'store_owner']
     }
 
     // Save to integration_configs
-    await IntegrationConfig.createOrUpdate({
-      store_id,
-      integration_type: ADYEN_INTEGRATION_TYPE,
-      config_data: {
-        apiKey: api_key,
-        merchantAccount: merchant_account,
-        environment,
-        clientKey: client_key || null,
-        connectedAt: new Date().toISOString()
-      },
-      is_active: true,
-      connection_status: 'success',
-      connection_tested_at: new Date().toISOString()
+    await IntegrationConfig.createOrUpdate(store_id, ADYEN_INTEGRATION_TYPE, {
+      apiKey: api_key,
+      merchantAccount: merchant_account,
+      environment,
+      clientKey: client_key || null,
+      connectedAt: new Date().toISOString()
     });
 
     console.log(`✅ Adyen connected for store ${store_id} (${environment} mode)`);
@@ -5194,15 +5174,9 @@ router.post('/adyen/sync-methods', authMiddleware, authorize(['admin', 'store_ow
     }
 
     // Update sync status
-    await IntegrationConfig.createOrUpdate({
-      store_id,
-      integration_type: ADYEN_INTEGRATION_TYPE,
-      config_data: {
-        ...adyenConfig.config_data,
-        lastSyncAt: new Date().toISOString()
-      },
-      last_sync_at: new Date().toISOString(),
-      sync_status: 'success'
+    await IntegrationConfig.createOrUpdate(store_id, ADYEN_INTEGRATION_TYPE, {
+      ...adyenConfig.config_data,
+      lastSyncAt: new Date().toISOString()
     });
 
     console.log(`✅ Adyen sync for store ${store_id}: ${inserted} inserted, ${updated} updated, ${reactivated} reactivated, ${deactivated} deactivated`);
