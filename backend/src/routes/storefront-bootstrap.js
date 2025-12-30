@@ -764,32 +764,8 @@ router.get('/', cacheMiddleware({
         }
       }
 
-      // Fix header_inner to be full width (remove max-w-7xl constraint)
-      let headerInnerFixed = false;
-      if (mergedSlots.header_inner) {
-        const currentClassName = mergedSlots.header_inner.className || '';
-        if (currentClassName.includes('max-w-') || currentClassName.includes('mx-auto')) {
-          // Remove max-w-* and mx-auto, then prepend w-full
-          const cleanedClassName = currentClassName.replace(/max-w-\S+/g, '').replace(/mx-auto/g, '').trim();
-          mergedSlots.header_inner = {
-            ...mergedSlots.header_inner,
-            className: `w-full ${cleanedClassName}`.trim(),
-            styles: {
-              ...mergedSlots.header_inner.styles,
-              width: '100%'
-            }
-          };
-          headerInnerFixed = true;
-        }
-      }
-
-      if (addedSlots.length > 0 || headerInnerFixed) {
-        if (headerInnerFixed) {
-          console.log(`📱 Bootstrap: Fixed header_inner to full width for store ${store.id}`);
-        }
-        if (addedSlots.length > 0) {
-          console.log(`📱 Bootstrap: Auto-merged ${addedSlots.length} mobile slots for store ${store.id}:`, addedSlots);
-        }
+      if (addedSlots.length > 0) {
+        console.log(`📱 Bootstrap: Auto-merged ${addedSlots.length} mobile slots for store ${store.id}:`, addedSlots);
         finalHeaderConfig = {
           ...headerSlotConfigResult,
           configuration: {

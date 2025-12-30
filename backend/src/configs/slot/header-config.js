@@ -31,10 +31,12 @@ const headerConfig = {
       id: 'header_inner',
       type: 'container',
       content: '',
-      className: 'w-full px-2 md:px-4 lg:px-8',
+      className: 'max-w-7xl mx-auto px-2 md:px-4 lg:px-8',
       parentClassName: '',
       styles: {
-        width: '100%'
+        maxWidth: '80rem',
+        marginLeft: 'auto',
+        marginRight: 'auto'
       },
       parentId: 'header_main',
       position: { col: 1, row: 1 },
