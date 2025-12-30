@@ -885,34 +885,66 @@ export default function ThemeLayout() {
             // Sync slot configurations so they match the new theme settings
             // This ensures slot-level overrides are updated to reflect the preset colors
             try {
-                // 1. Header slot - sync header background color
+                // 1. Add to Cart Button - sync to category and product pages
+                const addToCartBgColor = newThemeSettings.add_to_cart_button_bg_color || baseDefaults.add_to_cart_button_bg_color;
+                const addToCartTextColor = newThemeSettings.add_to_cart_button_text_color || baseDefaults.add_to_cart_button_text_color;
+                const addToCartHoverColor = newThemeSettings.add_to_cart_button_hover_color || baseDefaults.add_to_cart_button_hover_color;
+                const addToCartBorderRadius = newThemeSettings.add_to_cart_button_border_radius || baseDefaults.add_to_cart_button_border_radius;
+
+                for (const pageType of ['category', 'product']) {
+                    try {
+                        await api.patch(`/slot-configurations/${store.id}/${pageType}/slot/add_to_cart_button`, {
+                            styles: {
+                                backgroundColor: addToCartBgColor,
+                                color: addToCartTextColor,
+                                hoverBackgroundColor: addToCartHoverColor,
+                                borderRadius: addToCartBorderRadius
+                            }
+                        });
+                    } catch (e) {
+                        console.debug(`Could not update ${pageType}/add_to_cart_button:`, e.message);
+                    }
+                }
+
+                // 2. Header slot - sync header background and icon colors
                 await api.patch(`/slot-configurations/${store.id}/header/slot/header_main`, {
                     styles: {
-                        backgroundColor: newThemeSettings.header_bg_color || baseDefaults.header_bg_color
+                        backgroundColor: newThemeSettings.header_bg_color || baseDefaults.header_bg_color,
+                        iconColor: newThemeSettings.header_icon_color || baseDefaults.header_icon_color,
+                        paddingTop: newThemeSettings.header_padding_top || baseDefaults.header_padding_top,
+                        paddingBottom: newThemeSettings.header_padding_bottom || baseDefaults.header_padding_bottom
                     }
                 });
 
-                // 2. Navigation bar slot - sync nav background color
+                // 3. Navigation bar slot - sync nav background color
                 await api.patch(`/slot-configurations/${store.id}/header/slot/navigation_bar`, {
                     styles: {
                         backgroundColor: newThemeSettings.header_nav_bg_color || baseDefaults.header_nav_bg_color
                     }
                 });
 
-                // 3. Search bar slot - sync search styling
+                // 4. Search bar slot - sync search styling
                 await api.patch(`/slot-configurations/${store.id}/header/slot/search_bar`, {
                     styles: {
                         backgroundColor: newThemeSettings.header_search_bg_color || baseDefaults.header_search_bg_color,
                         borderColor: newThemeSettings.header_search_border_color || baseDefaults.header_search_border_color,
-                        borderRadius: newThemeSettings.header_search_border_radius || baseDefaults.header_search_border_radius
+                        borderRadius: newThemeSettings.header_search_border_radius || baseDefaults.header_search_border_radius,
+                        color: newThemeSettings.header_search_text_color || baseDefaults.header_search_text_color
                     }
                 });
 
-                // 4. Category navigation slot - sync nav link colors
+                // 5. Category navigation slot - sync all nav link styles
                 await api.patch(`/slot-configurations/${store.id}/header/slot/category_navigation`, {
                     styles: {
                         color: newThemeSettings.header_nav_text_color || baseDefaults.header_nav_text_color,
-                        hoverColor: newThemeSettings.header_nav_hover_color || baseDefaults.header_nav_hover_color
+                        hoverColor: newThemeSettings.header_nav_hover_color || baseDefaults.header_nav_hover_color,
+                        hoverBackgroundColor: newThemeSettings.header_nav_hover_bg_color || baseDefaults.header_nav_hover_bg_color,
+                        activeColor: newThemeSettings.header_nav_active_color || baseDefaults.header_nav_active_color,
+                        activeBackgroundColor: newThemeSettings.header_nav_active_bg_color || baseDefaults.header_nav_active_bg_color,
+                        paddingX: newThemeSettings.header_nav_padding_x || baseDefaults.header_nav_padding_x,
+                        paddingY: newThemeSettings.header_nav_padding_y || baseDefaults.header_nav_padding_y,
+                        expandIcon: newThemeSettings.header_nav_expand_icon || baseDefaults.header_nav_expand_icon,
+                        collapseIcon: newThemeSettings.header_nav_collapse_icon || baseDefaults.header_nav_collapse_icon
                     },
                     metadata: {
                         subcategoryBgColor: newThemeSettings.header_subnav_bg_color || baseDefaults.header_subnav_bg_color,
@@ -922,7 +954,7 @@ export default function ThemeLayout() {
                     }
                 });
 
-                // 5. Pagination slot - sync pagination styling
+                // 6. Pagination slot - sync pagination styling
                 await api.patch(`/slot-configurations/${store.id}/category/slot/pagination_container`, {
                     styles: {
                         buttonBgColor: paginationSettings.buttonBgColor,
@@ -934,7 +966,7 @@ export default function ThemeLayout() {
                     }
                 });
 
-                // 6. Layered Navigation slots - sync filter styling
+                // 7. Layered Navigation slots - sync filter styling
                 await api.patch(`/slot-configurations/${store.id}/category/slot/filter_option_styles`, {
                     styles: {
                         cardBgColor: newThemeSettings.layered_nav_card_bg_color || baseDefaults.layered_nav_card_bg_color,
@@ -948,14 +980,14 @@ export default function ThemeLayout() {
                     }
                 });
 
-                // 7. Filter heading slot - sync header text color
+                // 8. Filter heading slot - sync header text color
                 await api.patch(`/slot-configurations/${store.id}/category/slot/filter_heading`, {
                     styles: {
                         color: newThemeSettings.layered_nav_header_text_color || baseDefaults.layered_nav_header_text_color
                     }
                 });
 
-                // 8. Attribute filter label slot - sync filter label color
+                // 9. Attribute filter label slot - sync filter label color
                 await api.patch(`/slot-configurations/${store.id}/category/slot/attribute_filter_label`, {
                     styles: {
                         color: newThemeSettings.layered_nav_filter_label_color || baseDefaults.layered_nav_filter_label_color
