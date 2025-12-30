@@ -107,12 +107,12 @@ const headerConfig = {
       id: 'search_section',
       type: 'container',
       content: '',
-      className: 'hidden md:flex flex-1 justify-center px-8',
+      className: 'hidden md:flex flex-1 justify-center px-4',
       parentClassName: '',
       styles: {},
       parentId: 'header_top_row',
-      position: { col: 4, row: 1 },
-      colSpan: { desktop: 6 },
+      position: { col: 3, row: 1 },
+      colSpan: { desktop: 7 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -125,9 +125,11 @@ const headerConfig = {
       type: 'component',
       component: 'HeaderSearch',
       content: '',
-      className: 'w-full',
+      className: 'w-full max-h-10',
       parentClassName: '',
-      styles: {},
+      styles: {
+        maxHeight: '40px'
+      },
       parentId: 'search_section',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 12 },
@@ -195,26 +197,6 @@ const headerConfig = {
       }
     },
 
-    // Wishlist dropdown
-    wishlist_icon: {
-      id: 'wishlist_icon',
-      type: 'component',
-      component: 'WishlistDropdown',
-      content: '',
-      className: '',
-      parentClassName: '',
-      styles: {},
-      parentId: 'actions_section',
-      position: { col: 3, row: 1 },
-      colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['default'],
-      metadata: {
-        hierarchical: false,
-        displayName: 'Wishlist Icon',
-        component: 'WishlistDropdown'
-      }
-    },
-
     // Language selector (desktop only, shown if enabled in settings)
     language_selector: {
       id: 'language_selector',
@@ -225,7 +207,7 @@ const headerConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
-      position: { col: 4, row: 1 },
+      position: { col: 3, row: 1 },
       colSpan: { desktop: 12 },
       viewMode: ['default'],
       metadata: {
@@ -245,7 +227,7 @@ const headerConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
-      position: { col: 5, row: 1 },
+      position: { col: 4, row: 1 },
       colSpan: { desktop: 12 },
       viewMode: ['default'],
       metadata: {
@@ -265,13 +247,33 @@ const headerConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
-      position: { col: 6, row: 1 },
+      position: { col: 5, row: 1 },
       colSpan: { desktop: 12 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'User Account Menu',
         component: 'UserAccountMenu'
+      }
+    },
+
+    // Wishlist dropdown (after Sign In, before Cart)
+    wishlist_icon: {
+      id: 'wishlist_icon',
+      type: 'component',
+      component: 'WishlistDropdown',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_section',
+      position: { col: 6, row: 1 },
+      colSpan: { mobile: 12, desktop: 12 },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Wishlist Icon',
+        component: 'WishlistDropdown'
       }
     },
 
