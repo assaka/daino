@@ -273,6 +273,14 @@ const HARDCODED_THEME_DEFAULTS = {
   header_nav_expand_icon: 'chevron-right',
   header_nav_collapse_icon: 'chevron-down',
 
+  // Pagination styling (FLAT - synced to settings.pagination on theme apply)
+  pagination_button_bg_color: '#FFFFFF',
+  pagination_button_text_color: '#374151',
+  pagination_button_hover_bg_color: '#F3F4F6',
+  pagination_button_border_color: '#D1D5DB',
+  pagination_active_bg_color: '#3B82F6',
+  pagination_active_text_color: '#FFFFFF',
+
   // Stock label styling (FLAT)
   stock_in_stock_text_color: '#166534',
   stock_in_stock_bg_color: '#dcfce7',

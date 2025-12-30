@@ -843,9 +843,23 @@ export default function ThemeLayout() {
     const handleApplyTheme = async (theme) => {
         if (!theme?.theme_settings) return;
 
+        // Start with base defaults, then apply the preset's settings
+        // This ensures all settings are reset to the preset's values, not merged with old values
+        const baseDefaults = getThemeDefaults();
         const newThemeSettings = {
-            ...store.settings.theme,
-            ...theme.theme_settings
+            ...baseDefaults,                    // Start with all defaults
+            ...theme.theme_settings,            // Apply preset settings (override defaults)
+            custom_fonts: store.settings.theme?.custom_fonts || [] // Preserve user's custom fonts
+        };
+
+        // Extract pagination settings from theme (prefixed with pagination_) and map to pagination object
+        const paginationSettings = {
+            buttonBgColor: newThemeSettings.pagination_button_bg_color || baseDefaults.pagination_button_bg_color,
+            buttonTextColor: newThemeSettings.pagination_button_text_color || baseDefaults.pagination_button_text_color,
+            buttonHoverBgColor: newThemeSettings.pagination_button_hover_bg_color || baseDefaults.pagination_button_hover_bg_color,
+            buttonBorderColor: newThemeSettings.pagination_button_border_color || baseDefaults.pagination_button_border_color,
+            activeBgColor: newThemeSettings.pagination_active_bg_color || baseDefaults.pagination_active_bg_color,
+            activeTextColor: newThemeSettings.pagination_active_text_color || baseDefaults.pagination_active_text_color
         };
 
         // Merge the theme settings into the current store settings
@@ -854,7 +868,8 @@ export default function ThemeLayout() {
             theme_preset: theme.preset_name,
             settings: {
                 ...prev.settings,
-                theme: newThemeSettings
+                theme: newThemeSettings,
+                pagination: paginationSettings
             }
         }));
 
@@ -863,7 +878,7 @@ export default function ThemeLayout() {
         // Save immediately to backend
         try {
             await api.put(`/stores/${store.id}/settings`, {
-                settings: { ...store.settings, theme: newThemeSettings },
+                settings: { ...store.settings, theme: newThemeSettings, pagination: paginationSettings },
                 theme_preset: theme.preset_name
             });
             setFlashMessage({ type: 'success', message: `Theme "${theme.display_name}" applied and saved.` });
