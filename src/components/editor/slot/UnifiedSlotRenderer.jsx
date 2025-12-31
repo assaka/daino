@@ -1516,7 +1516,9 @@ export function UnifiedSlotRenderer({
 
       // CRITICAL: In editor mode, containers need grid layout for child colSpan/gridColumn to work
       // Add grid classes if not already present (for container type, not flex)
-      if (context === 'editor' && type === 'container' && !containerClass.includes('grid')) {
+      // BUT: Don't add grid if container already has flex - flex containers should remain flex
+      const hasFlexInClass = containerClass.split(/\s+/).some(cls => cls === 'flex' || cls === 'inline-flex');
+      if (context === 'editor' && type === 'container' && !containerClass.includes('grid') && !hasFlexInClass) {
         containerClass = `grid grid-cols-12 gap-2 ${containerClass}`;
       }
 
