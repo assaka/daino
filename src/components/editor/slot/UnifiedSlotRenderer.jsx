@@ -1307,7 +1307,7 @@ export function UnifiedSlotRenderer({
           const finalButtonStyles = {
             ...buttonStyles,
             display: 'flex', // Override inline-block from saved styles
-            width: '100%', // Full width for add to cart button
+            width: 'fit-content', // Fit content for add to cart button
             // UNIFIED: Theme settings are the single source of truth for button colors
             // This ensures editor sidebar and Theme & Layout share the same settings
             backgroundColor: theme.add_to_cart_button_bg_color || buttonStyles?.backgroundColor,
@@ -1357,8 +1357,8 @@ export function UnifiedSlotRenderer({
           // Ensure button starts with full width - force 100% width for add_to_cart
           // ResizeWrapper auto-calculates percentage from natural size, so we must explicitly set 100%
           const cleanedButtonStyles = { ...buttonStyles };
-          // Always set to 100% for add_to_cart_button to ensure full width start
-          cleanedButtonStyles.width = '100%';
+          // Set to fit-content for add_to_cart_button
+          cleanedButtonStyles.width = 'fit-content';
 
           const finalButtonStyles = {
             ...cleanedButtonStyles,
