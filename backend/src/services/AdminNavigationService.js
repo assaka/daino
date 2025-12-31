@@ -99,8 +99,11 @@ class AdminNavigationService {
    * Merges: Master core items + Tenant customizations + Plugin items
    * @param {string} storeId - Store ID
    * @param {Object} tenantDb - Supabase client connection to tenant DB
+   * @param {Object} options - Options
+   * @param {boolean} options.includeHidden - Include hidden items (for Navigation Manager)
    */
-  async getNavigationForTenant(storeId, tenantDb) {
+  async getNavigationForTenant(storeId, tenantDb, options = {}) {
+    const { includeHidden = false } = options;
     try {
       // 1. Get core items from MASTER (cached)
       const coreItems = await this.getCoreNavigationFromMaster();
@@ -110,8 +113,18 @@ class AdminNavigationService {
       const customMap = new Map(customizations.map(c => [c.core_nav_key, c]));
 
       // 3. Apply tenant customizations to core items
+      // Visibility rules:
+      // - If master default_is_visible=false → always hidden (tenant cannot enable)
+      // - If master default_is_visible=true → use tenant override if exists, else visible
       const mergedCoreItems = coreItems.map(item => {
         const custom = customMap.get(item.key);
+
+        // Master hidden = always hidden, tenant cannot override
+        // Master visible = tenant can hide (override), or use default (visible)
+        const isVisible = item.default_is_visible === false
+          ? false
+          : (custom?.is_visible ?? item.default_is_visible);
+
         return {
           key: item.key,
           label: item.label,
@@ -119,7 +132,7 @@ class AdminNavigationService {
           route: item.route,
           parent_key: custom?.parent_key ?? item.parent_key,
           order_position: custom?.order_position ?? item.default_order_position,
-          is_visible: custom?.is_visible ?? item.default_is_visible,
+          is_visible: isVisible,
           is_core: true,
           plugin_id: null,
           category: item.category,
@@ -130,11 +143,11 @@ class AdminNavigationService {
       });
 
       // 4. Get plugin navigation items from tenant DB
-      const pluginNavItems = await this.getPluginNavigationItems(tenantDb);
+      const pluginNavItems = await this.getPluginNavigationItems(tenantDb, { includeHidden });
 
-      // 5. Combine and filter visible items
+      // 5. Combine items (filter hidden unless includeHidden is true)
       const allItems = [...mergedCoreItems, ...pluginNavItems]
-        .filter(item => item.is_visible);
+        .filter(item => includeHidden || item.is_visible);
 
       // 6. Build hierarchical tree
       return this.buildNavigationTree(allItems);
@@ -148,8 +161,11 @@ class AdminNavigationService {
   /**
    * Get plugin navigation items from tenant DB
    * Combines: admin_navigation_registry plugin items + file-based plugins + registry plugins
+   * @param {Object} options - Options
+   * @param {boolean} options.includeHidden - Include hidden items
    */
-  async getPluginNavigationItems(tenantDb) {
+  async getPluginNavigationItems(tenantDb, options = {}) {
+    const { includeHidden = false } = options;
     try {
       // 1. Get tenant's installed & active plugins
       const { data: installedPlugins, error: pluginsError } = await tenantDb
@@ -246,8 +262,12 @@ class AdminNavigationService {
         .from('admin_navigation_registry')
         .select('*')
         .eq('is_core', false)
-        .eq('is_visible', true)
         .order('order_position', { ascending: true });
+
+      // Only filter by visibility if not including hidden
+      if (!includeHidden) {
+        registryNavQuery = registryNavQuery.eq('is_visible', true);
+      }
 
       if (pluginIds.length > 0) {
         registryNavQuery = registryNavQuery.in('plugin_id', pluginIds);

@@ -188,7 +188,7 @@ const NavigationManager = () => {
   const loadNavigationItems = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('admin/navigation');
+      const response = await apiClient.get('admin/navigation?include_hidden=true');
 
       // Flatten the tree into a flat array for editing, preserving parent info
       // This flattens hierarchically: parent first, then its children, then next parent

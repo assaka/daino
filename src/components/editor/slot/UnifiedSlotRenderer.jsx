@@ -1663,61 +1663,31 @@ export function UnifiedSlotRenderer({
     }
 
     // Check if parent is a flex container - skip grid wrapper to preserve flex layout
-    // Check for: explicit type='flex', OR CSS flex class, OR display:flex style
     const parentSlot = slot.parentId ? slots[slot.parentId] : null;
-
-    // Check for 'flex' as standalone Tailwind class (not flex-1, flex-shrink-0, etc.)
     const hasFlexClass = parentSlot?.className?.split(/\s+/).some(cls => cls === 'flex' || cls === 'inline-flex');
-    const isParentFlex = parentSlot?.type === 'flex' ||
-                         hasFlexClass ||
-                         parentSlot?.styles?.display === 'flex';
+    const isParentFlex = parentSlot?.type === 'flex' || hasFlexClass || parentSlot?.styles?.display === 'flex';
 
     if (isParentFlex) {
-      // For flex children, use simpler wrapper that preserves flex layout
-      const processedParentClassName = processVariables(slot.parentClassName || '', variableContext);
-
+      // For flex children, render without grid wrapper to preserve flex layout
+      // Just add click handler for editor selection
       if (context === 'editor') {
-        // In editor, use GridColumn for drag-and-drop but skip grid column styles
         return (
-          <GridColumn
+          <div
             key={slot.id}
-            colSpan={12}
-            rowSpan={1}
-            height={slot.styles?.height}
-            slotId={slot.id}
-            slot={slot}
-            onGridResize={onGridResize}
-            onSlotHeightResize={onSlotHeightResize}
-            onResizeStart={onResizeStart}
-            onResizeEnd={onResizeEnd}
-            onSlotDrop={onSlotDrop}
-            onSlotDelete={onSlotDelete}
-            onElementClick={onElementClick}
-            mode={mode}
-            viewMode={viewMode}
-            showBorders={showBorders}
-            currentDragInfo={currentDragInfo}
-            setCurrentDragInfo={setCurrentDragInfo}
-            selectedElementId={selectedElementId}
-            slots={slots}
-            isNested={parentId !== null}
-            productData={productData}
-            preserveLayout={true}
-            isFlexChild={true}
+            data-slot-id={slot.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onElementClick) onElementClick(slot.id, e.currentTarget);
+            }}
+            className={`${showBorders ? 'border border-dashed border-gray-300 hover:border-blue-400' : ''} ${selectedElementId === slot.id ? 'ring-2 ring-blue-500' : ''}`}
+            style={{ cursor: 'pointer' }}
           >
-            <div className={processedParentClassName} style={slot.containerStyles}>
-              {slotContent}
-            </div>
-          </GridColumn>
+            {slotContent}
+          </div>
         );
       }
-
-      // For storefront, just return content with minimal wrapper
-      return (
-        <div key={slot.id} className={processedParentClassName} style={slot.containerStyles}>
-          {slotContent}
-        </div>
-      );
+      // Storefront - just return content
+      return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
     // Check if colSpan is empty object and skip wrapper

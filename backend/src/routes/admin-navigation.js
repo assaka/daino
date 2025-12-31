@@ -9,11 +9,14 @@ const { authorize } = require('../middleware/auth');
 /**
  * GET /api/admin/navigation
  * Get complete navigation tree for the current tenant DB
+ * Query params:
+ *   - include_hidden=true: Include hidden items (for Navigation Manager)
  */
 router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     // Get store_id from header, query param, or JWT token (optional for main navigation)
     const store_id = req.headers['x-store-id'] || req.query.store_id || req.user.store_id;
+    const includeHidden = req.query.include_hidden === 'true';
 
     // If no store_id, return core navigation without store-specific items
     if (!store_id) {
@@ -54,7 +57,7 @@ router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), a
     }
 
     // Pass tenantDb to service
-    const navigation = await AdminNavigationService.getNavigationForTenant(store_id, tenantDb);
+    const navigation = await AdminNavigationService.getNavigationForTenant(store_id, tenantDb, { includeHidden });
 
     res.json({
       success: true,
