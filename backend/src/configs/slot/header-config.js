@@ -226,13 +226,13 @@ const headerConfig = {
       }
     },
 
-    // Country selector (large screens only >= 1024px)
+    // Country selector (>= 768px, shows name >= 1024px)
     country_selector: {
       id: 'country_selector',
       type: 'component',
       component: 'CountrySelect',
       content: '',
-      className: 'hidden lg:block',
+      className: 'hidden md:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',

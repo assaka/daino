@@ -362,11 +362,12 @@ const UserMenuSlot = createSlotComponent({
 
 /**
  * UserAccountMenu Component - Button-based user account menu (for desktop)
+ * Responsive: icon only 768-1024px, full button with text >= 1024px
  */
 const UserAccountMenuSlot = createSlotComponent({
   name: 'UserAccountMenu',
   render: ({ slot, context, headerContext, className, styles }) => {
-    const { user, userLoading, handleCustomerLogout, store, navigate, settings } = headerContext || {};
+    const { user, userLoading, handleCustomerLogout, store, navigate, settings, responsiveMode } = headerContext || {};
     const iconVariant = slot?.metadata?.iconVariant || 'outline';
     const themeDefaults = getThemeDefaults();
     const primaryButtonColor = settings?.theme?.primary_button_color || themeDefaults.primary_button_color;
@@ -375,7 +376,6 @@ const UserAccountMenuSlot = createSlotComponent({
       backgroundColor: styles?.backgroundColor || primaryButtonColor,
       color: styles?.color || '#ffffff',
       borderRadius: styles?.borderRadius || '0.5rem',
-      padding: styles?.padding || '0.5rem 1rem'
     };
 
     // Choose icon based on variant
@@ -395,17 +395,23 @@ const UserAccountMenuSlot = createSlotComponent({
       }
     };
 
+    // In editor, use responsiveMode to determine visibility (instead of CSS media queries)
+    // desktop >= 1024px: show full button with text
+    // tablet 768-1024px: show icon only
+    // mobile < 768px: handled by slot visibility
+    const isDesktopViewport = responsiveMode === 'desktop';
+
     if (context === 'editor') {
       return (
         <div className={className} style={styles}>
           <Button
             size="sm"
             variant="themed"
-            className="px-4 py-2 flex items-center space-x-2"
+            className={`${isDesktopViewport ? 'px-4' : 'px-2'} py-2 flex items-center`}
             style={buttonStyles}
           >
             {getUserIcon()}
-            <span>Sign In</span>
+            {isDesktopViewport && <span className="ml-2">Sign In</span>}
           </Button>
         </div>
       );
@@ -418,12 +424,12 @@ const UserAccountMenuSlot = createSlotComponent({
           <Button
             size="sm"
             variant="themed"
-            className="px-4 py-2 flex items-center space-x-1"
+            className="px-2 lg:px-4 py-2 flex items-center"
             style={buttonStyles}
           >
             {getUserIcon()}
-            <span>{user.first_name || user.name || user.email}</span>
-            <ChevronDown className="w-4 h-4" />
+            <span className="hidden lg:inline ml-2">{user.first_name || user.name || user.email}</span>
+            <ChevronDown className="hidden lg:inline w-4 h-4 ml-1" />
           </Button>
         </div>
       );
@@ -439,11 +445,11 @@ const UserAccountMenuSlot = createSlotComponent({
           }}
           disabled={userLoading}
           variant="themed"
-          className="px-4 py-2 flex items-center space-x-2"
+          className="px-2 lg:px-4 py-2 flex items-center"
           style={buttonStyles}
         >
           {getUserIcon()}
-          <span>Sign In</span>
+          <span className="hidden lg:inline ml-2">Sign In</span>
         </Button>
       </div>
     );
@@ -516,13 +522,18 @@ const LanguageSelectorSlot = createSlotComponent({
 
 /**
  * CountrySelector Component
- * Shows only flag on smaller screens, full dropdown has search + flag + country name
+ * Responsive: flag only < 1024px, flag + name >= 1024px
  */
 const CountrySelectorSlot = createSlotComponent({
   name: 'CountrySelector',
   render: ({ slot, context, headerContext, className, styles }) => {
-    const { settings = {}, selectedCountry, setSelectedCountry } = headerContext || {};
+    const { settings = {}, selectedCountry, setSelectedCountry, responsiveMode } = headerContext || {};
     const allowedCountries = settings.allowed_countries || ['US', 'CA', 'UK'];
+
+    // In editor, use responsiveMode to determine display mode
+    // desktop >= 1024px: show flag + name
+    // tablet 768-1024px: show flag only
+    const isDesktopViewport = responsiveMode === 'desktop';
 
     if (context === 'editor') {
       return (
@@ -531,7 +542,8 @@ const CountrySelectorSlot = createSlotComponent({
             value="US"
             onValueChange={() => {}}
             allowedCountries={allowedCountries}
-            compact={true}
+            responsive={true}
+            editorViewport={responsiveMode}
           />
         </div>
       );
@@ -546,7 +558,7 @@ const CountrySelectorSlot = createSlotComponent({
           value={selectedCountry}
           onValueChange={setSelectedCountry}
           allowedCountries={allowedCountries}
-          compact={true}
+          responsive={true}
         />
       </div>
     );

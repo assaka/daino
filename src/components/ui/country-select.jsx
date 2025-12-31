@@ -25,9 +25,13 @@ const countryData = countries.map(country => ({
   flag: country.flag
 }));
 
-export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [], style = {}, dropdownStyle = {}, compact = false }) {
+export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [], style = {}, dropdownStyle = {}, compact = false, responsive = false, editorViewport = null }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
+
+  // In editor mode with viewport override, determine if we should show full display
+  // editorViewport: 'desktop' (>= 1024px shows name), 'tablet' (768-1024px flag only), 'mobile' (< 768px)
+  const shouldShowName = editorViewport === 'desktop';
 
   // Use onValueChange if provided, otherwise use onChange for backward compatibility
   const handleChange = onValueChange || onChange;
@@ -86,7 +90,7 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`${compact ? 'w-auto px-2' : 'w-full'} justify-between ${multiple ? 'h-auto min-h-[40px]' : ''}`}
+          className={`${compact || responsive ? 'w-auto px-2' : 'w-full'} justify-between ${multiple ? 'h-auto min-h-[40px]' : ''}`}
           style={style}
         >
           {multiple ? (
@@ -111,6 +115,20 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
           ) : compact ? (
             // Compact mode: show only flag
             <span className="text-lg">{value && selectedFlag ? selectedFlag : '🌐'}</span>
+          ) : responsive ? (
+            // Responsive mode: flag always, name on lg+ (1024px)
+            // When editorViewport is provided, use JavaScript-based visibility instead of CSS media queries
+            editorViewport ? (
+              <span className="flex items-center">
+                <span className="text-lg">{value && selectedFlag ? selectedFlag : '🌐'}</span>
+                {shouldShowName && <span className="ml-2">{selectedLabel}</span>}
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <span className="text-lg">{value && selectedFlag ? selectedFlag : '🌐'}</span>
+                <span className="hidden lg:inline ml-2">{selectedLabel}</span>
+              </span>
+            )
           ) : (
             // Full mode: show flag + label
             <span>{value ? (
@@ -120,7 +138,7 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
               </>
             ) : placeholder}</span>
           )}
-          <ChevronsUpDown className={`${compact ? 'ml-1' : 'ml-2'} h-4 w-4 shrink-0 opacity-50`} />
+          <ChevronsUpDown className={`${compact || responsive ? 'ml-1' : 'ml-2'} h-4 w-4 shrink-0 opacity-50`} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0" style={dropdownStyle}>

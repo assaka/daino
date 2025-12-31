@@ -486,7 +486,7 @@ export function HeaderSlotRenderer({
               value={selectedCountry}
               onValueChange={setSelectedCountry}
               allowedCountries={settings.allowed_countries}
-              compact={true}
+              responsive={true}
             />
           </div>
         );
@@ -518,6 +518,7 @@ export function HeaderSlotRenderer({
           }
         };
 
+        // Responsive: icon only 768-1024px, full button >= 1024px
         return (
           <div key={id} className={finalClassName} data-slot-id={id}>
             {user ? (
@@ -526,12 +527,12 @@ export function HeaderSlotRenderer({
                   <Button
                     size="sm"
                     variant="themed"
-                    className="px-4 py-2 flex items-center space-x-1"
+                    className="px-2 lg:px-4 py-2 flex items-center"
                     style={buttonStyles}
                   >
                     {getUserIcon('w-4 h-4')}
-                    <span>{user.first_name || user.name || user.email}</span>
-                    <ChevronDown className="w-4 h-4" />
+                    <span className="hidden lg:inline ml-2">{user.first_name || user.name || user.email}</span>
+                    <ChevronDown className="hidden lg:inline w-4 h-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
@@ -562,11 +563,11 @@ export function HeaderSlotRenderer({
                 }}
                 disabled={userLoading}
                 variant="themed"
-                className="px-4 py-2 flex items-center space-x-2"
+                className="px-2 lg:px-4 py-2 flex items-center"
                 style={buttonStyles}
               >
-                {getUserIcon('w-5 h-5 mr-2')}
-                <span>{t('common.sign_in', 'Sign In')}</span>
+                {getUserIcon('w-4 h-4')}
+                <span className="hidden lg:inline ml-2">{t('common.sign_in', 'Sign In')}</span>
               </Button>
             )}
           </div>
