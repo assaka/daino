@@ -1836,7 +1836,8 @@ export function UnifiedSlotRenderer({
           preserveLayout={true}
           isFlexChild={shouldSkipGridStyles}
         >
-          {layoutWrapper}
+          {/* When shouldSkipGridStyles, pass slotContent directly to avoid extra nesting */}
+          {shouldSkipGridStyles ? slotContent : layoutWrapper}
         </GridColumn>
       );
     }
