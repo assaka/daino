@@ -161,6 +161,14 @@ export default function MarketingSignup() {
     { icon: Sparkles, text: 'AI-powered customization' }
   ];
 
+  const whatsNew = [
+    'Theme presets with one-click styling',
+    'Enhanced mobile navigation & filters',
+    'Visual WYSIWYG editor improvements',
+    'Mollie & Adyen payment integrations',
+    'Header & navigation color customization'
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex">
       {/* Left side - Marketing content */}
@@ -190,7 +198,7 @@ export default function MarketingSignup() {
             Join thousands of entrepreneurs who've transformed their ideas into thriving online businesses.
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-4 mb-10">
             {benefits.map((benefit, index) => (
               <motion.div
                 key={index}
@@ -207,8 +215,29 @@ export default function MarketingSignup() {
             ))}
           </div>
 
+          {/* What's New Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-semibold text-white/90">What's New</span>
+            </div>
+            <ul className="space-y-2">
+              {whatsNew.map((update, index) => (
+                <li key={index} className="flex items-start gap-2 text-sm text-white/70">
+                  <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                  <span>{update}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
           {/* Trust badges */}
-          <div className="mt-12 pt-8 border-t border-white/10">
+          <div className="mt-8 pt-6 border-t border-white/10">
             <div className="flex flex-wrap items-center gap-6 text-white/60 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-400" />
