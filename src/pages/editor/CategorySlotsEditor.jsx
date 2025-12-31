@@ -482,7 +482,7 @@ const CategorySlotsEditorInner = ({
       store: selectedStore,
       settings: storeSettings,
       categories,
-      viewport: 'desktop', // Will be overridden by UnifiedSlotsEditor based on currentViewport
+      viewport: viewportMode,
       pathname: '/category'
     }),
     onEditHeader: () => selectPage(PAGE_TYPES.HEADER),

@@ -268,12 +268,12 @@ export default function ProductSlotsEditor({
       store: selectedStore,
       settings: selectedStore?.settings || {},
       categories,
-      viewport: 'desktop',
+      viewport: viewportMode,
       pathname: '/product'
     }),
     onEditHeader: () => selectPage(PAGE_TYPES.HEADER),
     onHeaderSave: handleHeaderSave
-  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig, selectPage, handleHeaderSave]);
+  }), [generateProductContext, allProducts, selectedProductSlug, loading, selectedStore, categories, headerConfig, selectPage, handleHeaderSave, viewportMode]);
 
   // Show loading state while fetching product
   if (loading) {

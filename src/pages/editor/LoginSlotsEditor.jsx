@@ -105,12 +105,12 @@ const LoginSlotsEditor = ({
       store: selectedStore,
       settings: selectedStore?.settings || {},
       categories,
-      viewport: 'desktop',
+      viewport: viewportMode,
       pathname: '/login'
     }),
     onEditHeader: () => selectPage(PAGE_TYPES.HEADER),
     onHeaderSave: handleHeaderSave
-  }), [headerConfig, selectedStore, categories, selectPage, handleHeaderSave]);
+  }), [headerConfig, selectedStore, categories, selectPage, handleHeaderSave, viewportMode]);
 
   return (
     <EditorStoreProvider>
