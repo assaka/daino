@@ -1668,14 +1668,44 @@ export function UnifiedSlotRenderer({
                          parentSlot?.className?.includes('flex') ||
                          parentSlot?.styles?.display === 'flex';
 
-    if (isParentFlex) {
-      // For flex children, return content directly without grid wrapper
-      // Just add data-slot-id for editor selection
+    if (isParentFlex && context === 'editor') {
+      // For flex children in editor, use GridColumn but without grid column styles
+      // This preserves drag-and-drop while maintaining flex layout
       return (
-        <div key={slot.id} data-slot-id={slot.id} className={slot.className || ''} style={slot.styles || {}}>
+        <GridColumn
+          key={slot.id}
+          colSpan={12}
+          rowSpan={1}
+          height={slot.styles?.height}
+          slotId={slot.id}
+          slot={slot}
+          onGridResize={onGridResize}
+          onSlotHeightResize={onSlotHeightResize}
+          onResizeStart={onResizeStart}
+          onResizeEnd={onResizeEnd}
+          onSlotDrop={onSlotDrop}
+          onSlotDelete={onSlotDelete}
+          onElementClick={onElementClick}
+          mode={mode}
+          viewMode={viewMode}
+          showBorders={showBorders}
+          currentDragInfo={currentDragInfo}
+          setCurrentDragInfo={setCurrentDragInfo}
+          selectedElementId={selectedElementId}
+          slots={slots}
+          isNested={parentId !== null}
+          productData={productData}
+          preserveLayout={true}
+          isFlexChild={true}
+        >
           {slotContent}
-        </div>
+        </GridColumn>
       );
+    }
+
+    if (isParentFlex && context === 'storefront') {
+      // For flex children in storefront, just return content without wrapper
+      return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
     // Check if colSpan is empty object and skip wrapper

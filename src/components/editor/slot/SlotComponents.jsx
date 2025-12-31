@@ -462,7 +462,8 @@ export function GridColumn({
   isNested = false,
   slots = {}, // Add slots prop for enhanced feedback
   selectedElementId = null, // Add selectedElementId prop
-  productData = {} // Add productData prop for real admin settings
+  productData = {}, // Add productData prop for real admin settings
+  isFlexChild = false // Skip grid column styles for flex container children
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -795,9 +796,12 @@ export function GridColumn({
   }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
 
   const gridStyles = {
-    ...(useTailwindClass ? {} : { gridColumn: `span ${colSpan}` }),
-    gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
+    // Skip grid column styles for flex children to preserve flex layout
+    ...(isFlexChild ? {} : (useTailwindClass ? {} : { gridColumn: `span ${colSpan}` })),
+    ...(isFlexChild ? {} : { gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined }),
     zIndex: 2,
+    // Add flex item styles when inside a flex container
+    ...(isFlexChild ? { flexShrink: slot?.styles?.flexShrink ?? 0 } : {}),
     // Add container-specific styles when it's a container type
     ...(['container', 'grid', 'flex'].includes(slot?.type) ? {
       minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
@@ -860,7 +864,7 @@ export function GridColumn({
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-visible'
-      } relative responsive-slot ${colSpanClass} ${processedParentClassName}`}
+      } relative responsive-slot ${isFlexChild ? '' : colSpanClass} ${processedParentClassName}`}
       ref={(el) => {
       }}
       data-col-span={colSpan}
