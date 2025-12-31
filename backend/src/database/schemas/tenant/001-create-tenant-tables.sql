@@ -1069,6 +1069,22 @@ CREATE TABLE IF NOT EXISTS admin_navigation_registry (
   type VARCHAR(50) DEFAULT 'standard'::character varying
 );
 
+-- ============================================
+-- ADMIN_NAVIGATION_CUSTOM TABLE
+-- Per-tenant overrides for core navigation items (from master admin_navigation_core)
+-- Stores visibility, order, and parent_key customizations per tenant
+-- ============================================
+CREATE TABLE IF NOT EXISTS admin_navigation_custom (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  core_nav_key VARCHAR(100) UNIQUE NOT NULL,
+  is_visible BOOLEAN,
+  order_position INTEGER,
+  parent_key VARCHAR(100),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_nav_custom_key ON admin_navigation_custom(core_nav_key);
+
 CREATE TABLE IF NOT EXISTS ai_chat_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

@@ -1724,6 +1724,7 @@ COMMENT ON TABLE service_credit_costs IS 'Pricing for all services that consume 
 COMMENT ON TABLE job_queue IS 'Centralized job queue for processing tenant jobs';
 COMMENT ON TABLE billing_transactions IS 'Subscription payment history';
 COMMENT ON TABLE theme_defaults IS 'Centralized theme presets (default, eclipse, corporate, etc.) used for new tenant provisioning and as fallback values';
+COMMENT ON TABLE admin_navigation_core IS 'Core admin navigation items (source of truth). Tenants can override visibility/order via admin_navigation_custom in tenant DB';
 
 -- ============================================
 -- MASTER DATABASE SCHEMA COMPLETE

@@ -10,8 +10,8 @@ import SectionHeader from './components/SectionHeader';
  * Provides controls for logo, search bar, navigation, user menu, etc.
  */
 const HeaderEditorSidebar = ({
-  slot,
-  pageConfig,
+  slotId,
+  slotConfig,
   allSlots = {},
   onClassChange,
   onTextChange,

@@ -80,7 +80,8 @@ const EditorSidebar = ({
   slotConfig,    // Current slot configuration from database
   allSlots = {}, // All slots configuration to check for product_items
   storeId,       // Store ID for API calls
-  isVisible = true
+  isVisible = true,
+  sectionLabel   // Optional: 'Header' or page name to detect header editing
 }) => {
   // Set up database save callback for SimpleStyleManager
   useEffect(() => {
@@ -1636,11 +1637,25 @@ const EditorSidebar = ({
     console.log('🔍 [EditorSidebar] Finding specialized sidebar for:', {
       slotId,
       slotConfig,
+      sectionLabel,
       hasMetadata: !!slotConfig?.metadata,
       editorSidebar: slotConfig?.metadata?.editorSidebar,
       parentId: slotConfig?.parentId,
       allSlotsKeys: Object.keys(allSlots || {})
     });
+
+    // Detect header section by sectionLabel or slot ID pattern
+    if (sectionLabel === 'Header' || slotId?.startsWith('header_') || slotId?.startsWith('store_logo') ||
+        slotId?.startsWith('search_') || slotId?.startsWith('cart_') || slotId?.startsWith('navigation_') ||
+        slotId?.startsWith('mobile_') || slotId?.startsWith('actions_') || slotId?.startsWith('logo_') ||
+        slotId?.startsWith('user_') || slotId?.startsWith('wishlist_') || slotId?.startsWith('language_') ||
+        slotId?.startsWith('country_')) {
+      console.log('✅ [EditorSidebar] Detected header section, using HeaderEditorSidebar');
+      return {
+        sidebarName: 'HeaderEditorSidebar',
+        parentSlotId: 'header_main'
+      };
+    }
 
     // First check the current slot
     if (slotConfig?.metadata?.editorSidebar) {
@@ -1675,7 +1690,7 @@ const EditorSidebar = ({
 
     console.log('❌ [EditorSidebar] No specialized sidebar found');
     return { sidebarName: null, parentSlotId: null };
-  }, [slotConfig, slotId, allSlots]);
+  }, [slotConfig, slotId, allSlots, sectionLabel]);
 
   const { sidebarName: specializedSidebarName, parentSlotId: sidebarParentSlotId } = findSpecializedSidebar();
   const [SpecializedSidebar, setSpecializedSidebar] = useState(null);
