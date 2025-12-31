@@ -53,6 +53,7 @@ const aiPluginAssistantRoutes = require('./routes/ai-plugin-assistant');
 const aiRoutes = require('./routes/ai'); // Centralized AI service
 const aiModelsRoutes = require('./routes/ai-models'); // AI models configuration
 const aiLearningRoutes = require('./routes/ai-learning'); // AI training & feedback
+const imageOptimizationRoutes = require('./routes/image-optimization'); // AI image optimization
 const migrationsRoutes = require('./routes/migrations');
 // const diagnosticRoutes = require('./routes/diagnostic'); // Temporarily disabled
 const customerActivityRoutes = require('./routes/customer-activity');
@@ -1135,6 +1136,7 @@ app.use('/api/ai', aiWorkspaceRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
 app.use('/api/ai-models', aiModelsRoutes); // AI models configuration (public endpoint)
 app.use('/api/ai-learning', aiLearningRoutes); // AI training, feedback, and documentation management
+app.use('/api/image-optimization', imageOptimizationRoutes); // AI image optimization (compress, upscale, remove-bg, stage)
 app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/ab-testing', abTestingRoutes);

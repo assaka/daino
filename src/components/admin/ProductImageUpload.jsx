@@ -19,8 +19,10 @@ import {
   Loader2,
   FileText,
   File,
-  Archive
+  Archive,
+  Wand2
 } from 'lucide-react';
+import { ImageOptimizer } from '@/components/image-optimizer';
 
 const ProductImageUpload = ({ 
   images = [], 
@@ -40,8 +42,63 @@ const ProductImageUpload = ({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [optimizerOpen, setOptimizerOpen] = useState(false);
+  const [imageToOptimize, setImageToOptimize] = useState(null);
+  const [selectedImageIds, setSelectedImageIds] = useState([]);
+  const [bulkOptimizeMode, setBulkOptimizeMode] = useState(false);
   const fileInputRef = useRef();
   const dragCounter = useRef(0);
+
+  // Handle image selection for bulk actions
+  const toggleImageSelection = (imageId) => {
+    setSelectedImageIds(prev =>
+      prev.includes(imageId)
+        ? prev.filter(id => id !== imageId)
+        : [...prev, imageId]
+    );
+  };
+
+  const selectAllImages = () => {
+    if (selectedImageIds.length === images.length) {
+      setSelectedImageIds([]);
+    } else {
+      setSelectedImageIds(images.map(img => img.id || img.url));
+    }
+  };
+
+  const openOptimizer = (image = null, bulk = false) => {
+    if (bulk) {
+      setBulkOptimizeMode(true);
+      setImageToOptimize(null);
+    } else {
+      setBulkOptimizeMode(false);
+      setImageToOptimize(image);
+    }
+    setOptimizerOpen(true);
+  };
+
+  const handleOptimizedImage = async (result) => {
+    // Replace the optimized image in the list
+    if (imageToOptimize && result.result) {
+      const newImages = images.map(img => {
+        if ((img.id || img.url) === (imageToOptimize.id || imageToOptimize.url)) {
+          return {
+            ...img,
+            url: result.result.startsWith('http') ? result.result : `data:image/png;base64,${result.result}`,
+            optimized: true,
+            optimizedWith: result.provider,
+            optimizedOperation: result.operation
+          };
+        }
+        return img;
+      });
+      onImagesChange(newImages);
+      setSuccess(`Image optimized with ${result.provider}`);
+    }
+    setOptimizerOpen(false);
+    setImageToOptimize(null);
+    setBulkOptimizeMode(false);
+  };
 
   // Determine actual file types and settings based on attribute type
   const getFileConfiguration = () => {
@@ -410,9 +467,37 @@ const ProductImageUpload = ({
       {images.length > 0 && showPreview && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              Uploaded {fileConfig.isImageType ? 'Images' : 'Files'}
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Uploaded {fileConfig.isImageType ? 'Images' : 'Files'}
+              </div>
+              {fileConfig.isImageType && images.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {/* Select All Checkbox */}
+                  <label className="flex items-center gap-2 text-sm font-normal cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedImageIds.length === images.length && images.length > 0}
+                      onChange={selectAllImages}
+                      className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    Select All
+                  </label>
+                  {/* Bulk Optimize Button */}
+                  {selectedImageIds.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openOptimizer(null, true)}
+                      className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                    >
+                      <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                      AI Optimize ({selectedImageIds.length})
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>

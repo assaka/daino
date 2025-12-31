@@ -1,0 +1,270 @@
+/**
+ * Flux Image Provider
+ *
+ * Uses Flux models via Replicate or fal.ai for image operations
+ * Flux is excellent for high-quality image generation and editing
+ */
+
+class FluxImageProvider {
+  constructor(options = {}) {
+    this.replicateToken = options.replicateToken;
+    this.falApiKey = options.falApiKey;
+
+    if (!this.replicateToken && !this.falApiKey) {
+      throw new Error('Either Replicate token or fal.ai API key is required');
+    }
+
+    this.name = 'flux';
+    this.useReplicate = !!this.replicateToken;
+  }
+
+  getDisplayName() {
+    return 'Flux';
+  }
+
+  getIcon() {
+    return '⚡';
+  }
+
+  getCapabilities() {
+    return ['upscale', 'remove_bg', 'stage', 'convert'];
+  }
+
+  /**
+   * Make request to Replicate API
+   */
+  async replicateRequest(model, input) {
+    const response = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${this.replicateToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        version: model,
+        input
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Replicate API error');
+    }
+
+    let prediction = await response.json();
+
+    // Poll for completion
+    while (prediction.status !== 'succeeded' && prediction.status !== 'failed') {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const pollResponse = await fetch(prediction.urls.get, {
+        headers: { 'Authorization': `Token ${this.replicateToken}` }
+      });
+      prediction = await pollResponse.json();
+    }
+
+    if (prediction.status === 'failed') {
+      throw new Error(prediction.error || 'Prediction failed');
+    }
+
+    return prediction.output;
+  }
+
+  /**
+   * Make request to fal.ai API
+   */
+  async falRequest(model, input) {
+    const response = await fetch(`https://fal.run/${model}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${this.falApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(input)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'fal.ai API error');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Upscale and enhance image
+   */
+  async upscale(image, params = {}) {
+    const { scale = 2 } = params;
+    const imageUrl = await this.ensureUrl(image);
+
+    if (this.useReplicate) {
+      // Use Real-ESRGAN for upscaling
+      const output = await this.replicateRequest(
+        'nightmareai/real-esrgan:f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa',
+        {
+          image: imageUrl,
+          scale,
+          face_enhance: false
+        }
+      );
+
+      return {
+        imageUrl: output,
+        format: 'png',
+        scale
+      };
+    } else {
+      // Use fal.ai
+      const result = await this.falRequest('fal-ai/creative-upscaler', {
+        image_url: imageUrl,
+        scale
+      });
+
+      return {
+        imageUrl: result.image?.url,
+        format: 'png',
+        scale
+      };
+    }
+  }
+
+  /**
+   * Remove background from image
+   */
+  async removeBackground(image, params = {}) {
+    const imageUrl = await this.ensureUrl(image);
+
+    if (this.useReplicate) {
+      // Use rembg for background removal
+      const output = await this.replicateRequest(
+        'cjwbw/rembg:fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003',
+        { image: imageUrl }
+      );
+
+      return {
+        imageUrl: output,
+        format: 'png',
+        backgroundRemoved: true
+      };
+    } else {
+      const result = await this.falRequest('fal-ai/birefnet', {
+        image_url: imageUrl
+      });
+
+      return {
+        imageUrl: result.image?.url,
+        format: 'png',
+        backgroundRemoved: true
+      };
+    }
+  }
+
+  /**
+   * Stage product in context using Flux
+   */
+  async stage(image, params = {}) {
+    const {
+      context = 'modern living room',
+      style = 'photorealistic',
+      lighting = 'natural daylight'
+    } = params;
+
+    const imageUrl = await this.ensureUrl(image);
+
+    const prompt = `A ${style} photo of this product placed naturally in a ${context}. ${lighting} lighting. The product should have realistic shadows and reflections, looking like it belongs in the scene.`;
+
+    if (this.useReplicate) {
+      // Use Flux Canny for image-guided generation
+      const output = await this.replicateRequest(
+        'xlabs-ai/flux-dev-controlnet:4312e0fe97b5ed7d54bd2e0dcafe76c7eb8057bc6b6f0d8bd22644fe40a76c1d',
+        {
+          image: imageUrl,
+          prompt,
+          num_inference_steps: 28,
+          guidance_scale: 3.5,
+          controlnet_conditioning_scale: 0.6
+        }
+      );
+
+      return {
+        imageUrl: Array.isArray(output) ? output[0] : output,
+        format: 'png',
+        context,
+        style
+      };
+    } else {
+      const result = await this.falRequest('fal-ai/flux-pro/v1.1', {
+        image_url: imageUrl,
+        prompt,
+        num_inference_steps: 28,
+        guidance_scale: 3.5
+      });
+
+      return {
+        imageUrl: result.images?.[0]?.url,
+        format: 'png',
+        context,
+        style
+      };
+    }
+  }
+
+  /**
+   * Convert image format (via re-encoding)
+   */
+  async convert(image, params = {}) {
+    const { targetFormat = 'webp' } = params;
+
+    // For Flux, we'll just return the image URL
+    // Actual format conversion should be done server-side
+    const imageUrl = await this.ensureUrl(image);
+
+    return {
+      imageUrl,
+      format: 'png',
+      requestedFormat: targetFormat
+    };
+  }
+
+  /**
+   * Ensure image is a URL (upload if needed)
+   */
+  async ensureUrl(image) {
+    if (typeof image === 'string' && image.startsWith('http')) {
+      return image;
+    }
+
+    // For base64 or buffer, we need to upload to a temporary host
+    // Using tmpfiles.org for temporary storage
+    let base64Data;
+
+    if (typeof image === 'string' && image.startsWith('data:')) {
+      base64Data = image.split(',')[1];
+    } else if (Buffer.isBuffer(image)) {
+      base64Data = image.toString('base64');
+    } else {
+      base64Data = image;
+    }
+
+    // Upload to temporary file host
+    const formData = new FormData();
+    const blob = new Blob([Buffer.from(base64Data, 'base64')], { type: 'image/png' });
+    formData.append('file', blob, 'image.png');
+
+    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload temporary image');
+    }
+
+    const result = await response.json();
+    // Convert tmpfiles.org URL to direct link
+    return result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+  }
+}
+
+module.exports = FluxImageProvider;

@@ -599,11 +599,62 @@ const UnifiedSlotsEditor = ({
 
       if (!draggedSlot || !targetSlot) return prevConfig;
 
-      // Update parent based on drop position
+      // Check if same parent (intra-container reordering)
+      const sameParent = draggedSlot.parentId === targetSlot.parentId;
+
       if (position === 'inside') {
+        // Move into target container
         slots[draggedSlotId] = { ...draggedSlot, parentId: targetSlotId };
+      } else if (sameParent && (position === 'before' || position === 'left')) {
+        // Reorder: place dragged slot before target
+        const targetCol = targetSlot.position?.col || 1;
+        const draggedCol = draggedSlot.position?.col || 1;
+
+        // Get all siblings in same parent, sorted by column
+        const siblings = Object.values(slots)
+          .filter(s => s.parentId === draggedSlot.parentId)
+          .sort((a, b) => (a.position?.col || 0) - (b.position?.col || 0));
+
+        // Reassign column positions based on new order
+        const newOrder = siblings.filter(s => s.id !== draggedSlotId);
+        const targetIndex = newOrder.findIndex(s => s.id === targetSlotId);
+        newOrder.splice(targetIndex, 0, { ...draggedSlot, id: draggedSlotId });
+
+        // Update positions
+        newOrder.forEach((slot, index) => {
+          slots[slot.id] = {
+            ...slots[slot.id],
+            position: { ...slots[slot.id].position, col: index + 1 }
+          };
+        });
+      } else if (sameParent && (position === 'after' || position === 'right')) {
+        // Reorder: place dragged slot after target
+        const siblings = Object.values(slots)
+          .filter(s => s.parentId === draggedSlot.parentId)
+          .sort((a, b) => (a.position?.col || 0) - (b.position?.col || 0));
+
+        // Reassign column positions based on new order
+        const newOrder = siblings.filter(s => s.id !== draggedSlotId);
+        const targetIndex = newOrder.findIndex(s => s.id === targetSlotId);
+        newOrder.splice(targetIndex + 1, 0, { ...draggedSlot, id: draggedSlotId });
+
+        // Update positions
+        newOrder.forEach((slot, index) => {
+          slots[slot.id] = {
+            ...slots[slot.id],
+            position: { ...slots[slot.id].position, col: index + 1 }
+          };
+        });
       } else {
-        slots[draggedSlotId] = { ...draggedSlot, parentId: targetSlot.parentId };
+        // Cross-container move
+        slots[draggedSlotId] = {
+          ...draggedSlot,
+          parentId: targetSlot.parentId,
+          position: {
+            ...draggedSlot.position,
+            col: (targetSlot.position?.col || 1) + (position === 'after' || position === 'right' ? 1 : 0)
+          }
+        };
       }
 
       const updatedConfig = {

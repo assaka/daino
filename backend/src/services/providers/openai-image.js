@@ -1,0 +1,182 @@
+/**
+ * OpenAI Image Provider
+ *
+ * Uses GPT-Image-1 (gpt-4o) and DALL-E 3 for image operations
+ * - Edit/Inpainting: GPT-Image-1
+ * - Generation: DALL-E 3
+ */
+
+const OpenAI = require('openai');
+
+class OpenAIImageProvider {
+  constructor(apiKey) {
+    if (!apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
+    this.client = new OpenAI({ apiKey });
+    this.name = 'openai';
+  }
+
+  getDisplayName() {
+    return 'OpenAI';
+  }
+
+  getIcon() {
+    return '🤖';
+  }
+
+  getCapabilities() {
+    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert'];
+  }
+
+  /**
+   * Compress image while maintaining quality
+   */
+  async compress(image, params = {}) {
+    const { quality = 'high' } = params;
+
+    // Use GPT-4o vision to analyze and regenerate at optimal quality
+    const response = await this.client.images.edit({
+      model: 'gpt-image-1',
+      image: await this.prepareImage(image),
+      prompt: `Optimize this image for web use. Maintain visual quality while reducing file size. Quality level: ${quality}`,
+      size: params.size || '1024x1024',
+      response_format: 'b64_json'
+    });
+
+    return {
+      image: response.data[0].b64_json,
+      format: 'png',
+      optimized: true
+    };
+  }
+
+  /**
+   * Upscale and enhance image
+   */
+  async upscale(image, params = {}) {
+    const { scale = 2, enhanceDetails = true } = params;
+
+    // Calculate target size
+    const sizes = {
+      1: '1024x1024',
+      2: '1792x1024',
+      4: '1792x1024' // Max supported
+    };
+
+    const response = await this.client.images.edit({
+      model: 'gpt-image-1',
+      image: await this.prepareImage(image),
+      prompt: `Upscale this image to higher resolution. ${enhanceDetails ? 'Enhance fine details, textures, and sharpness.' : 'Maintain original appearance.'} Remove any artifacts or noise.`,
+      size: sizes[scale] || '1792x1024',
+      response_format: 'b64_json'
+    });
+
+    return {
+      image: response.data[0].b64_json,
+      format: 'png',
+      scale
+    };
+  }
+
+  /**
+   * Remove background from image
+   */
+  async removeBackground(image, params = {}) {
+    const { replacement = 'transparent' } = params;
+
+    let prompt = 'Remove the background from this image completely. Keep only the main subject with crisp, clean edges.';
+
+    if (replacement !== 'transparent') {
+      prompt = `Remove the background from this image and replace it with ${replacement}. Keep the main subject with clean edges.`;
+    }
+
+    const response = await this.client.images.edit({
+      model: 'gpt-image-1',
+      image: await this.prepareImage(image),
+      prompt,
+      size: params.size || '1024x1024',
+      response_format: 'b64_json'
+    });
+
+    return {
+      image: response.data[0].b64_json,
+      format: 'png',
+      backgroundRemoved: true,
+      replacement
+    };
+  }
+
+  /**
+   * Stage product in context (room, model, environment)
+   */
+  async stage(image, params = {}) {
+    const {
+      context = 'modern living room',
+      style = 'photorealistic',
+      lighting = 'natural daylight'
+    } = params;
+
+    const prompt = `Place this product naturally in a ${context}. Style: ${style}. Lighting: ${lighting}. The product should look like it belongs in the scene, with realistic shadows and reflections. Maintain the product's original appearance and details.`;
+
+    const response = await this.client.images.edit({
+      model: 'gpt-image-1',
+      image: await this.prepareImage(image),
+      prompt,
+      size: params.size || '1792x1024',
+      response_format: 'b64_json'
+    });
+
+    return {
+      image: response.data[0].b64_json,
+      format: 'png',
+      context,
+      style
+    };
+  }
+
+  /**
+   * Convert image format
+   */
+  async convert(image, params = {}) {
+    const { targetFormat = 'webp', quality = 85 } = params;
+
+    // For format conversion, we regenerate the image
+    const response = await this.client.images.edit({
+      model: 'gpt-image-1',
+      image: await this.prepareImage(image),
+      prompt: 'Reproduce this image exactly as it is, maintaining all details, colors, and composition.',
+      size: params.size || '1024x1024',
+      response_format: 'b64_json'
+    });
+
+    // Note: OpenAI returns PNG, conversion to target format should be done server-side
+    return {
+      image: response.data[0].b64_json,
+      format: 'png', // Will need server-side conversion to targetFormat
+      requestedFormat: targetFormat,
+      quality
+    };
+  }
+
+  /**
+   * Prepare image for API (convert URL/base64 to proper format)
+   */
+  async prepareImage(image) {
+    if (typeof image === 'string') {
+      if (image.startsWith('data:')) {
+        // Base64 data URL - extract the base64 part
+        const base64Data = image.split(',')[1];
+        return Buffer.from(base64Data, 'base64');
+      } else if (image.startsWith('http')) {
+        // URL - fetch and convert to buffer
+        const response = await fetch(image);
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      }
+    }
+    return image; // Already a buffer
+  }
+}
+
+module.exports = OpenAIImageProvider;
