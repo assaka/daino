@@ -35,9 +35,8 @@ const headerConfig = {
       className: 'max-w-7xl mx-auto px-2 md:px-4 lg:px-8',
       parentClassName: '',
       styles: {
-        maxWidth: '80rem',
-        marginLeft: 'auto',
-        marginRight: 'auto'
+        // No explicit margins - mx-auto class handles centering
+        // This prevents double margin in editor preview
       },
       parentId: 'header_main',
       position: { col: 1, row: 1 },
@@ -207,13 +206,13 @@ const headerConfig = {
       }
     },
 
-    // Language selector (desktop only, shown if enabled in settings)
+    // Language selector (large screens only, hidden when grid is too small)
     language_selector: {
       id: 'language_selector',
       type: 'component',
       component: 'LanguageSelector',
       content: '',
-      className: 'hidden md:block',
+      className: 'hidden lg:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
@@ -227,13 +226,13 @@ const headerConfig = {
       }
     },
 
-    // Country selector (desktop only, shown if multiple countries configured)
+    // Country selector (large screens only, hidden when grid is too small)
     country_selector: {
       id: 'country_selector',
       type: 'component',
       component: 'CountrySelect',
       content: '',
-      className: 'hidden md:block',
+      className: 'hidden lg:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
@@ -247,13 +246,13 @@ const headerConfig = {
       }
     },
 
-    // User account menu (desktop - shows sign in button or user dropdown)
+    // User account menu (large screens only - shows sign in button or user dropdown)
     user_account_menu: {
       id: 'user_account_menu',
       type: 'component',
       component: 'UserAccountMenu',
       content: '',
-      className: 'hidden md:block',
+      className: 'hidden lg:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
