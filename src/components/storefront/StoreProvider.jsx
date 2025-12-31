@@ -18,6 +18,15 @@ import { useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
 import { shouldSkipStoreProvider } from '@/utils/domainConfig';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
@@ -270,6 +279,27 @@ export const StoreProvider = ({ children }) => {
   // IMPORTANT: This check must be AFTER all hooks to comply with React Rules of Hooks
   if (shouldSkip) {
     return <>{children}</>;
+  }
+
+  // Show modal if store is not found
+  if (bootstrapError && !bootstrapLoading) {
+    return (
+      <AlertDialog open={true}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Shop Not Found</AlertDialogTitle>
+            <AlertDialogDescription>
+              Shop "{resolvedSlug}" could not be found. Please check the URL and try again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => window.location.href = '/'}>
+              Go to Homepage
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
   }
 
   // Context value
