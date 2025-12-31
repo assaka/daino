@@ -177,7 +177,7 @@ export default function CmsPageViewer() {
     const pageContent = processStoreVariables(rawPageContent, store, settings);
 
     return (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 lg:px-8 py-12">
             <SeoHeadManager
                 pageType="cms_page"
                 pageData={{
@@ -186,7 +186,7 @@ export default function CmsPageViewer() {
                 }}
                 pageTitle={pageTitle}
             />
-            <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
+            <article className="prose lg:prose-xl mx-auto bg-white px-2 sm:p-8 rounded-lg shadow">
                 <div dangerouslySetInnerHTML={{ __html: pageContent }} />
             </article>
 

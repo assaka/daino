@@ -67,7 +67,7 @@ const NotFoundPage = () => {
           }}
           pageTitle={pageTitle || "404 - Page Not Found"}
         />
-        <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
+        <article className="prose lg:prose-xl mx-auto bg-white sm:p-8 rounded-lg shadow">
           <div dangerouslySetInnerHTML={{ __html: pageContent }} />
         </article>
       </div>

@@ -1,6 +1,6 @@
 // Default Privacy Policy page content for new stores
 const defaultPrivacyPolicyContent = `
-<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+<div style="max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
   <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
     Privacy Policy
   </h1>
@@ -119,7 +119,7 @@ const defaultPrivacyPolicyMetadata = {
 
 // Dutch translation
 const defaultPrivacyPolicyContentNL = `
-<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+<div style="max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
   <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
     Privacybeleid
   </h1>

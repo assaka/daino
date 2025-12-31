@@ -242,7 +242,6 @@ const ProfileFormSlotComponent = ({ slot, variableContext }) => {
                 <option value="male">{t('common.male', 'Male')}</option>
                 <option value="female">{t('common.female', 'Female')}</option>
                 <option value="other">{t('common.other', 'Other')}</option>
-                <option value="prefer_not_to_say">{t('common.prefer_not_to_say', 'Prefer not to say')}</option>
               </select>
             </div>
           </div>

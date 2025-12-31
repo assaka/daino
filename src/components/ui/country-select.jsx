@@ -25,7 +25,7 @@ const countryData = countries.map(country => ({
   flag: country.flag
 }));
 
-export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [], style = {}, dropdownStyle = {} }) {
+export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [], style = {}, dropdownStyle = {}, compact = false }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
@@ -63,9 +63,11 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
         .filter(Boolean)
     : [];
 
-  const selectedLabel = !multiple
-    ? filteredCountries.find((country) => country && country.value === value)?.label
+  const selectedCountry = !multiple
+    ? filteredCountries.find((country) => country && country.value === value)
     : null;
+  const selectedLabel = selectedCountry?.label;
+  const selectedFlag = selectedCountry?.flag;
 
   // Handle removing a country from selection
   const handleRemove = (e, countryValue) => {
@@ -84,7 +86,7 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`w-full justify-between ${multiple ? 'h-auto min-h-[40px]' : ''}`}
+          className={`${compact ? 'w-auto px-2' : 'w-full'} justify-between ${multiple ? 'h-auto min-h-[40px]' : ''}`}
           style={style}
         >
           {multiple ? (
@@ -106,10 +108,19 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
                 <span className="text-muted-foreground">{placeholder}</span>
               )}
             </div>
+          ) : compact ? (
+            // Compact mode: show only flag
+            <span className="text-lg">{value && selectedFlag ? selectedFlag : '🌐'}</span>
           ) : (
-            <span>{value ? selectedLabel : placeholder}</span>
+            // Full mode: show flag + label
+            <span>{value ? (
+              <>
+                <span className="mr-2">{selectedFlag}</span>
+                {selectedLabel}
+              </>
+            ) : placeholder}</span>
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className={`${compact ? 'ml-1' : 'ml-2'} h-4 w-4 shrink-0 opacity-50`} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0" style={dropdownStyle}>

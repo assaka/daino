@@ -57,7 +57,7 @@ ON CONFLICT DO NOTHING;
 
 
 -- cms_page_translations (7 rows)
-INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "title", "content", "excerpt", "created_at", "updated_at") VALUES ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'en', 'Privacy Policy', '<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "title", "content", "excerpt", "created_at", "updated_at") VALUES ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'en', 'Privacy Policy', '<div style="max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
   <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
     Privacy Policy
   </h1>
@@ -199,7 +199,7 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
     </p>
   </div>
 </div>
-', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00'), ('c90291e1-764b-47f4-a73c-2bcc0189c9da', 'en', 'Terms of Service', '<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00'), ('c90291e1-764b-47f4-a73c-2bcc0189c9da', 'en', 'Terms of Service', '<div style="max-width: 900px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
   <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
     Terms of Service
   </h1>

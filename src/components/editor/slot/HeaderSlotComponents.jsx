@@ -498,6 +498,7 @@ const LanguageSelectorSlot = createSlotComponent({
 
 /**
  * CountrySelector Component
+ * Shows only flag on smaller screens, full dropdown has search + flag + country name
  */
 const CountrySelectorSlot = createSlotComponent({
   name: 'CountrySelector',
@@ -512,6 +513,7 @@ const CountrySelectorSlot = createSlotComponent({
             value="US"
             onValueChange={() => {}}
             allowedCountries={allowedCountries}
+            compact={true}
           />
         </div>
       );
@@ -526,6 +528,7 @@ const CountrySelectorSlot = createSlotComponent({
           value={selectedCountry}
           onValueChange={setSelectedCountry}
           allowedCountries={allowedCountries}
+          compact={true}
         />
       </div>
     );

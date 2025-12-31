@@ -37,7 +37,7 @@ const productConfig = {
       id: 'main_layout',
       type: 'grid',
       content: '',
-      className: 'main-layout max-w-6xl mx-auto sm:px-4 py-8',
+      className: 'main-layout max-w-6xl mx-auto px-2 sm:px-4 py-8',
       styles: {},
       parentId: null,
       layout: 'grid',

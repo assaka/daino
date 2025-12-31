@@ -17,7 +17,7 @@ const loginConfig = {
       id: 'main_layout',
       type: 'grid',
       content: '',
-      className: 'grid grid-cols-12 gap-8 max-w-7xl mx-auto px-4 py-8',
+      className: 'grid grid-cols-12 gap-8 max-w-7xl mx-auto px-2 sm:px-4 py-8',
       styles: {},
       parentId: null,
       layout: 'grid',
