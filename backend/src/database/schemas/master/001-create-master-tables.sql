@@ -1673,6 +1673,45 @@ VALUES
 ON CONFLICT (preset_name) DO NOTHING;
 
 -- ============================================
+-- ADMIN_NAVIGATION_CORE TABLE
+-- Core navigation items for admin sidebar (master source of truth)
+-- Tenants can override visibility/order in admin_navigation_custom
+-- ============================================
+CREATE TABLE IF NOT EXISTS admin_navigation_core (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key VARCHAR(100) UNIQUE NOT NULL,
+  label VARCHAR(255) NOT NULL,
+  icon VARCHAR(50),
+  route VARCHAR(255),
+  parent_key VARCHAR(100),
+  default_order_position INTEGER DEFAULT 0,
+  default_is_visible BOOLEAN DEFAULT true,
+  category VARCHAR(50),
+  required_permission VARCHAR(100),
+  description TEXT,
+  badge_config JSONB,
+  type VARCHAR(50) DEFAULT 'standard',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Add self-referential FK after table creation (for parent_key)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_admin_nav_core_parent'
+  ) THEN
+    ALTER TABLE admin_navigation_core
+    ADD CONSTRAINT fk_admin_nav_core_parent
+    FOREIGN KEY (parent_key) REFERENCES admin_navigation_core(key) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_admin_nav_core_key ON admin_navigation_core(key);
+CREATE INDEX IF NOT EXISTS idx_admin_nav_core_parent ON admin_navigation_core(parent_key);
+CREATE INDEX IF NOT EXISTS idx_admin_nav_core_order ON admin_navigation_core(default_order_position);
+
+-- ============================================
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================
 COMMENT ON TABLE users IS 'Platform users (agency/store owners only). Full user structure synced from tenant DBs where account_type = agency';

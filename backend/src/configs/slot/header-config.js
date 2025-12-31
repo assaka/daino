@@ -23,7 +23,8 @@ const headerConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        displayName: 'Main Header Container'
+        displayName: 'Main Header Container',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
