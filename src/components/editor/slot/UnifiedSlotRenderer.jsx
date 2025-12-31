@@ -1662,57 +1662,27 @@ export function UnifiedSlotRenderer({
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
-    // Check if parent is a flex container - skip grid wrapper to preserve flex layout
+    // Check if parent uses custom grid-template-columns (like 'auto 1fr auto')
+    // In this case, we should NOT apply grid-column: span X but still want drag-and-drop
     const parentSlot = slot.parentId ? slots[slot.parentId] : null;
+    const hasCustomGridTemplate = parentSlot?.styles?.gridTemplateColumns &&
+                                  !parentSlot?.styles?.gridTemplateColumns.includes('repeat');
+
+    // Check if parent is a flex container
     const hasFlexClass = parentSlot?.className?.split(/\s+/).some(cls => cls === 'flex' || cls === 'inline-flex');
     const isParentFlex = parentSlot?.type === 'flex' || hasFlexClass || parentSlot?.styles?.display === 'flex';
 
-    if (isParentFlex) {
-      // For flex children, render without grid wrapper to preserve flex layout
-      // Just add click handler for editor selection
-      if (context === 'editor') {
-        return (
-          <div
-            key={slot.id}
-            data-slot-id={slot.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onElementClick) onElementClick(slot.id, e.currentTarget);
-            }}
-            className={`${showBorders ? 'border border-dashed border-gray-300 hover:border-blue-400' : ''} ${selectedElementId === slot.id ? 'ring-2 ring-blue-500' : ''}`}
-            style={{ cursor: 'pointer' }}
-          >
-            {slotContent}
-          </div>
-        );
-      }
-      // Storefront - just return content
-      return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
-    }
-
-    // Check if colSpan is empty object - skip grid wrapper but add click handler in editor
+    // Check if colSpan is empty object - skip grid wrapper styles but keep drag-and-drop
     const isEmptyColSpan = typeof slot.colSpan === 'object' &&
                            slot.colSpan !== null &&
                            Object.keys(slot.colSpan).length === 0;
 
-    if (isEmptyColSpan) {
-      if (context === 'editor') {
-        // In editor, add clickable wrapper for selection
-        return (
-          <div
-            key={slot.id}
-            data-slot-id={slot.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onElementClick) onElementClick(slot.id, e.currentTarget);
-            }}
-            className={`${showBorders ? 'border border-dashed border-gray-300 hover:border-blue-400' : ''} ${selectedElementId === slot.id ? 'ring-2 ring-blue-500' : ''}`}
-            style={{ cursor: 'pointer' }}
-          >
-            {slotContent}
-          </div>
-        );
-      }
+    // Use isFlexChild mode when: parent is flex, parent has custom grid-template, or colSpan is empty
+    // This skips grid-column styles but keeps drag-and-drop functionality
+    const shouldSkipGridStyles = isParentFlex || hasCustomGridTemplate || isEmptyColSpan;
+
+    if (shouldSkipGridStyles && context !== 'editor') {
+      // Storefront - just return content without wrapper
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
@@ -1722,12 +1692,12 @@ export function UnifiedSlotRenderer({
     const layoutWrapper = (
       <div
         key={slot.id}
-        className={`${colSpanClass} ${processedParentClassName}`}
+        className={`${shouldSkipGridStyles ? '' : colSpanClass} ${processedParentClassName}`}
         style={{
-          // CRITICAL: Only apply gridColumn in editor mode
+          // CRITICAL: Only apply gridColumn in editor mode when NOT using custom grid template
           // In storefront, Tailwind responsive classes (col-span-12 md:col-span-6) handle grid layout
-          // Inline gridColumn style would override responsive breakpoints
-          ...(context === 'editor' && gridColumn ? { gridColumn } : {}),
+          // Inline gridColumn style would override responsive breakpoints or custom grid-template-columns
+          ...(context === 'editor' && gridColumn && !shouldSkipGridStyles ? { gridColumn } : {}),
           ...slot.containerStyles
         }}
       >
@@ -1803,9 +1773,9 @@ export function UnifiedSlotRenderer({
             onDelete={onSlotDelete ? (slotId) => onSlotDelete(slotId, slot) : null}
             currentDragInfo={currentDragInfo}
             setCurrentDragInfo={setCurrentDragInfo}
-            className={`${colSpanClass} ${processedParentClassName}`}
+            className={`${shouldSkipGridStyles ? '' : colSpanClass} ${processedParentClassName}`}
             style={{
-              ...(gridColumn ? { gridColumn } : {}),
+              ...(gridColumn && !shouldSkipGridStyles ? { gridColumn } : {}),
               ...slot.containerStyles
             }}
           >
@@ -1841,7 +1811,7 @@ export function UnifiedSlotRenderer({
         <GridColumn
           key={`${slot.id}-${viewportMode}`}
           colSpan={colSpanValue}
-          colSpanClass={colSpanClass}
+          colSpanClass={shouldSkipGridStyles ? '' : colSpanClass}
           useTailwindClass={useTailwindClass}
           rowSpan={1}
           height={slot.styles?.height}
@@ -1864,6 +1834,7 @@ export function UnifiedSlotRenderer({
           isNested={parentId !== null}
           productData={productData}
           preserveLayout={true}
+          isFlexChild={shouldSkipGridStyles}
         >
           {layoutWrapper}
         </GridColumn>
