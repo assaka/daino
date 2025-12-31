@@ -64,8 +64,8 @@ const PROVIDERS = {
     description: 'Self-hosted workflow automation',
     urlPlaceholder: 'https://your-n8n-instance.com/webhook/...',
     docsUrl: 'https://docs.n8n.io/integrations/builtin/trigger-nodes/n8n-nodes-base.webhook/',
-    color: 'bg-red-500',
-    badgeColor: 'bg-red-100 text-red-800 border-red-200',
+    color: 'bg-amber-500',
+    badgeColor: 'bg-amber-100 text-black border-amber-300',
     features: ['Self-hosted automation', 'Visual workflow editor', 'Custom nodes', 'Full data control']
   },
   zapier: {
@@ -74,8 +74,8 @@ const PROVIDERS = {
     description: 'No-code automation platform',
     urlPlaceholder: 'https://hooks.zapier.com/hooks/catch/...',
     docsUrl: 'https://zapier.com/help/create/code-webhooks/trigger-zaps-from-webhooks',
-    color: 'bg-orange-500',
-    badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+    color: 'bg-amber-500',
+    badgeColor: 'bg-amber-100 text-black border-amber-300',
     features: ['5000+ app integrations', 'No-code automation', 'Pre-built templates', 'Cloud-based']
   },
   make: {
@@ -84,8 +84,8 @@ const PROVIDERS = {
     description: 'Visual workflow builder',
     urlPlaceholder: 'https://hook.make.com/...',
     docsUrl: 'https://www.make.com/en/help/tools/webhooks',
-    color: 'bg-purple-500',
-    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+    color: 'bg-amber-500',
+    badgeColor: 'bg-amber-100 text-black border-amber-300',
     features: ['Visual scenario builder', 'Complex logic support', 'Data transformations', 'Error handling']
   }
 };
@@ -101,6 +101,15 @@ const EVENT_LABELS = {
   customer_created: 'Customer Created',
   abandoned_cart: 'Abandoned Cart',
   search: 'Search'
+};
+
+// Authentication types
+const AUTH_TYPES = {
+  none: { id: 'none', name: 'None', description: 'No authentication' },
+  api_key: { id: 'api_key', name: 'API Key', description: 'API key in custom header' },
+  basic: { id: 'basic', name: 'Basic Auth', description: 'Username and password' },
+  bearer: { id: 'bearer', name: 'Bearer Token', description: 'Bearer token in Authorization header' },
+  hmac: { id: 'hmac', name: 'HMAC Signature', description: 'Sign payload with secret key' }
 };
 
 export default function WorkflowIntegrations() {
@@ -133,7 +142,18 @@ export default function WorkflowIntegrations() {
     name: '',
     webhookUrl: '',
     eventTypes: [],
-    isActive: true
+    isActive: true,
+    auth: {
+      type: 'none',
+      headerName: 'X-API-Key',
+      apiKey: '',
+      username: '',
+      password: '',
+      token: '',
+      secret: '',
+      algorithm: 'sha256',
+      signatureHeader: 'X-Webhook-Signature'
+    }
   });
 
   // Load webhooks from all providers
@@ -186,6 +206,19 @@ export default function WorkflowIntegrations() {
     });
   };
 
+  // Default auth state
+  const defaultAuth = {
+    type: 'none',
+    headerName: 'X-API-Key',
+    apiKey: '',
+    username: '',
+    password: '',
+    token: '',
+    secret: '',
+    algorithm: 'sha256',
+    signatureHeader: 'X-Webhook-Signature'
+  };
+
   // Handle form open for create/edit
   const handleOpenForm = (webhook = null) => {
     if (webhook) {
@@ -194,7 +227,8 @@ export default function WorkflowIntegrations() {
         name: webhook.name || '',
         webhookUrl: webhook.webhookUrl || '',
         eventTypes: webhook.eventTypes || [],
-        isActive: webhook.isActive !== false
+        isActive: webhook.isActive !== false,
+        auth: { ...defaultAuth, type: webhook.authType || 'none' }
       });
       setSelectedWebhook(webhook);
     } else {
@@ -203,7 +237,8 @@ export default function WorkflowIntegrations() {
         name: '',
         webhookUrl: '',
         eventTypes: [],
-        isActive: true
+        isActive: true,
+        auth: { ...defaultAuth }
       });
       setSelectedWebhook(null);
     }
@@ -658,6 +693,167 @@ export default function WorkflowIntegrations() {
                 placeholder={PROVIDERS[form.provider]?.urlPlaceholder || 'https://...'}
                 required
               />
+            </div>
+
+            {/* Authentication Section */}
+            <div className="space-y-3 p-3 border rounded bg-gray-50">
+              <div>
+                <Label htmlFor="authType">Authentication</Label>
+                <Select
+                  value={form.auth.type}
+                  onValueChange={(value) => setForm(prev => ({
+                    ...prev,
+                    auth: { ...prev.auth, type: value }
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select authentication type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(AUTH_TYPES).map((authType) => (
+                      <SelectItem key={authType.id} value={authType.id}>
+                        <span className="flex flex-col">
+                          <span>{authType.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {AUTH_TYPES[form.auth.type]?.description}
+                </p>
+              </div>
+
+              {/* API Key Auth Fields */}
+              {form.auth.type === 'api_key' && (
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="headerName">Header Name</Label>
+                    <Input
+                      id="headerName"
+                      value={form.auth.headerName}
+                      onChange={(e) => setForm(prev => ({
+                        ...prev,
+                        auth: { ...prev.auth, headerName: e.target.value }
+                      }))}
+                      placeholder="X-API-Key"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="apiKey">API Key *</Label>
+                    <Input
+                      id="apiKey"
+                      type="password"
+                      value={form.auth.apiKey}
+                      onChange={(e) => setForm(prev => ({
+                        ...prev,
+                        auth: { ...prev.auth, apiKey: e.target.value }
+                      }))}
+                      placeholder="Your API key"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Basic Auth Fields */}
+              {form.auth.type === 'basic' && (
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="username">Username *</Label>
+                    <Input
+                      id="username"
+                      value={form.auth.username}
+                      onChange={(e) => setForm(prev => ({
+                        ...prev,
+                        auth: { ...prev.auth, username: e.target.value }
+                      }))}
+                      placeholder="Username"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={form.auth.password}
+                      onChange={(e) => setForm(prev => ({
+                        ...prev,
+                        auth: { ...prev.auth, password: e.target.value }
+                      }))}
+                      placeholder="Password"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Bearer Token Field */}
+              {form.auth.type === 'bearer' && (
+                <div>
+                  <Label htmlFor="token">Bearer Token *</Label>
+                  <Input
+                    id="token"
+                    type="password"
+                    value={form.auth.token}
+                    onChange={(e) => setForm(prev => ({
+                      ...prev,
+                      auth: { ...prev.auth, token: e.target.value }
+                    }))}
+                    placeholder="Your bearer token"
+                  />
+                </div>
+              )}
+
+              {/* HMAC Signature Fields */}
+              {form.auth.type === 'hmac' && (
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="secret">Secret Key *</Label>
+                    <Input
+                      id="secret"
+                      type="password"
+                      value={form.auth.secret}
+                      onChange={(e) => setForm(prev => ({
+                        ...prev,
+                        auth: { ...prev.auth, secret: e.target.value }
+                      }))}
+                      placeholder="HMAC secret key"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="algorithm">Algorithm</Label>
+                      <Select
+                        value={form.auth.algorithm}
+                        onValueChange={(value) => setForm(prev => ({
+                          ...prev,
+                          auth: { ...prev.auth, algorithm: value }
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sha256">SHA-256</SelectItem>
+                          <SelectItem value="sha512">SHA-512</SelectItem>
+                          <SelectItem value="sha1">SHA-1</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="signatureHeader">Signature Header</Label>
+                      <Input
+                        id="signatureHeader"
+                        value={form.auth.signatureHeader}
+                        onChange={(e) => setForm(prev => ({
+                          ...prev,
+                          auth: { ...prev.auth, signatureHeader: e.target.value }
+                        }))}
+                        placeholder="X-Webhook-Signature"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
