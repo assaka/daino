@@ -230,13 +230,11 @@ export default function MarketingLogin() {
           </Link>
 
           <h1 className="text-4xl xl:text-5xl font-black text-white mb-6 leading-tight">
-            Welcome Back to
-            <br />
-            <span className="text-indigo-400">Your Dashboard</span>
+            Welcome Back
           </h1>
 
           <p className="text-xl text-white/70 mb-10 max-w-md">
-            Continue building your online empire with powerful tools and insights at your fingertips.
+            Continue building your online store with powerful tools and best practices.
           </p>
 
           <div className="space-y-4 mb-10">
