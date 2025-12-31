@@ -452,45 +452,63 @@ const UserAccountMenuSlot = createSlotComponent({
 
 /**
  * LanguageSelector Component
+ * Shows only globe icon in header, dropdown has full language names with flags
  */
 const LanguageSelectorSlot = createSlotComponent({
   name: 'LanguageSelector',
   render: ({ slot, context, headerContext, className, styles }) => {
     const { languages = [], currentLanguage, setCurrentLanguage } = headerContext || {};
+    const [open, setOpen] = React.useState(false);
 
     // Hide if no languages or only one language (feature disabled on storefront)
     if (!languages || languages.length <= 1) return null;
 
-    if (context === 'editor') {
-      return (
-        <div className={className || "flex items-center space-x-2"} style={styles}>
-          <Globe className="w-5 h-5 text-gray-600" />
-          <select className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-blue-500">
-            {languages.map(lang => (
-              <option key={lang.code || lang.id} value={lang.code}>
-                {lang.flag_icon} {lang.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      );
-    }
+    const currentLang = languages.find(l => l.code === currentLanguage) || languages[0];
 
-    // Storefront rendering
+    // Compact dropdown with just icon trigger
     return (
-      <div className={className || "flex items-center space-x-2"} style={styles}>
-        <Globe className="w-5 h-5 text-gray-600" />
-        <select
-          value={currentLanguage}
-          onChange={(e) => setCurrentLanguage?.(e.target.value)}
-          className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-blue-500"
+      <div className={className || "relative"} style={styles}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center justify-center w-9 h-9 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          title={currentLang?.name || 'Select language'}
         >
-          {languages.map(lang => (
-            <option key={lang.code} value={lang.code}>
-              {lang.flag_icon} {lang.name}
-            </option>
-          ))}
-        </select>
+          {currentLang?.flag_icon ? (
+            <span className="text-lg">{currentLang.flag_icon}</span>
+          ) : (
+            <Globe className="w-5 h-5 text-gray-600" />
+          )}
+        </button>
+
+        {open && (
+          <>
+            {/* Backdrop to close dropdown */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setOpen(false)}
+            />
+            {/* Dropdown menu */}
+            <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg">
+              {languages.map(lang => (
+                <button
+                  key={lang.code || lang.id}
+                  onClick={() => {
+                    if (context !== 'editor') {
+                      setCurrentLanguage?.(lang.code);
+                    }
+                    setOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-100 ${
+                    lang.code === currentLanguage ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  <span className="text-base">{lang.flag_icon}</span>
+                  <span>{lang.name}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   }
