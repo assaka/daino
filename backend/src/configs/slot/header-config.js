@@ -53,13 +53,12 @@ const headerConfig = {
       id: 'header_top_row',
       type: 'grid',
       content: '',
-      className: 'grid items-center gap-4 h-16',
+      className: 'grid grid-cols-12 items-center gap-2 h-16',
       parentClassName: 'w-full',
       styles: {
         display: 'grid',
-        gridTemplateColumns: 'auto 1fr auto',
         alignItems: 'center',
-        gap: '1rem',
+        gap: '0.5rem',
         height: '4rem'
       },
       parentId: 'header_inner',
@@ -81,7 +80,7 @@ const headerConfig = {
       styles: {},
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
-      colSpan: {},
+      colSpan: { mobile: 4, desktop: 2 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -117,7 +116,7 @@ const headerConfig = {
       styles: { minWidth: 0 },
       parentId: 'header_top_row',
       position: { col: 2, row: 1 },
-      colSpan: {},
+      colSpan: { mobile: 1, desktop: 5 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -148,14 +147,20 @@ const headerConfig = {
 
     actions_section: {
       id: 'actions_section',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'flex items-center justify-end space-x-1 md:space-x-2',
+      className: 'grid items-center justify-end',
       parentClassName: '',
-      styles: {},
+      styles: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(8, auto)',
+        alignItems: 'center',
+        justifyContent: 'end',
+        gap: '0.25rem'
+      },
       parentId: 'header_top_row',
       position: { col: 3, row: 1 },
-      colSpan: {},
+      colSpan: { mobile: 8, desktop: 5 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -173,7 +178,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 1, row: 1 },
-      colSpan: { mobile: 12, desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -193,7 +198,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 2, row: 1 },
-      colSpan: { mobile: 12, desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -213,7 +218,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 3, row: 1 },
-      colSpan: { desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -233,7 +238,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 4, row: 1 },
-      colSpan: { desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -253,7 +258,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 5, row: 1 },
-      colSpan: { desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -273,7 +278,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 6, row: 1 },
-      colSpan: { mobile: 12, desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -292,7 +297,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 7, row: 1 },
-      colSpan: { mobile: 12, desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
@@ -311,7 +316,7 @@ const headerConfig = {
       styles: {},
       parentId: 'actions_section',
       position: { col: 8, row: 1 },
-      colSpan: { mobile: 12, desktop: 12 },
+      colSpan: { mobile: 1, desktop: 1 },
       viewMode: ['default'],
       metadata: {
         hierarchical: false,
