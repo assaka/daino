@@ -157,6 +157,7 @@ import { enrichSettings } from '@/utils/slotDataPreprocessor';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
+import '@/components/editor/slot/HeaderSlotComponents'; // Header components (StoreLogo, MiniCart, etc.)
 
 // Re-export registry functions for backward compatibility
 export { createSlotComponent, ComponentRegistry, registerSlotComponent } from './SlotComponentRegistry';
