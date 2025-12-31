@@ -977,6 +977,18 @@ export function UnifiedSlotRenderer({
         }
       }
 
+      // hidden xl:block means "hidden on mobile/tablet/small desktop, block on extra large screens (>= 1280px)"
+      // In editor, treat xl as desktop only (since editor preview is usually narrower)
+      if (processedClassName.includes('hidden') && processedClassName.includes('xl:block')) {
+        if (viewportMode === 'mobile' || viewportMode === 'tablet') {
+          // Skip rendering in mobile/tablet viewport
+          shouldSkipDueToViewport = true;
+        } else {
+          // In desktop viewport, remove hidden and apply block
+          processedClassName = processedClassName.replace(/\bhidden\b/g, '').replace(/\bxl:block\b/g, 'block').trim();
+        }
+      }
+
       // Transform responsive grid-cols classes based on viewport mode
       // ONLY in editor mode - storefront uses real Tailwind breakpoints
       // e.g., "grid md:grid-cols-12" -> "grid grid-cols-12" in desktop mode

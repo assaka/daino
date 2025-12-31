@@ -1,4 +1,4 @@
-import React, { Fragment, useContext } from 'react';
+import React, { Fragment, useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
@@ -16,6 +16,57 @@ import CmsBlockRenderer from './CmsBlockRenderer';
 // Slot configurations come from database - renderConditions handled via slot metadata
 import TranslationContext from '@/contexts/TranslationContext';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
+
+/**
+ * Compact Language Selector - shows flag only, dropdown has full names
+ */
+function LanguageSelectorDropdown({ languages, currentLanguage, currentLang }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-center w-9 h-9 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        title={currentLang?.name || 'Select language'}
+      >
+        {currentLang?.flag_icon ? (
+          <span className="text-lg">{currentLang.flag_icon}</span>
+        ) : (
+          <Globe className="w-5 h-5 text-gray-600" />
+        )}
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop to close dropdown */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          {/* Dropdown menu */}
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg">
+            {languages.map(lang => (
+              <button
+                key={lang.code || lang.id}
+                onClick={() => {
+                  localStorage.setItem('daino_language', lang.code);
+                  window.location.reload();
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-100 ${
+                  lang.code === currentLanguage ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                }`}
+              >
+                <span className="text-base">{lang.flag_icon}</span>
+                <span>{lang.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
 
 /**
  * HeaderSlotRenderer - Renders header slots with full customization
@@ -414,24 +465,16 @@ export function HeaderSlotRenderer({
         if (!showLangSelector) return null;
         if (!languages || languages.length <= 1) return null;
 
+        const currentLang = languages.find(l => l.code === currentLanguage) || languages[0];
+
+        // Compact language selector - flag only trigger, full dropdown
         return (
-          <div key={id} className={finalClassName} data-slot-id={id}>
-            <select
-              className="border-none bg-transparent text-sm cursor-pointer hover:bg-gray-100 rounded px-2 py-1"
-              value={currentLanguage}
-              onChange={(e) => {
-                const newLang = e.target.value;
-                localStorage.setItem('daino_language', newLang);
-                // Reload page to fetch new translations
-                window.location.reload();
-              }}
-            >
-              {languages.map(lang => (
-                <option key={lang.id} value={lang.code}>
-                  {lang.flag_icon} {lang.name}
-                </option>
-              ))}
-            </select>
+          <div key={id} className={`${finalClassName} relative`} data-slot-id={id}>
+            <LanguageSelectorDropdown
+              languages={languages}
+              currentLanguage={currentLanguage}
+              currentLang={currentLang}
+            />
           </div>
         );
 
@@ -443,6 +486,7 @@ export function HeaderSlotRenderer({
               value={selectedCountry}
               onValueChange={setSelectedCountry}
               allowedCountries={settings.allowed_countries}
+              compact={true}
             />
           </div>
         );

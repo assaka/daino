@@ -206,13 +206,13 @@ const headerConfig = {
       }
     },
 
-    // Language selector (large screens only >= 1024px)
+    // Language selector (extra large screens only >= 1280px - hides first)
     language_selector: {
       id: 'language_selector',
       type: 'component',
       component: 'LanguageSelector',
       content: '',
-      className: 'hidden lg:block',
+      className: 'hidden xl:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
@@ -246,13 +246,13 @@ const headerConfig = {
       }
     },
 
-    // User account menu (large screens only >= 1024px)
+    // User account menu (medium screens and up >= 768px - always visible on desktop/tablet)
     user_account_menu: {
       id: 'user_account_menu',
       type: 'component',
       component: 'UserAccountMenu',
       content: '',
-      className: 'hidden lg:block',
+      className: 'hidden md:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
