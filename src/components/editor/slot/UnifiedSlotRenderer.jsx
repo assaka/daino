@@ -1690,12 +1690,29 @@ export function UnifiedSlotRenderer({
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
-    // Check if colSpan is empty object and skip wrapper
+    // Check if colSpan is empty object - skip grid wrapper but add click handler in editor
     const isEmptyColSpan = typeof slot.colSpan === 'object' &&
                            slot.colSpan !== null &&
                            Object.keys(slot.colSpan).length === 0;
 
     if (isEmptyColSpan) {
+      if (context === 'editor') {
+        // In editor, add clickable wrapper for selection
+        return (
+          <div
+            key={slot.id}
+            data-slot-id={slot.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onElementClick) onElementClick(slot.id, e.currentTarget);
+            }}
+            className={`${showBorders ? 'border border-dashed border-gray-300 hover:border-blue-400' : ''} ${selectedElementId === slot.id ? 'ring-2 ring-blue-500' : ''}`}
+            style={{ cursor: 'pointer' }}
+          >
+            {slotContent}
+          </div>
+        );
+      }
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
