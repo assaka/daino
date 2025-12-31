@@ -179,7 +179,10 @@ class BackgroundJobManager extends EventEmitter {
       ['marketing:automation:process', './jobs/AutomationProcessJob'],
       ['marketing:abandoned_cart', './jobs/AbandonedCartJob'],
       ['marketing:rfm:calculate', './jobs/RfmCalculateJob'],
-      ['marketing:sync:contacts', './jobs/MarketingSyncJob']
+      ['marketing:sync:contacts', './jobs/MarketingSyncJob'],
+
+      // Webhook integration jobs (n8n, Zapier, Make)
+      ['webhook:send', './jobs/WebhookIntegrationJob']
     ];
 
     for (const [type, path] of jobTypes) {

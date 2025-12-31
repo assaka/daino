@@ -55,6 +55,7 @@ class AutomationService {
     ADD_TO_SEGMENT: 'add_to_segment',
     REMOVE_FROM_SEGMENT: 'remove_from_segment',
     WEBHOOK: 'webhook',
+    SEND_TO_WORKFLOW_PLATFORM: 'send_to_workflow_platform', // n8n, Zapier, Make
     INTERNAL_NOTIFICATION: 'internal_notification',
 
     // Flow control
@@ -374,6 +375,9 @@ class AutomationService {
         case this.STEP_TYPES.WEBHOOK:
           return await this.executeWebhook(storeId, enrollment, step.config);
 
+        case this.STEP_TYPES.SEND_TO_WORKFLOW_PLATFORM:
+          return await this.executeSendToWorkflowPlatform(storeId, enrollment, step.config);
+
         case this.STEP_TYPES.INTERNAL_NOTIFICATION:
           return await this.executeInternalNotification(storeId, enrollment, step.config);
 
@@ -548,6 +552,105 @@ class AutomationService {
     }
 
     return { success: true, metadata: { statusCode: response.status } };
+  }
+
+  /**
+   * Execute send to workflow platform step (n8n, Zapier, Make)
+   * Uses pre-configured webhook integrations from WebhookIntegrationService
+   */
+  static async executeSendToWorkflowPlatform(storeId, enrollment, config) {
+    const WebhookIntegrationService = require('./webhook-integration-service');
+
+    const payload = {
+      event: 'automation_workflow_step',
+      timestamp: new Date().toISOString(),
+      store_id: storeId,
+      data: {
+        workflow_id: enrollment.workflow_id,
+        workflow_name: enrollment.automation_workflows?.name,
+        customer_id: enrollment.customer_id,
+        customer: enrollment.customers,
+        trigger_data: enrollment.trigger_data,
+        step_config: config,
+        custom_data: config.data || {}
+      }
+    };
+
+    try {
+      // If a specific webhook ID is provided, use that
+      if (config.webhookId) {
+        const webhookConfig = await WebhookIntegrationService.getWebhookById(storeId, config.webhookId);
+        if (!webhookConfig) {
+          return { success: false, error: 'Webhook configuration not found' };
+        }
+
+        const result = await WebhookIntegrationService.sendWebhook(webhookConfig, payload);
+
+        // Log the delivery
+        await WebhookIntegrationService.logDelivery(
+          storeId,
+          webhookConfig.id,
+          webhookConfig.integration_type,
+          'automation_workflow_step',
+          payload,
+          result
+        );
+
+        return {
+          success: result.success,
+          metadata: {
+            provider: webhookConfig.integration_type,
+            statusCode: result.statusCode
+          },
+          error: result.error
+        };
+      }
+
+      // If provider is specified, send to all webhooks of that provider
+      if (config.provider) {
+        const webhooks = await WebhookIntegrationService.getWebhooks(storeId, config.provider);
+        if (!webhooks || webhooks.length === 0) {
+          return { success: false, error: `No ${config.provider} webhooks configured` };
+        }
+
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (const webhook of webhooks) {
+          const fullWebhook = await WebhookIntegrationService.getWebhookById(storeId, webhook.id);
+          const result = await WebhookIntegrationService.sendWebhook(fullWebhook, payload);
+
+          await WebhookIntegrationService.logDelivery(
+            storeId,
+            fullWebhook.id,
+            fullWebhook.integration_type,
+            'automation_workflow_step',
+            payload,
+            result
+          );
+
+          if (result.success) {
+            successCount++;
+          } else {
+            failureCount++;
+          }
+        }
+
+        return {
+          success: successCount > 0,
+          metadata: {
+            provider: config.provider,
+            webhooksSent: successCount,
+            webhooksFailed: failureCount
+          }
+        };
+      }
+
+      return { success: false, error: 'No webhookId or provider specified' };
+    } catch (error) {
+      console.error('[AutomationService] Error executing send_to_workflow_platform:', error.message);
+      return { success: false, error: error.message };
+    }
   }
 
   /**
@@ -759,6 +862,36 @@ class AutomationService {
           { type: 'send_email', config: { templateId: 'complete_profile', subject: 'Complete your profile for a special reward!' } },
           { type: 'add_tag', config: { tags: ['profile_reminder_sent'] } },
           { type: 'exit' }
+        ]
+      },
+      // Workflow Platform Templates (n8n, Zapier, Make)
+      {
+        id: 'n8n_order_notification',
+        name: 'n8n Order Notification',
+        description: 'Send order details to n8n for custom processing',
+        triggerType: this.TRIGGER_TYPES.ORDER_PLACED,
+        steps: [
+          { type: 'send_to_workflow_platform', config: { provider: 'n8n', includeOrderDetails: true, includeCustomerDetails: true } }
+        ]
+      },
+      {
+        id: 'zapier_customer_sync',
+        name: 'Zapier Customer Sync',
+        description: 'Sync new customers to external systems via Zapier',
+        triggerType: this.TRIGGER_TYPES.CUSTOMER_CREATED,
+        steps: [
+          { type: 'delay', config: { value: 5, unit: 'minutes' } },
+          { type: 'send_to_workflow_platform', config: { provider: 'zapier', includeCustomerDetails: true } }
+        ]
+      },
+      {
+        id: 'make_abandoned_cart',
+        name: 'Make Abandoned Cart Alert',
+        description: 'Trigger Make scenario when cart is abandoned',
+        triggerType: this.TRIGGER_TYPES.ABANDONED_CART,
+        steps: [
+          { type: 'delay', config: { value: 1, unit: 'hours' } },
+          { type: 'send_to_workflow_platform', config: { provider: 'make', includeCartDetails: true } }
         ]
       }
     ];

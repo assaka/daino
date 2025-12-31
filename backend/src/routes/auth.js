@@ -1244,6 +1244,31 @@ router.post('/customer/register', [
       await createCustomerAddresses(tenantDb, customer.id, first_name, last_name, phone, email, address_data, 'customer');
     }
 
+    // Publish customer_created event for webhook integrations (n8n, Zapier, Make)
+    try {
+      const eventBus = require('../services/analytics/EventBus');
+      await eventBus.publish('customer_created', {
+        store_id: store_id,
+        customer_id: customer.id,
+        email: customer.email,
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        phone: customer.phone || null,
+        created_at: customer.created_at,
+        metadata: {
+          source: 'storefront_registration',
+          has_address: !!address_data
+        }
+      }, {
+        source: 'customer_registration',
+        priority: 'normal'
+      });
+      console.log('📡 customer_created event published for webhook integrations');
+    } catch (eventError) {
+      console.error('Failed to publish customer_created event:', eventError.message);
+      // Don't fail the registration if event publishing fails
+    }
+
     // Send verification email with code
     // Email service extracts origin from req automatically
     await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode, req);

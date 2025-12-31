@@ -55,6 +55,11 @@ const allNavItems = [
   { key: 'crm_leads', label: 'Leads', icon: 'UserPlus', route: '/admin/crm/leads', order: 51, category: 'crm', is_visible: false },
   { key: 'crm_activities', label: 'Activities', icon: 'ListTodo', route: '/admin/crm/activities', order: 52, category: 'crm', is_visible: false },
 
+  // Workflow Integrations (n8n, Zapier, Make)
+  { key: 'n8n_integration', label: 'n8n', icon: 'Workflow', route: '/admin/integrations/n8n', order: 55, category: 'integrations' },
+  { key: 'zapier_integration', label: 'Zapier', icon: 'Zap', route: '/admin/integrations/zapier', order: 56, category: 'integrations' },
+  { key: 'make_integration', label: 'Make', icon: 'Puzzle', route: '/admin/integrations/make', order: 57, category: 'integrations' },
+
   // SEO
   { key: 'seo_settings', label: 'SEO Settings', icon: 'Search', route: '/admin/seo-tools/settings', order: 60, category: 'seo' },
   { key: 'seo_templates', label: 'SEO Templates', icon: 'FileText', route: '/admin/seo-tools/templates', order: 61, category: 'seo' },

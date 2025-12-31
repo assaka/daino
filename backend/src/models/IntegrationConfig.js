@@ -101,7 +101,12 @@ IntegrationConfig.getSensitiveFields = (integrationType) => {
     // Payment providers
     'stripe-connect': [],
     'mollie-connect': ['apiKey'],
-    'adyen-connect': ['apiKey', 'hmacKey']
+    'adyen-connect': ['apiKey', 'hmacKey'],
+
+    // Workflow automation integrations (webhooks)
+    'n8n': ['webhookSecret', 'authToken'],
+    'zapier': ['webhookSecret'],
+    'make': ['webhookSecret', 'apiKey']
   };
 
   return sensitiveFieldsMap[integrationType] || [];

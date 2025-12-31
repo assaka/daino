@@ -8,6 +8,7 @@ const eventBus = require('../services/analytics/EventBus');
 
 // Initialize handlers
 require('../services/analytics/handlers/CustomerActivityHandler');
+require('../services/analytics/handlers/WebhookIntegrationHandler');
 
 const router = express.Router();
 

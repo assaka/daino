@@ -662,6 +662,49 @@ router.post('/finalize-order', async (req, res) => {
       const [firstName, ...lastNameParts] = customerName.split(' ');
       const lastName = lastNameParts.join(' ') || '';
 
+      // Publish order_placed event for webhook integrations (n8n, Zapier, Make)
+      try {
+        const eventBus = require('../services/analytics/EventBus');
+        await eventBus.publish('order_placed', {
+          store_id: store_id,
+          order_id: order.id,
+          order_number: order.order_number,
+          customer_id: order.customer_id,
+          customer_email: order.customer_email,
+          total_amount: order.total_amount,
+          subtotal: order.subtotal,
+          tax_amount: order.tax_amount,
+          shipping_amount: order.shipping_amount,
+          discount_amount: order.discount_amount,
+          currency: order.currency || 'EUR',
+          payment_method: order.payment_method,
+          items: (orderItems || []).map(item => ({
+            product_id: item.product_id,
+            variant_id: item.variant_id,
+            name: item.product_name || item.name,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.total
+          })),
+          shipping_address: order.shipping_address,
+          billing_address: order.billing_address,
+          customer: customer ? {
+            id: customer.id,
+            email: customer.email,
+            first_name: customer.first_name,
+            last_name: customer.last_name
+          } : null
+        }, {
+          source: 'order_finalization',
+          priority: 'high'
+        });
+        console.log('📡 order_placed event published for webhook integrations');
+      } catch (eventError) {
+        console.error('Failed to publish order_placed event:', eventError.message);
+        // Don't fail the order finalization if event publishing fails
+      }
+
       console.log('📧 Sending order confirmation email to:', order.customer_email);
 
       // Email service extracts origin from req automatically

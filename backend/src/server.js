@@ -144,6 +144,7 @@ const campaignsRoutes = require('./routes/campaigns');
 const rfmRoutes = require('./routes/rfm');
 const crmRoutes = require('./routes/crm');
 const marketingIntegrationsRoutes = require('./routes/marketing-integrations');
+const webhookIntegrationsRoutes = require('./routes/webhook-integrations');
 
 // Import subscription enforcement middleware
 const {
@@ -1147,6 +1148,7 @@ app.use('/api/campaigns', authMiddleware, campaignsRoutes);
 app.use('/api/rfm', authMiddleware, rfmRoutes);
 app.use('/api/crm', crmRoutes); // CRM: pipelines, deals, leads, activities (auth in routes via storeOwnerOnly)
 app.use('/api/marketing-integrations', marketingIntegrationsRoutes); // Klaviyo, Mailchimp, HubSpot (auth in routes)
+app.use('/api/webhook-integrations', webhookIntegrationsRoutes); // n8n, Zapier, Make (auth in routes)
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/custom-analytics-events', customAnalyticsEventsRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);

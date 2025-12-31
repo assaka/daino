@@ -2301,6 +2301,33 @@ CREATE TABLE IF NOT EXISTS marketing_sync_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ============================================
+-- WEBHOOK INTEGRATION LOGS (n8n, Zapier, Make)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS webhook_integration_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  provider VARCHAR(50) NOT NULL,
+  webhook_config_id UUID NOT NULL,
+  event_type VARCHAR(100) NOT NULL,
+  event_id VARCHAR(100),
+  payload JSONB,
+  response_status INTEGER,
+  response_body TEXT,
+  delivery_status VARCHAR(20) DEFAULT 'pending',
+  attempts INTEGER DEFAULT 0,
+  last_attempt_at TIMESTAMP WITH TIME ZONE,
+  error_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT webhook_logs_delivery_status_check CHECK (delivery_status IN ('pending', 'sent', 'failed', 'retrying'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_store_provider ON webhook_integration_logs(store_id, provider);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_webhook_config ON webhook_integration_logs(webhook_config_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_status ON webhook_integration_logs(delivery_status);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_integration_logs(created_at DESC);
+
 -- Indexes for Email Marketing & CRM tables
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_store ON email_campaigns(store_id);
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);

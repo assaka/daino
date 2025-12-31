@@ -362,8 +362,9 @@ class WebhookIntegrationHandler {
   }
 }
 
-// Create singleton instance
+// Create singleton instance and auto-initialize
 const handler = new WebhookIntegrationHandler();
+handler.initialize();
 
 // Export instance and class
 module.exports = handler;
