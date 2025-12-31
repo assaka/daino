@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/utils/api';
 import { User } from '@/api/entities';
+import { WHATS_NEW } from '@/constants/MarketingContent';
 
 // Google logo SVG component
 const GoogleLogo = () => (
@@ -161,13 +162,6 @@ export default function MarketingSignup() {
     { icon: Sparkles, text: 'AI-powered customization' }
   ];
 
-  const whatsNew = [
-    'Theme presets with one-click styling',
-    'Enhanced mobile navigation & filters',
-    'Visual WYSIWYG editor improvements',
-    'Mollie & Adyen payment integrations',
-    'Header & navigation color customization'
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex">
@@ -227,7 +221,7 @@ export default function MarketingSignup() {
               <span className="text-sm font-semibold text-white/90">What's New</span>
             </div>
             <ul className="space-y-2">
-              {whatsNew.map((update, index) => (
+              {WHATS_NEW.map((update, index) => (
                 <li key={index} className="flex items-start gap-2 text-sm text-white/70">
                   <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                   <span>{update}</span>
