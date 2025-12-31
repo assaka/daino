@@ -789,20 +789,27 @@ const UnifiedSlotsEditor = ({
                   viewMode={getHeaderViewMode(currentViewport)}
                   viewportMode={currentViewport}
                   context="editor"
-                  headerContext={configHeaderContext || buildEditorHeaderContext({
-                    store: selectedStore,
-                    settings: selectedStore?.settings || {},
-                    categories: storeContextValue?.categories || [],
-                    viewport: currentViewport,
-                    pathname: `/${pageType}`
-                  })}
-                  preprocessedData={configHeaderContext || buildEditorHeaderContext({
-                    store: selectedStore,
-                    settings: selectedStore?.settings || {},
-                    categories: storeContextValue?.categories || [],
-                    viewport: currentViewport,
-                    pathname: `/${pageType}`
-                  })}
+                  headerContext={{
+                    ...(configHeaderContext || buildEditorHeaderContext({
+                      store: selectedStore,
+                      settings: selectedStore?.settings || {},
+                      categories: storeContextValue?.categories || [],
+                      viewport: currentViewport,
+                      pathname: `/${pageType}`
+                    })),
+                    // Always override responsiveMode with current viewport from editor
+                    responsiveMode: currentViewport
+                  }}
+                  preprocessedData={{
+                    ...(configHeaderContext || buildEditorHeaderContext({
+                      store: selectedStore,
+                      settings: selectedStore?.settings || {},
+                      categories: storeContextValue?.categories || [],
+                      viewport: currentViewport,
+                      pathname: `/${pageType}`
+                    })),
+                    responsiveMode: currentViewport
+                  }}
                   slotConfig={{ pageType: 'header' }}
                   mode={showPreview ? 'view' : mode}
                   showBorders={showPreview ? false : showSlotBorders}
