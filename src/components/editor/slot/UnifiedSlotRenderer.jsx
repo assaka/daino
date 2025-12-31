@@ -1632,6 +1632,7 @@ export function UnifiedSlotRenderer({
    * - Editor-specific wrapping (GridColumn for drag & drop)
    * - Absolute positioning detection (skips wrapper)
    * - Null content handling (returns null)
+   * - Flex container children (skips grid wrapper to preserve flex layout)
    *
    * Editor mode: Wraps with GridColumn for drag/resize functionality
    * Storefront mode: Simple div wrapper for layout only
@@ -1659,6 +1660,22 @@ export function UnifiedSlotRenderer({
     if (isAbsolutePositioned) {
       // For absolutely positioned elements, return directly without any grid wrapper
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
+    }
+
+    // Check if parent is a flex container - skip grid wrapper to preserve flex layout
+    const parentSlot = slot.parentId ? slots[slot.parentId] : null;
+    const isParentFlex = parentSlot?.type === 'flex' ||
+                         parentSlot?.className?.includes('flex') ||
+                         parentSlot?.styles?.display === 'flex';
+
+    if (isParentFlex) {
+      // For flex children, return content directly without grid wrapper
+      // Just add data-slot-id for editor selection
+      return (
+        <div key={slot.id} data-slot-id={slot.id} className={slot.className || ''} style={slot.styles || {}}>
+          {slotContent}
+        </div>
+      );
     }
 
     // Check if colSpan is empty object and skip wrapper

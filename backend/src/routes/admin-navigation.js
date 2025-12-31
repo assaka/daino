@@ -70,32 +70,15 @@ router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), a
 
 /**
  * POST /api/admin/navigation/seed
- * Seed core navigation items (run once) in tenant DB
+ * @deprecated Core navigation now comes from master DB (admin_navigation_core)
+ * This endpoint is kept for backward compatibility but is now a no-op
  */
 router.post('/navigation/seed', authMiddleware, authorize(['admin']), async (req, res) => {
-  try {
-    const { store_id } = req.body;
-
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    await AdminNavigationService.seedCoreNavigation(tenantDb);
-
-    res.json({
-      success: true,
-      message: 'Core navigation seeded successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+  console.warn('[DEPRECATED] POST /api/admin/navigation/seed is deprecated - core items now come from master DB');
+  res.json({
+    success: true,
+    message: 'Core navigation seeding is deprecated - items now come from master DB admin_navigation_core table'
+  });
 });
 
 /**
@@ -322,16 +305,19 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
             onConflict: 'key'
           });
       } else {
-        // For core items, just UPDATE
+        // For core items, save customizations to admin_navigation_custom
+        // Core items themselves are in master DB (admin_navigation_core)
         await tenantDb
-          .from('admin_navigation_registry')
-          .update({
+          .from('admin_navigation_custom')
+          .upsert({
+            core_nav_key: item.key,
             order_position: item.order_position,
             is_visible: item.is_visible,
             parent_key: item.parent_key,
             updated_at: new Date().toISOString()
-          })
-          .eq('key', item.key);
+          }, {
+            onConflict: 'core_nav_key'
+          });
       }
     }
 

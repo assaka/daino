@@ -1,6 +1,84 @@
 // backend/src/services/AdminNavigationService.js
 
+const { masterDbClient } = require('../database/masterConnection');
+
 class AdminNavigationService {
+  constructor() {
+    // Cache for core navigation items from master DB
+    this._coreNavCache = null;
+    this._coreNavCacheTime = 0;
+    this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes
+  }
+
+  /**
+   * Get core navigation items from MASTER database
+   * Returns all core items with their default settings
+   * Cached for 5 minutes to reduce master DB queries
+   */
+  async getCoreNavigationFromMaster() {
+    const now = Date.now();
+
+    // Return cached data if still valid
+    if (this._coreNavCache && (now - this._coreNavCacheTime) < this._cacheMaxAge) {
+      return this._coreNavCache;
+    }
+
+    try {
+      const { data: coreItems, error } = await masterDbClient
+        .from('admin_navigation_core')
+        .select('*')
+        .order('default_order_position', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching core navigation from master:', error.message);
+        // Return cached data if available, even if stale
+        if (this._coreNavCache) {
+          return this._coreNavCache;
+        }
+        throw error;
+      }
+
+      // Update cache
+      this._coreNavCache = coreItems || [];
+      this._coreNavCacheTime = now;
+
+      return this._coreNavCache;
+    } catch (error) {
+      console.error('Failed to fetch core navigation from master:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear the core navigation cache
+   * Call this when core items are updated in master DB
+   */
+  clearCoreNavCache() {
+    this._coreNavCache = null;
+    this._coreNavCacheTime = 0;
+  }
+
+  /**
+   * Get tenant-specific customizations for core navigation
+   * Returns overrides for visibility, order, and parent_key
+   */
+  async getTenantCustomizations(tenantDb) {
+    try {
+      const { data: customizations, error } = await tenantDb
+        .from('admin_navigation_custom')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching tenant customizations:', error.message);
+        return [];
+      }
+
+      return customizations || [];
+    } catch (error) {
+      console.error('Failed to fetch tenant customizations:', error.message);
+      return [];
+    }
+  }
 
   /**
    * Get core navigation items (no store required)
@@ -18,13 +96,61 @@ class AdminNavigationService {
 
   /**
    * Get complete navigation for a tenant
-   * Merges: Navigation registry + Installed plugins
+   * Merges: Master core items + Tenant customizations + Plugin items
    * @param {string} storeId - Store ID
    * @param {Object} tenantDb - Supabase client connection to tenant DB
    */
   async getNavigationForTenant(storeId, tenantDb) {
     try {
+      // 1. Get core items from MASTER (cached)
+      const coreItems = await this.getCoreNavigationFromMaster();
 
+      // 2. Get tenant customizations
+      const customizations = await this.getTenantCustomizations(tenantDb);
+      const customMap = new Map(customizations.map(c => [c.core_nav_key, c]));
+
+      // 3. Apply tenant customizations to core items
+      const mergedCoreItems = coreItems.map(item => {
+        const custom = customMap.get(item.key);
+        return {
+          key: item.key,
+          label: item.label,
+          icon: item.icon,
+          route: item.route,
+          parent_key: custom?.parent_key ?? item.parent_key,
+          order_position: custom?.order_position ?? item.default_order_position,
+          is_visible: custom?.is_visible ?? item.default_is_visible,
+          is_core: true,
+          plugin_id: null,
+          category: item.category,
+          description: item.description,
+          badge: item.badge_config,
+          type: item.type || 'standard'
+        };
+      });
+
+      // 4. Get plugin navigation items from tenant DB
+      const pluginNavItems = await this.getPluginNavigationItems(tenantDb);
+
+      // 5. Combine and filter visible items
+      const allItems = [...mergedCoreItems, ...pluginNavItems]
+        .filter(item => item.is_visible);
+
+      // 6. Build hierarchical tree
+      return this.buildNavigationTree(allItems);
+
+    } catch (error) {
+      console.error('Error in getNavigationForTenant:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get plugin navigation items from tenant DB
+   * Combines: admin_navigation_registry plugin items + file-based plugins + registry plugins
+   */
+  async getPluginNavigationItems(tenantDb) {
+    try {
       // 1. Get tenant's installed & active plugins
       const { data: installedPlugins, error: pluginsError } = await tenantDb
         .from('plugins')
@@ -71,12 +197,13 @@ class AdminNavigationService {
               };
             }
           } catch (e) {
+            // Ignore parse errors
           }
           return null;
         })
         .filter(Boolean);
 
-      // 2b. Get active plugins from plugin_registry with adminNavigation (from tenant DB)
+      // 2b. Get active plugins from plugin_registry with adminNavigation
       const { data: registryPlugins, error: registryError } = await tenantDb
         .from('plugin_registry')
         .select('id, name, manifest')
@@ -108,41 +235,44 @@ class AdminNavigationService {
               };
             }
           } catch (e) {
+            // Ignore parse errors
           }
           return null;
         })
         .filter(Boolean);
 
-      // 3. Get navigation items from tenant's admin_navigation_registry
-      // Include: Core items + items from tenant's installed plugins
-      let navItemsQuery = tenantDb
+      // 3. Get plugin navigation items from admin_navigation_registry (plugin items only)
+      let registryNavQuery = tenantDb
         .from('admin_navigation_registry')
         .select('*')
+        .eq('is_core', false)
         .eq('is_visible', true)
         .order('order_position', { ascending: true });
 
       if (pluginIds.length > 0) {
-        navItemsQuery = navItemsQuery.or(`is_core.eq.true,plugin_id.in.(${pluginIds.join(',')})`);
-      } else {
-        navItemsQuery = navItemsQuery.eq('is_core', true);
+        registryNavQuery = registryNavQuery.in('plugin_id', pluginIds);
       }
 
-      const { data: navItems, error: navError } = await navItemsQuery;
+      const { data: registryItems, error: navError } = await registryNavQuery;
 
       if (navError) {
-        console.error('Error fetching navigation items:', navError.message);
+        console.error('Error fetching plugin navigation items:', navError.message);
       }
 
-      // 4. Merge ALL plugin nav items with registry
-      const allNavItems = [...(navItems || []), ...fileBasedNavItems, ...registryNavItems];
+      // 4. Merge all plugin nav items (dedupe by key)
+      const allPluginItems = [...(registryItems || []), ...fileBasedNavItems, ...registryNavItems];
+      const uniqueItems = new Map();
+      allPluginItems.forEach(item => {
+        if (!uniqueItems.has(item.key)) {
+          uniqueItems.set(item.key, item);
+        }
+      });
 
-      // 5. Build hierarchical tree
-      const tree = this.buildNavigationTree(allNavItems);
-
-      return tree;
+      return Array.from(uniqueItems.values());
 
     } catch (error) {
-      throw error;
+      console.error('Error fetching plugin navigation items:', error.message);
+      return [];
     }
   }
 
@@ -210,6 +340,30 @@ class AdminNavigationService {
   }
 
   /**
+   * Save tenant navigation customizations
+   * Saves visibility, order, and parent_key overrides for core items
+   */
+  async saveNavigationCustomizations(tenantDb, items) {
+    for (const item of items) {
+      const { error } = await tenantDb
+        .from('admin_navigation_custom')
+        .upsert({
+          core_nav_key: item.key,
+          is_visible: item.is_visible,
+          order_position: item.order_position,
+          parent_key: item.parent_key,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'core_nav_key'
+        });
+
+      if (error) {
+        console.error(`Error saving customization for ${item.key}:`, error.message);
+      }
+    }
+  }
+
+  /**
    * Register plugin navigation items in tenant DB
    * Called during plugin installation
    */
@@ -235,42 +389,12 @@ class AdminNavigationService {
   }
 
   /**
-   * Seed core navigation items
-   * Run once to populate tenant DB
+   * @deprecated Core navigation now comes from master DB (admin_navigation_core)
+   * This method is kept for backward compatibility during migration
    */
   async seedCoreNavigation(tenantDb) {
-    const coreItems = [
-      { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', order: 1, category: 'main' },
-      { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', order: 2, category: 'main' },
-      { key: 'orders', label: 'Orders', icon: 'ShoppingCart', route: '/admin/orders', order: 3, category: 'main' },
-      { key: 'customers', label: 'Customers', icon: 'Users', route: '/admin/customers', order: 4, category: 'main' },
-      { key: 'chat-support', label: 'Chat Support', icon: 'MessageSquare', route: '/admin/chat-support', order: 5, category: 'main' },
-      { key: 'analytics', label: 'Analytics', icon: 'BarChart', route: '/admin/analytics', order: 6, category: 'main' },
-      { key: 'plugins', label: 'Plugins', icon: 'Puzzle', route: '/admin/plugins', order: 10, category: 'tools' },
-      { key: 'settings', label: 'Settings', icon: 'Settings', route: '/admin/settings', order: 99, category: 'settings' }
-    ];
-
-    for (const item of coreItems) {
-      const { error } = await tenantDb
-        .from('admin_navigation_registry')
-        .upsert({
-          key: item.key,
-          label: item.label,
-          icon: item.icon,
-          route: item.route,
-          order_position: item.order,
-          is_core: true,
-          category: item.category
-        }, {
-          onConflict: 'key',
-          ignoreDuplicates: true
-        });
-
-      if (error) {
-        console.error(`Error seeding navigation item ${item.key}:`, error.message);
-      }
-    }
-
+    console.warn('[DEPRECATED] seedCoreNavigation is deprecated - core items now come from master DB admin_navigation_core table');
+    // No-op - core items are now in master DB
   }
 }
 
