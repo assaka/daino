@@ -25,6 +25,15 @@ export const EVENT_TYPES = [
   'search'
 ];
 
+// Authentication types
+export const AUTH_TYPES = {
+  NONE: 'none',
+  API_KEY: 'api_key',
+  BASIC: 'basic',
+  BEARER: 'bearer',
+  HMAC: 'hmac'
+};
+
 /**
  * Get all webhooks for a provider
  * @param {string} provider - Provider type (n8n, zapier, make)
@@ -122,10 +131,20 @@ export const getProviders = async () => {
   return response;
 };
 
+/**
+ * Get supported authentication types
+ * @returns {Promise<Object>} List of supported auth types
+ */
+export const getAuthTypes = async () => {
+  const response = await apiClient.get('/webhook-integrations/auth-types');
+  return response;
+};
+
 // Named export object for convenience
 export const webhookIntegrationsApi = {
   PROVIDERS,
   EVENT_TYPES,
+  AUTH_TYPES,
   getWebhooks,
   createWebhook,
   updateWebhook,
@@ -134,7 +153,8 @@ export const webhookIntegrationsApi = {
   getWebhookLogs,
   getWebhookStats,
   getEventTypes,
-  getProviders
+  getProviders,
+  getAuthTypes
 };
 
 export default webhookIntegrationsApi;

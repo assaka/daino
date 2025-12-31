@@ -54,6 +54,20 @@ router.get('/event-types', storeOwnerOnly, async (req, res) => {
 });
 
 /**
+ * GET /api/webhook-integrations/auth-types
+ * Get all supported authentication types
+ */
+router.get('/auth-types', storeOwnerOnly, async (req, res) => {
+  try {
+    const authTypes = WebhookIntegrationService.getAuthTypes();
+    res.json({ success: true, authTypes });
+  } catch (error) {
+    console.error('Error getting auth types:', error);
+    res.status(500).json({ success: false, error: 'Failed to get auth types' });
+  }
+});
+
+/**
  * GET /api/webhook-integrations/:provider/webhooks
  * Get all webhook configurations for a provider
  */

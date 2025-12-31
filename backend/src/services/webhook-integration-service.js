@@ -10,6 +10,7 @@
  */
 
 const axios = require('axios');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const IntegrationConfig = require('../models/IntegrationConfig');
 const ConnectionManager = require('./database/ConnectionManager');
@@ -19,6 +20,15 @@ const PROVIDERS = {
   N8N: 'n8n',
   ZAPIER: 'zapier',
   MAKE: 'make'
+};
+
+// Authentication types
+const AUTH_TYPES = {
+  NONE: 'none',
+  API_KEY: 'api_key',
+  BASIC: 'basic',
+  BEARER: 'bearer',
+  HMAC: 'hmac'
 };
 
 // Supported event types
@@ -40,6 +50,64 @@ const EVENT_TYPES = [
 ];
 
 class WebhookIntegrationService {
+
+  /**
+   * Build authentication headers based on auth type
+   */
+  static _buildAuthHeaders(authConfig, payload = null) {
+    if (!authConfig || authConfig.type === AUTH_TYPES.NONE) {
+      return {};
+    }
+
+    const headers = {};
+
+    switch (authConfig.type) {
+      case AUTH_TYPES.API_KEY:
+        // API Key in custom header
+        const headerName = authConfig.headerName || 'X-API-Key';
+        headers[headerName] = authConfig.apiKey;
+        break;
+
+      case AUTH_TYPES.BASIC:
+        // Basic Auth (Base64 encoded username:password)
+        const credentials = Buffer.from(`${authConfig.username}:${authConfig.password}`).toString('base64');
+        headers['Authorization'] = `Basic ${credentials}`;
+        break;
+
+      case AUTH_TYPES.BEARER:
+        // Bearer token
+        headers['Authorization'] = `Bearer ${authConfig.token}`;
+        break;
+
+      case AUTH_TYPES.HMAC:
+        // HMAC signature
+        if (payload && authConfig.secret) {
+          const payloadString = typeof payload === 'string' ? payload : JSON.stringify(payload);
+          const signature = crypto
+            .createHmac(authConfig.algorithm || 'sha256', authConfig.secret)
+            .update(payloadString)
+            .digest('hex');
+          const signatureHeader = authConfig.signatureHeader || 'X-Webhook-Signature';
+          headers[signatureHeader] = `${authConfig.algorithm || 'sha256'}=${signature}`;
+        }
+        break;
+    }
+
+    return headers;
+  }
+
+  /**
+   * Get all supported auth types
+   */
+  static getAuthTypes() {
+    return [
+      { id: AUTH_TYPES.NONE, name: 'None', description: 'No authentication' },
+      { id: AUTH_TYPES.API_KEY, name: 'API Key', description: 'API key in custom header' },
+      { id: AUTH_TYPES.BASIC, name: 'Basic Auth', description: 'Username and password' },
+      { id: AUTH_TYPES.BEARER, name: 'Bearer Token', description: 'Bearer token in Authorization header' },
+      { id: AUTH_TYPES.HMAC, name: 'HMAC Signature', description: 'Sign payload with secret key' }
+    ];
+  }
 
   /**
    * Get all supported providers
@@ -79,21 +147,25 @@ class WebhookIntegrationService {
       }
 
       // Decrypt and format webhooks
-      return (data || []).map(config => ({
-        id: config.id,
-        provider: config.integration_type,
-        configKey: config.config_key,
-        displayName: config.display_name,
-        webhookUrl: this._maskWebhookUrl(IntegrationConfig.decryptSensitiveData(config.config_data, provider)?.webhookUrl),
-        eventTypes: config.config_data?.eventTypes || [],
-        isGlobal: config.config_data?.isGlobal || false,
-        isActive: config.is_active,
-        connectionStatus: config.connection_status,
-        connectionTestedAt: config.connection_tested_at,
-        lastSyncAt: config.last_sync_at,
-        createdAt: config.created_at,
-        updatedAt: config.updated_at
-      }));
+      return (data || []).map(config => {
+        const decrypted = IntegrationConfig.decryptSensitiveData(config.config_data, provider);
+        return {
+          id: config.id,
+          provider: config.integration_type,
+          configKey: config.config_key,
+          name: config.display_name,
+          webhookUrl: this._maskWebhookUrl(decrypted?.webhookUrl),
+          eventTypes: decrypted?.eventTypes || [],
+          isGlobal: decrypted?.isGlobal || false,
+          isActive: config.is_active,
+          authType: decrypted?.auth?.type || AUTH_TYPES.NONE,
+          connectionStatus: config.connection_status,
+          connectionTestedAt: config.connection_tested_at,
+          lastSyncAt: config.last_sync_at,
+          createdAt: config.created_at,
+          updatedAt: config.updated_at
+        };
+      });
     } catch (error) {
       console.error(`[WEBHOOK-INTEGRATION] Error getting webhooks for ${provider}:`, error.message);
       throw error;
@@ -165,6 +237,8 @@ class WebhookIntegrationService {
         includeCustomerData: config.includeCustomerData !== false,
         includeOrderItems: config.includeOrderItems !== false,
         retryOnFailure: config.retryOnFailure !== false,
+        // Authentication config
+        auth: config.auth || { type: AUTH_TYPES.NONE },
         // Provider-specific fields
         ...(provider === PROVIDERS.ZAPIER && config.zapId && { zapId: config.zapId }),
         ...(provider === PROVIDERS.MAKE && config.scenarioId && { scenarioId: config.scenarioId })
@@ -223,7 +297,8 @@ class WebhookIntegrationService {
         ...(config.includeCustomerData !== undefined && { includeCustomerData: config.includeCustomerData }),
         ...(config.includeOrderItems !== undefined && { includeOrderItems: config.includeOrderItems }),
         ...(config.retryOnFailure !== undefined && { retryOnFailure: config.retryOnFailure }),
-        ...(config.isActive !== undefined && { isActive: config.isActive })
+        ...(config.isActive !== undefined && { isActive: config.isActive }),
+        ...(config.auth && { auth: config.auth })
       };
 
       // Encrypt sensitive data
@@ -320,12 +395,16 @@ class WebhookIntegrationService {
 
       const startTime = Date.now();
 
+      // Build auth headers
+      const authHeaders = this._buildAuthHeaders(config.config_data?.auth, testPayload);
+
       try {
         const response = await axios.post(webhookUrl, testPayload, {
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'DainoStore-Webhook/1.0',
-            ...(config.config_data?.customHeaders || {})
+            ...(config.config_data?.customHeaders || {}),
+            ...authHeaders
           },
           timeout: 10000 // 10 second timeout
         });
@@ -391,6 +470,9 @@ class WebhookIntegrationService {
       data: payload.data || {}
     };
 
+    // Build auth headers
+    const authHeaders = this._buildAuthHeaders(webhookConfig.config_data?.auth, formattedPayload);
+
     try {
       const response = await axios.post(webhookUrl, formattedPayload, {
         headers: {
@@ -398,7 +480,8 @@ class WebhookIntegrationService {
           'User-Agent': 'DainoStore-Webhook/1.0',
           'X-Webhook-Event': payload.event,
           'X-Webhook-Provider': provider,
-          ...customHeaders
+          ...customHeaders,
+          ...authHeaders
         },
         timeout: options.timeout || 30000 // 30 second default timeout
       });
@@ -620,8 +703,9 @@ class WebhookIntegrationService {
   }
 }
 
-// Export providers constant for external use
+// Export constants for external use
 WebhookIntegrationService.PROVIDERS = PROVIDERS;
+WebhookIntegrationService.AUTH_TYPES = AUTH_TYPES;
 WebhookIntegrationService.EVENT_TYPES = EVENT_TYPES;
 
 module.exports = WebhookIntegrationService;
