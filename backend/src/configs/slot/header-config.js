@@ -51,13 +51,13 @@ const headerConfig = {
 
     header_top_row: {
       id: 'header_top_row',
-      type: 'flex',
+      type: 'grid',
       content: '',
-      className: 'flex items-center justify-between gap-2 h-16',
+      className: 'grid grid-cols-12 gap-2 items-center h-16',
       parentClassName: 'w-full',
       styles: {
-        display: 'flex',
-        justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
         gap: '0.5rem',
         alignItems: 'center',
         height: '4rem'
@@ -76,14 +76,12 @@ const headerConfig = {
       id: 'logo_section',
       type: 'container',
       content: '',
-      className: 'flex items-center flex-shrink-0',
+      className: 'flex items-center',
       parentClassName: '',
-      styles: {
-        flexShrink: 0
-      },
+      styles: {},
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
-      colSpan: { mobile: 6, desktop: 1 },
+      colSpan: { mobile: 4, desktop: 2 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -114,15 +112,12 @@ const headerConfig = {
       id: 'search_section',
       type: 'container',
       content: '',
-      className: 'hidden md:flex flex-1 justify-center px-4',
+      className: 'hidden md:flex justify-center px-4',
       parentClassName: '',
-      styles: {
-        flex: '1 1 0%',
-        minWidth: 0
-      },
+      styles: {},
       parentId: 'header_top_row',
       position: { col: 3, row: 1 },
-      colSpan: { desktop: 6 },
+      colSpan: { mobile: 0, desktop: 6 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
@@ -155,14 +150,12 @@ const headerConfig = {
       id: 'actions_section',
       type: 'container',
       content: '',
-      className: 'flex items-center justify-end space-x-1 md:space-x-2 flex-shrink-0',
+      className: 'flex items-center justify-end space-x-1 md:space-x-2',
       parentClassName: '',
-      styles: {
-        flexShrink: 0
-      },
+      styles: {},
       parentId: 'header_top_row',
-      position: { col: 10, row: 1 },
-      colSpan: { mobile: 6, desktop: 5 },
+      position: { col: 9, row: 1 },
+      colSpan: { mobile: 8, desktop: 4 },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
