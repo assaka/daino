@@ -1709,11 +1709,15 @@ export function UnifiedSlotRenderer({
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
     }
 
-    // Check if parent uses custom grid-template-columns (like 'auto 1fr auto')
+    // Check if parent uses custom grid-template-columns (like 'auto 1fr auto' or 'repeat(8, auto)')
     // In this case, we should NOT apply grid-column: span X but still want drag-and-drop
     const parentSlot = slot.parentId ? slots[slot.parentId] : null;
-    const hasCustomGridTemplate = parentSlot?.styles?.gridTemplateColumns &&
-                                  !parentSlot?.styles?.gridTemplateColumns.includes('repeat');
+    const parentGridTemplate = parentSlot?.styles?.gridTemplateColumns;
+    // Custom grid if: no 'repeat', OR uses 'repeat' but not with 12 columns (e.g., 'repeat(8, auto)')
+    const hasCustomGridTemplate = parentGridTemplate && (
+      !parentGridTemplate.includes('repeat') ||
+      (parentGridTemplate.includes('repeat') && !parentGridTemplate.includes('repeat(12'))
+    );
 
     // Check if parent is a flex container
     const hasFlexClass = parentSlot?.className?.split(/\s+/).some(cls => cls === 'flex' || cls === 'inline-flex');
