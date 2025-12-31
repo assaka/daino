@@ -274,50 +274,68 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
     // Combine all items back together
     const allItems = [...topLevelItems, ...childItems];
 
-    // Update each navigation item in the database
-    for (const item of allItems) {
-      if (!item.key) {
-        continue;
-      }
+    // Separate plugin items from core items
+    const pluginItems = allItems.filter(item => item.key?.startsWith('plugin-'));
+    const coreItems = allItems.filter(item => item.key && !item.key.startsWith('plugin-'));
 
-      // Check if this is a plugin item (key starts with 'plugin-')
-      const isPluginItem = item.key.startsWith('plugin-');
+    // Update plugin items in admin_navigation_registry
+    for (const item of pluginItems) {
+      const pluginId = item.key.replace('plugin-', '');
+      await tenantDb
+        .from('admin_navigation_registry')
+        .upsert({
+          key: item.key,
+          label: item.label || 'Plugin Item',
+          icon: item.icon || 'Package',
+          route: item.route || '/admin',
+          parent_key: item.parent_key,
+          order_position: item.order_position,
+          is_visible: item.is_visible,
+          is_core: false,
+          plugin_id: pluginId,
+          category: 'plugins',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
+    }
 
-      if (isPluginItem) {
-        // For plugin items, INSERT or UPDATE in admin_navigation_registry
-        const pluginId = item.key.replace('plugin-', '');
+    // For core items, only save customizations that differ from master defaults
+    if (coreItems.length > 0) {
+      // Fetch master defaults
+      const masterDefaults = await AdminNavigationService.getCoreNavigationFromMaster();
+      const defaultsMap = new Map(masterDefaults.map(d => [d.key, d]));
 
-        await tenantDb
-          .from('admin_navigation_registry')
-          .upsert({
-            key: item.key,
-            label: item.label || 'Plugin Item',
-            icon: item.icon || 'Package',
-            route: item.route || '/admin',
-            parent_key: item.parent_key,
-            order_position: item.order_position,
-            is_visible: item.is_visible,
-            is_core: false,
-            plugin_id: pluginId,
-            category: 'plugins',
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'key'
-          });
-      } else {
-        // For core items, save customizations to admin_navigation_custom
-        // Core items themselves are in master DB (admin_navigation_core)
-        await tenantDb
-          .from('admin_navigation_custom')
-          .upsert({
-            core_nav_key: item.key,
-            order_position: item.order_position,
-            is_visible: item.is_visible,
-            parent_key: item.parent_key,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'core_nav_key'
-          });
+      for (const item of coreItems) {
+        const masterDefault = defaultsMap.get(item.key);
+        if (!masterDefault) continue; // Unknown item, skip
+
+        // Check if this item differs from master defaults
+        const isDifferent =
+          item.order_position !== masterDefault.default_order_position ||
+          item.is_visible !== masterDefault.default_is_visible ||
+          item.parent_key !== masterDefault.parent_key;
+
+        if (isDifferent) {
+          // Save the customization
+          await tenantDb
+            .from('admin_navigation_custom')
+            .upsert({
+              core_nav_key: item.key,
+              order_position: item.order_position,
+              is_visible: item.is_visible,
+              parent_key: item.parent_key,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'core_nav_key'
+            });
+        } else {
+          // Matches default - remove any existing override
+          await tenantDb
+            .from('admin_navigation_custom')
+            .delete()
+            .eq('core_nav_key', item.key);
+        }
       }
     }
 

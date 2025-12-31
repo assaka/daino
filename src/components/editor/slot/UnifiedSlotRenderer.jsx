@@ -1663,10 +1663,14 @@ export function UnifiedSlotRenderer({
     }
 
     // Check if parent is a flex container - skip grid wrapper to preserve flex layout
-    // ONLY check for explicit type='flex', not className containing 'flex'
-    // This prevents nested flex detection issues (e.g., actions_section has 'flex' in className but is type='container')
+    // Check for: explicit type='flex', OR CSS flex class, OR display:flex style
     const parentSlot = slot.parentId ? slots[slot.parentId] : null;
-    const isParentFlex = parentSlot?.type === 'flex';
+
+    // Check for 'flex' as standalone Tailwind class (not flex-1, flex-shrink-0, etc.)
+    const hasFlexClass = parentSlot?.className?.split(/\s+/).some(cls => cls === 'flex' || cls === 'inline-flex');
+    const isParentFlex = parentSlot?.type === 'flex' ||
+                         hasFlexClass ||
+                         parentSlot?.styles?.display === 'flex';
 
     if (isParentFlex) {
       // For flex children, use simpler wrapper that preserves flex layout
