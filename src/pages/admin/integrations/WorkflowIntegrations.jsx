@@ -19,13 +19,18 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Webhook,
-  Settings,
   Plus,
   Edit,
   Trash2,
   PlayCircle,
-  RefreshCw,
   CheckCircle,
   XCircle,
   Clock,
@@ -35,7 +40,9 @@ import {
   History,
   Info,
   Copy,
-  Check
+  Check,
+  Filter,
+  X
 } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -46,57 +53,44 @@ import {
   deleteWebhook,
   testWebhook,
   getWebhookLogs,
-  getWebhookStats,
   EVENT_TYPES
 } from '@/api/webhook-integrations';
 
 // Provider configurations
-const PROVIDER_CONFIG = {
+const PROVIDERS = {
   n8n: {
+    id: 'n8n',
     name: 'n8n',
     description: 'Self-hosted workflow automation',
     urlPlaceholder: 'https://your-n8n-instance.com/webhook/...',
     docsUrl: 'https://docs.n8n.io/integrations/builtin/trigger-nodes/n8n-nodes-base.webhook/',
-    color: 'from-red-500 to-orange-500',
-    icon: 'N8N',
-    features: [
-      'Self-hosted automation',
-      'Visual workflow editor',
-      'Custom nodes & integrations',
-      'Full data control'
-    ]
+    color: 'bg-red-500',
+    badgeColor: 'bg-red-100 text-red-800 border-red-200',
+    features: ['Self-hosted automation', 'Visual workflow editor', 'Custom nodes', 'Full data control']
   },
   zapier: {
+    id: 'zapier',
     name: 'Zapier',
     description: 'No-code automation platform',
     urlPlaceholder: 'https://hooks.zapier.com/hooks/catch/...',
     docsUrl: 'https://zapier.com/help/create/code-webhooks/trigger-zaps-from-webhooks',
-    color: 'from-orange-500 to-amber-500',
-    icon: 'ZAP',
-    features: [
-      '5000+ app integrations',
-      'No-code automation',
-      'Pre-built templates',
-      'Cloud-based reliability'
-    ]
+    color: 'bg-orange-500',
+    badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+    features: ['5000+ app integrations', 'No-code automation', 'Pre-built templates', 'Cloud-based']
   },
   make: {
+    id: 'make',
     name: 'Make',
     description: 'Visual workflow builder',
     urlPlaceholder: 'https://hook.make.com/...',
     docsUrl: 'https://www.make.com/en/help/tools/webhooks',
-    color: 'from-purple-500 to-indigo-500',
-    icon: 'MAKE',
-    features: [
-      'Visual scenario builder',
-      'Complex logic support',
-      'Data transformations',
-      'Error handling'
-    ]
+    color: 'bg-purple-500',
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+    features: ['Visual scenario builder', 'Complex logic support', 'Data transformations', 'Error handling']
   }
 };
 
-// Event type labels for display
+// Event type labels
 const EVENT_LABELS = {
   page_view: 'Page View',
   product_view: 'Product View',
@@ -109,15 +103,16 @@ const EVENT_LABELS = {
   search: 'Search'
 };
 
-export default function WebhookSettings({ provider }) {
+export default function WorkflowIntegrations() {
   const { selectedStore } = useStoreSelection();
-  const config = PROVIDER_CONFIG[provider];
 
   const [loading, setLoading] = useState(true);
   const [webhooks, setWebhooks] = useState([]);
-  const [stats, setStats] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
   const [activeTab, setActiveTab] = useState('webhooks');
+
+  // Filter state
+  const [selectedProviders, setSelectedProviders] = useState(['n8n', 'zapier', 'make']);
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -134,66 +129,81 @@ export default function WebhookSettings({ provider }) {
 
   // Form state
   const [form, setForm] = useState({
+    provider: 'n8n',
     name: '',
     webhookUrl: '',
     eventTypes: [],
-    isActive: true,
-    customHeaders: {}
+    isActive: true
   });
 
-  // Load webhooks
+  // Load webhooks from all providers
   const loadWebhooks = useCallback(async () => {
     if (!selectedStore) return;
 
     try {
       setLoading(true);
-      const response = await getWebhooks(provider);
-      setWebhooks(response.data?.webhooks || []);
+      const allWebhooks = [];
+
+      for (const providerId of Object.keys(PROVIDERS)) {
+        try {
+          const response = await getWebhooks(providerId);
+          const providerWebhooks = (response.data?.webhooks || []).map(w => ({
+            ...w,
+            provider: providerId
+          }));
+          allWebhooks.push(...providerWebhooks);
+        } catch (error) {
+          console.error(`Error loading ${providerId} webhooks:`, error);
+        }
+      }
+
+      setWebhooks(allWebhooks);
     } catch (error) {
       console.error('Error loading webhooks:', error);
       setFlashMessage({ type: 'error', message: 'Failed to load webhooks' });
     } finally {
       setLoading(false);
     }
-  }, [selectedStore, provider]);
-
-  // Load stats
-  const loadStats = useCallback(async () => {
-    if (!selectedStore) return;
-
-    try {
-      const response = await getWebhookStats(provider);
-      setStats(response.data?.stats || null);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
-  }, [selectedStore, provider]);
+  }, [selectedStore]);
 
   useEffect(() => {
     if (selectedStore) {
       loadWebhooks();
-      loadStats();
     }
-  }, [selectedStore, loadWebhooks, loadStats]);
+  }, [selectedStore, loadWebhooks]);
+
+  // Filter webhooks by selected providers
+  const filteredWebhooks = webhooks.filter(w => selectedProviders.includes(w.provider));
+
+  // Toggle provider filter
+  const toggleProvider = (providerId) => {
+    setSelectedProviders(prev => {
+      if (prev.includes(providerId)) {
+        if (prev.length === 1) return prev; // Keep at least one selected
+        return prev.filter(p => p !== providerId);
+      }
+      return [...prev, providerId];
+    });
+  };
 
   // Handle form open for create/edit
   const handleOpenForm = (webhook = null) => {
     if (webhook) {
       setForm({
+        provider: webhook.provider || 'n8n',
         name: webhook.name || '',
         webhookUrl: webhook.webhookUrl || '',
         eventTypes: webhook.eventTypes || [],
-        isActive: webhook.isActive !== false,
-        customHeaders: webhook.customHeaders || {}
+        isActive: webhook.isActive !== false
       });
       setSelectedWebhook(webhook);
     } else {
       setForm({
+        provider: selectedProviders[0] || 'n8n',
         name: '',
         webhookUrl: '',
         eventTypes: [],
-        isActive: true,
-        customHeaders: {}
+        isActive: true
       });
       setSelectedWebhook(null);
     }
@@ -216,16 +226,17 @@ export default function WebhookSettings({ provider }) {
 
     setSaving(true);
     try {
+      const { provider, ...webhookData } = form;
+
       if (selectedWebhook) {
-        await updateWebhook(provider, selectedWebhook.id, form);
+        await updateWebhook(selectedWebhook.provider, selectedWebhook.id, webhookData);
         setFlashMessage({ type: 'success', message: 'Webhook updated successfully' });
       } else {
-        await createWebhook(provider, form);
+        await createWebhook(provider, webhookData);
         setFlashMessage({ type: 'success', message: 'Webhook created successfully' });
       }
       setIsFormOpen(false);
       loadWebhooks();
-      loadStats();
     } catch (error) {
       console.error('Error saving webhook:', error);
       setFlashMessage({ type: 'error', message: error.message || 'Failed to save webhook' });
@@ -240,12 +251,11 @@ export default function WebhookSettings({ provider }) {
 
     setDeleting(true);
     try {
-      await deleteWebhook(provider, selectedWebhook.id);
+      await deleteWebhook(selectedWebhook.provider, selectedWebhook.id);
       setFlashMessage({ type: 'success', message: 'Webhook deleted successfully' });
       setIsDeleteOpen(false);
       setSelectedWebhook(null);
       loadWebhooks();
-      loadStats();
     } catch (error) {
       console.error('Error deleting webhook:', error);
       setFlashMessage({ type: 'error', message: 'Failed to delete webhook' });
@@ -255,10 +265,10 @@ export default function WebhookSettings({ provider }) {
   };
 
   // Handle test
-  const handleTest = async (webhookId) => {
-    setTesting(webhookId);
+  const handleTest = async (webhook) => {
+    setTesting(webhook.id);
     try {
-      const response = await testWebhook(provider, webhookId);
+      const response = await testWebhook(webhook.provider, webhook.id);
       if (response.success) {
         setFlashMessage({ type: 'success', message: 'Test webhook sent successfully!' });
       } else {
@@ -279,7 +289,7 @@ export default function WebhookSettings({ provider }) {
     setIsLogsOpen(true);
 
     try {
-      const response = await getWebhookLogs(provider, webhook.id, { limit: 50 });
+      const response = await getWebhookLogs(webhook.provider, webhook.id, { limit: 50 });
       setLogs(response.data?.logs || []);
     } catch (error) {
       console.error('Error loading logs:', error);
@@ -299,23 +309,11 @@ export default function WebhookSettings({ provider }) {
     }));
   };
 
-  // Select all events
-  const selectAllEvents = () => {
-    setForm(prev => ({
-      ...prev,
-      eventTypes: [...EVENT_TYPES]
-    }));
-  };
+  // Select/clear all events
+  const selectAllEvents = () => setForm(prev => ({ ...prev, eventTypes: [...EVENT_TYPES] }));
+  const clearAllEvents = () => setForm(prev => ({ ...prev, eventTypes: [] }));
 
-  // Clear all events
-  const clearAllEvents = () => {
-    setForm(prev => ({
-      ...prev,
-      eventTypes: []
-    }));
-  };
-
-  // Copy webhook URL
+  // Copy to clipboard
   const [copied, setCopied] = useState(null);
   const copyToClipboard = async (text, id) => {
     try {
@@ -326,6 +324,9 @@ export default function WebhookSettings({ provider }) {
       console.error('Failed to copy:', error);
     }
   };
+
+  // Count webhooks per provider
+  const getProviderCount = (providerId) => webhooks.filter(w => w.provider === providerId).length;
 
   if (loading) {
     return <PageLoader size="lg" />;
@@ -342,64 +343,55 @@ export default function WebhookSettings({ provider }) {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <div className={`w-10 h-10 bg-gradient-to-r ${config.color} rounded-lg flex items-center justify-center`}>
-            <Webhook className="w-5 h-5 text-white" />
-          </div>
-          {config.name} Integration
+          <Webhook className="w-8 h-8 text-blue-600" />
+          Workflow Integrations
         </h1>
         <p className="text-gray-600 mt-1">
-          {config.description} - Send real-time event data to your workflows
+          Connect your store to n8n, Zapier, and Make for workflow automation
         </p>
       </div>
 
-      {/* Stats Overview */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.totalWebhooks || 0}</div>
-                <div className="text-sm text-gray-600">Total Webhooks</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.activeWebhooks || 0}</div>
-                <div className="text-sm text-gray-600">Active</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{stats.totalDeliveries || 0}</div>
-                <div className="text-sm text-gray-600">Total Deliveries</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {stats.totalDeliveries > 0
-                    ? `${Math.round((stats.successfulDeliveries || 0) / stats.totalDeliveries * 100)}%`
-                    : 'N/A'
-                  }
-                </div>
-                <div className="text-sm text-gray-600">Success Rate</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Provider Filter Badges */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <span className="text-sm text-gray-500 flex items-center gap-1">
+          <Filter className="w-4 h-4" />
+          Filter:
+        </span>
+        {Object.values(PROVIDERS).map((provider) => {
+          const isSelected = selectedProviders.includes(provider.id);
+          const count = getProviderCount(provider.id);
+          return (
+            <button
+              key={provider.id}
+              onClick={() => toggleProvider(provider.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                isSelected
+                  ? provider.badgeColor
+                  : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60 hover:opacity-100'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${provider.color}`} />
+              {provider.name}
+              {count > 0 && (
+                <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                  isSelected ? 'bg-white/50' : 'bg-gray-200'
+                }`}>
+                  {count}
+                </span>
+              )}
+              {isSelected && selectedProviders.length > 1 && (
+                <X className="w-3 h-3 ml-0.5 opacity-60" />
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="webhooks" className="flex items-center gap-2">
             <Webhook className="h-4 w-4" />
-            Webhooks
+            Webhooks ({filteredWebhooks.length})
           </TabsTrigger>
           <TabsTrigger value="info" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
@@ -415,7 +407,7 @@ export default function WebhookSettings({ provider }) {
                 <div>
                   <CardTitle>Configured Webhooks</CardTitle>
                   <CardDescription>
-                    Manage your {config.name} webhook endpoints
+                    Manage webhook endpoints for workflow automation
                   </CardDescription>
                 </div>
                 <Button onClick={() => handleOpenForm()} className="flex items-center gap-2">
@@ -425,12 +417,12 @@ export default function WebhookSettings({ provider }) {
               </div>
             </CardHeader>
             <CardContent>
-              {webhooks.length === 0 ? (
+              {filteredWebhooks.length === 0 ? (
                 <div className="text-center py-12">
                   <Webhook className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No webhooks configured</h3>
                   <p className="text-gray-600 mb-4">
-                    Add your first {config.name} webhook to start receiving events
+                    Add your first webhook to start receiving events
                   </p>
                   <Button onClick={() => handleOpenForm()}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -439,97 +431,110 @@ export default function WebhookSettings({ provider }) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {webhooks.map((webhook) => (
-                    <Card key={webhook.id} className="border">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-medium">{webhook.name || 'Unnamed Webhook'}</h3>
-                              <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
-                                {webhook.isActive ? (
-                                  <><CheckCircle className="w-3 h-3 mr-1" /> Active</>
-                                ) : (
-                                  <><XCircle className="w-3 h-3 mr-1" /> Inactive</>
-                                )}
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                              <code className="bg-gray-100 px-2 py-1 rounded text-xs max-w-md truncate">
-                                {webhook.webhookUrl}
-                              </code>
-                              <button
-                                onClick={() => copyToClipboard(webhook.webhookUrl, webhook.id)}
-                                className="p-1 hover:bg-gray-100 rounded"
-                              >
-                                {copied === webhook.id ? (
-                                  <Check className="w-4 h-4 text-green-500" />
-                                ) : (
-                                  <Copy className="w-4 h-4 text-gray-400" />
-                                )}
-                              </button>
-                            </div>
-
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {(webhook.eventTypes || []).map((event) => (
-                                <Badge key={event} variant="outline" className="text-xs">
-                                  {EVENT_LABELS[event] || event}
+                  {filteredWebhooks.map((webhook) => {
+                    const provider = PROVIDERS[webhook.provider];
+                    return (
+                      <Card key={webhook.id} className="border">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className={provider.badgeColor}>
+                                  <span className={`w-2 h-2 rounded-full ${provider.color} mr-1.5`} />
+                                  {provider.name}
                                 </Badge>
-                              ))}
+                                <h3 className="font-medium">{webhook.name || 'Unnamed Webhook'}</h3>
+                                <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
+                                  {webhook.isActive ? (
+                                    <><CheckCircle className="w-3 h-3 mr-1" /> Active</>
+                                  ) : (
+                                    <><XCircle className="w-3 h-3 mr-1" /> Inactive</>
+                                  )}
+                                </Badge>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                <code className="bg-gray-100 px-2 py-1 rounded text-xs max-w-md truncate">
+                                  {webhook.webhookUrl}
+                                </code>
+                                <button
+                                  onClick={() => copyToClipboard(webhook.webhookUrl, webhook.id)}
+                                  className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                  {copied === webhook.id ? (
+                                    <Check className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4 text-gray-400" />
+                                  )}
+                                </button>
+                              </div>
+
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {(webhook.eventTypes || []).slice(0, 4).map((event) => (
+                                  <Badge key={event} variant="outline" className="text-xs">
+                                    {EVENT_LABELS[event] || event}
+                                  </Badge>
+                                ))}
+                                {(webhook.eventTypes || []).length > 4 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{webhook.eventTypes.length - 4} more
+                                  </Badge>
+                                )}
+                              </div>
+
+                              <div className="text-xs text-gray-400">
+                                Created: {new Date(webhook.createdAt).toLocaleDateString()}
+                              </div>
                             </div>
 
-                            <div className="text-xs text-gray-400">
-                              Created: {new Date(webhook.createdAt).toLocaleDateString()}
-                              {webhook.lastDeliveryAt && (
-                                <> | Last delivery: {new Date(webhook.lastDeliveryAt).toLocaleString()}</>
-                              )}
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleTest(webhook)}
+                                disabled={testing === webhook.id}
+                                title="Send test webhook"
+                              >
+                                {testing === webhook.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <PlayCircle className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewLogs(webhook)}
+                                title="View logs"
+                              >
+                                <History className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenForm(webhook)}
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  setSelectedWebhook(webhook);
+                                  setIsDeleteOpen(true);
+                                }}
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleTest(webhook.id)}
-                              disabled={testing === webhook.id}
-                            >
-                              {testing === webhook.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <PlayCircle className="w-4 h-4" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewLogs(webhook)}
-                            >
-                              <History className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenForm(webhook)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => {
-                                setSelectedWebhook(webhook);
-                                setIsDeleteOpen(true);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -538,80 +543,62 @@ export default function WebhookSettings({ provider }) {
 
         {/* Info Tab */}
         <TabsContent value="info" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                How to Set Up {config.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-semibold mb-3">Features</h3>
-                  <ul className="space-y-2">
-                    {config.features.map((feature, idx) => (
+          <div className="grid md:grid-cols-3 gap-6">
+            {Object.values(PROVIDERS).map((provider) => (
+              <Card key={provider.id}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${provider.color}`} />
+                    {provider.name}
+                  </CardTitle>
+                  <CardDescription>{provider.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {provider.features.map((feature, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-sm text-gray-600">
                         <CheckCircle className="w-4 h-4 text-green-500" />
                         {feature}
                       </li>
                     ))}
                   </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-3">Supported Events</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {EVENT_TYPES.map((event) => (
-                      <Badge key={event} variant="outline">
-                        {EVENT_LABELS[event] || event}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                  <a
+                    href={provider.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                  >
+                    View Documentation
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Quick Start:</strong> Create a webhook trigger in {config.name},
-                  copy the webhook URL, and add it here. Events will be sent in real-time as they occur.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex gap-4">
-                <a
-                  href={config.docsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-600 hover:underline"
-                >
-                  View {config.name} Documentation
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold mb-2">Example Payload</h4>
-                <pre className="text-xs bg-gray-900 text-gray-100 p-4 rounded overflow-x-auto">
-{`{
-  "event": "order_placed",
-  "provider": "${provider}",
-  "timestamp": "2025-01-15T10:30:00.000Z",
-  "store_id": "your-store-id",
-  "store_name": "My Store",
-  "event_id": "evt_xxx",
-  "data": {
-    "order_id": "ord_123",
-    "customer_email": "customer@example.com",
-    "total_amount": 99.99,
-    "currency": "USD",
-    "items": [...]
-  }
-}`}
-                </pre>
+          <Card>
+            <CardHeader>
+              <CardTitle>Supported Events</CardTitle>
+              <CardDescription>Events that can trigger your workflows</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {EVENT_TYPES.map((event) => (
+                  <Badge key={event} variant="outline" className="text-sm py-1 px-3">
+                    {EVENT_LABELS[event] || event}
+                  </Badge>
+                ))}
               </div>
             </CardContent>
           </Card>
+
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Quick Start:</strong> Create a webhook trigger in your automation platform,
+              copy the webhook URL, and add it here. Events will be sent in real-time.
+            </AlertDescription>
+          </Alert>
         </TabsContent>
       </Tabs>
 
@@ -623,11 +610,35 @@ export default function WebhookSettings({ provider }) {
               {selectedWebhook ? 'Edit Webhook' : 'Add Webhook'}
             </DialogTitle>
             <DialogDescription>
-              Configure your {config.name} webhook endpoint
+              Configure your webhook endpoint
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4">
+            {!selectedWebhook && (
+              <div>
+                <Label htmlFor="provider">Platform *</Label>
+                <Select
+                  value={form.provider}
+                  onValueChange={(value) => setForm(prev => ({ ...prev, provider: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(PROVIDERS).map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        <span className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${provider.color}`} />
+                          {provider.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div>
               <Label htmlFor="name">Name (optional)</Label>
               <Input
@@ -644,7 +655,7 @@ export default function WebhookSettings({ provider }) {
                 id="webhookUrl"
                 value={form.webhookUrl}
                 onChange={(e) => setForm(prev => ({ ...prev, webhookUrl: e.target.value }))}
-                placeholder={config.urlPlaceholder}
+                placeholder={PROVIDERS[form.provider]?.urlPlaceholder || 'https://...'}
                 required
               />
             </div>
@@ -653,28 +664,17 @@ export default function WebhookSettings({ provider }) {
               <div className="flex items-center justify-between mb-2">
                 <Label>Events to Send *</Label>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={selectAllEvents}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
+                  <button type="button" onClick={selectAllEvents} className="text-xs text-blue-600 hover:underline">
                     Select All
                   </button>
-                  <button
-                    type="button"
-                    onClick={clearAllEvents}
-                    className="text-xs text-gray-600 hover:underline"
-                  >
+                  <button type="button" onClick={clearAllEvents} className="text-xs text-gray-600 hover:underline">
                     Clear
                   </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded">
                 {EVENT_TYPES.map((event) => (
-                  <label
-                    key={event}
-                    className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                  >
+                  <label key={event} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
                     <Checkbox
                       checked={form.eventTypes.includes(event)}
                       onCheckedChange={() => toggleEventType(event)}
@@ -784,9 +784,7 @@ export default function WebhookSettings({ provider }) {
                         )}
                         <Badge variant="outline">{log.event_type}</Badge>
                         {log.response_status && (
-                          <span className="text-xs text-gray-500">
-                            HTTP {log.response_status}
-                          </span>
+                          <span className="text-xs text-gray-500">HTTP {log.response_status}</span>
                         )}
                       </div>
                       <span className="text-xs text-gray-500">
@@ -796,9 +794,6 @@ export default function WebhookSettings({ provider }) {
                     {log.error_message && (
                       <p className="text-xs text-red-600 mt-1">{log.error_message}</p>
                     )}
-                    <div className="text-xs text-gray-500 mt-1">
-                      Attempts: {log.attempts || 1}
-                    </div>
                   </div>
                 ))}
               </div>

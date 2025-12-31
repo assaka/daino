@@ -33,9 +33,7 @@ export { default as ShopifyIntegration } from './admin/ShopifyIntegration';
 export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
 export { default as InstagramShopping } from './admin/InstagramShopping';
 // Workflow Automation Integrations
-export { default as N8nSettings } from './admin/integrations/N8nSettings';
-export { default as ZapierSettings } from './admin/integrations/ZapierSettings';
-export { default as MakeSettings } from './admin/integrations/MakeSettings';
+export { default as WorkflowIntegrations } from './admin/integrations/WorkflowIntegrations';
 // Unified Plugin System
 export { default as ProductTabs } from './admin/ProductTabs';
 export { default as ProductLabels } from './admin/ProductLabels';

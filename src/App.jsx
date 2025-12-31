@@ -454,9 +454,7 @@ function App() {
           <Route path="/admin/shopify-integration" element={<PageWrapper Component={Pages.ShopifyIntegration} pageName="ShopifyIntegration" />} />
           <Route path="/admin/integrations/instagram-shopping" element={<PageWrapper Component={Pages.InstagramShopping} pageName="instagram-shopping" />} />
           {/* Workflow Automation Integrations */}
-          <Route path="/admin/integrations/n8n" element={<PageWrapper Component={Pages.N8nSettings} pageName="n8n-settings" />} />
-          <Route path="/admin/integrations/zapier" element={<PageWrapper Component={Pages.ZapierSettings} pageName="zapier-settings" />} />
-          <Route path="/admin/integrations/make" element={<PageWrapper Component={Pages.MakeSettings} pageName="make-settings" />} />
+          <Route path="/admin/integrations/workflows" element={<PageWrapper Component={Pages.WorkflowIntegrations} pageName="workflow-integrations" />} />
           <Route path="/admin/settings" element={<PageWrapper Component={Pages.Settings} pageName="SETTINGS" />} />
           <Route path="/admin/navigation-manager" element={<PageWrapper Component={Pages.NavigationManager} pageName="NAVIGATION_MANAGER" />} />
           <Route path="/admin/theme-layout" element={<PageWrapper Component={Pages.ThemeLayout} pageName="THEME_LAYOUT" />} />
