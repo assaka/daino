@@ -1049,7 +1049,7 @@ CREATE TABLE IF NOT EXISTS ab_tests (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS admin_navigation_registr
+CREATE TABLE IF NOT EXISTS admin_navigation_registry
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key VARCHAR(100) NOT NULL,
   label VARCHAR(255) NOT NULL,
@@ -1057,7 +1057,6 @@ CREATE TABLE IF NOT EXISTS admin_navigation_registr
   route VARCHAR(255),
   parent_key VARCHAR(100),
   order_position INTEGER DEFAULT 0,
-  is_core BOOLEAN DEFAULT false,
   is_visible BOOLEAN DEFAULT true,
   plugin_id UUID,
   category VARCHAR(50),
