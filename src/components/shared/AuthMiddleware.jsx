@@ -510,17 +510,16 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   }
                 }
 
-                if (storeId) {
+                // ALWAYS fetch stores from dropdown - don't rely solely on JWT store_id
+                // The JWT may not have store_id even if user has stores
+                try {
+                  const dropdownResponse = await apiClient.get('/stores/dropdown');
+                  const stores = dropdownResponse.data || dropdownResponse;
 
-                  // BETTER APPROACH: Fetch from /stores/dropdown directly
-                  // The /stores/{id} endpoint seems to return malformed data
-                  try {
-                    const dropdownResponse = await apiClient.get('/stores/dropdown');
-                    const stores = dropdownResponse.data || dropdownResponse;
-
-                    // CRITICAL: Don't blindly trust storeId from JWT
-                    // Check if it's actually active, otherwise use first active store
-                    let selectedStore = stores.find(s => s.id === storeId);
+                  // If user has stores, select one
+                  if (stores && stores.length > 0) {
+                    // Try to find the store from JWT first (if storeId exists)
+                    let selectedStore = storeId ? stores.find(s => s.id === storeId) : null;
 
                     if (selectedStore) {
                       // Check if this store is actually active and ready
@@ -552,34 +551,35 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                         window.location.href = dashboardUrl;
                       }
                     } else {
-
-                      // Clear all authentication data
-                      localStorage.removeItem('store_owner_auth_token');
-                      localStorage.removeItem('store_owner_user_data');
-                      localStorage.removeItem('selectedStoreId');
-                      localStorage.removeItem('selectedStoreSlug');
-                      localStorage.removeItem('selectedStoreName');
-                      localStorage.setItem('user_logged_out', 'true');
-                      apiClient.clearToken();
-                      apiClient.isLoggedOut = true;
-
-                      // Redirect to login with error message
-                      const loginUrl = createAdminUrl("ADMIN_AUTH");
-                      window.location.href = loginUrl + '?error=no_active_store';
+                      // All stores are inactive/pending - go to onboarding
+                      const redirectUrl = searchParams.get('redirect');
+                      if (redirectUrl) {
+                        window.location.href = decodeURIComponent(redirectUrl);
+                      } else {
+                        navigate(createAdminUrl("ONBOARDING"));
+                      }
                     }
-                  } catch (dropdownError) {
-                    // Last resort: just set the storeId and navigate
-                    localStorage.setItem('selectedStoreId', storeId);
-                    window.location.href = createAdminUrl("DASHBOARD");
+                  } else {
+                    // No stores at all - go to onboarding
+                    const redirectUrl = searchParams.get('redirect');
+                    if (redirectUrl) {
+                      window.location.href = decodeURIComponent(redirectUrl);
+                    } else {
+                      navigate(createAdminUrl("ONBOARDING"));
+                    }
                   }
-                } else {
-                  // No active stores found - check for redirect parameter first (invitation flow)
+                } catch (dropdownError) {
+                  console.error('Error fetching stores:', dropdownError);
+                  // On error, check for redirect parameter first
                   const redirectUrl = searchParams.get('redirect');
                   if (redirectUrl) {
-                    // User is likely accepting an invitation - redirect there to complete
                     window.location.href = decodeURIComponent(redirectUrl);
+                  } else if (storeId) {
+                    // Last resort: if we have storeId from JWT, try to use it
+                    localStorage.setItem('selectedStoreId', storeId);
+                    window.location.href = createAdminUrl("DASHBOARD");
                   } else {
-                    // No redirect, go to onboarding
+                    // No stores and no storeId - go to onboarding
                     navigate(createAdminUrl("ONBOARDING"));
                   }
                 }
