@@ -206,13 +206,13 @@ const headerConfig = {
       }
     },
 
-    // Language selector (large screens only, hidden when grid is too small)
+    // Language selector (desktop only, shown if enabled in settings)
     language_selector: {
       id: 'language_selector',
       type: 'component',
       component: 'LanguageSelector',
       content: '',
-      className: 'hidden lg:block',
+      className: 'hidden md:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
@@ -226,13 +226,13 @@ const headerConfig = {
       }
     },
 
-    // Country selector (large screens only, hidden when grid is too small)
+    // Country selector (desktop only, shown if multiple countries configured)
     country_selector: {
       id: 'country_selector',
       type: 'component',
       component: 'CountrySelect',
       content: '',
-      className: 'hidden lg:block',
+      className: 'hidden md:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
@@ -246,13 +246,13 @@ const headerConfig = {
       }
     },
 
-    // User account menu (large screens only - shows sign in button or user dropdown)
+    // User account menu (desktop - shows sign in button or user dropdown)
     user_account_menu: {
       id: 'user_account_menu',
       type: 'component',
       component: 'UserAccountMenu',
       content: '',
-      className: 'hidden lg:block',
+      className: 'hidden md:block',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
