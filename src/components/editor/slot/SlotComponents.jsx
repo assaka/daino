@@ -862,7 +862,7 @@ export function GridColumn({
                       : showBorders
                       ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
-                  } ${isFlexChild ? 'p-0' : 'p-2'} ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
+                  } ${isFlexChild ? 'p-0' : 'p-1'} ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-visible'
       } relative responsive-slot ${isFlexChild ? '' : colSpanClass} ${processedParentClassName}`}
       ref={(el) => {
