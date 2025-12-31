@@ -140,22 +140,23 @@ export default function MarketingLogin() {
             return;
           }
 
-          // Navigate to dashboard
+          // Navigate to dashboard - always fetch stores, don't rely solely on JWT store_id
           setTimeout(async () => {
             try {
               const storeId = actualResponse.data?.user?.store_id;
+              const dropdownResponse = await apiClient.get('/stores/dropdown');
+              const stores = dropdownResponse.data || dropdownResponse;
 
-              if (storeId) {
-                const dropdownResponse = await apiClient.get('/stores/dropdown');
-                const stores = dropdownResponse.data || dropdownResponse;
-                let selectedStore = stores.find(s => s.id === storeId);
+              if (stores && stores.length > 0) {
+                // Try to find the store from JWT first (if storeId exists)
+                let selectedStore = storeId ? stores.find(s => s.id === storeId) : null;
 
                 if (selectedStore && (!selectedStore.is_active || selectedStore.status === 'pending_database')) {
                   selectedStore = null;
                 }
 
                 if (!selectedStore) {
-                  selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores[0];
+                  selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
                 }
 
                 if (selectedStore) {
@@ -172,10 +173,11 @@ export default function MarketingLogin() {
                     window.location.href = createAdminUrl("DASHBOARD");
                   }
                 } else {
-                  setError('No active store found. Please contact support.');
-                  setLoading(false);
+                  // All stores are inactive/pending
+                  navigate('/admin/onboarding');
                 }
               } else {
+                // No stores at all - go to onboarding
                 const redirectUrl = searchParams.get('redirect');
                 if (redirectUrl) {
                   window.location.href = decodeURIComponent(redirectUrl);
@@ -184,6 +186,7 @@ export default function MarketingLogin() {
                 }
               }
             } catch (error) {
+              console.error('Error fetching stores:', error);
               navigate('/admin/onboarding');
             }
           }, 100);
