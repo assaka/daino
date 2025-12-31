@@ -88,7 +88,8 @@ const UnifiedSlotsEditor = ({
   config,
   mode = 'edit',
   onSave,
-  viewMode: propViewMode
+  viewMode: propViewMode,
+  viewportMode: externalViewportMode
 }) => {
   // Extract configuration
   const {
@@ -192,6 +193,13 @@ const UnifiedSlotsEditor = ({
       }));
     }
   }, [initialHeaderSlots]);
+
+  // Sync external viewport mode with internal state (from AI Workspace viewport selector)
+  useEffect(() => {
+    if (externalViewportMode && externalViewportMode !== currentViewport) {
+      setCurrentViewport(externalViewportMode);
+    }
+  }, [externalViewportMode]);
 
   // Sync sidebar visibility to AIWorkspaceContext for WorkspaceHeader to react
   useEffect(() => {

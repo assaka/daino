@@ -41,6 +41,7 @@ export default function ProductSlotsEditor({
   mode = 'edit',
   onSave,
   viewMode = 'default',
+  viewportMode = 'desktop',
   initialItemSlug = null
 }) {
   // Get initial product from prop (from AI Workspace) or URL params
@@ -291,6 +292,7 @@ export default function ProductSlotsEditor({
         mode={mode}
         onSave={onSave}
         viewMode={viewMode}
+        viewportMode={viewportMode}
       />
     </EditorStoreProvider>
   );

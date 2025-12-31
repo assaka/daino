@@ -140,6 +140,7 @@ const CategorySlotsEditorInner = ({
   mode,
   onSave,
   viewMode,
+  viewportMode,
   initialCategorySlug
 }) => {
   // CRITICAL: useStore() must be called INSIDE EditorStoreProvider's children
@@ -494,6 +495,7 @@ const CategorySlotsEditorInner = ({
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}
+      viewportMode={viewportMode}
     />
   );
 };
@@ -506,6 +508,7 @@ const CategorySlotsEditor = ({
   mode = 'edit',
   onSave,
   viewMode = 'grid',
+  viewportMode = 'desktop',
   initialItemSlug = null
 }) => {
   // Get initial category from prop (from AI Workspace) or URL params
@@ -518,6 +521,7 @@ const CategorySlotsEditor = ({
         mode={mode}
         onSave={onSave}
         viewMode={viewMode}
+        viewportMode={viewportMode}
         initialCategorySlug={initialCategorySlug}
       />
     </EditorStoreProvider>

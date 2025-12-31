@@ -103,7 +103,8 @@ const successEditorConfig = {
 const SuccessSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode = 'empty'
+  viewMode = 'empty',
+  viewportMode = 'desktop'
 }) => {
   return (
     <UnifiedSlotsEditor
@@ -111,6 +112,7 @@ const SuccessSlotsEditor = ({
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}
+      viewportMode={viewportMode}
     />
   );
 };

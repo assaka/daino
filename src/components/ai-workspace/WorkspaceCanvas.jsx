@@ -28,6 +28,7 @@ const WorkspaceCanvas = () => {
     selectedPageType,
     editorMode,
     viewMode,
+    viewportMode,
     selectedItemSlug,
     markAsSaved,
     setIsLoading,
@@ -208,6 +209,7 @@ const WorkspaceCanvas = () => {
     const editorProps = {
       mode,
       viewMode: currentViewMode,
+      viewportMode: viewportMode || 'desktop',
       onSave: handleSave,
       initialItemSlug: selectedItemSlug
     };

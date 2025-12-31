@@ -32,7 +32,12 @@ const createDefaultSlots = async () => {
 /**
  * HeaderSlotsEditor Component
  */
-export default function HeaderSlotsEditor() {
+export default function HeaderSlotsEditor({
+  mode = 'edit',
+  onSave,
+  viewMode = 'default',
+  viewportMode = 'desktop'
+}) {
   // State for mobile menu and search toggles
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -164,6 +169,10 @@ export default function HeaderSlotsEditor() {
   return (
     <UnifiedSlotsEditor
       config={headerEditorConfig}
+      mode={mode}
+      onSave={onSave}
+      viewMode={viewMode}
+      viewportMode={viewportMode}
     />
   );
 }

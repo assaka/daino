@@ -78,7 +78,8 @@ const accountEditorConfig = {
 const AccountSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode = 'overview'
+  viewMode = 'overview',
+  viewportMode = 'desktop'
 }) => {
   return (
     <UnifiedSlotsEditor
@@ -86,6 +87,7 @@ const AccountSlotsEditor = ({
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}
+      viewportMode={viewportMode}
     />
   );
 };

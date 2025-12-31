@@ -82,7 +82,8 @@ const checkoutEditorConfig = {
 const CheckoutSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode = 'default'
+  viewMode = 'default',
+  viewportMode = 'desktop'
 }) => {
   return (
     <UnifiedSlotsEditor
@@ -90,6 +91,7 @@ const CheckoutSlotsEditor = ({
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}
+      viewportMode={viewportMode}
     />
   );
 };

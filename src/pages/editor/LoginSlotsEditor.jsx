@@ -68,7 +68,8 @@ const loginEditorConfig = {
 const LoginSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode = 'login'
+  viewMode = 'login',
+  viewportMode = 'desktop'
 }) => {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
@@ -118,6 +119,7 @@ const LoginSlotsEditor = ({
         mode={mode}
         onSave={onSave}
         viewMode={viewMode}
+        viewportMode={viewportMode}
       />
     </EditorStoreProvider>
   );

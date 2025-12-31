@@ -108,7 +108,8 @@ const cartEditorConfig = {
 const CartSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode = 'emptyCart'
+  viewMode = 'emptyCart',
+  viewportMode = 'desktop'
 }) => {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
@@ -158,6 +159,7 @@ const CartSlotsEditor = ({
         mode={mode}
         onSave={onSave}
         viewMode={viewMode}
+        viewportMode={viewportMode}
       />
     </EditorStoreProvider>
   );
