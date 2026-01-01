@@ -5,6 +5,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const abTestingService = require('../services/analytics/ABTestingServiceSupabase');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { deletePattern } = require('../utils/cacheManager');
 
 // Helper functions to load configuration files from the frontend config directory
 async function loadPageConfig(pageType) {
@@ -334,6 +335,27 @@ async function publishDraft(draftId, publishedByUserId, storeId) {
     .single();
 
   if (error) throw error;
+
+  // Invalidate bootstrap cache for this store to ensure storefront gets updated config
+  // Get store slug from master database to construct cache key
+  try {
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: store } = await masterDbClient
+      .from('stores')
+      .select('slug')
+      .eq('id', storeId)
+      .single();
+
+    if (store?.slug) {
+      // Invalidate all bootstrap cache entries for this store (all languages, storefronts, versions)
+      const deleted = await deletePattern(`bootstrap:${store.slug}:*`);
+      console.log(`[PUBLISH] Invalidated ${deleted} bootstrap cache entries for store ${store.slug}`);
+    }
+  } catch (cacheError) {
+    // Log but don't fail the publish if cache invalidation fails
+    console.error('[PUBLISH] Failed to invalidate bootstrap cache:', cacheError.message);
+  }
+
   return data;
 }
 
