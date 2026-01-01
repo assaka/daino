@@ -983,6 +983,7 @@ const FileLibrary = () => {
   const [selectedFileIds, setSelectedFileIds] = useState([]);
   const [optimizerOpen, setOptimizerOpen] = useState(false);
   const [fileToOptimize, setFileToOptimize] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Selection handlers
   const toggleFileSelection = (fileId) => {
@@ -1275,12 +1276,16 @@ const FileLibrary = () => {
       // Extract file path from the file name/URL
       const filePath = `library/${file.name}`;
 
+      // Get store ID from localStorage
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+
       // Use fetch directly for DELETE request with body (apiClient doesn't support body in DELETE)
       const response = await fetch('/api/storage/delete', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiClient.getToken()}`
+          'Authorization': `Bearer ${apiClient.getToken()}`,
+          'x-store-id': selectedStoreId || ''
         },
         body: JSON.stringify({
           imagePath: filePath
@@ -1306,6 +1311,67 @@ const FileLibrary = () => {
       } else {
         toast.error(error.message || "Failed to delete file");
       }
+    }
+  };
+
+  // Bulk delete selected files
+  const bulkDeleteFiles = async () => {
+    if (selectedFileIds.length === 0) return;
+
+    const count = selectedFileIds.length;
+    if (!window.confirm(`Are you sure you want to delete ${count} file${count > 1 ? 's' : ''}? This action cannot be undone.`)) return;
+
+    setDeleting(true);
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const fileId of selectedFileIds) {
+      try {
+        const file = files.find(f => f.id === fileId);
+        if (!file) continue;
+
+        const filePath = `library/${file.name}`;
+
+        const response = await fetch('/api/storage/delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiClient.getToken()}`,
+            'x-store-id': selectedStoreId || ''
+          },
+          body: JSON.stringify({
+            imagePath: filePath
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error('Delete error for file:', fileId, error);
+        failCount++;
+      }
+    }
+
+    // Clear selection and reload
+    setSelectedFileIds([]);
+    await loadFiles();
+    setDeleting(false);
+
+    if (successCount > 0 && failCount === 0) {
+      toast.success(`Successfully deleted ${successCount} file${successCount > 1 ? 's' : ''}`);
+    } else if (successCount > 0 && failCount > 0) {
+      toast.warning(`Deleted ${successCount} file${successCount > 1 ? 's' : ''}, ${failCount} failed`);
+    } else {
+      toast.error(`Failed to delete files`);
     }
   };
 
@@ -1479,15 +1545,29 @@ const FileLibrary = () => {
             </label>
           )}
 
-          {/* Bulk AI Optimize */}
+          {/* Bulk Actions */}
           {selectedFileIds.length > 0 && (
-            <button
-              onClick={() => openOptimizer(null)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <Wand2 className="w-4 h-4" />
-              AI Optimize ({selectedFileIds.length})
-            </button>
+            <>
+              <button
+                onClick={() => openOptimizer(null)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Wand2 className="w-4 h-4" />
+                AI Optimize ({selectedFileIds.length})
+              </button>
+              <button
+                onClick={bulkDeleteFiles}
+                disabled={deleting}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                {deleting ? 'Deleting...' : `Delete (${selectedFileIds.length})`}
+              </button>
+            </>
           )}
         </div>
 
