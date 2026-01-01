@@ -51,7 +51,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
   const [processedCount, setProcessedCount] = useState(0);
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
-  const [saveCopy, setSaveCopy] = useState(true); // Checkbox state for save copy
+  const [applyToOriginal, setApplyToOriginal] = useState(false); // Checkbox: unchecked = save copy (default), checked = replace original
   const [isApplying, setIsApplying] = useState(false);
 
   // For single image mode: track current working image (starts as original, becomes result after optimization)
@@ -250,9 +250,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       const format = 'png';
       const base64Data = currentImage;
       const originalName = singleFile.name || 'image';
-      const newName = saveCopy
-        ? `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`
-        : originalName;
+      const newName = applyToOriginal
+        ? originalName
+        : `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
 
       // Convert base64 to blob
       const byteCharacters = atob(base64Data);
@@ -277,9 +277,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       });
 
       if (uploadResponse.ok) {
-        toast.success(saveCopy ? `Saved copy as "${newName}"` : `Applied changes to "${newName}"`);
+        toast.success(applyToOriginal ? `Applied changes to "${newName}"` : `Saved copy as "${newName}"`);
         if (onOptimized) onOptimized({ applied: true });
-        if (!saveCopy) onClose(); // Close if replacing original
+        if (applyToOriginal) onClose(); // Close if replacing original
       } else {
         throw new Error('Upload failed');
       }
@@ -303,9 +303,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
         const format = result.result?.format || 'png';
         const base64Data = result.result.image;
         const originalName = result.original.name || 'image';
-        const newName = saveCopy
-          ? `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`
-          : originalName;
+        const newName = applyToOriginal
+          ? originalName
+          : `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
 
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
@@ -337,7 +337,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     }
 
     setResults([...results]);
-    toast.success(`${saveCopy ? 'Saved' : 'Applied'} ${savedCount} images`);
+    toast.success(`${applyToOriginal ? 'Applied' : 'Saved'} ${savedCount} images`);
     if (onOptimized) onOptimized({ applied: true });
     setIsApplying(false);
   };
@@ -802,17 +802,17 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                 )}
               </div>
 
-              {/* Save Copy checkbox - show when there's a result */}
+              {/* Apply checkbox - show when there's a result */}
               {((!isBulkMode && currentImage) || (isBulkMode && results.filter(r => r.success).length > 0)) && (
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={saveCopy}
-                    onChange={(e) => setSaveCopy(e.target.checked)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    checked={applyToOriginal}
+                    onChange={(e) => setApplyToOriginal(e.target.checked)}
+                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
                   <span className="text-gray-700">
-                    {isBulkMode ? 'Save as copies' : 'Save as copy'}
+                    Replace original{isBulkMode ? 's' : ''}
                   </span>
                 </label>
               )}
@@ -824,13 +824,15 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                 Cancel
               </Button>
 
-              {/* Apply button - show when there's a result */}
+              {/* Save/Apply button - show when there's a result */}
               {((!isBulkMode && currentImage) || (isBulkMode && results.filter(r => r.success).length > 0)) && (
                 <Button
                   onClick={isBulkMode ? handleApplyAll : handleApply}
                   disabled={isApplying}
-                  variant="outline"
-                  className="border-green-300 text-green-700 hover:bg-green-50"
+                  className={applyToOriginal
+                    ? "bg-orange-600 hover:bg-orange-700"
+                    : "bg-green-600 hover:bg-green-700"
+                  }
                 >
                   {isApplying ? (
                     <>
@@ -841,8 +843,8 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                     <>
                       <Check className="w-4 h-4 mr-2" />
                       {isBulkMode
-                        ? `Apply All (${results.filter(r => r.success && !r.applied).length})`
-                        : 'Apply'
+                        ? (applyToOriginal ? 'Replace All' : 'Save Copies') + ` (${results.filter(r => r.success && !r.applied).length})`
+                        : (applyToOriginal ? 'Replace Original' : 'Save as Copy')
                       }
                     </>
                   )}
