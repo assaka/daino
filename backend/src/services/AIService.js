@@ -516,7 +516,7 @@ class AIService {
     // Get tenant connection for AI usage logs
     const connection = await ConnectionManager.getStoreConnection(storeId);
 
-    const { data, error } = await connection.client
+    const { data, error } = await connection
       .from('ai_usage_logs')
       .select('operation_type, model_used, tokens_input, tokens_output, metadata, created_at')
       .eq('user_id', userId)
@@ -677,7 +677,7 @@ class AIService {
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
       // Insert into plugin_registry (tenant DB)
-      const { error: insertError } = await connection.client
+      const { error: insertError } = await connection
         .from('plugin_registry')
         .insert({
           id: pluginId,
@@ -748,7 +748,7 @@ For issues or questions, please contact the platform administrator.
 `;
 
       // Save README.md to plugin_docs (for file tree display)
-      const { error: docsError } = await connection.client
+      const { error: docsError } = await connection
         .from('plugin_docs')
         .insert({
           plugin_id: pluginId,
@@ -798,7 +798,7 @@ For issues or questions, please contact the platform administrator.
           }
 
           if (fileContent) {
-            const { error: scriptError } = await connection.client
+            const { error: scriptError } = await connection
               .from('plugin_scripts')
               .insert({
                 plugin_id: pluginId,
@@ -827,7 +827,7 @@ For issues or questions, please contact the platform administrator.
           const hookCode = hook.code || `function(value, context) { return value; }`;
           const priority = hook.priority || 10;
 
-          const { error: hookError } = await connection.client
+          const { error: hookError } = await connection
             .from('plugin_hooks')
             .insert({
               plugin_id: pluginId,
@@ -853,7 +853,7 @@ For issues or questions, please contact the platform administrator.
           const eventCode = event.listenerCode || event.code || `function(eventData, context) { console.log('Event triggered'); }`;
           const priority = event.priority || 10;
 
-          const { error: eventError } = await connection.client
+          const { error: eventError } = await connection
             .from('plugin_events')
             .insert({
               plugin_id: pluginId,
@@ -878,7 +878,7 @@ For issues or questions, please contact the platform administrator.
       if (widgets.length > 0) {
         console.log(`  🧩 Processing ${widgets.length} widgets...`);
         for (const widget of widgets) {
-          const { error: widgetError } = await connection.client
+          const { error: widgetError } = await connection
             .from('plugin_widgets')
             .insert({
               plugin_id: pluginId,
@@ -907,7 +907,7 @@ For issues or questions, please contact the platform administrator.
       if (controllers.length > 0) {
         console.log(`  🎮 Processing ${controllers.length} controllers...`);
         for (const controller of controllers) {
-          const { error: controllerError } = await connection.client
+          const { error: controllerError } = await connection
             .from('plugin_controllers')
             .insert({
               plugin_id: pluginId,
@@ -942,7 +942,7 @@ For issues or questions, please contact the platform administrator.
               console.log(`  🗄️  Executed migration: ${migration.name}`);
 
               // Record migration in plugin_migrations table
-              await connection.client
+              await connection
                 .from('plugin_migrations')
                 .insert({
                   plugin_id: pluginId,
@@ -965,7 +965,7 @@ For issues or questions, please contact the platform administrator.
       if (pluginDataItems.length > 0) {
         console.log(`  💾 Saving ${pluginDataItems.length} plugin data items...`);
         for (const item of pluginDataItems) {
-          const { error: dataError } = await connection.client
+          const { error: dataError } = await connection
             .from('plugin_data')
             .insert({
               plugin_id: pluginId,
@@ -990,7 +990,7 @@ For issues or questions, please contact the platform administrator.
           // Skip README if we already created one
           if (doc.title === 'README' || doc.fileName === 'README.md') continue;
 
-          const { error: docError } = await connection.client
+          const { error: docError } = await connection
             .from('plugin_docs')
             .insert({
               plugin_id: pluginId,
@@ -1017,7 +1017,7 @@ For issues or questions, please contact the platform administrator.
       if (adminPages.length > 0) {
         console.log(`  📱 Saving ${adminPages.length} admin pages...`);
         for (const page of adminPages) {
-          const { error: pageError } = await connection.client
+          const { error: pageError } = await connection
             .from('plugin_admin_pages')
             .insert({
               plugin_id: pluginId,
@@ -1044,7 +1044,7 @@ For issues or questions, please contact the platform administrator.
       if (files.length > 0) {
         console.log(`  📦 Saving ${files.length} files...`);
         for (const file of files) {
-          const { error: fileError } = await connection.client
+          const { error: fileError } = await connection
             .from('plugin_scripts')
             .insert({
               plugin_id: pluginId,
