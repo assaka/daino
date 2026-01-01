@@ -80,6 +80,21 @@ class GeminiImageProvider {
     // Check various possible response structures
     const candidates = response.candidates || [];
 
+    // Check for finish reasons that indicate failure
+    const finishReason = candidates[0]?.finishReason;
+    if (finishReason) {
+      const reasonMessages = {
+        'RECITATION': 'Gemini refused: content policy violation (may be seen as reproducing copyrighted content)',
+        'SAFETY': 'Gemini refused: safety filter triggered',
+        'BLOCKED_REASON_UNSPECIFIED': 'Gemini refused: content blocked',
+        'OTHER': 'Gemini refused: unknown reason'
+      };
+      if (reasonMessages[finishReason]) {
+        console.error(`[Gemini] Blocked with reason: ${finishReason}`);
+        throw new Error(reasonMessages[finishReason]);
+      }
+    }
+
     for (const candidate of candidates) {
       const parts = candidate.content?.parts || [];
       for (const part of parts) {
