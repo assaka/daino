@@ -505,10 +505,16 @@ const ProductImageUpload = ({
               {images.map((image, index) => {
                 const FileIcon = getFileIcon(image.filename, image.mimeType);
                 const shouldShowImagePreview = isImageFile(image.filename, image.mimeType);
-                
+                const imageId = image.id || image.url;
+                const isSelected = selectedImageIds.includes(imageId);
+
                 return (
                 <div key={image.id || index} className="group relative">
-                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200 group-hover:border-blue-400 transition-colors">
+                  <div className={`aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 transition-colors ${
+                    isSelected
+                      ? 'border-purple-500 ring-2 ring-purple-200'
+                      : 'border-gray-200 group-hover:border-blue-400'
+                  }`}>
                     {shouldShowImagePreview ? (
                       <img
                         src={image.url}
@@ -531,17 +537,51 @@ const ProductImageUpload = ({
                         </span>
                       </div>
                     )}
-                    
+
+                    {/* Selection Checkbox */}
+                    {fileConfig.isImageType && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleImageSelection(imageId)}
+                          className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 bg-white shadow-sm cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+
                     {/* Primary Badge */}
                     {image.isPrimary && (
-                      <Badge className="absolute top-2 left-2 bg-yellow-500 text-white">
+                      <Badge className="absolute top-2 left-9 bg-yellow-500 text-white">
                         <Star className="w-3 h-3 mr-1" />
                         Primary
                       </Badge>
                     )}
-                    
+
+                    {/* Optimized Badge */}
+                    {image.optimized && (
+                      <Badge className="absolute bottom-2 left-2 bg-purple-500 text-white text-xs">
+                        <Wand2 className="w-2.5 h-2.5 mr-1" />
+                        Optimized
+                      </Badge>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* AI Optimize Button */}
+                      {shouldShowImagePreview && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 w-8 p-0 bg-purple-100 hover:bg-purple-200 text-purple-600"
+                          onClick={() => openOptimizer(image, false)}
+                          title="AI Optimize"
+                        >
+                          <Wand2 className="w-3 h-3" />
+                        </Button>
+                      )}
+
                       {!image.isPrimary && (
                         <Button
                           size="sm"
@@ -553,7 +593,7 @@ const ProductImageUpload = ({
                           <Star className="w-3 h-3" />
                         </Button>
                       )}
-                      
+
                       <Button
                         size="sm"
                         variant="secondary"
@@ -563,7 +603,7 @@ const ProductImageUpload = ({
                       >
                         <ExternalLink className="w-3 h-3" />
                       </Button>
-                      
+
                       <Button
                         size="sm"
                         variant="destructive"
@@ -640,6 +680,103 @@ const ProductImageUpload = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Image Optimizer Modal */}
+      {optimizerOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Wand2 className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {bulkOptimizeMode
+                      ? `AI Optimize ${selectedImageIds.length} Images`
+                      : 'AI Image Optimizer'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {bulkOptimizeMode
+                      ? 'Select operation to apply to all selected images'
+                      : 'Enhance, upscale, remove background, or stage your product'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setOptimizerOpen(false);
+                  setImageToOptimize(null);
+                  setBulkOptimizeMode(false);
+                }}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-0">
+              {bulkOptimizeMode ? (
+                <div className="p-6">
+                  {/* Bulk mode: show selected images preview */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Selected Images</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {images
+                        .filter(img => selectedImageIds.includes(img.id || img.url))
+                        .map((img, idx) => (
+                          <div key={idx} className="w-16 h-16 rounded-lg overflow-hidden border-2 border-purple-300">
+                            <img src={img.url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Bulk optimization will process each image individually. Upload results will replace original images.
+                  </p>
+                  <ImageOptimizer
+                    storeId={getSelectedStoreId()}
+                    onImageOptimized={handleOptimizedImage}
+                    className="h-auto"
+                  />
+                </div>
+              ) : imageToOptimize ? (
+                <div className="grid grid-cols-2 gap-0 h-full">
+                  {/* Original Image */}
+                  <div className="border-r p-4 flex flex-col">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Original Image</h3>
+                    <div className="flex-1 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                      <img
+                        src={imageToOptimize.url}
+                        alt="Original"
+                        className="max-w-full max-h-80 object-contain"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 truncate">{imageToOptimize.filename}</p>
+                  </div>
+                  {/* Optimizer */}
+                  <div className="p-4">
+                    <ImageOptimizer
+                      storeId={getSelectedStoreId()}
+                      onImageOptimized={handleOptimizedImage}
+                      className="h-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <ImageOptimizer
+                  storeId={getSelectedStoreId()}
+                  onImageOptimized={handleOptimizedImage}
+                  className="h-full"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

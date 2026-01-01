@@ -412,6 +412,7 @@ function App() {
           <Route path="/admin/emails" element={<PageWrapper Component={Pages.Emails} pageName="EMAILS" />} />
           <Route path="/admin/email" element={<PageWrapper Component={Pages.EmailSettings} pageName="EMAIL_SETTINGS" />} />
           <Route path="/admin/file-library" element={<PageWrapper Component={Pages.FileLibrary} pageName="file-library" />} />
+          <Route path="/admin/ai-image-optimizer" element={<PageWrapper Component={Pages.AIImageOptimizer} pageName="ai-image-optimizer" />} />
           <Route path="/admin/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="COOKIE_CONSENT" />} />
           <Route path="/admin/analytics" element={<PageWrapper Component={Pages.AnalyticsSettings} pageName="ANALYTICS" />} />
           <Route path="/admin/analytics-settings" element={<PageWrapper Component={Pages.AnalyticsSettings} pageName="ANALYTICS" />} />

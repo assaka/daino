@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings } from 'lucide-react';
+import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import SaveButton from '@/components/ui/save-button';
 import { PageLoader } from '@/components/ui/page-loader';
+import { ImageOptimizer } from '@/components/image-optimizer';
+
+// Entity type filters
+const ENTITY_TYPES = [
+  { id: 'all', label: 'All Files', icon: FolderOpen },
+  { id: 'library', label: 'Library', icon: Archive },
+  { id: 'products', label: 'Products', icon: Package },
+  { id: 'categories', label: 'Categories', icon: Filter }
+];
 
 const FileLibrary = () => {
   const { selectedStore } = useStoreSelection();
@@ -21,6 +30,42 @@ const FileLibrary = () => {
   const [storageError, setStorageError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+
+  // New state for entity filter and AI optimizer
+  const [entityFilter, setEntityFilter] = useState('all');
+  const [selectedFileIds, setSelectedFileIds] = useState([]);
+  const [optimizerOpen, setOptimizerOpen] = useState(false);
+  const [fileToOptimize, setFileToOptimize] = useState(null);
+
+  // Selection handlers
+  const toggleFileSelection = (fileId) => {
+    setSelectedFileIds(prev =>
+      prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]
+    );
+  };
+
+  const selectAllFiles = () => {
+    const imageFiles = filteredFiles.filter(f => f.mimeType?.startsWith('image/'));
+    if (selectedFileIds.length === imageFiles.length) {
+      setSelectedFileIds([]);
+    } else {
+      setSelectedFileIds(imageFiles.map(f => f.id));
+    }
+  };
+
+  const openOptimizer = (file = null) => {
+    setFileToOptimize(file);
+    setOptimizerOpen(true);
+  };
+
+  const handleOptimizedImage = (result) => {
+    if (result.result) {
+      toast.success(`Image optimized with ${result.provider}`);
+      loadFiles(); // Reload files to show updated version
+    }
+    setOptimizerOpen(false);
+    setFileToOptimize(null);
+  };
 
   // File type icons
   const getFileIcon = (mimeType) => {
@@ -315,11 +360,25 @@ const FileLibrary = () => {
     }
   };
 
-  // Filter files based on search
-  const filteredFiles = files.filter(file => 
-    file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    file.mimeType?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter files based on search and entity type
+  const filteredFiles = files.filter(file => {
+    // Search filter
+    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      file.mimeType?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Entity filter
+    let matchesEntity = true;
+    if (entityFilter !== 'all') {
+      const folder = file.folder || file.path?.split('/')[0] || 'library';
+      matchesEntity = folder.toLowerCase().includes(entityFilter.toLowerCase()) ||
+        (entityFilter === 'library' && !folder.includes('product') && !folder.includes('categor'));
+    }
+
+    return matchesSearch && matchesEntity;
+  });
+
+  // Count images for selection
+  const imageFilesCount = filteredFiles.filter(f => f.mimeType?.startsWith('image/')).length;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -417,9 +476,36 @@ const FileLibrary = () => {
         />
       </div>
 
+      {/* Entity Type Tabs */}
+      <div className="mb-6 border-b">
+        <div className="flex items-center gap-1">
+          {ENTITY_TYPES.map((type) => {
+            const Icon = type.icon;
+            return (
+              <button
+                key={type.id}
+                onClick={() => {
+                  setEntityFilter(type.id);
+                  setSelectedFileIds([]);
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  entityFilter === type.id
+                    ? 'border-purple-600 text-purple-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {type.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -427,11 +513,42 @@ const FileLibrary = () => {
               placeholder="Search files..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
+
+          {/* Select All (only for images) */}
+          {imageFilesCount > 0 && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer text-gray-600 hover:text-gray-900">
+              <input
+                type="checkbox"
+                checked={selectedFileIds.length === imageFilesCount && imageFilesCount > 0}
+                onChange={selectAllFiles}
+                className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              Select All Images ({imageFilesCount})
+            </label>
+          )}
+
+          {/* Bulk AI Optimize */}
+          {selectedFileIds.length > 0 && (
+            <button
+              onClick={() => openOptimizer(null)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Wand2 className="w-4 h-4" />
+              AI Optimize ({selectedFileIds.length})
+            </button>
+          )}
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
+          {/* File count */}
+          <span className="text-sm text-gray-500 mr-2">
+            {filteredFiles.length} file{filteredFiles.length !== 1 ? 's' : ''}
+          </span>
+
+          {/* View toggles */}
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
@@ -467,11 +584,22 @@ const FileLibrary = () => {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-          {filteredFiles.map((file) => (
-            <div key={file.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+          {filteredFiles.map((file) => {
+            const isImage = file.mimeType?.startsWith('image/');
+            const isSelected = selectedFileIds.includes(file.id);
+
+            return (
+            <div
+              key={file.id}
+              className={`border rounded-lg overflow-hidden transition-all ${
+                isSelected
+                  ? 'ring-2 ring-purple-500 border-purple-500'
+                  : 'hover:shadow-lg'
+              }`}
+            >
               {/* Preview */}
               <div className="h-20 bg-gray-100 flex items-center justify-center relative group">
-                {file.mimeType?.startsWith('image/') ? (
+                {isImage ? (
                   <img
                     src={file.url}
                     alt={file.name}
@@ -481,54 +609,78 @@ const FileLibrary = () => {
                 ) : (
                   getFileIcon(file.mimeType)
                 )}
-                
+
+                {/* Selection Checkbox - for images only */}
+                {isImage && (
+                  <div className="absolute top-1 left-1 z-10">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleFileSelection(file.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 bg-white shadow cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                )}
+
                 {/* Overlay Actions */}
-                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                  {file.mimeType?.startsWith('image/') && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-1">
+                  {/* AI Optimize - for images only */}
+                  {isImage && (
+                    <button
+                      onClick={() => openOptimizer(file)}
+                      className="p-1.5 bg-purple-500 rounded-full hover:bg-purple-600"
+                      title="AI Optimize"
+                    >
+                      <Wand2 className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  )}
+                  {isImage && (
                     <button
                       onClick={() => setPreviewFile(file)}
-                      className="p-2 bg-white rounded-full hover:bg-gray-100"
+                      className="p-1.5 bg-white rounded-full hover:bg-gray-100"
                       title="Preview"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-3.5 h-3.5" />
                     </button>
                   )}
                   <button
                     onClick={() => copyToClipboard(file.url, file.id)}
-                    className="p-2 bg-white rounded-full hover:bg-gray-100"
+                    className="p-1.5 bg-white rounded-full hover:bg-gray-100"
                     title="Copy URL"
                   >
-                    {copiedUrl === file.id ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    {copiedUrl === file.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                   <a
                     href={file.url}
                     download={file.name}
-                    className="p-2 bg-white rounded-full hover:bg-gray-100"
+                    className="p-1.5 bg-white rounded-full hover:bg-gray-100"
                     title="Download"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="w-3.5 h-3.5" />
                   </a>
                   <button
                     onClick={() => deleteFile(file.id)}
-                    className="p-2 bg-white rounded-full hover:bg-gray-100"
+                    className="p-1.5 bg-white rounded-full hover:bg-gray-100"
                     title="Delete"
                   >
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
                   </button>
                 </div>
               </div>
-              
+
               {/* File Info */}
-              <div className="p-3">
-                <p className="text-sm font-medium truncate" title={file.name}>
+              <div className="p-2">
+                <p className="text-xs font-medium truncate" title={file.name}>
                   {file.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-[10px] text-gray-500">
                   {formatFileSize(file.size)}
                 </p>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -628,13 +780,13 @@ const FileLibrary = () => {
 
       {/* Image Preview Modal */}
       {previewFile && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
           onClick={() => setPreviewFile(null)}
         >
           <div className="relative max-w-4xl max-h-full">
-            <img 
-              src={previewFile.url} 
+            <img
+              src={previewFile.url}
               alt={previewFile.name}
               className="max-w-full max-h-[80vh] object-contain"
             />
@@ -665,6 +817,100 @@ const FileLibrary = () => {
                   {previewFile.url}
                 </code>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Image Optimizer Modal */}
+      {optimizerOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Wand2 className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {fileToOptimize
+                      ? 'AI Image Optimizer'
+                      : `AI Optimize ${selectedFileIds.length} Images`}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {fileToOptimize
+                      ? 'Enhance, upscale, remove background, or stage your image'
+                      : 'Select operation to apply to all selected images'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setOptimizerOpen(false);
+                  setFileToOptimize(null);
+                }}
+                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto">
+              {fileToOptimize ? (
+                <div className="grid grid-cols-2 gap-0 h-full">
+                  {/* Original Image */}
+                  <div className="border-r p-4 flex flex-col">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Original Image</h3>
+                    <div className="flex-1 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                      <img
+                        src={fileToOptimize.url}
+                        alt="Original"
+                        className="max-w-full max-h-80 object-contain"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 truncate">{fileToOptimize.name}</p>
+                  </div>
+                  {/* Optimizer */}
+                  <div className="p-4">
+                    <ImageOptimizer
+                      storeId={selectedStore?.id}
+                      onImageOptimized={handleOptimizedImage}
+                      className="h-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6">
+                  {/* Bulk mode: show selected images preview */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">
+                      Selected Images ({selectedFileIds.length})
+                    </h3>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                      {filteredFiles
+                        .filter(f => selectedFileIds.includes(f.id))
+                        .map((file) => (
+                          <div
+                            key={file.id}
+                            className="w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-300 flex-shrink-0"
+                          >
+                            <img src={file.url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Upload an image to the optimizer below. Bulk processing will apply the same operation to all selected images.
+                  </p>
+                  <ImageOptimizer
+                    storeId={selectedStore?.id}
+                    onImageOptimized={handleOptimizedImage}
+                    className="h-auto"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
