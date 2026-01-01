@@ -1049,7 +1049,7 @@ CREATE TABLE IF NOT EXISTS ab_tests (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS admin_navigation_registry
+CREATE TABLE IF NOT EXISTS admin_navigation_registry (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key VARCHAR(100) NOT NULL,
   label VARCHAR(255) NOT NULL,
