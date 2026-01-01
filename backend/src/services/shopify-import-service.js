@@ -913,15 +913,21 @@ class ShopifyImportService {
               if (existingAsset) {
                 mediaAssetId = existingAsset.id;
               } else {
+                // Extract file_path from storedUrl
+                const urlPath = new URL(storedUrl).pathname;
+                const filePath = urlPath.split('/').slice(-4).join('/'); // Get last 4 segments as path
+
                 const { data: newAsset, error: assetError } = await tenantDb
                   .from('media_assets')
                   .insert({
                     id: uuidv4(),
                     store_id: this.storeId,
                     file_url: storedUrl,
+                    file_path: filePath,
                     file_name: `${product.handle}-${i}.jpg`,
                     mime_type: 'image/jpeg',
-                    alt_text: image.alt || product.title
+                    alt_text: image.alt || product.title,
+                    folder: 'product'
                   })
                   .select('id')
                   .single();
@@ -976,15 +982,20 @@ class ShopifyImportService {
               if (existingAsset) {
                 mediaAssetId = existingAsset.id;
               } else {
+                // For external URLs, use handle as path
+                const filePath = `external/${product.handle}-${i}.jpg`;
+
                 const { data: newAsset, error: assetError } = await tenantDb
                   .from('media_assets')
                   .insert({
                     id: uuidv4(),
                     store_id: this.storeId,
                     file_url: image.src,
+                    file_path: filePath,
                     file_name: `${product.handle}-${i}.jpg`,
                     mime_type: 'image/jpeg',
-                    alt_text: image.alt || product.title
+                    alt_text: image.alt || product.title,
+                    folder: 'external'
                   })
                   .select('id')
                   .single();

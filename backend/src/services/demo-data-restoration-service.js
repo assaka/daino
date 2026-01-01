@@ -44,6 +44,9 @@ class DemoDataRestorationService {
     'product_translations',
     'products',
 
+    // Media assets (after product_files due to FK)
+    'media_assets',
+
     // Attribute-related
     'attribute_value_translations',
     'attribute_values',

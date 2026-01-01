@@ -2493,12 +2493,14 @@ CREATE TABLE IF NOT EXISTS media_assets (
   folder VARCHAR(100) DEFAULT 'library'::character varying,
   tags JSON DEFAULT '{}'::json,
   description TEXT,
+  alt_text TEXT,
   metadata JSONB DEFAULT '{}'::jsonb,
   uploaded_by UUID,
   usage_count INTEGER DEFAULT 0,
   last_accessed TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS payment_method_translations (

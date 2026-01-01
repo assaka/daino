@@ -7,6 +7,16 @@ import SaveButton from '@/components/ui/save-button';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Provider display info
 const PROVIDERS = {
@@ -985,6 +995,11 @@ const FileLibrary = () => {
   const [fileToOptimize, setFileToOptimize] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+
   // Selection handlers
   const toggleFileSelection = (fileId) => {
     setSelectedFileIds(prev =>
@@ -1263,10 +1278,21 @@ const FileLibrary = () => {
     }
   };
 
+  // Open delete confirmation dialog for single file
+  const confirmDeleteFile = (fileId) => {
+    setFileToDelete(fileId);
+    setIsBulkDelete(false);
+    setDeleteDialogOpen(true);
+  };
+
+  // Open delete confirmation dialog for bulk delete
+  const confirmBulkDelete = () => {
+    setIsBulkDelete(true);
+    setDeleteDialogOpen(true);
+  };
+
   // Delete file using Supabase storage API
   const deleteFile = async (fileId) => {
-    if (!window.confirm('Are you sure you want to delete this file?')) return;
-
     try {
       // Find the file to get its path
       const file = files.find(f => f.id === fileId);

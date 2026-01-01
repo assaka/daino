@@ -553,15 +553,20 @@ class DemoDataProvisioningService {
         if (existingAsset) {
           mediaAssetId = existingAsset.id;
         } else {
+          const fileName = `${prod.sku}-${imgIdx}.jpg`;
+          const filePath = `demo/products/${fileName}`;
+
           const { data: newAsset } = await this.tenantDb
             .from('media_assets')
             .insert({
               id: uuidv4(),
               store_id: this.storeId,
               file_url: imageUrl,
-              file_name: `${prod.sku}-${imgIdx}.jpg`,
+              file_path: filePath,
+              file_name: fileName,
               mime_type: 'image/jpeg',
               alt_text: altText,
+              folder: 'demo',
               demo: true
             })
             .select('id')
@@ -1015,15 +1020,20 @@ class DemoDataProvisioningService {
       if (existingAsset) {
         mediaAssetId = existingAsset.id;
       } else {
+        const fileName = `${prod.sku}-0.jpg`;
+        const filePath = `demo/products/${fileName}`;
+
         const { data: newAsset } = await this.tenantDb
           .from('media_assets')
           .insert({
             id: uuidv4(),
             store_id: this.storeId,
             file_url: imageUrl,
-            file_name: `${prod.sku}-0.jpg`,
+            file_path: filePath,
+            file_name: fileName,
             mime_type: 'image/jpeg',
             alt_text: prod.name,
+            folder: 'demo',
             demo: true
           })
           .select('id')
