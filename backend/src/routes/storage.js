@@ -363,31 +363,17 @@ router.post('/replace', upload.single('file'), async (req, res) => {
       }
     }
 
-    // Update product_files - find all references to old URL and update
-    const { data: productFiles, error: pfFindError } = await tenantDb
-      .from('product_files')
-      .select('id')
-      .eq('store_id', storeId)
-      .eq('file_url', oldFileUrl);
-
-    let productFilesUpdated = 0;
-    if (productFiles && productFiles.length > 0 && !pfFindError) {
-      const { error: pfUpdateError, count } = await tenantDb
+    // Count product_files linked to this media_asset (no update needed, they link via media_asset_id)
+    let productFilesLinked = 0;
+    if (mediaAsset) {
+      const { data: productFiles, error: pfFindError } = await tenantDb
         .from('product_files')
-        .update({
-          file_url: newUrl,
-          mime_type: req.file.mimetype,
-          file_size: req.file.size,
-          updated_at: new Date().toISOString()
-        })
-        .eq('store_id', storeId)
-        .eq('file_url', oldFileUrl);
+        .select('id')
+        .eq('media_asset_id', mediaAsset.id);
 
-      if (!pfUpdateError) {
-        productFilesUpdated = productFiles.length;
-        console.log(`   ✅ Updated ${productFilesUpdated} product_files records`);
-      } else {
-        console.warn('   ⚠️ Failed to update product_files:', pfUpdateError.message);
+      if (!pfFindError && productFiles) {
+        productFilesLinked = productFiles.length;
+        console.log(`   ℹ️ ${productFilesLinked} product_files linked via media_asset_id`);
       }
     }
 
@@ -408,7 +394,7 @@ router.post('/replace', upload.single('file'), async (req, res) => {
         url: newUrl,
         path: newPath,
         mediaAssetUpdated,
-        productFilesUpdated,
+        productFilesLinked,
         provider: uploadResult.provider
       }
     });

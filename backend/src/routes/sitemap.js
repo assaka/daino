@@ -91,14 +91,11 @@ async function generateSitemapXml(storeId, baseUrl) {
         if (includeImages && products.length > 0) {
           const productIds = products.map(p => p.id);
 
-          // Try JOIN to media_assets first, fallback if FK doesn't exist
-          let files = null;
-          const joinResult = await tenantDb
+          const { data: files } = await tenantDb
             .from('product_files')
             .select(`
               product_id,
               alt_text,
-              file_url,
               media_assets (
                 file_url
               )
@@ -107,25 +104,14 @@ async function generateSitemapXml(storeId, baseUrl) {
             .eq('file_type', 'image')
             .order('position', { ascending: true });
 
-          if (joinResult.error && joinResult.error.message?.includes('media_assets')) {
-            const simpleResult = await tenantDb
-              .from('product_files')
-              .select('product_id, alt_text, file_url')
-              .in('product_id', productIds)
-              .eq('file_type', 'image')
-              .order('position', { ascending: true });
-            files = simpleResult.data;
-          } else {
-            files = joinResult.data;
-          }
-
           if (files) {
             files.forEach(file => {
+              const fileUrl = file.media_assets?.file_url;
+              if (!fileUrl) return; // Skip if no URL
+
               if (!productImages[file.product_id]) {
                 productImages[file.product_id] = [];
               }
-              // Prefer media_assets.file_url, fallback to product_files.file_url
-              const fileUrl = file.media_assets?.file_url || file.file_url;
               productImages[file.product_id].push({
                 loc: fileUrl,
                 title: file.alt_text || 'Product Image'

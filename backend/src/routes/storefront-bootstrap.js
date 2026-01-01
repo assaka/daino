@@ -526,18 +526,14 @@ router.get('/', cacheMiddleware({
             return wishlistItems.map(w => ({ ...w, Product: null }));
           }
 
-          // Fetch images from product_files table - try JOIN to media_assets first
-          let productFiles = null;
-          let filesError = null;
-
-          const joinResult = await tenantDb
+          // Fetch images from product_files with JOIN to media_assets
+          const { data: productFiles, error: filesError } = await tenantDb
             .from('product_files')
             .select(`
               product_id,
               position,
               is_primary,
               alt_text,
-              file_url,
               media_assets (
                 file_url
               )
@@ -546,21 +542,6 @@ router.get('/', cacheMiddleware({
             .eq('file_type', 'image')
             .order('position', { ascending: true });
 
-          // If JOIN fails (FK doesn't exist yet), fallback to simple query
-          if (joinResult.error && joinResult.error.message?.includes('media_assets')) {
-            const simpleResult = await tenantDb
-              .from('product_files')
-              .select('product_id, position, is_primary, alt_text, file_url')
-              .in('product_id', productIds)
-              .eq('file_type', 'image')
-              .order('position', { ascending: true });
-            productFiles = simpleResult.data;
-            filesError = simpleResult.error;
-          } else {
-            productFiles = joinResult.data;
-            filesError = joinResult.error;
-          }
-
           if (filesError) {
             console.warn('⚠️ Failed to fetch product images:', filesError.message);
           }
@@ -568,11 +549,12 @@ router.get('/', cacheMiddleware({
           // Group images by product_id
           const imagesByProduct = {};
           (productFiles || []).forEach(file => {
+            const fileUrl = file.media_assets?.file_url;
+            if (!fileUrl) return; // Skip if no URL
+
             if (!imagesByProduct[file.product_id]) {
               imagesByProduct[file.product_id] = [];
             }
-            // Prefer media_assets.file_url, fallback to product_files.file_url
-            const fileUrl = file.media_assets?.file_url || file.file_url;
             imagesByProduct[file.product_id].push({
               url: fileUrl,
               alt: file.alt_text || '',
