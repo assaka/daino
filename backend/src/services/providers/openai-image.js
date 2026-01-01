@@ -7,6 +7,7 @@
  */
 
 const OpenAI = require('openai');
+const { toFile } = require('openai');
 
 class OpenAIImageProvider {
   constructor(apiKey) {
@@ -174,19 +175,37 @@ class OpenAIImageProvider {
    * Prepare image for API (convert URL/base64 to proper format)
    */
   async prepareImage(image) {
+    let buffer;
+    let mimeType = 'image/png';
+
     if (typeof image === 'string') {
       if (image.startsWith('data:')) {
-        // Base64 data URL - extract the base64 part
-        const base64Data = image.split(',')[1];
-        return Buffer.from(base64Data, 'base64');
+        // Base64 data URL - extract the base64 part and mime type
+        const matches = image.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          mimeType = matches[1];
+          buffer = Buffer.from(matches[2], 'base64');
+        } else {
+          const base64Data = image.split(',')[1];
+          buffer = Buffer.from(base64Data, 'base64');
+        }
       } else if (image.startsWith('http')) {
         // URL - fetch and convert to buffer
         const response = await fetch(image);
+        const contentType = response.headers.get('content-type');
+        if (contentType) mimeType = contentType;
         const arrayBuffer = await response.arrayBuffer();
-        return Buffer.from(arrayBuffer);
+        buffer = Buffer.from(arrayBuffer);
+      } else {
+        buffer = image;
       }
+    } else {
+      buffer = image; // Already a buffer
     }
-    return image; // Already a buffer
+
+    // Use OpenAI's toFile helper to properly format the image
+    const ext = mimeType.includes('png') ? 'png' : mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+    return await toFile(buffer, `image.${ext}`, { type: mimeType });
   }
 
   /**
