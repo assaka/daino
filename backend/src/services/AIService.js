@@ -6,6 +6,7 @@ const aiProvider = require('./ai-provider-service'); // Unified AI provider
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 const AIModel = require('../models/AIModel');
 const aiModelsService = require('./AIModelsService'); // Centralized model config
+const { buildPluginGenerationPrompt, parsePluginResponse } = require('./plugin-generation-context'); // Plugin generation
 
 /**
  * Centralized AI Service
@@ -541,260 +542,24 @@ class AIService {
    * Uses existing plugin architecture knowledge from database
    */
   async generatePlugin(userId, prompt, metadata = {}) {
-    // Fetch RAG context for plugin generation
-    const ragContext = await aiContextService.getContextForQuery({
-      mode: 'developer',
-      category: metadata.category || 'general',
-      query: prompt,
-      storeId: metadata.storeId,
-      limit: 13 // 5 docs + 3 examples + 5 patterns
-    });
-
-    const systemPrompt = `You are an expert plugin developer for the DainoStore e-commerce platform.
-
-${ragContext || '# DainoStore Plugin Architecture\n\nPlugins are JavaScript classes that extend the base Plugin class with hooks, events, and controllers.'}
-
-Generate a complete, production-ready plugin based on the user's description.
-
-CRITICAL: Follow this EXACT structure for ALL plugins:
-
-UNIFORM CODE STRUCTURE:
-1. Always use ES6 class syntax
-2. Always extend base Plugin class
-3. Use consistent naming: camelCase for methods, PascalCase for classes
-4. Include proper JSDoc comments
-5. Use modern JavaScript (ES6+)
-6. Include error handling
-7. Use template literals for HTML
-8. Escape user input to prevent XSS
-
-CRITICAL: CATALYST USES DATABASE-DRIVEN PLUGIN SYSTEM!
-
-REQUIRED DIRECTORY STRUCTURE:
-\`\`\`
-plugin-name/
-├── manifest.json          # Plugin metadata (saved to plugin_registry.manifest)
-├── README.md              # Documentation
-└── src/
-    ├── components/        # Reusable UI components (saved to plugin_scripts)
-    │   └── AlertBox.js
-    ├── services/          # Business logic modules (saved to plugin_scripts)
-    │   └── AlertService.js
-    ├── utils/             # Helper functions (saved to plugin_scripts)
-    │   └── helpers.js
-    ├── controllers/       # API controllers (saved to plugin_scripts)
-    │   └── AlertController.js
-    └── entities/          # Database models (saved to plugin_scripts)
-        └── AlertConfig.js
-\`\`\`
-
-IMPORTANT: NO index.js!
-- Hooks are stored as INLINE FUNCTIONS in plugin_hooks table
-- Components are standalone modules in plugin_scripts table
-- Registration is done through database tables, NOT through index.js
-
-HOW THE SYSTEM WORKS:
-1. Plugin metadata → plugin_registry.manifest (JSON)
-2. Hook functions → plugin_hooks.handler_function (inline code)
-3. Component files → plugin_scripts (one row per file)
-4. Hooks can require() components: require('./components/AlertBox')
-\`\`\`
-
-HOOK STORAGE (Stored in plugin_hooks table as INLINE FUNCTIONS):
-
-Hooks are NOT stored in files! They're stored as inline JavaScript code in plugin_hooks table.
-
-Example hook (cart.processLoadedItems):
-\`\`\`javascript
-function(items, context) {
-  // Load component if needed
-  const AlertBox = require('./components/AlertBox');
-
-  // Hook logic
-  if (items.length === 0) {
-    const html = AlertBox({ message: 'Your cart is empty!' });
-    // Inject HTML into page
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    document.body.appendChild(container);
-  }
-
-  // IMPORTANT: Hooks MUST return the value (they're filters)
-  return items;
-}
-\`\`\`
-
-THIS HOOK GETS STORED IN DATABASE:
-- Table: plugin_hooks
-- Column: handler_function (the inline code above)
-- Column: hook_name ('cart.processLoadedItems')
-- Column: plugin_id (UUID reference)
-\`\`\`
-
-COMPONENT EXAMPLE (components/AlertBox.jsx):
-\`\`\`javascript
-/**
- * AlertBox Component
- * Displays an alert message
- */
-const AlertBox = ({ message, context }) => {
-  const escapeHtml = (text) => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  };
-
-  return \`
-    <div class="alert-box" style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin: 10px 0;">
-      <strong>⚠️ Alert:</strong>
-      <p style="margin: 5px 0 0 0;">\${escapeHtml(message)}</p>
-    </div>
-  \`;
-};
-
-module.exports = AlertBox;
-\`\`\`
-
-SERVICE EXAMPLE (services/AlertService.js):
-\`\`\`javascript
-/**
- * AlertService
- * Handles business logic for alerts
- */
-class AlertService {
-  constructor(config = {}) {
-    this.config = config;
-  }
-
-  async createTables() {
-    // Create database tables if needed
-    console.log('Creating alert configuration table...');
-  }
-
-  async getAlertMessage() {
-    // Fetch from database or return default
-    return this.config.message || 'Default alert';
-  }
-}
-
-module.exports = AlertService;
-\`\`\`
-
-EVENT EXAMPLE (events/onCartUpdate.js):
-\`\`\`javascript
-/**
- * Cart Update Event Handler
- */
-const onCartUpdate = (eventData, config) => {
-  console.log('Cart updated:', eventData);
-  // Handle cart update logic
-  if (eventData.total > 100) {
-    // Trigger special alert for large orders
-    console.log('Large order alert triggered');
-  }
-};
-
-module.exports = onCartUpdate;
-\`\`\`
-
-RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
-{
-  "name": "Cart Alert Plugin",
-  "slug": "cart-alert-plugin",
-  "description": "Displays alerts in the shopping cart",
-  "category": "commerce",
-  "version": "1.0.0",
-  "author": "AI Generated",
-  "tags": ["cart", "alert", "notification", "ai-generated"],
-  "features": ["Cart alerts", "Custom messages", "Configurable styling"],
-  "generatedFiles": [
-    {
-      "name": "components/AlertBox.js",
-      "code": "// AlertBox component - standalone module"
-    },
-    {
-      "name": "services/AlertService.js",
-      "code": "// AlertService - business logic"
-    },
-    {
-      "name": "utils/helpers.js",
-      "code": "// Utility functions (only if needed)"
+    // Fetch RAG context for plugin generation (optional additional context)
+    let ragContext = '';
+    try {
+      ragContext = await aiContextService.getContextForQuery({
+        mode: 'developer',
+        category: metadata.category || 'general',
+        query: prompt,
+        storeId: metadata.storeId,
+        limit: 5
+      }) || '';
+    } catch (e) {
+      console.log('RAG context fetch skipped:', e.message);
     }
-  ],
-  "hooks": [
-    {
-      "name": "cart.processLoadedItems",
-      "priority": 10,
-      "code": "function(items, context) { /* Hook implementation */ return items; }"
-    }
-  ],
-  "events": [
-    {
-      "name": "cart.viewed",
-      "priority": 10,
-      "code": "function(eventData, context) { /* Event handler */ }"
-    }
-  ],
-  "config_schema": {
-    "fields": [
-      {
-        "name": "message",
-        "type": "text",
-        "label": "Alert Message",
-        "default": "Special offer available!"
-      }
-    ]
-  },
-  "manifest": {
-    "name": "Cart Alert Plugin",
-    "slug": "cart-alert-plugin",
-    "version": "1.0.0",
-    "hooks": ["cart.processLoadedItems"],
-    "events": ["cart.viewed"],
-    "adminNavigation": {
-      "enabled": false,
-      "label": "Cart Alert",
-      "icon": "ShoppingCart",
-      "route": "/admin/plugins/cart-alert",
-      "order": 100,
-      "parentKey": null,
-      "category": "commerce",
-      "description": "Manage cart alert messages"
-    }
-  },
-  "explanation": "This plugin displays customizable alert messages in the shopping cart to inform customers about special offers or important information."
-}
 
-CRITICAL RULES:
-1. ❌ NEVER create manifest.json in generatedFiles - it's auto-generated!
-2. ❌ NEVER create README.md in generatedFiles - it's auto-generated!
-3. ❌ NEVER create index.js - system is database-driven!
-4. ✅ ONLY create components/, services/, utils/, controllers/, entities/ files
-5. ✅ ALWAYS include hooks array with inline function code
-6. ✅ ALWAYS include tags array with relevant keywords
-7. ✅ ALWAYS include at least:
-   - components/ (at least 1 component if UI needed)
-   - services/ (business logic if complex)
-   - utils/ (helper functions only if needed)
-8. Each file in generatedFiles MUST be standalone module with module.exports
-9. Hooks are inline functions stored in hooks array, NOT in files
-10. Hooks can require('./components/AlertBox') to use components
-11. Include JSDoc comments in all files
-12. Include error handling in all hook functions
-13. Use template literals for HTML in components
-14. File paths MUST include subdirectories (e.g., "components/AlertBox.js")
-15. Hooks MUST return values (they are filters, not void functions)
-16. Components export a single function: module.exports = AlertBox;
-17. If adminNavigation is needed, include full structure with: enabled, label, icon, route, order, parentKey, category, description
+    // Use the comprehensive plugin generation prompt with export format
+    const systemPrompt = buildPluginGenerationPrompt(ragContext);
 
-REMEMBER: generatedFiles should ONLY contain src/ directory files!
-Example generatedFiles:
-- ✅ "components/AlertBox.js"
-- ✅ "services/AlertService.js"
-- ✅ "utils/helpers.js"
-- ❌ "manifest.json" (NEVER!)
-- ❌ "README.md" (NEVER!)
-- ❌ "index.js" (NEVER!)`;
+    console.log('🔌 Generating plugin with new export format schema');
 
     const result = await this.generate({
       userId,
@@ -808,59 +573,48 @@ Example generatedFiles:
       metadata
     });
 
-    // Parse the JSON response
+    // Parse the JSON response using centralized parser
     try {
-      let content = result.content;
+      const pluginData = parsePluginResponse(result.content);
 
-      // Strategy 1: Try to extract JSON from markdown code blocks
-      const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        content = jsonMatch[1];
-      }
-      // Strategy 2: Try to extract JSON object (find first { and last matching })
-      else {
-        const firstBrace = content.indexOf('{');
-        if (firstBrace !== -1) {
-          // Find the matching closing brace
-          let braceCount = 0;
-          let lastBrace = firstBrace;
+      // Normalize plugin data to ensure consistent structure
+      // Handle both new export format and legacy format
+      const normalizedData = {
+        // Core plugin info
+        name: pluginData.plugin?.name || pluginData.name,
+        slug: pluginData.plugin?.slug || pluginData.slug || (pluginData.plugin?.name || pluginData.name || '').toLowerCase().replace(/\s+/g, '-'),
+        version: pluginData.plugin?.version || pluginData.version || '1.0.0',
+        description: pluginData.plugin?.description || pluginData.description || '',
+        author: pluginData.plugin?.author || pluginData.author || 'AI Generated',
+        category: pluginData.plugin?.category || pluginData.category || 'utility',
+        tags: pluginData.plugin?.tags || pluginData.tags || [],
 
-          for (let i = firstBrace; i < content.length; i++) {
-            if (content[i] === '{') braceCount++;
-            if (content[i] === '}') {
-              braceCount--;
-              if (braceCount === 0) {
-                lastBrace = i;
-                break;
-              }
-            }
-          }
+        // New export format fields
+        widgets: pluginData.widgets || [],
+        controllers: pluginData.controllers || [],
+        entities: pluginData.entities || [],
+        migrations: pluginData.migrations || [],
+        events: pluginData.events || [],
+        hooks: pluginData.hooks || [],
+        files: pluginData.files || [],
+        pluginData: pluginData.pluginData || [],
+        pluginDocs: pluginData.pluginDocs || [],
+        adminPages: pluginData.adminPages || [],
 
-          content = content.substring(firstBrace, lastBrace + 1);
-        }
-      }
+        // Keep original for reference
+        _raw: pluginData
+      };
 
-      const pluginData = JSON.parse(content);
+      console.log('✅ Plugin parsed successfully:', normalizedData.name);
 
       return {
         ...result,
-        pluginData
+        pluginData: normalizedData
       };
     } catch (error) {
-      console.error('❌ JSON Parse Error:', error.message);
-      console.error('📄 Full AI response:', result.content);
-      console.error('📝 Extracted content:', content);
-      console.error('🔍 Parse error at position:', error.message.match(/position (\d+)/)?.[1]);
-
-      // Log the problematic area
-      if (error.message.includes('position')) {
-        const pos = parseInt(error.message.match(/position (\d+)/)?.[1] || '0');
-        const start = Math.max(0, pos - 50);
-        const end = Math.min(content.length, pos + 50);
-        console.error('📍 Error context:', content.substring(start, end));
-      }
-
-      throw new Error(`Failed to parse plugin data: ${error.message}. Check Render logs for full response.`);
+      console.error('❌ Plugin Parse Error:', error.message);
+      console.error('📄 AI response preview:', result.content?.substring(0, 500));
+      throw new Error(`Failed to parse plugin data: ${error.message}`);
     }
   }
 
@@ -1095,8 +849,8 @@ For issues or questions, please contact the platform administrator.
       const events = pluginData.events || [];
       if (events && events.length > 0) {
         for (const event of events) {
-          const eventName = event.name || event;
-          const eventCode = event.code || `function(eventData, context) { console.log('Event triggered'); }`;
+          const eventName = event.eventName || event.name || event;
+          const eventCode = event.listenerCode || event.code || `function(eventData, context) { console.log('Event triggered'); }`;
           const priority = event.priority || 10;
 
           const { error: eventError } = await connection.client
@@ -1117,6 +871,201 @@ For issues or questions, please contact the platform administrator.
         }
       }
 
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Save widgets to plugin_widgets table
+      // ═══════════════════════════════════════════════════════════════════
+      const widgets = pluginData.widgets || [];
+      if (widgets.length > 0) {
+        console.log(`  🧩 Processing ${widgets.length} widgets...`);
+        for (const widget of widgets) {
+          const { error: widgetError } = await connection.client
+            .from('plugin_widgets')
+            .insert({
+              plugin_id: pluginId,
+              widget_id: widget.widgetId || widget.id || `${slug}-widget-${Date.now()}`,
+              widget_name: widget.widgetName || widget.name,
+              description: widget.description || '',
+              component_code: widget.componentCode || widget.code,
+              default_config: widget.defaultConfig || widget.config || {},
+              category: widget.category || pluginData.category || 'utility',
+              icon: widget.icon || 'Package',
+              is_enabled: true
+            });
+
+          if (widgetError) {
+            console.warn(`Failed to save widget ${widget.widgetName}:`, widgetError);
+          } else {
+            console.log(`  🧩 Saved widget: ${widget.widgetName || widget.name}`);
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Save controllers to plugin_controllers table
+      // ═══════════════════════════════════════════════════════════════════
+      const controllers = pluginData.controllers || [];
+      if (controllers.length > 0) {
+        console.log(`  🎮 Processing ${controllers.length} controllers...`);
+        for (const controller of controllers) {
+          const { error: controllerError } = await connection.client
+            .from('plugin_controllers')
+            .insert({
+              plugin_id: pluginId,
+              name: controller.name,
+              method: controller.method || 'GET',
+              path: controller.path,
+              handler_code: controller.code || controller.handlerCode,
+              description: controller.description || '',
+              is_enabled: true
+            });
+
+          if (controllerError) {
+            console.warn(`Failed to save controller ${controller.name}:`, controllerError);
+          } else {
+            console.log(`  🎮 Saved controller: ${controller.method} ${controller.path}`);
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Run migrations for entities
+      // ═══════════════════════════════════════════════════════════════════
+      const migrations = pluginData.migrations || [];
+      if (migrations.length > 0) {
+        console.log(`  🗄️  Running ${migrations.length} migrations...`);
+        for (const migration of migrations) {
+          try {
+            // Execute the migration SQL
+            const migrationCode = migration.code || migration.sql;
+            if (migrationCode) {
+              await connection.query(migrationCode);
+              console.log(`  🗄️  Executed migration: ${migration.name}`);
+
+              // Record migration in plugin_migrations table
+              await connection.client
+                .from('plugin_migrations')
+                .insert({
+                  plugin_id: pluginId,
+                  migration_name: migration.name,
+                  migration_version: migration.migrationVersion || migration.version || Date.now().toString(),
+                  executed_at: new Date().toISOString()
+                });
+            }
+          } catch (migrationError) {
+            console.warn(`Migration ${migration.name} failed:`, migrationError.message);
+            // Continue with other migrations
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Save plugin data (config, settings)
+      // ═══════════════════════════════════════════════════════════════════
+      const pluginDataItems = pluginData.pluginData || [];
+      if (pluginDataItems.length > 0) {
+        console.log(`  💾 Saving ${pluginDataItems.length} plugin data items...`);
+        for (const item of pluginDataItems) {
+          const { error: dataError } = await connection.client
+            .from('plugin_data')
+            .insert({
+              plugin_id: pluginId,
+              key: item.key,
+              value: item.value
+            });
+
+          if (dataError) {
+            console.warn(`Failed to save plugin data ${item.key}:`, dataError);
+          } else {
+            console.log(`  💾 Saved plugin data: ${item.key}`);
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Save additional docs
+      // ═══════════════════════════════════════════════════════════════════
+      const pluginDocs = pluginData.pluginDocs || [];
+      if (pluginDocs.length > 0) {
+        for (const doc of pluginDocs) {
+          // Skip README if we already created one
+          if (doc.title === 'README' || doc.fileName === 'README.md') continue;
+
+          const { error: docError } = await connection.client
+            .from('plugin_docs')
+            .insert({
+              plugin_id: pluginId,
+              doc_type: doc.category || 'general',
+              file_name: doc.fileName || `${doc.title}.md`,
+              content: doc.content,
+              format: 'markdown',
+              is_visible: true,
+              display_order: doc.orderPosition || 10,
+              title: doc.title,
+              description: ''
+            });
+
+          if (docError) {
+            console.warn(`Failed to save doc ${doc.title}:`, docError);
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Save admin pages
+      // ═══════════════════════════════════════════════════════════════════
+      const adminPages = pluginData.adminPages || [];
+      if (adminPages.length > 0) {
+        console.log(`  📱 Saving ${adminPages.length} admin pages...`);
+        for (const page of adminPages) {
+          const { error: pageError } = await connection.client
+            .from('plugin_admin_pages')
+            .insert({
+              plugin_id: pluginId,
+              page_name: page.pageName || page.name,
+              slug: page.slug,
+              icon: page.icon || 'Settings',
+              component_code: page.componentCode || page.code,
+              description: page.description || '',
+              is_enabled: true
+            });
+
+          if (pageError) {
+            console.warn(`Failed to save admin page ${page.pageName}:`, pageError);
+          } else {
+            console.log(`  📱 Saved admin page: ${page.pageName || page.name}`);
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // NEW EXPORT FORMAT: Save files (global scripts)
+      // ═══════════════════════════════════════════════════════════════════
+      const files = pluginData.files || [];
+      if (files.length > 0) {
+        console.log(`  📦 Saving ${files.length} files...`);
+        for (const file of files) {
+          const { error: fileError } = await connection.client
+            .from('plugin_scripts')
+            .insert({
+              plugin_id: pluginId,
+              file_name: file.name,
+              file_content: file.content || file.code,
+              script_type: file.type || 'js',
+              scope: file.scope || 'frontend',
+              load_priority: file.priority || 0,
+              is_enabled: true
+            });
+
+          if (fileError) {
+            console.warn(`Failed to save file ${file.name}:`, fileError);
+          } else {
+            console.log(`  📦 Saved file: ${file.name}`);
+          }
+        }
+      }
+
+      console.log(`✅ Plugin ${pluginData.name} saved successfully with all components`);
+
       // Return plugin ID and slug
       return { pluginId, slug, storeId };
     } catch (error) {
@@ -1136,66 +1085,43 @@ For issues or questions, please contact the platform administrator.
    * Modify existing plugin
    */
   async modifyPlugin(userId, prompt, existingCode, metadata = {}) {
-    const systemPrompt = `You are an expert plugin developer. Modify the existing plugin code according to the user's request.
+    // Use the same comprehensive plugin schema for modifications
+    const basePrompt = buildPluginGenerationPrompt();
+    const systemPrompt = `${basePrompt}
 
-Existing Plugin Code:
-\`\`\`javascript
+═══════════════════════════════════════════════════════════════════════════════
+MODIFICATION MODE: You are modifying an existing plugin
+═══════════════════════════════════════════════════════════════════════════════
+
+Existing Plugin JSON:
+\`\`\`json
 ${existingCode}
 \`\`\`
 
-Return the modified plugin in the same JSON format as plugin generation.`;
+Apply the user's requested changes to this plugin and return the COMPLETE updated plugin JSON.
+Preserve all existing functionality unless specifically asked to remove it.`;
 
     const result = await this.generate({
       userId,
       operationType: 'plugin-modification',
-      modelId: metadata.modelId, // Use user-selected model if provided
+      modelId: metadata.modelId,
       serviceKey: metadata.serviceKey,
       prompt,
       systemPrompt,
-      maxTokens: 4096,
+      maxTokens: 8192,
       temperature: 0.7,
       metadata
     });
 
     try {
-      let content = result.content;
-
-      // Strategy 1: Try to extract JSON from markdown code blocks
-      const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        content = jsonMatch[1];
-      }
-      // Strategy 2: Try to extract JSON object (find first { and last matching })
-      else {
-        const firstBrace = content.indexOf('{');
-        if (firstBrace !== -1) {
-          // Find the matching closing brace
-          let braceCount = 0;
-          let lastBrace = firstBrace;
-
-          for (let i = firstBrace; i < content.length; i++) {
-            if (content[i] === '{') braceCount++;
-            if (content[i] === '}') {
-              braceCount--;
-              if (braceCount === 0) {
-                lastBrace = i;
-                break;
-              }
-            }
-          }
-
-          content = content.substring(firstBrace, lastBrace + 1);
-        }
-      }
-
-      const pluginData = JSON.parse(content);
+      const pluginData = parsePluginResponse(result.content);
       return {
         ...result,
         pluginData
       };
     } catch (error) {
-      console.error('Failed to parse AI response:', result.content);
-      throw new Error(`Failed to parse modified plugin data. AI returned: ${result.content.substring(0, 200)}...`);
+      console.error('Failed to parse modified plugin:', error.message);
+      throw new Error(`Failed to parse modified plugin data: ${error.message}`);
     }
   }
 
