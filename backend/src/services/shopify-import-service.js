@@ -906,13 +906,14 @@ class ShopifyImportService {
               const { data: existingAsset } = await tenantDb
                 .from('media_assets')
                 .select('id')
+                .eq('store_id', this.storeId)
                 .eq('file_url', storedUrl)
                 .maybeSingle();
 
               if (existingAsset) {
                 mediaAssetId = existingAsset.id;
               } else {
-                const { data: newAsset } = await tenantDb
+                const { data: newAsset, error: assetError } = await tenantDb
                   .from('media_assets')
                   .insert({
                     id: uuidv4(),
@@ -924,11 +925,15 @@ class ShopifyImportService {
                   })
                   .select('id')
                   .single();
+
+                if (assetError) {
+                  console.error(`❌ Failed to create media_asset:`, assetError.message);
+                }
                 mediaAssetId = newAsset?.id;
               }
 
               // Insert into product_files table with media_asset_id
-              await tenantDb
+              const { error: pfError } = await tenantDb
                 .from('product_files')
                 .insert({
                   id: uuidv4(),
@@ -948,6 +953,10 @@ class ShopifyImportService {
                   updated_at: new Date().toISOString()
                 });
 
+              if (pfError) {
+                console.error(`❌ Failed to insert product_files:`, pfError.message);
+              }
+
               console.log(`✅ Saved image ${i + 1}/${product.images.length} for ${product.title}`);
             } catch (imageError) {
               console.warn(`⚠️ Failed to process image ${i} for ${product.title}, using original URL:`, imageError.message);
@@ -960,13 +969,14 @@ class ShopifyImportService {
               const { data: existingAsset } = await tenantDb
                 .from('media_assets')
                 .select('id')
+                .eq('store_id', this.storeId)
                 .eq('file_url', image.src)
                 .maybeSingle();
 
               if (existingAsset) {
                 mediaAssetId = existingAsset.id;
               } else {
-                const { data: newAsset } = await tenantDb
+                const { data: newAsset, error: assetError } = await tenantDb
                   .from('media_assets')
                   .insert({
                     id: uuidv4(),
@@ -978,10 +988,14 @@ class ShopifyImportService {
                   })
                   .select('id')
                   .single();
+
+                if (assetError) {
+                  console.error(`❌ Failed to create fallback media_asset:`, assetError.message);
+                }
                 mediaAssetId = newAsset?.id;
               }
 
-              await tenantDb
+              const { error: pfError } = await tenantDb
                 .from('product_files')
                 .insert({
                   id: uuidv4(),
@@ -1001,6 +1015,10 @@ class ShopifyImportService {
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
                 });
+
+              if (pfError) {
+                console.error(`❌ Failed to insert fallback product_files:`, pfError.message);
+              }
             }
           }
 
