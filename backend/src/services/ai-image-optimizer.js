@@ -368,13 +368,14 @@ class AIImageOptimizer {
   }
 
   /**
-   * Compress image using Sharp while maintaining quality
+   * Process image using Sharp - lossless, preserves original quality
+   * Only re-encodes to proper format without quality loss
    * @param {string} base64Image - Base64 encoded image
-   * @param {Object} options - Compression options
+   * @param {Object} options - Processing options
    * @returns {Promise<{image: string, format: string}>}
    */
   async compressWithSharp(base64Image, options = {}) {
-    const { preserveTransparency = true, quality = 90 } = options;
+    const { preserveTransparency = true } = options;
 
     try {
       // Convert base64 to buffer
@@ -388,22 +389,21 @@ class AIImageOptimizer {
       let format = 'png';
 
       if (hasAlpha && preserveTransparency) {
-        // For images with transparency, use PNG with compression
+        // For images with transparency, use PNG (lossless)
         outputBuffer = await sharp(inputBuffer)
           .png({
-            compressionLevel: 9, // Max compression
+            compressionLevel: 6, // Balanced compression (0-9)
             adaptiveFiltering: true,
             palette: false // Keep as truecolor for quality
           })
           .toBuffer();
         format = 'png';
       } else {
-        // For images without transparency, use WebP for better compression
+        // For images without transparency, use lossless WebP
         outputBuffer = await sharp(inputBuffer)
           .webp({
-            quality: quality,
-            effort: 6, // Higher effort = better compression
-            lossless: false
+            lossless: true, // Lossless - no quality degradation
+            effort: 4 // Balanced effort (0-6)
           })
           .toBuffer();
         format = 'webp';
@@ -413,7 +413,7 @@ class AIImageOptimizer {
       const compressedSize = outputBuffer.length;
       const savings = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
 
-      console.log(`[AIImageOptimizer] Sharp compression: ${(originalSize/1024).toFixed(1)}KB -> ${(compressedSize/1024).toFixed(1)}KB (${savings}% reduction)`);
+      console.log(`[AIImageOptimizer] Sharp lossless: ${(originalSize/1024).toFixed(1)}KB -> ${(compressedSize/1024).toFixed(1)}KB (${savings}% ${compressedSize < originalSize ? 'reduction' : 'increase'})`);
 
       return {
         image: outputBuffer.toString('base64'),
@@ -422,8 +422,8 @@ class AIImageOptimizer {
         compressedSize
       };
     } catch (error) {
-      console.error('[AIImageOptimizer] Sharp compression failed:', error.message);
-      // Return original if compression fails
+      console.error('[AIImageOptimizer] Sharp processing failed:', error.message);
+      // Return original if processing fails
       return {
         image: base64Image,
         format: 'png',
