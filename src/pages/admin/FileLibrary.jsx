@@ -314,7 +314,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
 
       // Upload using apiClient
       const file = new File([blob], newName, { type: `image/${format}` });
-      const uploadResponse = await apiClient.uploadFile('files/upload', file, { entity_type: 'library' });
+      const uploadResponse = await apiClient.uploadFile('storage/upload', file, { entity_type: 'library' });
 
       if (uploadResponse.success) {
         toast.success(applyToOriginal ? `Applied changes to "${newName}"` : `Saved copy as "${newName}"`);
@@ -357,7 +357,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
 
         // Upload using apiClient
         const file = new File([blob], newName, { type: `image/${format}` });
-        const uploadResponse = await apiClient.uploadFile('files/upload', file, { entity_type: 'library' });
+        const uploadResponse = await apiClient.uploadFile('storage/upload', file, { entity_type: 'library' });
 
         if (uploadResponse.success) {
           result.applied = true;
