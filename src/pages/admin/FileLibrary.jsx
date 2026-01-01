@@ -263,20 +263,11 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: `image/${format}` });
 
-      const formData = new FormData();
-      formData.append('file', blob, newName);
-      formData.append('entity_type', 'library');
+      // Upload using apiClient
+      const file = new File([blob], newName, { type: `image/${format}` });
+      const uploadResponse = await apiClient.uploadFile('files/upload', file, { entity_type: 'library' });
 
-      // If replacing original, we could delete old file first (optional)
-      const uploadResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/files/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      if (uploadResponse.ok) {
+      if (uploadResponse.success) {
         toast.success(applyToOriginal ? `Applied changes to "${newName}"` : `Saved copy as "${newName}"`);
         if (onOptimized) onOptimized({ applied: true });
         if (applyToOriginal) onClose(); // Close if replacing original
@@ -315,19 +306,11 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: `image/${format}` });
 
-        const formData = new FormData();
-        formData.append('file', blob, newName);
-        formData.append('entity_type', 'library');
+        // Upload using apiClient
+        const file = new File([blob], newName, { type: `image/${format}` });
+        const uploadResponse = await apiClient.uploadFile('files/upload', file, { entity_type: 'library' });
 
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/files/upload`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        });
-
-        if (uploadResponse.ok) {
+        if (uploadResponse.success) {
           result.applied = true;
           savedCount++;
         }
@@ -790,67 +773,53 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-gray-50">
           <div className="flex items-center justify-between">
-            {/* Left side: Cost info + Save Copy checkbox */}
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">
-                {costPerImage !== null && (
-                  <span>
-                    Cost: <span className="font-semibold text-purple-600">
-                      {isBulkMode ? `${totalCost?.toFixed(2)} credits` : `${costPerImage} credits`}
-                    </span>
-                  </span>
-                )}
-              </div>
-
+            {/* Left side: Replace checkbox + Save button */}
+            <div className="flex items-center gap-3">
               {/* Apply checkbox - show when there's a result */}
               {((!isBulkMode && currentImage) || (isBulkMode && results.filter(r => r.success).length > 0)) && (
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={applyToOriginal}
-                    onChange={(e) => setApplyToOriginal(e.target.checked)}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="text-gray-700">
-                    Replace original{isBulkMode ? 's' : ''}
-                  </span>
-                </label>
+                <>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={applyToOriginal}
+                      onChange={(e) => setApplyToOriginal(e.target.checked)}
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-700">
+                      Replace original{isBulkMode ? 's' : ''}
+                    </span>
+                  </label>
+
+                  {/* Save/Apply button */}
+                  <Button
+                    onClick={isBulkMode ? handleApplyAll : handleApply}
+                    disabled={isApplying}
+                    className={applyToOriginal
+                      ? "bg-orange-600 hover:bg-orange-700"
+                      : "bg-green-600 hover:bg-green-700"
+                    }
+                  >
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        {isBulkMode
+                          ? (applyToOriginal ? 'Replace All' : 'Save Copies') + ` (${results.filter(r => r.success && !r.applied).length})`
+                          : (applyToOriginal ? 'Replace Original' : 'Save as Copy')
+                        }
+                      </>
+                    )}
+                  </Button>
+                </>
               )}
             </div>
 
-            {/* Right side: Action buttons */}
+            {/* Right side: Optimize + Cancel */}
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose} disabled={isProcessing || isApplying}>
-                Cancel
-              </Button>
-
-              {/* Save/Apply button - show when there's a result */}
-              {((!isBulkMode && currentImage) || (isBulkMode && results.filter(r => r.success).length > 0)) && (
-                <Button
-                  onClick={isBulkMode ? handleApplyAll : handleApply}
-                  disabled={isApplying}
-                  className={applyToOriginal
-                    ? "bg-orange-600 hover:bg-orange-700"
-                    : "bg-green-600 hover:bg-green-700"
-                  }
-                >
-                  {isApplying ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      {isBulkMode
-                        ? (applyToOriginal ? 'Replace All' : 'Save Copies') + ` (${results.filter(r => r.success && !r.applied).length})`
-                        : (applyToOriginal ? 'Replace Original' : 'Save as Copy')
-                      }
-                    </>
-                  )}
-                </Button>
-              )}
-
               {/* Optimize button */}
               <Button
                 onClick={handleOptimize}
@@ -868,6 +837,10 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                     {currentImage || results.length > 0 ? 'Run Again' : 'Optimize'}
                   </>
                 )}
+              </Button>
+
+              <Button variant="outline" onClick={onClose} disabled={isProcessing || isApplying}>
+                Cancel
               </Button>
             </div>
           </div>
