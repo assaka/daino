@@ -40,12 +40,15 @@ class OpenAIImageProvider {
       model: 'gpt-image-1',
       image: await this.prepareImage(image),
       prompt: `Optimize this image for web use. Maintain visual quality while reducing file size. Quality level: ${quality}`,
-      size: params.size || '1024x1024',
-      response_format: 'b64_json'
+      size: params.size || '1024x1024'
     });
 
+    // gpt-image-1 returns URL by default, need to fetch and convert to base64
+    const imageUrl = response.data[0].url;
+    const imageData = await this.urlToBase64(imageUrl);
+
     return {
-      image: response.data[0].b64_json,
+      image: imageData,
       format: 'png',
       optimized: true
     };
@@ -68,12 +71,14 @@ class OpenAIImageProvider {
       model: 'gpt-image-1',
       image: await this.prepareImage(image),
       prompt: `Upscale this image to higher resolution. ${enhanceDetails ? 'Enhance fine details, textures, and sharpness.' : 'Maintain original appearance.'} Remove any artifacts or noise.`,
-      size: sizes[scale] || '1792x1024',
-      response_format: 'b64_json'
+      size: sizes[scale] || '1792x1024'
     });
 
+    const imageUrl = response.data[0].url;
+    const imageData = await this.urlToBase64(imageUrl);
+
     return {
-      image: response.data[0].b64_json,
+      image: imageData,
       format: 'png',
       scale
     };
@@ -95,12 +100,14 @@ class OpenAIImageProvider {
       model: 'gpt-image-1',
       image: await this.prepareImage(image),
       prompt,
-      size: params.size || '1024x1024',
-      response_format: 'b64_json'
+      size: params.size || '1024x1024'
     });
 
+    const imageUrl = response.data[0].url;
+    const imageData = await this.urlToBase64(imageUrl);
+
     return {
-      image: response.data[0].b64_json,
+      image: imageData,
       format: 'png',
       backgroundRemoved: true,
       replacement
@@ -123,12 +130,14 @@ class OpenAIImageProvider {
       model: 'gpt-image-1',
       image: await this.prepareImage(image),
       prompt,
-      size: params.size || '1792x1024',
-      response_format: 'b64_json'
+      size: params.size || '1792x1024'
     });
 
+    const imageUrl = response.data[0].url;
+    const imageData = await this.urlToBase64(imageUrl);
+
     return {
-      image: response.data[0].b64_json,
+      image: imageData,
       format: 'png',
       context,
       style
@@ -146,13 +155,15 @@ class OpenAIImageProvider {
       model: 'gpt-image-1',
       image: await this.prepareImage(image),
       prompt: 'Reproduce this image exactly as it is, maintaining all details, colors, and composition.',
-      size: params.size || '1024x1024',
-      response_format: 'b64_json'
+      size: params.size || '1024x1024'
     });
+
+    const imageUrl = response.data[0].url;
+    const imageData = await this.urlToBase64(imageUrl);
 
     // Note: OpenAI returns PNG, conversion to target format should be done server-side
     return {
-      image: response.data[0].b64_json,
+      image: imageData,
       format: 'png', // Will need server-side conversion to targetFormat
       requestedFormat: targetFormat,
       quality
@@ -176,6 +187,16 @@ class OpenAIImageProvider {
       }
     }
     return image; // Already a buffer
+  }
+
+  /**
+   * Convert image URL to base64
+   */
+  async urlToBase64(url) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return buffer.toString('base64');
   }
 }
 
