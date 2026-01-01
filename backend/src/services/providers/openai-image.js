@@ -44,9 +44,8 @@ class OpenAIImageProvider {
       size: params.size || '1024x1024'
     });
 
-    // gpt-image-1 returns URL by default, need to fetch and convert to base64
-    const imageUrl = response.data[0].url;
-    const imageData = await this.urlToBase64(imageUrl);
+    // Extract image from response (may be url or b64_json)
+    const imageData = await this.extractImageFromResponse(response);
 
     return {
       image: imageData,
@@ -75,8 +74,7 @@ class OpenAIImageProvider {
       size: sizes[scale] || '1792x1024'
     });
 
-    const imageUrl = response.data[0].url;
-    const imageData = await this.urlToBase64(imageUrl);
+    const imageData = await this.extractImageFromResponse(response);
 
     return {
       image: imageData,
@@ -104,8 +102,7 @@ class OpenAIImageProvider {
       size: params.size || '1024x1024'
     });
 
-    const imageUrl = response.data[0].url;
-    const imageData = await this.urlToBase64(imageUrl);
+    const imageData = await this.extractImageFromResponse(response);
 
     return {
       image: imageData,
@@ -134,8 +131,7 @@ class OpenAIImageProvider {
       size: params.size || '1792x1024'
     });
 
-    const imageUrl = response.data[0].url;
-    const imageData = await this.urlToBase64(imageUrl);
+    const imageData = await this.extractImageFromResponse(response);
 
     return {
       image: imageData,
@@ -159,8 +155,7 @@ class OpenAIImageProvider {
       size: params.size || '1024x1024'
     });
 
-    const imageUrl = response.data[0].url;
-    const imageData = await this.urlToBase64(imageUrl);
+    const imageData = await this.extractImageFromResponse(response);
 
     // Note: OpenAI returns PNG, conversion to target format should be done server-side
     return {
@@ -169,6 +164,31 @@ class OpenAIImageProvider {
       requestedFormat: targetFormat,
       quality
     };
+  }
+
+  /**
+   * Extract image from OpenAI response (handles both url and b64_json)
+   */
+  async extractImageFromResponse(response) {
+    console.log('[OpenAI] Response structure:', JSON.stringify(response, null, 2).slice(0, 500));
+
+    if (!response.data || !response.data[0]) {
+      throw new Error('No image data in OpenAI response');
+    }
+
+    const imageResponse = response.data[0];
+
+    // Check for base64 response
+    if (imageResponse.b64_json) {
+      return imageResponse.b64_json;
+    }
+
+    // Check for URL response
+    if (imageResponse.url) {
+      return await this.urlToBase64(imageResponse.url);
+    }
+
+    throw new Error('OpenAI response has neither url nor b64_json');
   }
 
   /**
