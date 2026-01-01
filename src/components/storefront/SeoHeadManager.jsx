@@ -739,7 +739,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 // Build product images array
                 const productImages = Array.isArray(pageData.images)
-                    ? pageData.images.map(img => img?.url || img?.file_url || img).filter(Boolean)
+                    ? pageData.images.map(img => img?.url || img).filter(Boolean)
                     : (pageData.images ? [pageData.images] : []);
 
                 // Get product identifiers for AI shopping

@@ -3030,14 +3030,11 @@ CREATE TABLE IF NOT EXISTS product_files (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL,
   media_asset_id UUID REFERENCES media_assets(id) ON DELETE SET NULL, -- FK to media_assets (normalized)
-  file_url TEXT NOT NULL, -- Kept for backward compatibility, prefer media_asset_id
   file_type VARCHAR(20) DEFAULT 'image' CHECK (file_type IN ('image', 'video', 'document', '3d_model', 'pdf')),
   position INTEGER NOT NULL DEFAULT 0,
   is_primary BOOLEAN DEFAULT false,
   alt_text TEXT,
   title TEXT,
-  file_size INTEGER, -- bytes (deprecated, use media_assets.file_size)
-  mime_type VARCHAR(100), -- deprecated, use media_assets.mime_type
   metadata JSONB DEFAULT '{}', -- Extra data: width, height, duration, shopify_id, thumbnail_url, etc.
   store_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
