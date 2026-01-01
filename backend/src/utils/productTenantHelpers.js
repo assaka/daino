@@ -206,22 +206,62 @@ async function syncProductImages(tenantDb, storeId, productId, images) {
 
     // Insert new images
     if (images.length > 0) {
-      const insertRecords = images.map((img, index) => ({
-        product_id: productId,
-        store_id: storeId,
-        file_url: img.url || img.file_url,
-        file_type: 'image',
-        position: img.position !== undefined ? img.position : index,
-        is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
-        alt_text: img.alt || img.alt_text || '',
-        file_size: img.filesize || img.file_size || null,
-        mime_type: img.mime_type || null,
-        metadata: {
-          attribute_code: img.attribute_code || null,
-          filepath: img.filepath || null,
-          original_data: img
+      const insertRecords = [];
+
+      for (let index = 0; index < images.length; index++) {
+        const img = images[index];
+        const fileUrl = img.url || img.file_url;
+
+        // Try to find existing media_asset by URL
+        let mediaAssetId = null;
+        const { data: existingAsset } = await tenantDb
+          .from('media_assets')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('file_url', fileUrl)
+          .single();
+
+        if (existingAsset) {
+          mediaAssetId = existingAsset.id;
+        } else {
+          // Create media_asset for this image
+          const { data: newAsset, error: assetError } = await tenantDb
+            .from('media_assets')
+            .insert({
+              store_id: storeId,
+              file_name: fileUrl.split('/').pop() || 'image',
+              file_path: fileUrl,
+              file_url: fileUrl,
+              mime_type: img.mime_type || 'image/jpeg',
+              file_size: img.filesize || img.file_size || null,
+              folder: 'product'
+            })
+            .select('id')
+            .single();
+
+          if (!assetError && newAsset) {
+            mediaAssetId = newAsset.id;
+          }
         }
-      }));
+
+        insertRecords.push({
+          product_id: productId,
+          store_id: storeId,
+          media_asset_id: mediaAssetId,
+          file_url: fileUrl, // Keep for backward compatibility
+          file_type: 'image',
+          position: img.position !== undefined ? img.position : index,
+          is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
+          alt_text: img.alt || img.alt_text || '',
+          file_size: img.filesize || img.file_size || null,
+          mime_type: img.mime_type || null,
+          metadata: {
+            attribute_code: img.attribute_code || null,
+            filepath: img.filepath || null,
+            original_data: img
+          }
+        });
+      }
 
       const { error: insertError } = await tenantDb
         .from('product_files')

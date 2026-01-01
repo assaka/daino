@@ -539,21 +539,51 @@ class DemoDataProvisioningService {
       // Create product images in product_files table using realistic images
       const images = productImages[prod.sku] || [];
       for (let imgIdx = 0; imgIdx < images.length; imgIdx++) {
+        const imageUrl = images[imgIdx];
+        const altText = imgIdx === 0 ? prod.name : `${prod.name} - View ${imgIdx + 1}`;
+
+        // Create or find media_asset record
+        let mediaAssetId = null;
+        const { data: existingAsset } = await this.tenantDb
+          .from('media_assets')
+          .select('id')
+          .eq('file_url', imageUrl)
+          .maybeSingle();
+
+        if (existingAsset) {
+          mediaAssetId = existingAsset.id;
+        } else {
+          const { data: newAsset } = await this.tenantDb
+            .from('media_assets')
+            .insert({
+              id: uuidv4(),
+              store_id: this.storeId,
+              file_url: imageUrl,
+              file_name: `${prod.sku}-${imgIdx}.jpg`,
+              mime_type: 'image/jpeg',
+              alt_text: altText,
+              demo: true
+            })
+            .select('id')
+            .single();
+          mediaAssetId = newAsset?.id;
+        }
+
         const { error: imgError } = await this.tenantDb
           .from('product_files')
           .insert({
             id: uuidv4(),
             product_id: productId,
             store_id: this.storeId,
-            file_url: images[imgIdx],
+            media_asset_id: mediaAssetId,
+            file_url: imageUrl,
             file_type: 'image',
             position: imgIdx,
             is_primary: imgIdx === 0,
-            alt_text: imgIdx === 0 ? prod.name : `${prod.name} - View ${imgIdx + 1}`,
+            alt_text: altText,
             mime_type: 'image/jpeg',
             demo: true
           });
-
       }
 
       // Create product translation
@@ -974,13 +1004,43 @@ class DemoDataProvisioningService {
         });
 
       // Create a simple product image for custom options
+      const imageUrl = `https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&h=600&fit=crop`;
+
+      // Create or find media_asset record
+      let mediaAssetId = null;
+      const { data: existingAsset } = await this.tenantDb
+        .from('media_assets')
+        .select('id')
+        .eq('file_url', imageUrl)
+        .maybeSingle();
+
+      if (existingAsset) {
+        mediaAssetId = existingAsset.id;
+      } else {
+        const { data: newAsset } = await this.tenantDb
+          .from('media_assets')
+          .insert({
+            id: uuidv4(),
+            store_id: this.storeId,
+            file_url: imageUrl,
+            file_name: `${prod.sku}-0.jpg`,
+            mime_type: 'image/jpeg',
+            alt_text: prod.name,
+            demo: true
+          })
+          .select('id')
+          .single();
+        mediaAssetId = newAsset?.id;
+      }
+
       await this.tenantDb
         .from('product_files')
         .insert({
           id: uuidv4(),
           product_id: productId,
           store_id: this.storeId,
-          file_url: `https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&h=600&fit=crop`,
+          media_asset_id: mediaAssetId,
+          file_url: imageUrl,
           file_type: 'image',
           position: 0,
           is_primary: true,

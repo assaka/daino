@@ -253,16 +253,28 @@ class MetaCommerceService {
         }
       });
 
-      // Fetch images from product_files
+      // Fetch images from product_files with JOIN to media_assets
       const { data: files } = await tenantDb
         .from('product_files')
-        .select('product_id, file_url, position, is_primary')
+        .select(`
+          product_id,
+          position,
+          is_primary,
+          file_url,
+          media_assets (
+            file_url
+          )
+        `)
         .in('product_id', products.map(p => p.id))
         .order('position', { ascending: true });
 
       products.forEach(product => {
         const productFiles = files?.filter(f => f.product_id === product.id) || [];
-        product.images = productFiles.map(f => ({ url: f.file_url, position: f.position, is_primary: f.is_primary }));
+        product.images = productFiles.map(f => ({
+          url: f.media_assets?.file_url || f.file_url,
+          position: f.position,
+          is_primary: f.is_primary
+        }));
       });
     }
 

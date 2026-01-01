@@ -526,10 +526,19 @@ router.get('/', cacheMiddleware({
             return wishlistItems.map(w => ({ ...w, Product: null }));
           }
 
-          // Fetch images from product_files table
+          // Fetch images from product_files table with JOIN to media_assets
           const { data: productFiles, error: filesError } = await tenantDb
             .from('product_files')
-            .select('*')
+            .select(`
+              product_id,
+              position,
+              is_primary,
+              alt_text,
+              file_url,
+              media_assets (
+                file_url
+              )
+            `)
             .in('product_id', productIds)
             .eq('file_type', 'image')
             .order('position', { ascending: true });
@@ -544,8 +553,10 @@ router.get('/', cacheMiddleware({
             if (!imagesByProduct[file.product_id]) {
               imagesByProduct[file.product_id] = [];
             }
+            // Prefer media_assets.file_url, fallback to product_files.file_url
+            const fileUrl = file.media_assets?.file_url || file.file_url;
             imagesByProduct[file.product_id].push({
-              url: file.file_url,
+              url: fileUrl,
               alt: file.alt_text || '',
               isPrimary: file.is_primary || file.position === 0,
               position: file.position || 0

@@ -92,18 +92,27 @@ async function generateSitemapXml(storeId, baseUrl) {
           const productIds = products.map(p => p.id);
           const { data: files } = await tenantDb
             .from('product_files')
-            .select('product_id, file_url, alt_text')
+            .select(`
+              product_id,
+              alt_text,
+              file_url,
+              media_assets (
+                file_url
+              )
+            `)
             .in('product_id', productIds)
             .eq('file_type', 'image')
-            .order('sort_order', { ascending: true });
+            .order('position', { ascending: true });
 
           if (files) {
             files.forEach(file => {
               if (!productImages[file.product_id]) {
                 productImages[file.product_id] = [];
               }
+              // Prefer media_assets.file_url, fallback to product_files.file_url
+              const fileUrl = file.media_assets?.file_url || file.file_url;
               productImages[file.product_id].push({
-                loc: file.file_url,
+                loc: fileUrl,
                 title: file.alt_text || 'Product Image'
               });
             });

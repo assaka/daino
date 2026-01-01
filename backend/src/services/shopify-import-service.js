@@ -901,12 +901,39 @@ class ShopifyImportService {
               // Download and store image using storage provider
               const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
 
-              // Insert into product_files table
+              // Create or find media_asset record
+              let mediaAssetId = null;
+              const { data: existingAsset } = await tenantDb
+                .from('media_assets')
+                .select('id')
+                .eq('file_url', storedUrl)
+                .maybeSingle();
+
+              if (existingAsset) {
+                mediaAssetId = existingAsset.id;
+              } else {
+                const { data: newAsset } = await tenantDb
+                  .from('media_assets')
+                  .insert({
+                    id: uuidv4(),
+                    store_id: this.storeId,
+                    file_url: storedUrl,
+                    file_name: `${product.handle}-${i}.jpg`,
+                    mime_type: 'image/jpeg',
+                    alt_text: image.alt || product.title
+                  })
+                  .select('id')
+                  .single();
+                mediaAssetId = newAsset?.id;
+              }
+
+              // Insert into product_files table with media_asset_id
               await tenantDb
                 .from('product_files')
                 .insert({
                   id: uuidv4(),
                   product_id: savedProduct.id,
+                  media_asset_id: mediaAssetId,
                   file_url: storedUrl,
                   file_type: 'image',
                   position: i,
@@ -928,11 +955,39 @@ class ShopifyImportService {
 
               // Fallback: Insert with original Shopify URL
               const image = product.images[i];
+
+              // Create or find media_asset record for fallback URL
+              let mediaAssetId = null;
+              const { data: existingAsset } = await tenantDb
+                .from('media_assets')
+                .select('id')
+                .eq('file_url', image.src)
+                .maybeSingle();
+
+              if (existingAsset) {
+                mediaAssetId = existingAsset.id;
+              } else {
+                const { data: newAsset } = await tenantDb
+                  .from('media_assets')
+                  .insert({
+                    id: uuidv4(),
+                    store_id: this.storeId,
+                    file_url: image.src,
+                    file_name: `${product.handle}-${i}.jpg`,
+                    mime_type: 'image/jpeg',
+                    alt_text: image.alt || product.title
+                  })
+                  .select('id')
+                  .single();
+                mediaAssetId = newAsset?.id;
+              }
+
               await tenantDb
                 .from('product_files')
                 .insert({
                   id: uuidv4(),
                   product_id: savedProduct.id,
+                  media_asset_id: mediaAssetId,
                   file_url: image.src,
                   file_type: 'image',
                   position: i,

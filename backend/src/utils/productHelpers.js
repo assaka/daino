@@ -353,32 +353,31 @@ async function fetchProductImages(productIds, tenantDb) {
   if (idsArray.length === 0) return {};
 
   try {
-    // First try product_files table
+    // First try product_files table with JOIN to media_assets
     const { data: files, error: filesError } = await tenantDb
       .from('product_files')
-      .select('*')
+      .select(`
+        id,
+        product_id,
+        position,
+        is_primary,
+        alt_text,
+        file_type,
+        file_url,
+        media_assets (
+          file_url,
+          mime_type,
+          file_size
+        )
+      `)
       .in('product_id', idsArray)
       .eq('file_type', 'image')
       .order('position', { ascending: true });
 
     // Debug logging
     console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
-    console.log(`🖼️ fetchProductImages: First 3 product IDs:`, idsArray.slice(0, 3));
     if (filesError) {
       console.error('🖼️ fetchProductImages error:', filesError);
-    }
-
-    // If no files found, check if there are ANY files for these products (regardless of file_type)
-    if (!files || files.length === 0) {
-      const { data: allFiles, error: allFilesError } = await tenantDb
-        .from('product_files')
-        .select('product_id, file_type, file_url')
-        .in('product_id', idsArray.slice(0, 5))
-        .limit(10);
-      console.log(`🖼️ fetchProductImages: Checking all file types for first 5 products:`, allFiles?.length || 0, 'files');
-      if (allFiles && allFiles.length > 0) {
-        console.log(`🖼️ fetchProductImages: Sample files:`, allFiles.slice(0, 3));
-      }
     }
 
     // Group images by product_id from product_files
@@ -389,8 +388,11 @@ async function fetchProductImages(productIds, tenantDb) {
           imagesByProduct[file.product_id] = [];
         }
 
+        // Prefer media_assets.file_url, fallback to product_files.file_url for backward compatibility
+        const fileUrl = file.media_assets?.file_url || file.file_url;
+
         imagesByProduct[file.product_id].push({
-          url: file.file_url,
+          url: fileUrl,
           alt: file.alt_text || '',
           isPrimary: file.is_primary || file.position === 0,
           position: file.position || 0
