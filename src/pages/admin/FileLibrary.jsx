@@ -834,12 +834,14 @@ const FileLibrary = () => {
   };
 
   const handleOptimizedImage = (result) => {
-    if (result.result) {
-      toast.success(`Image optimized with ${result.provider}`);
-      loadFiles(); // Reload files to show updated version
-    }
+    // Just reload files to update library - modal stays open for more operations
+    loadFiles();
+  };
+
+  const closeOptimizer = () => {
     setOptimizerOpen(false);
     setFileToOptimize(null);
+    setSelectedFileIds([]);
   };
 
   // File type icons
@@ -1601,10 +1603,7 @@ const FileLibrary = () => {
       {optimizerOpen && (
         <FileLibraryOptimizerModal
           isOpen={optimizerOpen}
-          onClose={() => {
-            setOptimizerOpen(false);
-            setFileToOptimize(null);
-          }}
+          onClose={closeOptimizer}
           storeId={selectedStore?.id}
           fileToOptimize={fileToOptimize}
           selectedFiles={filteredFiles.filter(f => selectedFileIds.includes(f.id))}
