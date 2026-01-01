@@ -934,7 +934,6 @@ class ShopifyImportService {
                   id: uuidv4(),
                   product_id: savedProduct.id,
                   media_asset_id: mediaAssetId,
-                  file_url: storedUrl,
                   file_type: 'image',
                   position: i,
                   is_primary: i === 0, // First image is primary
@@ -988,7 +987,6 @@ class ShopifyImportService {
                   id: uuidv4(),
                   product_id: savedProduct.id,
                   media_asset_id: mediaAssetId,
-                  file_url: image.src,
                   file_type: 'image',
                   position: i,
                   is_primary: i === 0,

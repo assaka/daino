@@ -248,13 +248,10 @@ async function syncProductImages(tenantDb, storeId, productId, images) {
           product_id: productId,
           store_id: storeId,
           media_asset_id: mediaAssetId,
-          file_url: fileUrl, // Keep for backward compatibility
           file_type: 'image',
           position: img.position !== undefined ? img.position : index,
           is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
           alt_text: img.alt || img.alt_text || '',
-          file_size: img.filesize || img.file_size || null,
-          mime_type: img.mime_type || null,
           metadata: {
             attribute_code: img.attribute_code || null,
             filepath: img.filepath || null,

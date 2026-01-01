@@ -576,12 +576,10 @@ class DemoDataProvisioningService {
             product_id: productId,
             store_id: this.storeId,
             media_asset_id: mediaAssetId,
-            file_url: imageUrl,
             file_type: 'image',
             position: imgIdx,
             is_primary: imgIdx === 0,
             alt_text: altText,
-            mime_type: 'image/jpeg',
             demo: true
           });
       }
@@ -1040,12 +1038,10 @@ class DemoDataProvisioningService {
           product_id: productId,
           store_id: this.storeId,
           media_asset_id: mediaAssetId,
-          file_url: imageUrl,
           file_type: 'image',
           position: 0,
           is_primary: true,
           alt_text: prod.name,
-          mime_type: 'image/jpeg',
           demo: true
         });
     }
