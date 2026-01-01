@@ -286,6 +286,143 @@ router.delete('/delete', async (req, res) => {
 });
 
 /**
+ * POST /api/storage/replace
+ * Replace a file while preserving database references (media_assets.id, product_files associations)
+ */
+router.post('/replace', upload.single('file'), async (req, res) => {
+  try {
+    const { storeId } = req;
+    const { oldFileUrl, oldFilePath, folder } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file provided'
+      });
+    }
+
+    if (!oldFileUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'oldFileUrl is required'
+      });
+    }
+
+    console.log(`🔄 Replacing file for store ${storeId}`);
+    console.log(`   Old URL: ${oldFileUrl}`);
+    console.log(`   New file: ${req.file.originalname}`);
+
+    // 1. Upload the new file
+    const uploadOptions = {
+      folder: folder || 'library',
+      public: true
+    };
+
+    const uploadResult = await storageManager.uploadFile(storeId, req.file, uploadOptions);
+
+    if (!uploadResult.success && !uploadResult.url) {
+      throw new Error('Failed to upload new file');
+    }
+
+    const newUrl = uploadResult.publicUrl || uploadResult.url;
+    const newPath = uploadResult.path || uploadResult.fullPath;
+
+    console.log(`   New URL: ${newUrl}`);
+
+    // 2. Update database references
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Update media_assets - find by old URL and update
+    const { data: mediaAsset, error: findError } = await tenantDb
+      .from('media_assets')
+      .select('id')
+      .eq('store_id', storeId)
+      .eq('file_url', oldFileUrl)
+      .single();
+
+    let mediaAssetUpdated = false;
+    if (mediaAsset && !findError) {
+      const { error: updateError } = await tenantDb
+        .from('media_assets')
+        .update({
+          file_url: newUrl,
+          file_path: newPath,
+          file_name: req.file.originalname,
+          mime_type: req.file.mimetype,
+          file_size: req.file.size,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', mediaAsset.id);
+
+      if (!updateError) {
+        mediaAssetUpdated = true;
+        console.log(`   ✅ Updated media_assets record: ${mediaAsset.id}`);
+      } else {
+        console.warn('   ⚠️ Failed to update media_assets:', updateError.message);
+      }
+    }
+
+    // Update product_files - find all references to old URL and update
+    const { data: productFiles, error: pfFindError } = await tenantDb
+      .from('product_files')
+      .select('id')
+      .eq('store_id', storeId)
+      .eq('file_url', oldFileUrl);
+
+    let productFilesUpdated = 0;
+    if (productFiles && productFiles.length > 0 && !pfFindError) {
+      const { error: pfUpdateError, count } = await tenantDb
+        .from('product_files')
+        .update({
+          file_url: newUrl,
+          mime_type: req.file.mimetype,
+          file_size: req.file.size,
+          updated_at: new Date().toISOString()
+        })
+        .eq('store_id', storeId)
+        .eq('file_url', oldFileUrl);
+
+      if (!pfUpdateError) {
+        productFilesUpdated = productFiles.length;
+        console.log(`   ✅ Updated ${productFilesUpdated} product_files records`);
+      } else {
+        console.warn('   ⚠️ Failed to update product_files:', pfUpdateError.message);
+      }
+    }
+
+    // 3. Delete old file from storage (optional, don't fail if this fails)
+    if (oldFilePath) {
+      try {
+        await storageManager.deleteFile(storeId, oldFilePath);
+        console.log(`   ✅ Deleted old file from storage: ${oldFilePath}`);
+      } catch (deleteErr) {
+        console.warn(`   ⚠️ Could not delete old file (may already be gone): ${deleteErr.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'File replaced successfully',
+      data: {
+        url: newUrl,
+        path: newPath,
+        mediaAssetUpdated,
+        productFilesUpdated,
+        provider: uploadResult.provider
+      }
+    });
+
+  } catch (error) {
+    console.error('Replace file error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/storage/move
  * Move image to different folder
  */

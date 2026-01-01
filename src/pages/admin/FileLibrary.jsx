@@ -168,6 +168,11 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     if (imageHistory.length === 0) return;
     const previousImage = imageHistory[imageHistory.length - 1];
     const previousFormat = formatHistory[formatHistory.length - 1] || 'png';
+    console.log('[AI Optimizer] Reverting', {
+      historyLength: imageHistory.length,
+      previousImageLength: previousImage?.length,
+      previousFormat
+    });
     setImageHistory(prev => prev.slice(0, -1));
     setFormatHistory(prev => prev.slice(0, -1));
     setCurrentImage(previousImage);
@@ -290,45 +295,24 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
 
   // Apply changes (replace original or save copy)
   const handleApply = async () => {
-    if (!currentImage || !singleFile) return;
+    console.log('[AI Optimizer] handleApply called', {
+      hasCurrentImage: !!currentImage,
+      currentImageLength: currentImage?.length,
+      currentFormat,
+      applyToOriginal,
+      singleFileName: singleFile?.name
+    });
+
+    if (!currentImage || !singleFile) {
+      console.warn('[AI Optimizer] No image to save');
+      return;
+    }
     setIsApplying(true);
 
     try {
       const format = currentFormat || 'png';
       const base64Data = currentImage;
       const originalName = singleFile.name || 'image';
-
-      // For replace: use original name with new extension
-      // For copy: prefix with optimized-
-      const newName = applyToOriginal
-        ? originalName.replace(/\.[^.]+$/, `.${format}`)
-        : `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
-
-      // If replacing original, delete the old file first
-      if (applyToOriginal && singleFile.id) {
-        try {
-          // Get the folder from the file's path or default to library
-          const folder = singleFile.folder || singleFile.path?.split('/')[0] || 'library';
-          const filePath = `${folder}/${singleFile.name}`;
-
-          const deleteResponse = await fetch(`${apiClient.baseUrl}/storage/delete`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiClient.getToken()}`,
-              'X-Store-Id': localStorage.getItem('selectedStoreId')
-            },
-            body: JSON.stringify({ filePath })
-          });
-
-          if (!deleteResponse.ok) {
-            console.warn('Could not delete original file, will upload as new');
-          }
-        } catch (deleteErr) {
-          console.warn('Delete original failed:', deleteErr);
-          // Continue with upload even if delete fails
-        }
-      }
 
       // Convert base64 to blob
       const byteCharacters = atob(base64Data);
@@ -339,23 +323,49 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: `image/${format}` });
 
-      // Upload using apiClient - use original folder if replacing
-      const folder = applyToOriginal
-        ? (singleFile.folder || singleFile.path?.split('/')[0] || 'library')
-        : 'library';
-      const file = new File([blob], newName, { type: `image/${format}` });
-      const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder });
+      if (applyToOriginal) {
+        // REPLACE: Use replace endpoint to preserve database references
+        const fileFolder = singleFile.folder || singleFile.path?.split('/')[0] || 'library';
+        const filePath = `${fileFolder}/${singleFile.name}`;
+        const newName = originalName.replace(/\.[^.]+$/, `.${format}`);
 
-      if (uploadResponse.success) {
-        toast.success(applyToOriginal ? `Replaced "${originalName}"` : `Saved copy as "${newName}"`);
-        if (onOptimized) onOptimized({ applied: true, refresh: true });
-        if (applyToOriginal) onClose(); // Close if replacing original
+        console.log('[AI Optimizer] Replacing file:', { oldUrl: singleFile.url, filePath });
+
+        const file = new File([blob], newName, { type: `image/${format}` });
+        const replaceResponse = await apiClient.uploadFile('storage/replace', file, {
+          oldFileUrl: singleFile.url,
+          oldFilePath: filePath,
+          folder: fileFolder
+        });
+
+        if (replaceResponse.success) {
+          const { mediaAssetUpdated, productFilesUpdated } = replaceResponse.data || {};
+          let msg = `Replaced "${originalName}"`;
+          if (productFilesUpdated > 0) {
+            msg += ` (${productFilesUpdated} product reference${productFilesUpdated > 1 ? 's' : ''} updated)`;
+          }
+          toast.success(msg);
+          if (onOptimized) onOptimized({ applied: true, refresh: true });
+          onClose();
+        } else {
+          throw new Error(replaceResponse.error || 'Replace failed');
+        }
       } else {
-        throw new Error('Upload failed');
+        // SAVE COPY: Upload as new file
+        const newName = `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
+        const file = new File([blob], newName, { type: `image/${format}` });
+        const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
+
+        if (uploadResponse.success) {
+          toast.success(`Saved copy as "${newName}"`);
+          if (onOptimized) onOptimized({ applied: true, refresh: true });
+        } else {
+          throw new Error('Upload failed');
+        }
       }
     } catch (err) {
       console.error('Failed to apply:', err);
-      toast.error('Failed to save image');
+      toast.error(`Failed to save: ${err.message}`);
     } finally {
       setIsApplying(false);
     }
