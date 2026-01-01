@@ -18,15 +18,6 @@ import { useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
 import { shouldSkipStoreProvider } from '@/utils/domainConfig';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog';
 
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
@@ -281,24 +272,60 @@ export const StoreProvider = ({ children }) => {
     return <>{children}</>;
   }
 
-  // Show modal if store is not found
+  // Show marketing-styled modal if store is not found
   if (bootstrapError && !bootstrapLoading) {
     return (
-      <AlertDialog open={true}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Shop Not Found</AlertDialogTitle>
-            <AlertDialogDescription>
-              Shop "{resolvedSlug}" could not be found. Please check the URL and try again.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => window.location.href = '/'}>
-              Go to Homepage
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="relative max-w-md w-full mx-4">
+          {/* Decorative elements */}
+          <div className="absolute -top-20 -left-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl" />
+
+          {/* Modal content */}
+          <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 text-center shadow-2xl">
+            {/* Icon */}
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-white mb-3">
+              Oops! Shop Not Found
+            </h1>
+
+            {/* Message */}
+            <p className="text-white/70 mb-2">
+              Looks like <span className="text-amber-400 font-semibold">"{resolvedSlug}"</span> doesn't exist.
+            </p>
+            <p className="text-white/50 text-sm mb-8">
+              Double-check the URL or maybe it's time to start your own journey?
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="space-y-3">
+              <a
+                href="/Landing"
+                className="block w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-amber-500/25"
+              >
+                Create Your Own Shop
+              </a>
+              <button
+                onClick={() => window.history.back()}
+                className="block w-full py-3 px-6 bg-white/10 hover:bg-white/20 text-white/90 font-medium rounded-xl transition-all border border-white/10"
+              >
+                Go Back
+              </button>
+            </div>
+
+            {/* Footer text */}
+            <p className="mt-6 text-white/40 text-xs">
+              Join thousands of entrepreneurs building their dreams with Daino
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
