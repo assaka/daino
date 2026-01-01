@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, Sparkles, Image, Zap, CreditCard, Info } from 'lucide-react';
+import { Wand2, Sparkles, Image, Zap, CreditCard, Info, ArrowRight, FolderOpen, Package } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { ImageOptimizer } from '@/components/image-optimizer';
+import { Link } from 'react-router-dom';
 import apiClient from '@/api/client';
 
 const AIImageOptimizer = () => {
@@ -80,15 +80,104 @@ const AIImageOptimizer = () => {
 
       {/* Main Content - Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Optimizer */}
-        <div className="lg:col-span-2">
-          <ImageOptimizer
-            storeId={selectedStore?.id}
-            onImageOptimized={(result) => {
-              console.log('Optimized:', result);
-            }}
-            className="h-[600px]"
-          />
+        {/* Where to Use Section */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Quick Access Cards */}
+          <div className="bg-white rounded-xl border overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500">
+              <h2 className="text-lg font-semibold text-white">Get Started</h2>
+              <p className="text-purple-100 text-sm">
+                Select images to optimize from one of these locations
+              </p>
+            </div>
+            <div className="p-6 grid gap-4 md:grid-cols-2">
+              {/* File Library */}
+              <Link
+                to="/admin/file-library"
+                className="group flex items-start gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50/50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
+                  <FolderOpen className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 flex items-center gap-2">
+                    File Library
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Bulk optimize images from your media library. Select multiple files and apply AI operations.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">Bulk select</span>
+                    <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">All file types</span>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Products */}
+              <Link
+                to="/admin/products"
+                className="group flex items-start gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50/50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-200 transition-colors">
+                  <Package className="w-6 h-6 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 flex items-center gap-2">
+                    Product Images
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Edit a product and optimize its images directly. Perfect for individual product updates.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded">Product photos</span>
+                    <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded">Gallery images</span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* How It Works */}
+          <div className="bg-white rounded-xl border p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">How It Works</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600 font-semibold text-sm">
+                  1
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Select Images</h4>
+                  <p className="text-sm text-gray-500">
+                    Go to File Library or Product Edit and select the images you want to optimize. Use checkboxes for bulk selection.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600 font-semibold text-sm">
+                  2
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Choose AI Provider & Operation</h4>
+                  <p className="text-sm text-gray-500">
+                    Select an AI provider (OpenAI, Gemini, Flux, or Qwen) and choose the operation: compress, upscale, remove background, or stage.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600 font-semibold text-sm">
+                  3
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Review Costs & Optimize</h4>
+                  <p className="text-sm text-gray-500">
+                    See the total credit cost before processing. Click optimize to apply AI enhancements to your images.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Pricing Sidebar */}
@@ -161,7 +250,7 @@ const AIImageOptimizer = () => {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-purple-400">•</span>
-                <span>Bulk optimize from <strong>File Library</strong> or <strong>Product Edit</strong></span>
+                <span>Bulk optimize from <strong>File Library</strong> for best efficiency</span>
               </li>
             </ul>
           </div>

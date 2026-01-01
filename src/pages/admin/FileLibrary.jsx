@@ -1,11 +1,630 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare } from 'lucide-react';
+import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import SaveButton from '@/components/ui/save-button';
 import { PageLoader } from '@/components/ui/page-loader';
-import { ImageOptimizer } from '@/components/image-optimizer';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+// Provider display info
+const PROVIDERS = {
+  openai: { name: 'OpenAI', icon: '🤖', color: 'text-green-600' },
+  gemini: { name: 'Gemini', icon: '✨', color: 'text-blue-600' },
+  flux: { name: 'Flux', icon: '⚡', color: 'text-purple-600' },
+  qwen: { name: 'Qwen', icon: '🎨', color: 'text-orange-600' }
+};
+
+// Operation display info
+const OPERATIONS = {
+  compress: { name: 'Compress', icon: FileImage, description: 'Optimize quality & size' },
+  upscale: { name: 'Upscale', icon: Maximize, description: 'Enhance resolution' },
+  remove_bg: { name: 'Remove Background', icon: Eraser, description: 'Remove or replace background' },
+  stage: { name: 'Product Staging', icon: Package, description: 'Place in environment' },
+  convert: { name: 'Convert Format', icon: FileImage, description: 'WebP, AVIF optimization' }
+};
+
+// Staging context presets
+const STAGING_CONTEXTS = [
+  { id: 'living_room', label: 'Modern Living Room', value: 'modern minimalist living room with natural light' },
+  { id: 'bedroom', label: 'Cozy Bedroom', value: 'cozy bedroom with soft lighting' },
+  { id: 'kitchen', label: 'Modern Kitchen', value: 'modern kitchen with marble countertops' },
+  { id: 'office', label: 'Home Office', value: 'professional home office with natural light' },
+  { id: 'outdoor', label: 'Outdoor Patio', value: 'outdoor patio with garden view' },
+  { id: 'fashion_model', label: 'Fashion Model', value: 'fashion model in studio setting' },
+  { id: 'flat_lay', label: 'Flat Lay', value: 'flat lay on marble surface with props' },
+  { id: 'custom', label: 'Custom...', value: '' }
+];
+
+/**
+ * FileLibraryOptimizerModal - Modal for AI image optimization with cost display
+ */
+const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, onOptimized }) => {
+  const [pricing, setPricing] = useState(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+  const [selectedProvider, setSelectedProvider] = useState('openai');
+  const [selectedOperation, setSelectedOperation] = useState('remove_bg');
+  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showOperationDropdown, setShowOperationDropdown] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [results, setResults] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Operation-specific params
+  const [stagingContext, setStagingContext] = useState(STAGING_CONTEXTS[0].value);
+  const [customContext, setCustomContext] = useState('');
+  const [bgReplacement, setBgReplacement] = useState('transparent');
+  const [upscaleScale, setUpscaleScale] = useState(2);
+
+  const providerDropdownRef = useRef(null);
+  const operationDropdownRef = useRef(null);
+
+  const isBulkMode = !fileToOptimize && selectedFiles?.length > 0;
+  const imagesToProcess = fileToOptimize ? [fileToOptimize] : selectedFiles || [];
+
+  // Fetch pricing on mount
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await apiClient.get('/image-optimization/pricing');
+        if (response.success) {
+          setPricing(response);
+          const availableProviders = response.providers || [];
+          if (availableProviders.length > 0 && !availableProviders.includes(selectedProvider)) {
+            setSelectedProvider(availableProviders[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch pricing:', err);
+      } finally {
+        setPricingLoading(false);
+      }
+    };
+    if (isOpen) {
+      fetchPricing();
+    }
+  }, [isOpen]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (providerDropdownRef.current && !providerDropdownRef.current.contains(e.target)) {
+        setShowProviderDropdown(false);
+      }
+      if (operationDropdownRef.current && !operationDropdownRef.current.contains(e.target)) {
+        setShowOperationDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Get current credit cost per image
+  const getCostPerImage = useCallback(() => {
+    if (!pricing?.matrix) return null;
+    return pricing.matrix[selectedProvider]?.[selectedOperation]?.credits;
+  }, [pricing, selectedProvider, selectedOperation]);
+
+  // Calculate total cost for bulk
+  const getTotalCost = useCallback(() => {
+    const costPerImage = getCostPerImage();
+    if (costPerImage === null) return null;
+    return costPerImage * imagesToProcess.length;
+  }, [getCostPerImage, imagesToProcess.length]);
+
+  // Process images
+  const handleOptimize = async () => {
+    if (imagesToProcess.length === 0) return;
+
+    setIsProcessing(true);
+    setError(null);
+    setProcessedCount(0);
+    setResults([]);
+
+    const newResults = [];
+
+    for (let i = 0; i < imagesToProcess.length; i++) {
+      const image = imagesToProcess[i];
+      setProcessedCount(i + 1);
+
+      try {
+        // Build params based on operation
+        const params = {};
+        if (selectedOperation === 'stage') {
+          params.context = stagingContext === '' ? customContext : stagingContext;
+          params.style = 'photorealistic';
+          params.lighting = 'natural daylight';
+        } else if (selectedOperation === 'remove_bg') {
+          params.replacement = bgReplacement;
+        } else if (selectedOperation === 'upscale') {
+          params.scale = upscaleScale;
+          params.enhanceDetails = true;
+        }
+
+        // Fetch image as base64
+        const imageResponse = await fetch(image.url);
+        const imageBlob = await imageResponse.blob();
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(imageBlob);
+        });
+
+        const response = await apiClient.post('/image-optimization/optimize', {
+          provider: selectedProvider,
+          operation: selectedOperation,
+          image: base64,
+          params
+        });
+
+        if (response.success) {
+          newResults.push({
+            original: image,
+            success: true,
+            result: response.result,
+            credits: response.creditsDeducted
+          });
+        } else {
+          newResults.push({
+            original: image,
+            success: false,
+            error: response.message || 'Failed'
+          });
+        }
+      } catch (err) {
+        newResults.push({
+          original: image,
+          success: false,
+          error: err.message || 'Processing failed'
+        });
+      }
+    }
+
+    setResults(newResults);
+    setIsProcessing(false);
+
+    const successCount = newResults.filter(r => r.success).length;
+    const totalCredits = newResults.reduce((sum, r) => sum + (r.credits || 0), 0);
+
+    if (successCount > 0) {
+      toast.success(`Optimized ${successCount}/${imagesToProcess.length} images (${totalCredits.toFixed(2)} credits used)`);
+      if (onOptimized) {
+        onOptimized({ results: newResults, creditsUsed: totalCredits });
+      }
+    } else {
+      toast.error('All images failed to process');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const costPerImage = getCostPerImage();
+  const totalCost = getTotalCost();
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+              <Wand2 className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">
+                {isBulkMode
+                  ? `AI Optimize ${imagesToProcess.length} Images`
+                  : 'AI Image Optimizer'}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Select provider and operation below
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Provider & Operation Selection */}
+        <div className="px-6 py-4 border-b bg-white">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Provider Dropdown */}
+            <div className="relative" ref={providerDropdownRef}>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Provider</label>
+              <button
+                onClick={() => setShowProviderDropdown(!showProviderDropdown)}
+                disabled={isProcessing || pricingLoading}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all min-w-[140px]",
+                  "border border-gray-200 bg-white",
+                  "hover:bg-gray-50",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                <span className="text-lg">{PROVIDERS[selectedProvider]?.icon}</span>
+                <span className="font-medium flex-1 text-left">{PROVIDERS[selectedProvider]?.name}</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", showProviderDropdown && "rotate-180")} />
+              </button>
+
+              {showProviderDropdown && (
+                <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 border-b border-gray-100 bg-gray-50">
+                    <p className="text-xs font-medium text-gray-500">Select AI Provider</p>
+                  </div>
+                  <div className="py-1 max-h-64 overflow-y-auto">
+                    {(pricing?.providers || Object.keys(PROVIDERS)).map((providerId) => {
+                      const provider = PROVIDERS[providerId];
+                      if (!provider) return null;
+                      const cost = pricing?.matrix?.[providerId]?.[selectedOperation]?.credits;
+
+                      return (
+                        <button
+                          key={providerId}
+                          onClick={() => {
+                            setSelectedProvider(providerId);
+                            setShowProviderDropdown(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors",
+                            selectedProvider === providerId
+                              ? "bg-purple-50"
+                              : "hover:bg-gray-50"
+                          )}
+                        >
+                          <span className="text-xl">{provider.icon}</span>
+                          <div className="flex-1">
+                            <span className={cn(
+                              "text-sm font-medium",
+                              selectedProvider === providerId ? "text-purple-600" : ""
+                            )}>
+                              {provider.name}
+                            </span>
+                          </div>
+                          {cost !== undefined && (
+                            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                              {cost} cr
+                            </span>
+                          )}
+                          {selectedProvider === providerId && (
+                            <Check className="w-4 h-4 text-purple-600" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Operation Dropdown */}
+            <div className="relative" ref={operationDropdownRef}>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Operation</label>
+              <button
+                onClick={() => setShowOperationDropdown(!showOperationDropdown)}
+                disabled={isProcessing}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all min-w-[180px]",
+                  "border border-gray-200 bg-white",
+                  "hover:bg-gray-50",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                {React.createElement(OPERATIONS[selectedOperation]?.icon || Image, { className: "w-4 h-4 text-gray-600" })}
+                <span className="font-medium flex-1 text-left">{OPERATIONS[selectedOperation]?.name}</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", showOperationDropdown && "rotate-180")} />
+              </button>
+
+              {showOperationDropdown && (
+                <div className="absolute left-0 top-full mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 border-b border-gray-100 bg-gray-50">
+                    <p className="text-xs font-medium text-gray-500">Select Operation</p>
+                  </div>
+                  <div className="py-1">
+                    {Object.entries(OPERATIONS).map(([opId, op]) => {
+                      const cost = pricing?.matrix?.[selectedProvider]?.[opId]?.credits;
+                      const OpIcon = op.icon;
+
+                      return (
+                        <button
+                          key={opId}
+                          onClick={() => {
+                            setSelectedOperation(opId);
+                            setShowOperationDropdown(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                            selectedOperation === opId
+                              ? "bg-purple-50"
+                              : "hover:bg-gray-50"
+                          )}
+                        >
+                          <OpIcon className="w-5 h-5 text-gray-500" />
+                          <div className="flex-1">
+                            <span className={cn(
+                              "text-sm font-medium block",
+                              selectedOperation === opId ? "text-purple-600" : ""
+                            )}>
+                              {op.name}
+                            </span>
+                            <span className="text-xs text-gray-500">{op.description}</span>
+                          </div>
+                          {cost !== undefined && (
+                            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                              {cost} cr
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Cost Display */}
+            <div className="ml-auto text-right">
+              {pricingLoading ? (
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Loading costs...</span>
+                </div>
+              ) : costPerImage !== null ? (
+                <div>
+                  <div className="text-xs text-gray-500">
+                    {costPerImage} credits × {imagesToProcess.length} image{imagesToProcess.length !== 1 ? 's' : ''}
+                  </div>
+                  <div className="text-lg font-bold text-purple-600">
+                    {totalCost?.toFixed(2)} credits total
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Operation-specific options */}
+          {selectedOperation === 'stage' && (
+            <div className="mt-4 pt-4 border-t">
+              <label className="text-xs font-medium text-gray-500 mb-2 block">Staging Context</label>
+              <div className="flex flex-wrap gap-1.5">
+                {STAGING_CONTEXTS.map((ctx) => (
+                  <button
+                    key={ctx.id}
+                    onClick={() => {
+                      setStagingContext(ctx.value);
+                      if (ctx.id !== 'custom') setCustomContext('');
+                    }}
+                    disabled={isProcessing}
+                    className={cn(
+                      "px-2.5 py-1 text-xs rounded-full transition-colors",
+                      stagingContext === ctx.value
+                        ? "bg-purple-100 text-purple-700 border border-purple-300"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    {ctx.label}
+                  </button>
+                ))}
+              </div>
+              {stagingContext === '' && (
+                <input
+                  type="text"
+                  value={customContext}
+                  onChange={(e) => setCustomContext(e.target.value)}
+                  placeholder="Describe the environment (e.g., 'luxury penthouse with city view')"
+                  className="mt-2 w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  disabled={isProcessing}
+                />
+              )}
+            </div>
+          )}
+
+          {selectedOperation === 'remove_bg' && (
+            <div className="mt-4 pt-4 border-t">
+              <label className="text-xs font-medium text-gray-500 mb-2 block">Background Replacement</label>
+              <div className="flex gap-2">
+                {['transparent', 'white', 'black', 'gradient'].map((bg) => (
+                  <button
+                    key={bg}
+                    onClick={() => setBgReplacement(bg)}
+                    disabled={isProcessing}
+                    className={cn(
+                      "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize",
+                      bgReplacement === bg
+                        ? "bg-purple-100 text-purple-700 border border-purple-300"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    {bg}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedOperation === 'upscale' && (
+            <div className="mt-4 pt-4 border-t">
+              <label className="text-xs font-medium text-gray-500 mb-2 block">Upscale Factor</label>
+              <div className="flex gap-2">
+                {[2, 3, 4].map((scale) => (
+                  <button
+                    key={scale}
+                    onClick={() => setUpscaleScale(scale)}
+                    disabled={isProcessing}
+                    className={cn(
+                      "px-4 py-1.5 text-xs rounded-lg transition-colors",
+                      upscaleScale === scale
+                        ? "bg-purple-100 text-purple-700 border border-purple-300"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    {scale}x
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Content - Images Preview */}
+        <div className="flex-1 overflow-auto p-6">
+          {results.length > 0 ? (
+            // Results view
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Results: {results.filter(r => r.success).length}/{results.length} successful
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {results.map((result, idx) => (
+                  <div key={idx} className={cn(
+                    "border rounded-lg overflow-hidden",
+                    result.success ? "border-green-300" : "border-red-300"
+                  )}>
+                    <div className="h-24 bg-gray-100 flex items-center justify-center">
+                      <img
+                        src={result.success && result.result?.imageUrl ? result.result.imageUrl : result.original.url}
+                        alt=""
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    <div className="p-2 text-xs">
+                      {result.success ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <Check className="w-3 h-3" />
+                          <span>{result.credits?.toFixed(2)} credits</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <AlertCircle className="w-3 h-3" />
+                          <span className="truncate">{result.error}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Preview view
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                {isBulkMode ? `Selected Images (${imagesToProcess.length})` : 'Image to Optimize'}
+              </h3>
+              {isProcessing && (
+                <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-purple-700 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing {processedCount} of {imagesToProcess.length}...</span>
+                  </div>
+                  <div className="mt-2 bg-purple-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-purple-600 h-full transition-all"
+                      style={{ width: `${(processedCount / imagesToProcess.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              <div className={cn(
+                "grid gap-3",
+                isBulkMode ? "grid-cols-3 md:grid-cols-4 lg:grid-cols-6" : "grid-cols-1 max-w-md mx-auto"
+              )}>
+                {imagesToProcess.map((file) => (
+                  <div
+                    key={file.id}
+                    className="border rounded-lg overflow-hidden bg-gray-50"
+                  >
+                    <div className={cn(
+                      "flex items-center justify-center bg-gray-100",
+                      isBulkMode ? "h-20" : "h-64"
+                    )}>
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    {!isBulkMode && (
+                      <div className="p-2 text-xs text-gray-500 truncate">
+                        {file.name}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            {results.length > 0 ? (
+              <span>
+                Total credits used: <span className="font-semibold text-purple-600">
+                  {results.reduce((sum, r) => sum + (r.credits || 0), 0).toFixed(2)}
+                </span>
+              </span>
+            ) : totalCost !== null ? (
+              <span>
+                Estimated cost: <span className="font-semibold text-purple-600">{totalCost.toFixed(2)} credits</span>
+                <span className="text-gray-400 ml-1">
+                  (${(totalCost * 0.10).toFixed(2)})
+                </span>
+              </span>
+            ) : null}
+          </div>
+          <div className="flex gap-2">
+            {results.length > 0 ? (
+              <>
+                <Button variant="outline" onClick={() => setResults([])}>
+                  Optimize More
+                </Button>
+                <Button onClick={onClose}>
+                  Done
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={onClose} disabled={isProcessing}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleOptimize}
+                  disabled={isProcessing || imagesToProcess.length === 0}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Optimize {imagesToProcess.length} Image{imagesToProcess.length !== 1 ? 's' : ''}
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Entity type filters
 const ENTITY_TYPES = [
@@ -824,96 +1443,17 @@ const FileLibrary = () => {
 
       {/* AI Image Optimizer Modal */}
       {optimizerOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Wand2 className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    {fileToOptimize
-                      ? 'AI Image Optimizer'
-                      : `AI Optimize ${selectedFileIds.length} Images`}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {fileToOptimize
-                      ? 'Enhance, upscale, remove background, or stage your image'
-                      : 'Select operation to apply to all selected images'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setOptimizerOpen(false);
-                  setFileToOptimize(null);
-                }}
-                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 overflow-auto">
-              {fileToOptimize ? (
-                <div className="grid grid-cols-2 gap-0 h-full">
-                  {/* Original Image */}
-                  <div className="border-r p-4 flex flex-col">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Original Image</h3>
-                    <div className="flex-1 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                      <img
-                        src={fileToOptimize.url}
-                        alt="Original"
-                        className="max-w-full max-h-80 object-contain"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 truncate">{fileToOptimize.name}</p>
-                  </div>
-                  {/* Optimizer */}
-                  <div className="p-4">
-                    <ImageOptimizer
-                      storeId={selectedStore?.id}
-                      onImageOptimized={handleOptimizedImage}
-                      className="h-full"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="p-6">
-                  {/* Bulk mode: show selected images preview */}
-                  <div className="mb-6">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">
-                      Selected Images ({selectedFileIds.length})
-                    </h3>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                      {filteredFiles
-                        .filter(f => selectedFileIds.includes(f.id))
-                        .map((file) => (
-                          <div
-                            key={file.id}
-                            className="w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-300 flex-shrink-0"
-                          >
-                            <img src={file.url} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Upload an image to the optimizer below. Bulk processing will apply the same operation to all selected images.
-                  </p>
-                  <ImageOptimizer
-                    storeId={selectedStore?.id}
-                    onImageOptimized={handleOptimizedImage}
-                    className="h-auto"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <FileLibraryOptimizerModal
+          isOpen={optimizerOpen}
+          onClose={() => {
+            setOptimizerOpen(false);
+            setFileToOptimize(null);
+          }}
+          storeId={selectedStore?.id}
+          fileToOptimize={fileToOptimize}
+          selectedFiles={filteredFiles.filter(f => selectedFileIds.includes(f.id))}
+          onOptimized={handleOptimizedImage}
+        />
       )}
     </div>
   );
