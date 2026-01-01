@@ -3203,11 +3203,13 @@ router.post('/plugin/generate', authMiddleware, async (req, res) => {
 router.post('/plugin/create', authMiddleware, async (req, res) => {
   try {
     const { pluginData } = req.body;
+    const storeId = req.headers['x-store-id'] || req.body.storeId;
 
     // Debug logging
     console.log('🔍 Plugin Create Request:');
     console.log('  - req.user:', req.user);
     console.log('  - req.user?.id:', req.user?.id);
+    console.log('  - storeId:', storeId);
     console.log('  - pluginData.name:', pluginData?.name);
 
     const userId = req.user?.id;
@@ -3232,7 +3234,15 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
       });
     }
 
-    console.log(`✅ Creating plugin for user: ${userId}`);
+    if (!storeId) {
+      console.error('❌ Store ID missing');
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required. Please ensure x-store-id header is set.'
+      });
+    }
+
+    console.log(`✅ Creating plugin for user: ${userId} in store: ${storeId}`);
 
     // Check if user has 50 credits for plugin creation
     const creditCheck = await aiService.checkCredits(userId, 'plugin-generation');
@@ -3255,7 +3265,7 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
     console.log(`💰 Deducted 50 credits for plugin creation`);
 
     // Save plugin to database using aiService instance
-    const result = await aiService.savePluginToDatabase(pluginData, userId);
+    const result = await aiService.savePluginToDatabase(pluginData, userId, { storeId });
 
     console.log(`✅ Plugin created:`, result);
 
