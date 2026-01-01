@@ -3461,8 +3461,6 @@ CREATE INDEX IF NOT EXISTS idx_product_files_store ON product_files(store_id);
 
 CREATE INDEX IF NOT EXISTS idx_product_files_type ON product_files(product_id, file_type);
 
-CREATE INDEX IF NOT EXISTS idx_product_files_url ON product_files(file_url);
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_product_files_unique_primary
   ON product_files(product_id, file_type)
   WHERE is_primary = true;
