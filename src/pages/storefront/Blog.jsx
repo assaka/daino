@@ -539,6 +539,17 @@ const BLOG_ARTICLES = {
     date: 'December 2024',
     author: 'DainoStore Team'
   },
+  'workflow-integrations-guide': {
+    title: 'Workflow Integrations: Connect to n8n, Zapier & Make',
+    description: 'Automate your store by connecting to n8n, Zapier, and Make for powerful workflow automation.',
+    category: 'Developer Guides',
+    categoryIcon: Zap,
+    categoryColor: 'bg-slate-100 text-slate-600',
+    tags: ['developer', 'integrations', 'automation', 'advanced'],
+    readTime: '12 min read',
+    date: 'January 2025',
+    author: 'DainoStore Team'
+  },
   'multi-tenant-architecture': {
     title: 'Multi-Tenant Architecture Explained',
     description: 'Understand how DainoStore isolates stores, scales efficiently, and maintains security.',
@@ -608,6 +619,7 @@ const CONTENT_PATHS = {
   'database-integrations': '/blog/database-integrations.md',
   'media-cdn-setup': '/blog/media-cdn-setup.md',
   'api-integration-patterns': '/blog/api-integration-patterns.md',
+  'workflow-integrations-guide': '/blog/workflow-integrations-guide.md',
   'multi-tenant-architecture': '/blog/multi-tenant-architecture.md',
   // Migration
   'shopify-migration': '/blog/shopify-migration.md'
