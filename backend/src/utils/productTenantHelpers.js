@@ -170,8 +170,8 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
     await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
   }
 
-  // Sync images to product_files table
-  if (images && Array.isArray(images)) {
+  // Sync images to product_files table (only if images array has items)
+  if (images && Array.isArray(images) && images.length > 0) {
     await syncProductImages(tenantDb, storeId, productId, images);
   }
 
