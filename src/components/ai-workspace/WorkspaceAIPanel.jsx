@@ -308,9 +308,20 @@ const WorkspaceAIPanel = () => {
 
   const handleInstallPlugin = async (pluginData) => {
     try {
+      console.log('🔌 Creating plugin with data:', pluginData);
       const response = await apiClient.post('/ai/plugin/create', { pluginData });
+      console.log('🔌 Plugin create response:', response);
 
       if (response.success) {
+        const pluginId = response.pluginId || response.plugin?.id;
+        const pluginSlug = response.plugin?.slug || response.slug;
+
+        console.log('🔌 Extracted pluginId:', pluginId, 'slug:', pluginSlug);
+
+        if (!pluginId) {
+          throw new Error('Plugin created but no ID returned');
+        }
+
         addChatMessage({
           role: 'assistant',
           content: `✅ Plugin "${pluginData.name}" created successfully!\n\nOpening in editor...`,
@@ -318,8 +329,8 @@ const WorkspaceAIPanel = () => {
 
         openPluginEditor({
           ...pluginData,
-          id: response.pluginId,
-          slug: response.plugin.slug
+          id: pluginId,
+          slug: pluginSlug
         });
       } else {
         throw new Error(response.message || 'Failed to create plugin');
