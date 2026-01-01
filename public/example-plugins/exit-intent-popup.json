@@ -1,0 +1,125 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Exit Intent Popup",
+    "slug": "exit-intent-popup",
+    "version": "1.0.0",
+    "description": "Show a discount or newsletter popup when user moves cursor to leave the page",
+    "author": "DainoStore",
+    "category": "marketing",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Exit Intent Popup",
+      "tags": ["popup", "exit-intent", "conversion", "discount", "newsletter"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "marketing",
+      "description": "Capture leaving visitors with targeted offers",
+      "permissions": []
+    },
+    "permissions": [],
+    "dependencies": [],
+    "tags": ["popup", "exit-intent", "conversion"]
+  },
+  "files": [],
+  "events": [],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "exit-intent-popup-widget",
+      "widgetName": "Exit Intent Popup",
+      "description": "Popup that appears when user attempts to leave",
+      "componentCode": "function ExitIntentPopupWidget({ config = {} }) {\n  const [show, setShow] = React.useState(false);\n  const [email, setEmail] = React.useState('');\n  const [submitted, setSubmitted] = React.useState(false);\n  const [copied, setCopied] = React.useState(false);\n  const triggered = React.useRef(false);\n\n  const {\n    headline = \"Wait! Don't leave yet!\",\n    subheadline = 'Get 10% off your first order',\n    discountCode = 'SAVE10',\n    showEmailCapture = true,\n    buttonText = 'Get My Discount',\n    imageUrl = null,\n    delay = 0,\n    showOnMobile = false,\n    cookieDays = 7\n  } = config;\n\n  React.useEffect(() => {\n    // Check if already shown\n    const lastShown = localStorage.getItem('exit-popup-shown');\n    if (lastShown) {\n      const daysSince = (Date.now() - parseInt(lastShown)) / (1000 * 60 * 60 * 24);\n      if (daysSince < cookieDays) return;\n    }\n\n    // Check mobile\n    if (!showOnMobile && window.innerWidth < 768) return;\n\n    const handleMouseLeave = (e) => {\n      if (e.clientY <= 0 && !triggered.current) {\n        triggered.current = true;\n        if (delay > 0) {\n          setTimeout(() => setShow(true), delay);\n        } else {\n          setShow(true);\n        }\n        localStorage.setItem('exit-popup-shown', Date.now().toString());\n      }\n    };\n\n    document.addEventListener('mouseleave', handleMouseLeave);\n    return () => document.removeEventListener('mouseleave', handleMouseLeave);\n  }, [delay, showOnMobile, cookieDays]);\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    if (!email) return;\n\n    try {\n      await fetch('/api/plugins/exit-intent-popup/exec/subscribe', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ email, source: 'exit-intent' })\n      });\n      setSubmitted(true);\n    } catch (error) {\n      console.error('Failed to subscribe:', error);\n      setSubmitted(true);\n    }\n  };\n\n  const handleCopyCode = () => {\n    navigator.clipboard.writeText(discountCode);\n    setCopied(true);\n    setTimeout(() => setCopied(false), 2000);\n  };\n\n  if (!show) return null;\n\n  return React.createElement('div', {\n    style: {\n      position: 'fixed',\n      inset: 0,\n      backgroundColor: 'rgba(0,0,0,0.6)',\n      display: 'flex',\n      alignItems: 'center',\n      justifyContent: 'center',\n      zIndex: 9999,\n      padding: '20px'\n    },\n    onClick: () => setShow(false)\n  },\n    React.createElement('div', {\n      style: {\n        background: 'white',\n        borderRadius: '16px',\n        maxWidth: '500px',\n        width: '100%',\n        overflow: 'hidden',\n        position: 'relative',\n        animation: 'scaleIn 0.3s ease-out'\n      },\n      onClick: (e) => e.stopPropagation()\n    },\n      // Close button\n      React.createElement('button', {\n        onClick: () => setShow(false),\n        style: {\n          position: 'absolute',\n          top: '12px',\n          right: '12px',\n          background: 'rgba(0,0,0,0.1)',\n          border: 'none',\n          borderRadius: '50%',\n          width: '32px',\n          height: '32px',\n          cursor: 'pointer',\n          fontSize: '18px',\n          zIndex: 1\n        }\n      }, '×'),\n\n      // Image\n      imageUrl && React.createElement('img', {\n        src: imageUrl,\n        alt: '',\n        style: {\n          width: '100%',\n          height: '150px',\n          objectFit: 'cover'\n        }\n      }),\n\n      // Content\n      React.createElement('div', {\n        style: { padding: '32px', textAlign: 'center' }\n      },\n        React.createElement('h2', {\n          style: {\n            fontSize: '28px',\n            fontWeight: 'bold',\n            marginBottom: '12px',\n            color: '#111827'\n          }\n        }, headline),\n\n        React.createElement('p', {\n          style: {\n            fontSize: '18px',\n            color: '#6b7280',\n            marginBottom: '24px'\n          }\n        }, subheadline),\n\n        !submitted ? (\n          showEmailCapture ? \n            React.createElement('form', {\n              onSubmit: handleSubmit,\n              style: { marginBottom: '20px' }\n            },\n              React.createElement('input', {\n                type: 'email',\n                value: email,\n                onChange: (e) => setEmail(e.target.value),\n                placeholder: 'Enter your email',\n                required: true,\n                style: {\n                  width: '100%',\n                  padding: '14px 16px',\n                  border: '2px solid #e5e7eb',\n                  borderRadius: '8px',\n                  fontSize: '16px',\n                  marginBottom: '12px'\n                }\n              }),\n              React.createElement('button', {\n                type: 'submit',\n                style: {\n                  width: '100%',\n                  padding: '14px 24px',\n                  background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',\n                  color: 'white',\n                  border: 'none',\n                  borderRadius: '8px',\n                  fontSize: '16px',\n                  fontWeight: '600',\n                  cursor: 'pointer'\n                }\n              }, buttonText)\n            )\n          : React.createElement('button', {\n              onClick: () => setSubmitted(true),\n              style: {\n                width: '100%',\n                padding: '14px 24px',\n                background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',\n                color: 'white',\n                border: 'none',\n                borderRadius: '8px',\n                fontSize: '16px',\n                fontWeight: '600',\n                cursor: 'pointer',\n                marginBottom: '20px'\n              }\n            }, buttonText)\n        ) : (\n          React.createElement('div', null,\n            React.createElement('p', {\n              style: {\n                color: '#10b981',\n                fontWeight: '600',\n                marginBottom: '16px'\n              }\n            }, '🎉 Your discount code:'),\n            React.createElement('div', {\n              style: {\n                display: 'flex',\n                alignItems: 'center',\n                justifyContent: 'center',\n                gap: '12px',\n                marginBottom: '16px'\n              }\n            },\n              React.createElement('code', {\n                style: {\n                  background: '#f3f4f6',\n                  padding: '12px 24px',\n                  borderRadius: '8px',\n                  fontSize: '24px',\n                  fontWeight: 'bold',\n                  letterSpacing: '2px'\n                }\n              }, discountCode),\n              React.createElement('button', {\n                onClick: handleCopyCode,\n                style: {\n                  padding: '12px 16px',\n                  background: copied ? '#10b981' : '#3b82f6',\n                  color: 'white',\n                  border: 'none',\n                  borderRadius: '8px',\n                  cursor: 'pointer'\n                }\n              }, copied ? '✓ Copied' : 'Copy')\n            )\n          )\n        ),\n\n        React.createElement('p', {\n          style: {\n            fontSize: '12px',\n            color: '#9ca3af'\n          }\n        }, 'No thanks, I\\'ll pay full price')\n      )\n    )\n  );\n}",
+      "defaultConfig": {
+        "headline": "Wait! Don't leave yet!",
+        "subheadline": "Get 10% off your first order",
+        "discountCode": "SAVE10",
+        "showEmailCapture": true,
+        "buttonText": "Get My Discount",
+        "imageUrl": null,
+        "delay": 0,
+        "showOnMobile": false,
+        "cookieDays": 7
+      },
+      "category": "marketing",
+      "icon": "MousePointerClick"
+    }
+  ],
+  "entities": [
+    {
+      "name": "ExitPopupSubscriber",
+      "tableName": "exit_popup_subscribers",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "email", "type": "VARCHAR(255)", "notNull": true },
+          { "name": "source", "type": "VARCHAR(50)", "default": "'exit-intent'" },
+          { "name": "converted", "type": "BOOLEAN", "default": "false" },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_exit_subscribers_email", "columns": ["email"], "unique": true }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Email subscribers from exit intent popup"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_exit_popup_subscribers",
+      "pluginName": "Exit Intent Popup",
+      "migrationVersion": "1704067200000_create_exit_popup_subscribers",
+      "code": "CREATE TABLE IF NOT EXISTS exit_popup_subscribers (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  email VARCHAR(255) NOT NULL UNIQUE,\n  source VARCHAR(50) DEFAULT 'exit-intent',\n  converted BOOLEAN DEFAULT false,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_exit_subscribers_email ON exit_popup_subscribers(email);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "subscribe",
+      "method": "POST",
+      "path": "/subscribe",
+      "code": "async function subscribe(req, res, { sequelize }) {\n  const { email, source = 'exit-intent' } = req.body;\n\n  if (!email || !email.includes('@')) {\n    return res.status(400).json({ success: false, error: 'Valid email required' });\n  }\n\n  try {\n    await sequelize.query(`\n      INSERT INTO exit_popup_subscribers (email, source)\n      VALUES ($1, $2)\n      ON CONFLICT (email) DO UPDATE SET source = $2\n    `, {\n      bind: [email.toLowerCase(), source],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, message: 'Subscribed successfully' });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Subscribe email from popup"
+    },
+    {
+      "name": "getSubscribers",
+      "method": "GET",
+      "path": "/subscribers",
+      "code": "async function getSubscribers(req, res, { sequelize }) {\n  const { limit = 50, offset = 0 } = req.query;\n\n  try {\n    const subscribers = await sequelize.query(`\n      SELECT * FROM exit_popup_subscribers\n      ORDER BY created_at DESC\n      LIMIT $1 OFFSET $2\n    `, {\n      bind: [parseInt(limit), parseInt(offset)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const countResult = await sequelize.query(\n      'SELECT COUNT(*) as total FROM exit_popup_subscribers',\n      { type: sequelize.QueryTypes.SELECT }\n    );\n\n    return res.json({\n      success: true,\n      subscribers,\n      total: parseInt(countResult[0].total)\n    });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get all subscribers"
+    },
+    {
+      "name": "getStats",
+      "method": "GET",
+      "path": "/stats",
+      "code": "async function getStats(req, res, { sequelize }) {\n  try {\n    const stats = await sequelize.query(`\n      SELECT\n        COUNT(*) as total_subscribers,\n        COUNT(*) FILTER (WHERE converted = true) as conversions,\n        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days') as last_7_days\n      FROM exit_popup_subscribers\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, ...stats[0] });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get popup statistics"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "headline": "Wait! Don't leave yet!",
+        "subheadline": "Get 10% off your first order",
+        "discountCode": "SAVE10",
+        "showEmailCapture": true,
+        "buttonText": "Get My Discount",
+        "enabled": true
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Exit Intent Popup Plugin\n\nCapture leaving visitors with targeted discount offers.\n\n## Features\n\n- Triggers when mouse leaves viewport\n- Email capture form\n- Discount code display\n- Copy to clipboard\n- Session frequency control\n- Mobile detection\n\n## Configuration\n\n| Setting | Description |\n|---------|-------------|\n| headline | Main popup title |\n| subheadline | Supporting text |\n| discountCode | Code to display |\n| showEmailCapture | Require email first |\n| delay | Delay before showing (ms) |\n| cookieDays | Days between shows |\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

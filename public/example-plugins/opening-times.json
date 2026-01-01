@@ -1,0 +1,109 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Opening Times",
+    "slug": "opening-times",
+    "version": "1.0.0",
+    "description": "Display store opening hours in footer with real-time open/closed status indicator",
+    "author": "DainoStore",
+    "category": "display",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Opening Times",
+      "tags": ["hours", "opening", "schedule", "footer", "status"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "display",
+      "description": "Show customers when your store is open with live status",
+      "permissions": []
+    },
+    "permissions": [],
+    "dependencies": [],
+    "tags": ["hours", "schedule", "footer"]
+  },
+  "files": [],
+  "events": [],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "opening-times-widget",
+      "widgetName": "Opening Times Widget",
+      "description": "Displays store hours with open/closed indicator",
+      "componentCode": "function OpeningTimesWidget({ config = {} }) {\n  const [isOpen, setIsOpen] = React.useState(false);\n  const [currentDay, setCurrentDay] = React.useState('');\n  const [nextOpen, setNextOpen] = React.useState('');\n\n  const defaultHours = {\n    monday: { open: '09:00', close: '18:00', closed: false },\n    tuesday: { open: '09:00', close: '18:00', closed: false },\n    wednesday: { open: '09:00', close: '18:00', closed: false },\n    thursday: { open: '09:00', close: '18:00', closed: false },\n    friday: { open: '09:00', close: '18:00', closed: false },\n    saturday: { open: '10:00', close: '16:00', closed: false },\n    sunday: { open: null, close: null, closed: true }\n  };\n\n  const hours = config.hours || defaultHours;\n  const timezone = config.timezone || 'Europe/Amsterdam';\n  const showAllDays = config.showAllDays !== false;\n\n  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];\n  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];\n\n  React.useEffect(() => {\n    const checkStatus = () => {\n      const now = new Date();\n      const dayIndex = now.getDay();\n      const dayName = days[dayIndex];\n      const todayHours = hours[dayName];\n\n      setCurrentDay(dayName);\n\n      if (todayHours?.closed) {\n        setIsOpen(false);\n        findNextOpen(dayIndex);\n        return;\n      }\n\n      const currentTime = now.toLocaleTimeString('en-US', {\n        hour12: false,\n        hour: '2-digit',\n        minute: '2-digit',\n        timeZone: timezone\n      });\n\n      const openTime = todayHours?.open || '09:00';\n      const closeTime = todayHours?.close || '18:00';\n\n      const open = currentTime >= openTime && currentTime < closeTime;\n      setIsOpen(open);\n\n      if (!open) {\n        if (currentTime < openTime) {\n          setNextOpen(`Opens at ${formatTime(openTime)}`);\n        } else {\n          findNextOpen(dayIndex);\n        }\n      }\n    };\n\n    const findNextOpen = (fromDay) => {\n      for (let i = 1; i <= 7; i++) {\n        const nextDayIndex = (fromDay + i) % 7;\n        const nextDayName = days[nextDayIndex];\n        const nextDayHours = hours[nextDayName];\n\n        if (!nextDayHours?.closed && nextDayHours?.open) {\n          const dayLabel = i === 1 ? 'tomorrow' : dayLabels[nextDayIndex];\n          setNextOpen(`Opens ${dayLabel} at ${formatTime(nextDayHours.open)}`);\n          return;\n        }\n      }\n    };\n\n    const formatTime = (time) => {\n      const [h, m] = time.split(':');\n      const hour = parseInt(h);\n      const ampm = hour >= 12 ? 'PM' : 'AM';\n      const hour12 = hour % 12 || 12;\n      return `${hour12}:${m} ${ampm}`;\n    };\n\n    checkStatus();\n    const interval = setInterval(checkStatus, 60000);\n    return () => clearInterval(interval);\n  }, [hours, timezone]);\n\n  const formatTimeDisplay = (time) => {\n    if (!time) return '-';\n    const [h, m] = time.split(':');\n    const hour = parseInt(h);\n    const ampm = hour >= 12 ? 'PM' : 'AM';\n    const hour12 = hour % 12 || 12;\n    return `${hour12}:${m} ${ampm}`;\n  };\n\n  return React.createElement('div', {\n    style: {\n      padding: '20px',\n      background: '#f9fafb',\n      borderRadius: '8px'\n    }\n  },\n    // Status Badge\n    React.createElement('div', {\n      style: {\n        display: 'flex',\n        alignItems: 'center',\n        gap: '8px',\n        marginBottom: '16px'\n      }\n    },\n      React.createElement('span', {\n        style: {\n          width: '10px',\n          height: '10px',\n          borderRadius: '50%',\n          background: isOpen ? '#22c55e' : '#ef4444',\n          animation: isOpen ? 'pulse 2s infinite' : 'none'\n        }\n      }),\n      React.createElement('span', {\n        style: {\n          fontWeight: '600',\n          color: isOpen ? '#166534' : '#991b1b'\n        }\n      }, isOpen ? 'Open Now' : 'Closed'),\n      !isOpen && nextOpen && React.createElement('span', {\n        style: {\n          color: '#6b7280',\n          fontSize: '14px'\n        }\n      }, `• ${nextOpen}`)\n    ),\n\n    // Hours Table\n    showAllDays && React.createElement('div', {\n      style: {\n        display: 'grid',\n        gap: '8px'\n      }\n    },\n      days.map((day, index) => {\n        const dayHours = hours[day];\n        const isToday = day === currentDay;\n\n        return React.createElement('div', {\n          key: day,\n          style: {\n            display: 'flex',\n            justifyContent: 'space-between',\n            padding: '8px 12px',\n            background: isToday ? '#dbeafe' : 'transparent',\n            borderRadius: '6px',\n            fontSize: '14px'\n          }\n        },\n          React.createElement('span', {\n            style: {\n              fontWeight: isToday ? '600' : '400',\n              color: isToday ? '#1d4ed8' : '#374151',\n              textTransform: 'capitalize'\n            }\n          }, day),\n          React.createElement('span', {\n            style: {\n              color: dayHours?.closed ? '#9ca3af' : '#374151'\n            }\n          },\n            dayHours?.closed\n              ? 'Closed'\n              : `${formatTimeDisplay(dayHours?.open)} - ${formatTimeDisplay(dayHours?.close)}`\n          )\n        );\n      })\n    ),\n\n    // Timezone note\n    React.createElement('p', {\n      style: {\n        fontSize: '12px',\n        color: '#9ca3af',\n        marginTop: '12px',\n        textAlign: 'center'\n      }\n    }, `Times shown in ${timezone.replace('_', ' ')}`)\n  );\n}",
+      "defaultConfig": {
+        "hours": {
+          "monday": { "open": "09:00", "close": "18:00", "closed": false },
+          "tuesday": { "open": "09:00", "close": "18:00", "closed": false },
+          "wednesday": { "open": "09:00", "close": "18:00", "closed": false },
+          "thursday": { "open": "09:00", "close": "18:00", "closed": false },
+          "friday": { "open": "09:00", "close": "18:00", "closed": false },
+          "saturday": { "open": "10:00", "close": "16:00", "closed": false },
+          "sunday": { "open": null, "close": null, "closed": true }
+        },
+        "timezone": "Europe/Amsterdam",
+        "showAllDays": true
+      },
+      "category": "display",
+      "icon": "Clock"
+    }
+  ],
+  "entities": [],
+  "migrations": [],
+  "controllers": [
+    {
+      "name": "getOpeningHours",
+      "method": "GET",
+      "path": "/hours",
+      "code": "async function getOpeningHours(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(`\n      SELECT value FROM plugin_data \n      WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'opening-times' LIMIT 1)\n      AND key = 'hours'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const hours = result[0]?.value || {\n      monday: { open: '09:00', close: '18:00', closed: false },\n      tuesday: { open: '09:00', close: '18:00', closed: false },\n      wednesday: { open: '09:00', close: '18:00', closed: false },\n      thursday: { open: '09:00', close: '18:00', closed: false },\n      friday: { open: '09:00', close: '18:00', closed: false },\n      saturday: { open: '10:00', close: '16:00', closed: false },\n      sunday: { open: null, close: null, closed: true }\n    };\n\n    return res.json({ success: true, hours });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get store opening hours"
+    },
+    {
+      "name": "updateOpeningHours",
+      "method": "POST",
+      "path": "/hours",
+      "code": "async function updateOpeningHours(req, res, { sequelize }) {\n  const hours = req.body;\n\n  try {\n    await sequelize.query(`\n      INSERT INTO plugin_data (plugin_id, key, value, created_at, updated_at)\n      SELECT id, 'hours', $1::jsonb, NOW(), NOW()\n      FROM plugin_registry WHERE slug = 'opening-times'\n      ON CONFLICT (plugin_id, key) DO UPDATE\n      SET value = $1::jsonb, updated_at = NOW()\n    `, {\n      bind: [JSON.stringify(hours)],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, hours });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Update store opening hours"
+    },
+    {
+      "name": "getStatus",
+      "method": "GET",
+      "path": "/status",
+      "code": "async function getStatus(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(`\n      SELECT value FROM plugin_data \n      WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'opening-times' LIMIT 1)\n      AND key = 'hours'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const hours = result[0]?.value || {};\n    const timezone = 'Europe/Amsterdam';\n\n    const now = new Date();\n    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];\n    const dayName = days[now.getDay()];\n    const todayHours = hours[dayName];\n\n    if (todayHours?.closed) {\n      return res.json({ success: true, isOpen: false, reason: 'Closed today' });\n    }\n\n    const currentTime = now.toLocaleTimeString('en-US', {\n      hour12: false,\n      hour: '2-digit',\n      minute: '2-digit',\n      timeZone: timezone\n    });\n\n    const openTime = todayHours?.open || '09:00';\n    const closeTime = todayHours?.close || '18:00';\n    const isOpen = currentTime >= openTime && currentTime < closeTime;\n\n    return res.json({\n      success: true,\n      isOpen,\n      currentTime,\n      openTime,\n      closeTime,\n      timezone\n    });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get current open/closed status"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "hours",
+      "value": {
+        "monday": { "open": "09:00", "close": "18:00", "closed": false },
+        "tuesday": { "open": "09:00", "close": "18:00", "closed": false },
+        "wednesday": { "open": "09:00", "close": "18:00", "closed": false },
+        "thursday": { "open": "09:00", "close": "18:00", "closed": false },
+        "friday": { "open": "09:00", "close": "18:00", "closed": false },
+        "saturday": { "open": "10:00", "close": "16:00", "closed": false },
+        "sunday": { "open": null, "close": null, "closed": true }
+      }
+    },
+    {
+      "key": "config",
+      "value": {
+        "timezone": "Europe/Amsterdam",
+        "showAllDays": true
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Opening Times Plugin\n\nDisplay your store's opening hours with real-time open/closed status.\n\n## Features\n\n- Live open/closed indicator\n- Full weekly schedule\n- Timezone support\n- Highlights current day\n- Shows when store opens next\n- Pulsing status indicator\n\n## Widget\n\nAdd the widget to your footer or any page section.\n\n## Configuration\n\n```json\n{\n  \"hours\": {\n    \"monday\": { \"open\": \"09:00\", \"close\": \"18:00\", \"closed\": false },\n    \"sunday\": { \"closed\": true }\n  },\n  \"timezone\": \"Europe/Amsterdam\",\n  \"showAllDays\": true\n}\n```\n\n## API\n\n- `GET /hours` - Get full schedule\n- `POST /hours` - Update schedule\n- `GET /status` - Get current status\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

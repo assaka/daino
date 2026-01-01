@@ -1,0 +1,182 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Loyalty Points",
+    "slug": "loyalty-points",
+    "version": "1.0.0",
+    "description": "Reward customers with points for purchases that can be redeemed for discounts",
+    "author": "DainoStore",
+    "category": "marketing",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Loyalty Points",
+      "tags": ["loyalty", "points", "rewards", "discounts", "retention"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "marketing",
+      "description": "Build customer loyalty with a points-based rewards system",
+      "permissions": ["customers:read", "customers:write", "orders:read"]
+    },
+    "permissions": ["customers:read", "customers:write", "orders:read"],
+    "dependencies": [],
+    "tags": ["loyalty", "points", "rewards"]
+  },
+  "files": [],
+  "events": [
+    {
+      "eventName": "order.completed",
+      "fileName": "award-order-points.js",
+      "listenerCode": "async function onAwardOrderPoints(data) {\n  console.log('🎁 Loyalty: Processing order for points');\n\n  const order = data?.order || data;\n  if (!order?.id || !order?.customer_id) {\n    console.log('🎁 No customer ID, skipping points');\n    return;\n  }\n\n  try {\n    // Get config for points rate\n    const configResponse = await fetch('/api/plugins/loyalty-points/exec/config');\n    const configResult = await configResponse.json();\n    const config = configResult.config || { pointsPerDollar: 1 };\n\n    const orderTotal = parseFloat(order.total) || 0;\n    const pointsEarned = Math.floor(orderTotal * config.pointsPerDollar);\n\n    if (pointsEarned <= 0) return;\n\n    // Award points\n    await fetch('/api/plugins/loyalty-points/exec/award', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        customerId: order.customer_id,\n        points: pointsEarned,\n        reason: `Order #${order.id}`,\n        orderId: order.id\n      })\n    });\n\n    console.log(`🎁 Awarded ${pointsEarned} points for order ${order.id}`);\n  } catch (error) {\n    console.error('🎁 Error awarding points:', error);\n  }\n}",
+      "priority": 10
+    },
+    {
+      "eventName": "customer.registered",
+      "fileName": "welcome-bonus-points.js",
+      "listenerCode": "async function onWelcomeBonusPoints(data) {\n  console.log('🎁 Loyalty: Processing welcome bonus');\n\n  const customer = data?.customer || data;\n  if (!customer?.id) return;\n\n  try {\n    const configResponse = await fetch('/api/plugins/loyalty-points/exec/config');\n    const configResult = await configResponse.json();\n    const config = configResult.config || { welcomeBonus: 100 };\n\n    if (!config.welcomeBonus || config.welcomeBonus <= 0) return;\n\n    await fetch('/api/plugins/loyalty-points/exec/award', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        customerId: customer.id,\n        points: config.welcomeBonus,\n        reason: 'Welcome bonus'\n      })\n    });\n\n    console.log(`🎁 Awarded ${config.welcomeBonus} welcome bonus points`);\n  } catch (error) {\n    console.error('🎁 Error awarding welcome bonus:', error);\n  }\n}",
+      "priority": 10
+    }
+  ],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "loyalty-points-display",
+      "widgetName": "Loyalty Points Display",
+      "description": "Show customer's current points balance and tier",
+      "componentCode": "function LoyaltyPointsDisplayWidget({ config = {}, customerId }) {\n  const [balance, setBalance] = React.useState(null);\n  const [tier, setTier] = React.useState(null);\n  const [loading, setLoading] = React.useState(true);\n  const [history, setHistory] = React.useState([]);\n  const [showHistory, setShowHistory] = React.useState(false);\n\n  const {\n    showTier = true,\n    showRedeemValue = true,\n    pointsPerDollar = 100,\n    tiers = [\n      { name: 'Bronze', minPoints: 0, color: '#CD7F32' },\n      { name: 'Silver', minPoints: 500, color: '#C0C0C0' },\n      { name: 'Gold', minPoints: 2000, color: '#FFD700' },\n      { name: 'Platinum', minPoints: 5000, color: '#E5E4E2' }\n    ]\n  } = config;\n\n  React.useEffect(() => {\n    if (!customerId) {\n      setLoading(false);\n      return;\n    }\n\n    fetch(`/api/plugins/loyalty-points/exec/balance?customerId=${customerId}`)\n      .then(res => res.json())\n      .then(data => {\n        if (data.success) {\n          setBalance(data.balance);\n          // Calculate tier\n          const currentTier = [...tiers].reverse().find(t => data.balance >= t.minPoints);\n          setTier(currentTier);\n        }\n      })\n      .catch(err => console.error('Failed to load points:', err))\n      .finally(() => setLoading(false));\n  }, [customerId]);\n\n  const loadHistory = async () => {\n    if (!customerId) return;\n    try {\n      const response = await fetch(`/api/plugins/loyalty-points/exec/history?customerId=${customerId}&limit=10`);\n      const data = await response.json();\n      if (data.success) {\n        setHistory(data.transactions || []);\n        setShowHistory(true);\n      }\n    } catch (error) {\n      console.error('Failed to load history:', error);\n    }\n  };\n\n  if (loading) {\n    return React.createElement('div', {\n      style: { padding: '16px', textAlign: 'center' }\n    }, 'Loading points...');\n  }\n\n  if (!customerId) {\n    return React.createElement('div', {\n      style: {\n        padding: '20px',\n        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',\n        borderRadius: '12px',\n        color: 'white',\n        textAlign: 'center'\n      }\n    },\n      React.createElement('p', { style: { marginBottom: '12px' } }, 'Join our loyalty program!'),\n      React.createElement('a', {\n        href: '/register',\n        style: {\n          display: 'inline-block',\n          padding: '10px 20px',\n          background: 'white',\n          color: '#667eea',\n          borderRadius: '8px',\n          textDecoration: 'none',\n          fontWeight: '600'\n        }\n      }, 'Sign Up & Earn Points')\n    );\n  }\n\n  const redeemValue = (balance / pointsPerDollar).toFixed(2);\n  const nextTier = tiers.find(t => t.minPoints > balance);\n  const pointsToNext = nextTier ? nextTier.minPoints - balance : 0;\n\n  return React.createElement('div', {\n    style: {\n      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',\n      borderRadius: '16px',\n      padding: '24px',\n      color: 'white'\n    }\n  },\n    // Header with tier badge\n    React.createElement('div', {\n      style: {\n        display: 'flex',\n        justifyContent: 'space-between',\n        alignItems: 'center',\n        marginBottom: '20px'\n      }\n    },\n      React.createElement('span', {\n        style: { fontSize: '14px', opacity: 0.9 }\n      }, 'Your Points Balance'),\n      showTier && tier && React.createElement('span', {\n        style: {\n          padding: '4px 12px',\n          background: tier.color,\n          borderRadius: '20px',\n          fontSize: '12px',\n          fontWeight: '600',\n          color: tier.name === 'Gold' ? '#000' : '#fff'\n        }\n      }, tier.name)\n    ),\n\n    // Points balance\n    React.createElement('div', {\n      style: {\n        fontSize: '48px',\n        fontWeight: '700',\n        marginBottom: '8px'\n      }\n    }, balance?.toLocaleString() || 0),\n\n    // Redeem value\n    showRedeemValue && React.createElement('p', {\n      style: {\n        fontSize: '14px',\n        opacity: 0.9,\n        marginBottom: '20px'\n      }\n    }, `Worth $${redeemValue} in discounts`),\n\n    // Progress to next tier\n    nextTier && React.createElement('div', {\n      style: { marginBottom: '16px' }\n    },\n      React.createElement('div', {\n        style: {\n          display: 'flex',\n          justifyContent: 'space-between',\n          fontSize: '12px',\n          marginBottom: '6px'\n        }\n      },\n        React.createElement('span', null, `${pointsToNext} points to ${nextTier.name}`),\n        React.createElement('span', null, `${nextTier.minPoints} pts`)\n      ),\n      React.createElement('div', {\n        style: {\n          height: '6px',\n          background: 'rgba(255,255,255,0.3)',\n          borderRadius: '3px',\n          overflow: 'hidden'\n        }\n      },\n        React.createElement('div', {\n          style: {\n            height: '100%',\n            width: `${(balance / nextTier.minPoints) * 100}%`,\n            background: 'white',\n            borderRadius: '3px'\n          }\n        })\n      )\n    ),\n\n    // Action buttons\n    React.createElement('div', {\n      style: {\n        display: 'flex',\n        gap: '12px'\n      }\n    },\n      React.createElement('button', {\n        onClick: loadHistory,\n        style: {\n          flex: 1,\n          padding: '10px',\n          background: 'rgba(255,255,255,0.2)',\n          border: '1px solid rgba(255,255,255,0.3)',\n          borderRadius: '8px',\n          color: 'white',\n          cursor: 'pointer'\n        }\n      }, 'View History'),\n      React.createElement('a', {\n        href: '/checkout',\n        style: {\n          flex: 1,\n          padding: '10px',\n          background: 'white',\n          borderRadius: '8px',\n          color: '#667eea',\n          textDecoration: 'none',\n          textAlign: 'center',\n          fontWeight: '600'\n        }\n      }, 'Redeem Points')\n    ),\n\n    // History modal\n    showHistory && React.createElement('div', {\n      style: {\n        position: 'fixed',\n        inset: 0,\n        background: 'rgba(0,0,0,0.5)',\n        display: 'flex',\n        alignItems: 'center',\n        justifyContent: 'center',\n        zIndex: 1000\n      },\n      onClick: () => setShowHistory(false)\n    },\n      React.createElement('div', {\n        style: {\n          background: 'white',\n          borderRadius: '12px',\n          padding: '24px',\n          maxWidth: '400px',\n          width: '90%',\n          maxHeight: '80vh',\n          overflow: 'auto',\n          color: '#111'\n        },\n        onClick: (e) => e.stopPropagation()\n      },\n        React.createElement('h3', {\n          style: { marginBottom: '16px', fontSize: '18px' }\n        }, 'Points History'),\n        history.length === 0\n          ? React.createElement('p', { style: { color: '#6b7280' } }, 'No transactions yet')\n          : history.map(tx =>\n              React.createElement('div', {\n                key: tx.id,\n                style: {\n                  display: 'flex',\n                  justifyContent: 'space-between',\n                  padding: '12px 0',\n                  borderBottom: '1px solid #e5e7eb'\n                }\n              },\n                React.createElement('div', null,\n                  React.createElement('p', { style: { fontWeight: '500' } }, tx.reason),\n                  React.createElement('p', { style: { fontSize: '12px', color: '#6b7280' } },\n                    new Date(tx.created_at).toLocaleDateString()\n                  )\n                ),\n                React.createElement('span', {\n                  style: {\n                    fontWeight: '600',\n                    color: tx.points > 0 ? '#10b981' : '#ef4444'\n                  }\n                }, tx.points > 0 ? `+${tx.points}` : tx.points)\n              )\n            ),\n        React.createElement('button', {\n          onClick: () => setShowHistory(false),\n          style: {\n            marginTop: '16px',\n            width: '100%',\n            padding: '10px',\n            background: '#3b82f6',\n            color: 'white',\n            border: 'none',\n            borderRadius: '8px',\n            cursor: 'pointer'\n          }\n        }, 'Close')\n      )\n    )\n  );\n}",
+      "defaultConfig": {
+        "showTier": true,
+        "showRedeemValue": true,
+        "pointsPerDollar": 100,
+        "tiers": [
+          { "name": "Bronze", "minPoints": 0, "color": "#CD7F32" },
+          { "name": "Silver", "minPoints": 500, "color": "#C0C0C0" },
+          { "name": "Gold", "minPoints": 2000, "color": "#FFD700" },
+          { "name": "Platinum", "minPoints": 5000, "color": "#E5E4E2" }
+        ]
+      },
+      "category": "marketing",
+      "icon": "Award"
+    }
+  ],
+  "entities": [
+    {
+      "name": "LoyaltyBalance",
+      "tableName": "loyalty_balances",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "customer_id", "type": "UUID", "notNull": true },
+          { "name": "balance", "type": "INTEGER", "default": "0" },
+          { "name": "lifetime_earned", "type": "INTEGER", "default": "0" },
+          { "name": "lifetime_redeemed", "type": "INTEGER", "default": "0" },
+          { "name": "tier", "type": "VARCHAR(50)", "default": "'Bronze'" },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" },
+          { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_loyalty_balances_customer", "columns": ["customer_id"], "unique": true }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Customer loyalty point balances"
+    },
+    {
+      "name": "LoyaltyTransaction",
+      "tableName": "loyalty_transactions",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "customer_id", "type": "UUID", "notNull": true },
+          { "name": "points", "type": "INTEGER", "notNull": true },
+          { "name": "type", "type": "VARCHAR(50)", "notNull": true },
+          { "name": "reason", "type": "VARCHAR(255)" },
+          { "name": "order_id", "type": "UUID", "nullable": true },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_loyalty_transactions_customer", "columns": ["customer_id"] },
+          { "name": "idx_loyalty_transactions_created", "columns": ["created_at"], "order": "DESC" }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Loyalty points transaction history"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_loyalty_tables",
+      "pluginName": "Loyalty Points",
+      "migrationVersion": "1704067200000_create_loyalty_tables",
+      "code": "CREATE TABLE IF NOT EXISTS loyalty_balances (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  customer_id UUID NOT NULL UNIQUE,\n  balance INTEGER DEFAULT 0,\n  lifetime_earned INTEGER DEFAULT 0,\n  lifetime_redeemed INTEGER DEFAULT 0,\n  tier VARCHAR(50) DEFAULT 'Bronze',\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS loyalty_transactions (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  customer_id UUID NOT NULL,\n  points INTEGER NOT NULL,\n  type VARCHAR(50) NOT NULL,\n  reason VARCHAR(255),\n  order_id UUID,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_loyalty_balances_customer ON loyalty_balances(customer_id);\nCREATE INDEX IF NOT EXISTS idx_loyalty_transactions_customer ON loyalty_transactions(customer_id);\nCREATE INDEX IF NOT EXISTS idx_loyalty_transactions_created ON loyalty_transactions(created_at DESC);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "getBalance",
+      "method": "GET",
+      "path": "/balance",
+      "code": "async function getBalance(req, res, { sequelize }) {\n  const { customerId } = req.query;\n\n  if (!customerId) {\n    return res.status(400).json({ success: false, error: 'Customer ID required' });\n  }\n\n  try {\n    const result = await sequelize.query(`\n      SELECT balance, tier, lifetime_earned, lifetime_redeemed\n      FROM loyalty_balances\n      WHERE customer_id = $1\n    `, {\n      bind: [customerId],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const data = result[0] || { balance: 0, tier: 'Bronze', lifetime_earned: 0, lifetime_redeemed: 0 };\n    return res.json({ success: true, ...data });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get customer's current points balance"
+    },
+    {
+      "name": "awardPoints",
+      "method": "POST",
+      "path": "/award",
+      "code": "async function awardPoints(req, res, { sequelize }) {\n  const { customerId, points, reason, orderId } = req.body;\n\n  if (!customerId || !points) {\n    return res.status(400).json({ success: false, error: 'Customer ID and points required' });\n  }\n\n  try {\n    // Upsert balance\n    await sequelize.query(`\n      INSERT INTO loyalty_balances (customer_id, balance, lifetime_earned)\n      VALUES ($1, $2, $2)\n      ON CONFLICT (customer_id) DO UPDATE\n      SET balance = loyalty_balances.balance + $2,\n          lifetime_earned = loyalty_balances.lifetime_earned + $2,\n          updated_at = NOW()\n    `, {\n      bind: [customerId, parseInt(points)],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    // Record transaction\n    await sequelize.query(`\n      INSERT INTO loyalty_transactions (customer_id, points, type, reason, order_id)\n      VALUES ($1, $2, 'earned', $3, $4)\n    `, {\n      bind: [customerId, parseInt(points), reason || 'Points earned', orderId],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    // Update tier\n    await sequelize.query(`\n      UPDATE loyalty_balances\n      SET tier = CASE\n        WHEN balance >= 5000 THEN 'Platinum'\n        WHEN balance >= 2000 THEN 'Gold'\n        WHEN balance >= 500 THEN 'Silver'\n        ELSE 'Bronze'\n      END\n      WHERE customer_id = $1\n    `, {\n      bind: [customerId],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    return res.json({ success: true, message: `Awarded ${points} points` });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Award points to a customer"
+    },
+    {
+      "name": "redeemPoints",
+      "method": "POST",
+      "path": "/redeem",
+      "code": "async function redeemPoints(req, res, { sequelize }) {\n  const { customerId, points, reason } = req.body;\n\n  if (!customerId || !points) {\n    return res.status(400).json({ success: false, error: 'Customer ID and points required' });\n  }\n\n  try {\n    // Check balance\n    const balanceResult = await sequelize.query(`\n      SELECT balance FROM loyalty_balances WHERE customer_id = $1\n    `, {\n      bind: [customerId],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const currentBalance = balanceResult[0]?.balance || 0;\n    if (currentBalance < points) {\n      return res.status(400).json({ success: false, error: 'Insufficient points' });\n    }\n\n    // Deduct points\n    await sequelize.query(`\n      UPDATE loyalty_balances\n      SET balance = balance - $2,\n          lifetime_redeemed = lifetime_redeemed + $2,\n          updated_at = NOW()\n      WHERE customer_id = $1\n    `, {\n      bind: [customerId, parseInt(points)],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    // Record transaction\n    await sequelize.query(`\n      INSERT INTO loyalty_transactions (customer_id, points, type, reason)\n      VALUES ($1, $2, 'redeemed', $3)\n    `, {\n      bind: [customerId, -parseInt(points), reason || 'Points redeemed'],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, message: `Redeemed ${points} points` });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Redeem points for a discount"
+    },
+    {
+      "name": "getHistory",
+      "method": "GET",
+      "path": "/history",
+      "code": "async function getHistory(req, res, { sequelize }) {\n  const { customerId, limit = 20 } = req.query;\n\n  if (!customerId) {\n    return res.status(400).json({ success: false, error: 'Customer ID required' });\n  }\n\n  try {\n    const transactions = await sequelize.query(`\n      SELECT * FROM loyalty_transactions\n      WHERE customer_id = $1\n      ORDER BY created_at DESC\n      LIMIT $2\n    `, {\n      bind: [customerId, parseInt(limit)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, transactions });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get customer's points history"
+    },
+    {
+      "name": "getConfig",
+      "method": "GET",
+      "path": "/config",
+      "code": "async function getConfig(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(`\n      SELECT value FROM plugin_data\n      WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'loyalty-points' LIMIT 1)\n      AND key = 'config'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const config = result[0]?.value || {\n      pointsPerDollar: 1,\n      pointsToRedeem: 100,\n      dollarValuePerPoint: 0.01,\n      welcomeBonus: 100\n    };\n\n    return res.json({ success: true, config });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get loyalty program configuration"
+    },
+    {
+      "name": "getLeaderboard",
+      "method": "GET",
+      "path": "/leaderboard",
+      "code": "async function getLeaderboard(req, res, { sequelize }) {\n  const { limit = 10 } = req.query;\n\n  try {\n    const leaders = await sequelize.query(`\n      SELECT lb.customer_id, lb.balance, lb.tier, lb.lifetime_earned,\n             c.name, c.email\n      FROM loyalty_balances lb\n      LEFT JOIN customers c ON lb.customer_id = c.id\n      ORDER BY lb.lifetime_earned DESC\n      LIMIT $1\n    `, {\n      bind: [parseInt(limit)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, leaders });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get top points earners"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "pointsPerDollar": 1,
+        "pointsToRedeem": 100,
+        "dollarValuePerPoint": 0.01,
+        "welcomeBonus": 100,
+        "enabled": true
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Loyalty Points Plugin\n\nReward customers with points for purchases and registrations.\n\n## Features\n\n- Earn points on purchases\n- Welcome bonus for new signups\n- Tiered membership (Bronze, Silver, Gold, Platinum)\n- Points redemption for discounts\n- Transaction history\n- Leaderboard\n\n## How Points Work\n\n| Action | Default Points |\n|--------|---------------|\n| Per $1 spent | 1 point |\n| New registration | 100 points |\n| Redeem 100 points | $1 discount |\n\n## Tiers\n\n| Tier | Points Required |\n|------|----------------|\n| Bronze | 0 |\n| Silver | 500 |\n| Gold | 2000 |\n| Platinum | 5000 |\n\n## Widget\n\nAdd the widget to customer account pages to show:\n- Current balance\n- Tier status with progress bar\n- Points value in dollars\n- Transaction history\n\n## API Endpoints\n\n- `GET /balance` - Get customer balance\n- `POST /award` - Award points\n- `POST /redeem` - Redeem points\n- `GET /history` - Transaction history\n- `GET /leaderboard` - Top earners\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

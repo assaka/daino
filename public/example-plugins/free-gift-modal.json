@@ -1,0 +1,89 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Free Gift Modal",
+    "slug": "free-gift-modal",
+    "version": "1.0.0",
+    "description": "Show a modal in cart when customers qualify for a free gift based on cart value",
+    "author": "DainoStore",
+    "category": "marketing",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Free Gift Modal",
+      "tags": ["gift", "modal", "cart", "promotion", "marketing"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "marketing",
+      "description": "Encourage higher cart values with free gift promotions",
+      "permissions": ["cart:read"]
+    },
+    "permissions": ["cart:read"],
+    "dependencies": [],
+    "tags": ["gift", "promotion", "cart"]
+  },
+  "files": [],
+  "events": [
+    {
+      "eventName": "cart.viewed",
+      "fileName": "cart-viewed-check-gift.js",
+      "listenerCode": "async function onCartViewedCheckGift(data) {\n  console.log('🎁 Free Gift: Checking cart eligibility');\n\n  const cartTotal = data?.total || data?.subtotal || 0;\n  const items = data?.items || [];\n\n  // Fetch gift configuration\n  try {\n    const response = await fetch('/api/plugins/free-gift-modal/exec/config');\n    const result = await response.json();\n\n    if (!result.success || !result.config.enabled) {\n      console.log('🎁 Free gift plugin disabled');\n      return;\n    }\n\n    const config = result.config;\n    const threshold = config.minimumCartValue || 50;\n    const amountToGo = threshold - cartTotal;\n\n    // Check if already shown in this session\n    const shownKey = `gift-modal-shown-${threshold}`;\n    const alreadyShown = sessionStorage.getItem(shownKey);\n\n    // If cart qualifies and modal not shown yet\n    if (cartTotal >= threshold && !alreadyShown) {\n      // Dispatch event to show modal\n      window.dispatchEvent(new CustomEvent('show-free-gift-modal', {\n        detail: {\n          qualified: true,\n          giftName: config.giftName,\n          giftImage: config.giftImage,\n          giftDescription: config.giftDescription,\n          cartTotal\n        }\n      }));\n      sessionStorage.setItem(shownKey, 'true');\n    } else if (cartTotal > 0 && amountToGo > 0 && amountToGo <= threshold * 0.5) {\n      // Show teaser if within 50% of threshold\n      window.dispatchEvent(new CustomEvent('show-gift-teaser', {\n        detail: {\n          amountToGo,\n          threshold,\n          giftName: config.giftName\n        }\n      }));\n    }\n  } catch (error) {\n    console.error('🎁 Error checking gift eligibility:', error);\n  }\n}",
+      "priority": 10
+    }
+  ],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "free-gift-modal-widget",
+      "widgetName": "Free Gift Modal",
+      "description": "Modal popup announcing free gift qualification",
+      "componentCode": "function FreeGiftModalWidget({ config = {} }) {\n  const [show, setShow] = React.useState(false);\n  const [giftData, setGiftData] = React.useState(null);\n  const [teaser, setTeaser] = React.useState(null);\n\n  React.useEffect(() => {\n    const handleShowModal = (e) => {\n      setGiftData(e.detail);\n      setShow(true);\n    };\n\n    const handleShowTeaser = (e) => {\n      setTeaser(e.detail);\n    };\n\n    window.addEventListener('show-free-gift-modal', handleShowModal);\n    window.addEventListener('show-gift-teaser', handleShowTeaser);\n\n    return () => {\n      window.removeEventListener('show-free-gift-modal', handleShowModal);\n      window.removeEventListener('show-gift-teaser', handleShowTeaser);\n    };\n  }, []);\n\n  // Teaser bar\n  if (teaser && !show) {\n    return React.createElement('div', {\n      style: {\n        position: 'fixed',\n        bottom: '20px',\n        left: '50%',\n        transform: 'translateX(-50%)',\n        background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',\n        color: 'white',\n        padding: '12px 24px',\n        borderRadius: '50px',\n        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',\n        display: 'flex',\n        alignItems: 'center',\n        gap: '8px',\n        zIndex: 1000,\n        animation: 'slideUp 0.3s ease-out'\n      }\n    },\n      React.createElement('span', { style: { fontSize: '20px' } }, '🎁'),\n      React.createElement('span', null,\n        `Add $${teaser.amountToGo.toFixed(2)} more for a FREE ${teaser.giftName}!`\n      )\n    );\n  }\n\n  if (!show || !giftData) return null;\n\n  return React.createElement('div', {\n    style: {\n      position: 'fixed',\n      inset: 0,\n      backgroundColor: 'rgba(0,0,0,0.5)',\n      display: 'flex',\n      alignItems: 'center',\n      justifyContent: 'center',\n      zIndex: 1000\n    },\n    onClick: () => setShow(false)\n  },\n    React.createElement('div', {\n      style: {\n        background: 'white',\n        borderRadius: '16px',\n        padding: '32px',\n        maxWidth: '400px',\n        textAlign: 'center',\n        position: 'relative',\n        animation: 'scaleIn 0.3s ease-out'\n      },\n      onClick: (e) => e.stopPropagation()\n    },\n      // Confetti effect\n      React.createElement('div', {\n        style: {\n          position: 'absolute',\n          top: '-20px',\n          left: '50%',\n          transform: 'translateX(-50%)',\n          fontSize: '60px'\n        }\n      }, '🎉'),\n\n      React.createElement('h2', {\n        style: {\n          fontSize: '24px',\n          fontWeight: 'bold',\n          marginTop: '40px',\n          marginBottom: '16px',\n          background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',\n          WebkitBackgroundClip: 'text',\n          WebkitTextFillColor: 'transparent'\n        }\n      }, 'Congratulations!'),\n\n      React.createElement('p', {\n        style: {\n          color: '#6b7280',\n          marginBottom: '24px'\n        }\n      }, \"You've unlocked a FREE gift!\"),\n\n      giftData.giftImage && React.createElement('img', {\n        src: giftData.giftImage,\n        alt: giftData.giftName,\n        style: {\n          width: '120px',\n          height: '120px',\n          objectFit: 'cover',\n          borderRadius: '12px',\n          margin: '0 auto 16px',\n          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'\n        }\n      }),\n\n      React.createElement('h3', {\n        style: {\n          fontSize: '18px',\n          fontWeight: '600',\n          marginBottom: '8px'\n        }\n      }, giftData.giftName || 'Free Gift'),\n\n      giftData.giftDescription && React.createElement('p', {\n        style: {\n          color: '#9ca3af',\n          fontSize: '14px',\n          marginBottom: '24px'\n        }\n      }, giftData.giftDescription),\n\n      React.createElement('p', {\n        style: {\n          color: '#10b981',\n          fontWeight: '500',\n          marginBottom: '24px'\n        }\n      }, 'Added to your cart automatically!'),\n\n      React.createElement('button', {\n        onClick: () => setShow(false),\n        style: {\n          background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',\n          color: 'white',\n          border: 'none',\n          padding: '12px 32px',\n          borderRadius: '8px',\n          fontSize: '16px',\n          fontWeight: '600',\n          cursor: 'pointer'\n        }\n      }, 'Continue Shopping')\n    )\n  );\n}",
+      "defaultConfig": {},
+      "category": "marketing",
+      "icon": "Gift"
+    }
+  ],
+  "entities": [],
+  "migrations": [],
+  "controllers": [
+    {
+      "name": "getGiftConfig",
+      "method": "GET",
+      "path": "/config",
+      "code": "async function getGiftConfig(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(`\n      SELECT value FROM plugin_data \n      WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'free-gift-modal' LIMIT 1)\n      AND key = 'config'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const config = result[0]?.value || {\n      enabled: false,\n      minimumCartValue: 50,\n      giftName: 'Free Sample',\n      giftDescription: 'A special gift just for you!',\n      giftImage: null,\n      giftProductId: null\n    };\n\n    return res.json({ success: true, config });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get gift configuration"
+    },
+    {
+      "name": "updateGiftConfig",
+      "method": "POST",
+      "path": "/config",
+      "code": "async function updateGiftConfig(req, res, { sequelize }) {\n  const { enabled, minimumCartValue, giftName, giftDescription, giftImage, giftProductId } = req.body;\n\n  try {\n    const config = {\n      enabled: enabled || false,\n      minimumCartValue: minimumCartValue || 50,\n      giftName: giftName || 'Free Sample',\n      giftDescription: giftDescription || 'A special gift just for you!',\n      giftImage: giftImage || null,\n      giftProductId: giftProductId || null\n    };\n\n    await sequelize.query(`\n      INSERT INTO plugin_data (plugin_id, key, value, created_at, updated_at)\n      SELECT id, 'config', $1::jsonb, NOW(), NOW()\n      FROM plugin_registry WHERE slug = 'free-gift-modal'\n      ON CONFLICT (plugin_id, key) DO UPDATE\n      SET value = $1::jsonb, updated_at = NOW()\n    `, {\n      bind: [JSON.stringify(config)],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, config });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Update gift configuration"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "enabled": true,
+        "minimumCartValue": 50,
+        "giftName": "Deluxe Sample Kit",
+        "giftDescription": "Try our best-selling products!",
+        "giftImage": null,
+        "giftProductId": null
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Free Gift Modal Plugin\n\nIncentivize customers to increase their cart value by offering free gifts.\n\n## Features\n\n- Customizable cart value threshold\n- Animated celebration modal\n- Teaser bar when close to threshold\n- Session-aware (only shows once per session)\n- Configurable gift details\n\n## How It Works\n\n1. Customer adds items to cart\n2. When within 50% of threshold, a teaser bar appears\n3. When threshold is met, a celebration modal shows\n4. Gift is automatically added to cart\n\n## Configuration\n\n| Setting | Description |\n|---------|-------------|\n| minimumCartValue | Cart total needed for gift |\n| giftName | Display name of the gift |\n| giftDescription | Short description |\n| giftImage | URL to gift image |\n| giftProductId | Product to auto-add to cart |\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

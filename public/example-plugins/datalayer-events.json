@@ -1,0 +1,156 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "DataLayer Events",
+    "slug": "datalayer-events",
+    "version": "1.0.0",
+    "description": "Push customer events to dataLayer for Google Tag Manager and optionally send to n8n webhook",
+    "author": "DainoStore",
+    "category": "analytics",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "DataLayer Events",
+      "tags": ["analytics", "datalayer", "gtm", "n8n", "webhook", "tracking"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "analytics",
+      "description": "Track customer events and send to analytics platforms",
+      "permissions": ["customers:read", "orders:read"]
+    },
+    "permissions": ["customers:read", "orders:read"],
+    "dependencies": [],
+    "tags": ["analytics", "gtm", "n8n"]
+  },
+  "files": [
+    {
+      "name": "utils/datalayer.js",
+      "content": "// DataLayer Events Plugin - Utilities\n\nwindow.dataLayer = window.dataLayer || [];\n\nconst DataLayerUtils = {\n  push(event, data = {}) {\n    const payload = {\n      event,\n      timestamp: new Date().toISOString(),\n      ...data\n    };\n    window.dataLayer.push(payload);\n    console.log('📊 DataLayer push:', payload);\n    return payload;\n  },\n\n  pushUserEvent(eventName, userData) {\n    return this.push(eventName, {\n      user: {\n        id: userData.id,\n        email: userData.email,\n        name: userData.name,\n        isLoggedIn: true\n      }\n    });\n  },\n\n  pushEcommerceEvent(eventName, ecomData) {\n    return this.push(eventName, {\n      ecommerce: ecomData\n    });\n  }\n};\n\nwindow.DataLayerUtils = DataLayerUtils;\nconsole.log('✅ DataLayer utilities loaded');\n",
+      "type": "js",
+      "scope": "frontend",
+      "priority": 0
+    }
+  ],
+  "events": [
+    {
+      "eventName": "customer.login",
+      "fileName": "customer-login-track.js",
+      "listenerCode": "async function onCustomerLoginTrack(data) {\n  console.log('📊 DataLayer: Tracking customer login');\n\n  const customer = data?.customer || data;\n  if (!customer?.id) return;\n\n  // Push to dataLayer\n  window.dataLayer = window.dataLayer || [];\n  window.dataLayer.push({\n    event: 'customer_login',\n    timestamp: new Date().toISOString(),\n    user: {\n      id: customer.id,\n      email: customer.email,\n      name: customer.name || customer.first_name,\n      isLoggedIn: true,\n      customerType: customer.customer_type || 'registered'\n    }\n  });\n\n  console.log('📊 Pushed customer_login to dataLayer');\n\n  // Send to n8n webhook if configured\n  try {\n    const configResponse = await fetch('/api/plugins/datalayer-events/exec/config');\n    const configResult = await configResponse.json();\n\n    if (configResult.success && configResult.config.n8nWebhookUrl) {\n      const webhookUrl = configResult.config.n8nWebhookUrl;\n\n      await fetch(webhookUrl, {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          event: 'customer_login',\n          timestamp: new Date().toISOString(),\n          customer: {\n            id: customer.id,\n            email: customer.email,\n            name: customer.name\n          },\n          source: 'datalayer-events-plugin'\n        })\n      });\n      console.log('📊 Sent to n8n webhook');\n    }\n  } catch (error) {\n    console.error('📊 Error sending to webhook:', error);\n  }\n}",
+      "priority": 10
+    },
+    {
+      "eventName": "customer.registered",
+      "fileName": "customer-registered-track.js",
+      "listenerCode": "async function onCustomerRegisteredTrack(data) {\n  console.log('📊 DataLayer: Tracking customer registration');\n\n  const customer = data?.customer || data;\n  if (!customer?.id) return;\n\n  window.dataLayer = window.dataLayer || [];\n  window.dataLayer.push({\n    event: 'sign_up',\n    timestamp: new Date().toISOString(),\n    method: 'email',\n    user: {\n      id: customer.id,\n      email: customer.email\n    }\n  });\n\n  // Send to n8n webhook\n  try {\n    const configResponse = await fetch('/api/plugins/datalayer-events/exec/config');\n    const configResult = await configResponse.json();\n\n    if (configResult.success && configResult.config.n8nWebhookUrl) {\n      await fetch(configResult.config.n8nWebhookUrl, {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          event: 'customer_registered',\n          timestamp: new Date().toISOString(),\n          customer: {\n            id: customer.id,\n            email: customer.email\n          },\n          source: 'datalayer-events-plugin'\n        })\n      });\n    }\n  } catch (error) {\n    console.error('📊 Error sending to webhook:', error);\n  }\n}",
+      "priority": 10
+    },
+    {
+      "eventName": "order.completed",
+      "fileName": "order-completed-track.js",
+      "listenerCode": "async function onOrderCompletedTrack(data) {\n  console.log('📊 DataLayer: Tracking order completion');\n\n  const order = data?.order || data;\n  if (!order?.id) return;\n\n  window.dataLayer = window.dataLayer || [];\n  window.dataLayer.push({\n    event: 'purchase',\n    timestamp: new Date().toISOString(),\n    ecommerce: {\n      transaction_id: order.id,\n      value: order.total,\n      currency: order.currency || 'USD',\n      items: (order.items || []).map(item => ({\n        item_id: item.product_id,\n        item_name: item.name,\n        price: item.price,\n        quantity: item.quantity\n      }))\n    }\n  });\n\n  // Send to n8n webhook\n  try {\n    const configResponse = await fetch('/api/plugins/datalayer-events/exec/config');\n    const configResult = await configResponse.json();\n\n    if (configResult.success && configResult.config.n8nWebhookUrl) {\n      await fetch(configResult.config.n8nWebhookUrl, {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          event: 'order_completed',\n          timestamp: new Date().toISOString(),\n          order: {\n            id: order.id,\n            total: order.total,\n            itemCount: order.items?.length || 0\n          },\n          customer: order.customer,\n          source: 'datalayer-events-plugin'\n        })\n      });\n    }\n  } catch (error) {\n    console.error('📊 Error sending to webhook:', error);\n  }\n}",
+      "priority": 10
+    },
+    {
+      "eventName": "product.viewed",
+      "fileName": "product-viewed-track.js",
+      "listenerCode": "function onProductViewedTrack(data) {\n  console.log('📊 DataLayer: Tracking product view');\n\n  const product = data?.product || data;\n  if (!product?.id) return;\n\n  window.dataLayer = window.dataLayer || [];\n  window.dataLayer.push({\n    event: 'view_item',\n    timestamp: new Date().toISOString(),\n    ecommerce: {\n      items: [{\n        item_id: product.id,\n        item_name: product.name,\n        price: product.price,\n        item_category: product.category\n      }]\n    }\n  });\n}",
+      "priority": 10
+    },
+    {
+      "eventName": "cart.item_added",
+      "fileName": "cart-item-added-track.js",
+      "listenerCode": "function onCartItemAddedTrack(data) {\n  console.log('📊 DataLayer: Tracking add to cart');\n\n  const item = data?.item || data;\n  if (!item) return;\n\n  window.dataLayer = window.dataLayer || [];\n  window.dataLayer.push({\n    event: 'add_to_cart',\n    timestamp: new Date().toISOString(),\n    ecommerce: {\n      items: [{\n        item_id: item.product_id || item.id,\n        item_name: item.name,\n        price: item.price,\n        quantity: item.quantity || 1\n      }]\n    }\n  });\n}",
+      "priority": 10
+    }
+  ],
+  "hooks": [],
+  "widgets": [],
+  "entities": [
+    {
+      "name": "TrackedEvent",
+      "tableName": "tracked_events",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "event_name", "type": "VARCHAR(100)", "notNull": true },
+          { "name": "event_data", "type": "JSONB", "default": "'{}'" },
+          { "name": "customer_id", "type": "UUID", "nullable": true },
+          { "name": "session_id", "type": "VARCHAR(255)", "nullable": true },
+          { "name": "sent_to_webhook", "type": "BOOLEAN", "default": "false" },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_tracked_events_name", "columns": ["event_name"] },
+          { "name": "idx_tracked_events_customer", "columns": ["customer_id"] },
+          { "name": "idx_tracked_events_created", "columns": ["created_at"], "order": "DESC" }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Log of tracked events for debugging and replay"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_tracked_events_table",
+      "pluginName": "DataLayer Events",
+      "migrationVersion": "1704067200000_create_tracked_events",
+      "code": "CREATE TABLE IF NOT EXISTS tracked_events (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  event_name VARCHAR(100) NOT NULL,\n  event_data JSONB DEFAULT '{}',\n  customer_id UUID,\n  session_id VARCHAR(255),\n  sent_to_webhook BOOLEAN DEFAULT false,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_tracked_events_name ON tracked_events(event_name);\nCREATE INDEX IF NOT EXISTS idx_tracked_events_customer ON tracked_events(customer_id);\nCREATE INDEX IF NOT EXISTS idx_tracked_events_created ON tracked_events(created_at DESC);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "getConfig",
+      "method": "GET",
+      "path": "/config",
+      "code": "async function getConfig(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(`\n      SELECT value FROM plugin_data \n      WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'datalayer-events' LIMIT 1)\n      AND key = 'config'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const config = result[0]?.value || {\n      enabled: true,\n      n8nWebhookUrl: null,\n      trackLogin: true,\n      trackRegistration: true,\n      trackOrders: true,\n      trackProductViews: true,\n      trackAddToCart: true\n    };\n\n    return res.json({ success: true, config });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get tracking configuration"
+    },
+    {
+      "name": "updateConfig",
+      "method": "POST",
+      "path": "/config",
+      "code": "async function updateConfig(req, res, { sequelize }) {\n  const config = req.body;\n\n  try {\n    await sequelize.query(`\n      INSERT INTO plugin_data (plugin_id, key, value, created_at, updated_at)\n      SELECT id, 'config', $1::jsonb, NOW(), NOW()\n      FROM plugin_registry WHERE slug = 'datalayer-events'\n      ON CONFLICT (plugin_id, key) DO UPDATE\n      SET value = $1::jsonb, updated_at = NOW()\n    `, {\n      bind: [JSON.stringify(config)],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, config });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Update tracking configuration"
+    },
+    {
+      "name": "getRecentEvents",
+      "method": "GET",
+      "path": "/events",
+      "code": "async function getRecentEvents(req, res, { sequelize }) {\n  const { limit = 50, event_name } = req.query;\n\n  try {\n    let query = 'SELECT * FROM tracked_events';\n    const params = [];\n\n    if (event_name) {\n      query += ' WHERE event_name = $1';\n      params.push(event_name);\n    }\n\n    query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1);\n    params.push(parseInt(limit));\n\n    const result = await sequelize.query(query, {\n      bind: params,\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, events: result });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get recent tracked events"
+    },
+    {
+      "name": "testWebhook",
+      "method": "POST",
+      "path": "/test-webhook",
+      "code": "async function testWebhook(req, res, { sequelize }) {\n  const { webhookUrl } = req.body;\n\n  if (!webhookUrl) {\n    return res.status(400).json({ success: false, error: 'Webhook URL required' });\n  }\n\n  try {\n    const response = await fetch(webhookUrl, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        event: 'test_event',\n        timestamp: new Date().toISOString(),\n        message: 'Test from DataLayer Events plugin',\n        source: 'datalayer-events-plugin'\n      })\n    });\n\n    if (response.ok) {\n      return res.json({ success: true, message: 'Webhook test successful!' });\n    } else {\n      return res.json({ success: false, error: `Webhook returned ${response.status}` });\n    }\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Test n8n webhook connection"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "enabled": true,
+        "n8nWebhookUrl": null,
+        "trackLogin": true,
+        "trackRegistration": true,
+        "trackOrders": true,
+        "trackProductViews": true,
+        "trackAddToCart": true
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# DataLayer Events Plugin\n\nPush customer events to Google Tag Manager dataLayer and optionally send to n8n webhook.\n\n## Events Tracked\n\n| Event | DataLayer Event | Description |\n|-------|-----------------|-------------|\n| customer.login | customer_login | User signs in |\n| customer.registered | sign_up | New user registration |\n| order.completed | purchase | Order placed |\n| product.viewed | view_item | Product page view |\n| cart.item_added | add_to_cart | Item added to cart |\n\n## n8n Integration\n\n1. Create a webhook node in n8n\n2. Copy the webhook URL\n3. Paste in plugin settings\n4. All tracked events will be sent to your n8n workflow\n\n## DataLayer Format\n\n```javascript\nwindow.dataLayer.push({\n  event: 'customer_login',\n  timestamp: '2026-01-01T12:00:00.000Z',\n  user: {\n    id: 'uuid',\n    email: 'customer@example.com',\n    isLoggedIn: true\n  }\n});\n```\n\n## Google Tag Manager\n\nCreate triggers based on these events to fire your marketing tags.\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

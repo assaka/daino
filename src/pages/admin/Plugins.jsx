@@ -44,7 +44,18 @@ import {
   Terminal,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  Gift,
+  MessageCircle,
+  Ruler,
+  Activity,
+  Construction,
+  Timer,
+  MousePointerClick,
+  History,
+  MessageCircleQuestion,
+  Award,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,6 +116,108 @@ export default function Plugins() {
   const [showHowToDialog, setShowHowToDialog] = useState(false);
   const [showCreatePluginDialog, setShowCreatePluginDialog] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
+  const [showExamplePlugins, setShowExamplePlugins] = useState(false);
+  const [installingExample, setInstallingExample] = useState(null);
+
+  // Example plugins available for one-click install
+  const examplePlugins = [
+    {
+      id: 'maintenance-banner',
+      name: 'Maintenance Banner',
+      description: 'Show a banner below the navbar during store maintenance or important announcements',
+      icon: Construction,
+      color: 'from-orange-500 to-red-500',
+      file: 'maintenance-banner.json'
+    },
+    {
+      id: 'free-gift-modal',
+      name: 'Free Gift Modal',
+      description: 'Display a modal in cart when customer qualifies for a free gift based on cart value',
+      icon: Gift,
+      color: 'from-pink-500 to-purple-500',
+      file: 'free-gift-modal.json'
+    },
+    {
+      id: 'size-guide',
+      name: 'Size Guide',
+      description: 'Show size guide on product detail page based on product size attributes',
+      icon: Ruler,
+      color: 'from-blue-500 to-cyan-500',
+      file: 'size-guide.json'
+    },
+    {
+      id: 'datalayer-events',
+      name: 'DataLayer Events',
+      description: 'Push customer events to dataLayer and send to n8n webhook for analytics',
+      icon: Activity,
+      color: 'from-green-500 to-teal-500',
+      file: 'datalayer-events.json'
+    },
+    {
+      id: 'live-chat',
+      name: 'Live Chat',
+      description: 'Simple chat widget for customer support with admin dashboard',
+      icon: MessageCircle,
+      color: 'from-indigo-500 to-purple-500',
+      file: 'live-chat.json'
+    },
+    {
+      id: 'opening-times',
+      name: 'Opening Times',
+      description: 'Display store opening hours in footer with open/closed status indicator',
+      icon: Timer,
+      color: 'from-amber-500 to-orange-500',
+      file: 'opening-times.json'
+    },
+    {
+      id: 'product-reviews',
+      name: 'Product Reviews',
+      description: 'Full review system with ratings, moderation, verified purchases and helpful votes',
+      icon: Star,
+      color: 'from-yellow-500 to-orange-500',
+      file: 'product-reviews.json'
+    },
+    {
+      id: 'exit-intent-popup',
+      name: 'Exit Intent Popup',
+      description: 'Show discount popup when visitor moves cursor to leave the page',
+      icon: MousePointerClick,
+      color: 'from-rose-500 to-pink-500',
+      file: 'exit-intent-popup.json'
+    },
+    {
+      id: 'recently-viewed',
+      name: 'Recently Viewed Products',
+      description: 'Track and display products customers have recently viewed',
+      icon: History,
+      color: 'from-slate-500 to-gray-500',
+      file: 'recently-viewed.json'
+    },
+    {
+      id: 'product-qa',
+      name: 'Product Q&A',
+      description: 'Allow customers to ask questions about products with moderation',
+      icon: MessageCircleQuestion,
+      color: 'from-cyan-500 to-blue-500',
+      file: 'product-qa.json'
+    },
+    {
+      id: 'loyalty-points',
+      name: 'Loyalty Points',
+      description: 'Reward customers with points for purchases and registrations',
+      icon: Award,
+      color: 'from-violet-500 to-purple-500',
+      file: 'loyalty-points.json'
+    },
+    {
+      id: 'age-verification',
+      name: 'Age Verification',
+      description: 'Gate age-restricted products with verification modal',
+      icon: ShieldCheck,
+      color: 'from-red-500 to-rose-500',
+      file: 'age-verification.json'
+    }
+  ];
 
   // CodeBlock component with copy functionality
   const CodeBlock = ({ code, language = 'javascript', title }) => {
@@ -506,6 +619,39 @@ export default function Plugins() {
     setNewPluginData({ name: '', description: '', category: 'integration' });
   };
 
+  const handleInstallExamplePlugin = async (example) => {
+    setInstallingExample(example.id);
+    try {
+      // Fetch the plugin JSON from public folder
+      const response = await fetch(`/example-plugins/${example.file}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch plugin package');
+      }
+      const packageData = await response.json();
+
+      // Add userId to request
+      packageData.userId = user?.id;
+
+      // Call import endpoint
+      const result = await apiClient.post('plugins/import', packageData);
+
+      setFlashMessage({
+        type: 'success',
+        message: `"${example.name}" installed successfully! You can now edit it in AI Workspace.`
+      });
+      setShowExamplePlugins(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error installing example plugin:', error);
+      setFlashMessage({
+        type: 'error',
+        message: 'Error installing plugin: ' + error.message
+      });
+    } finally {
+      setInstallingExample(null);
+    }
+  };
+
   // Different filtering for different contexts
   const getFilteredPlugins = (tabFilter = 'marketplace') => {
     return plugins.filter(plugin => {
@@ -581,20 +727,19 @@ export default function Plugins() {
               Create with AI
             </Button>
             <Button
+              onClick={() => setShowExamplePlugins(true)}
+              variant="outline"
+              className="border-green-300 text-green-700 hover:bg-green-50"
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Example Plugins
+            </Button>
+            <Button
               onClick={() => setShowImportDialog(true)}
               variant="outline"
             >
               <Upload className="w-4 h-4 mr-2" />
               Import Plugin
-            </Button>
-            <Button
-              onClick={() => setShowGitHubInstall(true)}
-              variant="outline"
-              disabled
-              className="opacity-50 cursor-not-allowed"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Install from GitHub
             </Button>
           </div>
         </div>
@@ -1477,6 +1622,83 @@ export default function Plugins() {
                     </>
                   )}
                 </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Example Plugins Dialog */}
+        <Dialog open={showExamplePlugins} onOpenChange={setShowExamplePlugins}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-green-600" />
+                Example Plugins
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Install pre-built plugins to add features to your store. Each plugin can be customized after installation.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {examplePlugins.map((example) => {
+                  const IconComponent = example.icon;
+                  const isInstalling = installingExample === example.id;
+                  const isAlreadyInstalled = plugins.some(p =>
+                    p.slug === example.id || p.name.toLowerCase().replace(/\s+/g, '-') === example.id
+                  );
+
+                  return (
+                    <Card key={example.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${example.color} flex items-center justify-center flex-shrink-0`}>
+                            <IconComponent className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900 mb-1">{example.name}</h4>
+                            <p className="text-xs text-gray-600 line-clamp-2 mb-3">
+                              {example.description}
+                            </p>
+                            <Button
+                              size="sm"
+                              onClick={() => handleInstallExamplePlugin(example)}
+                              disabled={isInstalling || isAlreadyInstalled}
+                              className={isAlreadyInstalled
+                                ? "bg-gray-100 text-gray-500"
+                                : "bg-green-600 hover:bg-green-700 text-white"
+                              }
+                            >
+                              {isInstalling ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  Installing...
+                                </>
+                              ) : isAlreadyInstalled ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Installed
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-3 h-3 mr-1" />
+                                  Install
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Tip:</strong> After installing, go to <strong>AI Workspace</strong> to customize the plugin code, add features, or modify the styling.
+                </p>
               </div>
             </div>
           </DialogContent>

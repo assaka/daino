@@ -1,0 +1,84 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Recently Viewed Products",
+    "slug": "recently-viewed",
+    "version": "1.0.0",
+    "description": "Show customers their recently viewed products with persistent storage",
+    "author": "DainoStore",
+    "category": "display",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Recently Viewed Products",
+      "tags": ["recently-viewed", "history", "products", "browsing"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "display",
+      "description": "Display recently viewed products to encourage return visits",
+      "permissions": ["products:read"]
+    },
+    "permissions": ["products:read"],
+    "dependencies": [],
+    "tags": ["recently-viewed", "history", "products"]
+  },
+  "files": [],
+  "events": [
+    {
+      "eventName": "product.viewed",
+      "fileName": "track-product-view.js",
+      "listenerCode": "function onTrackProductView(data) {\n  console.log('📦 Recently Viewed: Tracking product view');\n\n  const product = data?.product || data;\n  if (!product?.id) return;\n\n  const storageKey = 'recently_viewed_products';\n  const maxItems = 12;\n\n  try {\n    const stored = localStorage.getItem(storageKey);\n    let items = stored ? JSON.parse(stored) : [];\n\n    // Remove if already exists\n    items = items.filter(item => item.id !== product.id);\n\n    // Add to beginning\n    items.unshift({\n      id: product.id,\n      name: product.name,\n      slug: product.slug,\n      price: product.price,\n      image: product.images?.[0]?.url || product.image,\n      viewedAt: new Date().toISOString()\n    });\n\n    // Limit to max items\n    items = items.slice(0, maxItems);\n\n    localStorage.setItem(storageKey, JSON.stringify(items));\n    console.log('📦 Stored recently viewed product:', product.name);\n  } catch (error) {\n    console.error('📦 Error storing recently viewed:', error);\n  }\n}",
+      "priority": 10
+    }
+  ],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "recently-viewed-widget",
+      "widgetName": "Recently Viewed Products",
+      "description": "Carousel of recently viewed products",
+      "componentCode": "function RecentlyViewedWidget({ config = {} }) {\n  const [products, setProducts] = React.useState([]);\n  const [scrollPosition, setScrollPosition] = React.useState(0);\n\n  const {\n    title = 'Recently Viewed',\n    maxDisplay = 6,\n    showPrice = true,\n    excludeCurrent = true,\n    cardStyle = 'compact'\n  } = config;\n\n  React.useEffect(() => {\n    const loadProducts = () => {\n      try {\n        const stored = localStorage.getItem('recently_viewed_products');\n        if (!stored) return;\n\n        let items = JSON.parse(stored);\n\n        // Exclude current product if on product page\n        if (excludeCurrent) {\n          const currentSlug = window.location.pathname.split('/').pop();\n          items = items.filter(item => item.slug !== currentSlug);\n        }\n\n        setProducts(items.slice(0, maxDisplay));\n      } catch (error) {\n        console.error('Error loading recently viewed:', error);\n      }\n    };\n\n    loadProducts();\n    window.addEventListener('storage', loadProducts);\n    return () => window.removeEventListener('storage', loadProducts);\n  }, [maxDisplay, excludeCurrent]);\n\n  const scroll = (direction) => {\n    const container = document.getElementById('recently-viewed-container');\n    if (!container) return;\n    const scrollAmount = 220;\n    const newPosition = direction === 'left' \n      ? scrollPosition - scrollAmount \n      : scrollPosition + scrollAmount;\n    container.scrollTo({ left: newPosition, behavior: 'smooth' });\n    setScrollPosition(newPosition);\n  };\n\n  if (products.length === 0) return null;\n\n  const formatPrice = (price) => {\n    return new Intl.NumberFormat('en-US', {\n      style: 'currency',\n      currency: 'USD'\n    }).format(price);\n  };\n\n  return React.createElement('div', {\n    style: {\n      padding: '24px 0',\n      position: 'relative'\n    }\n  },\n    // Title\n    React.createElement('h3', {\n      style: {\n        fontSize: '20px',\n        fontWeight: '600',\n        marginBottom: '16px',\n        color: '#111827'\n      }\n    }, title),\n\n    // Navigation buttons\n    products.length > 4 && React.createElement('div', {\n      style: {\n        position: 'absolute',\n        top: '50%',\n        left: '-12px',\n        right: '-12px',\n        display: 'flex',\n        justifyContent: 'space-between',\n        pointerEvents: 'none',\n        zIndex: 10\n      }\n    },\n      React.createElement('button', {\n        onClick: () => scroll('left'),\n        style: {\n          width: '36px',\n          height: '36px',\n          borderRadius: '50%',\n          background: 'white',\n          border: '1px solid #e5e7eb',\n          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',\n          cursor: 'pointer',\n          pointerEvents: 'auto',\n          display: 'flex',\n          alignItems: 'center',\n          justifyContent: 'center'\n        }\n      }, '<'),\n      React.createElement('button', {\n        onClick: () => scroll('right'),\n        style: {\n          width: '36px',\n          height: '36px',\n          borderRadius: '50%',\n          background: 'white',\n          border: '1px solid #e5e7eb',\n          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',\n          cursor: 'pointer',\n          pointerEvents: 'auto',\n          display: 'flex',\n          alignItems: 'center',\n          justifyContent: 'center'\n        }\n      }, '>')\n    ),\n\n    // Products container\n    React.createElement('div', {\n      id: 'recently-viewed-container',\n      style: {\n        display: 'flex',\n        gap: '16px',\n        overflowX: 'auto',\n        scrollBehavior: 'smooth',\n        paddingBottom: '8px',\n        scrollbarWidth: 'none',\n        msOverflowStyle: 'none'\n      }\n    },\n      products.map((product, index) =>\n        React.createElement('a', {\n          key: product.id,\n          href: `/products/${product.slug}`,\n          style: {\n            flexShrink: 0,\n            width: cardStyle === 'compact' ? '160px' : '200px',\n            textDecoration: 'none',\n            color: 'inherit'\n          }\n        },\n          React.createElement('div', {\n            style: {\n              background: '#f9fafb',\n              borderRadius: '12px',\n              overflow: 'hidden',\n              transition: 'transform 0.2s, box-shadow 0.2s'\n            },\n            onMouseEnter: (e) => {\n              e.currentTarget.style.transform = 'translateY(-4px)';\n              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';\n            },\n            onMouseLeave: (e) => {\n              e.currentTarget.style.transform = 'translateY(0)';\n              e.currentTarget.style.boxShadow = 'none';\n            }\n          },\n            // Image\n            React.createElement('div', {\n              style: {\n                aspectRatio: '1',\n                background: '#e5e7eb',\n                overflow: 'hidden'\n              }\n            },\n              product.image && React.createElement('img', {\n                src: product.image,\n                alt: product.name,\n                style: {\n                  width: '100%',\n                  height: '100%',\n                  objectFit: 'cover'\n                }\n              })\n            ),\n\n            // Info\n            React.createElement('div', {\n              style: { padding: '12px' }\n            },\n              React.createElement('p', {\n                style: {\n                  fontSize: '14px',\n                  fontWeight: '500',\n                  color: '#374151',\n                  overflow: 'hidden',\n                  textOverflow: 'ellipsis',\n                  whiteSpace: 'nowrap',\n                  marginBottom: '4px'\n                }\n              }, product.name),\n\n              showPrice && product.price && React.createElement('p', {\n                style: {\n                  fontSize: '14px',\n                  fontWeight: '600',\n                  color: '#111827'\n                }\n              }, formatPrice(product.price))\n            )\n          )\n        )\n      )\n    ),\n\n    // Clear button\n    React.createElement('button', {\n      onClick: () => {\n        localStorage.removeItem('recently_viewed_products');\n        setProducts([]);\n      },\n      style: {\n        marginTop: '12px',\n        fontSize: '12px',\n        color: '#6b7280',\n        background: 'none',\n        border: 'none',\n        cursor: 'pointer',\n        textDecoration: 'underline'\n      }\n    }, 'Clear history')\n  );\n}",
+      "defaultConfig": {
+        "title": "Recently Viewed",
+        "maxDisplay": 6,
+        "showPrice": true,
+        "excludeCurrent": true,
+        "cardStyle": "compact"
+      },
+      "category": "display",
+      "icon": "History"
+    }
+  ],
+  "entities": [],
+  "migrations": [],
+  "controllers": [
+    {
+      "name": "getRecentlyViewed",
+      "method": "GET",
+      "path": "/products",
+      "code": "async function getRecentlyViewed(req, res, { sequelize }) {\n  const { productIds } = req.query;\n\n  if (!productIds) {\n    return res.json({ success: true, products: [] });\n  }\n\n  try {\n    const ids = productIds.split(',');\n    const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');\n\n    const products = await sequelize.query(`\n      SELECT id, name, slug, price, images\n      FROM products\n      WHERE id IN (${placeholders})\n    `, {\n      bind: ids,\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, products });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get product details for recently viewed items"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "maxItems": 12,
+        "enabled": true
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Recently Viewed Products Plugin\n\nTrack and display products customers have recently viewed.\n\n## Features\n\n- Automatic tracking on product view\n- Persistent localStorage storage\n- Horizontal scrolling carousel\n- Excludes current product\n- Clear history option\n- Hover effects\n\n## Widget Configuration\n\n| Setting | Description |\n|---------|-------------|\n| title | Widget heading |\n| maxDisplay | Max products to show |\n| showPrice | Show product prices |\n| excludeCurrent | Hide current product |\n| cardStyle | 'compact' or 'large' |\n\n## How It Works\n\n1. When customer views a product, the `product.viewed` event fires\n2. Plugin stores product info in localStorage\n3. Widget reads from localStorage and displays products\n4. Clicking a product navigates to that product page\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

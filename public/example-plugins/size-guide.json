@@ -1,0 +1,120 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Size Guide",
+    "slug": "size-guide",
+    "version": "1.0.0",
+    "description": "Display product size guides on product detail pages based on product category or size attributes",
+    "author": "DainoStore",
+    "category": "display",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Size Guide",
+      "tags": ["size", "guide", "product", "clothing", "measurements"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "display",
+      "description": "Help customers find the right size with detailed measurement guides",
+      "permissions": ["products:read"]
+    },
+    "permissions": ["products:read"],
+    "dependencies": [],
+    "tags": ["size", "guide", "product"]
+  },
+  "files": [],
+  "events": [
+    {
+      "eventName": "product.viewed",
+      "fileName": "product-viewed-size-guide.js",
+      "listenerCode": "async function onProductViewedSizeGuide(data) {\n  console.log('📏 Size Guide: Checking product for size guide');\n\n  const product = data?.product || data;\n  const productId = product?.id;\n  const category = product?.category?.toLowerCase() || '';\n  const hasSize = product?.variants?.some(v => v.option_name?.toLowerCase() === 'size') ||\n                  product?.options?.some(o => o.name?.toLowerCase() === 'size');\n\n  if (!hasSize && !['clothing', 'shoes', 'apparel', 'fashion'].some(c => category.includes(c))) {\n    console.log('📏 No size attribute found, skipping size guide');\n    return;\n  }\n\n  // Fetch size guide configuration\n  try {\n    const response = await fetch(`/api/plugins/size-guide/exec/guide?category=${encodeURIComponent(category)}`);\n    const result = await response.json();\n\n    if (result.success && result.guide) {\n      window.dispatchEvent(new CustomEvent('show-size-guide-button', {\n        detail: {\n          productId,\n          category,\n          guide: result.guide\n        }\n      }));\n    }\n  } catch (error) {\n    console.error('📏 Error loading size guide:', error);\n  }\n}",
+      "priority": 10
+    }
+  ],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "size-guide-widget",
+      "widgetName": "Size Guide Widget",
+      "description": "Size guide button and modal for product pages",
+      "componentCode": "function SizeGuideWidget() {\n  const [show, setShow] = React.useState(false);\n  const [guideData, setGuideData] = React.useState(null);\n  const [showButton, setShowButton] = React.useState(false);\n  const [unit, setUnit] = React.useState('cm');\n\n  React.useEffect(() => {\n    const handleShowButton = (e) => {\n      setGuideData(e.detail);\n      setShowButton(true);\n    };\n\n    window.addEventListener('show-size-guide-button', handleShowButton);\n    return () => window.removeEventListener('show-size-guide-button', handleShowButton);\n  }, []);\n\n  const convertToInches = (cm) => (cm / 2.54).toFixed(1);\n\n  if (!showButton) return null;\n\n  const guide = guideData?.guide || {};\n  const sizes = guide.sizes || [\n    { size: 'XS', chest: 86, waist: 71, hips: 91 },\n    { size: 'S', chest: 91, waist: 76, hips: 96 },\n    { size: 'M', chest: 96, waist: 81, hips: 101 },\n    { size: 'L', chest: 101, waist: 86, hips: 106 },\n    { size: 'XL', chest: 106, waist: 91, hips: 111 },\n    { size: 'XXL', chest: 111, waist: 96, hips: 116 }\n  ];\n\n  return React.createElement(React.Fragment, null,\n    // Size Guide Button\n    React.createElement('button', {\n      onClick: () => setShow(true),\n      style: {\n        display: 'flex',\n        alignItems: 'center',\n        gap: '6px',\n        padding: '8px 16px',\n        border: '1px solid #e5e7eb',\n        borderRadius: '6px',\n        background: 'white',\n        color: '#374151',\n        fontSize: '14px',\n        cursor: 'pointer',\n        marginTop: '12px'\n      }\n    },\n      React.createElement('span', null, '📏'),\n      'Size Guide'\n    ),\n\n    // Modal\n    show && React.createElement('div', {\n      style: {\n        position: 'fixed',\n        inset: 0,\n        backgroundColor: 'rgba(0,0,0,0.5)',\n        display: 'flex',\n        alignItems: 'center',\n        justifyContent: 'center',\n        zIndex: 1000,\n        padding: '20px'\n      },\n      onClick: () => setShow(false)\n    },\n      React.createElement('div', {\n        style: {\n          background: 'white',\n          borderRadius: '12px',\n          padding: '24px',\n          maxWidth: '600px',\n          width: '100%',\n          maxHeight: '80vh',\n          overflow: 'auto'\n        },\n        onClick: (e) => e.stopPropagation()\n      },\n        // Header\n        React.createElement('div', {\n          style: {\n            display: 'flex',\n            justifyContent: 'space-between',\n            alignItems: 'center',\n            marginBottom: '20px'\n          }\n        },\n          React.createElement('h2', {\n            style: { fontSize: '20px', fontWeight: 'bold', margin: 0 }\n          }, '📏 Size Guide'),\n          React.createElement('button', {\n            onClick: () => setShow(false),\n            style: {\n              background: 'none',\n              border: 'none',\n              fontSize: '24px',\n              cursor: 'pointer',\n              color: '#9ca3af'\n            }\n          }, '×')\n        ),\n\n        // Unit Toggle\n        React.createElement('div', {\n          style: {\n            display: 'flex',\n            gap: '8px',\n            marginBottom: '20px'\n          }\n        },\n          ['cm', 'inches'].map(u =>\n            React.createElement('button', {\n              key: u,\n              onClick: () => setUnit(u),\n              style: {\n                padding: '6px 16px',\n                border: 'none',\n                borderRadius: '4px',\n                background: unit === u ? '#3b82f6' : '#f3f4f6',\n                color: unit === u ? 'white' : '#374151',\n                cursor: 'pointer',\n                fontSize: '14px'\n              }\n            }, u.toUpperCase())\n          )\n        ),\n\n        // Size Table\n        React.createElement('table', {\n          style: {\n            width: '100%',\n            borderCollapse: 'collapse',\n            fontSize: '14px'\n          }\n        },\n          React.createElement('thead', null,\n            React.createElement('tr', {\n              style: { background: '#f9fafb' }\n            },\n              React.createElement('th', { style: { padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' } }, 'Size'),\n              React.createElement('th', { style: { padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' } }, 'Chest'),\n              React.createElement('th', { style: { padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' } }, 'Waist'),\n              React.createElement('th', { style: { padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' } }, 'Hips')\n            )\n          ),\n          React.createElement('tbody', null,\n            sizes.map((s, i) =>\n              React.createElement('tr', {\n                key: s.size,\n                style: { background: i % 2 === 0 ? 'white' : '#f9fafb' }\n              },\n                React.createElement('td', {\n                  style: { padding: '12px', fontWeight: '600', borderBottom: '1px solid #e5e7eb' }\n                }, s.size),\n                React.createElement('td', {\n                  style: { padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }\n                }, unit === 'cm' ? s.chest : convertToInches(s.chest)),\n                React.createElement('td', {\n                  style: { padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }\n                }, unit === 'cm' ? s.waist : convertToInches(s.waist)),\n                React.createElement('td', {\n                  style: { padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }\n                }, unit === 'cm' ? s.hips : convertToInches(s.hips))\n              )\n            )\n          )\n        ),\n\n        // How to Measure\n        React.createElement('div', {\n          style: {\n            marginTop: '24px',\n            padding: '16px',\n            background: '#f0f9ff',\n            borderRadius: '8px'\n          }\n        },\n          React.createElement('h3', {\n            style: { fontSize: '14px', fontWeight: '600', marginBottom: '12px' }\n          }, 'How to Measure'),\n          React.createElement('ul', {\n            style: { margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#4b5563' }\n          },\n            React.createElement('li', { style: { marginBottom: '4px' } }, 'Chest: Measure around the fullest part of your chest'),\n            React.createElement('li', { style: { marginBottom: '4px' } }, 'Waist: Measure around your natural waistline'),\n            React.createElement('li', null, 'Hips: Measure around the fullest part of your hips')\n          )\n        )\n      )\n    )\n  );\n}",
+      "defaultConfig": {},
+      "category": "display",
+      "icon": "Ruler"
+    }
+  ],
+  "entities": [
+    {
+      "name": "SizeGuide",
+      "tableName": "size_guides",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "name", "type": "VARCHAR(100)", "notNull": true },
+          { "name": "category", "type": "VARCHAR(100)", "nullable": true },
+          { "name": "sizes", "type": "JSONB", "default": "'[]'" },
+          { "name": "measurements", "type": "JSONB", "default": "'[]'" },
+          { "name": "how_to_measure", "type": "TEXT", "nullable": true },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" },
+          { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_size_guides_category", "columns": ["category"] }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Size guide configurations by category"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_size_guides_table",
+      "pluginName": "Size Guide",
+      "migrationVersion": "1704067200000_create_size_guides",
+      "code": "-- Create size_guides table\nCREATE TABLE IF NOT EXISTS size_guides (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  name VARCHAR(100) NOT NULL,\n  category VARCHAR(100),\n  sizes JSONB DEFAULT '[]',\n  measurements JSONB DEFAULT '[]',\n  how_to_measure TEXT,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_size_guides_category ON size_guides(category);\n\n-- Insert default guide\nINSERT INTO size_guides (name, category, sizes, measurements) VALUES (\n  'Standard Clothing',\n  'clothing',\n  '[{\"size\":\"XS\",\"chest\":86,\"waist\":71,\"hips\":91},{\"size\":\"S\",\"chest\":91,\"waist\":76,\"hips\":96},{\"size\":\"M\",\"chest\":96,\"waist\":81,\"hips\":101},{\"size\":\"L\",\"chest\":101,\"waist\":86,\"hips\":106},{\"size\":\"XL\",\"chest\":106,\"waist\":91,\"hips\":111}]'::jsonb,\n  '[\"Chest\",\"Waist\",\"Hips\"]'::jsonb\n);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "getSizeGuide",
+      "method": "GET",
+      "path": "/guide",
+      "code": "async function getSizeGuide(req, res, { sequelize }) {\n  const { category } = req.query;\n\n  try {\n    let query = 'SELECT * FROM size_guides';\n    const params = [];\n\n    if (category) {\n      query += ' WHERE category ILIKE $1 OR category IS NULL ORDER BY category NULLS LAST LIMIT 1';\n      params.push(`%${category}%`);\n    } else {\n      query += ' ORDER BY created_at DESC LIMIT 1';\n    }\n\n    const result = await sequelize.query(query, {\n      bind: params,\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    if (result.length === 0) {\n      return res.json({ success: true, guide: null });\n    }\n\n    return res.json({ success: true, guide: result[0] });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get size guide by category"
+    },
+    {
+      "name": "listSizeGuides",
+      "method": "GET",
+      "path": "/guides",
+      "code": "async function listSizeGuides(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(\n      'SELECT * FROM size_guides ORDER BY name',\n      { type: sequelize.QueryTypes.SELECT }\n    );\n    return res.json({ success: true, guides: result });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "List all size guides"
+    },
+    {
+      "name": "createSizeGuide",
+      "method": "POST",
+      "path": "/guides",
+      "code": "async function createSizeGuide(req, res, { sequelize }) {\n  const { name, category, sizes, measurements, how_to_measure } = req.body;\n\n  try {\n    const result = await sequelize.query(`\n      INSERT INTO size_guides (name, category, sizes, measurements, how_to_measure)\n      VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)\n      RETURNING *\n    `, {\n      bind: [\n        name,\n        category || null,\n        JSON.stringify(sizes || []),\n        JSON.stringify(measurements || ['Chest', 'Waist', 'Hips']),\n        how_to_measure || null\n      ],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, guide: result[0][0] });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Create a new size guide"
+    },
+    {
+      "name": "updateSizeGuide",
+      "method": "PUT",
+      "path": "/guides/:id",
+      "code": "async function updateSizeGuide(req, res, { sequelize }) {\n  const { id } = req.params;\n  const { name, category, sizes, measurements, how_to_measure } = req.body;\n\n  try {\n    const result = await sequelize.query(`\n      UPDATE size_guides\n      SET name = COALESCE($1, name),\n          category = COALESCE($2, category),\n          sizes = COALESCE($3::jsonb, sizes),\n          measurements = COALESCE($4::jsonb, measurements),\n          how_to_measure = COALESCE($5, how_to_measure),\n          updated_at = NOW()\n      WHERE id = $6\n      RETURNING *\n    `, {\n      bind: [\n        name,\n        category,\n        sizes ? JSON.stringify(sizes) : null,\n        measurements ? JSON.stringify(measurements) : null,\n        how_to_measure,\n        id\n      ],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    if (result[1] === 0) {\n      return res.status(404).json({ success: false, error: 'Size guide not found' });\n    }\n\n    return res.json({ success: true, guide: result[0][0] });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Update a size guide"
+    }
+  ],
+  "pluginData": [],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Size Guide Plugin\n\nHelp customers find the right size with detailed measurement guides.\n\n## Features\n\n- Auto-detect products with size options\n- Category-based guides\n- CM/Inches toggle\n- Measurement instructions\n- Multiple guide support\n\n## How It Works\n\n1. Plugin detects products with size variants\n2. Shows \"Size Guide\" button on product page\n3. Opens modal with measurement table\n4. Customers can switch between cm/inches\n\n## Creating Guides\n\nUse the API to create custom guides:\n\n```json\nPOST /api/plugins/size-guide/exec/guides\n{\n  \"name\": \"T-Shirts\",\n  \"category\": \"tops\",\n  \"sizes\": [\n    {\"size\": \"S\", \"chest\": 91, \"length\": 71},\n    {\"size\": \"M\", \"chest\": 96, \"length\": 73}\n  ]\n}\n```\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}

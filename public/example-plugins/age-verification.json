@@ -1,0 +1,156 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Age Verification",
+    "slug": "age-verification",
+    "version": "1.0.0",
+    "description": "Gate age-restricted products with verification modal before viewing or purchasing",
+    "author": "DainoStore",
+    "category": "compliance",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Age Verification",
+      "tags": ["age", "verification", "18+", "21+", "alcohol", "tobacco", "compliance"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "compliance",
+      "description": "Verify customer age for restricted products",
+      "permissions": ["products:read"]
+    },
+    "permissions": ["products:read"],
+    "dependencies": [],
+    "tags": ["age", "verification", "compliance"]
+  },
+  "files": [],
+  "events": [
+    {
+      "eventName": "product.viewed",
+      "fileName": "check-age-restriction.js",
+      "listenerCode": "function onCheckAgeRestriction(data) {\n  console.log('🔞 Age Verification: Checking product');\n\n  const product = data?.product || data;\n  if (!product) return;\n\n  // Check if product has age restriction tag or category\n  const restrictedTags = ['18+', '21+', 'age-restricted', 'alcohol', 'tobacco', 'adult'];\n  const productTags = (product.tags || []).map(t => t.toLowerCase());\n  const productCategory = (product.category || '').toLowerCase();\n\n  const isRestricted = restrictedTags.some(tag => \n    productTags.includes(tag) || productCategory.includes(tag)\n  );\n\n  if (!isRestricted) return;\n\n  // Check if already verified\n  const verified = localStorage.getItem('age_verified');\n  const verifiedAt = localStorage.getItem('age_verified_at');\n\n  if (verified === 'true' && verifiedAt) {\n    const hoursSince = (Date.now() - parseInt(verifiedAt)) / (1000 * 60 * 60);\n    if (hoursSince < 24) {\n      console.log('🔞 Age already verified');\n      return;\n    }\n  }\n\n  // Trigger verification modal\n  window.dispatchEvent(new CustomEvent('show-age-verification', {\n    detail: { product }\n  }));\n}",
+      "priority": 1
+    }
+  ],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "age-verification-gate",
+      "widgetName": "Age Verification Gate",
+      "description": "Modal gate for age-restricted content",
+      "componentCode": "function AgeVerificationGateWidget({ config = {} }) {\n  const [show, setShow] = React.useState(false);\n  const [product, setProduct] = React.useState(null);\n  const [birthYear, setBirthYear] = React.useState('');\n  const [birthMonth, setBirthMonth] = React.useState('');\n  const [birthDay, setBirthDay] = React.useState('');\n  const [error, setError] = React.useState('');\n  const [denied, setDenied] = React.useState(false);\n\n  const {\n    minimumAge = 18,\n    title = 'Age Verification Required',\n    message = 'This product is age-restricted. Please verify your age to continue.',\n    verifyButtonText = 'Verify My Age',\n    denyButtonText = 'I am under ' + minimumAge,\n    deniedMessage = 'Sorry, you must be at least ' + minimumAge + ' years old to view this content.',\n    logoUrl = null,\n    backgroundColor = '#000000',\n    requireFullDate = true,\n    rememberHours = 24\n  } = config;\n\n  React.useEffect(() => {\n    const handleShowVerification = (e) => {\n      setProduct(e.detail?.product);\n      setShow(true);\n      setError('');\n      setDenied(false);\n    };\n\n    // Check on page load for restricted products\n    const checkPageRestriction = () => {\n      const restrictedMeta = document.querySelector('meta[name=\"age-restricted\"]');\n      if (restrictedMeta?.content === 'true') {\n        const verified = localStorage.getItem('age_verified');\n        const verifiedAt = localStorage.getItem('age_verified_at');\n        if (verified !== 'true' || !verifiedAt) {\n          setShow(true);\n        } else {\n          const hoursSince = (Date.now() - parseInt(verifiedAt)) / (1000 * 60 * 60);\n          if (hoursSince >= rememberHours) {\n            setShow(true);\n          }\n        }\n      }\n    };\n\n    window.addEventListener('show-age-verification', handleShowVerification);\n    checkPageRestriction();\n\n    return () => {\n      window.removeEventListener('show-age-verification', handleShowVerification);\n    };\n  }, [rememberHours]);\n\n  const calculateAge = (year, month, day) => {\n    const today = new Date();\n    const birthDate = new Date(year, month - 1, day);\n    let age = today.getFullYear() - birthDate.getFullYear();\n    const monthDiff = today.getMonth() - birthDate.getMonth();\n    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {\n      age--;\n    }\n    return age;\n  };\n\n  const handleVerify = () => {\n    setError('');\n\n    if (requireFullDate) {\n      if (!birthYear || !birthMonth || !birthDay) {\n        setError('Please enter your complete date of birth');\n        return;\n      }\n\n      const year = parseInt(birthYear);\n      const month = parseInt(birthMonth);\n      const day = parseInt(birthDay);\n\n      if (year < 1900 || year > new Date().getFullYear()) {\n        setError('Please enter a valid year');\n        return;\n      }\n\n      if (month < 1 || month > 12) {\n        setError('Please enter a valid month');\n        return;\n      }\n\n      if (day < 1 || day > 31) {\n        setError('Please enter a valid day');\n        return;\n      }\n\n      const age = calculateAge(year, month, day);\n\n      if (age < minimumAge) {\n        setDenied(true);\n        return;\n      }\n    }\n\n    // Mark as verified\n    localStorage.setItem('age_verified', 'true');\n    localStorage.setItem('age_verified_at', Date.now().toString());\n    setShow(false);\n  };\n\n  const handleDeny = () => {\n    setDenied(true);\n  };\n\n  const handleExit = () => {\n    window.history.back();\n  };\n\n  if (!show) return null;\n\n  return React.createElement('div', {\n    style: {\n      position: 'fixed',\n      inset: 0,\n      backgroundColor: backgroundColor,\n      display: 'flex',\n      alignItems: 'center',\n      justifyContent: 'center',\n      zIndex: 99999,\n      padding: '20px'\n    }\n  },\n    React.createElement('div', {\n      style: {\n        background: 'white',\n        borderRadius: '16px',\n        maxWidth: '450px',\n        width: '100%',\n        padding: '40px',\n        textAlign: 'center'\n      }\n    },\n      // Logo\n      logoUrl && React.createElement('img', {\n        src: logoUrl,\n        alt: 'Logo',\n        style: {\n          height: '60px',\n          marginBottom: '24px'\n        }\n      }),\n\n      // Age badge\n      React.createElement('div', {\n        style: {\n          width: '80px',\n          height: '80px',\n          borderRadius: '50%',\n          background: denied ? '#fee2e2' : '#fef3c7',\n          display: 'flex',\n          alignItems: 'center',\n          justifyContent: 'center',\n          margin: '0 auto 24px',\n          fontSize: '32px',\n          fontWeight: '700',\n          color: denied ? '#dc2626' : '#d97706'\n        }\n      }, denied ? '✕' : `${minimumAge}+`),\n\n      denied ? (\n        // Denied state\n        React.createElement('div', null,\n          React.createElement('h2', {\n            style: {\n              fontSize: '24px',\n              fontWeight: '600',\n              marginBottom: '16px',\n              color: '#dc2626'\n            }\n          }, 'Access Denied'),\n          React.createElement('p', {\n            style: {\n              color: '#6b7280',\n              marginBottom: '24px',\n              lineHeight: '1.6'\n            }\n          }, deniedMessage),\n          React.createElement('button', {\n            onClick: handleExit,\n            style: {\n              width: '100%',\n              padding: '14px 24px',\n              background: '#6b7280',\n              color: 'white',\n              border: 'none',\n              borderRadius: '8px',\n              fontSize: '16px',\n              fontWeight: '600',\n              cursor: 'pointer'\n            }\n          }, 'Leave This Page')\n        )\n      ) : (\n        // Verification form\n        React.createElement('div', null,\n          React.createElement('h2', {\n            style: {\n              fontSize: '24px',\n              fontWeight: '600',\n              marginBottom: '12px',\n              color: '#111827'\n            }\n          }, title),\n\n          React.createElement('p', {\n            style: {\n              color: '#6b7280',\n              marginBottom: '24px',\n              lineHeight: '1.6'\n            }\n          }, message),\n\n          requireFullDate && React.createElement('div', {\n            style: {\n              display: 'grid',\n              gridTemplateColumns: '1fr 1fr 1fr',\n              gap: '12px',\n              marginBottom: '16px'\n            }\n          },\n            React.createElement('div', null,\n              React.createElement('label', {\n                style: {\n                  display: 'block',\n                  fontSize: '12px',\n                  color: '#6b7280',\n                  marginBottom: '4px'\n                }\n              }, 'Month'),\n              React.createElement('input', {\n                type: 'number',\n                min: '1',\n                max: '12',\n                placeholder: 'MM',\n                value: birthMonth,\n                onChange: (e) => setBirthMonth(e.target.value),\n                style: {\n                  width: '100%',\n                  padding: '12px',\n                  border: '2px solid #e5e7eb',\n                  borderRadius: '8px',\n                  fontSize: '16px',\n                  textAlign: 'center'\n                }\n              })\n            ),\n            React.createElement('div', null,\n              React.createElement('label', {\n                style: {\n                  display: 'block',\n                  fontSize: '12px',\n                  color: '#6b7280',\n                  marginBottom: '4px'\n                }\n              }, 'Day'),\n              React.createElement('input', {\n                type: 'number',\n                min: '1',\n                max: '31',\n                placeholder: 'DD',\n                value: birthDay,\n                onChange: (e) => setBirthDay(e.target.value),\n                style: {\n                  width: '100%',\n                  padding: '12px',\n                  border: '2px solid #e5e7eb',\n                  borderRadius: '8px',\n                  fontSize: '16px',\n                  textAlign: 'center'\n                }\n              })\n            ),\n            React.createElement('div', null,\n              React.createElement('label', {\n                style: {\n                  display: 'block',\n                  fontSize: '12px',\n                  color: '#6b7280',\n                  marginBottom: '4px'\n                }\n              }, 'Year'),\n              React.createElement('input', {\n                type: 'number',\n                min: '1900',\n                max: new Date().getFullYear(),\n                placeholder: 'YYYY',\n                value: birthYear,\n                onChange: (e) => setBirthYear(e.target.value),\n                style: {\n                  width: '100%',\n                  padding: '12px',\n                  border: '2px solid #e5e7eb',\n                  borderRadius: '8px',\n                  fontSize: '16px',\n                  textAlign: 'center'\n                }\n              })\n            )\n          ),\n\n          error && React.createElement('p', {\n            style: {\n              color: '#dc2626',\n              fontSize: '14px',\n              marginBottom: '16px'\n            }\n          }, error),\n\n          React.createElement('button', {\n            onClick: handleVerify,\n            style: {\n              width: '100%',\n              padding: '14px 24px',\n              background: '#10b981',\n              color: 'white',\n              border: 'none',\n              borderRadius: '8px',\n              fontSize: '16px',\n              fontWeight: '600',\n              cursor: 'pointer',\n              marginBottom: '12px'\n            }\n          }, verifyButtonText),\n\n          React.createElement('button', {\n            onClick: handleDeny,\n            style: {\n              width: '100%',\n              padding: '14px 24px',\n              background: 'transparent',\n              color: '#6b7280',\n              border: '1px solid #e5e7eb',\n              borderRadius: '8px',\n              fontSize: '14px',\n              cursor: 'pointer'\n            }\n          }, denyButtonText),\n\n          React.createElement('p', {\n            style: {\n              fontSize: '11px',\n              color: '#9ca3af',\n              marginTop: '20px',\n              lineHeight: '1.5'\n            }\n          }, `By entering this site, you certify that you are ${minimumAge} years of age or older.`)\n        )\n      )\n    )\n  );\n}",
+      "defaultConfig": {
+        "minimumAge": 18,
+        "title": "Age Verification Required",
+        "message": "This product is age-restricted. Please verify your age to continue.",
+        "verifyButtonText": "Verify My Age",
+        "deniedMessage": "Sorry, you must be at least 18 years old to view this content.",
+        "logoUrl": null,
+        "backgroundColor": "#000000",
+        "requireFullDate": true,
+        "rememberHours": 24
+      },
+      "category": "compliance",
+      "icon": "ShieldCheck"
+    },
+    {
+      "widgetId": "age-restriction-badge",
+      "widgetName": "Age Restriction Badge",
+      "description": "Display age restriction badge on products",
+      "componentCode": "function AgeRestrictionBadgeWidget({ config = {}, product }) {\n  const {\n    badgeText = '18+',\n    badgeColor = '#dc2626',\n    showOnAllProducts = false\n  } = config;\n\n  // Check if product is restricted\n  const restrictedTags = ['18+', '21+', 'age-restricted', 'alcohol', 'tobacco', 'adult'];\n  const productTags = (product?.tags || []).map(t => t.toLowerCase());\n  const productCategory = (product?.category || '').toLowerCase();\n\n  const isRestricted = showOnAllProducts || restrictedTags.some(tag => \n    productTags.includes(tag) || productCategory.includes(tag)\n  );\n\n  if (!isRestricted) return null;\n\n  return React.createElement('span', {\n    style: {\n      display: 'inline-flex',\n      alignItems: 'center',\n      justifyContent: 'center',\n      padding: '4px 8px',\n      background: badgeColor,\n      color: 'white',\n      borderRadius: '4px',\n      fontSize: '12px',\n      fontWeight: '700'\n    }\n  }, badgeText);\n}",
+      "defaultConfig": {
+        "badgeText": "18+",
+        "badgeColor": "#dc2626",
+        "showOnAllProducts": false
+      },
+      "category": "display",
+      "icon": "Badge"
+    }
+  ],
+  "entities": [
+    {
+      "name": "AgeVerificationLog",
+      "tableName": "age_verification_logs",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "session_id", "type": "VARCHAR(255)" },
+          { "name": "customer_id", "type": "UUID", "nullable": true },
+          { "name": "product_id", "type": "UUID", "nullable": true },
+          { "name": "birth_date", "type": "DATE", "nullable": true },
+          { "name": "verified", "type": "BOOLEAN", "default": "false" },
+          { "name": "ip_address", "type": "VARCHAR(45)", "nullable": true },
+          { "name": "user_agent", "type": "TEXT", "nullable": true },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_age_logs_session", "columns": ["session_id"] },
+          { "name": "idx_age_logs_created", "columns": ["created_at"], "order": "DESC" }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Audit log of age verification attempts"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_age_verification_logs",
+      "pluginName": "Age Verification",
+      "migrationVersion": "1704067200000_create_age_verification_logs",
+      "code": "CREATE TABLE IF NOT EXISTS age_verification_logs (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  session_id VARCHAR(255),\n  customer_id UUID,\n  product_id UUID,\n  birth_date DATE,\n  verified BOOLEAN DEFAULT false,\n  ip_address VARCHAR(45),\n  user_agent TEXT,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_age_logs_session ON age_verification_logs(session_id);\nCREATE INDEX IF NOT EXISTS idx_age_logs_created ON age_verification_logs(created_at DESC);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "logVerification",
+      "method": "POST",
+      "path": "/verify",
+      "code": "async function logVerification(req, res, { sequelize }) {\n  const { sessionId, customerId, productId, birthDate, verified } = req.body;\n\n  try {\n    await sequelize.query(`\n      INSERT INTO age_verification_logs (session_id, customer_id, product_id, birth_date, verified, ip_address, user_agent)\n      VALUES ($1, $2, $3, $4, $5, $6, $7)\n    `, {\n      bind: [\n        sessionId,\n        customerId || null,\n        productId || null,\n        birthDate || null,\n        verified || false,\n        req.ip || req.headers['x-forwarded-for'],\n        req.headers['user-agent']\n      ],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Log an age verification attempt"
+    },
+    {
+      "name": "getStats",
+      "method": "GET",
+      "path": "/stats",
+      "code": "async function getStats(req, res, { sequelize }) {\n  const { days = 30 } = req.query;\n\n  try {\n    const stats = await sequelize.query(`\n      SELECT\n        COUNT(*) as total_checks,\n        COUNT(*) FILTER (WHERE verified = true) as verified_count,\n        COUNT(*) FILTER (WHERE verified = false) as denied_count,\n        COUNT(DISTINCT session_id) as unique_sessions\n      FROM age_verification_logs\n      WHERE created_at > NOW() - INTERVAL '${parseInt(days)} days'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const dailyStats = await sequelize.query(`\n      SELECT\n        DATE(created_at) as date,\n        COUNT(*) as checks,\n        COUNT(*) FILTER (WHERE verified = true) as verified\n      FROM age_verification_logs\n      WHERE created_at > NOW() - INTERVAL '${parseInt(days)} days'\n      GROUP BY DATE(created_at)\n      ORDER BY date DESC\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({\n      success: true,\n      summary: stats[0],\n      daily: dailyStats\n    });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get age verification statistics"
+    },
+    {
+      "name": "getRestrictedProducts",
+      "method": "GET",
+      "path": "/restricted-products",
+      "code": "async function getRestrictedProducts(req, res, { sequelize }) {\n  try {\n    const products = await sequelize.query(`\n      SELECT id, name, slug, category\n      FROM products\n      WHERE \n        tags::text ILIKE '%18+%' OR\n        tags::text ILIKE '%21+%' OR\n        tags::text ILIKE '%age-restricted%' OR\n        tags::text ILIKE '%alcohol%' OR\n        tags::text ILIKE '%tobacco%' OR\n        category ILIKE '%alcohol%' OR\n        category ILIKE '%tobacco%'\n      ORDER BY name\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, products });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get list of age-restricted products"
+    },
+    {
+      "name": "getConfig",
+      "method": "GET",
+      "path": "/config",
+      "code": "async function getConfig(req, res, { sequelize }) {\n  try {\n    const result = await sequelize.query(`\n      SELECT value FROM plugin_data\n      WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'age-verification' LIMIT 1)\n      AND key = 'config'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const config = result[0]?.value || {\n      minimumAge: 18,\n      restrictedTags: ['18+', '21+', 'age-restricted', 'alcohol', 'tobacco'],\n      requireFullDate: true,\n      rememberHours: 24\n    };\n\n    return res.json({ success: true, config });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get age verification configuration"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "minimumAge": 18,
+        "restrictedTags": ["18+", "21+", "age-restricted", "alcohol", "tobacco"],
+        "requireFullDate": true,
+        "rememberHours": 24,
+        "enabled": true
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Age Verification Plugin\n\nGate age-restricted products with a verification modal.\n\n## Features\n\n- Full date of birth verification\n- Configurable minimum age (18, 21, etc.)\n- Remember verification for 24 hours\n- Audit logging of all attempts\n- Restriction badge on product cards\n- Blocks access until verified\n\n## How to Mark Products as Restricted\n\nAdd one of these tags to your products:\n- `18+`\n- `21+`\n- `age-restricted`\n- `alcohol`\n- `tobacco`\n- `adult`\n\nOr use a category containing these terms.\n\n## Widgets\n\n### Age Verification Gate\nFull-screen modal that blocks access until age is verified.\n\n### Age Restriction Badge\nSmall badge to display on product cards.\n\n## Configuration\n\n| Setting | Description |\n|---------|-------------|\n| minimumAge | Required age (18 or 21) |\n| requireFullDate | Require full DOB or just confirmation |\n| rememberHours | Hours to remember verification |\n| deniedMessage | Message shown when underage |\n\n## Compliance\n\nAll verification attempts are logged with:\n- Session ID\n- Date of birth entered\n- Verification result\n- Timestamp\n- IP address\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": []
+}
