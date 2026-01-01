@@ -56,8 +56,10 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
 
   // For single image mode: track current working image (starts as original, becomes result after optimization)
   const [currentImage, setCurrentImage] = useState(null);
+  const [currentFormat, setCurrentFormat] = useState('png'); // Track current image format
   const [originalImage, setOriginalImage] = useState(null);
   const [imageHistory, setImageHistory] = useState([]); // History stack for undo
+  const [formatHistory, setFormatHistory] = useState([]); // Format history for undo
   const [originalSize, setOriginalSize] = useState(null); // Original file size in bytes
 
   // Operation-specific params
@@ -79,7 +81,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     if (isOpen && singleFile) {
       setOriginalImage(singleFile);
       setCurrentImage(null); // Reset result when opening
+      setCurrentFormat('png'); // Reset format
       setImageHistory([]); // Reset history
+      setFormatHistory([]); // Reset format history
       setOriginalSize(singleFile.size || null); // Use file size if available
 
       // Fetch original size if not available
@@ -163,16 +167,18 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
   const handleRevert = () => {
     if (imageHistory.length === 0) return;
     const previousImage = imageHistory[imageHistory.length - 1];
+    const previousFormat = formatHistory[formatHistory.length - 1] || 'png';
     setImageHistory(prev => prev.slice(0, -1));
+    setFormatHistory(prev => prev.slice(0, -1));
     setCurrentImage(previousImage);
+    setCurrentFormat(previousFormat);
   };
 
   // Get base64 from current image result or fetch from URL
   const getImageBase64 = async (imageSource) => {
     // If it's already a base64 result from previous operation
     if (typeof imageSource === 'string' && !imageSource.startsWith('http')) {
-      const format = 'png';
-      return `data:image/${format};base64,${imageSource}`;
+      return `data:image/${currentFormat};base64,${imageSource}`;
     }
     // If it's a URL, fetch it
     const url = typeof imageSource === 'string' ? imageSource : imageSource.url;
@@ -245,8 +251,10 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
             // Push current state to history (for undo)
             if (currentImage) {
               setImageHistory(prev => [...prev, currentImage]);
+              setFormatHistory(prev => [...prev, currentFormat]);
             }
             setCurrentImage(response.result.image);
+            setCurrentFormat(response.result.format || 'png');
           }
         } else {
           newResults.push({
@@ -288,7 +296,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     setIsApplying(true);
 
     try {
-      const format = 'png';
+      const format = currentFormat || 'png';
       const base64Data = currentImage;
       const originalName = singleFile.name || 'image';
       const newName = applyToOriginal
@@ -693,7 +701,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                     <div className="h-72 flex items-center justify-center bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZjBmMGYwIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmMGYwZjAiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')]">
                       {currentImage ? (
                         <img
-                          src={`data:image/png;base64,${currentImage}`}
+                          src={`data:image/${currentFormat};base64,${currentImage}`}
                           alt="Result"
                           className="max-w-full max-h-full object-contain"
                         />
@@ -730,8 +738,8 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                             <button
                               onClick={() => {
                                 const link = document.createElement('a');
-                                link.href = `data:image/png;base64,${currentImage}`;
-                                link.download = `optimized-${singleFile?.name || 'image'}.png`;
+                                link.href = `data:image/${currentFormat};base64,${currentImage}`;
+                                link.download = `optimized-${singleFile?.name?.replace(/\.[^.]+$/, '') || 'image'}.${currentFormat}`;
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
@@ -769,7 +777,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                       <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">
                         <img
                           src={result.success && result.result?.image
-                            ? `data:image/png;base64,${result.result.image}`
+                            ? `data:image/${result.result.format || 'png'};base64,${result.result.image}`
                             : result.original.url
                           }
                           alt=""
