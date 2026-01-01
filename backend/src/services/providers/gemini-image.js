@@ -12,8 +12,9 @@ class GeminiImageProvider {
     }
     this.apiKey = apiKey;
     this.name = 'gemini';
-    // Model that supports image generation
-    this.modelName = 'gemini-2.0-flash-exp';
+    // Model for image generation/editing (aka "nano banana")
+    // Options: gemini-2.0-flash-preview-image-generation, gemini-2.5-flash-preview-image-generation
+    this.modelName = 'gemini-2.0-flash-preview-image-generation';
   }
 
   getDisplayName() {
