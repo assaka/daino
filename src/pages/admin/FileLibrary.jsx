@@ -248,11 +248,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
 
           // For single mode: save current to history and update current image
           if (!isBulkMode) {
-            // Push current state to history (for undo)
-            if (currentImage) {
-              setImageHistory(prev => [...prev, currentImage]);
-              setFormatHistory(prev => [...prev, currentFormat]);
-            }
+            // Push current state to history (for undo) - null means "original"
+            setImageHistory(prev => [...prev, currentImage]);
+            setFormatHistory(prev => [...prev, currentFormat]);
             setCurrentImage(response.result.image);
             setCurrentFormat(response.result.format || 'png');
           }
