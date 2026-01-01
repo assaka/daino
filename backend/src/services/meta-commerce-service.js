@@ -253,8 +253,9 @@ class MetaCommerceService {
         }
       });
 
-      // Fetch images from product_files with JOIN to media_assets
-      const { data: files } = await tenantDb
+      // Fetch images from product_files - try JOIN to media_assets first
+      let files = null;
+      const joinResult = await tenantDb
         .from('product_files')
         .select(`
           product_id,
@@ -267,6 +268,18 @@ class MetaCommerceService {
         `)
         .in('product_id', products.map(p => p.id))
         .order('position', { ascending: true });
+
+      // Fallback if FK doesn't exist yet
+      if (joinResult.error && joinResult.error.message?.includes('media_assets')) {
+        const simpleResult = await tenantDb
+          .from('product_files')
+          .select('product_id, position, is_primary, file_url')
+          .in('product_id', products.map(p => p.id))
+          .order('position', { ascending: true });
+        files = simpleResult.data;
+      } else {
+        files = joinResult.data;
+      }
 
       products.forEach(product => {
         const productFiles = files?.filter(f => f.product_id === product.id) || [];

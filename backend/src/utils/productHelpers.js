@@ -353,8 +353,12 @@ async function fetchProductImages(productIds, tenantDb) {
   if (idsArray.length === 0) return {};
 
   try {
-    // First try product_files table with JOIN to media_assets
-    const { data: files, error: filesError } = await tenantDb
+    // Try product_files table - first attempt with JOIN to media_assets
+    let files = null;
+    let filesError = null;
+
+    // Try with JOIN first (requires media_asset_id FK to exist)
+    const joinResult = await tenantDb
       .from('product_files')
       .select(`
         id,
@@ -373,6 +377,22 @@ async function fetchProductImages(productIds, tenantDb) {
       .in('product_id', idsArray)
       .eq('file_type', 'image')
       .order('position', { ascending: true });
+
+    // If JOIN fails (FK doesn't exist yet), fallback to simple query
+    if (joinResult.error && joinResult.error.message?.includes('media_assets')) {
+      console.log('🖼️ fetchProductImages: media_assets JOIN not available, using direct query');
+      const simpleResult = await tenantDb
+        .from('product_files')
+        .select('id, product_id, position, is_primary, alt_text, file_type, file_url')
+        .in('product_id', idsArray)
+        .eq('file_type', 'image')
+        .order('position', { ascending: true });
+      files = simpleResult.data;
+      filesError = simpleResult.error;
+    } else {
+      files = joinResult.data;
+      filesError = joinResult.error;
+    }
 
     // Debug logging
     console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);

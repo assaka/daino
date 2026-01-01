@@ -90,7 +90,10 @@ async function generateSitemapXml(storeId, baseUrl) {
         let productImages = {};
         if (includeImages && products.length > 0) {
           const productIds = products.map(p => p.id);
-          const { data: files } = await tenantDb
+
+          // Try JOIN to media_assets first, fallback if FK doesn't exist
+          let files = null;
+          const joinResult = await tenantDb
             .from('product_files')
             .select(`
               product_id,
@@ -103,6 +106,18 @@ async function generateSitemapXml(storeId, baseUrl) {
             .in('product_id', productIds)
             .eq('file_type', 'image')
             .order('position', { ascending: true });
+
+          if (joinResult.error && joinResult.error.message?.includes('media_assets')) {
+            const simpleResult = await tenantDb
+              .from('product_files')
+              .select('product_id, alt_text, file_url')
+              .in('product_id', productIds)
+              .eq('file_type', 'image')
+              .order('position', { ascending: true });
+            files = simpleResult.data;
+          } else {
+            files = joinResult.data;
+          }
 
           if (files) {
             files.forEach(file => {
