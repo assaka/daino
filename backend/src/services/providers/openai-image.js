@@ -60,11 +60,11 @@ class OpenAIImageProvider {
   async upscale(image, params = {}) {
     const { scale = 2, enhanceDetails = true } = params;
 
-    // Calculate target size
+    // Valid sizes for gpt-image-1: 1024x1024, 1024x1536, 1536x1024, auto
     const sizes = {
       1: '1024x1024',
-      2: '1792x1024',
-      4: '1792x1024' // Max supported
+      2: '1536x1024',
+      4: '1536x1024' // Max supported
     };
 
     const response = await this.client.images.edit({
@@ -128,7 +128,7 @@ class OpenAIImageProvider {
       model: 'gpt-image-1',
       image: await this.prepareImage(image),
       prompt,
-      size: params.size || '1792x1024'
+      size: params.size || '1536x1024' // Valid: 1024x1024, 1024x1536, 1536x1024
     });
 
     const imageData = await this.extractImageFromResponse(response);
