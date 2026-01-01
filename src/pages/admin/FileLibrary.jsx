@@ -1088,7 +1088,9 @@ const FileLibrary = () => {
             url: imageUrl,
             size: file.metadata?.size || file.size || 0,
             mimeType: file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
-            uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
+            uploadedAt: file.created_at || file.updated_at || new Date().toISOString(),
+            fullPath: file.fullPath || `library/${file.name}`,
+            folder: file.folder || 'library'
           };
         });
 
@@ -1261,7 +1263,7 @@ const FileLibrary = () => {
     }
   };
 
-  // Delete file using provider-agnostic storage API
+  // Delete file using Supabase storage API
   const deleteFile = async (fileId) => {
     if (!window.confirm('Are you sure you want to delete this file?')) return;
 
@@ -1273,14 +1275,14 @@ const FileLibrary = () => {
         return;
       }
 
-      // Extract file path from the file name/URL
-      const filePath = `library/${file.name}`;
+      // Use fullPath from the file object (e.g., "library/a/filename.jpg")
+      const filePath = file.fullPath || `library/${file.name}`;
 
       // Get store ID from localStorage
       const selectedStoreId = localStorage.getItem('selectedStoreId');
 
-      // Use fetch directly for DELETE request with body (apiClient doesn't support body in DELETE)
-      const response = await fetch('/api/storage/delete', {
+      // Use Supabase storage delete endpoint (matches the list endpoint we use)
+      const response = await fetch('/api/supabase/storage/delete', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -1288,13 +1290,13 @@ const FileLibrary = () => {
           'x-store-id': selectedStoreId || ''
         },
         body: JSON.stringify({
-          imagePath: filePath
+          path: filePath
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete file');
+        throw new Error(errorData.message || errorData.error || 'Failed to delete file');
       }
 
       const result = await response.json();
@@ -1302,7 +1304,7 @@ const FileLibrary = () => {
         toast.success("File deleted successfully");
         await loadFiles();
       } else {
-        toast.error(result.error || "Failed to delete file");
+        toast.error(result.message || result.error || "Failed to delete file");
       }
     } catch (error) {
       console.error('Delete error:', error);
@@ -1331,9 +1333,10 @@ const FileLibrary = () => {
         const file = files.find(f => f.id === fileId);
         if (!file) continue;
 
-        const filePath = `library/${file.name}`;
+        // Use fullPath from the file object
+        const filePath = file.fullPath || `library/${file.name}`;
 
-        const response = await fetch('/api/storage/delete', {
+        const response = await fetch('/api/supabase/storage/delete', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -1341,7 +1344,7 @@ const FileLibrary = () => {
             'x-store-id': selectedStoreId || ''
           },
           body: JSON.stringify({
-            imagePath: filePath
+            path: filePath
           })
         });
 
