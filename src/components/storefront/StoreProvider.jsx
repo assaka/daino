@@ -306,7 +306,7 @@ export const StoreProvider = ({ children }) => {
             {/* CTA Buttons */}
             <div className="space-y-3">
               <a
-                href="/MarketingSignup"
+                href="/get-started"
                 className="block w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-semibold rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-amber-500/25"
               >
                 Create Your Own Shop
