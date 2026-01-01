@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2 } from 'lucide-react';
+import { Upload, File as FileIcon, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
@@ -970,7 +970,7 @@ const FileLibrary = () => {
 
   // File type icons
   const getFileIcon = (mimeType) => {
-    if (!mimeType) return <File className="w-8 h-8" />;
+    if (!mimeType) return <FileIcon className="w-8 h-8" />;
     
     if (mimeType.startsWith('image/')) return <Image className="w-8 h-8 text-blue-500" />;
     if (mimeType.startsWith('video/')) return <Film className="w-8 h-8 text-purple-500" />;
@@ -978,7 +978,7 @@ const FileLibrary = () => {
     if (mimeType.includes('pdf')) return <FileText className="w-8 h-8 text-red-500" />;
     if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) 
       return <Archive className="w-8 h-8 text-yellow-500" />;
-    return <File className="w-8 h-8 text-gray-500" />;
+    return <FileIcon className="w-8 h-8 text-gray-500" />;
   };
 
   // Format file size
@@ -1470,7 +1470,7 @@ const FileLibrary = () => {
         <PageLoader size="lg" fullScreen={false} className="py-12" text="Loading files..." />
       ) : filteredFiles.length === 0 ? (
         <div className="text-center py-12">
-          <File className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <FileIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500">No files found</p>
           {!storageProvider && (
             <p className="text-sm text-gray-400 mt-2">

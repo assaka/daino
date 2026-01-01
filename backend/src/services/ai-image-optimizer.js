@@ -17,6 +17,7 @@ const FluxImageProvider = require('./providers/flux-image');
 const QwenImageProvider = require('./providers/qwen-image');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 const { masterDbClient } = require('../database/masterConnection');
+const sharp = require('sharp');
 
 // Provider registry
 const PROVIDERS = {
@@ -294,6 +295,18 @@ class AIImageOptimizer {
 
       const duration = Date.now() - startTime;
 
+      // Auto-compress result using Sharp (preserves transparency)
+      if (result && result.image) {
+        const compressed = await this.compressWithSharp(result.image, {
+          preserveTransparency: operation === OPERATIONS.REMOVE_BG,
+          quality: 90
+        });
+        result.image = compressed.image;
+        result.format = compressed.format;
+        result.originalSize = compressed.originalSize;
+        result.compressedSize = compressed.compressedSize;
+      }
+
       return {
         success: true,
         provider,
@@ -352,6 +365,71 @@ class AIImageOptimizer {
       chunks.push(array.slice(i, i + size));
     }
     return chunks;
+  }
+
+  /**
+   * Compress image using Sharp while maintaining quality
+   * @param {string} base64Image - Base64 encoded image
+   * @param {Object} options - Compression options
+   * @returns {Promise<{image: string, format: string}>}
+   */
+  async compressWithSharp(base64Image, options = {}) {
+    const { preserveTransparency = true, quality = 90 } = options;
+
+    try {
+      // Convert base64 to buffer
+      const inputBuffer = Buffer.from(base64Image, 'base64');
+
+      // Get image metadata to check for alpha channel
+      const metadata = await sharp(inputBuffer).metadata();
+      const hasAlpha = metadata.hasAlpha;
+
+      let outputBuffer;
+      let format = 'png';
+
+      if (hasAlpha && preserveTransparency) {
+        // For images with transparency, use PNG with compression
+        outputBuffer = await sharp(inputBuffer)
+          .png({
+            compressionLevel: 9, // Max compression
+            adaptiveFiltering: true,
+            palette: false // Keep as truecolor for quality
+          })
+          .toBuffer();
+        format = 'png';
+      } else {
+        // For images without transparency, use WebP for better compression
+        outputBuffer = await sharp(inputBuffer)
+          .webp({
+            quality: quality,
+            effort: 6, // Higher effort = better compression
+            lossless: false
+          })
+          .toBuffer();
+        format = 'webp';
+      }
+
+      const originalSize = inputBuffer.length;
+      const compressedSize = outputBuffer.length;
+      const savings = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+
+      console.log(`[AIImageOptimizer] Sharp compression: ${(originalSize/1024).toFixed(1)}KB -> ${(compressedSize/1024).toFixed(1)}KB (${savings}% reduction)`);
+
+      return {
+        image: outputBuffer.toString('base64'),
+        format,
+        originalSize,
+        compressedSize
+      };
+    } catch (error) {
+      console.error('[AIImageOptimizer] Sharp compression failed:', error.message);
+      // Return original if compression fails
+      return {
+        image: base64Image,
+        format: 'png',
+        compressionFailed: true
+      };
+    }
   }
 }
 
