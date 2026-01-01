@@ -1,8 +1,11 @@
 'use strict';
 
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
+const path = require('path');
 const ConnectionManager = require('./database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
+const StorageManager = require('./storage-manager');
 
 /**
  * Demo Data Provisioning Service
@@ -31,6 +34,75 @@ class DemoDataProvisioningService {
    */
   async initialize() {
     this.tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+  }
+
+  /**
+   * Download image from URL and store in storage
+   * @param {string} imageUrl - URL to download from
+   * @param {string} productSku - Product SKU for filename
+   * @param {number} index - Image index
+   * @returns {Promise<Object>} { url, path } or null if failed
+   */
+  async downloadAndStoreImage(imageUrl, productSku, index = 0) {
+    try {
+      console.log(`📷 Demo: Downloading image for ${productSku}-${index}...`);
+
+      // Download image
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000
+      });
+
+      const imageBuffer = Buffer.from(response.data);
+
+      // Determine extension and MIME type from content-type header or URL
+      const contentType = response.headers['content-type'] || 'image/jpeg';
+      let ext = '.jpg';
+      let mimeType = 'image/jpeg';
+
+      if (contentType.includes('png')) {
+        ext = '.png';
+        mimeType = 'image/png';
+      } else if (contentType.includes('webp')) {
+        ext = '.webp';
+        mimeType = 'image/webp';
+      } else if (contentType.includes('gif')) {
+        ext = '.gif';
+        mimeType = 'image/gif';
+      }
+
+      // Generate organized path
+      const firstChar = productSku.charAt(0).toLowerCase();
+      const secondChar = productSku.length > 1 ? productSku.charAt(1).toLowerCase() : firstChar;
+      const filename = `${productSku}-${index}${ext}`;
+
+      // Prepare file object
+      const fileObject = {
+        buffer: imageBuffer,
+        mimetype: mimeType,
+        size: imageBuffer.length,
+        originalname: filename
+      };
+
+      // Upload to storage
+      const uploadResult = await StorageManager.uploadFile(this.storeId, fileObject, {
+        folder: `demo/products/${firstChar}/${secondChar}`,
+        public: true,
+        type: 'demo'
+      });
+
+      console.log(`✅ Demo: Stored image ${filename}`);
+      return {
+        url: uploadResult.url,
+        path: uploadResult.path,
+        mimeType,
+        size: imageBuffer.length
+      };
+
+    } catch (error) {
+      console.error(`❌ Demo: Failed to download/store image for ${productSku}-${index}:`, error.message);
+      return null;
+    }
   }
 
   /**
@@ -536,56 +608,60 @@ class DemoDataProvisioningService {
 
       this.createdIds.products.push({ id: productId, sku: prod.sku, name: prod.name });
 
-      // Create product images in product_files table using realistic images
+      // Create product images - download from Unsplash and store locally
       const images = productImages[prod.sku] || [];
       for (let imgIdx = 0; imgIdx < images.length; imgIdx++) {
-        const imageUrl = images[imgIdx];
+        const sourceUrl = images[imgIdx];
         const altText = imgIdx === 0 ? prod.name : `${prod.name} - View ${imgIdx + 1}`;
 
-        // Create or find media_asset record
-        let mediaAssetId = null;
-        const { data: existingAsset } = await this.tenantDb
-          .from('media_assets')
-          .select('id')
-          .eq('file_url', imageUrl)
-          .maybeSingle();
+        // Download and store image in storage
+        const storedImage = await this.downloadAndStoreImage(sourceUrl, prod.sku, imgIdx);
 
-        if (existingAsset) {
-          mediaAssetId = existingAsset.id;
-        } else {
-          const fileName = `${prod.sku}-${imgIdx}.jpg`;
-          const filePath = `demo/products/${fileName}`;
-
-          const { data: newAsset } = await this.tenantDb
-            .from('media_assets')
-            .insert({
-              id: uuidv4(),
-              store_id: this.storeId,
-              file_url: imageUrl,
-              file_path: filePath,
-              file_name: fileName,
-              mime_type: 'image/jpeg',
-              folder: 'demo',
-              demo: true
-            })
-            .select('id')
-            .single();
-          mediaAssetId = newAsset?.id;
+        if (!storedImage) {
+          console.warn(`⚠️ Demo: Skipping image ${imgIdx} for ${prod.sku} - download failed`);
+          continue;
         }
 
+        // Create media_asset record with stored URL
+        const { data: newAsset } = await this.tenantDb
+          .from('media_assets')
+          .insert({
+            id: uuidv4(),
+            store_id: this.storeId,
+            file_url: storedImage.url,
+            file_path: storedImage.path,
+            file_name: `${prod.sku}-${imgIdx}.jpg`,
+            mime_type: storedImage.mimeType,
+            file_size: storedImage.size,
+            folder: 'demo',
+            demo: true
+          })
+          .select('id')
+          .single();
+
+        if (!newAsset) {
+          console.warn(`⚠️ Demo: Failed to create media_asset for ${prod.sku}-${imgIdx}`);
+          continue;
+        }
+
+        // Create product_files link
         const { error: imgError } = await this.tenantDb
           .from('product_files')
           .insert({
             id: uuidv4(),
             product_id: productId,
             store_id: this.storeId,
-            media_asset_id: mediaAssetId,
+            media_asset_id: newAsset.id,
             file_type: 'image',
             position: imgIdx,
             is_primary: imgIdx === 0,
             alt_text: altText,
             demo: true
           });
+
+        if (imgError) {
+          console.warn(`⚠️ Demo: Failed to create product_files for ${prod.sku}-${imgIdx}:`, imgError.message);
+        }
       }
 
       // Create product translation
@@ -1006,52 +1082,45 @@ class DemoDataProvisioningService {
         });
 
       // Create a simple product image for custom options
-      const imageUrl = `https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&h=600&fit=crop`;
+      const sourceUrl = `https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&h=600&fit=crop`;
 
-      // Create or find media_asset record
-      let mediaAssetId = null;
-      const { data: existingAsset } = await this.tenantDb
-        .from('media_assets')
-        .select('id')
-        .eq('file_url', imageUrl)
-        .maybeSingle();
+      // Download and store image
+      const storedImage = await this.downloadAndStoreImage(sourceUrl, prod.sku, 0);
 
-      if (existingAsset) {
-        mediaAssetId = existingAsset.id;
-      } else {
-        const fileName = `${prod.sku}-0.jpg`;
-        const filePath = `demo/products/${fileName}`;
-
+      if (storedImage) {
+        // Create media_asset record
         const { data: newAsset } = await this.tenantDb
           .from('media_assets')
           .insert({
             id: uuidv4(),
             store_id: this.storeId,
-            file_url: imageUrl,
-            file_path: filePath,
-            file_name: fileName,
-            mime_type: 'image/jpeg',
+            file_url: storedImage.url,
+            file_path: storedImage.path,
+            file_name: `${prod.sku}-0.jpg`,
+            mime_type: storedImage.mimeType,
+            file_size: storedImage.size,
             folder: 'demo',
             demo: true
           })
           .select('id')
           .single();
-        mediaAssetId = newAsset?.id;
-      }
 
-      await this.tenantDb
-        .from('product_files')
-        .insert({
-          id: uuidv4(),
-          product_id: productId,
-          store_id: this.storeId,
-          media_asset_id: mediaAssetId,
-          file_type: 'image',
-          position: 0,
-          is_primary: true,
-          alt_text: prod.name,
-          demo: true
-        });
+        if (newAsset) {
+          await this.tenantDb
+            .from('product_files')
+            .insert({
+              id: uuidv4(),
+              product_id: productId,
+              store_id: this.storeId,
+              media_asset_id: newAsset.id,
+              file_type: 'image',
+              position: 0,
+              is_primary: true,
+              alt_text: prod.name,
+              demo: true
+            });
+        }
+      }
     }
 
     // Now create custom option rules that make these products available as options for other products

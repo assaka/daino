@@ -2,12 +2,14 @@
 
 const ConnectionManager = require('./database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
+const StorageManager = require('./storage-manager');
 
 /**
  * Demo Data Restoration Service
  *
  * Clears all demo data from a store and restores it to active state.
  * Only deletes rows where demo=true, preserving user-added data.
+ * Also removes demo files from storage.
  */
 class DemoDataRestorationService {
   constructor(storeId) {
@@ -20,6 +22,54 @@ class DemoDataRestorationService {
    */
   async initialize() {
     this.tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+  }
+
+  /**
+   * Delete demo files from storage
+   * @returns {Promise<number>} Number of files deleted
+   */
+  async deleteDemoFilesFromStorage() {
+    let filesDeleted = 0;
+
+    try {
+      // Get all demo media_assets with their file paths
+      const { data: demoAssets, error } = await this.tenantDb
+        .from('media_assets')
+        .select('id, file_path, file_url')
+        .eq('store_id', this.storeId)
+        .eq('demo', true);
+
+      if (error) {
+        console.warn('[DemoRestore] Error fetching demo media_assets:', error.message);
+        return 0;
+      }
+
+      if (!demoAssets || demoAssets.length === 0) {
+        console.log('[DemoRestore] No demo files to delete from storage');
+        return 0;
+      }
+
+      console.log(`[DemoRestore] Deleting ${demoAssets.length} demo files from storage...`);
+
+      for (const asset of demoAssets) {
+        try {
+          if (asset.file_path && !asset.file_path.startsWith('http')) {
+            await StorageManager.deleteFile(this.storeId, asset.file_path);
+            filesDeleted++;
+          }
+        } catch (deleteErr) {
+          // Don't fail the whole operation if one file fails
+          console.warn(`[DemoRestore] Could not delete file ${asset.file_path}: ${deleteErr.message}`);
+        }
+      }
+
+      console.log(`[DemoRestore] Deleted ${filesDeleted} demo files from storage`);
+      return filesDeleted;
+
+    } catch (err) {
+      console.error('[DemoRestore] Error deleting demo files:', err.message);
+      return filesDeleted;
+    }
   }
 
   /**
@@ -85,6 +135,10 @@ class DemoDataRestorationService {
     const errors = [];
 
     try {
+      // Delete demo files from storage BEFORE deleting database records
+      const filesDeleted = await this.deleteDemoFilesFromStorage();
+      deletedCounts['storage_files'] = filesDeleted;
+
       for (const table of DemoDataRestorationService.TABLES_TO_CLEAR) {
         try {
           // Delete rows where demo=true and store_id matches
