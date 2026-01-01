@@ -101,8 +101,8 @@ async function seedNavigation() {
       const isVisible = item.is_visible !== false; // Default to true unless explicitly false
       await sequelize.query(`
         INSERT INTO admin_navigation_registry
-        (key, label, icon, route, order_position, is_core, is_visible, category)
-        VALUES ($1, $2, $3, $4, $5, true, $6, $7)
+        (key, label, icon, route, order_position, is_visible, category)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (key) DO UPDATE SET
           label = EXCLUDED.label,
           icon = EXCLUDED.icon,
@@ -125,7 +125,6 @@ async function seedNavigation() {
     const [counts] = await sequelize.query(`
       SELECT category, COUNT(*) as count
       FROM admin_navigation_registry
-      WHERE is_core = true
       GROUP BY category
       ORDER BY category
     `);

@@ -86,9 +86,9 @@ class AdminNavigationService {
    */
   async getCoreNavigation() {
     const coreItems = [
-      { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', order_position: 1, category: 'main', is_core: true, is_visible: true, children: [] },
-      { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order_position: 2, category: 'main', is_core: true, is_visible: true, children: [] },
-      { key: 'settings', label: 'Settings', icon: 'Settings', route: '/admin/settings', order_position: 99, category: 'settings', is_core: true, is_visible: true, children: [] }
+      { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', order_position: 1, category: 'main', is_visible: true, children: [] },
+      { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order_position: 2, category: 'main', is_visible: true, children: [] },
+      { key: 'settings', label: 'Settings', icon: 'Settings', route: '/admin/settings', order_position: 99, category: 'settings', is_visible: true, children: [] }
     ];
 
     return coreItems;
@@ -133,7 +133,6 @@ class AdminNavigationService {
           parent_key: custom?.parent_key ?? item.parent_key,
           order_position: custom?.order_position ?? item.default_order_position,
           is_visible: isVisible,
-          is_core: true,
           plugin_id: null,
           category: item.category,
           description: item.description,
@@ -205,7 +204,6 @@ class AdminNavigationService {
                 route: nav.route,
                 parent_key: nav.parentKey || null,
                 order_position: nav.order || 100,
-                is_core: false,
                 plugin_id: p.id,
                 is_visible: true,
                 category: 'plugins',
@@ -243,7 +241,6 @@ class AdminNavigationService {
                 route: nav.route,
                 parent_key: nav.parentKey || null,
                 order_position: nav.order || 100,
-                is_core: false,
                 plugin_id: p.id,
                 is_visible: true,
                 category: 'plugins',
@@ -261,7 +258,7 @@ class AdminNavigationService {
       let registryNavQuery = tenantDb
         .from('admin_navigation_registry')
         .select('*')
-        .eq('is_core', false)
+        .not('plugin_id', 'is', null)
         .order('order_position', { ascending: true });
 
       // Only filter by visibility if not including hidden
@@ -315,7 +312,6 @@ class AdminNavigationService {
         parent_key: item.parent_key,
         order_position: item.order_position,
         is_visible: item.is_visible,
-        is_core: item.is_core,
         plugin_id: item.plugin_id,
         category: item.category,
         description: item.description,
@@ -398,7 +394,6 @@ class AdminNavigationService {
           route: item.route,
           parent_key: item.parentKey || null,
           order_position: item.order || 100,
-          is_core: false,
           plugin_id: pluginId,
           category: item.category || 'plugins',
           updated_at: new Date().toISOString()

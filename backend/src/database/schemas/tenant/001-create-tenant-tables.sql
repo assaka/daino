@@ -3773,8 +3773,6 @@ CREATE INDEX IF NOT EXISTS idx_migrations_executed_at ON _migrations USING btree
 
 CREATE INDEX IF NOT EXISTS idx_migrations_filename ON _migrations USING btree (filename);
 
-CREATE INDEX IF NOT EXISTS idx_navigation_registry_core ON admin_navigation_registry USING btree (is_core);
-
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_key ON admin_navigation_registry USING btree (key);
 
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_parent ON admin_navigation_registry USING btree (parent_key);

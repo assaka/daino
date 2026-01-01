@@ -165,7 +165,6 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
             parent_key: adminNavigation.parentKey || null,
             order_position: orderPosition,
             is_visible: true,
-            is_core: false,
             plugin_id: pluginId,
             category: 'plugins',
             updated_at: new Date().toISOString()
@@ -294,7 +293,6 @@ router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_ow
           parent_key: item.parent_key,
           order_position: item.order_position,
           is_visible: item.is_visible,
-          is_core: false,
           plugin_id: pluginId,
           category: 'plugins',
           updated_at: new Date().toISOString()
