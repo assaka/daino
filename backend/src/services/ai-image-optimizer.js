@@ -295,16 +295,10 @@ class AIImageOptimizer {
 
       const duration = Date.now() - startTime;
 
-      // Auto-compress result using Sharp (preserves transparency)
-      if (result && result.image) {
-        const compressed = await this.compressWithSharp(result.image, {
-          preserveTransparency: operation === OPERATIONS.REMOVE_BG,
-          quality: 90
-        });
-        result.image = compressed.image;
-        result.format = compressed.format;
-        result.originalSize = compressed.originalSize;
-        result.compressedSize = compressed.compressedSize;
+      // Keep AI output as-is to preserve quality
+      // AI providers return PNG which is lossless
+      if (result && result.image && !result.format) {
+        result.format = 'png';
       }
 
       return {

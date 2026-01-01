@@ -299,9 +299,38 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       const format = currentFormat || 'png';
       const base64Data = currentImage;
       const originalName = singleFile.name || 'image';
+
+      // For replace: use original name with new extension
+      // For copy: prefix with optimized-
       const newName = applyToOriginal
-        ? originalName
+        ? originalName.replace(/\.[^.]+$/, `.${format}`)
         : `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
+
+      // If replacing original, delete the old file first
+      if (applyToOriginal && singleFile.id) {
+        try {
+          // Get the folder from the file's path or default to library
+          const folder = singleFile.folder || singleFile.path?.split('/')[0] || 'library';
+          const filePath = `${folder}/${singleFile.name}`;
+
+          const deleteResponse = await fetch(`${apiClient.baseUrl}/storage/delete`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiClient.getToken()}`,
+              'X-Store-Id': localStorage.getItem('selectedStoreId')
+            },
+            body: JSON.stringify({ filePath })
+          });
+
+          if (!deleteResponse.ok) {
+            console.warn('Could not delete original file, will upload as new');
+          }
+        } catch (deleteErr) {
+          console.warn('Delete original failed:', deleteErr);
+          // Continue with upload even if delete fails
+        }
+      }
 
       // Convert base64 to blob
       const byteCharacters = atob(base64Data);
@@ -312,12 +341,15 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: `image/${format}` });
 
-      // Upload using apiClient
+      // Upload using apiClient - use original folder if replacing
+      const folder = applyToOriginal
+        ? (singleFile.folder || singleFile.path?.split('/')[0] || 'library')
+        : 'library';
       const file = new File([blob], newName, { type: `image/${format}` });
-      const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
+      const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder });
 
       if (uploadResponse.success) {
-        toast.success(applyToOriginal ? `Applied changes to "${newName}"` : `Saved copy as "${newName}"`);
+        toast.success(applyToOriginal ? `Replaced "${originalName}"` : `Saved copy as "${newName}"`);
         if (onOptimized) onOptimized({ applied: true, refresh: true });
         if (applyToOriginal) onClose(); // Close if replacing original
       } else {
