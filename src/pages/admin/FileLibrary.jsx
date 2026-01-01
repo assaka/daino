@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage } from 'lucide-react';
+import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
@@ -57,6 +57,8 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
   // For single image mode: track current working image (starts as original, becomes result after optimization)
   const [currentImage, setCurrentImage] = useState(null);
   const [originalImage, setOriginalImage] = useState(null);
+  const [imageHistory, setImageHistory] = useState([]); // History stack for undo
+  const [originalSize, setOriginalSize] = useState(null); // Original file size in bytes
 
   // Operation-specific params
   const [stagingContext, setStagingContext] = useState(STAGING_CONTEXTS[0].value);
@@ -77,6 +79,18 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     if (isOpen && singleFile) {
       setOriginalImage(singleFile);
       setCurrentImage(null); // Reset result when opening
+      setImageHistory([]); // Reset history
+      setOriginalSize(singleFile.size || null); // Use file size if available
+
+      // Fetch original size if not available
+      if (!singleFile.size && singleFile.url) {
+        fetch(singleFile.url, { method: 'HEAD' })
+          .then(res => {
+            const size = res.headers.get('content-length');
+            if (size) setOriginalSize(parseInt(size, 10));
+          })
+          .catch(() => {});
+      }
     }
   }, [isOpen, singleFile?.id]);
 
@@ -129,6 +143,29 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     if (costPerImage === null) return null;
     return costPerImage * imagesToProcess.length;
   }, [getCostPerImage, imagesToProcess.length]);
+
+  // Format bytes to human readable
+  const formatBytes = (bytes) => {
+    if (!bytes) return '—';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  // Get size of base64 image in bytes
+  const getBase64Size = (base64) => {
+    if (!base64) return null;
+    // Base64 string length * 0.75 gives approximate byte size
+    return Math.round(base64.length * 0.75);
+  };
+
+  // Revert to previous state
+  const handleRevert = () => {
+    if (imageHistory.length === 0) return;
+    const previousImage = imageHistory[imageHistory.length - 1];
+    setImageHistory(prev => prev.slice(0, -1));
+    setCurrentImage(previousImage);
+  };
 
   // Get base64 from current image result or fetch from URL
   const getImageBase64 = async (imageSource) => {
@@ -203,8 +240,12 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
           };
           newResults.push(resultData);
 
-          // For single mode: update current image to the result
+          // For single mode: save current to history and update current image
           if (!isBulkMode) {
+            // Push current state to history (for undo)
+            if (currentImage) {
+              setImageHistory(prev => [...prev, currentImage]);
+            }
             setCurrentImage(response.result.image);
           }
         } else {
@@ -633,8 +674,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                         />
                       )}
                     </div>
-                    <div className="p-2 text-xs text-gray-500 truncate border-t">
-                      {singleFile?.name || 'Original image'}
+                    <div className="p-2 text-xs border-t flex items-center justify-between">
+                      <span className="text-gray-500 truncate">{singleFile?.name || 'Original image'}</span>
+                      <span className="text-gray-400 flex-shrink-0 ml-2">{formatBytes(originalSize)}</span>
                     </div>
                   </div>
                 </div>
@@ -668,24 +710,38 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                     <div className="p-2 text-xs border-t flex items-center justify-between">
                       {currentImage ? (
                         <>
-                          <span className="text-green-600 flex items-center gap-1">
-                            <Check className="w-3 h-3" />
-                            Optimized
-                          </span>
-                          <button
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = `data:image/png;base64,${currentImage}`;
-                              link.download = `optimized-${singleFile?.name || 'image'}.png`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }}
-                            className="text-gray-500 hover:text-gray-700"
-                            title="Download"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-600 flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              Optimized
+                            </span>
+                            <span className="text-gray-400">{formatBytes(getBase64Size(currentImage))}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {imageHistory.length > 0 && (
+                              <button
+                                onClick={handleRevert}
+                                className="p-1 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded"
+                                title="Undo last operation"
+                              >
+                                <Undo2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `data:image/png;base64,${currentImage}`;
+                                link.download = `optimized-${singleFile?.name || 'image'}.png`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                              className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
                         </>
                       ) : (
                         <span className="text-gray-400">Run an operation to see result</span>
