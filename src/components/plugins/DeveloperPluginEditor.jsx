@@ -122,6 +122,11 @@ const DeveloperPluginEditor = ({
 
   const loadPluginFiles = async () => {
     try {
+      if (!plugin?.id) {
+        console.error('DeveloperPluginEditor: plugin.id is missing!', plugin);
+        throw new Error('Plugin ID is required');
+      }
+      console.log('📂 Loading plugin files for:', plugin.id);
       const response = await apiClient.get(`plugins/registry/${plugin.id}`);
 
       // Extract migrations for status panel
