@@ -2493,7 +2493,6 @@ CREATE TABLE IF NOT EXISTS media_assets (
   folder VARCHAR(100) DEFAULT 'library'::character varying,
   tags JSON DEFAULT '{}'::json,
   description TEXT,
-  alt_text TEXT,
   metadata JSONB DEFAULT '{}'::jsonb,
   uploaded_by UUID,
   usage_count INTEGER DEFAULT 0,

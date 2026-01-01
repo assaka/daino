@@ -1291,6 +1291,18 @@ const FileLibrary = () => {
     setDeleteDialogOpen(true);
   };
 
+  // Handle confirmed delete action
+  const handleConfirmedDelete = async () => {
+    setDeleteDialogOpen(false);
+    if (isBulkDelete) {
+      await bulkDeleteFiles();
+    } else if (fileToDelete) {
+      await deleteFile(fileToDelete);
+    }
+    setFileToDelete(null);
+    setIsBulkDelete(false);
+  };
+
   // Delete file using Supabase storage API
   const deleteFile = async (fileId) => {
     try {
@@ -1345,9 +1357,6 @@ const FileLibrary = () => {
   // Bulk delete selected files
   const bulkDeleteFiles = async () => {
     if (selectedFileIds.length === 0) return;
-
-    const count = selectedFileIds.length;
-    if (!window.confirm(`Are you sure you want to delete ${count} file${count > 1 ? 's' : ''}? This action cannot be undone.`)) return;
 
     setDeleting(true);
     const selectedStoreId = localStorage.getItem('selectedStoreId');
@@ -1585,7 +1594,7 @@ const FileLibrary = () => {
                 AI Optimize ({selectedFileIds.length})
               </button>
               <button
-                onClick={bulkDeleteFiles}
+                onClick={confirmBulkDelete}
                 disabled={deleting}
                 className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1718,7 +1727,7 @@ const FileLibrary = () => {
                     <Download className="w-3.5 h-3.5" />
                   </a>
                   <button
-                    onClick={() => deleteFile(file.id)}
+                    onClick={() => confirmDeleteFile(file.id)}
                     className="p-1.5 bg-white rounded-full hover:bg-gray-100"
                     title="Delete"
                   >
@@ -1821,7 +1830,7 @@ const FileLibrary = () => {
                         <Download className="w-4 h-4" />
                       </a>
                       <button
-                        onClick={() => deleteFile(file.id)}
+                        onClick={() => confirmDeleteFile(file.id)}
                         className="text-red-600 hover:text-red-900"
                         title="Delete"
                       >
@@ -1891,6 +1900,40 @@ const FileLibrary = () => {
           onOptimized={handleOptimizedImage}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <AlertDialogTitle>
+                  {isBulkDelete
+                    ? `Delete ${selectedFileIds.length} file${selectedFileIds.length > 1 ? 's' : ''}?`
+                    : 'Delete file?'}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {isBulkDelete
+                    ? `Are you sure you want to delete ${selectedFileIds.length} selected file${selectedFileIds.length > 1 ? 's' : ''}? This action cannot be undone.`
+                    : 'Are you sure you want to delete this file? This action cannot be undone.'}
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

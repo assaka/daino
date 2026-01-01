@@ -926,7 +926,6 @@ class ShopifyImportService {
                     file_path: filePath,
                     file_name: `${product.handle}-${i}.jpg`,
                     mime_type: 'image/jpeg',
-                    alt_text: image.alt || product.title,
                     folder: 'product'
                   })
                   .select('id')
@@ -994,7 +993,6 @@ class ShopifyImportService {
                     file_path: filePath,
                     file_name: `${product.handle}-${i}.jpg`,
                     mime_type: 'image/jpeg',
-                    alt_text: image.alt || product.title,
                     folder: 'external'
                   })
                   .select('id')

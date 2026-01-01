@@ -565,7 +565,6 @@ class DemoDataProvisioningService {
               file_path: filePath,
               file_name: fileName,
               mime_type: 'image/jpeg',
-              alt_text: altText,
               folder: 'demo',
               demo: true
             })
@@ -1032,7 +1031,6 @@ class DemoDataProvisioningService {
             file_path: filePath,
             file_name: fileName,
             mime_type: 'image/jpeg',
-            alt_text: prod.name,
             folder: 'demo',
             demo: true
           })
