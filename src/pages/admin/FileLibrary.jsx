@@ -476,9 +476,61 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
           {results.length > 0 ? (
             // Results view
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700">
-                Results: {results.filter(r => r.success).length}/{results.length} successful
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  Results: {results.filter(r => r.success).length}/{results.length} successful
+                </h3>
+                {results.filter(r => r.success && !r.saved).length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const unsavedResults = results.filter(r => r.success && !r.saved);
+                      let savedCount = 0;
+                      for (const result of unsavedResults) {
+                        try {
+                          const format = result.result?.format || 'png';
+                          const base64Data = result.result.image;
+                          const originalName = result.original.name || 'image';
+                          const newName = `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
+
+                          const byteCharacters = atob(base64Data);
+                          const byteNumbers = new Array(byteCharacters.length);
+                          for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                          }
+                          const byteArray = new Uint8Array(byteNumbers);
+                          const blob = new Blob([byteArray], { type: `image/${format}` });
+
+                          const formData = new FormData();
+                          formData.append('file', blob, newName);
+                          formData.append('entity_type', 'library');
+
+                          const uploadResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/files/upload`, {
+                            method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            },
+                            body: formData
+                          });
+
+                          if (uploadResponse.ok) {
+                            result.saved = true;
+                            savedCount++;
+                          }
+                        } catch (err) {
+                          console.error('Failed to save:', err);
+                        }
+                      }
+                      setResults([...results]);
+                      toast.success(`Saved ${savedCount} images to library`);
+                    }}
+                    className="text-xs"
+                  >
+                    Save All to Library ({results.filter(r => r.success && !r.saved).length})
+                  </Button>
+                )}
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {results.map((result, idx) => {
                   // Convert base64 to data URL for display
@@ -503,6 +555,50 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                     document.body.removeChild(link);
                   };
 
+                  const handleSaveToLibrary = async () => {
+                    if (!result.success || !result.result?.image) return;
+                    try {
+                      const format = result.result?.format || 'png';
+                      const base64Data = result.result.image;
+                      const originalName = result.original.name || 'image';
+                      const newName = `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
+
+                      // Convert base64 to blob
+                      const byteCharacters = atob(base64Data);
+                      const byteNumbers = new Array(byteCharacters.length);
+                      for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                      }
+                      const byteArray = new Uint8Array(byteNumbers);
+                      const blob = new Blob([byteArray], { type: `image/${format}` });
+
+                      // Create FormData and upload
+                      const formData = new FormData();
+                      formData.append('file', blob, newName);
+                      formData.append('entity_type', 'library');
+
+                      const uploadResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/files/upload`, {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: formData
+                      });
+
+                      if (uploadResponse.ok) {
+                        toast.success(`Saved "${newName}" to library`);
+                        // Mark as saved in the result
+                        result.saved = true;
+                        setResults([...results]);
+                      } else {
+                        throw new Error('Upload failed');
+                      }
+                    } catch (err) {
+                      console.error('Failed to save to library:', err);
+                      toast.error('Failed to save to library');
+                    }
+                  };
+
                   return (
                     <div key={idx} className={cn(
                       "border rounded-lg overflow-hidden group",
@@ -515,28 +611,52 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                           className="max-w-full max-h-full object-contain"
                         />
                         {result.success && (
-                          <button
-                            onClick={handleDownload}
-                            className="absolute top-1 right-1 p-1.5 bg-white/90 rounded-lg shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Download"
-                          >
-                            <Download className="w-4 h-4 text-gray-600" />
-                          </button>
+                          <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={handleDownload}
+                              className="p-1.5 bg-white/90 rounded-lg shadow"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4 text-gray-600" />
+                            </button>
+                          </div>
+                        )}
+                        {result.saved && (
+                          <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-xs rounded">
+                            Saved
+                          </div>
                         )}
                       </div>
                       <div className="p-2 text-xs">
                         {result.success ? (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 text-green-600">
-                              <Check className="w-3 h-3" />
-                              <span>{result.credits?.toFixed(2)} cr</span>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1 text-green-600">
+                                <Check className="w-3 h-3" />
+                                <span>{result.credits?.toFixed(2)} cr</span>
+                              </div>
                             </div>
-                            <button
-                              onClick={handleDownload}
-                              className="text-purple-600 hover:text-purple-700 font-medium"
-                            >
-                              Download
-                            </button>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={handleSaveToLibrary}
+                                disabled={result.saved}
+                                className={cn(
+                                  "flex-1 py-1 rounded text-center font-medium transition-colors",
+                                  result.saved
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                                )}
+                              >
+                                {result.saved ? 'Saved' : 'Save to Library'}
+                              </button>
+                              <button
+                                onClick={handleDownload}
+                                className="px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                                title="Download"
+                              >
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 text-red-600">
@@ -627,39 +747,34 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
             ) : null}
           </div>
           <div className="flex gap-2">
-            {results.length > 0 ? (
-              <>
-                <Button variant="outline" onClick={() => setResults([])}>
-                  Optimize More
-                </Button>
-                <Button onClick={onClose}>
-                  Done
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={onClose} disabled={isProcessing}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleOptimize}
-                  disabled={isProcessing || imagesToProcess.length === 0}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Optimize {imagesToProcess.length} Image{imagesToProcess.length !== 1 ? 's' : ''}
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
+            <Button variant="outline" onClick={onClose} disabled={isProcessing}>
+              {results.length > 0 ? 'Close' : 'Cancel'}
+            </Button>
+            <Button
+              onClick={() => {
+                if (results.length > 0) setResults([]);
+                handleOptimize();
+              }}
+              disabled={isProcessing || imagesToProcess.length === 0}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : results.length > 0 ? (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Run Another Operation
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Optimize {imagesToProcess.length} Image{imagesToProcess.length !== 1 ? 's' : ''}
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
