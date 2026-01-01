@@ -480,33 +480,74 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                 Results: {results.filter(r => r.success).length}/{results.length} successful
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {results.map((result, idx) => (
-                  <div key={idx} className={cn(
-                    "border rounded-lg overflow-hidden",
-                    result.success ? "border-green-300" : "border-red-300"
-                  )}>
-                    <div className="h-24 bg-gray-100 flex items-center justify-center">
-                      <img
-                        src={result.success && result.result?.imageUrl ? result.result.imageUrl : result.original.url}
-                        alt=""
-                        className="max-w-full max-h-full object-contain"
-                      />
+                {results.map((result, idx) => {
+                  // Convert base64 to data URL for display
+                  const getImageSrc = () => {
+                    if (!result.success) return result.original.url;
+                    if (result.result?.imageUrl) return result.result.imageUrl;
+                    if (result.result?.image) {
+                      const format = result.result?.format || 'png';
+                      return `data:image/${format};base64,${result.result.image}`;
+                    }
+                    return result.original.url;
+                  };
+
+                  const handleDownload = () => {
+                    if (!result.success || !result.result?.image) return;
+                    const format = result.result?.format || 'png';
+                    const link = document.createElement('a');
+                    link.href = `data:image/${format};base64,${result.result.image}`;
+                    link.download = `optimized-${result.original.name || 'image'}.${format}`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  };
+
+                  return (
+                    <div key={idx} className={cn(
+                      "border rounded-lg overflow-hidden group",
+                      result.success ? "border-green-300" : "border-red-300"
+                    )}>
+                      <div className="h-32 bg-gray-100 flex items-center justify-center relative">
+                        <img
+                          src={getImageSrc()}
+                          alt=""
+                          className="max-w-full max-h-full object-contain"
+                        />
+                        {result.success && (
+                          <button
+                            onClick={handleDownload}
+                            className="absolute top-1 right-1 p-1.5 bg-white/90 rounded-lg shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Download"
+                          >
+                            <Download className="w-4 h-4 text-gray-600" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="p-2 text-xs">
+                        {result.success ? (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-green-600">
+                              <Check className="w-3 h-3" />
+                              <span>{result.credits?.toFixed(2)} cr</span>
+                            </div>
+                            <button
+                              onClick={handleDownload}
+                              className="text-purple-600 hover:text-purple-700 font-medium"
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600">
+                            <AlertCircle className="w-3 h-3" />
+                            <span className="truncate">{result.error}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="p-2 text-xs">
-                      {result.success ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <Check className="w-3 h-3" />
-                          <span>{result.credits?.toFixed(2)} credits</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-600">
-                          <AlertCircle className="w-3 h-3" />
-                          <span className="truncate">{result.error}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
