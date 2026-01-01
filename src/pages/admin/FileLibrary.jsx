@@ -67,16 +67,18 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
   const providerDropdownRef = useRef(null);
   const operationDropdownRef = useRef(null);
 
-  const isBulkMode = !fileToOptimize && selectedFiles?.length > 1;
-  const imagesToProcess = fileToOptimize ? [fileToOptimize] : selectedFiles || [];
+  // Determine single vs bulk mode
+  const singleFile = fileToOptimize || (selectedFiles?.length === 1 ? selectedFiles[0] : null);
+  const isBulkMode = !singleFile && selectedFiles?.length > 1;
+  const imagesToProcess = singleFile ? [singleFile] : selectedFiles || [];
 
   // Initialize original/current image for single mode
   useEffect(() => {
-    if (fileToOptimize && isOpen) {
-      setOriginalImage(fileToOptimize);
-      setCurrentImage(null); // No result yet
+    if (isOpen && singleFile) {
+      setOriginalImage(singleFile);
+      setCurrentImage(null); // Reset result when opening
     }
-  }, [fileToOptimize, isOpen]);
+  }, [isOpen, singleFile?.id]);
 
   // Fetch pricing on mount
   useEffect(() => {
@@ -149,7 +151,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
   // Process images
   const handleOptimize = async () => {
     if (isBulkMode && imagesToProcess.length === 0) return;
-    if (!isBulkMode && !originalImage) return;
+    if (!isBulkMode && !singleFile) return;
 
     setIsProcessing(true);
     setError(null);
@@ -157,7 +159,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     if (isBulkMode) setResults([]);
 
     const newResults = [];
-    const itemsToProcess = isBulkMode ? imagesToProcess : [originalImage];
+    const itemsToProcess = isBulkMode ? imagesToProcess : [singleFile];
 
     for (let i = 0; i < itemsToProcess.length; i++) {
       const image = itemsToProcess[i];
@@ -241,13 +243,13 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
 
   // Apply changes (replace original or save copy)
   const handleApply = async () => {
-    if (!currentImage || !originalImage) return;
+    if (!currentImage || !singleFile) return;
     setIsApplying(true);
 
     try {
       const format = 'png';
       const base64Data = currentImage;
-      const originalName = originalImage.name || 'image';
+      const originalName = singleFile.name || 'image';
       const newName = saveCopy
         ? `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`
         : originalName;
@@ -640,16 +642,16 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                   <h3 className="text-sm font-semibold text-gray-700">Original</h3>
                   <div className="border rounded-lg overflow-hidden bg-gray-50">
                     <div className="h-72 flex items-center justify-center bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZjBmMGYwIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmMGYwZjAiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')]">
-                      {originalImage && (
+                      {singleFile && (
                         <img
-                          src={originalImage.url}
+                          src={singleFile.url}
                           alt="Original"
                           className="max-w-full max-h-full object-contain"
                         />
                       )}
                     </div>
                     <div className="p-2 text-xs text-gray-500 truncate border-t">
-                      {originalImage?.name || 'Original image'}
+                      {singleFile?.name || 'Original image'}
                     </div>
                   </div>
                 </div>
@@ -670,9 +672,9 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                           alt="Result"
                           className="max-w-full max-h-full object-contain"
                         />
-                      ) : originalImage ? (
+                      ) : singleFile ? (
                         <img
-                          src={originalImage.url}
+                          src={singleFile.url}
                           alt="Preview"
                           className="max-w-full max-h-full object-contain opacity-50"
                         />
@@ -691,7 +693,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
                             onClick={() => {
                               const link = document.createElement('a');
                               link.href = `data:image/png;base64,${currentImage}`;
-                              link.download = `optimized-${originalImage?.name || 'image'}.png`;
+                              link.download = `optimized-${singleFile?.name || 'image'}.png`;
                               document.body.appendChild(link);
                               link.click();
                               document.body.removeChild(link);
@@ -850,7 +852,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
               {/* Optimize button */}
               <Button
                 onClick={handleOptimize}
-                disabled={isProcessing || (!isBulkMode && !originalImage) || (isBulkMode && imagesToProcess.length === 0)}
+                disabled={isProcessing || (!isBulkMode && !singleFile) || (isBulkMode && imagesToProcess.length === 0)}
                 className="bg-purple-600 hover:bg-purple-700"
               >
                 {isProcessing ? (
