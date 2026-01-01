@@ -1,7 +1,8 @@
 /**
  * Gemini Image Provider
  *
- * Uses Gemini 2.0 Flash and Imagen 3 for image operations
+ * Uses Gemini 2.0 Flash for image operations
+ * Note: Image generation requires specific model and config
  */
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -29,15 +30,47 @@ class GeminiImageProvider {
   }
 
   /**
-   * Get Gemini model for image tasks
+   * Get Gemini model for image generation tasks
    */
-  getModel() {
+  getImageModel() {
+    // Use gemini-2.0-flash-exp-image-generation for image output
     return this.client.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.0-flash-exp-image-generation',
       generationConfig: {
-        responseModalities: ['Text', 'Image']
+        responseModalities: ['image', 'text']
       }
     });
+  }
+
+  /**
+   * Extract image from response
+   */
+  extractImage(response) {
+    // Check various possible response structures
+    const candidates = response.candidates || [];
+
+    for (const candidate of candidates) {
+      const parts = candidate.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          return {
+            data: part.inlineData.data,
+            mimeType: part.inlineData.mimeType || 'image/png'
+          };
+        }
+        // Some responses may have fileData instead
+        if (part.fileData?.fileUri) {
+          return {
+            url: part.fileData.fileUri,
+            mimeType: part.fileData.mimeType || 'image/png'
+          };
+        }
+      }
+    }
+
+    // Log response for debugging
+    console.error('[Gemini] Response structure:', JSON.stringify(response, null, 2).slice(0, 1000));
+    return null;
   }
 
   /**
@@ -46,7 +79,7 @@ class GeminiImageProvider {
   async compress(image, params = {}) {
     const { quality = 'high' } = params;
 
-    const model = this.getModel();
+    const model = this.getImageModel();
     const imageData = await this.prepareImage(image);
 
     const result = await model.generateContent([
@@ -59,16 +92,14 @@ class GeminiImageProvider {
       `Optimize this image for web use while maintaining visual quality. Quality level: ${quality}. Output the optimized image.`
     ]);
 
-    const response = result.response;
-    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-    if (!imagePart) {
+    const imageResult = this.extractImage(result.response);
+    if (!imageResult) {
       throw new Error('No image returned from Gemini');
     }
 
     return {
-      image: imagePart.inlineData.data,
-      format: imagePart.inlineData.mimeType.split('/')[1] || 'png',
+      image: imageResult.data,
+      format: imageResult.mimeType.split('/')[1] || 'png',
       optimized: true
     };
   }
@@ -79,7 +110,7 @@ class GeminiImageProvider {
   async upscale(image, params = {}) {
     const { scale = 2, enhanceDetails = true } = params;
 
-    const model = this.getModel();
+    const model = this.getImageModel();
     const imageData = await this.prepareImage(image);
 
     const prompt = `Upscale this image by ${scale}x. ${enhanceDetails ? 'Enhance fine details and sharpness.' : 'Maintain original appearance.'} Output the enhanced image.`;
@@ -94,16 +125,14 @@ class GeminiImageProvider {
       prompt
     ]);
 
-    const response = result.response;
-    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-    if (!imagePart) {
+    const imageResult = this.extractImage(result.response);
+    if (!imageResult) {
       throw new Error('No image returned from Gemini');
     }
 
     return {
-      image: imagePart.inlineData.data,
-      format: imagePart.inlineData.mimeType.split('/')[1] || 'png',
+      image: imageResult.data,
+      format: imageResult.mimeType.split('/')[1] || 'png',
       scale
     };
   }
@@ -114,7 +143,7 @@ class GeminiImageProvider {
   async removeBackground(image, params = {}) {
     const { replacement = 'transparent' } = params;
 
-    const model = this.getModel();
+    const model = this.getImageModel();
     const imageData = await this.prepareImage(image);
 
     let prompt = 'Remove the background from this image. Keep only the main subject with clean edges.';
@@ -133,16 +162,14 @@ class GeminiImageProvider {
       prompt
     ]);
 
-    const response = result.response;
-    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-    if (!imagePart) {
+    const imageResult = this.extractImage(result.response);
+    if (!imageResult) {
       throw new Error('No image returned from Gemini');
     }
 
     return {
-      image: imagePart.inlineData.data,
-      format: imagePart.inlineData.mimeType.split('/')[1] || 'png',
+      image: imageResult.data,
+      format: imageResult.mimeType.split('/')[1] || 'png',
       backgroundRemoved: true,
       replacement
     };
@@ -158,7 +185,7 @@ class GeminiImageProvider {
       lighting = 'natural daylight'
     } = params;
 
-    const model = this.getModel();
+    const model = this.getImageModel();
     const imageData = await this.prepareImage(image);
 
     const prompt = `Place this product naturally in a ${context}. Style: ${style}. Lighting: ${lighting}. Create realistic shadows and reflections. Maintain the product's original appearance. Output as an image.`;
@@ -173,16 +200,14 @@ class GeminiImageProvider {
       prompt
     ]);
 
-    const response = result.response;
-    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-    if (!imagePart) {
+    const imageResult = this.extractImage(result.response);
+    if (!imageResult) {
       throw new Error('No image returned from Gemini');
     }
 
     return {
-      image: imagePart.inlineData.data,
-      format: imagePart.inlineData.mimeType.split('/')[1] || 'png',
+      image: imageResult.data,
+      format: imageResult.mimeType.split('/')[1] || 'png',
       context,
       style
     };
@@ -194,7 +219,7 @@ class GeminiImageProvider {
   async convert(image, params = {}) {
     const { targetFormat = 'webp', quality = 85 } = params;
 
-    const model = this.getModel();
+    const model = this.getImageModel();
     const imageData = await this.prepareImage(image);
 
     const result = await model.generateContent([
@@ -207,16 +232,14 @@ class GeminiImageProvider {
       'Reproduce this image exactly. Output as an image.'
     ]);
 
-    const response = result.response;
-    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-    if (!imagePart) {
+    const imageResult = this.extractImage(result.response);
+    if (!imageResult) {
       throw new Error('No image returned from Gemini');
     }
 
     return {
-      image: imagePart.inlineData.data,
-      format: imagePart.inlineData.mimeType.split('/')[1] || 'png',
+      image: imageResult.data,
+      format: imageResult.mimeType.split('/')[1] || 'png',
       requestedFormat: targetFormat,
       quality
     };
