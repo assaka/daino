@@ -1086,9 +1086,9 @@ class AkeneoMapping {
               images.push(imageObject);
               foundImageCount++;
               console.log(`📁 Added image ${foundImageCount}:`);
-              console.log(`   Final URL being saved: ${finalImageUrl}`);
-              console.log(`   Is Supabase URL: ${finalImageUrl.includes('supabase.co')}`);
-              console.log(`   Is Akeneo URL: ${finalImageUrl.includes('akeneo')}`);
+              console.log(`   Final URL: ${finalImageUrl}`);
+              console.log(`   media_asset_id: ${imageObject.media_asset_id}`);
+              console.log(`   contentType: ${imageObject.contentType}`);
               console.log(`   Was downloaded/uploaded: ${!!uploadResult}`);
             }
           }
@@ -1435,9 +1435,17 @@ class AkeneoMapping {
 
       // Skip file-type attributes - they go to product_files, not product_attribute_values
       const akeneoType = akeneoAttributeTypes[attributeCode];
-      if (akeneoType === 'pim_catalog_file' || akeneoType === 'pim_catalog_image' || dbAttrDef?.type === 'file') {
-        console.log(`📁 Skipping '${attributeCode}' - file type attribute (handled by product_files)`);
+      const isFileType = akeneoType === 'pim_catalog_file' || akeneoType === 'pim_catalog_image' || dbAttrDef?.type === 'file';
+
+      if (isFileType) {
+        console.log(`📁 Skipping '${attributeCode}' - file type (akeneo: ${akeneoType}, db: ${dbAttrDef?.type})`);
         continue;
+      }
+
+      // Debug: Log if this looks like a file attribute but wasn't detected
+      if (attributeCode.includes('pdf') || attributeCode.includes('image') || attributeCode.includes('file') ||
+          attributeCode.includes('brochure') || attributeCode.includes('manual') || attributeCode.includes('label')) {
+        console.log(`⚠️ Potential file attribute '${attributeCode}' not detected as file type (akeneo: ${akeneoType}, db: ${dbAttrDef?.type})`);
       }
       let rawValue = null;
       
