@@ -183,8 +183,10 @@ class TenantProvisioningService {
         result.errors.push({ step: 'create_store', error: 'No database client available' });
       }
 
-      // 5. Create agency user record in tenant DB
-      if (tenantDb && options.userId && options.userEmail) {
+      // 5. Create agency user record in tenant DB (skip if already created during migrations)
+      if (options._userCreatedInMigrations) {
+        console.log('⏭️ User record already created during migrations - skipping');
+      } else if (tenantDb && options.userId && options.userEmail) {
         // Use Supabase client
         console.log('Creating user record via Supabase client...');
         await this.createUserRecord(tenantDb, options, result);
@@ -431,8 +433,46 @@ END $$;`;
             result.tablesCreated.push(`Added ${successCount} foreign key constraints`);
           }
 
+          // IMPORTANT: Create user record BEFORE store (stores.user_id has FK to users.id)
+          if (options.userId && options.userEmail) {
+            console.log('📤 Pass 2.5a: Creating user record before store...');
+            const userInsertSQL = `
+INSERT INTO users (id, email, password, first_name, last_name, role, account_type, is_active, email_verified, created_at, updated_at)
+VALUES (
+  '${options.userId}',
+  '${options.userEmail}',
+  '${options.userPasswordHash || 'oauth-user'}',
+  '${(options.userFirstName || '').replace(/'/g, "''")}',
+  '${(options.userLastName || '').replace(/'/g, "''")}',
+  'admin',
+  'agency',
+  true,
+  true,
+  NOW(),
+  NOW()
+) ON CONFLICT (id) DO NOTHING;
+            `;
+
+            try {
+              await axios.post(
+                `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+                { query: userInsertSQL },
+                {
+                  headers: {
+                    'Authorization': `Bearer ${options.oauthAccessToken}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+              console.log('✅ User record created before store');
+              options._userCreatedInMigrations = true;
+            } catch (userError) {
+              console.error('❌ Failed to create user record:', userError.response?.data || userError.message);
+            }
+          }
+
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
-          console.log('📤 Pass 2.5: Creating store record before seed data...');
+          console.log('📤 Pass 2.5b: Creating store record before seed data...');
 
           // Store name must be provided in options (master DB doesn't have store name)
           const storeName = options.storeName || 'My Store';
