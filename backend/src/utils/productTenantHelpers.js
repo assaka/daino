@@ -512,6 +512,19 @@ async function deleteProduct(storeId, productId) {
     .map(f => f.media_asset_id)
     .filter(id => id);
 
+  // Delete product_files FIRST (has FK to media_assets)
+  const { error: productFilesError } = await tenantDb
+    .from('product_files')
+    .delete()
+    .eq('product_id', productId);
+
+  if (productFilesError) {
+    console.error(`Failed to delete product_files for product ${productId}:`, productFilesError.message);
+  } else {
+    console.log(`🗑️ Deleted product_files for product ${productId}`);
+  }
+
+  // Now delete media_assets (after product_files FK is removed)
   if (mediaAssetIds.length > 0) {
     // Get media asset details for storage deletion
     const { data: mediaAssets } = await tenantDb
@@ -529,24 +542,23 @@ async function deleteProduct(storeId, productId) {
             console.log(`🗑️ Deleted product image from storage: ${asset.file_path}`);
           } catch (storageError) {
             console.error(`Failed to delete product image from storage: ${asset.file_path}`, storageError.message);
-            // Continue even if storage deletion fails
           }
         }
       }
     }
 
     // Delete media_assets records
-    await tenantDb
+    const { error: mediaAssetsError } = await tenantDb
       .from('media_assets')
       .delete()
       .in('id', mediaAssetIds);
-  }
 
-  // Delete product_files
-  await tenantDb
-    .from('product_files')
-    .delete()
-    .eq('product_id', productId);
+    if (mediaAssetsError) {
+      console.error(`Failed to delete media_assets for product ${productId}:`, mediaAssetsError.message);
+    } else {
+      console.log(`🗑️ Deleted ${mediaAssetIds.length} media_assets for product ${productId}`);
+    }
+  }
 
   // Delete attribute values
   await tenantDb
