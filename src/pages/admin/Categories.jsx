@@ -95,6 +95,7 @@ export default function Categories() {
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [rootCategoryToDelete, setRootCategoryToDelete] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
 
   // Load user credits for AI translation checks
@@ -1147,18 +1148,7 @@ export default function Categories() {
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button
-                              onClick={async () => {
-                                if (window.confirm(`Are you sure you want to delete "${getCategoryName(category)}"? This will also delete all its subcategories.`)) {
-                                  try {
-                                    await Category.delete(category.id);
-                                    setFlashMessage({ type: 'success', message: 'Category deleted successfully' });
-                                    await loadCategories();
-                                  } catch (error) {
-                                    console.error('Error deleting category:', error);
-                                    setFlashMessage({ type: 'error', message: 'Failed to delete category' });
-                                  }
-                                }
-                              }}
+                              onClick={() => setRootCategoryToDelete(category)}
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -1740,6 +1730,46 @@ export default function Categories() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDeleteCategory}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Root Category Confirmation Dialog */}
+        <AlertDialog open={!!rootCategoryToDelete} onOpenChange={(open) => !open && setRootCategoryToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <AlertDialogTitle>Delete Root Category</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="pt-2">
+                Are you sure you want to delete <strong>"{rootCategoryToDelete ? getCategoryName(rootCategoryToDelete) : ''}"</strong>?
+                This will also delete all its subcategories. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (!rootCategoryToDelete) return;
+                  try {
+                    await Category.delete(rootCategoryToDelete.id);
+                    setFlashMessage({ type: 'success', message: 'Category deleted successfully' });
+                    await loadCategories();
+                  } catch (error) {
+                    console.error('Error deleting category:', error);
+                    setFlashMessage({ type: 'error', message: 'Failed to delete category' });
+                  } finally {
+                    setRootCategoryToDelete(null);
+                  }
+                }}
                 className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
               >
                 <Trash2 className="w-4 h-4 mr-2" />

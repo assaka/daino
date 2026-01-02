@@ -37,6 +37,16 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -79,6 +89,10 @@ export default function Attributes() {
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+
+  // Delete confirmation state
+  const [attributeToDelete, setAttributeToDelete] = useState(null);
+  const [attributeSetToDelete, setAttributeSetToDelete] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -179,17 +193,24 @@ export default function Attributes() {
     }
   };
 
-  const handleDeleteAttribute = async (attributeId) => {
-    if (window.confirm("Are you sure you want to delete this attribute?")) {
-      try {
-        await Attribute.delete(attributeId);
-        await loadData();
-        // Clear storefront cache for instant updates
-        const storeId = getSelectedStoreId();
-        if (storeId) clearAttributesCache(storeId);
-      } catch (error) {
-        console.error("Error deleting attribute:", error);
-      }
+  const handleDeleteAttribute = (attribute) => {
+    setAttributeToDelete(attribute);
+  };
+
+  const confirmDeleteAttribute = async () => {
+    if (!attributeToDelete) return;
+    try {
+      await Attribute.delete(attributeToDelete.id);
+      await loadData();
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearAttributesCache(storeId);
+      setFlashMessage({ type: 'success', message: 'Attribute deleted successfully' });
+    } catch (error) {
+      console.error("Error deleting attribute:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to delete attribute' });
+    } finally {
+      setAttributeToDelete(null);
     }
   };
 
@@ -229,17 +250,24 @@ export default function Attributes() {
     }
   };
 
-  const handleDeleteAttributeSet = async (attributeSetId) => {
-    if (window.confirm("Are you sure you want to delete this attribute set?")) {
-      try {
-        await AttributeSet.delete(attributeSetId);
-        await loadData();
-        // Clear storefront cache for instant updates
-        const storeId = getSelectedStoreId();
-        if (storeId) clearAttributesCache(storeId);
-      } catch (error) {
-        console.error("Error deleting attribute set:", error);
-      }
+  const handleDeleteAttributeSet = (attributeSet) => {
+    setAttributeSetToDelete(attributeSet);
+  };
+
+  const confirmDeleteAttributeSet = async () => {
+    if (!attributeSetToDelete) return;
+    try {
+      await AttributeSet.delete(attributeSetToDelete.id);
+      await loadData();
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearAttributesCache(storeId);
+      setFlashMessage({ type: 'success', message: 'Attribute set deleted successfully' });
+    } catch (error) {
+      console.error("Error deleting attribute set:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to delete attribute set' });
+    } finally {
+      setAttributeSetToDelete(null);
     }
   };
 
@@ -644,7 +672,7 @@ export default function Attributes() {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteAttribute(attribute.id)}
+                            onClick={() => handleDeleteAttribute(attribute)}
                             className="text-red-600"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -784,7 +812,7 @@ export default function Attributes() {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteAttributeSet(attributeSet.id)}
+                            onClick={() => handleDeleteAttributeSet(attributeSet)}
                             className="text-red-600"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -951,6 +979,62 @@ export default function Attributes() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Attribute Confirmation Dialog */}
+        <AlertDialog open={!!attributeToDelete} onOpenChange={(open) => !open && setAttributeToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <AlertDialogTitle>Delete Attribute</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="pt-2">
+                Are you sure you want to delete <strong>"{attributeToDelete?.name || ''}"</strong>?
+                This will remove it from all products. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteAttribute}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Attribute Set Confirmation Dialog */}
+        <AlertDialog open={!!attributeSetToDelete} onOpenChange={(open) => !open && setAttributeSetToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <AlertDialogTitle>Delete Attribute Set</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="pt-2">
+                Are you sure you want to delete <strong>"{attributeSetToDelete?.name || ''}"</strong>?
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteAttributeSet}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
