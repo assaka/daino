@@ -1286,7 +1286,11 @@ class AkeneoMapping {
             console.error(`[Akeneo] Full upload result:`, JSON.stringify(uploadResult, null, 2));
           }
         } catch (storageError) {
-          console.log(`⚠️ Storage manager upload failed, trying local fallback: ${storageError.message}`);
+          console.error(`❌ Storage manager upload FAILED for ${pathInfo.filename}:`);
+          console.error(`   Error: ${storageError.message}`);
+          console.error(`   Stack: ${storageError.stack}`);
+          // Don't fall through to local fallback - return null to indicate failure
+          return null;
         }
       }
 
