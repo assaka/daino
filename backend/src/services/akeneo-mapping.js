@@ -1414,9 +1414,16 @@ class AkeneoMapping {
         console.log(`⏭️ Skipping '${attributeCode}' - has explicit mapping to product field`);
         continue;
       }
-      
+
       // First check database for attribute type to determine extraction method
       const dbAttrDef = databaseAttributeTypes[attributeCode];
+
+      // Skip file-type attributes - they go to product_files, not product_attribute_values
+      const akeneoType = akeneoAttributeTypes[attributeCode];
+      if (akeneoType === 'pim_catalog_file' || akeneoType === 'pim_catalog_image' || dbAttrDef?.type === 'file') {
+        console.log(`📁 Skipping '${attributeCode}' - file type attribute (handled by product_files)`);
+        continue;
+      }
       let rawValue = null;
       
       // For multiselect attributes, extract all values
