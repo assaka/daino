@@ -434,6 +434,7 @@ END $$;`;
           }
 
           // IMPORTANT: Create user record BEFORE store (stores.user_id has FK to users.id)
+          let userCreated = false;
           if (options.userId && options.userEmail) {
             console.log('📤 Pass 2.5a: Creating user record before store...');
             const userInsertSQL = `
@@ -450,11 +451,11 @@ VALUES (
   true,
   NOW(),
   NOW()
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET updated_at = NOW();
             `;
 
             try {
-              await axios.post(
+              const userResponse = await axios.post(
                 `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
                 { query: userInsertSQL },
                 {
@@ -464,11 +465,15 @@ VALUES (
                   }
                 }
               );
-              console.log('✅ User record created before store');
+              console.log('✅ User record created/updated:', userResponse.data);
+              userCreated = true;
               options._userCreatedInMigrations = true;
             } catch (userError) {
               console.error('❌ Failed to create user record:', userError.response?.data || userError.message);
+              throw new Error(`User creation failed: ${userError.response?.data?.message || userError.message}`);
             }
+          } else {
+            console.warn('⚠️ No userId/userEmail provided - skipping user creation');
           }
 
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
@@ -507,7 +512,7 @@ VALUES (
           `;
 
           try {
-            await axios.post(
+            const storeResponse = await axios.post(
               `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
               { query: storeInsertSQL },
               {
@@ -517,13 +522,13 @@ VALUES (
                 }
               }
             );
-            console.log('✅ Store record created before seed data');
+            console.log('✅ Store record created before seed data:', storeResponse.data);
             result.dataSeeded.push('Store record (created before seed)');
             // Mark that store was already created so we don't create it again later
             options._storeCreatedInMigrations = true;
           } catch (storeError) {
             console.error('❌ Failed to create store record before seed:', storeError.response?.data || storeError.message);
-            // Continue anyway - seed data might still work for some tables
+            throw new Error(`Store creation failed: ${storeError.response?.data?.message || storeError.message}`);
           }
 
           // Execute seed data separately (6,598 rows - large file)
