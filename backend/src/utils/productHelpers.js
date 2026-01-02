@@ -353,26 +353,13 @@ async function fetchProductImages(productIds, tenantDb) {
   if (idsArray.length === 0) return {};
 
   try {
-    // Query product_files with JOIN to media_assets via FK
-    // Use explicit FK hint to avoid schema cache issues
+    // Query product_files with JOIN to media_assets
+    // Use FK constraint name as hint: product_files_media_asset_id_fkey
     const { data: files, error: filesError } = await tenantDb
       .from('product_files')
       .select(`
-        id,
-        product_id,
-        media_asset_id,
-        position,
-        is_primary,
-        alt_text,
-        file_type,
-        metadata,
-        media_assets!media_asset_id (
-          id,
-          file_url,
-          file_path,
-          mime_type,
-          file_size
-        )
+        id, product_id, media_asset_id, position, is_primary, alt_text, file_type, metadata,
+        media_assets!product_files_media_asset_id_fkey ( id, file_url, file_path, mime_type, file_size )
       `)
       .in('product_id', idsArray)
       .eq('file_type', 'image')
@@ -383,7 +370,7 @@ async function fetchProductImages(productIds, tenantDb) {
       return {};
     }
 
-    console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
+    console.log(`🖼️ fetchProductImages: ${idsArray.length} products, ${files?.length || 0} files`);
 
     if (!files || files.length === 0) {
       return {};
@@ -397,12 +384,9 @@ async function fetchProductImages(productIds, tenantDb) {
       }
 
       const fileUrl = file.media_assets?.file_url;
-      if (!fileUrl) return; // Skip if no URL available
+      if (!fileUrl) return;
 
-      // Parse metadata if it's a string
-      const metadata = typeof file.metadata === 'string'
-        ? JSON.parse(file.metadata)
-        : (file.metadata || {});
+      const metadata = typeof file.metadata === 'string' ? JSON.parse(file.metadata) : (file.metadata || {});
 
       imagesByProduct[file.product_id].push({
         url: fileUrl,
