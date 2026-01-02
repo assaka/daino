@@ -168,11 +168,42 @@ export const AIWorkspaceProvider = ({ children }) => {
     }
     // Handle new plugin creation (from Plugins page Create with AI button)
     if (location.state?.newPlugin) {
-      setPluginToEdit({
-        ...location.state.newPlugin,
-        isNew: true // Flag to indicate this is a new plugin
-      });
-      setShowPluginEditor(true);
+      const createNewPlugin = async () => {
+        const pluginData = location.state.newPlugin;
+        try {
+          // Save plugin to database first to get an ID
+          const response = await apiClient.post('/ai/plugin/create', { pluginData });
+
+          if (response.success) {
+            const pluginId = response.pluginId || response.plugin?.id;
+            const pluginSlug = response.plugin?.slug || pluginData.slug;
+
+            if (!pluginId) {
+              throw new Error('Plugin created but no ID returned');
+            }
+
+            // Open plugin editor with the saved plugin (including ID)
+            setPluginToEdit({
+              ...pluginData,
+              id: pluginId,
+              slug: pluginSlug
+            });
+            setShowPluginEditor(true);
+          } else {
+            throw new Error(response.message || 'Failed to create plugin');
+          }
+        } catch (error) {
+          console.error('Failed to create plugin:', error);
+          // Still open editor but warn about missing ID
+          setPluginToEdit({
+            ...pluginData,
+            isNew: true,
+            error: error.message
+          });
+          setShowPluginEditor(true);
+        }
+      };
+      createNewPlugin();
       // Clear the state to prevent re-opening on navigation
       window.history.replaceState({}, document.title);
     }

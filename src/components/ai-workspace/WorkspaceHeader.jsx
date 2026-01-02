@@ -247,15 +247,14 @@ const WorkspaceHeader = () => {
     // Exit editor mode if active
     if (editorMode) toggleEditorMode();
 
-    // Open plugin editor with the new plugin data
-    openPluginEditor({
+    // Create plugin data
+    const pluginData = {
       name: newPluginData.name,
       slug: slug,
       description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
       category: newPluginData.category,
       version: '1.0.0',
       author: user?.name || 'Store Owner',
-      isNew: true,
       manifest: {
         name: newPluginData.name,
         slug: slug,
@@ -266,7 +265,35 @@ const WorkspaceHeader = () => {
         hooks: {},
         configSchema: { properties: {} }
       }
-    });
+    };
+
+    try {
+      // Save plugin to database first to get an ID
+      const response = await apiClient.post('/ai/plugin/create', { pluginData });
+
+      if (response.success) {
+        const pluginId = response.pluginId || response.plugin?.id;
+        const pluginSlug = response.plugin?.slug || slug;
+
+        if (!pluginId) {
+          throw new Error('Plugin created but no ID returned');
+        }
+
+        // Open plugin editor with the saved plugin (including ID)
+        openPluginEditor({
+          ...pluginData,
+          id: pluginId,
+          slug: pluginSlug
+        });
+
+        setFlashMessage({ type: 'success', message: 'Plugin created successfully!' });
+      } else {
+        throw new Error(response.message || 'Failed to create plugin');
+      }
+    } catch (error) {
+      console.error('Failed to create plugin:', error);
+      setFlashMessage({ type: 'error', message: `Failed to create plugin: ${error.message}` });
+    }
 
     // Reset form
     setNewPluginData({ name: '', description: '', category: 'integration' });
