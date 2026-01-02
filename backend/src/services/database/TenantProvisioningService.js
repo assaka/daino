@@ -169,8 +169,9 @@ class TenantProvisioningService {
 
       // 4. ALWAYS create/ensure user exists (stores.user_id has FK to users.id)
       // Use upsert so it works even if user already exists
+      console.log('🔍 User creation check - userId:', options.userId, 'userEmail:', options.userEmail);
       if (!options.userId || !options.userEmail) {
-        console.log('⏭️ Skipping user record creation - no user data provided');
+        console.log('⏭️ Skipping user record creation - no user data provided (userId:', options.userId, ', userEmail:', options.userEmail, ')');
       } else if (tenantDb) {
         // Use Supabase client
         console.log('Creating user record via Supabase client...');
