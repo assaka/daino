@@ -60,16 +60,10 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
 
   // Load files from storage
   const loadFiles = async () => {
-    console.log('🔍 MediaBrowser: loadFiles called', {
-      uploadFolder,
-      selectedStoreId: selectedStore?.id
-    });
-
     try {
       setLoading(true);
 
       if (!selectedStore?.id) {
-        console.warn('⚠️ MediaBrowser: No store selected');
         toast.error('No store selected');
         setFiles([]);
         setLoading(false);
@@ -86,16 +80,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
       } else if (uploadFolder === 'product') {
         params.folder = 'product';
       }
-
-      console.log('📡 MediaBrowser: Fetching media assets...', { requestUrl, params });
-
       const response = await apiClient.get(requestUrl, { params });
-
-      console.log('✅ MediaBrowser: Response received', {
-        success: response?.success,
-        hasFiles: !!response?.files,
-        filesCount: response?.files?.length
-      });
 
       if (response.success && response.files) {
         // Files already have consistent format with media_asset_id
@@ -111,14 +96,11 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
           uploadedAt: file.createdAt || new Date().toISOString()
         }));
 
-        console.log(`📁 MediaBrowser: Loaded ${transformedFiles.length} files`);
         setFiles(transformedFiles);
       } else {
-        console.warn('⚠️ MediaBrowser: No files in response');
         setFiles([]);
       }
     } catch (error) {
-      console.error('❌ MediaBrowser: Error loading files:', error);
 
       // Graceful fallback for errors
       if (error.message?.includes('404') || error.message?.includes('not found')) {
@@ -128,7 +110,6 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
         setFiles([]);
       }
     } finally {
-      console.log('🏁 MediaBrowser: loadFiles complete');
       setLoading(false);
     }
   };
@@ -157,30 +138,22 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
 
   // Check storage connection status (using same approach as FileLibrary)
   const checkStorageConnection = async () => {
-    console.log('🔍 MediaBrowser: checkStorageConnection called');
     try {
       if (!selectedStore?.id) {
-        console.warn('⚠️ MediaBrowser: No store ID for storage check');
         return;
       }
 
-      console.log('📡 MediaBrowser: Checking Supabase storage stats...');
       // Use same endpoint as FileLibrary for consistent behavior
       const response = await apiClient.get('/supabase/storage/stats');
 
-      console.log('✅ MediaBrowser: Storage stats response:', response);
-
       if (response.success) {
-        console.log('✅ Storage connected: Supabase');
         setStorageConnected(true);
         setStorageError(null);
       } else {
-        console.warn('⚠️ Storage connection failed');
         setStorageConnected(false);
         setStorageError('Storage connection failed');
       }
     } catch (error) {
-      console.error('❌ MediaBrowser: Error checking storage connection:', error);
       setStorageConnected(false);
       setStorageError('Unable to check storage connection status');
     }
@@ -204,11 +177,6 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
 
     try {
       for (const file of filesArray) {
-        console.log('📤 MediaBrowser: Uploading file:', {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
 
         // Use same upload endpoint as FileLibrary
         const additionalData = {
@@ -229,7 +197,6 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
       // Reload files to show new uploads
       await loadFiles();
     } catch (error) {
-      console.error('❌ MediaBrowser: Upload error:', error);
       toast.error(`Failed to upload files: ${error.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
