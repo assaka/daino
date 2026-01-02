@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import { PageLoader } from '@/components/ui/page-loader';
 
-const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, uploadFolder = 'library' }) => {
+const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple = false, uploadFolder = 'library' }) => {
   const { selectedStore } = useStoreSelection();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,16 +76,18 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         return;
       }
 
-      // Use Supabase endpoint - let backend determine the bucket name for this store
-      const requestUrl = '/supabase/storage/list';
-      const params = {};
+      // Use media-assets endpoint for normalized data with media_asset_id
+      const requestUrl = '/storage/media-assets';
+      const params = { limit: 100 };
 
       // Add folder filter if specified
       if (uploadFolder === 'category') {
         params.folder = 'category';
+      } else if (uploadFolder === 'product') {
+        params.folder = 'product';
       }
 
-      console.log('📡 MediaBrowser: Fetching files...', { requestUrl, params });
+      console.log('📡 MediaBrowser: Fetching media assets...', { requestUrl, params });
 
       const response = await apiClient.get(requestUrl, { params });
 
@@ -95,30 +97,22 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         filesCount: response?.files?.length
       });
 
-      // Use same format as FileLibrary
       if (response.success && response.files) {
-        const rawFiles = response.files || [];
-        const transformedFiles = rawFiles.map(file => {
-          const imageUrl = file.url || file.publicUrl || file.name;
-          return {
-            id: file.id || file.name,
-            name: file.name,
-            url: imageUrl,
-            size: file.metadata?.size || file.size || 0,
-            mimeType: file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
-            uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
-          };
-        });
+        // Files already have consistent format with media_asset_id
+        const transformedFiles = response.files.map(file => ({
+          id: file.id,
+          media_asset_id: file.media_asset_id || file.id,
+          name: file.name,
+          url: file.url,
+          path: file.path,
+          size: file.size || 0,
+          mimeType: file.mimeType || 'application/octet-stream',
+          folder: file.folder,
+          uploadedAt: file.createdAt || new Date().toISOString()
+        }));
 
         console.log(`📁 MediaBrowser: Loaded ${transformedFiles.length} files`);
-
-        // Filter by folder if needed
-        if (uploadFolder === 'category') {
-          const filtered = transformedFiles.filter(f => f.name.includes('category/') || f.name.includes('categories/'));
-          setFiles(filtered);
-        } else {
-          setFiles(transformedFiles);
-        }
+        setFiles(transformedFiles);
       } else {
         console.warn('⚠️ MediaBrowser: No files in response');
         setFiles([]);
@@ -265,13 +259,27 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
       return;
     }
 
-    // Generate HTML for each selected file
+    // If onSelectFile callback is provided, use structured data (for category images, etc.)
+    if (onSelectFile) {
+      // For single file selection, pass the file object directly
+      const file = selectedFiles[0];
+      onSelectFile({
+        media_asset_id: file.media_asset_id,
+        url: file.url,
+        name: file.name,
+        path: file.path,
+        mimeType: file.mimeType
+      });
+      setSelectedFiles([]);
+      onClose();
+      return;
+    }
+
+    // Otherwise, generate HTML for CMS insertion
     const htmlContent = selectedFiles.map(file => {
       if (file.mimeType.startsWith('image/')) {
-        // For images, insert an img tag
         return `<img src="${file.url}" alt="${file.name}" class="cms-image" />`;
       } else {
-        // For other files, insert a download link
         const icon = file.mimeType.includes('pdf') ? '📄' : '📎';
         return `<a href="${file.url}" target="_blank" rel="noopener noreferrer" class="cms-file-link">${icon} ${file.name}</a>`;
       }

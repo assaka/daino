@@ -740,6 +740,65 @@ router.post('/test', async (req, res) => {
 });
 
 /**
+ * GET /api/storage/media-assets
+ * List media assets from database (normalized source of truth)
+ * Returns files with media_asset_id for proper FK references
+ */
+router.get('/media-assets', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { storeId } = req;
+    const { folder, limit = 100, offset = 0 } = req.query;
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getConnection(storeId);
+
+    let query = tenantDb
+      .from('media_assets')
+      .select('id, file_name, file_path, file_url, mime_type, file_size, folder, created_at')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    // Filter by folder if specified
+    if (folder) {
+      query = query.eq('folder', folder);
+    }
+
+    const { data: files, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch media assets: ${error.message}`);
+    }
+
+    // Transform to consistent format
+    const transformedFiles = (files || []).map(file => ({
+      id: file.id,  // This is media_asset_id
+      media_asset_id: file.id,
+      name: file.file_name,
+      url: file.file_url,
+      path: file.file_path,
+      mimeType: file.mime_type,
+      size: file.file_size,
+      folder: file.folder,
+      createdAt: file.created_at
+    }));
+
+    res.json({
+      success: true,
+      files: transformedFiles,
+      total: transformedFiles.length
+    });
+
+  } catch (error) {
+    console.error('Error listing media assets:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get human-readable provider name
  */
 function getProviderName(provider) {

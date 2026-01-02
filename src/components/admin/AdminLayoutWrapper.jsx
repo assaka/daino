@@ -57,10 +57,18 @@ export function AdminLayoutWrapper({ children }) {
       setChecking(false);
     } catch (error) {
       console.error('Store check error:', error);
-      // If session has been terminated, redirect to auth
-      // But only if we're not already navigating (prevents redirect loops)
-      if (error.message?.includes('Session has been terminated')) {
-        // Check if we're already on auth page to prevent loops
+
+      // Check for auth-related errors (session terminated, invalid token, etc.)
+      const isAuthError = error.message?.includes('Session has been terminated') ||
+                         error.message?.includes('Invalid token') ||
+                         error.message?.includes('Token expired') ||
+                         error.message?.includes('Unauthorized') ||
+                         error.message?.includes('Authentication failed') ||
+                         error.status === 401 ||
+                         error.status === 403;
+
+      if (isAuthError) {
+        // Redirect to auth if not already there (prevents loops)
         if (!location.pathname.includes('/admin/auth')) {
           navigate('/admin/auth', { replace: true });
         }

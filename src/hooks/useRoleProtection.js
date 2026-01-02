@@ -88,6 +88,15 @@ export const useRoleProtection = (shouldApply = true) => {
           return;
         }
 
+        // Check for auth-related errors
+        const isAuthError = error.message?.includes('Session has been terminated') ||
+                           error.message?.includes('Invalid token') ||
+                           error.message?.includes('Token expired') ||
+                           error.message?.includes('Unauthorized') ||
+                           error.message?.includes('Authentication failed') ||
+                           error.status === 401 ||
+                           error.status === 403;
+
         const dashboardPages = [
           '/admin/dashboard', '/admin/products', '/admin/categories', '/admin/settings', '/admin/attributes',
           '/admin/plugins', '/admin/cms-blocks', '/admin/tax', '/admin/orders', '/admin/coupons', '/admin/cms-pages',
@@ -100,8 +109,8 @@ export const useRoleProtection = (shouldApply = true) => {
         ];
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
 
-        // On error, only redirect to auth if trying to access dashboard
-        if (isDashboardContext) {
+        // On auth error or dashboard access error, redirect to auth
+        if (isAuthError || isDashboardContext) {
           navigate(createPageUrl("Auth"));
         }
       }

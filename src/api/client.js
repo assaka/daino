@@ -703,8 +703,9 @@ class ApiClient {
       detail: { timestamp: new Date().toISOString() }
     }));
 
-    // Redirect directly to auth page (no need to call handleLogout which would cause double redirect)
-    this.redirectToAuth();
+    // Don't redirect here - let components handle redirect via React Router
+    // This prevents double navigation (React Router + window.location.href)
+    this._authFailureInProgress = false;
   }
 
   // Clear all authentication data
