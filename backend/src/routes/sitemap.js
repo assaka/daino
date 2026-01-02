@@ -51,13 +51,19 @@ async function generateSitemapXml(storeId, baseUrl) {
     if (includeCategories) {
       const { data: categories } = await tenantDb
         .from('categories')
-        .select('slug, name, updated_at, image_url')
+        .select(`
+          slug, name, updated_at,
+          media_assets!categories_media_asset_id_fkey ( file_url )
+        `)
         .eq('is_active', true)
         .eq('store_id', storeId)
         .order('sort_order', { ascending: true });
 
       if (categories) {
         categories.forEach(category => {
+          // Get image URL from joined media_assets
+          const imageUrl = category.media_assets?.file_url;
+
           const urlEntry = {
             loc: `${baseUrl}/category/${category.slug}`,
             changefreq: categoryChangefreq,
@@ -65,9 +71,9 @@ async function generateSitemapXml(storeId, baseUrl) {
             lastmod: category.updated_at ? new Date(category.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
           };
           // Add image if enabled and available
-          if (includeImages && category.image_url) {
+          if (includeImages && imageUrl) {
             urlEntry.images = [{
-              loc: category.image_url,
+              loc: imageUrl,
               title: category.name || 'Category Image'
             }];
           }
