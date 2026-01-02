@@ -465,6 +465,10 @@ VALUES (
                   }
                 }
               );
+              // Check for SQL errors in response (API returns 200 even on SQL failure)
+              if (userResponse.data?.error) {
+                throw new Error(`User SQL failed: ${userResponse.data.error}`);
+              }
               console.log('✅ User record created/updated:', userResponse.data);
               userCreated = true;
               options._userCreatedInMigrations = true;
@@ -522,6 +526,10 @@ VALUES (
                 }
               }
             );
+            // Check for SQL errors in response (API returns 200 even on SQL failure)
+            if (storeResponse.data?.error) {
+              throw new Error(`Store SQL failed: ${storeResponse.data.error}`);
+            }
             console.log('✅ Store record created before seed data:', storeResponse.data);
             result.dataSeeded.push('Store record (created before seed)');
             // Mark that store was already created so we don't create it again later
