@@ -298,12 +298,14 @@ class StorageManager {
       // This ensures category, product, and library uploads all appear in Media Library
       try {
         // Determine the folder based on upload type with new consolidated structure
+        // Use simple folder names for database, not full paths
         let folder = 'library';
-        if (options.folder === 'category' || options.type === 'category') {
+        if (options.folder === 'category' || options.type === 'category' || options.folder?.startsWith('category')) {
           folder = 'category';
-        } else if (options.folder === 'product' || options.folder === 'products' || options.type === 'product') {
+        } else if (options.folder === 'product' || options.folder === 'products' || options.type === 'product' || options.folder?.startsWith('product')) {
           folder = 'product';
-        } else if (options.folder) {
+        } else if (options.folder && !options.folder.includes('/')) {
+          // Only use custom folder if it's a simple name (no path)
           folder = options.folder;
         }
 

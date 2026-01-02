@@ -283,30 +283,36 @@ class SupabaseStorageService extends StorageInterface {
       // Generate filename and path based on options
       const fileExt = path.extname(file.originalname || file.name || '');
       let fileName, filePath, bucketName;
-      
+
       // All files go to suprshop-assets bucket with organized folder structure
       bucketName = this.assetsBucketName;
       fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-      
-      // Determine folder based on upload type
-      let folder = 'library'; // Default folder
-      
-      if (options.type === 'product' || options.folder === 'product' || options.folder === 'products') {
-        // Determine subfolder based on file type
-        const isImage = file.mimetype && file.mimetype.startsWith('image/');
-        folder = isImage ? 'product/images' : 'product/files';
-      } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories') {
-        folder = 'category/images';
-      } else if (options.folder && options.folder !== 'uploads') {
-        folder = options.folder;
-      }
-      
-      // Use generateOrganizedPath for better directory structure
-      if (options.useOrganizedStructure !== false) {
-        const organizedPath = this.generateOrganizedPath(fileName);
-        filePath = `${folder}/${organizedPath}`;
+
+      // If customPath provided, use it directly (already has full structure)
+      if (options.customPath) {
+        filePath = options.customPath;
       } else {
-        filePath = `${folder}/${fileName}`;
+        // Determine folder based on upload type
+        let folder = 'library'; // Default folder
+
+        if (options.type === 'product' || options.folder === 'product' || options.folder === 'products' || options.folder?.startsWith('product')) {
+          // Determine subfolder based on file type
+          const isImage = file.mimetype && file.mimetype.startsWith('image/');
+          folder = isImage ? 'product/images' : 'product/files';
+        } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories' || options.folder?.startsWith('category')) {
+          folder = 'category/images';
+        } else if (options.folder && options.folder !== 'uploads' && !options.folder.includes('/')) {
+          // Only use custom folder if it's a simple name (no path segments)
+          folder = options.folder;
+        }
+
+        // Use generateOrganizedPath for better directory structure
+        if (options.useOrganizedStructure !== false) {
+          const organizedPath = this.generateOrganizedPath(fileName);
+          filePath = `${folder}/${organizedPath}`;
+        } else {
+          filePath = `${folder}/${fileName}`;
+        }
       }
 
       // Extract project ID from URL
@@ -446,33 +452,39 @@ class SupabaseStorageService extends StorageInterface {
       // All files go to suprshop-assets bucket with organized folder structure
       bucketName = this.assetsBucketName;
       fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-      
-      // Determine folder based on upload type
-      let folder = 'library'; // Default folder
-      
-      if (options.type === 'product' || options.folder === 'product' || options.folder === 'products') {
-        // Determine subfolder based on file type
-        const isImage = file.mimetype && file.mimetype.startsWith('image/');
-        folder = isImage ? 'product/images' : 'product/files';
-      } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories') {
-        folder = 'category/images';
-      } else if (options.folder && options.folder !== 'uploads') {
-        folder = options.folder;
-      }
-      
-      // Use generateOrganizedPath for better directory structure
-      if (options.useOrganizedStructure !== false) {
-        const organizedPath = this.generateOrganizedPath(fileName);
-        filePath = `${folder}/${organizedPath}`;
+
+      // If customPath provided, use it directly (already has full structure)
+      if (options.customPath) {
+        filePath = options.customPath;
       } else {
-        filePath = `${folder}/${fileName}`;
+        // Determine folder based on upload type
+        let folder = 'library'; // Default folder
+
+        if (options.type === 'product' || options.folder === 'product' || options.folder === 'products' || options.folder?.startsWith('product')) {
+          // Determine subfolder based on file type
+          const isImage = file.mimetype && file.mimetype.startsWith('image/');
+          folder = isImage ? 'product/images' : 'product/files';
+        } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories' || options.folder?.startsWith('category')) {
+          folder = 'category/images';
+        } else if (options.folder && options.folder !== 'uploads' && !options.folder.includes('/')) {
+          // Only use custom folder if it's a simple name (no path segments)
+          folder = options.folder;
+        }
+
+        // Use generateOrganizedPath for better directory structure
+        if (options.useOrganizedStructure !== false) {
+          const organizedPath = this.generateOrganizedPath(fileName);
+          filePath = `${folder}/${organizedPath}`;
+        } else {
+          filePath = `${folder}/${fileName}`;
+        }
       }
 
       console.log('Upload details:', {
         bucketName,
         filePath,
         fileName,
-        organizedStructure: options.useOrganizedStructure !== false
+        customPath: !!options.customPath
       });
 
       // Upload file
