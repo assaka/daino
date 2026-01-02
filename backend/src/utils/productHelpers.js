@@ -354,6 +354,7 @@ async function fetchProductImages(productIds, tenantDb) {
 
   try {
     // Query product_files with JOIN to media_assets via FK
+    // Use explicit FK hint to avoid schema cache issues
     const { data: files, error: filesError } = await tenantDb
       .from('product_files')
       .select(`
@@ -365,7 +366,7 @@ async function fetchProductImages(productIds, tenantDb) {
         alt_text,
         file_type,
         metadata,
-        media_assets (
+        media_assets!media_asset_id (
           id,
           file_url,
           file_path,
