@@ -54,9 +54,11 @@ class TenantProvisioningService {
       // 1. Check if already provisioned
       console.log('🔍 tenantDb exists:', !!tenantDb, 'type:', typeof tenantDb);
       console.log('🔍 OAuth mode available:', !!(options.oauthAccessToken && options.projectId));
+      console.log('🔍 OPTIONS:', JSON.stringify({ userId: options.userId, userEmail: options.userEmail, hasOAuth: !!options.oauthAccessToken, hasProjectId: !!options.projectId }));
 
       // If no tenantDb but have OAuth credentials, skip provisioned check and go straight to migrations
       if (!tenantDb && options.oauthAccessToken && options.projectId) {
+        console.log('🚀 TAKING OAUTH EARLY-RETURN PATH (no tenantDb)');
         console.log('🔄 No tenantDb client - using OAuth Management API mode for provisioning');
         // In OAuth mode without tenantDb, assume NOT provisioned and run migrations
         console.log('Running tenant migrations via OAuth API...');
