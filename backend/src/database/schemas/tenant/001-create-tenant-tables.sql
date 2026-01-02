@@ -1376,7 +1376,7 @@ CREATE TABLE IF NOT EXISTS categories (
   store_id UUID NOT NULL,
   slug VARCHAR(255) NOT NULL,
   image_url TEXT,
-  media_asset_id UUID REFERENCES media_assets(id) ON DELETE SET NULL, -- FK to media_assets (normalized)
+  media_asset_id UUID, -- FK added via ALTER TABLE after media_assets is created
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
   hide_in_menu BOOLEAN DEFAULT false,
@@ -4418,6 +4418,8 @@ ALTER TABLE carts ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERE
 ALTER TABLE categories ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
 
 ALTER TABLE categories ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE categories ADD CONSTRAINT categories_media_asset_id_fkey FOREIGN KEY (media_asset_id) REFERENCES media_assets(id) ON DELETE SET NULL;
 
 ALTER TABLE category_seo ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 

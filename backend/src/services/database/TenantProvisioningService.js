@@ -323,8 +323,9 @@ END $$;`;
           console.log('🔧 Extracting foreign key constraints for separate application...');
 
           // Extract ALTER TABLE ADD CONSTRAINT FOREIGN KEY statements
+          // Improved regex to capture full FK statements including multiple ON clauses
           const alterTableFKs = [];
-          const alterTableRegex = /ALTER\s+TABLE\s+([\w]+)\s+ADD\s+CONSTRAINT\s+([\w]+)\s+FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([\w]+)\s*\(([^)]+)\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))*\s*;/gi;
+          const alterTableRegex = /ALTER\s+TABLE\s+[\w]+\s+ADD\s+CONSTRAINT\s+[\w]+\s+FOREIGN\s+KEY\s*\([^)]+\)\s+REFERENCES\s+[\w]+\s*\([^)]+\)[^;]*;/gi;
           let match;
           while ((match = alterTableRegex.exec(fixedMigrationSQL)) !== null) {
             alterTableFKs.push(match[0]);
@@ -332,13 +333,15 @@ END $$;`;
 
           console.log(`📋 Found ${alterTableFKs.length} ALTER TABLE FK constraints to apply later`);
 
-          // Extract inline REFERENCES from CREATE TABLE and convert to ALTER TABLE
-          const inlineFKs = [];
-          const inlineRefRegex = /(\w+)\s+(UUID|INTEGER|BIGINT)\s+(NOT NULL\s+)?REFERENCES\s+([\w]+)\s*\(([^)]+)\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))*/gi;
+          // Log first few FKs for debugging
+          if (alterTableFKs.length > 0) {
+            console.log('📋 Sample FKs extracted:', alterTableFKs.slice(0, 3).map(fk => fk.substring(0, 100) + '...'));
+          }
 
           // Step 1: Remove REFERENCES clauses from within CREATE TABLE column definitions
+          // Improved regex to capture multiple ON DELETE/UPDATE clauses
           let tablesOnlySQL = fixedMigrationSQL.replace(
-            /REFERENCES\s+[\w]+\s*\([^)]+\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?/gi,
+            /REFERENCES\s+[\w]+\s*\([^)]+\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))*/gi,
             ''
           );
 
