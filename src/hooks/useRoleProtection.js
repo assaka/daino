@@ -79,9 +79,15 @@ export const useRoleProtection = (shouldApply = true) => {
 
       } catch (error) {
         console.error('Role protection check failed:', error);
-        
+
         // Determine context for error handling too
         const currentPath = location.pathname.toLowerCase();
+
+        // If already on auth page, don't redirect (prevents loops)
+        if (currentPath.includes('/admin/auth') || currentPath === '/auth') {
+          return;
+        }
+
         const dashboardPages = [
           '/admin/dashboard', '/admin/products', '/admin/categories', '/admin/settings', '/admin/attributes',
           '/admin/plugins', '/admin/cms-blocks', '/admin/tax', '/admin/orders', '/admin/coupons', '/admin/cms-pages',
@@ -93,7 +99,7 @@ export const useRoleProtection = (shouldApply = true) => {
           '/admin/customer-activity', '/admin/cookie-consent'
         ];
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
-        
+
         // On error, only redirect to auth if trying to access dashboard
         if (isDashboardContext) {
           navigate(createPageUrl("Auth"));

@@ -687,11 +687,17 @@ class ApiClient {
 
   // Handle authentication failures by automatically logging out the user
   handleAuthenticationFailure() {
+    // Prevent duplicate auth failure handling (multiple API calls might fail simultaneously)
+    if (this._authFailureInProgress) {
+      return;
+    }
+    this._authFailureInProgress = true;
+
     console.warn('🚨 Automatic logout triggered due to authentication failure');
-    
+
     // Clear all authentication data
     this.clearAllAuthData();
-    
+
     // Import and use the logout utility function
     import('../utils/auth.js').then(({ handleLogout }) => {
       // Use handleLogout which handles role-based redirection
@@ -700,6 +706,10 @@ class ApiClient {
       console.error('❌ Error during automatic logout:', error);
       // Fallback: redirect to admin auth page
       this.redirectToAuth();
+    }).finally(() => {
+      // Reset flag after redirect (allows future auth failures to be handled)
+      // Note: This might not run if page redirects, but that's OK
+      this._authFailureInProgress = false;
     });
   }
 

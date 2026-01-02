@@ -58,8 +58,12 @@ export function AdminLayoutWrapper({ children }) {
     } catch (error) {
       console.error('Store check error:', error);
       // If session has been terminated, redirect to auth
+      // But only if we're not already navigating (prevents redirect loops)
       if (error.message?.includes('Session has been terminated')) {
-        navigate('/admin/auth', { replace: true });
+        // Check if we're already on auth page to prevent loops
+        if (!location.pathname.includes('/admin/auth')) {
+          navigate('/admin/auth', { replace: true });
+        }
         return;
       }
       // On other errors, allow access (fail open)

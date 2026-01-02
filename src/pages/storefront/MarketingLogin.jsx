@@ -43,6 +43,11 @@ export default function MarketingLogin() {
 
   // Check if already logged in
   useEffect(() => {
+    // CRITICAL: Clear logout flag when on auth page to allow fresh login
+    // This prevents the "Session has been terminated" error loop
+    localStorage.removeItem('user_logged_out');
+    apiClient.isLoggedOut = false;
+
     const token = localStorage.getItem('store_owner_auth_token');
     if (token) {
       navigate('/admin/dashboard', { replace: true });

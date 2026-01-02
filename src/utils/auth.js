@@ -167,6 +167,7 @@ export const clearAuthData = () => {
 
 /**
  * Clear role-specific authentication data
+ * If role is undefined/null, clears ALL role-specific data to ensure complete logout
  */
 export const clearRoleBasedAuthData = (role) => {
   if (role === 'customer') {
@@ -188,6 +189,24 @@ export const clearRoleBasedAuthData = (role) => {
     localStorage.removeItem('dashboard_state');
     localStorage.removeItem('store_management_cache');
     // Clear preview mode state - prevents stale preview bypassing pause modal
+    localStorage.removeItem('daino_preview_mode');
+  } else {
+    // Role is undefined/null - clear ALL role-specific data to ensure complete logout
+    // This handles the case where getCurrentUser() returns null after token was already cleared
+    localStorage.removeItem('customer_auth_token');
+    localStorage.removeItem('customer_user_data');
+    localStorage.removeItem('customer_session_id');
+    localStorage.removeItem('customer_store_slug');
+    localStorage.removeItem('customer_wishlist_id');
+    localStorage.removeItem('customer_cart_session');
+    localStorage.removeItem('customer_addresses');
+    localStorage.removeItem('last_customer_activity');
+    localStorage.removeItem('store_owner_auth_token');
+    localStorage.removeItem('store_owner_user_data');
+    localStorage.removeItem('store_owner_session_id');
+    localStorage.removeItem('admin_preferences');
+    localStorage.removeItem('dashboard_state');
+    localStorage.removeItem('store_management_cache');
     localStorage.removeItem('daino_preview_mode');
   }
 };

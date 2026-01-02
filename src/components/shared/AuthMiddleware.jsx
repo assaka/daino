@@ -271,7 +271,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    
+    // CRITICAL: Clear logout flag when on auth page to allow fresh login
+    // This prevents the "Session has been terminated" error loop
+    localStorage.removeItem('user_logged_out');
+    apiClient.isLoggedOut = false;
+
     const token = searchParams.get('token');
     const oauth = searchParams.get('oauth');
     const errorParam = searchParams.get('error');
@@ -287,12 +291,6 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       const existingToken = localStorage.getItem(tokenKey);
 
       if (existingToken) {
-        // Always clear logout flag when we have a token - important for post-login flow
-        if (localStorage.getItem('user_logged_out') === 'true') {
-          localStorage.removeItem('user_logged_out');
-          apiClient.isLoggedOut = false;
-        }
-
         apiClient.setToken(existingToken);
         checkAuthStatus();
       }
