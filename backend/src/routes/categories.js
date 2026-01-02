@@ -264,6 +264,16 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
     // Extract translations from request body
     const { translations, ...categoryData } = req.body;
 
+    console.log('📥 PUT /categories/:id - received body:', {
+      categoryId: req.params.id,
+      store_id,
+      hasMediaAssetId: !!categoryData.media_asset_id,
+      media_asset_id: categoryData.media_asset_id,
+      hasImageUrl: !!categoryData.image_url,
+      image_url: categoryData.image_url,
+      bodyKeys: Object.keys(req.body)
+    });
+
     const category = await updateCategoryWithTranslations(store_id, req.params.id, categoryData, translations || {});
 
     res.json({

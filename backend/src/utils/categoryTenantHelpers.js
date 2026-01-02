@@ -165,6 +165,15 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
 async function updateCategoryWithTranslations(storeId, categoryId, categoryData = {}, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  console.log('📦 updateCategoryWithTranslations - received categoryData:', {
+    categoryId,
+    hasMediaAssetId: !!categoryData.media_asset_id,
+    media_asset_id: categoryData.media_asset_id,
+    hasImageUrl: !!categoryData.image_url,
+    image_url: categoryData.image_url,
+    allKeys: Object.keys(categoryData)
+  });
+
   // Remove name and description from categoryData as they belong in category_translations
   const { name, description, ...validCategoryData } = categoryData;
 
@@ -174,6 +183,13 @@ async function updateCategoryWithTranslations(storeId, categoryId, categoryData 
       ...validCategoryData,
       updated_at: new Date().toISOString()
     };
+
+    console.log('📝 updateCategoryWithTranslations - updateFields:', {
+      categoryId,
+      fields: Object.keys(updateFields),
+      media_asset_id: updateFields.media_asset_id,
+      image_url: updateFields.image_url
+    });
 
     const { error } = await tenantDb
       .from('categories')

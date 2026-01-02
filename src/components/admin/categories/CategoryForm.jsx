@@ -180,6 +180,13 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   const handleFileSelect = async (file) => {
     // file contains { media_asset_id, url, name, path, mimeType }
+    console.log('🖼️ CategoryForm handleFileSelect - received file:', {
+      url: file?.url,
+      media_asset_id: file?.media_asset_id,
+      name: file?.name,
+      allKeys: file ? Object.keys(file) : []
+    });
+
     if (!file || !file.url) {
       setShowMediaBrowser(false);
       return;
@@ -196,14 +203,23 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       setSavingImage(true);
       try {
         const storeId = getSelectedStoreId();
-        const response = await apiClient.put(`/categories/${category.id}`, {
+        const updatePayload = {
           ...formData,
           image_url: file.url,
           media_asset_id: file.media_asset_id,
           parent_id: formData.parent_id || null,
           sort_order: parseInt(formData.sort_order) || 0,
           store_id: storeId
+        };
+
+        console.log('📤 CategoryForm - sending update payload:', {
+          categoryId: category.id,
+          media_asset_id: updatePayload.media_asset_id,
+          image_url: updatePayload.image_url,
+          payloadKeys: Object.keys(updatePayload)
         });
+
+        const response = await apiClient.put(`/categories/${category.id}`, updatePayload);
 
         if (response.success) {
           toast.success('Category image updated successfully');
