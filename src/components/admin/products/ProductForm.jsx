@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { getCategoryName } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtils";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -206,6 +207,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [currentAttributeCode, setCurrentAttributeCode] = useState(null);
+  const [deleteFileDialog, setDeleteFileDialog] = useState({ open: false, fileId: null, fileName: null, loading: false });
 
   // Simplified product image system state
   const imageInputRef = useRef(null);
@@ -803,6 +805,34 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     } catch (error) {
       console.error('❌ Error creating redirect:', error);
       // Don't throw - allow form submission to continue
+    }
+  };
+
+  // Handle delete file from product_files and media_assets
+  const handleDeleteFileConfirm = async () => {
+    const { fileId } = deleteFileDialog;
+    if (!fileId || !product?.id) return;
+
+    setDeleteFileDialog(prev => ({ ...prev, loading: true }));
+
+    try {
+      const storeId = getSelectedStoreId();
+      await apiClient.delete(`/products/${product.id}/files/${fileId}`, {
+        headers: { 'x-store-id': storeId }
+      });
+
+      // Remove file from local state
+      setFormData(prev => ({
+        ...prev,
+        files: prev.files.filter(f => f.id !== fileId)
+      }));
+
+      setDeleteFileDialog({ open: false, fileId: null, fileName: null, loading: false });
+      toast.success('File deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+      setDeleteFileDialog(prev => ({ ...prev, loading: false }));
+      toast.error('Failed to delete file');
     }
   };
 
@@ -2226,28 +2256,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     ? fileName.substring(0, 15) + '...' + fileName.substring(fileName.length - 12)
                                     : (fileName || 'File');
 
-                                  const handleDeleteFile = async () => {
+                                  const handleDeleteClick = () => {
                                     if (!fileId || !product?.id) return;
-
-                                    if (!window.confirm('Are you sure you want to delete this file?')) return;
-
-                                    try {
-                                      const storeId = getSelectedStoreId();
-                                      await apiClient.delete(`/products/${product.id}/files/${fileId}`, {
-                                        headers: { 'x-store-id': storeId }
-                                      });
-
-                                      // Remove file from local state
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        files: prev.files.filter(f => f.id !== fileId)
-                                      }));
-
-                                      toast.success('File deleted successfully');
-                                    } catch (error) {
-                                      console.error('Failed to delete file:', error);
-                                      toast.error('Failed to delete file');
-                                    }
+                                    setDeleteFileDialog({ open: true, fileId, fileName: fileName || 'this file', loading: false });
                                   };
 
                                   return (
@@ -2274,7 +2285,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                       {fileId && product?.id && (
                                         <button
                                           type="button"
-                                          onClick={handleDeleteFile}
+                                          onClick={handleDeleteClick}
                                           className="text-red-500 hover:text-red-700 p-1"
                                           title="Delete file"
                                         >
@@ -3253,6 +3264,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         onInsert={handleMediaInsert}
         allowMultiple={false}
         uploadFolder="product"
+      />
+
+      {/* Delete File Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteFileDialog.open}
+        onOpenChange={(open) => !deleteFileDialog.loading && setDeleteFileDialog(prev => ({ ...prev, open }))}
+        onConfirm={handleDeleteFileConfirm}
+        title="Delete File"
+        description={`Are you sure you want to delete "${deleteFileDialog.fileName}"? This will permanently remove the file from storage.`}
+        confirmText="Delete"
+        loading={deleteFileDialog.loading}
       />
 
     </div>
