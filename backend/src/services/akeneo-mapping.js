@@ -1047,9 +1047,10 @@ class AkeneoMapping {
                 url: finalImageUrl,
                 alt: altText,
                 sort_order: images.length,
+                media_asset_id: uploadResult?.media_asset_id || null,  // Include mediaAssetId for product_files
                 variants: {
                   thumbnail: finalImageUrl,
-                  medium: finalImageUrl, 
+                  medium: finalImageUrl,
                   large: finalImageUrl
                 },
                 metadata: {
@@ -1248,17 +1249,18 @@ class AkeneoMapping {
           
           if (uploadResult && (uploadResult.success || uploadResult.url)) {
             console.log(`✅ [Akeneo] Image uploaded via ${uploadResult.provider}: ${uploadResult.url}`);
-            console.log(`📍 [Akeneo] Relative path: ${pathInfo.fullPath}`);
-            
+            console.log(`📍 [Akeneo] Relative path: ${pathInfo.fullPath}, mediaAssetId: ${uploadResult.mediaAssetId}`);
+
             return {
               url: uploadResult.url,
               originalUrl: imageUrl,
               filename: pathInfo.filename,
-              relativePath: pathInfo.fullPath, // Add relative path for database storage
+              relativePath: pathInfo.fullPath,
               size: buffer.length,
               contentType: contentType,
               uploadedTo: uploadResult.provider,
-              fallbackUsed: uploadResult.fallbackUsed || false
+              fallbackUsed: uploadResult.fallbackUsed || false,
+              media_asset_id: uploadResult.mediaAssetId  // Capture mediaAssetId from StorageManager
             };
           } else {
             console.error(`❌ [Akeneo] Upload failed - no URL returned`);

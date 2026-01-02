@@ -181,12 +181,12 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
 
 /**
  * Sync product images to product_files table
- * Replaces all existing images with the new array
+ * Expects media_asset_id from StorageManager upload response
  *
  * @param {Object} tenantDb - Tenant database connection
  * @param {string} storeId - Store UUID
  * @param {string} productId - Product UUID
- * @param {Array} images - Array of image objects with url, alt, position, etc.
+ * @param {Array} images - Array of image objects with media_asset_id, alt, position
  */
 async function syncProductImages(tenantDb, storeId, productId, images) {
   try {
@@ -204,103 +204,36 @@ async function syncProductImages(tenantDb, storeId, productId, images) {
       throw deleteError;
     }
 
-    // Insert new images
-    if (images.length > 0) {
-      const insertRecords = [];
+    // Insert new images - requires media_asset_id from upload
+    const validImages = images.filter(img => img.media_asset_id);
 
-      for (let index = 0; index < images.length; index++) {
-        const img = images[index];
-        const fileUrl = img.url || img.file_url;
-
-        if (!fileUrl) {
-          console.warn(`⚠️ Image ${index} has no URL, skipping`);
-          continue;
-        }
-
-        console.log(`📷 Processing image ${index}: ${fileUrl.substring(0, 80)}...`);
-
-        // Try to find existing media_asset by URL (use maybeSingle to avoid error when not found)
-        let mediaAssetId = null;
-        const { data: existingAsset, error: findError } = await tenantDb
-          .from('media_assets')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('file_url', fileUrl)
-          .maybeSingle();
-
-        if (findError) {
-          console.warn(`⚠️ Error finding media_asset:`, findError.message);
-        }
-
-        if (existingAsset) {
-          mediaAssetId = existingAsset.id;
-          console.log(`✅ Found existing media_asset ${mediaAssetId}`);
-        } else {
-          console.log(`📷 No existing media_asset found, creating new one`);
-
-          // Extract relative path from URL or use filepath from image
-          let filePath = img.filepath || '';
-          if (!filePath && fileUrl.includes('/storage/')) {
-            // Extract path from Supabase URL: /storage/v1/object/public/bucket/path
-            const pathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
-            if (pathMatch) filePath = pathMatch[1];
-          }
-          if (!filePath) {
-            filePath = fileUrl.split('/').slice(-4).join('/');
-          }
-
-          const { data: newAsset, error: assetError } = await tenantDb
-            .from('media_assets')
-            .insert({
-              store_id: storeId,
-              file_name: fileUrl.split('/').pop() || 'image',
-              file_path: filePath,
-              file_url: fileUrl,
-              mime_type: img.mime_type || 'image/jpeg',
-              file_size: img.filesize || img.file_size || null,
-              folder: 'product'
-            })
-            .select('id')
-            .single();
-
-          if (assetError) {
-            console.error(`❌ Error creating media_asset:`, assetError.message);
-          } else if (newAsset) {
-            mediaAssetId = newAsset.id;
-            console.log(`✅ Created new media_asset ${mediaAssetId}`);
-          }
-        }
-
-        insertRecords.push({
-          product_id: productId,
-          store_id: storeId,
-          media_asset_id: mediaAssetId,
-          file_type: 'image',
-          position: img.position !== undefined ? img.position : index,
-          is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
-          alt_text: img.alt || img.alt_text || '',
-          metadata: {
-            attribute_code: img.attribute_code || null,
-            filepath: img.filepath || null,
-            original_data: img
-          }
-        });
-      }
-
-      const { error: insertError } = await tenantDb
-        .from('product_files')
-        .insert(insertRecords);
-
-      if (insertError) {
-        console.error('Error inserting product images:', insertError);
-        throw insertError;
-      }
-
-      console.log(`✅ Successfully synced ${images.length} images to product_files`);
+    if (validImages.length === 0) {
+      console.log(`📷 No images with media_asset_id to sync`);
+      return;
     }
+
+    const insertRecords = validImages.map((img, index) => ({
+      product_id: productId,
+      store_id: storeId,
+      media_asset_id: img.media_asset_id,
+      file_type: 'image',
+      position: img.position !== undefined ? img.position : index,
+      is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
+      alt_text: img.alt || img.alt_text || ''
+    }));
+
+    const { error: insertError } = await tenantDb
+      .from('product_files')
+      .insert(insertRecords);
+
+    if (insertError) {
+      console.error('Error inserting product images:', insertError);
+      throw insertError;
+    }
+
+    console.log(`✅ Synced ${validImages.length} images to product_files`);
   } catch (err) {
     console.error('Error in syncProductImages:', err);
-    // Don't throw - let the product update succeed even if image sync fails
   }
 }
 

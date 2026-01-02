@@ -13,6 +13,7 @@ import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Card, CardContent } from "@/components/ui/card";
 // Slot configurations are loaded from database via useSlotConfiguration hook
 import { formatPrice } from '@/utils/priceUtils';
+import { PLACEHOLDER_IMAGE } from '@/utils/fileUtils';
 import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
 // React Query hooks for optimized API calls
@@ -574,7 +575,7 @@ export default function Category() {
       const priceValue = typeof product === 'object' ? product.price : product;
       return formatPrice(priceValue);
     },
-    getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+    getProductImageUrl: (product) => product?.images?.[0]?.url || PLACEHOLDER_IMAGE,
     navigate: (url) => window.location.href = url,
     onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug)
   };
@@ -647,7 +648,7 @@ export default function Category() {
                 onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug),
                 navigate: (url) => window.location.href = url,
                 formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
-                getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
+                getProductImageUrl: (product) => product?.images?.[0]?.url || PLACEHOLDER_IMAGE,
               }, store, settings, { translations, productLabels: productLabels || [] })}
             />
           </div>

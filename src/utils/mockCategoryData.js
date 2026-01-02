@@ -3,6 +3,8 @@
  * Can optionally receive real filterableAttributes and storeSettings from StoreProvider to maintain uniform flow
  */
 
+import { PLACEHOLDER_IMAGE } from '@/utils/fileUtils';
+
 export const generateMockCategoryContext = (realFilterableAttributes = null, storeSettings = null) => {
   const brands = ['Apple', 'Samsung', 'Google', 'OnePlus', 'Sony', 'LG'];
   const colors = ['Black', 'White', 'Blue', 'Red', 'Silver', 'Gold'];
@@ -214,9 +216,9 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
     formatDisplayPrice: (price) => `¥${price}`, // Mock data - uses fixed symbol for editor preview
     getProductImageUrl: (product) => {
       const img = product?.images?.[0];
-      if (!img) return '/placeholder-product.jpg';
+      if (!img) return PLACEHOLDER_IMAGE;
       if (typeof img === 'string') return img;
-      return img.url || '/placeholder-product.jpg';
+      return img.url || PLACEHOLDER_IMAGE;
     },
     navigate: () => {},
     onProductClick: () => {}

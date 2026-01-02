@@ -5,6 +5,11 @@
  */
 
 /**
+ * Placeholder image URL - single source of truth for missing product images
+ */
+export const PLACEHOLDER_IMAGE = '/placeholder-product.jpg';
+
+/**
  * Generate organized directory path from filename
  * Uses first two characters for directory structure
  *
@@ -36,12 +41,15 @@ export const generateOrganizedPath = (filename) => {
 /**
  * Get the primary image URL from a product's images array
  * Images are stored as objects with url property and optional isPrimary flag
+ * Returns PLACEHOLDER_IMAGE if no valid image found
+ *
  * @param {Array} images - Array of image objects with url property
- * @returns {string|null} - Primary image URL or null if no images
+ * @param {boolean} usePlaceholder - Whether to return placeholder when no image (default: true)
+ * @returns {string} - Primary image URL or placeholder
  */
-export const getPrimaryImageUrl = (images) => {
+export const getPrimaryImageUrl = (images, usePlaceholder = true) => {
   if (!images || !Array.isArray(images) || images.length === 0) {
-    return null;
+    return usePlaceholder ? PLACEHOLDER_IMAGE : null;
   }
 
   // First try to find the primary image
@@ -52,22 +60,25 @@ export const getPrimaryImageUrl = (images) => {
 
   // Fall back to first image with URL
   const firstImageWithUrl = images.find(img => img?.url);
-  return firstImageWithUrl?.url || null;
+  return firstImageWithUrl?.url || (usePlaceholder ? PLACEHOLDER_IMAGE : null);
 };
 
 /**
  * Get image URL by index from images array
+ * Returns PLACEHOLDER_IMAGE if index is out of bounds or no URL
+ *
  * @param {Array} images - Array of image objects
  * @param {number} index - Index of the image to get
- * @returns {string|null} - Image URL or null if not found
+ * @param {boolean} usePlaceholder - Whether to return placeholder when no image (default: true)
+ * @returns {string} - Image URL or placeholder
  */
-export const getImageUrlByIndex = (images, index) => {
+export const getImageUrlByIndex = (images, index, usePlaceholder = true) => {
   if (!images || !Array.isArray(images) || images.length === 0 || index < 0 || index >= images.length) {
-    return null;
+    return usePlaceholder ? PLACEHOLDER_IMAGE : null;
   }
 
   const image = images[index];
-  return image?.url || null;
+  return image?.url || (usePlaceholder ? PLACEHOLDER_IMAGE : null);
 };
 
 /**

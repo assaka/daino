@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
+import { PLACEHOLDER_IMAGE } from '@/utils/fileUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useCategory, useCategories, useFilterableAttributes } from '@/hooks/useApiQueries';
@@ -332,9 +333,9 @@ const CategorySlotsEditorInner = ({
         formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
         getProductImageUrl: (product) => {
           const img = product?.images?.[0];
-          if (!img) return '/placeholder-product.jpg';
+          if (!img) return PLACEHOLDER_IMAGE;
           if (typeof img === 'string') return img;
-          return img.url || '/placeholder-product.jpg';
+          return img.url || PLACEHOLDER_IMAGE;
         },
       };
 
@@ -389,9 +390,9 @@ const CategorySlotsEditorInner = ({
       formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
       getProductImageUrl: (product) => {
         const img = product?.images?.[0];
-        if (!img) return '/placeholder-product.jpg';
+        if (!img) return PLACEHOLDER_IMAGE;
         if (typeof img === 'string') return img;
-        return img.url || '/placeholder-product.jpg';
+        return img.url || PLACEHOLDER_IMAGE;
       },
     };
 

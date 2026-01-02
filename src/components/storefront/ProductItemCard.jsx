@@ -283,7 +283,7 @@ const ProductItemCard = ({
             onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_image') : undefined}
           >
             <img
-              src={getPrimaryImageUrl(product.images) || '/placeholder-product.jpg'}
+              src={getPrimaryImageUrl(product.images)}
               alt={translatedProductName}
               className={imageConfig.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
               style={imageConfig.styles || {}}
