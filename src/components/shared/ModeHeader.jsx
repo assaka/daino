@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { handleLogout } from '@/utils/auth';
+import { handleLogoutWithNavigate } from '@/utils/auth';
 import { createPageUrl, getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { Store } from '@/api/entities';
 
@@ -190,10 +190,10 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                     e.stopPropagation();
 
                     try {
-                      await handleLogout();
+                      await handleLogoutWithNavigate(navigate);
                     } catch (error) {
                       console.error('❌ Mobile logout error:', error);
-                      window.location.href = '/admin/auth';
+                      navigate('/admin/auth');
                     }
                   }}
                 >
@@ -341,12 +341,12 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    
+
                     try {
-                      await handleLogout();
+                      await handleLogoutWithNavigate(navigate);
                     } catch (error) {
                       console.error('❌ Desktop logout error:', error);
-                      window.location.href = '/admin/auth';
+                      navigate('/admin/auth');
                     }
                   }}
                 >

@@ -7,7 +7,7 @@ import { createAdminUrl, getExternalStoreUrl, getStoreBaseUrl } from "@/utils/ur
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
-import { hasBothRolesLoggedIn, handleLogout } from "@/utils/auth";
+import { hasBothRolesLoggedIn, handleLogoutWithNavigate } from "@/utils/auth";
 import { shouldSkipStoreContext, isPlatformDomain } from "@/utils/domainConfig";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
@@ -755,9 +755,9 @@ function LayoutInner({ children, currentPageName }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
                     try {
-                        await handleLogout();
+                        await handleLogoutWithNavigate(navigate);
                     } catch (error) {
-                        window.location.href = '/admin/auth';
+                        navigate('/admin/auth');
                     }
                 }}>
                     <LogOut className="mr-2 h-4 w-4" />
