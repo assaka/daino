@@ -336,6 +336,103 @@ async function getProductsOptimized(storeId, where = {}, lang = 'en', options = 
 }
 
 /**
+ * Fetch ALL product files (images, PDFs, documents) with media_assets join
+ *
+ * @param {string|Array} productIds - Single product ID or array of product IDs
+ * @param {Object} tenantDb - Tenant database connection
+ * @returns {Promise<Object>} Map of product_id => files array (with file_url from media_assets)
+ */
+async function fetchProductFiles(productIds, tenantDb) {
+  if (!tenantDb) {
+    console.error('❌ fetchProductFiles: tenantDb connection required');
+    return {};
+  }
+
+  const idsArray = Array.isArray(productIds) ? productIds : [productIds];
+
+  if (idsArray.length === 0) return {};
+
+  try {
+    // Query ALL product_files with JOIN to media_assets (not just images)
+    const { data: files, error: filesError } = await tenantDb
+      .from('product_files')
+      .select(`
+        id, product_id, media_asset_id, position, is_primary, alt_text, file_type, metadata,
+        media_assets!product_files_media_asset_id_fkey ( id, file_url, file_path, mime_type, file_size )
+      `)
+      .in('product_id', idsArray)
+      .order('file_type', { ascending: true })
+      .order('position', { ascending: true });
+
+    if (filesError) {
+      console.error('📁 fetchProductFiles error:', filesError);
+      return {};
+    }
+
+    console.log(`📁 fetchProductFiles: ${idsArray.length} products, ${files?.length || 0} files`);
+
+    if (!files || files.length === 0) {
+      return {};
+    }
+
+    // Group files by product_id
+    const filesByProduct = {};
+    files.forEach(file => {
+      if (!filesByProduct[file.product_id]) {
+        filesByProduct[file.product_id] = [];
+      }
+
+      const fileUrl = file.media_assets?.file_url;
+      if (!fileUrl) return;
+
+      const metadata = typeof file.metadata === 'string' ? JSON.parse(file.metadata) : (file.metadata || {});
+
+      filesByProduct[file.product_id].push({
+        id: file.id,
+        url: fileUrl,
+        file_url: fileUrl,
+        file_path: file.media_assets?.file_path || metadata.filepath || '',
+        file_type: file.file_type,
+        mime_type: file.media_assets?.mime_type,
+        file_size: file.media_assets?.file_size || metadata.filesize || 0,
+        alt: file.alt_text || '',
+        is_primary: file.is_primary || false,
+        position: file.position || 0,
+        media_asset_id: file.media_asset_id,
+        attribute_code: metadata.attribute_code || null,
+        original_filename: metadata.originalFileName || metadata.original_filename || null
+      });
+    });
+
+    return filesByProduct;
+  } catch (error) {
+    console.error('❌ fetchProductFiles error:', error);
+    return {};
+  }
+}
+
+/**
+ * Apply ALL product files to product data from product_files table
+ *
+ * @param {Array} products - Array of product objects
+ * @param {Object} tenantDb - Tenant database connection
+ * @returns {Promise<Array>} Products with files array
+ */
+async function applyProductFiles(products, tenantDb) {
+  if (!products || products.length === 0) return products;
+
+  const productIds = products.map(p => p.id).filter(Boolean);
+  if (productIds.length === 0) return products;
+
+  const filesByProduct = await fetchProductFiles(productIds, tenantDb);
+
+  return products.map(product => ({
+    ...product,
+    files: filesByProduct[product.id] || []
+  }));
+}
+
+/**
  * Fetch and format product images from product_files or product_images table
  *
  * @param {string|Array} productIds - Single product ID or array of product IDs
@@ -597,6 +694,8 @@ module.exports = {
   applyAllProductTranslations,
   updateProductTranslations,
   getProductsOptimized,
+  fetchProductFiles,
+  applyProductFiles,
   fetchProductImages,
   applyProductImages,
   enrichProductsWithBrandAndMpn

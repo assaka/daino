@@ -4,7 +4,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
-const { applyAllProductTranslations, updateProductTranslations, applyProductImages } = require('../utils/productHelpers');
+const { applyAllProductTranslations, updateProductTranslations, applyProductImages, applyProductFiles } = require('../utils/productHelpers');
 const router = express.Router();
 
 // Import the new store auth middleware
@@ -138,12 +138,13 @@ router.get('/:id', authAdmin, async (req, res) => {
       });
     }
 
-    // Get tenant connection and apply images from product_files table
+    // Get tenant connection and apply images and files from product_files table
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
     const productsWithImages = await applyProductImages([product], tenantDb);
+    const productsWithFiles = await applyProductFiles(productsWithImages, tenantDb);
 
     // Apply all translations from product_translations table
-    const productsWithTranslations = await applyAllProductTranslations(productsWithImages, tenantDb);
+    const productsWithTranslations = await applyAllProductTranslations(productsWithFiles, tenantDb);
 
     // Load attributes from product_attribute_values table
     const productWithAttributes = productsWithTranslations[0];

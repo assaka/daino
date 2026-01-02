@@ -170,6 +170,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     dimensions: { length: "", width: "", height: "" },
     category_ids: [],
     images: [], // JSON array of {attribute_code, filepath, filesize}
+    files: [], // All product files (images, PDFs, documents) with file_url from media_assets
     type: "simple", // Product type: simple, configurable, bundle, etc.
     status: "active",
     visibility: "visible",
@@ -263,6 +264,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         dimensions: product.dimensions || { length: "", width: "", height: "" },
         category_ids: Array.isArray(product.category_ids) ? product.category_ids : [],
         images: Array.isArray(product.images) ? product.images : [],
+        files: Array.isArray(product.files) ? product.files : [], // All product files from product_files + media_assets
         type: product.type || "simple", // Product type
         status: product.status || "active",
         visibility: product.visibility || "visible",
@@ -316,6 +318,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             dimensions: { length: "", width: "", height: "" },
             category_ids: [],
             images: [],
+            files: [], // Empty files for new product
             type: "simple", // Default to simple product
             status: "active",
             visibility: "visible",
@@ -2205,26 +2208,37 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 {uploadingImage && (
                                   <p className="text-sm text-blue-600">Uploading file...</p>
                                 )}
-                                {attributeValue && (typeof attributeValue === 'object' ? attributeValue.url : attributeValue) && (
-                                  <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                                    <span className="text-sm font-medium">
-                                      {typeof attributeValue === 'object' ? attributeValue.name : 'File Link'}
-                                    </span>
-                                    {typeof attributeValue === 'object' && attributeValue.size && (
-                                      <span className="text-xs text-gray-500">
-                                        {`(${(attributeValue.size / 1024 / 1024).toFixed(2)} MB)`}
-                                      </span>
-                                    )}
-                                    <a
-                                      href={typeof attributeValue === 'object' ? attributeValue.url : attributeValue}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 text-sm"
-                                    >
-                                      View
-                                    </a>
-                                  </div>
-                                )}
+                                {(() => {
+                                  // Look up file from product_files (joined with media_assets) by attribute_code
+                                  const fileFromProductFiles = formData.files?.find(f => f.attribute_code === attribute.code);
+                                  const fileUrl = fileFromProductFiles?.file_url || fileFromProductFiles?.url ||
+                                    (typeof attributeValue === 'object' ? attributeValue.url : null);
+                                  const fileName = fileFromProductFiles?.original_filename ||
+                                    (typeof attributeValue === 'object' ? attributeValue.name : 'File');
+                                  const fileSize = fileFromProductFiles?.file_size ||
+                                    (typeof attributeValue === 'object' ? attributeValue.size : null);
+
+                                  if (!fileUrl) return null;
+
+                                  return (
+                                    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                                      <span className="text-sm font-medium">{fileName}</span>
+                                      {fileSize && (
+                                        <span className="text-xs text-gray-500">
+                                          {`(${(fileSize / 1024 / 1024).toFixed(2)} MB)`}
+                                        </span>
+                                      )}
+                                      <a
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 text-sm"
+                                      >
+                                        View
+                                      </a>
+                                    </div>
+                                  );
+                                })()}
                                 {attribute.file_settings && (
                                   <p className="text-xs text-gray-500">
                                     Max size: {attribute.file_settings.max_file_size}MB.

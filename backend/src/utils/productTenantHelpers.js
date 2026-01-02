@@ -247,7 +247,10 @@ async function syncProductFiles(tenantDb, storeId, productId, files) {
       const isPrimary = isImage && !hasPrimaryImage;
       if (isPrimary) hasPrimaryImage = true;
 
-      console.log(`  📄 File ${index + 1}: ${file.contentType || 'unknown'} -> ${fileType}`);
+      // Extract attribute_code from metadata
+      const attributeCode = file.metadata?.attribute || file.attribute_code || null;
+
+      console.log(`  📄 File ${index + 1}: ${file.contentType || 'unknown'} -> ${fileType}, attribute: ${attributeCode || 'none'}`);
 
       return {
         product_id: productId,
@@ -256,7 +259,12 @@ async function syncProductFiles(tenantDb, storeId, productId, files) {
         file_type: fileType,
         position: file.position !== undefined ? file.position : index,
         is_primary: file.isPrimary !== undefined ? file.isPrimary : isPrimary,
-        alt_text: file.alt || file.alt_text || ''
+        alt_text: file.alt || file.alt_text || '',
+        metadata: {
+          attribute_code: attributeCode,
+          original_filename: file.metadata?.upload_result?.filename || file.filename || null,
+          original_url: file.metadata?.original_url || file.url || null
+        }
       };
     });
 
