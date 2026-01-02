@@ -123,6 +123,12 @@ class TenantProvisioningService {
         console.log('🔍 Existing store check:', existingStore ? 'found' : 'not found');
         console.log('🔍 Existing settings:', JSON.stringify(existingStore?.settings || {}).slice(0, 200));
 
+        // ALWAYS ensure user exists first (stores.user_id has FK to users.id)
+        if (options.userId && options.userEmail) {
+          console.log('📦 Ensuring user record exists (already provisioned path)...');
+          await this.createUserRecord(tenantDb, options, result);
+        }
+
         if (!existingStore) {
           console.log('📦 No store record found - creating it now...');
           await this.createStoreRecord(tenantDb, storeId, options, result);
