@@ -1376,6 +1376,7 @@ CREATE TABLE IF NOT EXISTS categories (
   store_id UUID NOT NULL,
   slug VARCHAR(255) NOT NULL,
   image_url TEXT,
+  media_asset_id UUID REFERENCES media_assets(id) ON DELETE SET NULL, -- FK to media_assets (normalized)
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
   hide_in_menu BOOLEAN DEFAULT false,
@@ -3615,6 +3616,8 @@ CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories USING btree (p
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories USING btree (slug);
 
 CREATE INDEX IF NOT EXISTS idx_categories_store_id ON categories USING btree (store_id);
+
+CREATE INDEX IF NOT EXISTS idx_categories_media_asset_id ON categories USING btree (media_asset_id);
 
 CREATE INDEX IF NOT EXISTS idx_category_translations_name ON category_translations USING btree (name);
 
