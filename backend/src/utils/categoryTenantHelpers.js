@@ -16,8 +16,11 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 async function getCategoriesWithAllTranslations(storeId, where = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Build query for categories
-  let query = tenantDb.from('categories').select('*');
+  // Build query for categories with media_assets join
+  let query = tenantDb.from('categories').select(`
+    *,
+    media_assets!categories_media_asset_id_fkey ( id, file_url )
+  `);
 
   // Apply filters
   Object.entries(where).forEach(([key, value]) => {
@@ -34,6 +37,11 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
 
   // Load translations for each category
   for (const category of categories || []) {
+    // Extract image_url from joined media_assets
+    if (category.media_assets) {
+      category.image_url = category.media_assets.file_url;
+    }
+
     const { data: translations } = await tenantDb
       .from('category_translations')
       .select('*')
@@ -76,13 +84,25 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
 async function getCategoryById(storeId, categoryId, lang = 'en') {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  // Fetch category with media_assets join for image URL
   const { data: category, error } = await tenantDb
     .from('categories')
-    .select('*')
+    .select(`
+      *,
+      media_assets!categories_media_asset_id_fkey ( id, file_url, file_path, mime_type )
+    `)
     .eq('id', categoryId)
     .single();
 
-  if (error || !category) return null;
+  if (error || !category) {
+    if (error) console.error('Error fetching category:', error);
+    return null;
+  }
+
+  // Extract image_url from joined media_assets
+  if (category.media_assets) {
+    category.image_url = category.media_assets.file_url;
+  }
 
   // Get all translations
   const { data: translations } = await tenantDb
@@ -316,8 +336,11 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
 
   if (countError) throw countError;
 
-  // Build data query
-  let query = tenantDb.from('categories').select('*');
+  // Build data query with media_assets join
+  let query = tenantDb.from('categories').select(`
+    *,
+    media_assets!categories_media_asset_id_fkey ( id, file_url )
+  `);
 
   // Apply filters
   Object.entries(where).forEach(([key, value]) => {
@@ -337,8 +360,13 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
 
   if (error) throw error;
 
-  // Load translations for each category
+  // Load translations and extract image_url for each category
   for (const category of categories || []) {
+    // Extract image_url from joined media_assets
+    if (category.media_assets) {
+      category.image_url = category.media_assets.file_url;
+    }
+
     const { data: translation } = await tenantDb
       .from('category_translations')
       .select('*')
