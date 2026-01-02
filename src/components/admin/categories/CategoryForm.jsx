@@ -44,6 +44,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     slug: "",
     description: "",
     image_url: "",
+    media_asset_id: null,  // Normalized FK reference to media_assets
     parent_id: "",
     sort_order: 0,
     is_active: true,
@@ -100,6 +101,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         slug: category.slug || "",
         description: translations.en?.description || "",
         image_url: category.image_url || "",
+        media_asset_id: category.media_asset_id || null,
         parent_id: category.parent_id || "",
         sort_order: category.sort_order || 0,
         is_active: category.is_active !== undefined ? category.is_active : true,
@@ -176,42 +178,54 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     });
   };
 
-  const handleMediaInsert = async (htmlContent) => {
-    // For category image, we expect a single image
-    // Extract the URL from the HTML content
-    const urlMatch = htmlContent.match(/src="([^"]+)"/);
-    if (urlMatch && urlMatch[1]) {
-      const newImageUrl = urlMatch[1];
-      setFormData(prev => ({ ...prev, image_url: newImageUrl }));
-      
-      // If editing an existing category, auto-save the image
-      if (category && category.id) {
-        setSavingImage(true);
-        try {
-          const storeId = getSelectedStoreId();
-          const response = await apiClient.put(`/categories/${category.id}`, {
-            ...formData,
-            image_url: newImageUrl,
-            parent_id: formData.parent_id || null,
-            sort_order: parseInt(formData.sort_order) || 0,
-            store_id: storeId
-          });
-          
-          if (response.success) {
-            toast.success('Category image updated successfully');
-          } else {
-            toast.error('Failed to update category image');
-            // Revert the image URL on failure
-            setFormData(prev => ({ ...prev, image_url: formData.image_url }));
-          }
-        } catch (error) {
-          console.error('Error saving category image:', error);
+  const handleFileSelect = async (file) => {
+    // file contains { media_asset_id, url, name, path, mimeType }
+    if (!file || !file.url) {
+      setShowMediaBrowser(false);
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      image_url: file.url,
+      media_asset_id: file.media_asset_id
+    }));
+
+    // If editing an existing category, auto-save the image
+    if (category && category.id) {
+      setSavingImage(true);
+      try {
+        const storeId = getSelectedStoreId();
+        const response = await apiClient.put(`/categories/${category.id}`, {
+          ...formData,
+          image_url: file.url,
+          media_asset_id: file.media_asset_id,
+          parent_id: formData.parent_id || null,
+          sort_order: parseInt(formData.sort_order) || 0,
+          store_id: storeId
+        });
+
+        if (response.success) {
+          toast.success('Category image updated successfully');
+        } else {
           toast.error('Failed to update category image');
-          // Revert the image URL on failure
-          setFormData(prev => ({ ...prev, image_url: formData.image_url }));
-        } finally {
-          setSavingImage(false);
+          // Revert on failure
+          setFormData(prev => ({
+            ...prev,
+            image_url: formData.image_url,
+            media_asset_id: formData.media_asset_id
+          }));
         }
+      } catch (error) {
+        console.error('Error saving category image:', error);
+        toast.error('Failed to update category image');
+        setFormData(prev => ({
+          ...prev,
+          image_url: formData.image_url,
+          media_asset_id: formData.media_asset_id
+        }));
+      } finally {
+        setSavingImage(false);
       }
     }
     setShowMediaBrowser(false);
@@ -628,7 +642,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               variant="destructive"
               size="icon"
               className="absolute -top-2 -right-2 h-6 w-6"
-              onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
+              onClick={() => setFormData(prev => ({ ...prev, image_url: "", media_asset_id: null }))}
               disabled={savingImage}
             >
               <X className="h-4 w-4" />
@@ -814,7 +828,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       <MediaBrowser
         isOpen={showMediaBrowser}
         onClose={() => setShowMediaBrowser(false)}
-        onInsert={handleMediaInsert}
+        onSelectFile={handleFileSelect}
         allowMultiple={false}
         uploadFolder="category"
       />

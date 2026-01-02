@@ -164,6 +164,7 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
       .insert({
         slug: categoryData.slug,
         image_url: categoryData.image_url || null,
+        media_asset_id: categoryData.media_asset_id || null,
         sort_order: categoryData.sort_order || 0,
         is_active: categoryData.is_active !== false,
         hide_in_menu: categoryData.hide_in_menu || false,
@@ -228,7 +229,7 @@ async function updateCategoryWithTranslations(storeId, id, categoryData, transla
     const updateData = {};
 
     const fields = [
-      'slug', 'image_url', 'sort_order', 'is_active', 'hide_in_menu',
+      'slug', 'image_url', 'media_asset_id', 'sort_order', 'is_active', 'hide_in_menu',
       'parent_id', 'level', 'path', 'product_count', 'seo'
     ];
 

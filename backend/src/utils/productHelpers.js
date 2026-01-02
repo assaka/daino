@@ -353,7 +353,7 @@ async function fetchProductImages(productIds, tenantDb) {
   if (idsArray.length === 0) return {};
 
   try {
-    // Query product_files with explicit FK JOIN to media_assets for file_url
+    // Query product_files with JOIN to media_assets via FK
     const { data: files, error: filesError } = await tenantDb
       .from('product_files')
       .select(`
@@ -365,7 +365,7 @@ async function fetchProductImages(productIds, tenantDb) {
         alt_text,
         file_type,
         metadata,
-        media_assets!media_asset_id (
+        media_assets (
           id,
           file_url,
           file_path,
@@ -377,46 +377,43 @@ async function fetchProductImages(productIds, tenantDb) {
       .eq('file_type', 'image')
       .order('position', { ascending: true });
 
-    // Debug logging
-    console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
-    if (files && files.length > 0) {
-      console.log(`🖼️ fetchProductImages sample:`, JSON.stringify({
-        media_asset_id: files[0].media_asset_id,
-        media_assets: files[0].media_assets
-      }));
-    }
     if (filesError) {
       console.error('🖼️ fetchProductImages error:', filesError);
+      return {};
     }
 
-    // Group images by product_id from product_files
+    console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
+
+    if (!files || files.length === 0) {
+      return {};
+    }
+
+    // Group images by product_id
     const imagesByProduct = {};
-    if (!filesError && files && files.length > 0) {
-      files.forEach(file => {
-        if (!imagesByProduct[file.product_id]) {
-          imagesByProduct[file.product_id] = [];
-        }
+    files.forEach(file => {
+      if (!imagesByProduct[file.product_id]) {
+        imagesByProduct[file.product_id] = [];
+      }
 
-        const fileUrl = file.media_assets?.file_url;
-        if (!fileUrl) return; // Skip if no URL available
+      const fileUrl = file.media_assets?.file_url;
+      if (!fileUrl) return; // Skip if no URL available
 
-        // Parse metadata if it's a string
-        const metadata = typeof file.metadata === 'string'
-          ? JSON.parse(file.metadata)
-          : (file.metadata || {});
+      // Parse metadata if it's a string
+      const metadata = typeof file.metadata === 'string'
+        ? JSON.parse(file.metadata)
+        : (file.metadata || {});
 
-        imagesByProduct[file.product_id].push({
-          url: fileUrl,
-          alt: file.alt_text || '',
-          isPrimary: file.is_primary || file.position === 0,
-          position: file.position || 0,
-          // Include fields expected by ProductForm
-          filepath: file.media_assets?.file_path || metadata.filepath || '',
-          filesize: file.media_assets?.file_size || metadata.filesize || 0,
-          attribute_code: metadata.attribute_code || `image_${file.position || 0}`
-        });
+      imagesByProduct[file.product_id].push({
+        url: fileUrl,
+        alt: file.alt_text || '',
+        isPrimary: file.is_primary || file.position === 0,
+        position: file.position || 0,
+        media_asset_id: file.media_asset_id,
+        filepath: file.media_assets?.file_path || metadata.filepath || '',
+        filesize: file.media_assets?.file_size || metadata.filesize || 0,
+        attribute_code: metadata.attribute_code || `image_${file.position || 0}`
       });
-    }
+    });
 
     // Check which product IDs still need images (fallback to product_images table)
     const idsWithoutImages = idsArray.filter(id => !imagesByProduct[id] || imagesByProduct[id].length === 0);
