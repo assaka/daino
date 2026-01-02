@@ -484,6 +484,7 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
 
 /**
  * Delete product from tenant database
+ * Also deletes associated images from storage and media_assets
  *
  * @param {string} storeId - Store UUID
  * @param {string} productId - Product UUID
@@ -492,7 +493,54 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
 async function deleteProduct(storeId, productId) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Delete attribute values first
+  // Get product files to find associated media assets
+  const { data: productFiles } = await tenantDb
+    .from('product_files')
+    .select('media_asset_id')
+    .eq('product_id', productId);
+
+  // Get media assets for these product files
+  const mediaAssetIds = (productFiles || [])
+    .map(f => f.media_asset_id)
+    .filter(id => id);
+
+  if (mediaAssetIds.length > 0) {
+    // Get media asset details for storage deletion
+    const { data: mediaAssets } = await tenantDb
+      .from('media_assets')
+      .select('id, file_path, metadata')
+      .in('id', mediaAssetIds);
+
+    // Delete files from storage
+    if (mediaAssets && mediaAssets.length > 0) {
+      const storageManager = require('../services/storage-manager');
+      for (const asset of mediaAssets) {
+        if (asset.file_path) {
+          try {
+            await storageManager.deleteFile(storeId, asset.file_path);
+            console.log(`🗑️ Deleted product image from storage: ${asset.file_path}`);
+          } catch (storageError) {
+            console.error(`Failed to delete product image from storage: ${asset.file_path}`, storageError.message);
+            // Continue even if storage deletion fails
+          }
+        }
+      }
+    }
+
+    // Delete media_assets records
+    await tenantDb
+      .from('media_assets')
+      .delete()
+      .in('id', mediaAssetIds);
+  }
+
+  // Delete product_files
+  await tenantDb
+    .from('product_files')
+    .delete()
+    .eq('product_id', productId);
+
+  // Delete attribute values
   await tenantDb
     .from('product_attribute_values')
     .delete()

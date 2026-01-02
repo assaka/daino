@@ -240,6 +240,7 @@ async function updateCategoryWithTranslations(storeId, categoryId, categoryData 
 
 /**
  * Delete category from tenant database
+ * Also deletes associated images from storage and media_assets
  *
  * @param {string} storeId - Store UUID
  * @param {string} categoryId - Category UUID
@@ -248,7 +249,63 @@ async function updateCategoryWithTranslations(storeId, categoryId, categoryData 
 async function deleteCategory(storeId, categoryId) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Delete translations first
+  // Get category to find associated media
+  const { data: category } = await tenantDb
+    .from('categories')
+    .select('media_asset_id, banner_images')
+    .eq('id', categoryId)
+    .single();
+
+  const mediaAssetIdsToDelete = [];
+
+  if (category) {
+    // Collect main category image media_asset_id
+    if (category.media_asset_id) {
+      mediaAssetIdsToDelete.push(category.media_asset_id);
+    }
+
+    // Collect banner image media_asset_ids
+    if (category.banner_images && Array.isArray(category.banner_images)) {
+      for (const banner of category.banner_images) {
+        if (banner.media_asset_id) {
+          mediaAssetIdsToDelete.push(banner.media_asset_id);
+        }
+      }
+    }
+  }
+
+  // Delete images from storage and media_assets table
+  if (mediaAssetIdsToDelete.length > 0) {
+    // Get media asset details for storage deletion
+    const { data: mediaAssets } = await tenantDb
+      .from('media_assets')
+      .select('id, file_path, metadata')
+      .in('id', mediaAssetIdsToDelete);
+
+    // Delete files from storage
+    if (mediaAssets && mediaAssets.length > 0) {
+      const storageManager = require('../services/storage-manager');
+      for (const asset of mediaAssets) {
+        if (asset.file_path) {
+          try {
+            await storageManager.deleteFile(storeId, asset.file_path);
+            console.log(`🗑️ Deleted category image from storage: ${asset.file_path}`);
+          } catch (storageError) {
+            console.error(`Failed to delete category image from storage: ${asset.file_path}`, storageError.message);
+            // Continue even if storage deletion fails
+          }
+        }
+      }
+    }
+
+    // Delete media_assets records
+    await tenantDb
+      .from('media_assets')
+      .delete()
+      .in('id', mediaAssetIdsToDelete);
+  }
+
+  // Delete translations
   await tenantDb
     .from('category_translations')
     .delete()
