@@ -617,7 +617,9 @@ class AkeneoClient {
   async getMediaFile(code) {
     try {
       await this.ensureValidToken();
-      const response = await this.makeRequest('GET', `/api/rest/v1/media-files/${code}`);
+      // URL-encode the code to handle slashes in media file paths (e.g., 9/0/0/f/filename.pdf)
+      const encodedCode = encodeURIComponent(code);
+      const response = await this.makeRequest('GET', `/api/rest/v1/media-files/${encodedCode}`);
       return response;
     } catch (error) {
       console.error(`Failed to get media file ${code}:`, error.message);
