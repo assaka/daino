@@ -334,6 +334,7 @@ class StorageManager {
           file_size: result.size,
           folder: folder,
           uploaded_by: options.userId || null,
+          demo: options.demo || false,
           metadata: {
             bucket: result.bucket,
             provider: storeProvider.type,
@@ -342,6 +343,8 @@ class StorageManager {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
+
+        let mediaAssetId;
 
         if (existingAsset) {
           // Update existing record with new upload data
@@ -356,24 +359,34 @@ class StorageManager {
           if (updateError) {
             throw updateError;
           }
+          mediaAssetId = existingAsset.id;
         } else {
           // Create new record
+          const newId = uuidv4();
           const { error: insertError } = await tenantDb
             .from('media_assets')
             .insert({
-              id: uuidv4(),
+              id: newId,
               ...assetData
             });
 
           if (insertError) {
             throw insertError;
           }
+          mediaAssetId = newId;
         }
+
+        return {
+          ...result,
+          provider: storeProvider.type,
+          fallbackUsed: false,
+          mediaAssetId
+        };
       } catch (dbError) {
         console.error('Failed to track media asset in database:', dbError.message);
         // Don't fail the upload if database tracking fails
       }
-      
+
       return {
         ...result,
         provider: storeProvider.type,

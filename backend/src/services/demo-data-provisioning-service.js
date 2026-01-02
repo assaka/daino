@@ -71,9 +71,7 @@ class DemoDataProvisioningService {
         mimeType = 'image/gif';
       }
 
-      // Generate organized path
-      const firstChar = productSku.charAt(0).toLowerCase();
-      const secondChar = productSku.length > 1 ? productSku.charAt(1).toLowerCase() : firstChar;
+      // Generate filename
       const filename = `${productSku}-${index}${ext}`;
 
       // Prepare file object
@@ -84,17 +82,19 @@ class DemoDataProvisioningService {
         originalname: filename
       };
 
-      // Upload to storage
+      // Upload to storage - just pass 'products', storage service adds d/e subdirs
+      // Pass demo: true so media_assets record is marked as demo
       const uploadResult = await StorageManager.uploadFile(this.storeId, fileObject, {
-        folder: `demo/products/${firstChar}/${secondChar}`,
+        folder: 'products',
         public: true,
-        type: 'demo'
+        demo: true
       });
 
       console.log(`✅ Demo: Stored image ${filename}`);
       return {
         url: uploadResult.url,
         path: uploadResult.path,
+        mediaAssetId: uploadResult.mediaAssetId,
         mimeType,
         size: imageBuffer.length
       };
@@ -614,44 +614,22 @@ class DemoDataProvisioningService {
         const sourceUrl = images[imgIdx];
         const altText = imgIdx === 0 ? prod.name : `${prod.name} - View ${imgIdx + 1}`;
 
-        // Download and store image in storage
+        // Download and store image - StorageManager creates media_assets record with demo=true
         const storedImage = await this.downloadAndStoreImage(sourceUrl, prod.sku, imgIdx);
 
-        if (!storedImage) {
+        if (!storedImage || !storedImage.mediaAssetId) {
           console.warn(`⚠️ Demo: Skipping image ${imgIdx} for ${prod.sku} - download failed`);
           continue;
         }
 
-        // Create media_asset record with stored URL
-        const { data: newAsset } = await this.tenantDb
-          .from('media_assets')
-          .insert({
-            id: uuidv4(),
-            store_id: this.storeId,
-            file_url: storedImage.url,
-            file_path: storedImage.path,
-            file_name: `${prod.sku}-${imgIdx}.jpg`,
-            mime_type: storedImage.mimeType,
-            file_size: storedImage.size,
-            folder: 'demo',
-            demo: true
-          })
-          .select('id')
-          .single();
-
-        if (!newAsset) {
-          console.warn(`⚠️ Demo: Failed to create media_asset for ${prod.sku}-${imgIdx}`);
-          continue;
-        }
-
-        // Create product_files link
+        // Create product_files link using mediaAssetId from upload
         const { error: imgError } = await this.tenantDb
           .from('product_files')
           .insert({
             id: uuidv4(),
             product_id: productId,
             store_id: this.storeId,
-            media_asset_id: newAsset.id,
+            media_asset_id: storedImage.mediaAssetId,
             file_type: 'image',
             position: imgIdx,
             is_primary: imgIdx === 0,
@@ -1084,42 +1062,23 @@ class DemoDataProvisioningService {
       // Create a simple product image for custom options
       const sourceUrl = `https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&h=600&fit=crop`;
 
-      // Download and store image
+      // Download and store image - StorageManager creates media_assets with demo=true
       const storedImage = await this.downloadAndStoreImage(sourceUrl, prod.sku, 0);
 
-      if (storedImage) {
-        // Create media_asset record
-        const { data: newAsset } = await this.tenantDb
-          .from('media_assets')
+      if (storedImage && storedImage.mediaAssetId) {
+        await this.tenantDb
+          .from('product_files')
           .insert({
             id: uuidv4(),
+            product_id: productId,
             store_id: this.storeId,
-            file_url: storedImage.url,
-            file_path: storedImage.path,
-            file_name: `${prod.sku}-0.jpg`,
-            mime_type: storedImage.mimeType,
-            file_size: storedImage.size,
-            folder: 'demo',
+            media_asset_id: storedImage.mediaAssetId,
+            file_type: 'image',
+            position: 0,
+            is_primary: true,
+            alt_text: prod.name,
             demo: true
-          })
-          .select('id')
-          .single();
-
-        if (newAsset) {
-          await this.tenantDb
-            .from('product_files')
-            .insert({
-              id: uuidv4(),
-              product_id: productId,
-              store_id: this.storeId,
-              media_asset_id: newAsset.id,
-              file_type: 'image',
-              position: 0,
-              is_primary: true,
-              alt_text: prod.name,
-              demo: true
-            });
-        }
+          });
       }
     }
 

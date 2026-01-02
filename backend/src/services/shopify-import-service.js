@@ -506,9 +506,7 @@ class ShopifyImportService {
 
       console.log(`📷 Downloading image: ext=${ext}, mimeType=${mimeType}, url=${imageUrl.substring(0, 80)}...`);
 
-      // Generate organized directory path: products/g/i/gift-card-0.jpg
-      const firstChar = productHandle.charAt(0).toLowerCase();
-      const secondChar = productHandle.length > 1 ? productHandle.charAt(1).toLowerCase() : firstChar;
+      // Generate filename - storage service handles d/e subdirs automatically
       const filename = `${productHandle}-${index}${ext}`;
 
       // Validate MIME type before upload
@@ -524,20 +522,25 @@ class ShopifyImportService {
         originalname: filename
       };
 
-      // Upload using StorageManager.uploadFile() - the correct API
+      // Upload using StorageManager.uploadFile() - just pass 'products', storage service adds subdirs
+      // StorageManager creates media_assets record and returns mediaAssetId
       const uploadResult = await StorageManager.uploadFile(this.storeId, fileObject, {
-        folder: `products/${firstChar}/${secondChar}`,
+        folder: 'products',
         public: true,
         type: 'product'
       });
 
-      console.log(`✅ Stored image: ${uploadResult.url}`);
-      return uploadResult.url;
+      console.log(`✅ Stored image: ${uploadResult.url}, mediaAssetId: ${uploadResult.mediaAssetId}`);
+      return {
+        url: uploadResult.url,
+        mediaAssetId: uploadResult.mediaAssetId,
+        path: uploadResult.path
+      };
 
     } catch (error) {
       console.error(`❌ Failed to download/store image from ${imageUrl}:`, error.message);
-      // Return original URL as fallback
-      return imageUrl;
+      // Return original URL as fallback (no mediaAssetId)
+      return { url: imageUrl, mediaAssetId: null, path: null };
     }
   }
 
@@ -895,49 +898,53 @@ class ShopifyImportService {
           console.log(`🖼️  Processing ${product.images.length} images for ${product.title}`);
 
           for (let i = 0; i < product.images.length; i++) {
+            const image = product.images[i];
+
             try {
-              const image = product.images[i];
+              // Download and store image - StorageManager creates media_assets and returns id
+              const storedResult = await this.downloadAndStoreImage(image.src, product.handle, i);
 
-              // Download and store image using storage provider
-              const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
+              let mediaAssetId = storedResult.mediaAssetId;
 
-              // Create or find media_asset record
-              let mediaAssetId = null;
-              const { data: existingAsset } = await tenantDb
-                .from('media_assets')
-                .select('id')
-                .eq('store_id', this.storeId)
-                .eq('file_url', storedUrl)
-                .maybeSingle();
+              // If no mediaAssetId (download failed), create fallback with external URL
+              if (!mediaAssetId) {
+                console.warn(`⚠️ No mediaAssetId returned for image ${i}, creating fallback record`);
 
-              if (existingAsset) {
-                mediaAssetId = existingAsset.id;
-              } else {
-                // Extract file_path from storedUrl
-                const urlPath = new URL(storedUrl).pathname;
-                const filePath = urlPath.split('/').slice(-4).join('/'); // Get last 4 segments as path
-
-                const { data: newAsset, error: assetError } = await tenantDb
+                // Check if fallback asset already exists
+                const { data: existingAsset } = await tenantDb
                   .from('media_assets')
-                  .insert({
-                    id: uuidv4(),
-                    store_id: this.storeId,
-                    file_url: storedUrl,
-                    file_path: filePath,
-                    file_name: `${product.handle}-${i}.jpg`,
-                    mime_type: 'image/jpeg',
-                    folder: 'product'
-                  })
                   .select('id')
-                  .single();
+                  .eq('store_id', this.storeId)
+                  .eq('file_url', image.src)
+                  .maybeSingle();
 
-                if (assetError) {
-                  console.error(`❌ Failed to create media_asset:`, assetError.message);
+                if (existingAsset) {
+                  mediaAssetId = existingAsset.id;
+                } else {
+                  const filePath = `external/${product.handle}-${i}.jpg`;
+                  const { data: newAsset } = await tenantDb
+                    .from('media_assets')
+                    .insert({
+                      id: uuidv4(),
+                      store_id: this.storeId,
+                      file_url: image.src,
+                      file_path: filePath,
+                      file_name: `${product.handle}-${i}.jpg`,
+                      mime_type: 'image/jpeg',
+                      folder: 'external'
+                    })
+                    .select('id')
+                    .single();
+                  mediaAssetId = newAsset?.id;
                 }
-                mediaAssetId = newAsset?.id;
               }
 
-              // Insert into product_files table with media_asset_id
+              if (!mediaAssetId) {
+                console.error(`❌ Could not get mediaAssetId for image ${i}, skipping`);
+                continue;
+              }
+
+              // Insert into product_files table
               const { error: pfError } = await tenantDb
                 .from('product_files')
                 .insert({
@@ -946,7 +953,7 @@ class ShopifyImportService {
                   media_asset_id: mediaAssetId,
                   file_type: 'image',
                   position: i,
-                  is_primary: i === 0, // First image is primary
+                  is_primary: i === 0,
                   alt_text: image.alt || product.title,
                   metadata: {
                     shopify_id: image.id,
@@ -964,70 +971,7 @@ class ShopifyImportService {
 
               console.log(`✅ Saved image ${i + 1}/${product.images.length} for ${product.title}`);
             } catch (imageError) {
-              console.warn(`⚠️ Failed to process image ${i} for ${product.title}, using original URL:`, imageError.message);
-
-              // Fallback: Insert with original Shopify URL
-              const image = product.images[i];
-
-              // Create or find media_asset record for fallback URL
-              let mediaAssetId = null;
-              const { data: existingAsset } = await tenantDb
-                .from('media_assets')
-                .select('id')
-                .eq('store_id', this.storeId)
-                .eq('file_url', image.src)
-                .maybeSingle();
-
-              if (existingAsset) {
-                mediaAssetId = existingAsset.id;
-              } else {
-                // For external URLs, use handle as path
-                const filePath = `external/${product.handle}-${i}.jpg`;
-
-                const { data: newAsset, error: assetError } = await tenantDb
-                  .from('media_assets')
-                  .insert({
-                    id: uuidv4(),
-                    store_id: this.storeId,
-                    file_url: image.src,
-                    file_path: filePath,
-                    file_name: `${product.handle}-${i}.jpg`,
-                    mime_type: 'image/jpeg',
-                    folder: 'external'
-                  })
-                  .select('id')
-                  .single();
-
-                if (assetError) {
-                  console.error(`❌ Failed to create fallback media_asset:`, assetError.message);
-                }
-                mediaAssetId = newAsset?.id;
-              }
-
-              const { error: pfError } = await tenantDb
-                .from('product_files')
-                .insert({
-                  id: uuidv4(),
-                  product_id: savedProduct.id,
-                  media_asset_id: mediaAssetId,
-                  file_type: 'image',
-                  position: i,
-                  is_primary: i === 0,
-                  alt_text: image.alt || product.title,
-                  metadata: {
-                    shopify_id: image.id,
-                    shopify_position: image.position,
-                    original_src: image.src,
-                    storage_error: imageError.message
-                  },
-                  store_id: this.storeId,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                });
-
-              if (pfError) {
-                console.error(`❌ Failed to insert fallback product_files:`, pfError.message);
-              }
+              console.error(`❌ Failed to process image ${i} for ${product.title}:`, imageError.message);
             }
           }
 
