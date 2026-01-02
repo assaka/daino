@@ -1418,9 +1418,18 @@ const FileLibrary = () => {
     // Entity filter
     let matchesEntity = true;
     if (entityFilter !== 'all') {
-      const folder = file.folder || file.path?.split('/')[0] || 'library';
-      matchesEntity = folder.toLowerCase().includes(entityFilter.toLowerCase()) ||
-        (entityFilter === 'library' && !folder.includes('product') && !folder.includes('categor'));
+      const folder = (file.folder || file.path?.split('/')[0] || 'library').toLowerCase();
+
+      if (entityFilter === 'library') {
+        // Library: exclude product and category folders
+        matchesEntity = !folder.includes('product') && !folder.includes('categor');
+      } else if (entityFilter === 'products') {
+        // Products: match 'product' or 'products' folder
+        matchesEntity = folder.includes('product');
+      } else if (entityFilter === 'categories') {
+        // Categories: match 'category' or 'categories' folder
+        matchesEntity = folder.includes('categor');
+      }
     }
 
     return matchesSearch && matchesEntity;
