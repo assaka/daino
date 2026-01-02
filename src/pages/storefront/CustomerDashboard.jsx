@@ -306,8 +306,8 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfi
                             {order.OrderItems.map(item => (
                               <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                                 {item.Product?.images?.[0] && (
-                                  <img 
-                                    src={item.Product.images[0]} 
+                                  <img
+                                    src={item.Product.images[0]?.url || item.Product.images[0]}
                                     alt={item.product_name || item.Product.name}
                                     className="w-16 h-16 object-cover rounded"
                                   />
@@ -442,9 +442,9 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
             {wishlistProducts.map(item => (
               <Card key={item.id}>
                 <CardContent className="p-4 flex flex-col items-center text-center">
-                  <img 
-                    src={item.product?.images?.[0] || 'https://placehold.co/128x128?text=No+Image'} 
-                    alt={item.product?.name || 'Product'} 
+                  <img
+                    src={item.product?.images?.[0]?.url || item.product?.images?.[0] || 'https://placehold.co/128x128?text=No+Image'}
+                    alt={item.product?.name || 'Product'}
                     className="w-32 h-32 object-cover mb-2 rounded-lg"
                     onError={(e) => {
                       e.target.src = 'https://placehold.co/128x128?text=No+Image';
