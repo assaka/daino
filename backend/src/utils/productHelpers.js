@@ -353,17 +353,19 @@ async function fetchProductImages(productIds, tenantDb) {
   if (idsArray.length === 0) return {};
 
   try {
-    // Query product_files with JOIN to media_assets for file_url
+    // Query product_files with explicit FK JOIN to media_assets for file_url
     const { data: files, error: filesError } = await tenantDb
       .from('product_files')
       .select(`
         id,
         product_id,
+        media_asset_id,
         position,
         is_primary,
         alt_text,
         file_type,
-        media_assets (
+        media_assets!media_asset_id (
+          id,
           file_url,
           mime_type,
           file_size
@@ -375,6 +377,12 @@ async function fetchProductImages(productIds, tenantDb) {
 
     // Debug logging
     console.log(`🖼️ fetchProductImages: Querying ${idsArray.length} products, found ${files?.length || 0} files`);
+    if (files && files.length > 0) {
+      console.log(`🖼️ fetchProductImages sample:`, JSON.stringify({
+        media_asset_id: files[0].media_asset_id,
+        media_assets: files[0].media_assets
+      }));
+    }
     if (filesError) {
       console.error('🖼️ fetchProductImages error:', filesError);
     }

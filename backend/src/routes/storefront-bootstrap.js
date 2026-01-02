@@ -534,7 +534,7 @@ router.get('/', cacheMiddleware({
               position,
               is_primary,
               alt_text,
-              media_assets (
+              media_assets!media_asset_id (
                 file_url
               )
             `)

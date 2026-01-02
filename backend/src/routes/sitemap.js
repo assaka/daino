@@ -96,7 +96,7 @@ async function generateSitemapXml(storeId, baseUrl) {
             .select(`
               product_id,
               alt_text,
-              media_assets (
+              media_assets!media_asset_id (
                 file_url
               )
             `)

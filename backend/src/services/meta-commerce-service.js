@@ -260,7 +260,7 @@ class MetaCommerceService {
           product_id,
           position,
           is_primary,
-          media_assets (
+          media_assets!media_asset_id (
             file_url
           )
         `)
