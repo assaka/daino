@@ -4,7 +4,7 @@ import { Database, Check, ExternalLink, RefreshCw, Trash2, AlertCircle, CheckCir
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 
 const PlanetScalePage = () => {
@@ -14,6 +14,7 @@ const PlanetScalePage = () => {
   const [isDefaultDatabase, setIsDefaultDatabase] = useState(false);
   const [settingDefaultDatabase, setSettingDefaultDatabase] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // No fallbacks - only use the selected store from context
   const storeId = selectedStore?.id;
@@ -54,7 +55,7 @@ const PlanetScalePage = () => {
 
   const handleSetAsDefaultDatabase = async () => {
     if (!storeId) {
-      toast.error('Please select a store first');
+      setFlashMessage({ type: 'error', message: 'Please select a store first' });
       return;
     }
 
@@ -65,11 +66,11 @@ const PlanetScalePage = () => {
       });
 
       setIsDefaultDatabase(true);
-      toast.success('PlanetScale set as default database provider');
+      setFlashMessage({ type: 'success', message: 'PlanetScale set as default database provider' });
       await checkIfDefault();
     } catch (error) {
       console.error('Error setting default database provider:', error);
-      toast.error('Failed to set as default database provider');
+      setFlashMessage({ type: 'error', message: 'Failed to set as default database provider' });
     } finally {
       setSettingDefaultDatabase(false);
     }
@@ -83,7 +84,7 @@ const PlanetScalePage = () => {
         window.location.href = response.authUrl;
       }
     } catch (error) {
-      toast.error('Failed to initiate PlanetScale connection');
+      setFlashMessage({ type: 'error', message: 'Failed to initiate PlanetScale connection' });
       setConnecting(false);
     }
   };
@@ -95,10 +96,10 @@ const PlanetScalePage = () => {
 
     try {
       await apiClient.post('/database-oauth/disconnect', { store_id: storeId });
-      toast.success('PlanetScale disconnected successfully');
+      setFlashMessage({ type: 'success', message: 'PlanetScale disconnected successfully' });
       await loadConnectionStatus();
     } catch (error) {
-      toast.error('Failed to disconnect PlanetScale');
+      setFlashMessage({ type: 'error', message: 'Failed to disconnect PlanetScale' });
     }
   };
 
@@ -125,6 +126,7 @@ const PlanetScalePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">PlanetScale MySQL</h1>

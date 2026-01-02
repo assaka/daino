@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import apiClient from '@/api/client';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 const NeonCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('processing'); // processing, success, error
   const [message, setMessage] = useState('Connecting to Neon...');
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     handleCallback();
@@ -39,7 +40,7 @@ const NeonCallback = () => {
       if (response.success) {
         setStatus('success');
         setMessage('Neon database connected successfully!');
-        toast.success('Neon database connected successfully');
+        setFlashMessage({ type: 'success', message: 'Neon database connected successfully' });
 
         // Redirect to database integrations page after 2 seconds
         setTimeout(() => {
@@ -52,7 +53,7 @@ const NeonCallback = () => {
       console.error('Neon OAuth callback error:', error);
       setStatus('error');
       setMessage(error.message || 'Failed to connect to Neon');
-      toast.error(error.message || 'Failed to connect to Neon');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to connect to Neon' });
 
       // Redirect back after 3 seconds
       setTimeout(() => {
@@ -63,6 +64,7 @@ const NeonCallback = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center">
           {status === 'processing' && (

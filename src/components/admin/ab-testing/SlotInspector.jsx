@@ -21,7 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Copy, Check, Search, Eye, Code } from 'lucide-react';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 /**
  * Slot Inspector - Shows all available slots on a page
@@ -31,6 +31,7 @@ export default function SlotInspector({ storeId, onSelectSlot }) {
   const [selectedPageType, setSelectedPageType] = useState('product');
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedText, setCopiedText] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const pageTypes = [
     { value: 'home', label: 'Homepage' },
@@ -76,7 +77,7 @@ export default function SlotInspector({ storeId, onSelectSlot }) {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
-    toast.success('Copied to clipboard!');
+    setFlashMessage({ type: 'success', message: 'Copied to clipboard!' });
     setTimeout(() => setCopiedText(null), 2000);
   };
 
@@ -90,7 +91,7 @@ export default function SlotInspector({ storeId, onSelectSlot }) {
       }
     };
     navigator.clipboard.writeText(JSON.stringify(template, null, 2));
-    toast.success('Slot override template copied!');
+    setFlashMessage({ type: 'success', message: 'Slot override template copied!' });
   };
 
   const getSlotTypeColor = (type) => {
@@ -106,6 +107,7 @@ export default function SlotInspector({ storeId, onSelectSlot }) {
 
   return (
     <div className="space-y-4">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

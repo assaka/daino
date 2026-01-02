@@ -47,7 +47,7 @@ import {
 import AttributeForm from "@/components/admin/attributes/AttributeForm";
 import AttributeSetForm from "@/components/admin/attributes/AttributeSetForm";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
-import { toast } from "sonner";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { getAttributeLabel } from "@/utils/attributeUtils";
@@ -78,6 +78,7 @@ export default function Attributes() {
   // Delete all state
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -245,7 +246,7 @@ export default function Attributes() {
   const handleBulkTranslate = async (fromLang, toLang) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return { success: false, message: "No store selected" };
     }
 
@@ -283,7 +284,7 @@ export default function Attributes() {
   const handleDeleteAllAttributes = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
@@ -310,14 +311,14 @@ export default function Attributes() {
         throw new Error(data.message || 'Failed to delete attributes');
       }
 
-      toast.success(`${data.data?.deleted || 0} attributes deleted successfully`);
+      setFlashMessage({ type: 'success', message: `${data.data?.deleted || 0} attributes deleted successfully` });
       setShowDeleteAllConfirm(false);
       await loadData();
       // Clear cache
       clearAttributesCache(storeId);
     } catch (error) {
       console.error('Delete all attributes error:', error);
-      toast.error(error.message || 'Failed to delete attributes');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to delete attributes' });
     } finally {
       setIsDeleting(false);
     }
@@ -504,6 +505,7 @@ export default function Attributes() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">

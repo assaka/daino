@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Mail, Send, Copy, Check, Eye, RotateCcw, Languages } from 'lucide-react';
 import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
@@ -20,6 +20,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [copiedVariable, setCopiedVariable] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const [formData, setFormData] = useState({
     identifier: '',
@@ -155,7 +156,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
   const copyVariable = (variable) => {
     navigator.clipboard.writeText(variable);
     setCopiedVariable(variable);
-    toast.success('Variable copied to clipboard');
+    setFlashMessage({ type: 'success', message: 'Variable copied to clipboard' });
     setTimeout(() => setCopiedVariable(null), 2000);
   };
 
@@ -171,7 +172,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
       const response = await api.post(`/email-templates/${template.id}/restore-default`);
 
       if (response && response.success) {
-        toast.success('Template restored to default successfully');
+        setFlashMessage({ type: 'success', message: 'Template restored to default successfully' });
         // Reload the template data
         const updated = await api.get(`/email-templates/${template.id}`);
         if (updated && updated.success && updated.data) {
@@ -193,7 +194,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
       }
     } catch (error) {
       console.error('Restore error:', error);
-      toast.error('Failed to restore template');
+      setFlashMessage({ type: 'error', message: 'Failed to restore template' });
     } finally {
       setSaving(false);
     }
@@ -224,6 +225,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Basic Information */}
       <Card>
         <CardHeader>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 /**
@@ -19,6 +19,7 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const filteredLanguages = availableLanguages.filter(lang => selectedLanguages?.includes(lang.code));
 
@@ -80,7 +81,7 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
   // Save translations
   const handleSave = async () => {
     if (!settings || !settings.id) {
-      toast.error('No cookie consent settings found');
+      setFlashMessage({ type: 'error', message: 'No cookie consent settings found' });
       return;
     }
 
@@ -97,7 +98,7 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
       });
 
       console.log('Cookie consent save response:', response);
-      toast.success('Cookie consent translations updated successfully');
+      setFlashMessage({ type: 'success', message: 'Cookie consent translations updated successfully' });
       if (onFlashMessage) onFlashMessage('Cookie Consent translations updated successfully', 'success');
       if (onUpdate) onUpdate(settings.id, translations);
       setSaving(false);
@@ -106,7 +107,7 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
     } catch (error) {
       console.error('Error saving cookie consent translations:', error);
       console.error('Error response:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to save translations');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to save translations' });
       setSaving(false);
     }
   };
@@ -115,7 +116,7 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
   const handleAITranslate = async (field, fromLang, toLang) => {
     const sourceText = translations[fromLang]?.[field];
     if (!sourceText || !sourceText.trim()) {
-      toast.error(`No ${fromLang.toUpperCase()} text found for ${field}`);
+      setFlashMessage({ type: 'error', message: `No ${fromLang.toUpperCase()} text found for ${field}` });
       return;
     }
 
@@ -133,18 +134,20 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
 
       if (response && response.success && response.data) {
         handleTranslationChange(toLang, field, response.data.translated);
-        toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+        setFlashMessage({ type: 'success', message: `${field} translated to ${toLang.toUpperCase()}` });
       }
     } catch (error) {
       console.error('AI translate error:', error);
-      toast.error(`Failed to translate ${field}`);
+      setFlashMessage({ type: 'error', message: `Failed to translate ${field}` });
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
     }
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {/* Collapsed Header */}
       <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <button
@@ -386,5 +389,6 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
         </div>
       )}
     </div>
+    </>
   );
 }

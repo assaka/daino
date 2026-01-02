@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import apiClient from '@/api/client';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
 import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog';
 
@@ -71,6 +71,7 @@ const CustomDomains = () => {
   const [dnsDebugData, setDnsDebugData] = useState(null);
   const [isDnsDebugOpen, setIsDnsDebugOpen] = useState(false);
   const [copiedText, setCopiedText] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Companion domain state
   const [companionDomain, setCompanionDomain] = useState('');
@@ -181,7 +182,7 @@ const CustomDomains = () => {
       }
     } catch (error) {
       console.error('Error loading domains:', error);
-      toast.error('Failed to load domains');
+      setFlashMessage({ type: 'error', message: 'Failed to load domains' });
     } finally {
       setLoading(false);
     }
@@ -189,14 +190,14 @@ const CustomDomains = () => {
 
   const handleAddDomain = async () => {
     if (!newDomain.trim()) {
-      toast.error('Please enter a domain name');
+      setFlashMessage({ type: 'error', message: 'Please enter a domain name' });
       return;
     }
 
     // Basic domain validation
     const domainRegex = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i;
     if (!domainRegex.test(newDomain.trim())) {
-      toast.error('Please enter a valid domain name (e.g., shop.example.com)');
+      setFlashMessage({ type: 'error', message: 'Please enter a valid domain name (e.g., shop.example.com)' });
       return;
     }
 
@@ -213,7 +214,7 @@ const CustomDomains = () => {
         const message = includeCompanion && companionDomain
           ? `Domains added: ${newDomain} (primary) and ${companionDomain} (redirects)`
           : 'Domain added successfully! Please configure DNS records.';
-        toast.success(message);
+        setFlashMessage({ type: 'success', message: message });
         setAddDialogOpen(false);
         setNewDomain('');
         setCompanionDomain('');
@@ -227,7 +228,7 @@ const CustomDomains = () => {
       }
     } catch (error) {
       console.error('Error adding domain:', error);
-      toast.error(error.response?.data?.message || 'Failed to add domain');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to add domain' });
     } finally {
       setAdding(false);
     }
@@ -239,14 +240,14 @@ const CustomDomains = () => {
       const response = await apiClient.post(`/custom-domains/${domainId}/verify`);
 
       if (response.success) {
-        toast.success('Domain verified successfully!');
+        setFlashMessage({ type: 'success', message: 'Domain verified successfully!' });
         loadDomains();
       } else {
-        toast.error(response.message || 'Domain verification failed. Please check DNS records.');
+        setFlashMessage({ type: 'error', message: response.message || 'Domain verification failed. Please check DNS records.' });
       }
     } catch (error) {
       console.error('Error verifying domain:', error);
-      toast.error(error.response?.data?.message || 'Failed to verify domain');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to verify domain' });
     } finally {
       setVerifying(false);
     }
@@ -257,15 +258,15 @@ const CustomDomains = () => {
       const response = await apiClient.post(`/custom-domains/${domainId}/check-dns`);
 
       if (response.configured) {
-        toast.success('All DNS records configured correctly!');
+        setFlashMessage({ type: 'success', message: 'All DNS records configured correctly!' });
       } else {
         const missing = response.records.filter(r => !r.configured);
-        toast.warning(`Missing ${missing.length} DNS record(s). Check details below.`);
+        setFlashMessage({ type: 'warning', message: `Missing ${missing.length} DNS record(s). Check details below.` });
       }
 
       // Show results
     } catch (error) {
-      toast.error('Failed to check DNS configuration');
+      setFlashMessage({ type: 'error', message: 'Failed to check DNS configuration' });
     }
   };
 
@@ -284,16 +285,17 @@ const CustomDomains = () => {
         console.log(response.recommendations);
         console.log('=====================');
 
-        // Show recommendations as toast
-        response.recommendations.forEach(rec => {
+        // Show first recommendation as flash message
+        if (response.recommendations.length > 0) {
+          const rec = response.recommendations[0];
           if (rec.type === 'error') {
-            toast.error(rec.message, { duration: 8000 });
+            setFlashMessage({ type: 'error', message: rec.message });
           } else if (rec.type === 'warning') {
-            toast.warning(rec.message, { duration: 6000 });
+            setFlashMessage({ type: 'warning', message: rec.message });
           } else {
-            toast.success(rec.message, { duration: 4000 });
+            setFlashMessage({ type: 'success', message: rec.message });
           }
-        });
+        }
 
         // Open debug modal
         setDnsDebugData(response);
@@ -301,7 +303,7 @@ const CustomDomains = () => {
       }
     } catch (error) {
       console.error('Error debugging DNS:', error);
-      toast.error('Failed to debug DNS configuration');
+      setFlashMessage({ type: 'error', message: 'Failed to debug DNS configuration' });
     }
   };
 
@@ -312,17 +314,17 @@ const CustomDomains = () => {
 
       if (response.success) {
         if (response.ssl_status === 'active') {
-          toast.success('SSL certificate is active!');
+          setFlashMessage({ type: 'success', message: 'SSL certificate is active!' });
         } else {
-          toast.info(`SSL status: ${response.ssl_status}. Vercel is provisioning the certificate...`);
+          setFlashMessage({ type: 'info', message: `SSL status: ${response.ssl_status}. Vercel is provisioning the certificate...` });
         }
         loadDomains();
       } else {
-        toast.warning(response.message || 'SSL status check failed');
+        setFlashMessage({ type: 'warning', message: response.message || 'SSL status check failed' });
       }
     } catch (error) {
       console.error('Error checking SSL:', error);
-      toast.error(error.response?.data?.message || 'Failed to check SSL status');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to check SSL status' });
     } finally {
       setCheckingSSL(false);
     }
@@ -341,14 +343,14 @@ const CustomDomains = () => {
       const response = await apiClient.delete(`/custom-domains/${domainToDelete.id}`);
 
       if (response.success) {
-        toast.success('Domain removed successfully');
+        setFlashMessage({ type: 'success', message: 'Domain removed successfully' });
         setDeleteDialogOpen(false);
         setDomainToDelete(null);
         loadDomains();
       }
     } catch (error) {
       console.error('Error removing domain:', error);
-      toast.error(error.response?.data?.message || 'Failed to remove domain');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to remove domain' });
     } finally {
       setDeleting(false);
     }
@@ -362,7 +364,7 @@ const CustomDomains = () => {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
-    toast.success('Copied to clipboard!');
+    setFlashMessage({ type: 'success', message: 'Copied to clipboard!' });
     setTimeout(() => setCopiedText(null), 2000);
   };
 
@@ -407,6 +409,7 @@ const CustomDomains = () => {
 
   return (
     <div className="p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

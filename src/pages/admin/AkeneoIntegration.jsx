@@ -63,7 +63,6 @@ import {
   Unlink,
   X
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useStoreSlug } from '@/hooks/useStoreSlug';
 import SaveButton from '@/components/ui/save-button';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -586,7 +585,7 @@ const AkeneoIntegration = () => {
       setTimeout(() => setMappingsSaved(false), 2000);
     } catch (error) {
       console.error('Failed to save custom mappings to database:', error);
-      toast.error('Failed to save custom mappings');
+      setFlashMessage({ type: 'error', message: 'Failed to save custom mappings' });
     }
   };
 
@@ -636,14 +635,14 @@ const AkeneoIntegration = () => {
         setAvailableCategories(rootCategories);
 
         if (rootCategories.length === 0) {
-          toast.info('No root categories found in Akeneo. All categories appear to have parent categories.');
+          setFlashMessage({ type: 'info', message: 'No root categories found in Akeneo. All categories appear to have parent categories.' });
         }
       } else {
-        toast.error('Failed to load categories from Akeneo API');
+        setFlashMessage({ type: 'error', message: 'Failed to load categories from Akeneo API' });
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
-      toast.error(`Failed to load categories: ${error.message}`);
+      setFlashMessage({ type: 'error', message: `Failed to load categories: ${error.message}` });
     } finally {
       setLoadingCategories(false);
     }
@@ -1065,7 +1064,7 @@ const AkeneoIntegration = () => {
   const testConnection = async () => {
     // Check if we have placeholder values - if so, we need actual values
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
-      toast.error('Please fill in all configuration fields');
+      setFlashMessage({ type: 'error', message: 'Please fill in all configuration fields' });
       return;
     }
 
@@ -1073,7 +1072,7 @@ const AkeneoIntegration = () => {
     const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
 
     if (hasPlaceholders && !configSaved) {
-      toast.error('Please enter your actual Client Secret and Password to test the connection');
+      setFlashMessage({ type: 'error', message: 'Please enter your actual Client Secret and Password to test the connection' });
       return;
     }
 
@@ -1081,7 +1080,7 @@ const AkeneoIntegration = () => {
     const storeId = selectedStore?.id;
 
     if (!storeId) {
-      toast.error('No store selected. Please select a store first.');
+      setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
       return;
     }
 
@@ -1109,17 +1108,17 @@ const AkeneoIntegration = () => {
 
       if (success) {
         setConnectionStatus({ success: true, message });
-        toast.success('Connection successful!');
+        setFlashMessage({ type: 'success', message: 'Connection successful!' });
       } else {
         setConnectionStatus({ success: false, message });
-        toast.error('Connection failed');
+        setFlashMessage({ type: 'error', message: 'Connection failed' });
       }
     } catch (error) {
       console.error('Connection test error:', error);
 
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setConnectionStatus({ success: false, message });
-      toast.error(`Connection failed: ${message}`);
+      setFlashMessage({ type: 'error', message: `Connection failed: ${message}` });
     } finally {
       setTesting(false);
     }
@@ -1174,16 +1173,16 @@ const AkeneoIntegration = () => {
     setValidationErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      // Show first error as toast
+      // Show first error as flash message
       const firstError = Object.values(errors)[0];
-      toast.error(firstError);
+      setFlashMessage({ type: 'error', message: firstError });
       return;
     }
 
     // Get store_id from context
     const storeId = selectedStore?.id;
     if (!storeId) {
-      toast.error('No store selected. Please select a store first.');
+      setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
       return;
     }
 
@@ -1230,7 +1229,7 @@ const AkeneoIntegration = () => {
       const response = await apiClient.post('/integrations/akeneo/disconnect');
 
       if (response.success) {
-        toast.success('Akeneo disconnected successfully');
+        setFlashMessage({ type: 'success', message: 'Akeneo disconnected successfully' });
         setShowDisconnectModal(false);
         // Reset all related state
         setConfig({
@@ -1256,7 +1255,7 @@ const AkeneoIntegration = () => {
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
-      toast.error(error.message || 'Failed to disconnect');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to disconnect' });
     } finally {
       setDisconnecting(false);
     }
@@ -1269,23 +1268,23 @@ const AkeneoIntegration = () => {
       const storeId = selectedStore?.id;
 
       if (!authToken) {
-        toast.error('Authentication required. Please refresh the page and log in again.');
+        setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and log in again.' });
         return;
       }
 
       if (!connectionStatus?.success) {
-        toast.error('Please test the connection first');
+        setFlashMessage({ type: 'error', message: 'Please test the connection first' });
         return;
       }
 
       // Validate that at least one category is selected
       if (selectedRootCategories.length === 0) {
-        toast.error('Please select at least 1 category to import');
+        setFlashMessage({ type: 'error', message: 'Please select at least 1 category to import' });
         return;
       }
 
       if (!storeId) {
-        toast.error('No store selected. Please select a store first.');
+        setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
         return;
       }
 
@@ -1340,25 +1339,25 @@ const AkeneoIntegration = () => {
         const responseData = response.data || response;
 
         if (responseData?.success) {
-          toast.success(`Categories import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+          setFlashMessage({ type: 'success', message: `Categories import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.` });
           // Trigger refresh of ImportJobProgress to show the new job
           setRefreshTrigger(prev => prev + 1);
         } else {
-          toast.error(`Failed to start categories import: ${responseData.error || responseData.message}`);
+          setFlashMessage({ type: 'error', message: `Failed to start categories import: ${responseData.error || responseData.message}` });
         }
       } catch (error) {
         console.error('Categories import error:', error);
 
         // Handle authentication errors specifically
         if (error.status === 401) {
-          toast.error('Authentication expired. Please refresh the page and log in again.');
+          setFlashMessage({ type: 'error', message: 'Authentication expired. Please refresh the page and log in again.' });
           setImportResults({ success: false, error: 'Authentication expired' });
           return;
         }
 
         const message = error.response?.data?.error || error.response?.data?.message || error.message;
         setImportResults({ success: false, error: message });
-        toast.error(`Import failed: ${message}`);
+        setFlashMessage({ type: 'error', message: `Import failed: ${message}` });
       } finally {
         // Reset progress tracking for categories
         setImportProgress(prev => ({
@@ -1370,7 +1369,7 @@ const AkeneoIntegration = () => {
       }
     } catch (unexpectedError) {
       console.error('Unexpected error in importCategories function:', unexpectedError);
-      toast.error('An unexpected error occurred during import. Check console for details.');
+      setFlashMessage({ type: 'error', message: 'An unexpected error occurred during import. Check console for details.' });
       setImporting(false);
       setImportResults({ success: false, error: 'Unexpected error: ' + unexpectedError?.message });
     }
@@ -1382,17 +1381,17 @@ const AkeneoIntegration = () => {
     const storeId = selectedStore?.id;
 
     if (!authToken) {
-      toast.error('Authentication required. Please refresh the page and log in again.');
+      setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and log in again.' });
       return;
     }
 
     if (!connectionStatus?.success) {
-      toast.error('Please test the connection first');
+      setFlashMessage({ type: 'error', message: 'Please test the connection first' });
       return;
     }
 
     if (!storeId) {
-      toast.error('No store selected. Please select a store first.');
+      setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
       return;
     }
 
@@ -1439,26 +1438,26 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
 
       if (responseData?.success) {
-        toast.success(`Attributes import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        setFlashMessage({ type: 'success', message: `Attributes import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.` });
         // Trigger refresh of ImportJobProgress to show the new job
         setRefreshTrigger(prev => prev + 1);
       } else {
-        toast.error(`Failed to start attributes import: ${responseData.error || responseData.message}`);
+        setFlashMessage({ type: 'error', message: `Failed to start attributes import: ${responseData.error || responseData.message}` });
       }
     } catch (error) {
       console.error('❌ Attributes import error:', error);
-      
+
       // Handle authentication errors specifically
       if (error.status === 401) {
         console.error('🚨 Authentication error detected - token may be expired');
-        toast.error('Authentication expired. Please refresh the page and log in again.');
+        setFlashMessage({ type: 'error', message: 'Authentication expired. Please refresh the page and log in again.' });
         setTabImportResults('attributes', { success: false, error: 'Authentication expired' });
         return;
       }
-      
+
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setTabImportResults('attributes', { success: false, error: message });
-      toast.error(`Import failed: ${message}`);
+      setFlashMessage({ type: 'error', message: `Import failed: ${message}` });
     } finally {
       setImporting(false);
 
@@ -1474,12 +1473,12 @@ const AkeneoIntegration = () => {
     const storeId = selectedStore?.id;
 
     if (!connectionStatus?.success) {
-      toast.error('Please test the connection first');
+      setFlashMessage({ type: 'error', message: 'Please test the connection first' });
       return;
     }
 
     if (!storeId) {
-      toast.error('No store selected. Please select a store first.');
+      setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
       return;
     }
 
@@ -1522,18 +1521,18 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
 
       if (responseData?.success) {
-        toast.success(`Families import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        setFlashMessage({ type: 'success', message: `Families import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.` });
         // Trigger refresh of ImportJobProgress to show the new job
         setRefreshTrigger(prev => prev + 1);
       } else {
-        toast.error(`Failed to start families import: ${responseData.error || responseData.message}`);
+        setFlashMessage({ type: 'error', message: `Failed to start families import: ${responseData.error || responseData.message}` });
       }
     } catch (error) {
       console.error('Families import error:', error);
 
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
-      toast.error(`Import failed: ${message}`);
+      setFlashMessage({ type: 'error', message: `Import failed: ${message}` });
     } finally {
       setImporting(false);
 
@@ -1551,17 +1550,17 @@ const AkeneoIntegration = () => {
     const storeId = selectedStore?.id;
 
     if (!authToken) {
-      toast.error('Authentication required. Please refresh the page and log in again.');
+      setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and log in again.' });
       return;
     }
 
     if (!connectionStatus?.success) {
-      toast.error('Please test the connection first');
+      setFlashMessage({ type: 'error', message: 'Please test the connection first' });
       return;
     }
 
     if (!storeId) {
-      toast.error('No store selected. Please select a store first.');
+      setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
       return;
     }
 
@@ -1603,18 +1602,18 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
 
       if (responseData?.success) {
-        toast.success(`Products import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        setFlashMessage({ type: 'success', message: `Products import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.` });
         // Trigger refresh of ImportJobProgress to show the new job
         setRefreshTrigger(prev => prev + 1);
       } else {
-        toast.error(`Failed to start products import: ${responseData.error || responseData.message}`);
+        setFlashMessage({ type: 'error', message: `Failed to start products import: ${responseData.error || responseData.message}` });
       }
     } catch (error) {
       console.error('Products import failed with error:', error);
 
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setTabImportResults('products', { success: false, error: message });
-      toast.error(`Import failed: ${message}`);
+      setFlashMessage({ type: 'error', message: `Import failed: ${message}` });
     } finally {
       // Reset progress tracking for products
       setImportProgress(prev => ({
@@ -1628,14 +1627,14 @@ const AkeneoIntegration = () => {
 
   const importAll = async () => {
     if (!connectionStatus?.success) {
-      toast.error('Please test the connection first');
+      setFlashMessage({ type: 'error', message: 'Please test the connection first' });
       return;
     }
 
     // Get store_id from context
     const storeId = selectedStore?.id;
     if (!storeId) {
-      toast.error('No store selected. Please select a store first.');
+      setFlashMessage({ type: 'error', message: 'No store selected. Please select a store first.' });
       return;
     }
 
@@ -1652,15 +1651,15 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
 
       if (responseData?.success) {
-        toast.success(`Full import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.`);
+        setFlashMessage({ type: 'success', message: `Full import job started! ${dryRun ? '(Dry run mode)' : ''} Track progress below.` });
         // Trigger refresh of ImportJobProgress to show the new job
         setRefreshTrigger(prev => prev + 1);
       } else {
-        toast.error(`Failed to start full import: ${responseData?.error || responseData?.message || 'Unknown error'}`);
+        setFlashMessage({ type: 'error', message: `Failed to start full import: ${responseData?.error || responseData?.message || 'Unknown error'}` });
       }
     } catch (error) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      toast.error(`Failed to start import: ${message}`);
+      setFlashMessage({ type: 'error', message: `Failed to start import: ${message}` });
     } finally {
       setImporting(false);
     }
@@ -1670,11 +1669,11 @@ const AkeneoIntegration = () => {
   const handleJobComplete = useCallback((job) => {
     loadStats();
     loadConfigStatus();
-    toast.success(`Import completed! Check the job details for results.`);
+    setFlashMessage({ type: 'success', message: `Import completed! Check the job details for results.` });
   }, []);
 
   const handleJobFailed = useCallback((job) => {
-    toast.error(`Import failed: ${job.error || 'Unknown error'}`);
+    setFlashMessage({ type: 'error', message: `Import failed: ${job.error || 'Unknown error'}` });
   }, []);
 
   // Fetch category mapping stats
@@ -1742,7 +1741,7 @@ const AkeneoIntegration = () => {
       });
 
       if (response.success) {
-        toast.success('Category creation job started! Track progress below.');
+        setFlashMessage({ type: 'success', message: 'Category creation job started! Track progress below.' });
         // Trigger refresh of ImportJobProgress to show the new job
         setRefreshTrigger(prev => prev + 1);
         // Refresh mapping stats after job is scheduled (with delay to let job start)
@@ -1751,11 +1750,11 @@ const AkeneoIntegration = () => {
           setCategoryMappingKey(prev => prev + 1);
         }, 2000);
       } else {
-        toast.error(response.message || 'Failed to schedule category creation job');
+        setFlashMessage({ type: 'error', message: response.message || 'Failed to schedule category creation job' });
       }
     } catch (error) {
       console.error('Error scheduling category creation job:', error);
-      toast.error(error.message || 'Failed to schedule category creation job');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to schedule category creation job' });
     } finally {
       setImporting(false);
     }
@@ -3197,12 +3196,7 @@ const AkeneoIntegration = () => {
                         disabled={!storageConnected || storageError}
                         onCheckedChange={(checked) => {
                           if (!storageConnected || storageError) {
-                            toast.error("Media storage must be connected to import images", {
-                              action: {
-                                label: "Configure Storage",
-                                onClick: () => window.open('/admin/media-storage', '_blank')
-                              }
-                            });
+                            setFlashMessage({ type: 'error', message: 'Media storage must be connected to import images' });
                             return;
                           }
                           setProductSettings(prev => ({ ...prev, includeImages: checked }));
@@ -3246,12 +3240,7 @@ const AkeneoIntegration = () => {
                         disabled={!storageConnected || storageError}
                         onCheckedChange={(checked) => {
                           if (!storageConnected || storageError) {
-                            toast.error("Media storage must be connected to import files", {
-                              action: {
-                                label: "Configure Storage",
-                                onClick: () => window.open('/admin/media-storage', '_blank')
-                              }
-                            });
+                            setFlashMessage({ type: 'error', message: 'Media storage must be connected to import files' });
                             return;
                           }
                           setProductSettings(prev => ({ ...prev, includeFiles: checked }));

@@ -28,7 +28,7 @@ import {
   Network,
   MoreHorizontal
 } from 'lucide-react';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -80,6 +80,7 @@ export default function ServiceCreditCostsManager() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -112,7 +113,7 @@ export default function ServiceCreditCostsManager() {
       }
     } catch (error) {
       console.error('Error fetching services:', error);
-      toast.error('Failed to load service credit costs');
+      setFlashMessage({ type: 'error', message: 'Failed to load service credit costs' });
     } finally {
       setLoading(false);
     }
@@ -128,14 +129,14 @@ export default function ServiceCreditCostsManager() {
       );
 
       if (response.data.success) {
-        toast.success('Service created successfully');
+        setFlashMessage({ type: 'success', message: 'Service created successfully' });
         setCreateDialogOpen(false);
         resetForm();
         fetchServices();
       }
     } catch (error) {
       console.error('Error creating service:', error);
-      toast.error(error.response?.data?.message || 'Failed to create service');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to create service' });
     }
   };
 
@@ -149,14 +150,14 @@ export default function ServiceCreditCostsManager() {
       );
 
       if (response.data.success) {
-        toast.success('Service updated successfully');
+        setFlashMessage({ type: 'success', message: 'Service updated successfully' });
         setEditDialogOpen(false);
         resetForm();
         fetchServices();
       }
     } catch (error) {
       console.error('Error updating service:', error);
-      toast.error(error.response?.data?.message || 'Failed to update service');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to update service' });
     }
   };
 
@@ -171,12 +172,12 @@ export default function ServiceCreditCostsManager() {
       );
 
       if (response.data.success) {
-        toast.success('Service deleted successfully');
+        setFlashMessage({ type: 'success', message: 'Service deleted successfully' });
         fetchServices();
       }
     } catch (error) {
       console.error('Error deleting service:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete service');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to delete service' });
     }
   };
 
@@ -190,12 +191,12 @@ export default function ServiceCreditCostsManager() {
       );
 
       if (response.data.success) {
-        toast.success(`Service ${service.is_active ? 'deactivated' : 'activated'}`);
+        setFlashMessage({ type: 'success', message: `Service ${service.is_active ? 'deactivated' : 'activated'}` });
         fetchServices();
       }
     } catch (error) {
       console.error('Error toggling service:', error);
-      toast.error(error.response?.data?.message || 'Failed to toggle service');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to toggle service' });
     }
   };
 
@@ -451,6 +452,7 @@ export default function ServiceCreditCostsManager() {
 
   return (
     <div className="space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

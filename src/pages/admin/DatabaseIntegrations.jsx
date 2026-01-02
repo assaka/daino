@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, Server, Cloud, Check, Star, Shield, Lock, UserX } from 'lucide-react';
 import apiClient from '@/api/client';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { getCurrentUser } from '@/utils/auth';
 
 const DatabaseIntegrations = () => {
@@ -18,6 +18,7 @@ const DatabaseIntegrations = () => {
   const storeId = selectedStore?.id;
   const [defaultProvider, setDefaultProvider] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const currentUser = getCurrentUser();
   const isStoreOwner = currentUser?.role === 'store_owner' || currentUser?.role === 'admin';
@@ -43,7 +44,7 @@ const DatabaseIntegrations = () => {
 
   const handleSetAsDefault = async (provider) => {
     if (!storeId) {
-      toast.error('Please select a store first');
+      setFlashMessage({ type: 'error', message: 'Please select a store first' });
       return;
     }
 
@@ -52,15 +53,15 @@ const DatabaseIntegrations = () => {
       await apiClient.post(`/stores/${storeId}/default-database-provider`, {
         provider: provider
       });
-      
+
       setDefaultProvider(provider);
-      toast.success(`${provider} set as default database provider`);
-      
+      setFlashMessage({ type: 'success', message: `${provider} set as default database provider` });
+
       // Refresh the default provider status
       await fetchDefaultProvider();
     } catch (error) {
       console.error('Error setting default database provider:', error);
-      toast.error('Failed to set as default database provider');
+      setFlashMessage({ type: 'error', message: 'Failed to set as default database provider' });
     } finally {
       setSettingDefault(false);
     }
@@ -142,6 +143,7 @@ const DatabaseIntegrations = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Database Integrations</h1>
         <p className="text-gray-600">

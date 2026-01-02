@@ -64,7 +64,6 @@ import ProductFilters from "@/components/admin/products/ProductFilters";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
-import { toast } from "sonner";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { SaveButton } from "@/components/ui/save-button";
 import api from "@/utils/api";
@@ -78,7 +77,6 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
     } catch (error) {
       if (error.response?.status === 429 && i < maxRetries - 1) {
         const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
-        console.warn(`ProductsPage: Rate limit hit, retrying in ${delayTime.toFixed(0)}ms... (Attempt ${i + 1}/${maxRetries})`);
         await delay(delayTime);
         continue;
       }
@@ -161,7 +159,6 @@ export default function Products() {
   const loadData = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      console.warn("No store selected");
       setLoading(false);
       return;
     }
@@ -183,23 +180,18 @@ export default function Products() {
         retryApiCall(() => {
           return Product.findPaginated(1, PAGE_SIZE, productFilters);
         }).catch((error) => {
-          console.error('❌ Product.findPaginated failed:', error);
           return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
         }),
         retryApiCall(() => Category.findAll({ store_id: storeId, limit: 1000 })).catch((error) => {
-          console.error('❌ Category.findAll failed:', error);
           return [];
         }),
         retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
-          console.error('❌ Tax.filter failed:', error);
           return [];
         }),
         retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
-          console.error('❌ Attribute.filter failed:', error);
           return [];
         }),
         retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
-          console.error('❌ AttributeSet.filter failed:', error);
           return [];
         })
       ]);
@@ -229,7 +221,6 @@ export default function Products() {
             pagesToLoad.push(
               retryApiCall(() => Product.findPaginated(p, PAGE_SIZE, productFilters))
                 .catch((error) => {
-                  console.error(`❌ Failed to load page ${p}:`, error);
                   return { data: [] };
                 })
             );
@@ -256,18 +247,12 @@ export default function Products() {
       }
 
       // Final state update - ensure fresh array reference
-      // Debug: Log first product's images to check if they're being loaded
-      if (allProducts.length > 0) {
-        console.log('🖼️ First product images:', allProducts[0].sku, allProducts[0].images);
-      }
       setProducts([...allProducts]); // Force React re-render with new array reference
       setTotalItems(totalProductsInStore);
       setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
       setCurrentPage(1);
 
     } catch (error) {
-      console.error("❌ Products: Error loading data:", error);
-      console.error("❌ Error details:", error.message, error.stack);
       setProducts([]);
       setCategories([]);
       setTaxes([]);
@@ -286,7 +271,6 @@ export default function Products() {
       const userData = await User.me();
       setUserCredits(userData.credits || 0);
     } catch (error) {
-      console.error('Failed to load user credits:', error);
       setUserCredits(0);
     }
   };
@@ -303,7 +287,6 @@ export default function Products() {
       setSelectedProduct(freshProduct || product);
       setShowProductForm(true);
     } catch (error) {
-      console.error("Error fetching product for edit:", error);
       // Fallback to list data if fetch fails
       setSelectedProduct(product);
       setShowProductForm(true);
@@ -321,7 +304,6 @@ export default function Products() {
       await loadData();
       setShowProductForm(false);
     } catch (error) {
-      console.error("Error creating product:", error);
       throw error;
     }
   };
@@ -341,7 +323,6 @@ export default function Products() {
       await loadData();
 
     } catch (error) {
-      console.error("Error updating product:", error);
       await loadData();
       throw error;
     }
@@ -357,7 +338,6 @@ export default function Products() {
         setShowConfirmModal(false);
         setFlashMessage({ type: 'success', message: 'Product deleted successfully' });
       } catch (error) {
-        console.error("Error deleting product:", error);
         setShowConfirmModal(false);
         setFlashMessage({
           type: 'error',
@@ -460,7 +440,6 @@ export default function Products() {
               await Product.delete(id);
               results.success.push(id);
             } catch (error) {
-              console.error(`Error deleting product ${id}:`, error);
               results.failed.push({ id, error });
             }
           }
@@ -489,7 +468,6 @@ export default function Products() {
           }
         }
       } catch (error) {
-        console.error('Bulk delete error:', error);
         setFlashMessage({
           type: 'error',
           message: error.message || 'Failed to delete products'
@@ -516,12 +494,10 @@ export default function Products() {
         // Find product in full products array, not just paginated/filtered ones
         const product = products.find(p => p.id === id);
         if (!product) {
-          console.warn(`❌ Product with id ${id} not found in products array`);
           return Promise.resolve();
         }
         return Product.update(id, { status: newStatus })
           .catch(error => {
-            console.error(`❌ Failed to update product ${id}:`, error);
             throw error;
           });
       });
@@ -533,7 +509,6 @@ export default function Products() {
 
       await loadData();
     } catch (error) {
-      console.error("❌ Error updating product statuses:", error);
     } finally {
       setBulkActionInProgress(false);
     }
@@ -573,7 +548,6 @@ export default function Products() {
       setShowBulkActions(false);
       await loadData();
     } catch (error) {
-      console.error("Error updating product categories:", error);
     }
   };
 
@@ -590,14 +564,13 @@ export default function Products() {
       setShowBulkActions(false);
       await loadData();
     } catch (error) {
-      console.error("Error updating product attribute sets:", error);
     }
   };
 
   const handleBulkTranslate = async (fromLang, toLang) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return { success: false, message: "No store selected" };
     }
 
@@ -627,7 +600,6 @@ export default function Products() {
 
       return data;
     } catch (error) {
-      console.error('Bulk translate error:', error);
       return { success: false, message: error.message };
     }
   };
@@ -641,7 +613,6 @@ export default function Products() {
 
       await loadData();
     } catch (error) {
-      console.error("Error updating product status:", error);
     }
   };
 
@@ -701,10 +672,9 @@ export default function Products() {
         return newState;
       });
 
-      toast.success('Translations saved successfully');
+      setFlashMessage({ type: 'success', message: 'Translations saved successfully' });
     } catch (error) {
-      console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      setFlashMessage({ type: 'error', message: 'Failed to save translations' });
     }
   };
 
@@ -714,7 +684,7 @@ export default function Products() {
     const sourceText = product.translations?.en?.name || product.name;
 
     if (!sourceText || !sourceText.trim()) {
-      toast.error('No English product name found for translation');
+      setFlashMessage({ type: 'error', message: 'No English product name found for translation' });
       return;
     }
 
@@ -733,14 +703,14 @@ export default function Products() {
       if (response && response.success && response.data) {
         // Update the editing translation state with the AI-translated text
         handleTranslationEdit(product.id, toLang, response.data.translated);
-        toast.success(`Product name translated to ${toLang.toUpperCase()} (0.1 credits charged)`);
+        setFlashMessage({ type: 'success', message: `Product name translated to ${toLang.toUpperCase()} (0.1 credits charged)` });
       }
     } catch (error) {
       console.error('AI translate error:', error);
       if (error.response?.status === 402) {
-        toast.error('Insufficient credits for translation');
+        setFlashMessage({ type: 'error', message: 'Insufficient credits for translation' });
       } else {
-        toast.error('Failed to translate product name');
+        setFlashMessage({ type: 'error', message: 'Failed to translate product name' });
       }
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
@@ -1451,11 +1421,6 @@ export default function Products() {
                                           if (storeCode && productSlug) {
                                             const url = `/public/${storeCode}/product/${productSlug}`;
                                             window.open(url, '_blank');
-                                          } else {
-                                            console.error('Missing store slug or product slug:', {
-                                              storeSlug: storeCode,
-                                              productSlug
-                                            });
                                           }
                                         }}
                                       >

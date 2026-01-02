@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X, Folder, FolderOpen, Package, Unlink } from 'lucide-react';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -90,19 +89,15 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         setStatus(response);
         if (showRefreshToast) {
           if (response.authorizationRevoked && response.autoDisconnected) {
-            toast.info('Invalid connection was automatically removed', {
-              description: 'You can now reconnect with a valid authorization.'
-            });
+            setFlashMessage({ type: 'info', message: 'Invalid connection was automatically removed. You can now reconnect with a valid authorization.' });
           } else if (response.authorizationRevoked) {
-            toast.warning('Authorization revoked - removing connection...', {
-              description: 'The invalid connection is being removed automatically.'
-            });
+            setFlashMessage({ type: 'warning', message: 'Authorization revoked - removing connection. The invalid connection is being removed automatically.' });
             // Refresh again in 1 second to show the auto-disconnected state
             setTimeout(() => {
               loadStatus(false);
             }, 1000);
           } else if (response.connected) {
-            toast.success('Connection status updated');
+            setFlashMessage({ type: 'success', message: 'Connection status updated' });
           }
         } else if (response.authorizationRevoked && !response.autoDisconnected) {
           // If we detect revoked authorization without toast, still refresh to show auto-disconnect
@@ -139,11 +134,9 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error loading storage stats:', error);
-      // Don't show error toast for limited scope connections
+      // Don't show error message for limited scope connections
       if (!status?.limitedScope && !error.message?.includes('Service role key')) {
-        toast.error('Could not load storage statistics', {
-          description: 'Storage access may be limited without full permissions.'
-        });
+        setFlashMessage({ type: 'error', message: 'Could not load storage statistics. Storage access may be limited without full permissions.' });
       }
     } finally {
       setLoadingStats(false);
@@ -184,7 +177,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       console.error('Error loading projects:', error);
       // Don't show error for limited scope connections
       if (!status?.limitedScope) {
-        toast.error('Could not load projects list');
+        setFlashMessage({ type: 'error', message: 'Could not load projects list' });
       }
     } finally {
       setLoadingProjects(false);
@@ -201,7 +194,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       );
 
       if (response.success) {
-        toast.success(response.message || 'Project changed successfully');
+        setFlashMessage({ type: 'success', message: response.message || 'Project changed successfully' });
         setSelectedProjectId(projectId);
         // Reload status and storage stats
         loadStatus();
@@ -211,7 +204,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error changing project:', error);
-      toast.error(error.message || 'Failed to change project');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to change project' });
     } finally {
       setChangingProject(false);
     }
@@ -258,11 +251,11 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           clearInterval(checkClosed);
           if (connecting) {
             setConnecting(false);
-            toast.error('Connection timeout. Please try again.');
+            setFlashMessage({ type: 'error', message: 'Connection timeout. Please try again.' });
           }
         }, 300000); // 5 minutes
 
-        toast.success('Please complete the authorization in the popup window');
+        setFlashMessage({ type: 'success', message: 'Please complete the authorization in the popup window' });
       } else {
         throw new Error(response.message || 'Failed to initiate connection');
       }
@@ -271,15 +264,9 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       
       // Handle specific error types
       if (error.message?.includes('Session has been terminated')) {
-        toast.error('Your session has expired. Please refresh the page and try again.', {
-          duration: 8000,
-          action: {
-            label: 'Refresh Page',
-            onClick: () => window.location.reload()
-          }
-        });
+        setFlashMessage({ type: 'error', message: 'Your session has expired. Please refresh the page and try again.' });
       } else {
-        toast.error(error.message || 'Failed to connect to Supabase');
+        setFlashMessage({ type: 'error', message: error.message || 'Failed to connect to Supabase' });
       }
       
       setConnecting(false);
@@ -294,11 +281,9 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       if (response.success) {
         // Check if connection has limited scope
         if (response.limitedScope) {
-          toast.warning('Connection successful but with limited scope. Please reconnect for full features.', {
-            duration: 8000
-          });
+          setFlashMessage({ type: 'warning', message: 'Connection successful but with limited scope. Please reconnect for full features.' });
         } else {
-          toast.success('Connection test successful!');
+          setFlashMessage({ type: 'success', message: 'Connection test successful!' });
         }
         loadStatus(); // Reload status
       } else {
@@ -306,32 +291,18 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error testing connection:', error);
-      
+
       // Check for scope-related errors
       if (error.message?.includes('OAuth token requires') || error.message?.includes('scope')) {
-        toast.error('Your connection needs to be updated with new permissions.', {
-          duration: 10000,
-          description: 'Please disconnect and reconnect to Supabase to enable all features.',
-          action: {
-            label: 'Disconnect Now',
-            onClick: () => handleDisconnectClick()
-          }
-        });
+        setFlashMessage({ type: 'error', message: 'Your connection needs to be updated with new permissions. Please disconnect and reconnect to Supabase to enable all features.' });
       } else if (error.message?.includes('revoked') || error.message?.includes('Authorization has been revoked')) {
-        toast.error('Authorization was revoked in Supabase.', {
-          duration: 10000,
-          description: 'You need to disconnect the invalid connection first.',
-          action: {
-            label: 'Disconnect Now',
-            onClick: () => handleDisconnectClick()
-          }
-        });
+        setFlashMessage({ type: 'error', message: 'Authorization was revoked in Supabase. You need to disconnect the invalid connection first.' });
         // Reload status to show revoked authorization UI
         setTimeout(() => {
           loadStatus();
         }, 500);
       } else {
-        toast.error(error.message || 'Connection test failed');
+        setFlashMessage({ type: 'error', message: error.message || 'Connection test failed' });
       }
     } finally {
       setTesting(false);
@@ -348,10 +319,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       const response = await apiClient.post('/supabase/disconnect');
 
       if (response.success) {
-        toast.success('Supabase disconnected successfully', {
-          description: response.note || 'You may need to revoke access in your Supabase account settings.',
-          duration: 8000
-        });
+        setFlashMessage({ type: 'success', message: `Supabase disconnected successfully. ${response.note || 'You may need to revoke access in your Supabase account settings.'}` });
         // Reload status to show orphaned authorization warning if applicable
         loadStatus();
         setStorageStats(null);
@@ -361,7 +329,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
-      toast.error(error.message || 'Failed to disconnect');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to disconnect' });
     } finally {
       setDisconnecting(false);
     }
@@ -377,9 +345,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       const response = await apiClient.post('/supabase/force-reset');
 
       if (response.success) {
-        toast.success('Connection reset successfully', {
-          description: 'You can now reconnect to Supabase.'
-        });
+        setFlashMessage({ type: 'success', message: 'Connection reset successfully. You can now reconnect to Supabase.' });
         // Reload status to show disconnected state
         await loadStatus();
         setStorageStats(null);
@@ -388,7 +354,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error force resetting:', error);
-      toast.error(error.message || 'Failed to reset connection');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to reset connection' });
     } finally {
       setForceResetting(false);
     }
@@ -402,7 +368,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       const response = await apiClient.post('/supabase/storage/test-upload');
 
       if (response.success) {
-        toast.success('Test image uploaded successfully!');
+        setFlashMessage({ type: 'success', message: 'Test image uploaded successfully!' });
         setUploadResult(response);
         // Refresh storage stats
         loadStorageStats();
@@ -411,7 +377,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error testing upload:', error);
-      toast.error(error.message || 'Failed to upload test image');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to upload test image' });
     } finally {
       setTestingUpload(false);
     }
@@ -419,7 +385,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
   const handleSaveKeys = async () => {
     if (!serviceRoleKey) {
-      toast.error('Please provide the service role key');
+      setFlashMessage({ type: 'error', message: 'Please provide the service role key' });
       return;
     }
 
@@ -431,7 +397,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       });
 
       if (response.success) {
-        toast.success('Service role key configured successfully!');
+        setFlashMessage({ type: 'success', message: 'Service role key configured successfully!' });
         setServiceRoleKey('');
         setShowKeyConfig(false);
         // Refresh status
@@ -441,7 +407,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Error saving keys:', error);
-      toast.error(error.message || 'Failed to save API keys');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to save API keys' });
     } finally {
       setSavingKeys(false);
     }
@@ -455,7 +421,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
       if (response.success) {
         if (response.bucketsCreated && response.bucketsCreated.length > 0) {
-          toast.success(`Created storage buckets: ${response.bucketsCreated.join(', ')}`);
+          setFlashMessage({ type: 'success', message: `Created storage buckets: ${response.bucketsCreated.join(', ')}` });
           // Reload buckets list after creation
           await loadBuckets();
         }
@@ -476,14 +442,14 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       if (response.success) {
         setBuckets(response.buckets || []);
         if (response.limited) {
-          toast.info('Showing default buckets. Service role key required for full bucket management.');
+          setFlashMessage({ type: 'info', message: 'Showing default buckets. Service role key required for full bucket management.' });
         }
       } else {
         throw new Error(response.message || 'Failed to load buckets');
       }
     } catch (error) {
       console.error('Error loading buckets:', error);
-      toast.error('Failed to load storage buckets');
+      setFlashMessage({ type: 'error', message: 'Failed to load storage buckets' });
     } finally {
       setLoadingBuckets(false);
     }

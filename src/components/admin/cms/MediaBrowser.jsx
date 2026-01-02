@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Search, 
-  Image, 
-  File, 
-  FileText, 
-  Film, 
-  Music, 
-  Archive, 
+import {
+  Search,
+  Image,
+  File,
+  FileText,
+  Film,
+  Music,
+  Archive,
   X,
   Check,
   Upload,
@@ -20,7 +20,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -35,6 +35,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
   const [showUploadOnOpen, setShowUploadOnOpen] = useState(false);
   const [storageConnected, setStorageConnected] = useState(true);
   const [storageError, setStorageError] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // File type icons
   const getFileIcon = (mimeType) => {
@@ -64,7 +65,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
       setLoading(true);
 
       if (!selectedStore?.id) {
-        toast.error('No store selected');
+        setFlashMessage({ type: 'error', message: 'No store selected' });
         setFiles([]);
         setLoading(false);
         return;
@@ -106,7 +107,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
       if (error.message?.includes('404') || error.message?.includes('not found')) {
         setFiles([]);
       } else {
-        toast.error(`Failed to load media files: ${error.message || 'Unknown error'}`);
+        setFlashMessage({ type: 'error', message: `Failed to load media files: ${error.message || 'Unknown error'}` });
         setFiles([]);
       }
     } finally {
@@ -162,12 +163,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
   // Handle file upload (using same approach as FileLibrary)
   const handleFileUpload = async (filesArray) => {
     if (!storageConnected || storageError) {
-      toast.error("Media storage is not connected. Please configure storage in Media Storage settings first.", {
-        action: {
-          label: "Configure Storage",
-          onClick: () => window.open('/admin/media-storage', '_blank')
-        }
-      });
+      setFlashMessage({ type: 'error', message: 'Media storage is not connected. Please configure storage in Media Storage settings first.' });
       return;
     }
 
@@ -188,16 +184,16 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
         const response = await apiClient.uploadFile('/storage/upload', file, additionalData);
 
         if (response.success) {
-          toast.success(`${file.name} uploaded successfully`);
+          setFlashMessage({ type: 'success', message: `${file.name} uploaded successfully` });
         } else {
-          toast.error(`Failed to upload ${file.name}`);
+          setFlashMessage({ type: 'error', message: `Failed to upload ${file.name}` });
         }
       }
 
       // Reload files to show new uploads
       await loadFiles();
     } catch (error) {
-      toast.error(`Failed to upload files: ${error.message || 'Unknown error'}`);
+      setFlashMessage({ type: 'error', message: `Failed to upload files: ${error.message || 'Unknown error'}` });
     } finally {
       setUploading(false);
     }
@@ -222,7 +218,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
   // Insert selected files
   const handleInsert = () => {
     if (selectedFiles.length === 0) {
-      toast.error('Please select at least one file');
+      setFlashMessage({ type: 'error', message: 'Please select at least one file' });
       return;
     }
 
@@ -268,6 +264,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-hidden flex flex-col">
+        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         <DialogHeader>
           <DialogTitle>
             {uploadFolder === 'category' ? 'Category Images' : 'Media Library'}

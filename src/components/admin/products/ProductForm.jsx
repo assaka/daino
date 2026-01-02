@@ -23,7 +23,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from 'sonner';
 import { getCategoryName } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtils";
@@ -576,21 +575,21 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         if (product && product.id) {
           try {
             await saveProductImages([...formData.images, newImage]);
-            toast.success('Image uploaded and saved successfully');
+            setFlashMessage({ type: 'success', message: 'Image uploaded and saved successfully' });
           } catch (saveError) {
             console.error('Failed to auto-save image:', saveError);
-            toast.warning('Image uploaded but not yet saved. Click "Update Product" to save.');
+            setFlashMessage({ type: 'warning', message: 'Image uploaded but not yet saved. Click "Update Product" to save.' });
           }
         } else {
           // For new products, just show upload success
-          toast.success('Image uploaded successfully. Click "Create Product" to save.');
+          setFlashMessage({ type: 'success', message: 'Image uploaded successfully. Click "Create Product" to save.' });
         }
       } else {
-        toast.error('Failed to upload image');
+        setFlashMessage({ type: 'error', message: 'Failed to upload image' });
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error('Failed to upload image');
+      setFlashMessage({ type: 'error', message: 'Failed to upload image' });
     } finally {
       setUploadingImage(false);
     }
@@ -606,11 +605,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     if (product && product.id) {
       try {
         await saveProductImages(newImages);
-        toast.success('Image removed successfully');
+        setFlashMessage({ type: 'success', message: 'Image removed successfully' });
       } catch (error) {
         console.error('Error removing image:', error);
         setFormData(prev => ({ ...prev, images: oldImages }));
-        toast.error('Failed to remove image');
+        setFlashMessage({ type: 'error', message: 'Failed to remove image' });
       }
     }
   };
@@ -663,7 +662,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       }
     } catch (error) {
       console.error('Error loading variants:', error);
-      toast.error('Failed to load product variants');
+      setFlashMessage({ type: 'error', message: 'Failed to load product variants' });
     } finally {
       setLoadingVariants(false);
     }
@@ -684,7 +683,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       }
     } catch (error) {
       console.error('Error loading available variants:', error);
-      toast.error('Failed to load available variants');
+      setFlashMessage({ type: 'error', message: 'Failed to load available variants' });
     } finally {
       setLoadingVariants(false);
     }
@@ -726,14 +725,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       const response = await apiClient.delete(`/configurable-products/${product.id}/variants/${variantId}`);
 
       if (response.success) {
-        toast.success('Variant removed successfully');
+        setFlashMessage({ type: 'success', message: 'Variant removed successfully' });
         await loadProductVariants();
       } else {
-        toast.error(response.message || 'Failed to remove variant');
+        setFlashMessage({ type: 'error', message: response.message || 'Failed to remove variant' });
       }
     } catch (error) {
       console.error('Error removing variant:', error);
-      toast.error('Failed to remove variant');
+      setFlashMessage({ type: 'error', message: 'Failed to remove variant' });
     } finally {
       setLoadingVariants(false);
     }
@@ -828,11 +827,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       }));
 
       setDeleteFileDialog({ open: false, fileId: null, fileName: null, loading: false });
-      toast.success('File deleted successfully');
+      setFlashMessage({ type: 'success', message: 'File deleted successfully' });
     } catch (error) {
       console.error('Failed to delete file:', error);
       setDeleteFileDialog(prev => ({ ...prev, loading: false }));
-      toast.error('Failed to delete file');
+      setFlashMessage({ type: 'error', message: 'Failed to delete file' });
     }
   };
 
@@ -2415,10 +2414,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     attr.id === attribute.id ? { ...attr, is_configurable: checked } : attr
                                   );
                                   setUpdatedAttributes(updated);
-                                  toast.success(`${getAttributeLabel(attribute, currentLanguage)} ${checked ? 'marked' : 'unmarked'} as configurable`);
+                                  setFlashMessage({ type: 'success', message: `${getAttributeLabel(attribute, currentLanguage)} ${checked ? 'marked' : 'unmarked'} as configurable` });
                                 } catch (error) {
                                   console.error('Error updating attribute:', error);
-                                  toast.error('Failed to update attribute');
+                                  setFlashMessage({ type: 'error', message: 'Failed to update attribute' });
                                 }
                               }}
                             />
@@ -2737,7 +2736,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   .filter(attr => selectedAttributeValues[attr.code]?.length > 0);
 
                                 if (selectedAttrs.length === 0) {
-                                  toast.error('Please select at least one attribute value');
+                                  setFlashMessage({ type: 'error', message: 'Please select at least one attribute value' });
                                   setQuickCreateLoading(false);
                                   return;
                                 }
@@ -3081,10 +3080,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                       });
                                       await handleAddVariants([variant.id], payload);
                                       await loadAvailableVariants(); // Refresh the list
-                                      toast.success('Variant added successfully');
+                                      setFlashMessage({ type: 'success', message: 'Variant added successfully' });
                                     } catch (error) {
                                       console.error('❌ Error adding variant:', error);
-                                      toast.error(error.message || 'Failed to add variant');
+                                      setFlashMessage({ type: 'error', message: error.message || 'Failed to add variant' });
                                     }
                                   }}
                                 >

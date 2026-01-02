@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 /**
@@ -19,6 +19,7 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Update translations when category prop changes
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
       await api.put(`/categories/${category.id}`, {
         translations
       });
-      toast.success('Category translations updated successfully');
+      setFlashMessage({ type: 'success', message: 'Category translations updated successfully' });
       if (onFlashMessage) onFlashMessage('Category translations updated successfully', 'success');
       if (onUpdate) onUpdate(category.id, translations);
       setSaving(false);
@@ -95,7 +96,7 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      setFlashMessage({ type: 'error', message: 'Failed to save translations' });
       setSaving(false);
     }
   };
@@ -104,7 +105,7 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
   const handleAITranslate = async (field, fromLang, toLang) => {
     const sourceText = translations[fromLang]?.[field];
     if (!sourceText || !sourceText.trim()) {
-      toast.error(`No ${fromLang.toUpperCase()} text found for ${field}`);
+      setFlashMessage({ type: 'error', message: `No ${fromLang.toUpperCase()} text found for ${field}` });
       return;
     }
 
@@ -122,18 +123,20 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
 
       if (response && response.success && response.data) {
         handleTranslationChange(toLang, field, response.data.translated);
-        toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+        setFlashMessage({ type: 'success', message: `${field} translated to ${toLang.toUpperCase()}` });
       }
     } catch (error) {
       console.error('AI translate error:', error);
-      toast.error(`Failed to translate ${field}`);
+      setFlashMessage({ type: 'error', message: `Failed to translate ${field}` });
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
     }
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {/* Collapsed Header */}
       <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <button
@@ -250,5 +253,6 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
         </div>
       )}
     </div>
+    </>
   );
 }

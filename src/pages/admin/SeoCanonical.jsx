@@ -11,7 +11,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
-import { toast } from "sonner";
 import { SeoSetting } from '@/api/entities';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
@@ -66,7 +65,7 @@ export default function SeoCanonical() {
       }
     } catch (error) {
       console.error('Error loading canonical settings:', error);
-      toast.error('Failed to load canonical settings');
+      setFlashMessage({ type: 'error', message: 'Failed to load canonical settings' });
     } finally {
       setLoading(false);
     }
@@ -75,7 +74,7 @@ export default function SeoCanonical() {
   const loadCanonicalUrls = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error('No store selected');
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
@@ -85,7 +84,7 @@ export default function SeoCanonical() {
       setCanonicalUrls(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error loading canonical URLs:', error);
-      toast.error('Failed to load canonical URLs');
+      setFlashMessage({ type: 'error', message: 'Failed to load canonical URLs' });
     } finally {
       setLoading(false);
     }
@@ -94,12 +93,12 @@ export default function SeoCanonical() {
   const handleAddCanonicalUrl = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error('No store selected');
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
     if (!pageUrl || !canonicalUrl) {
-      toast.error('Please enter both Page URL and Canonical URL');
+      setFlashMessage({ type: 'error', message: 'Please enter both Page URL and Canonical URL' });
       return;
     }
 
@@ -112,7 +111,7 @@ export default function SeoCanonical() {
           canonical_url: canonicalUrl,
           is_active: true
         });
-        toast.success('Canonical URL updated successfully');
+        setFlashMessage({ type: 'success', message: 'Canonical URL updated successfully' });
       } else {
         // Create new
         await adminApiClient.post('/canonical-urls', {
@@ -121,7 +120,7 @@ export default function SeoCanonical() {
           canonical_url: canonicalUrl,
           is_active: true
         });
-        toast.success('Canonical URL added successfully');
+        setFlashMessage({ type: 'success', message: 'Canonical URL added successfully' });
       }
 
       setPageUrl('');
@@ -131,7 +130,7 @@ export default function SeoCanonical() {
       await loadCanonicalUrls();
     } catch (error) {
       console.error('Error saving canonical URL:', error);
-      toast.error(error.response?.data?.message || 'Failed to save canonical URL');
+      setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to save canonical URL' });
     } finally {
       setLoading(false);
     }
@@ -163,11 +162,11 @@ export default function SeoCanonical() {
     try {
       setLoading(true);
       await adminApiClient.delete(`/canonical-urls/${id}`);
-      toast.success('Canonical URL deleted successfully');
+      setFlashMessage({ type: 'success', message: 'Canonical URL deleted successfully' });
       await loadCanonicalUrls();
     } catch (error) {
       console.error('Error deleting canonical URL:', error);
-      toast.error('Failed to delete canonical URL');
+      setFlashMessage({ type: 'error', message: 'Failed to delete canonical URL' });
     } finally {
       setLoading(false);
     }
@@ -176,7 +175,6 @@ export default function SeoCanonical() {
   const handleSave = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error('No store selected');
       setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
@@ -199,7 +197,6 @@ export default function SeoCanonical() {
 
       setSaveSuccess(true);
       setFlashMessage({ type: 'success', message: 'Canonical settings saved successfully' });
-      toast.success('Canonical settings saved successfully');
 
       // Keep success state visible
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -211,7 +208,6 @@ export default function SeoCanonical() {
         stack: error.stack
       });
       setFlashMessage({ type: 'error', message: 'Failed to save canonical settings: ' + error.message });
-      toast.error('Failed to save canonical settings');
     } finally {
       setSaving(false);
     }

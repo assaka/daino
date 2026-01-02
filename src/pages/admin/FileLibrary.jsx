@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Upload, File as FileIcon, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 import SaveButton from '@/components/ui/save-button';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -50,7 +50,7 @@ const STAGING_CONTEXTS = [
 /**
  * FileLibraryOptimizerModal - Modal for AI image optimization with cost display
  */
-const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, onOptimized }) => {
+const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, onOptimized, setFlashMessage }) => {
   const [pricing, setPricing] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState('openai');
@@ -294,12 +294,12 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     const totalCredits = newResults.reduce((sum, r) => sum + (r.credits || 0), 0);
 
     if (successCount > 0) {
-      toast.success(`Optimized ${successCount}/${itemsToProcess.length} images (${totalCredits.toFixed(2)} credits used)`);
+      setFlashMessage({ type: 'success', message: `Optimized ${successCount}/${itemsToProcess.length} images (${totalCredits.toFixed(2)} credits used)` });
       if (onOptimized) {
         onOptimized({ results: newResults, creditsUsed: totalCredits });
       }
     } else {
-      toast.error('All images failed to process');
+      setFlashMessage({ type: 'error', message: 'All images failed to process' });
     }
   };
 
@@ -354,7 +354,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
           if (productFilesUpdated > 0) {
             msg += ` (${productFilesUpdated} product reference${productFilesUpdated > 1 ? 's' : ''} updated)`;
           }
-          toast.success(msg);
+          setFlashMessage({ type: 'success', message: msg });
           if (onOptimized) onOptimized({ applied: true, refresh: true });
           onClose();
         } else {
@@ -367,7 +367,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
         const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
 
         if (uploadResponse.success) {
-          toast.success(`Saved copy as "${newName}"`);
+          setFlashMessage({ type: 'success', message: `Saved copy as "${newName}"` });
           if (onOptimized) onOptimized({ applied: true, refresh: true });
         } else {
           throw new Error('Upload failed');
@@ -375,7 +375,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
       }
     } catch (err) {
       console.error('Failed to apply:', err);
-      toast.error(`Failed to save: ${err.message}`);
+      setFlashMessage({ type: 'error', message: `Failed to save: ${err.message}` });
     } finally {
       setIsApplying(false);
     }
@@ -419,7 +419,7 @@ const FileLibraryOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, s
     }
 
     setResults([...results]);
-    toast.success(`${applyToOriginal ? 'Applied' : 'Saved'} ${savedCount} images`);
+    setFlashMessage({ type: 'success', message: `${applyToOriginal ? 'Applied' : 'Saved'} ${savedCount} images` });
     if (onOptimized) onOptimized({ applied: true });
     setIsApplying(false);
   };
@@ -994,6 +994,7 @@ const FileLibrary = () => {
   const [optimizerOpen, setOptimizerOpen] = useState(false);
   const [fileToOptimize, setFileToOptimize] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -1126,7 +1127,7 @@ const FileLibrary = () => {
       if (error.message?.includes('404') || error.message?.includes('not found')) {
         setFiles([]);
       } else {
-        toast.error('Failed to load files: ' + error.message);
+        setFlashMessage({ type: 'error', message: 'Failed to load files: ' + error.message });
         setFiles([]);
       }
     } finally {
@@ -1146,22 +1147,17 @@ const FileLibrary = () => {
   // Handle file upload using provider-agnostic storage API
   const handleFileUpload = async (filesArray) => {
     if (!storageConnected || storageError) {
-      toast.error("Media storage is not connected. Please configure storage in Media Storage settings first.", {
-        action: {
-          label: "Go to Settings",
-          onClick: () => window.open('/admin/media-storage', '_blank')
-        }
-      });
+      setFlashMessage({ type: 'error', message: "Media storage is not connected. Please configure storage in Media Storage settings first." });
       return;
     }
 
     if (!storageProvider) {
-      toast.error("Please configure a storage provider in Media Storage settings first");
+      setFlashMessage({ type: 'error', message: "Please configure a storage provider in Media Storage settings first" });
       return;
     }
 
     if (filesArray.length === 0) {
-      toast.error("No files selected");
+      setFlashMessage({ type: 'error', message: "No files selected" });
       return;
     }
 
@@ -1203,7 +1199,7 @@ const FileLibrary = () => {
       }
 
       if (uploadedFiles.length > 0) {
-        toast.success(`Successfully uploaded ${uploadedFiles.length} file(s)!`);
+        setFlashMessage({ type: 'success', message: `Successfully uploaded ${uploadedFiles.length} file(s)!` });
       }
 
       // Reload files to show the new uploads
@@ -1227,7 +1223,7 @@ const FileLibrary = () => {
         uploadErrorMessage = `Upload failed: ${errorMessage}`;
       }
 
-      toast.error(uploadErrorMessage);
+      setFlashMessage({ type: 'error', message: uploadErrorMessage });
     } finally {
       setUploading(false);
     }
@@ -1257,7 +1253,7 @@ const FileLibrary = () => {
     
     // Don't allow drop if storage is not connected
     if (!storageConnected || storageError) {
-      toast.error("Media storage is not connected. Please configure storage first.");
+      setFlashMessage({ type: 'error', message: "Media storage is not connected. Please configure storage first." });
       return;
     }
     
@@ -1271,10 +1267,10 @@ const FileLibrary = () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopiedUrl(fileId);
-      toast.success("File URL copied to clipboard");
+      setFlashMessage({ type: 'success', message: "File URL copied to clipboard" });
       setTimeout(() => setCopiedUrl(null), 2000);
     } catch (error) {
-      toast.error("Failed to copy URL");
+      setFlashMessage({ type: 'error', message: "Failed to copy URL" });
     }
   };
 
@@ -1309,7 +1305,7 @@ const FileLibrary = () => {
       // Find the file to get its path
       const file = files.find(f => f.id === fileId);
       if (!file) {
-        toast.error("File not found");
+        setFlashMessage({ type: 'error', message: "File not found" });
         return;
       }
 
@@ -1339,17 +1335,17 @@ const FileLibrary = () => {
 
       const result = await response.json();
       if (result.success) {
-        toast.success("File deleted successfully");
+        setFlashMessage({ type: 'success', message: "File deleted successfully" });
         await loadFiles();
       } else {
-        toast.error(result.message || result.error || "Failed to delete file");
+        setFlashMessage({ type: 'error', message: result.message || result.error || "Failed to delete file" });
       }
     } catch (error) {
       console.error('Delete error:', error);
       if (error.message?.includes('404') || error.message?.includes('not found')) {
-        toast.error("Storage API not available. Cannot delete files.");
+        setFlashMessage({ type: 'error', message: "Storage API not available. Cannot delete files." });
       } else {
-        toast.error(error.message || "Failed to delete file");
+        setFlashMessage({ type: 'error', message: error.message || "Failed to delete file" });
       }
     }
   };
@@ -1405,11 +1401,11 @@ const FileLibrary = () => {
     setDeleting(false);
 
     if (successCount > 0 && failCount === 0) {
-      toast.success(`Successfully deleted ${successCount} file${successCount > 1 ? 's' : ''}`);
+      setFlashMessage({ type: 'success', message: `Successfully deleted ${successCount} file${successCount > 1 ? 's' : ''}` });
     } else if (successCount > 0 && failCount > 0) {
-      toast.warning(`Deleted ${successCount} file${successCount > 1 ? 's' : ''}, ${failCount} failed`);
+      setFlashMessage({ type: 'warning', message: `Deleted ${successCount} file${successCount > 1 ? 's' : ''}, ${failCount} failed` });
     } else {
-      toast.error(`Failed to delete files`);
+      setFlashMessage({ type: 'error', message: `Failed to delete files` });
     }
   };
 
@@ -1435,6 +1431,7 @@ const FileLibrary = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -1898,6 +1895,7 @@ const FileLibrary = () => {
           fileToOptimize={fileToOptimize}
           selectedFiles={filteredFiles.filter(f => selectedFileIds.includes(f.id))}
           onOptimized={handleOptimizedImage}
+          setFlashMessage={setFlashMessage}
         />
       )}
 

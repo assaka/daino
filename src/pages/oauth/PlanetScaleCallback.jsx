@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import apiClient from '@/api/client';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 const PlanetScaleCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('processing'); // processing, success, error
   const [message, setMessage] = useState('Connecting to PlanetScale...');
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     handleCallback();
@@ -39,7 +40,7 @@ const PlanetScaleCallback = () => {
       if (response.success) {
         setStatus('success');
         setMessage('PlanetScale database connected successfully!');
-        toast.success('PlanetScale database connected successfully');
+        setFlashMessage({ type: 'success', message: 'PlanetScale database connected successfully' });
 
         // Redirect to database integrations page after 2 seconds
         setTimeout(() => {
@@ -52,7 +53,7 @@ const PlanetScaleCallback = () => {
       console.error('PlanetScale OAuth callback error:', error);
       setStatus('error');
       setMessage(error.message || 'Failed to connect to PlanetScale');
-      toast.error(error.message || 'Failed to connect to PlanetScale');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to connect to PlanetScale' });
 
       // Redirect back after 3 seconds
       setTimeout(() => {
@@ -63,6 +64,7 @@ const PlanetScaleCallback = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center">
           {status === 'processing' && (

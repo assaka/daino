@@ -3,7 +3,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import SupabaseIntegration from '@/components/admin/integrations/SupabaseIntegration';
 import { Database, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 
 const SupabasePage = () => {
@@ -12,6 +12,7 @@ const SupabasePage = () => {
   const [loading, setLoading] = useState(true);
   const [isDefaultDatabase, setIsDefaultDatabase] = useState(false);
   const [settingDefaultDatabase, setSettingDefaultDatabase] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
   
   // No fallbacks - only use the selected store from context
   const storeId = selectedStore?.id;
@@ -53,7 +54,7 @@ const SupabasePage = () => {
 
   const handleSetAsDefaultDatabase = async () => {
     if (!storeId) {
-      toast.error('Please select a store first');
+      setFlashMessage({ type: 'error', message: 'Please select a store first' });
       return;
     }
 
@@ -62,15 +63,15 @@ const SupabasePage = () => {
       await apiClient.post(`/stores/${storeId}/default-database-provider`, {
         provider: 'supabase'
       });
-      
+
       setIsDefaultDatabase(true);
-      toast.success('Supabase set as default database provider');
-      
+      setFlashMessage({ type: 'success', message: 'Supabase set as default database provider' });
+
       // Refresh the default status
       await checkDefaults();
     } catch (error) {
       console.error('Error setting default database provider:', error);
-      toast.error('Failed to set as default database provider');
+      setFlashMessage({ type: 'error', message: 'Failed to set as default database provider' });
     } finally {
       setSettingDefaultDatabase(false);
     }
@@ -98,6 +99,7 @@ const SupabasePage = () => {
   // Show the main Supabase integration page with both database and storage features
   return (
     <div className="max-w-7xl mx-auto sm:p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="sm:flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Supabase Integration</h1>

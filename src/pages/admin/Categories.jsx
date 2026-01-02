@@ -6,7 +6,7 @@ import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { clearCategoriesCache } from "@/utils/cacheUtils";
-import { toast } from "sonner";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import {
   Tag,
   Plus,
@@ -95,6 +95,7 @@ export default function Categories() {
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Load user credits for AI translation checks
   const loadUserCredits = async () => {
@@ -189,7 +190,7 @@ export default function Categories() {
       
       if (!token) {
         console.error('No authentication token found');
-        toast.error('Authentication required. Please log in again.');
+        setFlashMessage({ type: 'error', message: 'Authentication required. Please log in again.' });
         return;
       }
 
@@ -206,19 +207,19 @@ export default function Categories() {
         setStoreSettings(prev => ({ ...prev, ...newSettings }));
         // Clear cache to update navigation menus
         clearCategoriesCache(storeId);
-        toast.success('Settings updated successfully');
+        setFlashMessage({ type: 'success', message: 'Settings updated successfully' });
       } else {
         const errorText = await response.text();
         console.error('Failed to save settings:', response.status, errorText);
         if (response.status === 401) {
-          toast.error('Authentication expired. Please log in again.');
+          setFlashMessage({ type: 'error', message: 'Authentication expired. Please log in again.' });
         } else {
-          toast.error('Failed to update settings');
+          setFlashMessage({ type: 'error', message: 'Failed to update settings' });
         }
       }
     } catch (error) {
       console.error('Error saving store settings:', error);
-      toast.error('Failed to update settings');
+      setFlashMessage({ type: 'error', message: 'Failed to update settings' });
     }
   };
 
@@ -416,10 +417,10 @@ export default function Categories() {
       await loadCategories();
       // Clear storefront cache for instant updates
       if (storeId) clearCategoriesCache(storeId);
-      toast.success('Category deleted successfully');
+      setFlashMessage({ type: 'success', message: 'Category deleted successfully' });
     } catch (error) {
       console.error("Error deleting category:", error);
-      toast.error('Failed to delete category');
+      setFlashMessage({ type: 'error', message: 'Failed to delete category' });
     } finally {
       setCategoryToDelete(null);
     }
@@ -462,7 +463,7 @@ export default function Categories() {
   const handleDeleteAllCategories = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
@@ -493,9 +494,9 @@ export default function Categories() {
       const deleted = data.data?.deleted || 0;
       const skippedRoot = data.data?.skippedRootCategories || 0;
       if (skippedRoot > 0) {
-        toast.success(`${deleted} categories deleted (${skippedRoot} root ${skippedRoot === 1 ? 'category' : 'categories'} preserved)`);
+        setFlashMessage({ type: 'success', message: `${deleted} categories deleted (${skippedRoot} root ${skippedRoot === 1 ? 'category' : 'categories'} preserved)` });
       } else {
-        toast.success(`${deleted} categories deleted successfully`);
+        setFlashMessage({ type: 'success', message: `${deleted} categories deleted successfully` });
       }
       setShowDeleteAllConfirm(false);
       await loadCategories();
@@ -503,7 +504,7 @@ export default function Categories() {
       clearCategoriesCache(storeId);
     } catch (error) {
       console.error('Delete all categories error:', error);
-      toast.error(error.message || 'Failed to delete categories');
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to delete categories' });
     } finally {
       setIsDeleting(false);
     }
@@ -511,18 +512,18 @@ export default function Categories() {
 
   const handleBulkTranslate = async () => {
     if (!translateFromLang || translateToLangs.length === 0) {
-      toast.error("Please select source language and at least one target language");
+      setFlashMessage({ type: 'error', message: 'Please select source language and at least one target language' });
       return;
     }
 
     if (translateToLangs.includes(translateFromLang)) {
-      toast.error("Target languages cannot include the source language");
+      setFlashMessage({ type: 'error', message: 'Target languages cannot include the source language' });
       return;
     }
 
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
@@ -566,16 +567,16 @@ export default function Categories() {
             allErrors.push(...data.data.errors.map(err => ({ ...err, toLang })));
           }
         } else {
-          toast.error(`Failed to translate to ${toLang}: ${data.message}`);
+          setFlashMessage({ type: 'error', message: `Failed to translate to ${toLang}: ${data.message}` });
         }
       }
 
       if (totalTranslated > 0) {
-        toast.success(`Successfully translated ${totalTranslated} categories to ${translateToLangs.length} language(s)`);
+        setFlashMessage({ type: 'success', message: `Successfully translated ${totalTranslated} categories to ${translateToLangs.length} language(s)` });
       }
       if (totalFailed > 0) {
         console.warn('Translation errors:', allErrors);
-        toast.warning(`${totalFailed} translations failed. Check console for details.`);
+        setFlashMessage({ type: 'warning', message: `${totalFailed} translations failed. Check console for details.` });
       }
 
       setShowBulkTranslateDialog(false);
@@ -583,7 +584,7 @@ export default function Categories() {
       await loadCategories();
     } catch (error) {
       console.error('Bulk translate error:', error);
-      toast.error('Failed to translate categories');
+      setFlashMessage({ type: 'error', message: 'Failed to translate categories' });
     } finally {
       setIsTranslating(false);
     }
@@ -989,6 +990,7 @@ export default function Categories() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -1149,11 +1151,11 @@ export default function Categories() {
                                 if (window.confirm(`Are you sure you want to delete "${getCategoryName(category)}"? This will also delete all its subcategories.`)) {
                                   try {
                                     await Category.delete(category.id);
-                                    toast.success('Category deleted successfully');
+                                    setFlashMessage({ type: 'success', message: 'Category deleted successfully' });
                                     await loadCategories();
                                   } catch (error) {
                                     console.error('Error deleting category:', error);
-                                    toast.error('Failed to delete category');
+                                    setFlashMessage({ type: 'error', message: 'Failed to delete category' });
                                   }
                                 }
                               }}

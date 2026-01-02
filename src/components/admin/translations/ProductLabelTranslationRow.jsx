@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 /**
@@ -18,6 +18,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const filteredLanguages = availableLanguages.filter(lang => selectedLanguages?.includes(lang.code));
 
@@ -56,7 +57,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
       await api.put(`/product-labels/${label.id}`, {
         translations
       });
-      toast.success('Product label translations updated successfully');
+      setFlashMessage({ type: 'success', message: 'Product label translations updated successfully' });
       if (onFlashMessage) onFlashMessage('Product Label translations updated successfully', 'success');
       if (onUpdate) onUpdate(label.id, translations);
       setSaving(false);
@@ -64,7 +65,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      setFlashMessage({ type: 'error', message: 'Failed to save translations' });
       setSaving(false);
     }
   };
@@ -73,7 +74,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
   const handleAITranslate = async (fromLang, toLang) => {
     const sourceText = translations[fromLang]?.text;
     if (!sourceText || !sourceText.trim()) {
-      toast.error(`No ${fromLang.toUpperCase()} text found`);
+      setFlashMessage({ type: 'error', message: `No ${fromLang.toUpperCase()} text found` });
       return;
     }
 
@@ -91,18 +92,20 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
 
       if (response && response.success && response.data) {
         handleTranslationChange(toLang, response.data.translated);
-        toast.success(`Label translated to ${toLang.toUpperCase()}`);
+        setFlashMessage({ type: 'success', message: `Label translated to ${toLang.toUpperCase()}` });
       }
     } catch (error) {
       console.error('AI translate error:', error);
-      toast.error(`Failed to translate label`);
+      setFlashMessage({ type: 'error', message: 'Failed to translate label' });
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
     }
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {/* Collapsed Header */}
       <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <button
@@ -214,5 +217,6 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
         </div>
       )}
     </div>
+    </>
   );
 }

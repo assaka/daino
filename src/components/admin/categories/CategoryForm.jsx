@@ -32,7 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { useTranslation } from '@/contexts/TranslationContext.jsx';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 import TranslationFields from '@/components/admin/TranslationFields';
 
@@ -60,6 +60,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   });
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
   const [originalSlug, setOriginalSlug] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
   const [createRedirect, setCreateRedirect] = useState(true);
@@ -222,9 +223,9 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         const response = await apiClient.put(`/categories/${category.id}`, updatePayload);
 
         if (response.success) {
-          toast.success('Category image updated successfully');
+          setFlashMessage({ type: 'success', message: 'Category image updated successfully' });
         } else {
-          toast.error('Failed to update category image');
+          setFlashMessage({ type: 'error', message: 'Failed to update category image' });
           // Revert on failure
           setFormData(prev => ({
             ...prev,
@@ -234,7 +235,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         }
       } catch (error) {
         console.error('Error saving category image:', error);
-        toast.error('Failed to update category image');
+        setFlashMessage({ type: 'error', message: 'Failed to update category image' });
         setFormData(prev => ({
           ...prev,
           image_url: formData.image_url,
@@ -382,17 +383,17 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   const handleAITranslate = async () => {
     if (!translateFromLang || !translateToLang) {
-      toast.error("Please select both source and target languages");
+      setFlashMessage({ type: 'error', message: 'Please select both source and target languages' });
       return;
     }
 
     if (translateFromLang === translateToLang) {
-      toast.error("Source and target languages must be different");
+      setFlashMessage({ type: 'error', message: 'Source and target languages must be different' });
       return;
     }
 
     if (!category || !category.id) {
-      toast.error("Please save the category first before translating");
+      setFlashMessage({ type: 'error', message: 'Please save the category first before translating' });
       return;
     }
 
@@ -423,7 +424,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       const data = await response.json();
 
       if (response.ok && data.success) {
-        toast.success(data.message || 'Category translated successfully');
+        setFlashMessage({ type: 'success', message: data.message || 'Category translated successfully' });
         // Update form data with new translations
         if (data.data && data.data.translations) {
           setFormData(prev => ({
@@ -433,11 +434,11 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         }
         setShowAITranslateDialog(false);
       } else {
-        toast.error(data.message || 'Failed to translate category');
+        setFlashMessage({ type: 'error', message: data.message || 'Failed to translate category' });
       }
     } catch (error) {
       console.error('AI translate error:', error);
-      toast.error('Failed to translate category');
+      setFlashMessage({ type: 'error', message: 'Failed to translate category' });
     } finally {
       setIsTranslating(false);
     }
@@ -445,6 +446,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div>
         <Label htmlFor="name">Category Name *</Label>
         <Input

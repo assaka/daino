@@ -41,7 +41,6 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import SaveButton from '@/components/ui/save-button';

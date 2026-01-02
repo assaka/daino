@@ -16,7 +16,7 @@ import {
   Trash2
 } from 'lucide-react';
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { formatDistanceToNow } from 'date-fns';
 import { DestroyLayoutModal } from './SlotComponents';
 
@@ -39,6 +39,7 @@ const PublishPanel = ({
   const [undoingRevert, setUndoingRevert] = useState(false);
   const [showDestroyModal, setShowDestroyModal] = useState(false);
   const [isDestroying, setIsDestroying] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Load version history
   const loadVersionHistory = async () => {
@@ -56,7 +57,7 @@ const PublishPanel = ({
       }
     } catch (error) {
       console.error('Failed to load version history:', error);
-      toast.error('Failed to load version history');
+      setFlashMessage({ type: 'error', message: 'Failed to load version history' });
     } finally {
       setLoadingHistory(false);
     }
@@ -81,21 +82,21 @@ const PublishPanel = ({
         if (response.success) {
           const count = response.data?.publishedCount || 0;
           if (count > 0) {
-            toast.success(`Successfully published ${count} page(s)!`);
+            setFlashMessage({ type: 'success', message: `Successfully published ${count} page(s)!` });
           } else {
-            toast.info('No changes to publish');
+            setFlashMessage({ type: 'info', message: 'No changes to publish' });
           }
         }
       } else {
         // Single page publish (legacy behavior)
         if (!draftConfig?.id) {
-          toast.error('No draft configuration to publish');
+          setFlashMessage({ type: 'error', message: 'No draft configuration to publish' });
           setIsPublishing(false);
           return;
         }
         response = await slotConfigurationService.publishDraft(draftConfig.id, storeId);
         if (response.success) {
-          toast.success('Configuration published successfully!');
+          setFlashMessage({ type: 'success', message: 'Configuration published successfully!' });
         }
       }
 
@@ -108,11 +109,11 @@ const PublishPanel = ({
           onPublished(response.data);
         }
       } else {
-        toast.error(response.error || 'Failed to publish configuration');
+        setFlashMessage({ type: 'error', message: response.error || 'Failed to publish configuration' });
       }
     } catch (error) {
       console.error('Error publishing configuration:', error);
-      toast.error('Failed to publish configuration');
+      setFlashMessage({ type: 'error', message: 'Failed to publish configuration' });
     } finally {
       setIsPublishing(false);
     }
@@ -126,7 +127,7 @@ const PublishPanel = ({
     try {
       const response = await slotConfigurationService.createRevertDraft(versionId, storeId);
       if (response.success) {
-        toast.success(`Created revert draft from version ${versionNumber}. Publish to apply changes.`);
+        setFlashMessage({ type: 'success', message: `Created revert draft from version ${versionNumber}. Publish to apply changes.` });
 
         // Reload version history
         await loadVersionHistory();
@@ -136,11 +137,11 @@ const PublishPanel = ({
           onReverted(response.data);
         }
       } else {
-        toast.error(response.error || 'Failed to create revert draft');
+        setFlashMessage({ type: 'error', message: response.error || 'Failed to create revert draft' });
       }
     } catch (error) {
       console.error('Error creating revert draft:', error);
-      toast.error('Failed to create revert draft');
+      setFlashMessage({ type: 'error', message: 'Failed to create revert draft' });
     } finally {
       setRevertingVersionId(null);
     }
@@ -152,7 +153,7 @@ const PublishPanel = ({
 
     // Only allow undo if this is a revert draft (has current_edit_id pointing to a version)
     if (!draftConfig.current_edit_id) {
-      toast.error('No revert to undo');
+      setFlashMessage({ type: 'error', message: 'No revert to undo' });
       return;
     }
 
@@ -161,9 +162,9 @@ const PublishPanel = ({
       const response = await slotConfigurationService.undoRevert(draftConfig.id, storeId);
       if (response.success) {
         if (response.restored) {
-          toast.success('Previous draft state restored');
+          setFlashMessage({ type: 'success', message: 'Previous draft state restored' });
         } else {
-          toast.success('Revert undone - no previous draft to restore');
+          setFlashMessage({ type: 'success', message: 'Revert undone - no previous draft to restore' });
         }
 
         // Reload version history
@@ -174,11 +175,11 @@ const PublishPanel = ({
           onReverted(response.data); // Pass the restored draft or null
         }
       } else {
-        toast.error(response.error || 'Failed to undo revert');
+        setFlashMessage({ type: 'error', message: response.error || 'Failed to undo revert' });
       }
     } catch (error) {
       console.error('Error undoing revert:', error);
-      toast.error('Failed to undo revert');
+      setFlashMessage({ type: 'error', message: 'Failed to undo revert' });
     } finally {
       setUndoingRevert(false);
     }
@@ -192,7 +193,7 @@ const PublishPanel = ({
     try {
       const response = await slotConfigurationService.destroyLayout(storeId, pageType);
       if (response.success) {
-        toast.success(`Layout destroyed successfully. Deleted ${response.deletedCount} versions and created fresh draft.`);
+        setFlashMessage({ type: 'success', message: `Layout destroyed successfully. Deleted ${response.deletedCount} versions and created fresh draft.` });
 
         // Clear version history
         setVersionHistory([]);
@@ -202,11 +203,11 @@ const PublishPanel = ({
           onReverted(response.data);
         }
       } else {
-        toast.error(response.error || 'Failed to destroy layout');
+        setFlashMessage({ type: 'error', message: response.error || 'Failed to destroy layout' });
       }
     } catch (error) {
       console.error('Error destroying layout:', error);
-      toast.error('Failed to destroy layout');
+      setFlashMessage({ type: 'error', message: 'Failed to destroy layout' });
     } finally {
       setIsDestroying(false);
     }
@@ -284,6 +285,7 @@ const PublishPanel = ({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-2">

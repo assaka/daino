@@ -46,7 +46,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
 import apiClient from '@/api/client';
 import { User } from '@/api/entities';
@@ -98,6 +98,7 @@ const WorkspaceHeader = () => {
   const [showCreatePluginDialog, setShowCreatePluginDialog] = useState(false);
   const [newPluginData, setNewPluginData] = useState({ name: '', description: '', category: 'integration' });
   const [creatingPlugin, setCreatingPlugin] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const storeId = getSelectedStoreId();
 
@@ -233,7 +234,7 @@ const WorkspaceHeader = () => {
   // Handle creating a new plugin with AI (same as Plugins page)
   const handleCreateWithAI = async () => {
     if (!newPluginData.name.trim()) {
-      toast.error('Please enter a plugin name');
+      setFlashMessage({ type: 'error', message: 'Please enter a plugin name' });
       return;
     }
 
@@ -273,6 +274,7 @@ const WorkspaceHeader = () => {
 
   return (
     <header className="h-14 border-b bg-white dark:bg-gray-800 flex items-center px-4 gap-4 shrink-0">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Left section: AI Panel toggle */}
       <div className="flex items-center gap-1">
         {/* AI Panel toggle - different behavior for plugin editor vs normal mode */}

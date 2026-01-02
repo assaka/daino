@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 import { CheckCircle, ArrowRight, Database, Shield, Settings, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SupabaseIntegration from '@/components/admin/integrations/SupabaseIntegration';
 
@@ -13,6 +14,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
   const [migrationStatus, setMigrationStatus] = useState(null);
   const [supabaseConnected, setSupabaseConnected] = useState(false);
   const [selectedDatabaseType, setSelectedDatabaseType] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const steps = [
     {
@@ -76,7 +78,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
             setSupabaseConnected(true);
             setConnectionStatus(response.database);
             setCurrentStep(3);
-            toast.success(`${selectedDatabaseType} connected! Ready to initialize database.`);
+            setFlashMessage({ type: 'success', message: `${selectedDatabaseType} connected! Ready to initialize database.` });
             clearInterval(pollInterval);
           }
         } catch (error) {
@@ -91,7 +93,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
 
   const handleDatabaseMigration = async () => {
     if (!storeId || storeId === 'undefined') {
-      toast.error('Invalid store ID. Please refresh and try again.');
+      setFlashMessage({ type: 'error', message: 'Invalid store ID. Please refresh and try again.' });
       return;
     }
     
@@ -104,27 +106,27 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
       );
 
       if (response.success) {
-        setMigrationStatus({ 
-          status: 'success', 
+        setMigrationStatus({
+          status: 'success',
           message: 'Database migration completed successfully!',
           details: response.details
         });
-        toast.success('Database migration completed!');
+        setFlashMessage({ type: 'success', message: 'Database migration completed!' });
         setCurrentStep(4);
       } else {
-        setMigrationStatus({ 
-          status: 'error', 
+        setMigrationStatus({
+          status: 'error',
           message: response.message || 'Migration failed'
         });
-        toast.error('Database migration failed');
+        setFlashMessage({ type: 'error', message: 'Database migration failed' });
       }
     } catch (error) {
       console.error('Database migration failed:', error);
-      setMigrationStatus({ 
-        status: 'error', 
+      setMigrationStatus({
+        status: 'error',
         message: error.response?.data?.message || 'Migration failed'
       });
-      toast.error('Database migration failed');
+      setFlashMessage({ type: 'error', message: 'Database migration failed' });
     } finally {
       setLoading(false);
     }
@@ -227,7 +229,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
                     window.location.href = response.authUrl;
                   }
                 } catch (error) {
-                  toast.error('Failed to initiate Neon connection');
+                  setFlashMessage({ type: 'error', message: 'Failed to initiate Neon connection' });
                 }
               }}
               size="lg"
@@ -247,7 +249,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
                     window.location.href = response.authUrl;
                   }
                 } catch (error) {
-                  toast.error('Failed to initiate PlanetScale connection');
+                  setFlashMessage({ type: 'error', message: 'Failed to initiate PlanetScale connection' });
                 }
               }}
               size="lg"
@@ -469,6 +471,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Set Up Your Store</h2>

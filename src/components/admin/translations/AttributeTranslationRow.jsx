@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import AttributeValueTranslations from '../attributes/AttributeValueTranslations';
 
@@ -20,6 +20,7 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Filter languages by selected languages
   const filteredLanguages = availableLanguages.filter(lang =>
@@ -105,7 +106,7 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
         }
       }
 
-      toast.success('Attribute translations updated successfully');
+      setFlashMessage({ type: 'success', message: 'Attribute translations updated successfully' });
       if (onFlashMessage) onFlashMessage('Attribute translations updated successfully', 'success');
       if (onUpdate) onUpdate(attribute.id, translations, attributeValues);
       setSaving(false);
@@ -113,7 +114,7 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      setFlashMessage({ type: 'error', message: 'Failed to save translations' });
       setSaving(false);
     }
   };
@@ -122,7 +123,7 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
   const handleAITranslateAttribute = async (fromLang, toLang) => {
     const sourceText = translations[fromLang]?.name;
     if (!sourceText || !sourceText.trim()) {
-      toast.error(`No ${fromLang.toUpperCase()} name found for attribute`);
+      setFlashMessage({ type: 'error', message: `No ${fromLang.toUpperCase()} name found for attribute` });
       return;
     }
 
@@ -140,11 +141,11 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
 
       if (response && response.success && response.data) {
         handleAttributeTranslationChange(toLang, response.data.translated);
-        toast.success(`Attribute name translated to ${toLang.toUpperCase()}`);
+        setFlashMessage({ type: 'success', message: `Attribute name translated to ${toLang.toUpperCase()}` });
       }
     } catch (error) {
       console.error('AI translate error:', error);
-      toast.error(`Failed to translate attribute name`);
+      setFlashMessage({ type: 'error', message: 'Failed to translate attribute name' });
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
     }
@@ -153,7 +154,9 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
   const hasValues = attribute.type === 'select' || attribute.type === 'multiselect';
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {/* Collapsed Header */}
       <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <button
@@ -282,5 +285,6 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
         </div>
       )}
     </div>
+    </>
   );
 }

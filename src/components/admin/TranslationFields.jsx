@@ -3,7 +3,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import { Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 /**
@@ -44,6 +44,7 @@ export default function TranslationFields({
   const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
   const [localTranslations, setLocalTranslations] = useState(translations);
   const [translating, setTranslating] = useState({}); // { fieldName-langCode: boolean }
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Update local state when translations prop changes
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function TranslationFields({
     const sourceText = localTranslations[defaultLanguage]?.[fieldName];
 
     if (!sourceText || !sourceText.trim()) {
-      toast.error(`No ${defaultLanguage.toUpperCase()} text found for ${fieldName}`);
+      setFlashMessage({ type: 'error', message: `No ${defaultLanguage.toUpperCase()} text found for ${fieldName}` });
       return;
     }
 
@@ -126,14 +127,14 @@ export default function TranslationFields({
       if (response && response.success && response.data) {
         // Update the translation
         handleFieldChange(toLang, fieldName, response.data.translated);
-        toast.success(`${fieldName} translated to ${toLang.toUpperCase()} (0.1 credits charged)`);
+        setFlashMessage({ type: 'success', message: `${fieldName} translated to ${toLang.toUpperCase()} (0.1 credits charged)` });
       }
     } catch (error) {
       console.error('AI translate error:', error);
       if (error.response?.status === 402) {
-        toast.error('Insufficient credits for translation');
+        setFlashMessage({ type: 'error', message: 'Insufficient credits for translation' });
       } else {
-        toast.error(`Failed to translate ${fieldName}`);
+        setFlashMessage({ type: 'error', message: `Failed to translate ${fieldName}` });
       }
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
@@ -152,6 +153,7 @@ export default function TranslationFields({
 
   return (
     <div className={`translation-fields ${className}`}>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Language Tabs */}
       <div className="border-b border-gray-200 mb-4">
         <div className="flex flex-wrap gap-2">

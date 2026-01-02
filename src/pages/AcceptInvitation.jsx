@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle, Eye, EyeOff, Users, Sparkles } from 'lucide-react';
 import apiClient from '@/api/client';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 // Daino Logo Component
 const DainoLogo = ({ className = "w-8 h-8" }) => (
@@ -47,6 +47,7 @@ export default function AcceptInvitation() {
   const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     // Check if user is logged in (check token exists and user not marked as logged out)
@@ -109,7 +110,7 @@ export default function AcceptInvitation() {
 
         if (response.success) {
           setSuccess(true);
-          toast.success('Invitation accepted! You are now part of the team.');
+          setFlashMessage({ type: 'success', message: 'Invitation accepted! You are now part of the team.' });
 
           // Redirect to the store dashboard after a short delay
           setTimeout(() => {
@@ -126,13 +127,13 @@ export default function AcceptInvitation() {
             err.message?.includes('token') ||
             err.message?.includes('Unauthorized') ||
             err.message?.includes('Authentication')) {
-          toast.error('Session expired. Please enter your password to continue.');
+          setFlashMessage({ type: 'error', message: 'Session expired. Please enter your password to continue.' });
           localStorage.removeItem('store_owner_auth_token');
           setIsLoggedIn(false);
           return;
         }
 
-        toast.error(err.message || 'Failed to accept invitation');
+        setFlashMessage({ type: 'error', message: err.message || 'Failed to accept invitation' });
         setFormError(err.message);
       } finally {
         setAccepting(false);
@@ -196,7 +197,7 @@ export default function AcceptInvitation() {
         }
 
         setSuccess(true);
-        toast.success('Welcome to the team!');
+        setFlashMessage({ type: 'success', message: 'Welcome to the team!' });
 
         // Redirect to the store dashboard after a short delay
         setTimeout(() => {
@@ -208,7 +209,7 @@ export default function AcceptInvitation() {
     } catch (err) {
       console.error('Error accepting invitation:', err);
       setFormError(err.message || 'Failed to accept invitation');
-      toast.error(err.message || 'Failed to accept invitation');
+      setFlashMessage({ type: 'error', message: err.message || 'Failed to accept invitation' });
     } finally {
       setAccepting(false);
     }
@@ -288,6 +289,7 @@ export default function AcceptInvitation() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
 

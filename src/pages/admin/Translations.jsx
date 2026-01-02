@@ -23,7 +23,6 @@ import StockLabelTranslationRow from '../../components/admin/translations/StockL
 import FlashMessage from '../../components/storefront/FlashMessage';
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { toast } from 'sonner';
 import { PageLoader } from '../../components/ui/page-loader';
 
 export default function Translations() {
@@ -344,7 +343,7 @@ export default function Translations() {
     try {
       const storeId = getSelectedStoreId();
       if (!storeId) {
-        toast.error('Please select a store first');
+        setFlashMessageData({ type: 'error', message: 'Please select a store first' });
         return { success: false, message: 'No store selected' };
       }
 
@@ -358,10 +357,8 @@ export default function Translations() {
       console.log('📥 Bulk translate response:', data);
 
       if (data.success) {
-        // Show toast notification about background processing
-        toast.info(data.message || 'Translation started in background. You will receive an email notification when complete.', {
-          duration: 10000
-        });
+        // Show flash message notification about background processing
+        setFlashMessageData({ type: 'info', message: data.message || 'Translation started in background. You will receive an email notification when complete.' });
 
         // Return a response that indicates background processing
         return {
@@ -773,7 +770,7 @@ export default function Translations() {
   const handleEntityTranslate = async (fromLang, toLang) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessageData({ type: 'error', message: 'No store selected' });
       return { success: false, message: "No store selected" };
     }
 
@@ -828,7 +825,7 @@ export default function Translations() {
   const handleMultiEntityTranslate = async (entityTypes, fromLang, toLang) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error("No store selected");
+      setFlashMessageData({ type: 'error', message: 'No store selected' });
       return { success: false, message: "No store selected" };
     }
 

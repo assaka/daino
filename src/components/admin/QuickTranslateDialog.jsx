@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Languages, Globe, CheckCircle, Loader2, X, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import api from '../../utils/api';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 /**
  * QuickTranslateDialog - Quick translation for specific UI elements
@@ -16,6 +16,7 @@ export default function QuickTranslateDialog({ isOpen, onClose, onSuccess }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [languages, setLanguages] = useState([]);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Quick translate presets for common UI elements
   const [selectedPreset, setSelectedPreset] = useState(null);
@@ -147,7 +148,7 @@ export default function QuickTranslateDialog({ isOpen, onClose, onSuccess }) {
       setSelectedLanguages(commonLangs);
     } catch (error) {
       console.error('Error loading languages:', error);
-      toast.error('Failed to load languages');
+      setFlashMessage({ type: 'error', message: 'Failed to load languages' });
     }
   };
 
@@ -197,9 +198,9 @@ export default function QuickTranslateDialog({ isOpen, onClose, onSuccess }) {
       setStep(3);
 
       if (response.data.data.errors && response.data.data.errors.length > 0) {
-        toast.warning(`Translated with ${response.data.data.errors.length} error(s)`);
+        setFlashMessage({ type: 'warning', message: `Translated with ${response.data.data.errors.length} error(s)` });
       } else {
-        toast.success('Translation completed successfully!');
+        setFlashMessage({ type: 'success', message: 'Translation completed successfully!' });
       }
 
       if (onSuccess) {
@@ -207,7 +208,7 @@ export default function QuickTranslateDialog({ isOpen, onClose, onSuccess }) {
       }
     } catch (error) {
       console.error('Translation error:', error);
-      toast.error('Translation failed: ' + (error.response?.data?.message || error.message));
+      setFlashMessage({ type: 'error', message: 'Translation failed: ' + (error.response?.data?.message || error.message) });
     } finally {
       setLoading(false);
     }
@@ -230,6 +231,7 @@ export default function QuickTranslateDialog({ isOpen, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-lg">

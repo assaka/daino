@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wand2, Languages, Globe, ArrowRight, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import api from '../../utils/api';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 /**
  * TranslationWizard - Interactive wizard for translating content
@@ -20,6 +20,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
   const [languages, setLanguages] = useState([]);
   const [serviceCosts, setServiceCosts] = useState({});
   const [localCredits, setLocalCredits] = useState(userCredits);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Sync local credits with prop
   useEffect(() => {
@@ -94,7 +95,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       setServiceCosts(costs);
     } catch (error) {
       console.error('Error loading translation costs:', error);
-      toast.error('Failed to load service costs, using fallback values');
+      setFlashMessage({ type: 'error', message: 'Failed to load service costs, using fallback values' });
     } finally {
       setLoadingCosts(false);
     }
@@ -145,7 +146,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
         setLanguages(response.filter(l => l.is_active));
       }
     } catch (error) {
-      toast.error('Failed to load languages');
+      setFlashMessage({ type: 'error', message: 'Failed to load languages' });
     }
   };
 
@@ -165,7 +166,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       setStats(data.data || data);
       setStep(3);
     } catch (error) {
-      toast.error('Failed to get translation preview');
+      setFlashMessage({ type: 'error', message: 'Failed to get translation preview' });
     } finally {
       setLoading(false);
     }
@@ -186,7 +187,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       const data = response.data || response;
       setTranslationResult(data.data || data);
       setStep(4);
-      toast.success('Translation completed!');
+      setFlashMessage({ type: 'success', message: 'Translation completed!' });
 
       // Update credits if any were deducted (store for later when wizard closes)
       const creditsDeducted = response.creditsDeducted || data.creditsDeducted || 0;
@@ -195,7 +196,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       }
     } catch (error) {
       console.error('Error executing translation:', error);
-      toast.error('Translation failed: ' + (error.message || 'Unknown error'));
+      setFlashMessage({ type: 'error', message: 'Translation failed: ' + (error.message || 'Unknown error') });
     } finally {
       setLoading(false);
     }
@@ -219,6 +220,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-lg">

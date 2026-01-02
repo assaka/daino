@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, RotateCcw, Copy, Check, Info, Languages } from 'lucide-react';
 import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -19,6 +19,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedVariable, setCopiedVariable] = useState(null);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const [formData, setFormData] = useState({
     html_template: '',
@@ -114,7 +115,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
   const copyVariable = (variable) => {
     navigator.clipboard.writeText(variable);
     setCopiedVariable(variable);
-    toast.success('Variable copied to clipboard');
+    setFlashMessage({ type: 'success', message: 'Variable copied to clipboard' });
     setTimeout(() => setCopiedVariable(null), 2000);
   };
 
@@ -130,7 +131,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
       const response = await api.post(`/pdf-templates/${template.id}/restore-default`);
 
       if (response && response.success) {
-        toast.success('PDF template restored to default successfully');
+        setFlashMessage({ type: 'success', message: 'PDF template restored to default successfully' });
         // Reload the template data
         const updated = await api.get(`/pdf-templates/${template.id}`);
         if (updated && updated.success && updated.data) {
@@ -146,7 +147,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
       }
     } catch (error) {
       console.error('Restore error:', error);
-      toast.error('Failed to restore template');
+      setFlashMessage({ type: 'error', message: 'Failed to restore template' });
     } finally {
       setSaving(false);
     }
@@ -227,6 +228,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       {/* Template Info */}
       {template?.is_system && (
         <Alert className="border-blue-200 bg-blue-50">

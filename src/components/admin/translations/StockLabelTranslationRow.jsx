@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 /**
@@ -19,6 +19,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+  const [flashMessage, setFlashMessage] = useState(null);
 
   const filteredLanguages = availableLanguages.filter(lang => selectedLanguages?.includes(lang.code));
 
@@ -69,7 +70,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       if (onFlashMessage) {
         onFlashMessage('Failed to load translations', 'error');
       } else {
-        toast.error('Failed to load translations');
+        setFlashMessage({ type: 'error', message: 'Failed to load translations' });
       }
     } finally {
       setLoading(false);
@@ -138,7 +139,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
         if (onFlashMessage) {
           onFlashMessage('No translations to save', 'error');
         } else {
-          toast.error('No translations to save');
+          setFlashMessage({ type: 'error', message: 'No translations to save' });
         }
         setSaving(false);
         return;
@@ -150,7 +151,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       if (onFlashMessage) {
         onFlashMessage('Stock label translations updated successfully', 'success');
       } else {
-        toast.success('Stock label translations updated successfully');
+        setFlashMessage({ type: 'success', message: 'Stock label translations updated successfully' });
       }
       if (onUpdate) onUpdate(translations);
       setSaving(false);
@@ -162,7 +163,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       if (onFlashMessage) {
         onFlashMessage(error.response?.data?.message || 'Failed to save translations', 'error');
       } else {
-        toast.error(error.response?.data?.message || 'Failed to save translations');
+        setFlashMessage({ type: 'error', message: error.response?.data?.message || 'Failed to save translations' });
       }
       setSaving(false);
     }
@@ -175,7 +176,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       if (onFlashMessage) {
         onFlashMessage(`No ${fromLang.toUpperCase()} text found for ${field}`, 'error');
       } else {
-        toast.error(`No ${fromLang.toUpperCase()} text found for ${field}`);
+        setFlashMessage({ type: 'error', message: `No ${fromLang.toUpperCase()} text found for ${field}` });
       }
       return;
     }
@@ -195,7 +196,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
         if (onFlashMessage) {
           onFlashMessage(`${field} translated to ${toLang.toUpperCase()}`, 'success');
         } else {
-          toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+          setFlashMessage({ type: 'success', message: `${field} translated to ${toLang.toUpperCase()}` });
         }
       }
     } catch (error) {
@@ -203,7 +204,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       if (onFlashMessage) {
         onFlashMessage(`Failed to translate ${field}`, 'error');
       } else {
-        toast.error(`Failed to translate ${field}`);
+        setFlashMessage({ type: 'error', message: `Failed to translate ${field}` });
       }
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
@@ -211,7 +212,9 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       {/* Collapsed Header */}
       <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <button
@@ -316,5 +319,6 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
         </div>
       )}
     </div>
+    </>
   );
 }

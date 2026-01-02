@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Languages, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 
 /**
@@ -23,6 +23,7 @@ export default function MultiEntityTranslateDialog({
   const [results, setResults] = useState(null);
   const [serviceCosts, setServiceCosts] = useState({});
   const [localCredits, setLocalCredits] = useState(userCredits);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Sync local credits with prop
   useEffect(() => {
@@ -134,17 +135,17 @@ export default function MultiEntityTranslateDialog({
 
   const handleTranslate = async () => {
     if (selectedEntities.length === 0) {
-      toast.error('Please select at least one entity type');
+      setFlashMessage({ type: 'error', message: 'Please select at least one entity type' });
       return;
     }
 
     if (translateToLangs.length === 0) {
-      toast.error('Please select at least one target language');
+      setFlashMessage({ type: 'error', message: 'Please select at least one target language' });
       return;
     }
 
     if (translateFromLang === translateToLangs[0] && translateToLangs.length === 1) {
-      toast.error('Source and target languages cannot be the same');
+      setFlashMessage({ type: 'error', message: 'Source and target languages cannot be the same' });
       return;
     }
 
@@ -197,15 +198,15 @@ export default function MultiEntityTranslateDialog({
 
       setResults(allResults);
 
-      // Show appropriate toast based on results
+      // Show appropriate flash message based on results
       if (allResults.translated > 0 && allResults.failed === 0) {
-        toast.success(`Successfully translated ${allResults.translated} items (${allResults.skipped} skipped)`);
+        setFlashMessage({ type: 'success', message: `Successfully translated ${allResults.translated} items (${allResults.skipped} skipped)` });
       } else if (allResults.translated > 0 && allResults.failed > 0) {
-        toast.warning(`Translated ${allResults.translated} items (${allResults.skipped} skipped, ${allResults.failed} failed)`);
+        setFlashMessage({ type: 'warning', message: `Translated ${allResults.translated} items (${allResults.skipped} skipped, ${allResults.failed} failed)` });
       } else if (allResults.skipped > 0 && allResults.translated === 0) {
-        toast.info(`All ${allResults.skipped} items were skipped (already translated)`);
+        setFlashMessage({ type: 'info', message: `All ${allResults.skipped} items were skipped (already translated)` });
       } else if (allResults.failed > 0) {
-        toast.error(`Translation failed: ${allResults.failed} items failed`);
+        setFlashMessage({ type: 'error', message: `Translation failed: ${allResults.failed} items failed` });
       }
 
       // Update local credits for display in modal
@@ -214,7 +215,7 @@ export default function MultiEntityTranslateDialog({
       }
     } catch (error) {
       console.error('Translation error:', error);
-      toast.error(error.message || 'Translation failed');
+      setFlashMessage({ type: 'error', message: error.message || 'Translation failed' });
     } finally {
       setTranslating(false);
     }
@@ -222,6 +223,7 @@ export default function MultiEntityTranslateDialog({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">

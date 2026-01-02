@@ -17,7 +17,6 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
-import { toast } from "sonner";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import api from "@/utils/api";
 
@@ -143,12 +142,12 @@ export default function BulkTranslateDialog({
 
   const handleTranslate = async () => {
     if (!translateFromLang || translateToLangs.length === 0) {
-      toast.error("Please select source language and at least one target language");
+      setFlashMessage({ type: 'error', message: "Please select source language and at least one target language" });
       return;
     }
 
     if (translateToLangs.includes(translateFromLang)) {
-      toast.error("Target languages cannot include the source language");
+      setFlashMessage({ type: 'error', message: "Target languages cannot include the source language" });
       return;
     }
 
@@ -158,7 +157,7 @@ export default function BulkTranslateDialog({
 
     // Warn user if translating UI labels (can be slow)
     if (entityName === 'UI Labels' && itemCount > 50) {
-      toast.info(`Translating ${itemCount} UI labels. This may take a few minutes...`, { duration: 5000 });
+      setFlashMessage({ type: 'info', message: `Translating ${itemCount} UI labels. This may take a few minutes...` });
     }
 
     try {
@@ -192,7 +191,7 @@ export default function BulkTranslateDialog({
             allErrors.push(...result.data.errors.map(err => ({ ...err, toLang })));
           }
         } else {
-          toast.error(`Failed to translate to ${toLang}: ${result.message}`);
+          setFlashMessage({ type: 'error', message: `Failed to translate to ${toLang}: ${result.message}` });
         }
       }
 
@@ -208,7 +207,7 @@ export default function BulkTranslateDialog({
 
         // Show success message about background processing and email notification
         const message = 'Translation started in background. You will be notified by email when complete (approximately 10 minutes).';
-        toast.success(message, { duration: 8000 });
+        setFlashMessage({ type: 'success', message });
 
         // Update local credits for display
         if (totalCreditsDeducted > 0) {
@@ -248,20 +247,17 @@ export default function BulkTranslateDialog({
 
       if (totalTranslated > 0) {
         const message = `Successfully translated ${totalTranslated} ${entityType} to ${translateToLangs.length} language(s)`;
-        toast.success(message);
-
-        // Show green flash message
         setFlashMessage({ type: 'success', message });
         setShowFlash(true);
         setTimeout(() => setShowFlash(false), 3000);
       }
       if (totalSkipped > 0 && totalTranslated === 0) {
         const message = `All ${totalSkipped} ${entityType} already have translations. ${totalCreditsDeducted > 0 ? `Charged ${totalCreditsDeducted.toFixed(2)} credits.` : ''}`;
-        toast.info(message, { duration: 5000 });
+        setFlashMessage({ type: 'info', message });
       }
       if (totalFailed > 0) {
         console.warn('Translation errors:', allErrors);
-        toast.warning(`${totalFailed} translations failed. Check console for details.`);
+        setFlashMessage({ type: 'warning', message: `${totalFailed} translations failed. Check console for details.` });
       }
 
       // Wait 3 seconds before closing to let user see the message
@@ -289,7 +285,7 @@ export default function BulkTranslateDialog({
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }, 150);
     } catch (error) {
-      toast.error(`Failed to translate ${entityType}`);
+      setFlashMessage({ type: 'error', message: `Failed to translate ${entityType}` });
       // Reset states on error too
       setIsTranslating(false);
       setTranslationProgress({ current: 0, total: 0 });

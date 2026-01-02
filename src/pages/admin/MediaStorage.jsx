@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/api/client';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { getCurrentUser } from '@/utils/auth';
 
 const MediaStorage = () => {
@@ -32,7 +32,8 @@ const MediaStorage = () => {
   const [bucketsEnsured, setBucketsEnsured] = useState(false);
   const [defaultProvider, setDefaultProvider] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
-  
+  const [flashMessage, setFlashMessage] = useState(null);
+
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
   const currentUser = getCurrentUser();
   const isStoreOwner = currentUser?.role === 'store_owner' || currentUser?.role === 'admin';
@@ -92,7 +93,7 @@ const MediaStorage = () => {
 
   const handleSetAsDefault = async (provider) => {
     if (!storeId) {
-      toast.error('Please select a store first');
+      setFlashMessage({ type: 'error', message: 'Please select a store first' });
       return;
     }
 
@@ -103,13 +104,13 @@ const MediaStorage = () => {
       });
       
       setDefaultProvider(provider);
-      toast.success(`${provider} set as default media storage provider`);
-      
+      setFlashMessage({ type: 'success', message: `${provider} set as default media storage provider` });
+
       // Refresh the default provider status
       await fetchDefaultProvider();
     } catch (error) {
       console.error('Error setting default media storage provider:', error);
-      toast.error('Failed to set as default media storage provider');
+      setFlashMessage({ type: 'error', message: 'Failed to set as default media storage provider' });
     } finally {
       setSettingDefault(false);
     }
@@ -221,6 +222,7 @@ const MediaStorage = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Media Storage</h1>
