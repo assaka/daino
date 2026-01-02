@@ -808,9 +808,18 @@ class AkeneoMapping {
     }
 
     // AUTOMATIC: Add all attributes that have type pim_catalog_image or pim_catalog_file
+    console.log(`\n🔍 DEBUG: akeneoAttributeTypes received:`, akeneoAttributeTypes ? Object.keys(akeneoAttributeTypes).length + ' attributes' : 'NULL/UNDEFINED');
     if (akeneoAttributeTypes && typeof akeneoAttributeTypes === 'object') {
       const autoImageAttrs = [];
       const autoFileAttrs = [];
+
+      // Debug: Check specifically for energy_label_pdf
+      if (akeneoAttributeTypes['energy_label_pdf']) {
+        console.log(`🎯 DEBUG: Found energy_label_pdf in akeneoAttributeTypes with type: ${akeneoAttributeTypes['energy_label_pdf']}`);
+      } else {
+        console.log(`⚠️ DEBUG: energy_label_pdf NOT found in akeneoAttributeTypes`);
+        console.log(`   Available file-type attributes:`, Object.entries(akeneoAttributeTypes).filter(([k, v]) => v === 'pim_catalog_file').map(([k]) => k));
+      }
 
       for (const [attrCode, attrType] of Object.entries(akeneoAttributeTypes)) {
         if (attrType === 'pim_catalog_image') {
@@ -833,6 +842,8 @@ class AkeneoMapping {
       if (autoFileAttrs.length > 0) {
         console.log(`📄 AUTO-MAPPED ${autoFileAttrs.length} pim_catalog_file attributes: ${autoFileAttrs.join(', ')}`);
       }
+    } else {
+      console.log(`⚠️ WARNING: akeneoAttributeTypes is empty or invalid - file attributes won't be auto-detected!`);
     }
     
     console.log(`\n🖼️ ===== EXTRACTING IMAGES FROM AKENEO PRODUCT =====`);
@@ -1124,12 +1135,18 @@ class AkeneoMapping {
           // Use the authenticated download method
           buffer = await akeneoClient.downloadAuthenticatedFile(imageUrl);
           console.log(`✅ Authenticated download successful: ${buffer.length} bytes`);
-          
-          // Try to determine content type from URL or default to jpeg
-          if (imageUrl.includes('.png')) contentType = 'image/png';
+
+          // Try to determine content type from URL - support images AND documents
+          if (imageUrl.includes('.pdf')) contentType = 'application/pdf';
+          else if (imageUrl.includes('.png')) contentType = 'image/png';
           else if (imageUrl.includes('.gif')) contentType = 'image/gif';
           else if (imageUrl.includes('.webp')) contentType = 'image/webp';
           else if (imageUrl.includes('.svg')) contentType = 'image/svg+xml';
+          else if (imageUrl.includes('.doc')) contentType = 'application/msword';
+          else if (imageUrl.includes('.docx')) contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          else if (imageUrl.includes('.xls')) contentType = 'application/vnd.ms-excel';
+          else if (imageUrl.includes('.xlsx')) contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          console.log(`📄 Detected content type from URL: ${contentType}`);
         } catch (authError) {
           console.warn(`⚠️ Authenticated download failed, trying regular download: ${authError.message}`);
           // Fall back to regular download
