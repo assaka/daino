@@ -2217,30 +2217,70 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     (typeof attributeValue === 'object' ? attributeValue.name : 'File');
                                   const fileSize = fileFromProductFiles?.file_size ||
                                     (typeof attributeValue === 'object' ? attributeValue.size : null);
+                                  const fileId = fileFromProductFiles?.id;
 
                                   if (!fileUrl) return null;
 
                                   // Truncate filename if too long
-                                  const truncatedFileName = fileName.length > 30
+                                  const truncatedFileName = fileName && fileName.length > 30
                                     ? fileName.substring(0, 15) + '...' + fileName.substring(fileName.length - 12)
-                                    : fileName;
+                                    : (fileName || 'File');
+
+                                  const handleDeleteFile = async () => {
+                                    if (!fileId || !product?.id) return;
+
+                                    if (!window.confirm('Are you sure you want to delete this file?')) return;
+
+                                    try {
+                                      const storeId = getSelectedStoreId();
+                                      await apiClient.delete(`/products/${product.id}/files/${fileId}`, {
+                                        headers: { 'x-store-id': storeId }
+                                      });
+
+                                      // Remove file from local state
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        files: prev.files.filter(f => f.id !== fileId)
+                                      }));
+
+                                      toast.success('File deleted successfully');
+                                    } catch (error) {
+                                      console.error('Failed to delete file:', error);
+                                      toast.error('Failed to delete file');
+                                    }
+                                  };
 
                                   return (
-                                    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                                      <span className="text-sm font-medium" title={fileName}>{truncatedFileName}</span>
+                                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                                      <span
+                                        className="text-sm font-medium truncate max-w-[200px] cursor-help"
+                                        title={fileName}
+                                      >
+                                        {truncatedFileName}
+                                      </span>
                                       {fileSize && (
-                                        <span className="text-xs text-gray-500">
-                                          {`(${(fileSize / 1024 / 1024).toFixed(2)} MB)`}
+                                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                                          ({(fileSize / 1024 / 1024).toFixed(2)} MB)
                                         </span>
                                       )}
                                       <a
                                         href={fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-800 text-sm"
+                                        className="text-blue-600 hover:text-blue-800 text-sm whitespace-nowrap"
                                       >
                                         View
                                       </a>
+                                      {fileId && product?.id && (
+                                        <button
+                                          type="button"
+                                          onClick={handleDeleteFile}
+                                          className="text-red-500 hover:text-red-700 p-1"
+                                          title="Delete file"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      )}
                                     </div>
                                   );
                                 })()}

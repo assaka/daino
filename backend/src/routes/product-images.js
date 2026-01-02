@@ -399,6 +399,95 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
 });
 
 /**
+ * DELETE /api/products/:productId/files/:fileId
+ * Delete a product file from product_files, media_assets, and storage
+ */
+router.delete('/:productId/files/:fileId', async (req, res) => {
+  try {
+    const { storeId } = req;
+    const { productId, fileId } = req.params;
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Find the product_file record
+    const { data: productFile, error: fileError } = await tenantDb
+      .from('product_files')
+      .select(`
+        id, product_id, media_asset_id, file_type, metadata,
+        media_assets!product_files_media_asset_id_fkey ( id, file_path, file_url )
+      `)
+      .eq('id', fileId)
+      .eq('product_id', productId)
+      .single();
+
+    if (!productFile || fileError) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product file not found'
+      });
+    }
+
+    const mediaAssetId = productFile.media_asset_id;
+    const filePath = productFile.media_assets?.file_path;
+
+    // Delete from storage first
+    if (filePath) {
+      try {
+        await storageManager.deleteFile(storeId, filePath);
+        console.log(`✅ Deleted file from storage: ${filePath}`);
+      } catch (storageError) {
+        console.warn('Could not delete file from storage:', storageError.message);
+        // Continue with database cleanup even if storage deletion fails
+      }
+    }
+
+    // Delete from product_files
+    const { error: deleteFileError } = await tenantDb
+      .from('product_files')
+      .delete()
+      .eq('id', fileId);
+
+    if (deleteFileError) {
+      console.error('Error deleting product_files record:', deleteFileError);
+    } else {
+      console.log(`✅ Deleted product_files record: ${fileId}`);
+    }
+
+    // Delete from media_assets
+    if (mediaAssetId) {
+      const { error: deleteAssetError } = await tenantDb
+        .from('media_assets')
+        .delete()
+        .eq('id', mediaAssetId);
+
+      if (deleteAssetError) {
+        console.error('Error deleting media_assets record:', deleteAssetError);
+      } else {
+        console.log(`✅ Deleted media_assets record: ${mediaAssetId}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'File deleted successfully',
+      data: {
+        product_id: productId,
+        deleted_file_id: fileId,
+        deleted_media_asset_id: mediaAssetId
+      }
+    });
+
+  } catch (error) {
+    console.error('Product file delete error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/products/:productId/images
  * Get all images for a product
  */
