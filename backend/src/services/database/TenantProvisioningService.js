@@ -152,14 +152,16 @@ class TenantProvisioningService {
       }
 
       // 2. Run migrations (create all tables)
-      console.log('Running tenant migrations...');
+      console.log('🔧 STEP 2: Running tenant migrations...');
       await this.runTenantMigrations(tenantDb, storeId, result, options);
+      console.log('🔧 STEP 2 COMPLETE: Migrations finished');
 
       // 3. Seed initial data
-      console.log('Seeding initial data...');
+      console.log('🔧 STEP 3: Seeding initial data (skipped)...');
       // await this.seedInitialData(tenantDb, storeId, options, result);
 
       // 4. Verify migrations succeeded before creating store record
+      console.log('🔧 STEP 4: Checking for migration errors...', result.errors);
       if (result.errors.some(e => e.step === 'migrations')) {
         console.error('❌ Skipping store record creation - migrations failed');
         return {
@@ -168,8 +170,9 @@ class TenantProvisioningService {
           message: 'Database provisioning failed - migrations did not complete'
         };
       }
+      console.log('🔧 STEP 4 PASSED: No migration errors');
 
-      // 4. ALWAYS create/ensure user exists (stores.user_id has FK to users.id)
+      // 5. ALWAYS create/ensure user exists (stores.user_id has FK to users.id)
       // Use upsert so it works even if user already exists
       console.log('🔍 User creation check - userId:', options.userId, 'userEmail:', options.userEmail);
       if (!options.userId || !options.userEmail) {
