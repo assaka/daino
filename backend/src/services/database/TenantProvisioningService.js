@@ -167,23 +167,8 @@ class TenantProvisioningService {
         };
       }
 
-      // 4. Create store record in tenant DB (skip if already created during migrations)
-      if (options._storeCreatedInMigrations) {
-        console.log('⏭️ Store record already created during migrations - skipping');
-      } else if (tenantDb) {
-        // Use Supabase client
-        console.log('Creating store record via Supabase client...');
-        await this.createStoreRecord(tenantDb, storeId, options, result);
-      } else if (options.oauthAccessToken && options.projectId) {
-        // Use Management API to execute SQL
-        console.log('Creating store record via Management API SQL...');
-        await this.createStoreRecordViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
-      } else {
-        console.warn('⚠️ Cannot create store record - no tenantDb or OAuth credentials');
-        result.errors.push({ step: 'create_store', error: 'No database client available' });
-      }
-
-      // 5. Create agency user record in tenant DB (skip if already created during migrations)
+      // 4. Create agency user record in tenant DB FIRST (stores.user_id has FK to users.id)
+      // Skip if already created during migrations
       if (options._userCreatedInMigrations) {
         console.log('⏭️ User record already created during migrations - skipping');
       } else if (tenantDb && options.userId && options.userEmail) {
@@ -199,6 +184,22 @@ class TenantProvisioningService {
       } else {
         console.warn('⚠️ Cannot create user record - no tenantDb or OAuth credentials');
         result.errors.push({ step: 'create_user', error: 'No database client available' });
+      }
+
+      // 5. Create store record in tenant DB (skip if already created during migrations)
+      if (options._storeCreatedInMigrations) {
+        console.log('⏭️ Store record already created during migrations - skipping');
+      } else if (tenantDb) {
+        // Use Supabase client
+        console.log('Creating store record via Supabase client...');
+        await this.createStoreRecord(tenantDb, storeId, options, result);
+      } else if (options.oauthAccessToken && options.projectId) {
+        // Use Management API to execute SQL
+        console.log('Creating store record via Management API SQL...');
+        await this.createStoreRecordViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+      } else {
+        console.warn('⚠️ Cannot create store record - no tenantDb or OAuth credentials');
+        result.errors.push({ step: 'create_store', error: 'No database client available' });
       }
 
       // 6. Seed slot configurations from config files
