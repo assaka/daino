@@ -512,7 +512,7 @@ VALUES (
   '${JSON.stringify(storeSettings).replace(/'/g, "''")}'::jsonb,
   NOW(),
   NOW()
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET updated_at = NOW();
           `;
 
           try {
@@ -531,6 +531,24 @@ VALUES (
               throw new Error(`Store SQL failed: ${storeResponse.data.error}`);
             }
             console.log('✅ Store record created before seed data:', storeResponse.data);
+
+            // Verify store actually exists
+            const verifySQL = `SELECT id FROM stores WHERE id = '${storeId}';`;
+            const verifyResponse = await axios.post(
+              `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+              { query: verifySQL },
+              {
+                headers: {
+                  'Authorization': `Bearer ${options.oauthAccessToken}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            console.log('🔍 Store verification:', JSON.stringify(verifyResponse.data));
+            if (!verifyResponse.data || verifyResponse.data.length === 0) {
+              throw new Error(`Store verification failed: store ${storeId} not found after INSERT`);
+            }
+
             result.dataSeeded.push('Store record (created before seed)');
             // Mark that store was already created so we don't create it again later
             options._storeCreatedInMigrations = true;
