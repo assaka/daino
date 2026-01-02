@@ -364,9 +364,11 @@ async function fetchProductImages(productIds, tenantDb) {
         is_primary,
         alt_text,
         file_type,
+        metadata,
         media_assets!media_asset_id (
           id,
           file_url,
+          file_path,
           mime_type,
           file_size
         )
@@ -398,11 +400,20 @@ async function fetchProductImages(productIds, tenantDb) {
         const fileUrl = file.media_assets?.file_url;
         if (!fileUrl) return; // Skip if no URL available
 
+        // Parse metadata if it's a string
+        const metadata = typeof file.metadata === 'string'
+          ? JSON.parse(file.metadata)
+          : (file.metadata || {});
+
         imagesByProduct[file.product_id].push({
           url: fileUrl,
           alt: file.alt_text || '',
           isPrimary: file.is_primary || file.position === 0,
-          position: file.position || 0
+          position: file.position || 0,
+          // Include fields expected by ProductForm
+          filepath: file.media_assets?.file_path || metadata.filepath || '',
+          filesize: file.media_assets?.file_size || metadata.filesize || 0,
+          attribute_code: metadata.attribute_code || `image_${file.position || 0}`
         });
       });
     }
