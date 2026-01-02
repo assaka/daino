@@ -102,13 +102,24 @@ class TenantProvisioningService {
       if (alreadyProvisioned && !options.force) {
         console.log('✅ Tenant database already provisioned - checking if data needs seeding...');
 
-        // Check if seed data exists (use languages as indicator - should have at least 'en')
+        // Double check: Query BOTH languages and slot_configurations to determine seed status
         const { data: existingLanguages } = await tenantDb
           .from('languages')
           .select('code')
           .limit(1);
 
-        if (!existingLanguages || existingLanguages.length === 0) {
+        const { data: existingSlots } = await tenantDb
+          .from('slot_configurations')
+          .select('id')
+          .limit(1);
+
+        const hasLanguages = existingLanguages && existingLanguages.length > 0;
+        const hasSlotConfigs = existingSlots && existingSlots.length > 0;
+
+        console.log(`🔍 Seed data check - languages: ${hasLanguages ? 'found' : 'MISSING'}, slot_configurations: ${hasSlotConfigs ? 'found' : 'MISSING'}`);
+
+        // If languages missing, run full seed SQL (includes languages, currencies, countries, etc.)
+        if (!hasLanguages) {
           console.log('📦 No seed data found (languages empty) - running seed data now...');
           // Run seed data via direct SQL (uses ON CONFLICT DO NOTHING, safe for existing data)
           try {
@@ -150,18 +161,15 @@ class TenantProvisioningService {
             // Don't fail - continue with other checks
           }
         } else {
-          console.log('✅ Seed data already exists (languages found)');
+          console.log('✅ Base seed data already exists (languages found)');
         }
 
-        // Even if provisioned, ensure slot configurations exist
-        const { data: existingSlots } = await tenantDb
-          .from('slot_configurations')
-          .select('id')
-          .limit(1);
-
-        if (!existingSlots || existingSlots.length === 0) {
+        // If slot configurations missing, seed them (separate from base seed data)
+        if (!hasSlotConfigs) {
           console.log('📦 No slot configurations found - seeding them now...');
           await this.seedSlotConfigurations(tenantDb, storeId, options, result);
+        } else {
+          console.log('✅ Slot configurations already exist');
         }
 
         // Even if provisioned, ensure store record exists with theme settings
