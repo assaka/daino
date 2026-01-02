@@ -1048,6 +1048,7 @@ class AkeneoMapping {
                 alt: altText,
                 sort_order: images.length,
                 media_asset_id: uploadResult?.media_asset_id || null,  // Include mediaAssetId for product_files
+                contentType: uploadResult?.contentType || null,  // Include contentType for file_type detection
                 variants: {
                   thumbnail: finalImageUrl,
                   medium: finalImageUrl,
@@ -1065,6 +1066,7 @@ class AkeneoMapping {
                     provider: uploadResult.uploadedTo,
                     filename: uploadResult.filename,
                     size: uploadResult.size,
+                    contentType: uploadResult.contentType,
                     fallback_used: uploadResult.fallbackUsed
                   } : null
                 }

@@ -1642,13 +1642,13 @@ class AkeneoIntegration {
           }
         }
 
-        // Sync images to product_files table
+        // Sync files (images, PDFs, documents) to product_files table
         if (transformedProduct.images && Array.isArray(transformedProduct.images) && transformedProduct.images.length > 0) {
           try {
-            const { syncProductImages } = require('../utils/productTenantHelpers');
-            await syncProductImages(tenantDb, storeId, existingProduct.id, transformedProduct.images);
-          } catch (imgError) {
-            console.warn(`⚠️ Failed to sync images for product ${existingProduct.id}:`, imgError.message);
+            const { syncProductFiles } = require('../utils/productTenantHelpers');
+            await syncProductFiles(tenantDb, storeId, existingProduct.id, transformedProduct.images);
+          } catch (fileError) {
+            console.warn(`⚠️ Failed to sync files for product ${existingProduct.id}:`, fileError.message);
           }
         }
 
@@ -1744,13 +1744,13 @@ class AkeneoIntegration {
           }
         }
 
-        // Sync images to product_files table
+        // Sync files (images, PDFs, documents) to product_files table
         if (transformedProduct.images && Array.isArray(transformedProduct.images) && transformedProduct.images.length > 0) {
           try {
-            const { syncProductImages } = require('../utils/productTenantHelpers');
-            await syncProductImages(tenantDb, storeId, newProduct.id, transformedProduct.images);
-          } catch (imgError) {
-            console.warn(`⚠️ Failed to sync images for product ${newProduct.id}:`, imgError.message);
+            const { syncProductFiles } = require('../utils/productTenantHelpers');
+            await syncProductFiles(tenantDb, storeId, newProduct.id, transformedProduct.images);
+          } catch (fileError) {
+            console.warn(`⚠️ Failed to sync files for product ${newProduct.id}:`, fileError.message);
           }
         }
 

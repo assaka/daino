@@ -124,9 +124,9 @@ async function createProduct(storeId, productData, locale = 'en_US') {
     await syncProductAttributeValues(tenantDb, storeId, product.id, attributes);
   }
 
-  // Sync images to product_files table
+  // Sync files (images, PDFs, documents) to product_files table
   if (images && Array.isArray(images) && images.length > 0) {
-    await syncProductImages(tenantDb, storeId, product.id, images);
+    await syncProductFiles(tenantDb, storeId, product.id, images);
   }
 
   return product;
@@ -170,9 +170,9 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
     await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
   }
 
-  // Sync images to product_files table (only if images array has items)
+  // Sync files (images, PDFs, documents) to product_files table
   if (images && Array.isArray(images) && images.length > 0) {
-    await syncProductImages(tenantDb, storeId, productId, images);
+    await syncProductFiles(tenantDb, storeId, productId, images);
   }
 
   // Return updated product
@@ -180,62 +180,107 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
 }
 
 /**
- * Sync product images to product_files table
+ * Determine file_type from contentType/mimeType
+ * Valid types: 'image', 'video', 'document', '3d_model', 'pdf'
+ */
+function getFileTypeFromContentType(contentType) {
+  if (!contentType) return 'document';
+
+  const ct = contentType.toLowerCase();
+
+  if (ct === 'application/pdf') return 'pdf';
+  if (ct.startsWith('image/')) return 'image';
+  if (ct.startsWith('video/')) return 'video';
+  if (ct.includes('gltf') || ct.includes('glb') || ct.includes('3d')) return '3d_model';
+
+  // Common document types
+  if (ct.includes('word') || ct.includes('document') ||
+      ct.includes('spreadsheet') || ct.includes('excel') ||
+      ct.includes('powerpoint') || ct.includes('presentation') ||
+      ct.includes('text/') || ct.includes('application/rtf')) {
+    return 'document';
+  }
+
+  return 'document';
+}
+
+/**
+ * Sync product files (images, PDFs, documents) to product_files table
  * Expects media_asset_id from StorageManager upload response
  *
  * @param {Object} tenantDb - Tenant database connection
  * @param {string} storeId - Store UUID
  * @param {string} productId - Product UUID
- * @param {Array} images - Array of image objects with media_asset_id, alt, position
+ * @param {Array} files - Array of file objects with media_asset_id, contentType, alt, position
  */
-async function syncProductImages(tenantDb, storeId, productId, images) {
+async function syncProductFiles(tenantDb, storeId, productId, files) {
   try {
-    console.log(`📷 Syncing ${images.length} images for product ${productId}`);
+    console.log(`📁 Syncing ${files.length} files for product ${productId}`);
 
-    // Delete existing images for this product
+    // Delete all existing product_files for this product (images, PDFs, documents, etc.)
     const { error: deleteError } = await tenantDb
       .from('product_files')
       .delete()
-      .eq('product_id', productId)
-      .eq('file_type', 'image');
+      .eq('product_id', productId);
 
     if (deleteError) {
-      console.error('Error deleting existing product images:', deleteError);
+      console.error('Error deleting existing product files:', deleteError);
       throw deleteError;
     }
 
-    // Insert new images - requires media_asset_id from upload
-    const validImages = images.filter(img => img.media_asset_id);
+    // Filter files that have media_asset_id from upload
+    const validFiles = files.filter(file => file.media_asset_id);
 
-    if (validImages.length === 0) {
-      console.log(`📷 No images with media_asset_id to sync`);
+    if (validFiles.length === 0) {
+      console.log(`📁 No files with media_asset_id to sync`);
       return;
     }
 
-    const insertRecords = validImages.map((img, index) => ({
-      product_id: productId,
-      store_id: storeId,
-      media_asset_id: img.media_asset_id,
-      file_type: 'image',
-      position: img.position !== undefined ? img.position : index,
-      is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
-      alt_text: img.alt || img.alt_text || ''
-    }));
+    // Track primary image separately
+    let hasPrimaryImage = false;
+
+    const insertRecords = validFiles.map((file, index) => {
+      const fileType = getFileTypeFromContentType(file.contentType);
+      const isImage = fileType === 'image';
+
+      // First image becomes primary
+      const isPrimary = isImage && !hasPrimaryImage;
+      if (isPrimary) hasPrimaryImage = true;
+
+      console.log(`  📄 File ${index + 1}: ${file.contentType || 'unknown'} -> ${fileType}`);
+
+      return {
+        product_id: productId,
+        store_id: storeId,
+        media_asset_id: file.media_asset_id,
+        file_type: fileType,
+        position: file.position !== undefined ? file.position : index,
+        is_primary: file.isPrimary !== undefined ? file.isPrimary : isPrimary,
+        alt_text: file.alt || file.alt_text || ''
+      };
+    });
 
     const { error: insertError } = await tenantDb
       .from('product_files')
       .insert(insertRecords);
 
     if (insertError) {
-      console.error('Error inserting product images:', insertError);
+      console.error('Error inserting product files:', insertError);
       throw insertError;
     }
 
-    console.log(`✅ Synced ${validImages.length} images to product_files`);
+    const fileCounts = insertRecords.reduce((acc, r) => {
+      acc[r.file_type] = (acc[r.file_type] || 0) + 1;
+      return acc;
+    }, {});
+    console.log(`✅ Synced ${validFiles.length} files to product_files:`, fileCounts);
   } catch (err) {
-    console.error('Error in syncProductImages:', err);
+    console.error('Error in syncProductFiles:', err);
   }
 }
+
+// Backward compatibility alias
+const syncProductImages = syncProductFiles;
 
 /**
  * Sync product translations to product_translations table
@@ -495,6 +540,7 @@ module.exports = {
   deleteProduct,
   getAllProducts,
   syncProductAttributeValues,
-  syncProductImages,
+  syncProductFiles,
+  syncProductImages, // Backward compatibility alias
   syncProductTranslations
 };
