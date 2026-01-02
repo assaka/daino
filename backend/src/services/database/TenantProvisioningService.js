@@ -480,6 +480,58 @@ VALUES (
             console.warn('⚠️ No userId/userEmail provided - skipping user creation');
           }
 
+          // Verify user exists before creating store
+          console.log('🔍 Verifying user exists before store creation...');
+          const verifyUserSQL = `SELECT id, email FROM users WHERE id = '${options.userId}';`;
+          const verifyUserResponse = await axios.post(
+            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+            { query: verifyUserSQL },
+            {
+              headers: {
+                'Authorization': `Bearer ${options.oauthAccessToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          console.log('🔍 User verification result:', JSON.stringify(verifyUserResponse.data));
+
+          if (!verifyUserResponse.data || verifyUserResponse.data.length === 0 || verifyUserResponse.data.error) {
+            console.error('❌ User does not exist in tenant DB! Creating user now...');
+            // Force user creation since verification failed
+            const forceUserSQL = `
+INSERT INTO users (id, email, password, first_name, last_name, role, account_type, is_active, email_verified, created_at, updated_at)
+VALUES (
+  '${options.userId}',
+  '${options.userEmail}',
+  '${options.userPasswordHash || 'oauth-user'}',
+  '${(options.userFirstName || '').replace(/'/g, "''")}',
+  '${(options.userLastName || '').replace(/'/g, "''")}',
+  'admin',
+  'agency',
+  true,
+  true,
+  NOW(),
+  NOW()
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, updated_at = NOW()
+RETURNING id;`;
+            const forceUserResponse = await axios.post(
+              `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+              { query: forceUserSQL },
+              {
+                headers: {
+                  'Authorization': `Bearer ${options.oauthAccessToken}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            console.log('🔧 Force user creation result:', JSON.stringify(forceUserResponse.data));
+            if (forceUserResponse.data?.error) {
+              throw new Error(`Force user creation failed: ${forceUserResponse.data.error}`);
+            }
+          } else {
+            console.log('✅ User verified in tenant DB');
+          }
+
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
           console.log('📤 Pass 2.5b: Creating store record before seed data...');
 
