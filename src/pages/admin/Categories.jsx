@@ -1759,10 +1759,13 @@ export default function Categories() {
               <AlertDialogAction
                 onClick={async () => {
                   if (!rootCategoryToDelete) return;
+                  const storeId = getSelectedStoreId();
                   try {
-                    await Category.delete(rootCategoryToDelete.id);
+                    await Category.delete(rootCategoryToDelete.id, { store_id: storeId });
                     setFlashMessage({ type: 'success', message: 'Category deleted successfully' });
                     await loadCategories();
+                    // Clear storefront cache for instant updates
+                    if (storeId) clearCategoriesCache(storeId);
                   } catch (error) {
                     console.error('Error deleting category:', error);
                     setFlashMessage({ type: 'error', message: 'Failed to delete category' });
