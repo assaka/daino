@@ -8,7 +8,7 @@ import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
 import { hasBothRolesLoggedIn, handleLogout } from "@/utils/auth";
-import { shouldSkipStoreContext } from "@/utils/domainConfig";
+import { shouldSkipStoreContext, isPlatformDomain } from "@/utils/domainConfig";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -383,13 +383,51 @@ function LayoutInner({ children, currentPageName }) {
     return <PageLoader size="lg" />;
   }
 
-  if (isStorefrontPage || isCustomerDashboard) {
+  // For NotFound pages on platform domains without a store context (/public/:slug),
+  // render without StoreProvider to show a proper platform 404 page
+  const isNotFoundOnPlatform = currentPageName === 'NotFound' &&
+                               isPlatformDomain() &&
+                               !location.pathname.startsWith('/public/');
+
+  if ((isStorefrontPage || isCustomerDashboard) && !isNotFoundOnPlatform) {
       return (
         <StoreProvider>
             <PriceUtilsProvider>
                 <StorefrontLayout>{children}</StorefrontLayout>
             </PriceUtilsProvider>
         </StoreProvider>
+      );
+  }
+
+  // Platform domain 404 - show without store context
+  if (isNotFoundOnPlatform) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-4">
+            <div className="mb-8">
+              <img src="/logo_red.svg" alt="DainoStore" className="h-16 mx-auto mb-4" />
+            </div>
+            <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Page Not Found</h2>
+            <p className="text-gray-600 mb-8">
+              The page you're looking for doesn't exist or has been moved.
+            </p>
+            <div className="space-y-3">
+              <a
+                href="/"
+                className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Go to Homepage
+              </a>
+              <button
+                onClick={() => window.history.back()}
+                className="block w-full py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
       );
   }
 

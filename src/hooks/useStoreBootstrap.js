@@ -148,15 +148,18 @@ export function determineStoreSlug(location) {
     return hostname;
   }
 
-  // Fallback to localStorage
+  // Fallback to localStorage (only for custom domains, not platform domains)
+  // On platform domains, we require explicit /public/:slug URLs
   const savedSlug = localStorage.getItem('selectedStoreSlug');
   if (savedSlug && savedSlug !== 'undefined' && savedSlug !== 'null') {
-    return savedSlug;
+    // Only use localStorage fallback on custom domains
+    // Platform domains should use /public/:slug pattern
+    if (isCustomDomain(hostname)) {
+      return savedSlug;
+    }
   }
 
-  // No store found - redirect to Landing page
-  if (typeof window !== 'undefined' && !path.startsWith('/Landing') && !path.startsWith('/landing')) {
-    window.location.href = '/Landing';
-  }
+  // No store found - return null and let the component handle it
+  // Layout.jsx will show proper 404 for platform domains
   return null;
 }
