@@ -862,10 +862,12 @@ VALUES (
    */
   async createUserRecord(tenantDb, options, result) {
     try {
+      console.log('📤 Creating user via Supabase client for userId:', options.userId);
+
       const userData = {
         id: options.userId,
         email: options.userEmail,
-        password: options.userPasswordHash, // Already hashed
+        password: options.userPasswordHash || 'oauth-user',
         first_name: options.userFirstName || '',
         last_name: options.userLastName || '',
         role: 'admin',
@@ -876,30 +878,30 @@ VALUES (
         updated_at: new Date().toISOString()
       };
 
+      // Use upsert to ensure user exists
       const { data, error } = await tenantDb
         .from('users')
-        .insert(userData)
+        .upsert(userData, { onConflict: 'id' })
         .select()
         .single();
 
       if (error) {
-        // User might already exist, that's okay
-        console.warn('User creation warning:', error.message);
-        result.dataSeeded.push('User record (may already exist)');
-        return null;
+        console.error('❌ User creation failed:', error.message);
+        throw new Error(`User creation failed: ${error.message}`);
       }
 
+      console.log('✅ User record created:', data?.id);
       result.dataSeeded.push('User record');
 
       return data;
     } catch (error) {
-      console.error('User creation error:', error);
+      console.error('❌ User creation error:', error);
       result.errors.push({
         step: 'create_user',
         error: error.message
       });
-      // Don't throw - user creation is optional
-      return null;
+      // THROW - user is required for store creation
+      throw error;
     }
   }
 
@@ -994,6 +996,7 @@ VALUES (
     try {
       const axios = require('axios');
 
+      // Use ON CONFLICT DO UPDATE to ensure user exists
       const insertSQL = `
 INSERT INTO users (id, email, password, first_name, last_name, role, account_type, is_active, email_verified, created_at, updated_at)
 VALUES (
@@ -1008,10 +1011,12 @@ VALUES (
   true,
   NOW(),
   NOW()
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, updated_at = NOW()
+RETURNING id;
       `;
 
-      await axios.post(
+      console.log('📤 Creating user via Management API for userId:', options.userId);
+      const response = await axios.post(
         `https://api.supabase.com/v1/projects/${projectId}/database/query`,
         { query: insertSQL },
         {
@@ -1022,17 +1027,22 @@ VALUES (
         }
       );
 
-      console.log('✅ User record created via Management API');
+      // Check for SQL errors in response (API returns 200 even on SQL failure)
+      if (response.data?.error) {
+        throw new Error(`User SQL failed: ${response.data.error}`);
+      }
+
+      console.log('✅ User record created via Management API:', response.data);
       result.dataSeeded.push('User record (via API)');
       return true;
     } catch (error) {
-      console.error('User creation via API error:', error.response?.data || error.message);
+      console.error('❌ User creation via API error:', error.response?.data || error.message);
       result.errors.push({
         step: 'create_user',
-        error: error.message
+        error: `Failed to create user: ${error.message}`
       });
-      // Don't throw - non-blocking
-      return false;
+      // THROW - user is required for store creation
+      throw error;
     }
   }
 
