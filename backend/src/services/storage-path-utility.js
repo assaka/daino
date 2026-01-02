@@ -149,12 +149,12 @@ class StoragePathUtility {
    */
   static getFirstChar(filename) {
     if (!filename || filename.length === 0) return '_';
-    
+
     const char = filename[0].toLowerCase();
-    // Use underscore for non-alphabetic characters
-    return /[a-z]/.test(char) ? char : '_';
+    // Use alphanumeric characters, underscore for special characters
+    return /[a-z0-9]/.test(char) ? char : '_';
   }
-  
+
   /**
    * Get second character for directory structure
    * @param {string} filename - Filename
@@ -162,10 +162,10 @@ class StoragePathUtility {
    */
   static getSecondChar(filename) {
     if (!filename || filename.length < 2) return '_';
-    
+
     const char = filename[1].toLowerCase();
-    // Use underscore for non-alphabetic characters
-    return /[a-z]/.test(char) ? char : '_';
+    // Use alphanumeric characters, underscore for special characters
+    return /[a-z0-9]/.test(char) ? char : '_';
   }
   
   /**
