@@ -1224,10 +1224,25 @@ class AkeneoMapping {
         originalFileName = `${baseName}_${productIdentifier}_${uniqueSuffix}${fileExt}`;
         console.log(`🏷️ Added unique filename with product identifier: ${originalFileName}`);
       }
-      
+
+      // Determine if this is a document/file vs image based on content type
+      const isDocument = contentType && (
+        contentType === 'application/pdf' ||
+        contentType.includes('word') ||
+        contentType.includes('document') ||
+        contentType.includes('spreadsheet') ||
+        contentType.includes('excel') ||
+        contentType.includes('presentation') ||
+        contentType.includes('text/') ||
+        contentType === 'application/rtf'
+      );
+
       // Generate uniform path structure using StoragePathUtility
-      const pathInfo = StoragePathUtility.generatePath(originalFileName, 'product');
-      console.log(`🗂️  Generated uniform path: ${pathInfo.fullPath}`);
+      // Documents go to product/files/, images go to product/images/
+      const pathInfo = StoragePathUtility.generatePath(originalFileName, 'product', {
+        fileType: isDocument ? 'document' : 'image'
+      });
+      console.log(`🗂️  Generated uniform path: ${pathInfo.fullPath} (type: ${isDocument ? 'document' : 'image'})`);
       
       // Create mock file object for storage upload
       const mockFile = {
