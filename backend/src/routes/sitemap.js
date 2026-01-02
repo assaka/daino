@@ -102,7 +102,7 @@ async function generateSitemapXml(storeId, baseUrl) {
             .select(`
               product_id,
               alt_text,
-              media_assets!media_asset_id (
+              media_assets!product_files_media_asset_id_fkey (
                 file_url
               )
             `)
