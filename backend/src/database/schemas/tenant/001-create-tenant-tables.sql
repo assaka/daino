@@ -4609,6 +4609,12 @@ ALTER TABLE products ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_
 
 ALTER TABLE products ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
+ALTER TABLE product_files ADD CONSTRAINT product_files_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+ALTER TABLE product_files ADD CONSTRAINT product_files_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE product_files ADD CONSTRAINT product_files_media_asset_id_fkey FOREIGN KEY (media_asset_id) REFERENCES media_assets(id) ON DELETE SET NULL;
+
 ALTER TABLE redirects ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE sales_invoices ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
@@ -4800,9 +4806,20 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION is_service_role()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN current_setting('role', true) = 'service_role'
+  -- Check Supabase auth.role() for service_role (works with PostgREST/service_role key)
+  -- Also check PostgreSQL-level settings for direct connections
+  RETURN (SELECT auth.role()) = 'service_role'
+    OR current_setting('role', true) = 'service_role'
     OR current_setting('role', true) = 'postgres'
     OR current_user = 'postgres';
+EXCEPTION
+  WHEN undefined_function THEN
+    -- auth.role() doesn't exist, fall back to PostgreSQL checks
+    RETURN current_setting('role', true) = 'service_role'
+      OR current_setting('role', true) = 'postgres'
+      OR current_user = 'postgres';
+  WHEN OTHERS THEN
+    RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
