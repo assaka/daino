@@ -16,11 +16,8 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 async function getCategoriesWithAllTranslations(storeId, where = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Build query for categories with media_assets join
-  let query = tenantDb.from('categories').select(`
-    *,
-    media_assets!categories_media_asset_id_fkey ( id, file_url )
-  `);
+  // Build query for categories
+  let query = tenantDb.from('categories').select('*');
 
   // Apply filters
   Object.entries(where).forEach(([key, value]) => {
@@ -35,11 +32,31 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
 
   if (error) throw error;
 
+  // Fetch media_assets for categories that have media_asset_id
+  const mediaAssetIds = (categories || [])
+    .filter(c => c.media_asset_id)
+    .map(c => c.media_asset_id);
+
+  let mediaAssetsMap = {};
+  if (mediaAssetIds.length > 0) {
+    const { data: mediaAssets } = await tenantDb
+      .from('media_assets')
+      .select('id, file_url')
+      .in('id', mediaAssetIds);
+
+    if (mediaAssets) {
+      mediaAssetsMap = mediaAssets.reduce((acc, ma) => {
+        acc[ma.id] = ma;
+        return acc;
+      }, {});
+    }
+  }
+
   // Load translations for each category
   for (const category of categories || []) {
-    // Extract image_url from joined media_assets
-    if (category.media_assets) {
-      category.image_url = category.media_assets.file_url;
+    // Extract image_url from media_assets lookup
+    if (category.media_asset_id && mediaAssetsMap[category.media_asset_id]) {
+      category.image_url = mediaAssetsMap[category.media_asset_id].file_url;
     }
 
     const { data: translations } = await tenantDb
@@ -84,13 +101,10 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
 async function getCategoryById(storeId, categoryId, lang = 'en') {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Fetch category with media_assets join for image URL
+  // Fetch category
   const { data: category, error } = await tenantDb
     .from('categories')
-    .select(`
-      *,
-      media_assets!categories_media_asset_id_fkey ( id, file_url, file_path, mime_type )
-    `)
+    .select('*')
     .eq('id', categoryId)
     .single();
 
@@ -99,9 +113,18 @@ async function getCategoryById(storeId, categoryId, lang = 'en') {
     return null;
   }
 
-  // Extract image_url from joined media_assets
-  if (category.media_assets) {
-    category.image_url = category.media_assets.file_url;
+  // Fetch media_asset if exists
+  if (category.media_asset_id) {
+    const { data: mediaAsset } = await tenantDb
+      .from('media_assets')
+      .select('id, file_url, file_path, mime_type')
+      .eq('id', category.media_asset_id)
+      .single();
+
+    if (mediaAsset) {
+      category.image_url = mediaAsset.file_url;
+      category.media_assets = mediaAsset;
+    }
   }
 
   // Get all translations
@@ -393,11 +416,8 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
 
   if (countError) throw countError;
 
-  // Build data query with media_assets join
-  let query = tenantDb.from('categories').select(`
-    *,
-    media_assets!categories_media_asset_id_fkey ( id, file_url )
-  `);
+  // Build data query
+  let query = tenantDb.from('categories').select('*');
 
   // Apply filters
   Object.entries(where).forEach(([key, value]) => {
@@ -417,11 +437,31 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
 
   if (error) throw error;
 
+  // Fetch media_assets for categories that have media_asset_id
+  const mediaAssetIds = (categories || [])
+    .filter(c => c.media_asset_id)
+    .map(c => c.media_asset_id);
+
+  let mediaAssetsMap = {};
+  if (mediaAssetIds.length > 0) {
+    const { data: mediaAssets } = await tenantDb
+      .from('media_assets')
+      .select('id, file_url')
+      .in('id', mediaAssetIds);
+
+    if (mediaAssets) {
+      mediaAssetsMap = mediaAssets.reduce((acc, ma) => {
+        acc[ma.id] = ma;
+        return acc;
+      }, {});
+    }
+  }
+
   // Load translations and extract image_url for each category
   for (const category of categories || []) {
-    // Extract image_url from joined media_assets
-    if (category.media_assets) {
-      category.image_url = category.media_assets.file_url;
+    // Extract image_url from media_assets lookup
+    if (category.media_asset_id && mediaAssetsMap[category.media_asset_id]) {
+      category.image_url = mediaAssetsMap[category.media_asset_id].file_url;
     }
 
     const { data: translation } = await tenantDb
