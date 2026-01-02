@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { formatPrice, safeNumber, calculateDisplayPrice } from '@/utils/priceUtils';
-import { getPrimaryImageUrl } from '@/utils/imageUtils';
+import { getPrimaryImageUrl } from '@/utils/fileUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';

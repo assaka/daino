@@ -9,7 +9,7 @@ import { AttributeSet } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
-import { getPrimaryImageUrl } from "@/utils/imageUtils";
+import { getPrimaryImageUrl } from "@/utils/fileUtils";
 import {
   Package,
   Plus,

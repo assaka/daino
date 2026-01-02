@@ -9,7 +9,7 @@ import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { getPrimaryImageUrl } from '@/utils/imageUtils';
+import { getPrimaryImageUrl } from '@/utils/fileUtils';
 // React Query hooks for optimized wishlist management
 import { useWishlist, useRemoveFromWishlist } from '@/hooks/useApiQueries';
 

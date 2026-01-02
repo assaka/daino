@@ -8,7 +8,7 @@ import ProductLabelComponent, { renderLabelsGroupedByPosition } from '@/componen
 import { formatPriceWithTax, formatPriceNumber, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
-import { getPrimaryImageUrl } from '@/utils/imageUtils';
+import { getPrimaryImageUrl } from '@/utils/fileUtils';
 import { getStockLabel, getStockLabelStyle, isProductOutOfStock } from '@/utils/stockUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';

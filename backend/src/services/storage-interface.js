@@ -120,23 +120,31 @@ class StorageInterface {
 
   /**
    * Generate organized directory path from filename
-   * Uses first two characters for directory structure (e.g., "test.jpg" -> "t/e/test.jpg")
+   * Uses first two characters for directory structure
+   *
+   * CANONICAL PATH FORMAT (used across entire application):
+   * - Pattern: firstChar/secondChar/filename
+   * - Example: "logo_red.png" -> "l/o/logo_red.png"
+   *
+   * Full paths when combined with folder:
+   * - Products: product/images/l/o/logo_red.png
+   * - Categories: category/images/c/a/category.png
+   * - Library: library/l/o/logo.png
+   *
+   * Frontend equivalent: src/utils/fileUtils.js generateOrganizedPath()
+   *
    * @param {string} filename - Original filename
-   * @returns {string} Organized path
+   * @returns {string} Organized path (e.g., "l/o/logo_red.png")
    */
   generateOrganizedPath(filename) {
-    // Remove extension for path generation
     const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
     const cleanName = nameWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+
     if (cleanName.length >= 2) {
-      // Use first two characters for directory structure
       return `${cleanName[0]}/${cleanName[1]}/${filename}`;
     } else if (cleanName.length === 1) {
-      // If only one character, use it twice
       return `${cleanName[0]}/${cleanName[0]}/${filename}`;
     } else {
-      // Fallback for edge cases
       return `misc/${filename}`;
     }
   }

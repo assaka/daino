@@ -695,22 +695,16 @@ class ApiClient {
 
     console.warn('🚨 Automatic logout triggered due to authentication failure');
 
-    // Clear all authentication data
+    // Clear all authentication data (this handles everything needed for logout)
     this.clearAllAuthData();
 
-    // Import and use the logout utility function
-    import('../utils/auth.js').then(({ handleLogout }) => {
-      // Use handleLogout which handles role-based redirection
-      handleLogout();
-    }).catch((error) => {
-      console.error('❌ Error during automatic logout:', error);
-      // Fallback: redirect to admin auth page
-      this.redirectToAuth();
-    }).finally(() => {
-      // Reset flag after redirect (allows future auth failures to be handled)
-      // Note: This might not run if page redirects, but that's OK
-      this._authFailureInProgress = false;
-    });
+    // Dispatch logout event to notify components
+    window.dispatchEvent(new CustomEvent('userLoggedOut', {
+      detail: { timestamp: new Date().toISOString() }
+    }));
+
+    // Redirect directly to auth page (no need to call handleLogout which would cause double redirect)
+    this.redirectToAuth();
   }
 
   // Clear all authentication data

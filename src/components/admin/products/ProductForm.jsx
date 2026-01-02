@@ -533,14 +533,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   };
 
 
-  // Product Image System Handlers - Simplified unified system
-  const generateImagePath = (filename) => {
-    // Create hierarchical path: first_char/second_char/filename
-    const cleanFilename = filename.toLowerCase().replace(/[^a-zA-Z0-9.-]/g, '');
-    const firstChar = cleanFilename.charAt(0) || 'a';
-    const secondChar = cleanFilename.charAt(1) || 'a';
-    return `${firstChar}/${secondChar}/${cleanFilename}`;
-  };
+  // Product Image System Handlers
+  // Path generation is handled by backend storage-interface.js generateOrganizedPath()
+  // Format: folder/firstChar/secondChar/filename (e.g., product/images/l/o/logo.png)
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
@@ -549,12 +544,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     setUploadingImage(true);
     try {
       const storeId = getSelectedStoreId();
-      
-      // Generate hierarchical path
-      const hierarchicalPath = generateImagePath(file.name);
-      
+
+      // Upload to storage - storage layer handles path structure
       const response = await apiClient.uploadFile('/storage/upload', file, {
-        folder: `product/images/${hierarchicalPath}`,
+        folder: 'product',
+        type: 'product',
         public: 'true',
         store_id: storeId
       });
@@ -562,13 +556,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       if (response.success) {
         const newImage = {
           attribute_code: `image_${formData.images.length}`,
-          filepath: hierarchicalPath,
+          filepath: response.data.path,  // Use path from storage response
           filesize: file.size,
-          url: response.data.url
+          url: response.data.url,
+          media_asset_id: response.data.mediaAssetId  // Capture mediaAssetId for direct FK reference
         };
-        
-        setFormData(prev => ({ 
-          ...prev, 
+
+        setFormData(prev => ({
+          ...prev,
           images: [...prev.images, newImage]
         }));
         

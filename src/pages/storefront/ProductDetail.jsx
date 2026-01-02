@@ -16,7 +16,7 @@ import { useProduct, useUser, useWishlist, useAddToWishlist, useRemoveFromWishli
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
-import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
+import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/fileUtils";
 import { getStockLabel as getStockLabelUtil, getStockLabelStyle, isProductOutOfStock } from "@/utils/stockUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye, Pencil

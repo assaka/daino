@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getProductName, getProductShortDescription, getCurrentLanguage } from '@/utils/translationUtils';
-import { getPrimaryImageUrl } from '@/utils/imageUtils';
+import { getPrimaryImageUrl } from '@/utils/fileUtils';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
