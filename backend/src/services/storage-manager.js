@@ -346,6 +346,13 @@ class StorageManager {
           updated_at: new Date().toISOString()
         };
 
+        console.log('📦 Creating media_assets record:', {
+          file_name: assetData.file_name,
+          file_path: assetData.file_path,
+          mime_type: assetData.mime_type,
+          folder: assetData.folder
+        });
+
         let mediaAssetId;
 
         if (existingAsset) {
@@ -385,7 +392,12 @@ class StorageManager {
           mediaAssetId
         };
       } catch (dbError) {
-        console.error('Failed to track media asset in database:', dbError.message);
+        console.error('❌ Failed to track media asset in database:');
+        console.error('   Error:', dbError.message);
+        console.error('   Code:', dbError.code);
+        console.error('   Details:', dbError.details);
+        console.error('   Hint:', dbError.hint);
+        console.error('   Full error:', JSON.stringify(dbError, null, 2));
         // Don't fail the upload if database tracking fails
       }
 
