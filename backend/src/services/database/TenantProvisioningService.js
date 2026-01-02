@@ -167,29 +167,27 @@ class TenantProvisioningService {
         };
       }
 
-      // 4. Create agency user record in tenant DB FIRST (stores.user_id has FK to users.id)
-      // Skip if already created during migrations
-      if (options._userCreatedInMigrations) {
-        console.log('⏭️ User record already created during migrations - skipping');
-      } else if (tenantDb && options.userId && options.userEmail) {
+      // 4. ALWAYS create/ensure user exists (stores.user_id has FK to users.id)
+      // Use upsert so it works even if user already exists
+      if (!options.userId || !options.userEmail) {
+        console.log('⏭️ Skipping user record creation - no user data provided');
+      } else if (tenantDb) {
         // Use Supabase client
         console.log('Creating user record via Supabase client...');
         await this.createUserRecord(tenantDb, options, result);
-      } else if (options.oauthAccessToken && options.projectId && options.userId && options.userEmail) {
+      } else if (options.oauthAccessToken && options.projectId) {
         // Use Management API to execute SQL
         console.log('Creating user record via Management API SQL...');
         await this.createUserRecordViaAPI(options.oauthAccessToken, options.projectId, options, result);
-      } else if (!options.userId || !options.userEmail) {
-        console.log('⏭️ Skipping user record creation - no user data provided');
       } else {
         console.warn('⚠️ Cannot create user record - no tenantDb or OAuth credentials');
         result.errors.push({ step: 'create_user', error: 'No database client available' });
+        throw new Error('Cannot create user - no database client');
       }
 
-      // 5. Create store record in tenant DB (skip if already created during migrations)
-      if (options._storeCreatedInMigrations) {
-        console.log('⏭️ Store record already created during migrations - skipping');
-      } else if (tenantDb) {
+      // 5. ALWAYS create/ensure store exists
+      // Use upsert so it works even if store already exists
+      if (tenantDb) {
         // Use Supabase client
         console.log('Creating store record via Supabase client...');
         await this.createStoreRecord(tenantDb, storeId, options, result);
@@ -200,6 +198,7 @@ class TenantProvisioningService {
       } else {
         console.warn('⚠️ Cannot create store record - no tenantDb or OAuth credentials');
         result.errors.push({ step: 'create_store', error: 'No database client available' });
+        throw new Error('Cannot create store - no database client');
       }
 
       // 6. Seed slot configurations from config files
@@ -833,15 +832,18 @@ VALUES (
         updated_at: new Date().toISOString()
       };
 
+      // Use upsert to handle case where store already exists
       const { data, error } = await tenantDb
         .from('stores')
-        .insert(storeData)
+        .upsert(storeData, { onConflict: 'id' })
         .select()
         .single();
 
       if (error) {
         throw new Error(`Failed to create store record: ${error.message}`);
       }
+
+      console.log('✅ Store record created/updated:', data?.id);
 
       result.dataSeeded.push('Store record');
 
