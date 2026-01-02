@@ -34,6 +34,28 @@
 -- This table now only stores plugin navigation items
 -- Tenants can customize core item visibility/order via admin_navigation_custom table
 
+-- ============================================
+-- LANGUAGES (MUST BE FIRST - other tables have FK to language_code)
+-- ============================================
+INSERT INTO languages (id, code, name, native_name, flag, is_rtl, is_active, is_default, translations, created_at, updated_at)
+VALUES
+  ('3e123615-9e25-45cd-b783-6f180ca7033f', 'en', 'English', 'English', NULL, false, true, false, '{}'::jsonb, '2025-10-13T07:44:03.236Z', '2025-10-13T07:44:03.236Z'),
+  ('e108298a-4581-4426-a499-bdba334f3f68', 'es', 'Spanish', 'Español', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.277Z', '2025-10-13T07:44:03.277Z'),
+  ('a65c0a66-5588-4094-ad7e-edee09daa190', 'fr', 'French', 'Français', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.312Z', '2025-10-13T07:44:03.312Z'),
+  ('79acd1f1-6df2-4f76-a5ae-7e12fc3eae21', 'de', 'German', 'Deutsch', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.346Z', '2025-10-13T07:44:03.346Z'),
+  ('1132bd28-6dbb-4445-804e-f50d100069dd', 'it', 'Italian', 'Italiano', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.388Z', '2025-10-13T07:44:03.388Z'),
+  ('362f8976-0827-454c-b687-b73c00f08b29', 'pt', 'Portuguese', 'Português', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.422Z', '2025-10-13T07:44:03.422Z'),
+  ('04355f7b-f905-4bce-842f-1dcf6bfee7a5', 'nl', 'Dutch', 'Nederlands', NULL, false, true, false, '{}'::jsonb, '2025-10-13T07:44:03.456Z', '2025-10-13T07:44:03.456Z'),
+  ('6756a8a6-e559-4166-a1af-eddca94e30a6', 'ar', 'Arabic', 'العربية', NULL, true, false, false, '{}'::jsonb, '2025-10-13T07:44:03.489Z', '2025-10-13T07:44:03.489Z'),
+  ('a8421477-cb04-4536-8656-3643eef3508f', 'he', 'Hebrew', 'עברית', NULL, true, false, false, '{}'::jsonb, '2025-10-13T07:44:03.522Z', '2025-10-13T07:44:03.522Z'),
+  ('2073e041-2174-4ea3-b57f-b922ceda7b47', 'zh', 'Chinese', '中文', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.559Z', '2025-10-13T07:44:03.559Z'),
+  ('ca2daa51-05ee-49c9-90f6-c9f5bb34ded3', 'ja', 'Japanese', '日本語', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.600Z', '2025-10-13T07:44:03.600Z'),
+  ('50aba09b-17a4-4976-861b-bad87f166bd8', 'ko', 'Korean', '한국어', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.637Z', '2025-10-13T07:44:03.637Z'),
+  ('02af2fc8-cced-4d3d-8351-9d11f95df26a', 'ru', 'Russian', 'Русский', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.671Z', '2025-10-13T07:44:03.671Z'),
+  ('e7020578-5969-49cf-b738-2024e9d7f1e9', 'pl', 'Polish', 'Polski', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.709Z', '2025-10-13T07:44:03.709Z'),
+  ('141627ed-f0f0-4707-b54c-94f8f54bb421', 'tr', 'Turkish', 'Türkçe', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.743Z', '2025-10-13T07:44:03.743Z')
+ON CONFLICT DO NOTHING;
+
 -- attribute_sets: Create 'Default' attribute set (store_id updated by provisioning service)
 INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
 VALUES (gen_random_uuid(), 'Default', 'Default attribute set', true, 0, '{{STORE_ID}}', '[]'::jsonb, NOW(), NOW());
@@ -1895,27 +1917,6 @@ Best regards,
 </table>
 {{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00')
 ON CONFLICT DO NOTHING;
-
--- languages (15 rows)
-INSERT INTO languages (id, code, name, native_name, flag, is_rtl, is_active, is_default, translations, created_at, updated_at)
-VALUES
-  ('3e123615-9e25-45cd-b783-6f180ca7033f', 'en', 'English', 'English', NULL, false, true, false, '{}'::jsonb, '2025-10-13T07:44:03.236Z', '2025-10-13T07:44:03.236Z'),
-  ('e108298a-4581-4426-a499-bdba334f3f68', 'es', 'Spanish', 'Español', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.277Z', '2025-10-13T07:44:03.277Z'),
-  ('a65c0a66-5588-4094-ad7e-edee09daa190', 'fr', 'French', 'Français', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.312Z', '2025-10-13T07:44:03.312Z'),
-  ('79acd1f1-6df2-4f76-a5ae-7e12fc3eae21', 'de', 'German', 'Deutsch', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.346Z', '2025-10-13T07:44:03.346Z'),
-  ('1132bd28-6dbb-4445-804e-f50d100069dd', 'it', 'Italian', 'Italiano', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.388Z', '2025-10-13T07:44:03.388Z'),
-  ('362f8976-0827-454c-b687-b73c00f08b29', 'pt', 'Portuguese', 'Português', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.422Z', '2025-10-13T07:44:03.422Z'),
-  ('04355f7b-f905-4bce-842f-1dcf6bfee7a5', 'nl', 'Dutch', 'Nederlands', NULL, false, true, false, '{}'::jsonb, '2025-10-13T07:44:03.456Z', '2025-10-13T07:44:03.456Z'),
-  ('6756a8a6-e559-4166-a1af-eddca94e30a6', 'ar', 'Arabic', 'العربية', NULL, true, false, false, '{}'::jsonb, '2025-10-13T07:44:03.489Z', '2025-10-13T07:44:03.489Z'),
-  ('a8421477-cb04-4536-8656-3643eef3508f', 'he', 'Hebrew', 'עברית', NULL, true, false, false, '{}'::jsonb, '2025-10-13T07:44:03.522Z', '2025-10-13T07:44:03.522Z'),
-  ('2073e041-2174-4ea3-b57f-b922ceda7b47', 'zh', 'Chinese', '中文', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.559Z', '2025-10-13T07:44:03.559Z'),
-  ('ca2daa51-05ee-49c9-90f6-c9f5bb34ded3', 'ja', 'Japanese', '日本語', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.600Z', '2025-10-13T07:44:03.600Z'),
-  ('50aba09b-17a4-4976-861b-bad87f166bd8', 'ko', 'Korean', '한국어', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.637Z', '2025-10-13T07:44:03.637Z'),
-  ('02af2fc8-cced-4d3d-8351-9d11f95df26a', 'ru', 'Russian', 'Русский', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.671Z', '2025-10-13T07:44:03.671Z'),
-  ('e7020578-5969-49cf-b738-2024e9d7f1e9', 'pl', 'Polish', 'Polski', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.709Z', '2025-10-13T07:44:03.709Z'),
-  ('141627ed-f0f0-4707-b54c-94f8f54bb421', 'tr', 'Turkish', 'Türkçe', NULL, false, false, false, '{}'::jsonb, '2025-10-13T07:44:03.743Z', '2025-10-13T07:44:03.743Z')
-ON CONFLICT DO NOTHING;
-
 
 -- payment_methods (3 rows)
 INSERT INTO payment_methods (id, name, code, type, is_active, sort_order, description, settings, fee_type, fee_amount, min_amount, max_amount, availability, countries, store_id, created_at, updated_at, conditions, payment_flow)
