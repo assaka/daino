@@ -23,9 +23,6 @@ router.get('/', authAdmin, async (req, res) => {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
     const offset = (page - 1) * limit;
 
-    console.log('🔍 Admin Products API called with params:', req.query);
-    console.log('📊 Status parameter:', status, typeof status);
-
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -57,8 +54,6 @@ router.get('/', authAdmin, async (req, res) => {
     if (search) filters.search = search;
     if (is_custom_option === 'true' || is_custom_option === true) filters.is_custom_option = true;
 
-    console.log('🔎 Final filters for products query:', JSON.stringify(filters, null, 2));
-
     // Get products from tenant database
     const { rows, count } = await getProducts(store_id, filters, { limit: parseInt(limit), offset });
 
@@ -66,16 +61,7 @@ router.get('/', authAdmin, async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Apply images from product_files table
-    console.log(`🖼️ Admin Products: Fetching images for ${rows.length} products`);
-    console.log(`🖼️ Admin Products: First 3 product IDs:`, rows.slice(0, 3).map(p => p.id));
     let products = await applyProductImages(rows, tenantDb);
-
-    // Debug: Check how many products got images
-    const productsWithImages = products.filter(p => p.images && p.images.length > 0);
-    console.log(`🖼️ Admin Products: ${productsWithImages.length}/${products.length} products have images`);
-    if (products.length > 0 && products[0].images) {
-      console.log(`🖼️ Admin Products: First product images:`, JSON.stringify(products[0].images.slice(0, 2)));
-    }
 
     // Apply all translations if requested (for admin translation management)
     if (include_all_translations === 'true') {
@@ -243,16 +229,6 @@ router.post('/',
 
     const { store_id, translations, formData_translations, name, description, attributes, ...productData } = req.body;
 
-    console.log('🔍 Product creation - Full request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 Product creation - separating fields:', {
-      hasTranslations: !!translations,
-      hasFormDataTranslations: !!formData_translations,
-      hasName: !!name,
-      hasDescription: !!description,
-      productDataKeys: Object.keys(productData),
-      translationsData: translations
-    });
-
     // Store ownership check is now handled by middleware
 
     // Get tenant database connection
@@ -275,8 +251,6 @@ router.post('/',
       throw error;
     }
 
-    console.log('✅ Product created:', product.id);
-
     // Handle translations if provided
     const translationsToSave = translations || {};
 
@@ -288,15 +262,12 @@ router.post('/',
       }
       if (name) translationsToSave[defaultLang].name = name;
       if (description) translationsToSave[defaultLang].description = description;
-      console.log('📝 Added direct name/description to default language:', defaultLang);
     }
 
     if (Object.keys(translationsToSave).length > 0) {
-      console.log('📝 Saving translations for languages:', Object.keys(translationsToSave));
 
       for (const [langCode, transData] of Object.entries(translationsToSave)) {
         if (transData && Object.keys(transData).length > 0) {
-          console.log(`📝 Saving translation for ${langCode}:`, transData);
 
           const { data: savedTrans, error: transError } = await tenantDb
             .from('product_translations')
@@ -309,16 +280,9 @@ router.post('/',
             })
             .select();
 
-          if (transError) {
-            console.error('❌ Error saving translation for', langCode, ':', transError);
-            console.error('❌ Translation error details:', JSON.stringify(transError, null, 2));
-          } else {
-            console.log('✅ Saved translation for', langCode, ':', savedTrans);
-          }
         }
       }
     } else {
-      console.log('⚠️ No translations to save');
     }
 
     // Sync attributes to product_attribute_values table if provided
@@ -326,9 +290,7 @@ router.post('/',
       const { syncProductAttributeValues } = require('../utils/productTenantHelpers');
       try {
         await syncProductAttributeValues(tenantDb, store_id, product.id, attributes);
-        console.log('✅ Synced attributes for product:', product.id);
       } catch (attrError) {
-        console.warn('⚠️ Failed to sync attributes:', attrError.message);
       }
     }
 
@@ -536,15 +498,12 @@ router.delete('/all', authAdmin, async (req, res) => {
       throw deleteError;
     }
 
-    console.log(`🗑️ Deleted ${productCount} products for store ${store_id}`);
-
     res.json({
       success: true,
       message: `Successfully deleted ${productCount} products`,
       data: { deleted: productCount }
     });
   } catch (error) {
-    console.error('Delete all products error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -659,9 +618,7 @@ router.delete('/:id/files/:fileId', authAdmin, async (req, res) => {
     if (filePath) {
       try {
         await storageManager.deleteFile(store_id, filePath);
-        console.log(`✅ Deleted file from storage: ${filePath}`);
       } catch (storageError) {
-        console.warn('Could not delete file from storage:', storageError.message);
       }
     }
 
@@ -671,24 +628,12 @@ router.delete('/:id/files/:fileId', authAdmin, async (req, res) => {
       .delete()
       .eq('id', fileId);
 
-    if (deleteFileError) {
-      console.error('Error deleting product_files record:', deleteFileError);
-    } else {
-      console.log(`✅ Deleted product_files record: ${fileId}`);
-    }
-
     // Delete from media_assets
     if (mediaAssetId) {
       const { error: deleteAssetError } = await tenantDb
         .from('media_assets')
         .delete()
         .eq('id', mediaAssetId);
-
-      if (deleteAssetError) {
-        console.error('Error deleting media_assets record:', deleteAssetError);
-      } else {
-        console.log(`✅ Deleted media_assets record: ${mediaAssetId}`);
-      }
     }
 
     res.json({
@@ -702,7 +647,6 @@ router.delete('/:id/files/:fileId', authAdmin, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Delete product file error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -841,17 +785,6 @@ router.post('/bulk-translate', authAdmin, [
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
     const products = await applyAllProductTranslations(productsRaw, tenantDb);
 
-    console.log(`📦 Loaded ${products.length} products from database with ALL translations`);
-    if (products.length > 0) {
-      console.log(`🔍 First product structure:`, JSON.stringify({
-        id: products[0].id,
-        name: products[0].name,
-        translations: products[0].translations,
-        hasTranslations: !!products[0].translations,
-        translationKeys: products[0].translations ? Object.keys(products[0].translations) : 'none'
-      }, null, 2));
-    }
-
     if (products.length === 0) {
       return res.json({
         success: true,
@@ -875,20 +808,12 @@ router.post('/bulk-translate', authAdmin, [
       skippedDetails: []
     };
 
-    console.log(`🌐 Starting product translation: ${fromLang} → ${toLang} (${products.length} products)`);
-
     for (const product of products) {
       try {
         const productName = product.translations?.[fromLang]?.name || product.name || `Product ${product.id}`;
 
-        console.log(`\n📋 Processing product: ${productName}`);
-        console.log(`   - Has translations object: ${!!product.translations}`);
-        console.log(`   - Has ${fromLang} translation: ${!!(product.translations && product.translations[fromLang])}`);
-        console.log(`   - Translations keys:`, product.translations ? Object.keys(product.translations) : 'none');
-
         // Check if source translation exists
         if (!product.translations || !product.translations[fromLang]) {
-          console.log(`⏭️  Skipping product "${productName}": No ${fromLang} translation`);
           results.skipped++;
           results.skippedDetails.push({
             productId: product.id,
@@ -909,7 +834,6 @@ router.post('/bulk-translate', authAdmin, [
         });
 
         if (allFieldsTranslated && sourceFields.length > 0) {
-          console.log(`⏭️  Skipping product "${productName}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             productId: product.id,
@@ -920,13 +844,10 @@ router.post('/bulk-translate', authAdmin, [
         }
 
         // Translate the product (field-level translation handled by aiTranslateEntity)
-        console.log(`🔄 Translating product "${productName}"...`);
         await translationService.aiTranslateEntity('product', product.id, fromLang, toLang);
-        console.log(`✅ Successfully translated product "${productName}"`);
         results.translated++;
       } catch (error) {
         const productName = product.translations?.[fromLang]?.name || product.name || `Product ${product.id}`;
-        console.error(`❌ Error translating product "${productName}":`, error);
         results.failed++;
         results.errors.push({
           productId: product.id,
@@ -936,8 +857,6 @@ router.post('/bulk-translate', authAdmin, [
       }
     }
 
-    console.log(`✅ Product translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
-
     // Deduct credits for ALL items (including skipped)
     const totalItems = products.length;
     let actualCost = 0;
@@ -945,8 +864,6 @@ router.post('/bulk-translate', authAdmin, [
     if (totalItems > 0) {
       const costPerItem = await translationService.getTranslationCost('product');
       actualCost = totalItems * costPerItem;
-
-      console.log(`💰 Product bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
 
       try {
         await creditService.deduct(
@@ -966,9 +883,7 @@ router.post('/bulk-translate', authAdmin, [
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} products`);
       } catch (deductError) {
-        console.error(`❌ CREDIT DEDUCTION FAILED (product-bulk-translate):`, deductError);
         actualCost = 0;
       }
     }
@@ -979,7 +894,6 @@ router.post('/bulk-translate', authAdmin, [
       data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
-    console.error('Bulk translate products error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'
