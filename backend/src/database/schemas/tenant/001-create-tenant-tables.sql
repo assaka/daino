@@ -4761,4 +4761,1111 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO service_role;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO service_role;
 GRANT USAGE ON SCHEMA public TO service_role;
 
+-- ============================================
+-- SECTION 8: ENABLE ROW LEVEL SECURITY
+-- Enable RLS dynamically on all base tables in the public schema
+-- ============================================
 
+DO $$
+DECLARE
+  table_record RECORD;
+BEGIN
+  FOR table_record IN
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', table_record.table_name);
+  END LOOP;
+END $$;
+
+-- ============================================
+-- SECTION 9: ROW LEVEL SECURITY POLICIES
+-- Tenant isolation policies based on store_id
+-- ============================================
+
+-- Helper function to get current tenant store_id from session
+CREATE OR REPLACE FUNCTION get_current_store_id()
+RETURNS UUID AS $$
+BEGIN
+  RETURN NULLIF(current_setting('app.current_store_id', true), '')::UUID;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- Helper function to check if current user is service role (bypass RLS)
+CREATE OR REPLACE FUNCTION is_service_role()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN current_setting('role', true) = 'service_role'
+    OR current_setting('role', true) = 'postgres'
+    OR current_user = 'postgres';
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- ============================================
+-- POLICIES FOR TABLES WITH DIRECT store_id
+-- ============================================
+
+-- stores: Special case - filter by id (the store itself)
+DROP POLICY IF EXISTS tenant_isolation_stores ON stores;
+CREATE POLICY tenant_isolation_stores ON stores
+  FOR ALL
+  USING (is_service_role() OR id = get_current_store_id())
+  WITH CHECK (is_service_role() OR id = get_current_store_id());
+
+-- ab_test_assignments
+DROP POLICY IF EXISTS tenant_isolation_ab_test_assignments ON ab_test_assignments;
+CREATE POLICY tenant_isolation_ab_test_assignments ON ab_test_assignments
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- ab_tests
+DROP POLICY IF EXISTS tenant_isolation_ab_tests ON ab_tests;
+CREATE POLICY tenant_isolation_ab_tests ON ab_tests
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- ai_store_intelligence
+DROP POLICY IF EXISTS tenant_isolation_ai_store_intelligence ON ai_store_intelligence;
+CREATE POLICY tenant_isolation_ai_store_intelligence ON ai_store_intelligence
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- import_statistics
+DROP POLICY IF EXISTS tenant_isolation_import_statistics ON import_statistics;
+CREATE POLICY tenant_isolation_import_statistics ON import_statistics
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- attribute_sets
+DROP POLICY IF EXISTS tenant_isolation_attribute_sets ON attribute_sets;
+CREATE POLICY tenant_isolation_attribute_sets ON attribute_sets
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- attributes
+DROP POLICY IF EXISTS tenant_isolation_attributes ON attributes;
+CREATE POLICY tenant_isolation_attributes ON attributes
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- integration_attribute_mappings
+DROP POLICY IF EXISTS tenant_isolation_integration_attribute_mappings ON integration_attribute_mappings;
+CREATE POLICY tenant_isolation_integration_attribute_mappings ON integration_attribute_mappings
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- integration_category_mappings
+DROP POLICY IF EXISTS tenant_isolation_integration_category_mappings ON integration_category_mappings;
+CREATE POLICY tenant_isolation_integration_category_mappings ON integration_category_mappings
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- blacklist_countries
+DROP POLICY IF EXISTS tenant_isolation_blacklist_countries ON blacklist_countries;
+CREATE POLICY tenant_isolation_blacklist_countries ON blacklist_countries
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- blacklist_emails
+DROP POLICY IF EXISTS tenant_isolation_blacklist_emails ON blacklist_emails;
+CREATE POLICY tenant_isolation_blacklist_emails ON blacklist_emails
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- blacklist_ips
+DROP POLICY IF EXISTS tenant_isolation_blacklist_ips ON blacklist_ips;
+CREATE POLICY tenant_isolation_blacklist_ips ON blacklist_ips
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- blacklist_settings
+DROP POLICY IF EXISTS tenant_isolation_blacklist_settings ON blacklist_settings;
+CREATE POLICY tenant_isolation_blacklist_settings ON blacklist_settings
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- canonical_urls
+DROP POLICY IF EXISTS tenant_isolation_canonical_urls ON canonical_urls;
+CREATE POLICY tenant_isolation_canonical_urls ON canonical_urls
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- carts
+DROP POLICY IF EXISTS tenant_isolation_carts ON carts;
+CREATE POLICY tenant_isolation_carts ON carts
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- categories
+DROP POLICY IF EXISTS tenant_isolation_categories ON categories;
+CREATE POLICY tenant_isolation_categories ON categories
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- cms_blocks
+DROP POLICY IF EXISTS tenant_isolation_cms_blocks ON cms_blocks;
+CREATE POLICY tenant_isolation_cms_blocks ON cms_blocks
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- cms_pages
+DROP POLICY IF EXISTS tenant_isolation_cms_pages ON cms_pages;
+CREATE POLICY tenant_isolation_cms_pages ON cms_pages
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- consent_logs
+DROP POLICY IF EXISTS tenant_isolation_consent_logs ON consent_logs;
+CREATE POLICY tenant_isolation_consent_logs ON consent_logs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- cookie_consent_settings
+DROP POLICY IF EXISTS tenant_isolation_cookie_consent_settings ON cookie_consent_settings;
+CREATE POLICY tenant_isolation_cookie_consent_settings ON cookie_consent_settings
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- coupons
+DROP POLICY IF EXISTS tenant_isolation_coupons ON coupons;
+CREATE POLICY tenant_isolation_coupons ON coupons
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- credit_transactions
+DROP POLICY IF EXISTS tenant_isolation_credit_transactions ON credit_transactions;
+CREATE POLICY tenant_isolation_credit_transactions ON credit_transactions
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- credit_usage
+DROP POLICY IF EXISTS tenant_isolation_credit_usage ON credit_usage;
+CREATE POLICY tenant_isolation_credit_usage ON credit_usage
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- cron_jobs
+DROP POLICY IF EXISTS tenant_isolation_cron_jobs ON cron_jobs;
+CREATE POLICY tenant_isolation_cron_jobs ON cron_jobs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- custom_domains
+DROP POLICY IF EXISTS tenant_isolation_custom_domains ON custom_domains;
+CREATE POLICY tenant_isolation_custom_domains ON custom_domains
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- custom_analytics_events
+DROP POLICY IF EXISTS tenant_isolation_custom_analytics_events ON custom_analytics_events;
+CREATE POLICY tenant_isolation_custom_analytics_events ON custom_analytics_events
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- custom_option_rules
+DROP POLICY IF EXISTS tenant_isolation_custom_option_rules ON custom_option_rules;
+CREATE POLICY tenant_isolation_custom_option_rules ON custom_option_rules
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- customer_activities
+DROP POLICY IF EXISTS tenant_isolation_customer_activities ON customer_activities;
+CREATE POLICY tenant_isolation_customer_activities ON customer_activities
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- customers
+DROP POLICY IF EXISTS tenant_isolation_customers ON customers;
+CREATE POLICY tenant_isolation_customers ON customers
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- delivery_settings
+DROP POLICY IF EXISTS tenant_isolation_delivery_settings ON delivery_settings;
+CREATE POLICY tenant_isolation_delivery_settings ON delivery_settings
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- email_send_logs
+DROP POLICY IF EXISTS tenant_isolation_email_send_logs ON email_send_logs;
+CREATE POLICY tenant_isolation_email_send_logs ON email_send_logs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- email_templates
+DROP POLICY IF EXISTS tenant_isolation_email_templates ON email_templates;
+CREATE POLICY tenant_isolation_email_templates ON email_templates
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- email_campaigns
+DROP POLICY IF EXISTS tenant_isolation_email_campaigns ON email_campaigns;
+CREATE POLICY tenant_isolation_email_campaigns ON email_campaigns
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- email_unsubscribes
+DROP POLICY IF EXISTS tenant_isolation_email_unsubscribes ON email_unsubscribes;
+CREATE POLICY tenant_isolation_email_unsubscribes ON email_unsubscribes
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- customer_segments
+DROP POLICY IF EXISTS tenant_isolation_customer_segments ON customer_segments;
+CREATE POLICY tenant_isolation_customer_segments ON customer_segments
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- customer_rfm_scores
+DROP POLICY IF EXISTS tenant_isolation_customer_rfm_scores ON customer_rfm_scores;
+CREATE POLICY tenant_isolation_customer_rfm_scores ON customer_rfm_scores
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- automation_workflows
+DROP POLICY IF EXISTS tenant_isolation_automation_workflows ON automation_workflows;
+CREATE POLICY tenant_isolation_automation_workflows ON automation_workflows
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- crm_pipelines
+DROP POLICY IF EXISTS tenant_isolation_crm_pipelines ON crm_pipelines;
+CREATE POLICY tenant_isolation_crm_pipelines ON crm_pipelines
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- crm_leads
+DROP POLICY IF EXISTS tenant_isolation_crm_leads ON crm_leads;
+CREATE POLICY tenant_isolation_crm_leads ON crm_leads
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- crm_deals
+DROP POLICY IF EXISTS tenant_isolation_crm_deals ON crm_deals;
+CREATE POLICY tenant_isolation_crm_deals ON crm_deals
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- crm_activities
+DROP POLICY IF EXISTS tenant_isolation_crm_activities ON crm_activities;
+CREATE POLICY tenant_isolation_crm_activities ON crm_activities
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- marketing_sync_logs
+DROP POLICY IF EXISTS tenant_isolation_marketing_sync_logs ON marketing_sync_logs;
+CREATE POLICY tenant_isolation_marketing_sync_logs ON marketing_sync_logs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- webhook_integration_logs
+DROP POLICY IF EXISTS tenant_isolation_webhook_integration_logs ON webhook_integration_logs;
+CREATE POLICY tenant_isolation_webhook_integration_logs ON webhook_integration_logs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- heatmap_aggregations
+DROP POLICY IF EXISTS tenant_isolation_heatmap_aggregations ON heatmap_aggregations;
+CREATE POLICY tenant_isolation_heatmap_aggregations ON heatmap_aggregations
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- heatmap_interactions
+DROP POLICY IF EXISTS tenant_isolation_heatmap_interactions ON heatmap_interactions;
+CREATE POLICY tenant_isolation_heatmap_interactions ON heatmap_interactions
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- heatmap_sessions
+DROP POLICY IF EXISTS tenant_isolation_heatmap_sessions ON heatmap_sessions;
+CREATE POLICY tenant_isolation_heatmap_sessions ON heatmap_sessions
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- integration_configs
+DROP POLICY IF EXISTS tenant_isolation_integration_configs ON integration_configs;
+CREATE POLICY tenant_isolation_integration_configs ON integration_configs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- media_assets
+DROP POLICY IF EXISTS tenant_isolation_media_assets ON media_assets;
+CREATE POLICY tenant_isolation_media_assets ON media_assets
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- payment_methods
+DROP POLICY IF EXISTS tenant_isolation_payment_methods ON payment_methods;
+CREATE POLICY tenant_isolation_payment_methods ON payment_methods
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- pdf_templates
+DROP POLICY IF EXISTS tenant_isolation_pdf_templates ON pdf_templates;
+CREATE POLICY tenant_isolation_pdf_templates ON pdf_templates
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- products
+DROP POLICY IF EXISTS tenant_isolation_products ON products;
+CREATE POLICY tenant_isolation_products ON products
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- product_labels
+DROP POLICY IF EXISTS tenant_isolation_product_labels ON product_labels;
+CREATE POLICY tenant_isolation_product_labels ON product_labels
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- product_tabs
+DROP POLICY IF EXISTS tenant_isolation_product_tabs ON product_tabs;
+CREATE POLICY tenant_isolation_product_tabs ON product_tabs
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- product_files
+DROP POLICY IF EXISTS tenant_isolation_product_files ON product_files;
+CREATE POLICY tenant_isolation_product_files ON product_files
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- redirects
+DROP POLICY IF EXISTS tenant_isolation_redirects ON redirects;
+CREATE POLICY tenant_isolation_redirects ON redirects
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- sales_invoices
+DROP POLICY IF EXISTS tenant_isolation_sales_invoices ON sales_invoices;
+CREATE POLICY tenant_isolation_sales_invoices ON sales_invoices
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- sales_orders
+DROP POLICY IF EXISTS tenant_isolation_sales_orders ON sales_orders;
+CREATE POLICY tenant_isolation_sales_orders ON sales_orders
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- sales_shipments
+DROP POLICY IF EXISTS tenant_isolation_sales_shipments ON sales_shipments;
+CREATE POLICY tenant_isolation_sales_shipments ON sales_shipments
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- seo_settings
+DROP POLICY IF EXISTS tenant_isolation_seo_settings ON seo_settings;
+CREATE POLICY tenant_isolation_seo_settings ON seo_settings
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- seo_templates
+DROP POLICY IF EXISTS tenant_isolation_seo_templates ON seo_templates;
+CREATE POLICY tenant_isolation_seo_templates ON seo_templates
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- shipping_methods
+DROP POLICY IF EXISTS tenant_isolation_shipping_methods ON shipping_methods;
+CREATE POLICY tenant_isolation_shipping_methods ON shipping_methods
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- slot_configurations
+DROP POLICY IF EXISTS tenant_isolation_slot_configurations ON slot_configurations;
+CREATE POLICY tenant_isolation_slot_configurations ON slot_configurations
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- store_uptime
+DROP POLICY IF EXISTS tenant_isolation_store_uptime ON store_uptime;
+CREATE POLICY tenant_isolation_store_uptime ON store_uptime
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- taxes
+DROP POLICY IF EXISTS tenant_isolation_taxes ON taxes;
+CREATE POLICY tenant_isolation_taxes ON taxes
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- translations
+DROP POLICY IF EXISTS tenant_isolation_translations ON translations;
+CREATE POLICY tenant_isolation_translations ON translations
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- wishlists
+DROP POLICY IF EXISTS tenant_isolation_wishlists ON wishlists;
+CREATE POLICY tenant_isolation_wishlists ON wishlists
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- store_pause_access
+DROP POLICY IF EXISTS tenant_isolation_store_pause_access ON store_pause_access;
+CREATE POLICY tenant_isolation_store_pause_access ON store_pause_access
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- ============================================
+-- POLICIES FOR CHILD TABLES (via parent FK)
+-- ============================================
+
+-- ab_test_variants (via ab_tests)
+DROP POLICY IF EXISTS tenant_isolation_ab_test_variants ON ab_test_variants;
+CREATE POLICY tenant_isolation_ab_test_variants ON ab_test_variants
+  FOR ALL
+  USING (is_service_role() OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id = get_current_store_id());
+
+-- attribute_translations (via attributes)
+DROP POLICY IF EXISTS tenant_isolation_attribute_translations ON attribute_translations;
+CREATE POLICY tenant_isolation_attribute_translations ON attribute_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM attributes a WHERE a.id = attribute_translations.attribute_id AND a.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM attributes a WHERE a.id = attribute_translations.attribute_id AND a.store_id = get_current_store_id()
+  ));
+
+-- attribute_value_translations (via attribute_values -> attributes)
+DROP POLICY IF EXISTS tenant_isolation_attribute_value_translations ON attribute_value_translations;
+CREATE POLICY tenant_isolation_attribute_value_translations ON attribute_value_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM attribute_values av
+    JOIN attributes a ON a.id = av.attribute_id
+    WHERE av.id = attribute_value_translations.attribute_value_id AND a.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM attribute_values av
+    JOIN attributes a ON a.id = av.attribute_id
+    WHERE av.id = attribute_value_translations.attribute_value_id AND a.store_id = get_current_store_id()
+  ));
+
+-- attribute_values (via attributes)
+DROP POLICY IF EXISTS tenant_isolation_attribute_values ON attribute_values;
+CREATE POLICY tenant_isolation_attribute_values ON attribute_values
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM attributes a WHERE a.id = attribute_values.attribute_id AND a.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM attributes a WHERE a.id = attribute_values.attribute_id AND a.store_id = get_current_store_id()
+  ));
+
+-- category_seo (via categories)
+DROP POLICY IF EXISTS tenant_isolation_category_seo ON category_seo;
+CREATE POLICY tenant_isolation_category_seo ON category_seo
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM categories c WHERE c.id = category_seo.category_id AND c.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM categories c WHERE c.id = category_seo.category_id AND c.store_id = get_current_store_id()
+  ));
+
+-- category_translations (via categories)
+DROP POLICY IF EXISTS tenant_isolation_category_translations ON category_translations;
+CREATE POLICY tenant_isolation_category_translations ON category_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM categories c WHERE c.id = category_translations.category_id AND c.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM categories c WHERE c.id = category_translations.category_id AND c.store_id = get_current_store_id()
+  ));
+
+-- cms_block_translations (via cms_blocks)
+DROP POLICY IF EXISTS tenant_isolation_cms_block_translations ON cms_block_translations;
+CREATE POLICY tenant_isolation_cms_block_translations ON cms_block_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM cms_blocks cb WHERE cb.id = cms_block_translations.cms_block_id AND cb.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM cms_blocks cb WHERE cb.id = cms_block_translations.cms_block_id AND cb.store_id = get_current_store_id()
+  ));
+
+-- cms_page_seo (via cms_pages)
+DROP POLICY IF EXISTS tenant_isolation_cms_page_seo ON cms_page_seo;
+CREATE POLICY tenant_isolation_cms_page_seo ON cms_page_seo
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM cms_pages cp WHERE cp.id = cms_page_seo.cms_page_id AND cp.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM cms_pages cp WHERE cp.id = cms_page_seo.cms_page_id AND cp.store_id = get_current_store_id()
+  ));
+
+-- cms_page_translations (via cms_pages)
+DROP POLICY IF EXISTS tenant_isolation_cms_page_translations ON cms_page_translations;
+CREATE POLICY tenant_isolation_cms_page_translations ON cms_page_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM cms_pages cp WHERE cp.id = cms_page_translations.cms_page_id AND cp.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM cms_pages cp WHERE cp.id = cms_page_translations.cms_page_id AND cp.store_id = get_current_store_id()
+  ));
+
+-- cookie_consent_settings_translations (via cookie_consent_settings)
+DROP POLICY IF EXISTS tenant_isolation_cookie_consent_settings_translations ON cookie_consent_settings_translations;
+CREATE POLICY tenant_isolation_cookie_consent_settings_translations ON cookie_consent_settings_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM cookie_consent_settings ccs WHERE ccs.id = cookie_consent_settings_translations.cookie_consent_settings_id AND ccs.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM cookie_consent_settings ccs WHERE ccs.id = cookie_consent_settings_translations.cookie_consent_settings_id AND ccs.store_id = get_current_store_id()
+  ));
+
+-- coupon_translations (via coupons)
+DROP POLICY IF EXISTS tenant_isolation_coupon_translations ON coupon_translations;
+CREATE POLICY tenant_isolation_coupon_translations ON coupon_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM coupons c WHERE c.id = coupon_translations.coupon_id AND c.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM coupons c WHERE c.id = coupon_translations.coupon_id AND c.store_id = get_current_store_id()
+  ));
+
+-- cron_job_executions (via cron_jobs)
+DROP POLICY IF EXISTS tenant_isolation_cron_job_executions ON cron_job_executions;
+CREATE POLICY tenant_isolation_cron_job_executions ON cron_job_executions
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM cron_jobs cj WHERE cj.id = cron_job_executions.cron_job_id AND cj.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM cron_jobs cj WHERE cj.id = cron_job_executions.cron_job_id AND cj.store_id = get_current_store_id()
+  ));
+
+-- customer_addresses (via customers)
+DROP POLICY IF EXISTS tenant_isolation_customer_addresses ON customer_addresses;
+CREATE POLICY tenant_isolation_customer_addresses ON customer_addresses
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM customers c WHERE c.id = customer_addresses.customer_id AND c.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM customers c WHERE c.id = customer_addresses.customer_id AND c.store_id = get_current_store_id()
+  ));
+
+-- email_template_translations (via email_templates)
+DROP POLICY IF EXISTS tenant_isolation_email_template_translations ON email_template_translations;
+CREATE POLICY tenant_isolation_email_template_translations ON email_template_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM email_templates et WHERE et.id = email_template_translations.email_template_id AND et.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM email_templates et WHERE et.id = email_template_translations.email_template_id AND et.store_id = get_current_store_id()
+  ));
+
+-- email_campaign_recipients (via email_campaigns)
+DROP POLICY IF EXISTS tenant_isolation_email_campaign_recipients ON email_campaign_recipients;
+CREATE POLICY tenant_isolation_email_campaign_recipients ON email_campaign_recipients
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM email_campaigns ec WHERE ec.id = email_campaign_recipients.campaign_id AND ec.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM email_campaigns ec WHERE ec.id = email_campaign_recipients.campaign_id AND ec.store_id = get_current_store_id()
+  ));
+
+-- customer_segment_members (via customer_segments)
+DROP POLICY IF EXISTS tenant_isolation_customer_segment_members ON customer_segment_members;
+CREATE POLICY tenant_isolation_customer_segment_members ON customer_segment_members
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM customer_segments cs WHERE cs.id = customer_segment_members.segment_id AND cs.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM customer_segments cs WHERE cs.id = customer_segment_members.segment_id AND cs.store_id = get_current_store_id()
+  ));
+
+-- automation_enrollments (via automation_workflows)
+DROP POLICY IF EXISTS tenant_isolation_automation_enrollments ON automation_enrollments;
+CREATE POLICY tenant_isolation_automation_enrollments ON automation_enrollments
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM automation_workflows aw WHERE aw.id = automation_enrollments.workflow_id AND aw.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM automation_workflows aw WHERE aw.id = automation_enrollments.workflow_id AND aw.store_id = get_current_store_id()
+  ));
+
+-- automation_logs (via automation_enrollments -> automation_workflows)
+DROP POLICY IF EXISTS tenant_isolation_automation_logs ON automation_logs;
+CREATE POLICY tenant_isolation_automation_logs ON automation_logs
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM automation_enrollments ae
+    JOIN automation_workflows aw ON aw.id = ae.workflow_id
+    WHERE ae.id = automation_logs.enrollment_id AND aw.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM automation_enrollments ae
+    JOIN automation_workflows aw ON aw.id = ae.workflow_id
+    WHERE ae.id = automation_logs.enrollment_id AND aw.store_id = get_current_store_id()
+  ));
+
+-- crm_pipeline_stages (via crm_pipelines)
+DROP POLICY IF EXISTS tenant_isolation_crm_pipeline_stages ON crm_pipeline_stages;
+CREATE POLICY tenant_isolation_crm_pipeline_stages ON crm_pipeline_stages
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM crm_pipelines cp WHERE cp.id = crm_pipeline_stages.pipeline_id AND cp.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM crm_pipelines cp WHERE cp.id = crm_pipeline_stages.pipeline_id AND cp.store_id = get_current_store_id()
+  ));
+
+-- payment_method_translations (via payment_methods)
+DROP POLICY IF EXISTS tenant_isolation_payment_method_translations ON payment_method_translations;
+CREATE POLICY tenant_isolation_payment_method_translations ON payment_method_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM payment_methods pm WHERE pm.id = payment_method_translations.payment_method_id AND pm.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM payment_methods pm WHERE pm.id = payment_method_translations.payment_method_id AND pm.store_id = get_current_store_id()
+  ));
+
+-- pdf_template_translations (via pdf_templates)
+DROP POLICY IF EXISTS tenant_isolation_pdf_template_translations ON pdf_template_translations;
+CREATE POLICY tenant_isolation_pdf_template_translations ON pdf_template_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM pdf_templates pt WHERE pt.id = pdf_template_translations.pdf_template_id AND pt.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM pdf_templates pt WHERE pt.id = pdf_template_translations.pdf_template_id AND pt.store_id = get_current_store_id()
+  ));
+
+-- product_attribute_values (via products)
+DROP POLICY IF EXISTS tenant_isolation_product_attribute_values ON product_attribute_values;
+CREATE POLICY tenant_isolation_product_attribute_values ON product_attribute_values
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_attribute_values.product_id AND p.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_attribute_values.product_id AND p.store_id = get_current_store_id()
+  ));
+
+-- product_label_translations (via product_labels)
+DROP POLICY IF EXISTS tenant_isolation_product_label_translations ON product_label_translations;
+CREATE POLICY tenant_isolation_product_label_translations ON product_label_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM product_labels pl WHERE pl.id = product_label_translations.product_label_id AND pl.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM product_labels pl WHERE pl.id = product_label_translations.product_label_id AND pl.store_id = get_current_store_id()
+  ));
+
+-- product_seo (via products)
+DROP POLICY IF EXISTS tenant_isolation_product_seo ON product_seo;
+CREATE POLICY tenant_isolation_product_seo ON product_seo
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_seo.product_id AND p.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_seo.product_id AND p.store_id = get_current_store_id()
+  ));
+
+-- product_tab_translations (via product_tabs)
+DROP POLICY IF EXISTS tenant_isolation_product_tab_translations ON product_tab_translations;
+CREATE POLICY tenant_isolation_product_tab_translations ON product_tab_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM product_tabs pt WHERE pt.id = product_tab_translations.product_tab_id AND pt.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM product_tabs pt WHERE pt.id = product_tab_translations.product_tab_id AND pt.store_id = get_current_store_id()
+  ));
+
+-- product_translations (via products)
+DROP POLICY IF EXISTS tenant_isolation_product_translations ON product_translations;
+CREATE POLICY tenant_isolation_product_translations ON product_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_translations.product_id AND p.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_translations.product_id AND p.store_id = get_current_store_id()
+  ));
+
+-- product_variants (via products)
+DROP POLICY IF EXISTS tenant_isolation_product_variants ON product_variants;
+CREATE POLICY tenant_isolation_product_variants ON product_variants
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_variants.parent_product_id AND p.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM products p WHERE p.id = product_variants.parent_product_id AND p.store_id = get_current_store_id()
+  ));
+
+-- sales_order_items (via sales_orders)
+DROP POLICY IF EXISTS tenant_isolation_sales_order_items ON sales_order_items;
+CREATE POLICY tenant_isolation_sales_order_items ON sales_order_items
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM sales_orders so WHERE so.id = sales_order_items.order_id AND so.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM sales_orders so WHERE so.id = sales_order_items.order_id AND so.store_id = get_current_store_id()
+  ));
+
+-- shipping_method_translations (via shipping_methods)
+DROP POLICY IF EXISTS tenant_isolation_shipping_method_translations ON shipping_method_translations;
+CREATE POLICY tenant_isolation_shipping_method_translations ON shipping_method_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM shipping_methods sm WHERE sm.id = shipping_method_translations.shipping_method_id AND sm.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM shipping_methods sm WHERE sm.id = shipping_method_translations.shipping_method_id AND sm.store_id = get_current_store_id()
+  ));
+
+-- tax_translations (via taxes)
+DROP POLICY IF EXISTS tenant_isolation_tax_translations ON tax_translations;
+CREATE POLICY tenant_isolation_tax_translations ON tax_translations
+  FOR ALL
+  USING (is_service_role() OR EXISTS (
+    SELECT 1 FROM taxes t WHERE t.id = tax_translations.tax_id AND t.store_id = get_current_store_id()
+  ))
+  WITH CHECK (is_service_role() OR EXISTS (
+    SELECT 1 FROM taxes t WHERE t.id = tax_translations.tax_id AND t.store_id = get_current_store_id()
+  ));
+
+-- ============================================
+-- POLICIES FOR GLOBAL/SHARED TABLES
+-- These tables are accessible by service role only or have special access rules
+-- ============================================
+
+-- _migrations: Service role only (system table)
+DROP POLICY IF EXISTS tenant_isolation__migrations ON _migrations;
+CREATE POLICY tenant_isolation__migrations ON _migrations
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- languages: Read access for all authenticated users (reference table)
+DROP POLICY IF EXISTS tenant_isolation_languages ON languages;
+CREATE POLICY tenant_isolation_languages ON languages
+  FOR SELECT
+  USING (true);
+DROP POLICY IF EXISTS tenant_isolation_languages_write ON languages;
+CREATE POLICY tenant_isolation_languages_write ON languages
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- login_attempts: Service role only (security table)
+DROP POLICY IF EXISTS tenant_isolation_login_attempts ON login_attempts;
+CREATE POLICY tenant_isolation_login_attempts ON login_attempts
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- admin_navigation_registry: Read access for all, write for service role
+DROP POLICY IF EXISTS tenant_isolation_admin_navigation_registry ON admin_navigation_registry;
+CREATE POLICY tenant_isolation_admin_navigation_registry ON admin_navigation_registry
+  FOR SELECT
+  USING (true);
+DROP POLICY IF EXISTS tenant_isolation_admin_navigation_registry_write ON admin_navigation_registry;
+CREATE POLICY tenant_isolation_admin_navigation_registry_write ON admin_navigation_registry
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- admin_navigation_custom: Service role only
+DROP POLICY IF EXISTS tenant_isolation_admin_navigation_custom ON admin_navigation_custom;
+CREATE POLICY tenant_isolation_admin_navigation_custom ON admin_navigation_custom
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- Plugin tables: Global registry, read for all, write for service role
+DROP POLICY IF EXISTS tenant_isolation_plugin_registry ON plugin_registry;
+CREATE POLICY tenant_isolation_plugin_registry ON plugin_registry
+  FOR SELECT
+  USING (true);
+DROP POLICY IF EXISTS tenant_isolation_plugin_registry_write ON plugin_registry;
+CREATE POLICY tenant_isolation_plugin_registry_write ON plugin_registry
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_marketplace ON plugin_marketplace;
+CREATE POLICY tenant_isolation_plugin_marketplace ON plugin_marketplace
+  FOR SELECT
+  USING (true);
+DROP POLICY IF EXISTS tenant_isolation_plugin_marketplace_write ON plugin_marketplace;
+CREATE POLICY tenant_isolation_plugin_marketplace_write ON plugin_marketplace
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugins ON plugins;
+CREATE POLICY tenant_isolation_plugins ON plugins
+  FOR SELECT
+  USING (true);
+DROP POLICY IF EXISTS tenant_isolation_plugins_write ON plugins;
+CREATE POLICY tenant_isolation_plugins_write ON plugins
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- plugin_configurations: Tenant-scoped via store_id (nullable)
+DROP POLICY IF EXISTS tenant_isolation_plugin_configurations ON plugin_configurations;
+CREATE POLICY tenant_isolation_plugin_configurations ON plugin_configurations
+  FOR ALL
+  USING (is_service_role() OR store_id IS NULL OR store_id = get_current_store_id())
+  WITH CHECK (is_service_role() OR store_id IS NULL OR store_id = get_current_store_id());
+
+-- users: Special handling - users can see their own data or service role
+DROP POLICY IF EXISTS tenant_isolation_users ON users;
+CREATE POLICY tenant_isolation_users ON users
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- chat tables: Service role only for now
+DROP POLICY IF EXISTS tenant_isolation_chat_agents ON chat_agents;
+CREATE POLICY tenant_isolation_chat_agents ON chat_agents
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_chat_conversations ON chat_conversations;
+CREATE POLICY tenant_isolation_chat_conversations ON chat_conversations
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_chat_messages ON chat_messages;
+CREATE POLICY tenant_isolation_chat_messages ON chat_messages
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_chat_typing_indicators ON chat_typing_indicators;
+CREATE POLICY tenant_isolation_chat_typing_indicators ON chat_typing_indicators
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- AI tables
+DROP POLICY IF EXISTS tenant_isolation_ai_chat_sessions ON ai_chat_sessions;
+CREATE POLICY tenant_isolation_ai_chat_sessions ON ai_chat_sessions
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_ai_usage_logs ON ai_usage_logs;
+CREATE POLICY tenant_isolation_ai_usage_logs ON ai_usage_logs
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- Custom pricing tables (tenant scoped via rules)
+DROP POLICY IF EXISTS tenant_isolation_custom_pricing_rules ON custom_pricing_rules;
+CREATE POLICY tenant_isolation_custom_pricing_rules ON custom_pricing_rules
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_custom_pricing_discounts ON custom_pricing_discounts;
+CREATE POLICY tenant_isolation_custom_pricing_discounts ON custom_pricing_discounts
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_custom_pricing_logs ON custom_pricing_logs;
+CREATE POLICY tenant_isolation_custom_pricing_logs ON custom_pricing_logs
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+-- Remaining plugin child tables: Service role only
+DROP POLICY IF EXISTS tenant_isolation_plugin_admin_pages ON plugin_admin_pages;
+CREATE POLICY tenant_isolation_plugin_admin_pages ON plugin_admin_pages
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_admin_scripts ON plugin_admin_scripts;
+CREATE POLICY tenant_isolation_plugin_admin_scripts ON plugin_admin_scripts
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_controllers ON plugin_controllers;
+CREATE POLICY tenant_isolation_plugin_controllers ON plugin_controllers
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_data ON plugin_data;
+CREATE POLICY tenant_isolation_plugin_data ON plugin_data
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_dependencies ON plugin_dependencies;
+CREATE POLICY tenant_isolation_plugin_dependencies ON plugin_dependencies
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_docs ON plugin_docs;
+CREATE POLICY tenant_isolation_plugin_docs ON plugin_docs
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_entities ON plugin_entities;
+CREATE POLICY tenant_isolation_plugin_entities ON plugin_entities
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_events ON plugin_events;
+CREATE POLICY tenant_isolation_plugin_events ON plugin_events
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_hooks ON plugin_hooks;
+CREATE POLICY tenant_isolation_plugin_hooks ON plugin_hooks
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_migrations ON plugin_migrations;
+CREATE POLICY tenant_isolation_plugin_migrations ON plugin_migrations
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_scripts ON plugin_scripts;
+CREATE POLICY tenant_isolation_plugin_scripts ON plugin_scripts
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_version_comparisons ON plugin_version_comparisons;
+CREATE POLICY tenant_isolation_plugin_version_comparisons ON plugin_version_comparisons
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_version_history ON plugin_version_history;
+CREATE POLICY tenant_isolation_plugin_version_history ON plugin_version_history
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_version_patches ON plugin_version_patches;
+CREATE POLICY tenant_isolation_plugin_version_patches ON plugin_version_patches
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_version_snapshots ON plugin_version_snapshots;
+CREATE POLICY tenant_isolation_plugin_version_snapshots ON plugin_version_snapshots
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_version_tags ON plugin_version_tags;
+CREATE POLICY tenant_isolation_plugin_version_tags ON plugin_version_tags
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
+
+DROP POLICY IF EXISTS tenant_isolation_plugin_widgets ON plugin_widgets;
+CREATE POLICY tenant_isolation_plugin_widgets ON plugin_widgets
+  FOR ALL
+  USING (is_service_role())
+  WITH CHECK (is_service_role());
