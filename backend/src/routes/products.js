@@ -4,6 +4,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
+const storageManager = require('../services/storage-manager');
 const { applyAllProductTranslations, updateProductTranslations, applyProductImages, applyProductFiles } = require('../utils/productHelpers');
 const router = express.Router();
 
@@ -597,6 +598,111 @@ router.delete('/:id', authAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Delete product error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   DELETE /api/products/:id/files/:fileId
+// @desc    Delete a product file from product_files, media_assets, and storage
+// @access  Private
+router.delete('/:id/files/:fileId', authAdmin, async (req, res) => {
+  try {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+    const { id: productId, fileId } = req.params;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find the product_file record
+    const { data: productFile, error: fileError } = await tenantDb
+      .from('product_files')
+      .select(`
+        id, product_id, media_asset_id, file_type, metadata,
+        media_assets!product_files_media_asset_id_fkey ( id, file_path, file_url )
+      `)
+      .eq('id', fileId)
+      .eq('product_id', productId)
+      .single();
+
+    if (!productFile || fileError) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product file not found'
+      });
+    }
+
+    const mediaAssetId = productFile.media_asset_id;
+    const filePath = productFile.media_assets?.file_path;
+
+    // Delete from storage first
+    if (filePath) {
+      try {
+        await storageManager.deleteFile(store_id, filePath);
+        console.log(`✅ Deleted file from storage: ${filePath}`);
+      } catch (storageError) {
+        console.warn('Could not delete file from storage:', storageError.message);
+      }
+    }
+
+    // Delete from product_files
+    const { error: deleteFileError } = await tenantDb
+      .from('product_files')
+      .delete()
+      .eq('id', fileId);
+
+    if (deleteFileError) {
+      console.error('Error deleting product_files record:', deleteFileError);
+    } else {
+      console.log(`✅ Deleted product_files record: ${fileId}`);
+    }
+
+    // Delete from media_assets
+    if (mediaAssetId) {
+      const { error: deleteAssetError } = await tenantDb
+        .from('media_assets')
+        .delete()
+        .eq('id', mediaAssetId);
+
+      if (deleteAssetError) {
+        console.error('Error deleting media_assets record:', deleteAssetError);
+      } else {
+        console.log(`✅ Deleted media_assets record: ${mediaAssetId}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'File deleted successfully',
+      data: {
+        product_id: productId,
+        deleted_file_id: fileId,
+        deleted_media_asset_id: mediaAssetId
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete product file error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
