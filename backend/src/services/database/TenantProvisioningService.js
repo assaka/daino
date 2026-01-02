@@ -100,7 +100,58 @@ class TenantProvisioningService {
 
       const alreadyProvisioned = await this.checkIfProvisioned(tenantDb);
       if (alreadyProvisioned && !options.force) {
-        console.log('✅ Tenant database already provisioned - checking if slot configs and store need seeding...');
+        console.log('✅ Tenant database already provisioned - checking if data needs seeding...');
+
+        // Check if seed data exists (use languages as indicator - should have at least 'en')
+        const { data: existingLanguages } = await tenantDb
+          .from('languages')
+          .select('code')
+          .limit(1);
+
+        if (!existingLanguages || existingLanguages.length === 0) {
+          console.log('📦 No seed data found (languages empty) - running seed data now...');
+          // Run seed data via direct SQL (uses ON CONFLICT DO NOTHING, safe for existing data)
+          try {
+            const fs = require('fs').promises;
+            const path = require('path');
+            const seedPath = path.join(__dirname, '../database/schemas/tenant/002-tenant-seed-data.sql');
+            let seedSQL = await fs.readFile(seedPath, 'utf-8');
+
+            // Replace template variables
+            seedSQL = seedSQL.replace(/\{\{STORE_ID\}\}/g, storeId);
+            const storeSlug = options.storeSlug || this.generateSlug(options.storeName);
+            seedSQL = seedSQL.replace(/\{\{STORE_SLUG\}\}/g, storeSlug);
+
+            // Execute seed via raw SQL (Supabase doesn't support multi-statement, so use rpc if available)
+            // For now, log that manual seeding may be needed
+            console.log('⚠️ Seed data needs to be run - attempting via Management API...');
+
+            if (options.oauthAccessToken && options.projectId) {
+              const axios = require('axios');
+              await axios.post(
+                `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+                { query: seedSQL },
+                {
+                  headers: {
+                    'Authorization': `Bearer ${options.oauthAccessToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  maxBodyLength: Infinity,
+                  timeout: 180000
+                }
+              );
+              console.log('✅ Seed data executed successfully');
+              result.dataSeeded.push('Seed data (via API)');
+            } else {
+              console.warn('⚠️ Cannot run seed data - no OAuth credentials. Manual seeding required.');
+            }
+          } catch (seedError) {
+            console.error('⚠️ Seed data execution failed:', seedError.message);
+            // Don't fail - continue with other checks
+          }
+        } else {
+          console.log('✅ Seed data already exists (languages found)');
+        }
 
         // Even if provisioned, ensure slot configurations exist
         const { data: existingSlots } = await tenantDb
