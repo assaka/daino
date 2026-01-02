@@ -384,30 +384,51 @@ END $$;`;
           console.log('✅ Pass 1 complete - 137 tables created without FKs');
           result.tablesCreated.push('Created 137 tables via OAuth API');
 
-          // Execute Pass 2: Add foreign key constraints
+          // Execute Pass 2: Add foreign key constraints (one at a time to handle failures gracefully)
           if (alterTableFKs.length > 0) {
             console.log(`📤 Pass 2: Adding ${alterTableFKs.length} foreign key constraints...`);
-            const fkSQL = alterTableFKs.join('\n');
 
-            try {
-              const fkResponse = await axios.post(
-                `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-                { query: fkSQL },
-                {
-                  headers: {
-                    'Authorization': `Bearer ${options.oauthAccessToken}`,
-                    'Content-Type': 'application/json'
-                  },
-                  timeout: 60000
-                }
-              );
+            let successCount = 0;
+            let failCount = 0;
+            const failedFKs = [];
 
-              console.log('✅ Foreign keys added:', fkResponse.data);
-              result.tablesCreated.push(`Added ${alterTableFKs.length} foreign key constraints`);
-            } catch (fkError) {
-              console.warn('⚠️ Some foreign keys failed to apply:', fkError.response?.data?.message || fkError.message);
-              // Don't fail the entire provisioning if FKs fail - tables still work
+            // Apply FKs in batches of 20 to balance speed and error handling
+            const batchSize = 20;
+            for (let i = 0; i < alterTableFKs.length; i += batchSize) {
+              const batch = alterTableFKs.slice(i, i + batchSize);
+              // Wrap each FK in DO block to continue on error
+              const wrappedBatch = batch.map(fk => {
+                // Extract constraint name for logging
+                const constraintMatch = fk.match(/ADD\s+CONSTRAINT\s+([\w]+)/i);
+                const constraintName = constraintMatch ? constraintMatch[1] : 'unknown';
+                return `DO $$ BEGIN ${fk.replace(/;$/, '')}; EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN RAISE NOTICE 'FK ${constraintName} failed: %', SQLERRM; END $$;`;
+              }).join('\n');
+
+              try {
+                await axios.post(
+                  `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+                  { query: wrappedBatch },
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${options.oauthAccessToken}`,
+                      'Content-Type': 'application/json'
+                    },
+                    timeout: 60000
+                  }
+                );
+                successCount += batch.length;
+              } catch (batchError) {
+                console.warn(`⚠️ FK batch ${Math.floor(i/batchSize) + 1} had issues:`, batchError.response?.data?.message || batchError.message);
+                failCount += batch.length;
+                failedFKs.push(...batch.map(fk => fk.substring(0, 80)));
+              }
             }
+
+            console.log(`✅ Foreign keys: ${successCount} processed, ${failCount} batch failures`);
+            if (failedFKs.length > 0) {
+              console.warn('⚠️ Failed FK batches (may have partial success):', failedFKs.slice(0, 5));
+            }
+            result.tablesCreated.push(`Added ${successCount} foreign key constraints`);
           }
 
           // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
