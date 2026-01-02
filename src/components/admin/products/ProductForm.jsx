@@ -2220,9 +2220,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                                   if (!fileUrl) return null;
 
+                                  // Truncate filename if too long
+                                  const truncatedFileName = fileName.length > 30
+                                    ? fileName.substring(0, 15) + '...' + fileName.substring(fileName.length - 12)
+                                    : fileName;
+
                                   return (
                                     <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                                      <span className="text-sm font-medium">{fileName}</span>
+                                      <span className="text-sm font-medium" title={fileName}>{truncatedFileName}</span>
                                       {fileSize && (
                                         <span className="text-xs text-gray-500">
                                           {`(${(fileSize / 1024 / 1024).toFixed(2)} MB)`}

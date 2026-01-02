@@ -286,22 +286,40 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
     }
 
     const imageToDelete = images[imageIndex];
+    let mediaAssetId = null;
+    let imagePath = null;
 
-    // Try to delete from Supabase storage
-    try {
-      let imagePath = null;
+    // Find the media_asset for this image by matching URL
+    if (imageToDelete.url) {
+      const { data: mediaAsset } = await tenantDb
+        .from('media_assets')
+        .select('id, file_path')
+        .eq('store_id', storeId)
+        .eq('file_url', imageToDelete.url)
+        .maybeSingle();
 
-      // Extract path from Supabase URL or use metadata
+      if (mediaAsset) {
+        mediaAssetId = mediaAsset.id;
+        imagePath = mediaAsset.file_path;
+      }
+    }
+
+    // Fallback: try to find path from image metadata
+    if (!imagePath) {
       if (imageToDelete.metadata?.path) {
         imagePath = imageToDelete.metadata.path;
       } else if (imageToDelete.url && imageToDelete.url.includes('supabase')) {
         // Extract path from Supabase URL structure
-        const url = new URL(imageToDelete.url);
-        const pathParts = url.pathname.split('/');
-        // Supabase URLs: /storage/v1/object/public/bucket/path
-        if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
-          const bucketIndex = pathParts.indexOf('public') + 1;
-          imagePath = pathParts.slice(bucketIndex + 1).join('/');
+        try {
+          const url = new URL(imageToDelete.url);
+          const pathParts = url.pathname.split('/');
+          // Supabase URLs: /storage/v1/object/public/bucket/path
+          if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
+            const bucketIndex = pathParts.indexOf('public') + 1;
+            imagePath = pathParts.slice(bucketIndex + 1).join('/');
+          }
+        } catch (e) {
+          console.warn('Could not parse image URL:', e.message);
         }
       } else if (imageToDelete.metadata?.filename) {
         // Fallback: construct organized path for products
@@ -313,14 +331,35 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
           imagePath = `products/misc/${imageToDelete.metadata.filename}`;
         }
       }
+    }
 
-      if (imagePath) {
+    // Delete from storage
+    if (imagePath) {
+      try {
         await storageManager.deleteFile(storeId, imagePath, imageToDelete.metadata?.bucket);
         console.log(`✅ Deleted image from storage: ${imagePath}`);
+      } catch (deleteError) {
+        console.warn('Could not delete image from storage:', deleteError.message);
       }
-    } catch (deleteError) {
-      console.warn('Could not delete image from Supabase storage:', deleteError.message);
-      // Continue with database deletion even if storage deletion fails
+    }
+
+    // Delete from product_files table (if exists)
+    if (mediaAssetId) {
+      await tenantDb
+        .from('product_files')
+        .delete()
+        .eq('product_id', productId)
+        .eq('media_asset_id', mediaAssetId);
+      console.log(`✅ Deleted product_files record for media_asset_id: ${mediaAssetId}`);
+    }
+
+    // Delete from media_assets table (if exists)
+    if (mediaAssetId) {
+      await tenantDb
+        .from('media_assets')
+        .delete()
+        .eq('id', mediaAssetId);
+      console.log(`✅ Deleted media_assets record: ${mediaAssetId}`);
     }
 
     // Remove image from product images array
