@@ -143,8 +143,8 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
         return;
       }
 
-      // Use same endpoint as FileLibrary for consistent behavior
-      const response = await apiClient.get('/supabase/storage/stats');
+      // Use unified storage endpoint for consistent behavior
+      const response = await apiClient.get('/storage/stats');
 
       if (response.success) {
         setStorageConnected(true);
@@ -178,14 +178,14 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, onSelectFile, allowMultiple =
     try {
       for (const file of filesArray) {
 
-        // Use same upload endpoint as FileLibrary
+        // Use unified storage endpoint which saves to media_assets table
         const additionalData = {
           folder: uploadFolder || 'library',
           public: 'true',
-          type: 'general'
+          type: uploadFolder === 'category' ? 'category' : (uploadFolder === 'product' ? 'product' : 'general')
         };
 
-        const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
+        const response = await apiClient.uploadFile('/storage/upload', file, additionalData);
 
         if (response.success) {
           toast.success(`${file.name} uploaded successfully`);
