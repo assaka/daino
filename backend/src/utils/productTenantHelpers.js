@@ -212,25 +212,49 @@ async function syncProductImages(tenantDb, storeId, productId, images) {
         const img = images[index];
         const fileUrl = img.url || img.file_url;
 
-        // Try to find existing media_asset by URL
+        if (!fileUrl) {
+          console.warn(`⚠️ Image ${index} has no URL, skipping`);
+          continue;
+        }
+
+        console.log(`📷 Processing image ${index}: ${fileUrl.substring(0, 80)}...`);
+
+        // Try to find existing media_asset by URL (use maybeSingle to avoid error when not found)
         let mediaAssetId = null;
-        const { data: existingAsset } = await tenantDb
+        const { data: existingAsset, error: findError } = await tenantDb
           .from('media_assets')
           .select('id')
           .eq('store_id', storeId)
           .eq('file_url', fileUrl)
-          .single();
+          .maybeSingle();
+
+        if (findError) {
+          console.warn(`⚠️ Error finding media_asset:`, findError.message);
+        }
 
         if (existingAsset) {
           mediaAssetId = existingAsset.id;
+          console.log(`✅ Found existing media_asset ${mediaAssetId}`);
         } else {
-          // Create media_asset for this image
+          console.log(`📷 No existing media_asset found, creating new one`);
+
+          // Extract relative path from URL or use filepath from image
+          let filePath = img.filepath || '';
+          if (!filePath && fileUrl.includes('/storage/')) {
+            // Extract path from Supabase URL: /storage/v1/object/public/bucket/path
+            const pathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
+            if (pathMatch) filePath = pathMatch[1];
+          }
+          if (!filePath) {
+            filePath = fileUrl.split('/').slice(-4).join('/');
+          }
+
           const { data: newAsset, error: assetError } = await tenantDb
             .from('media_assets')
             .insert({
               store_id: storeId,
               file_name: fileUrl.split('/').pop() || 'image',
-              file_path: fileUrl,
+              file_path: filePath,
               file_url: fileUrl,
               mime_type: img.mime_type || 'image/jpeg',
               file_size: img.filesize || img.file_size || null,
@@ -239,8 +263,11 @@ async function syncProductImages(tenantDb, storeId, productId, images) {
             .select('id')
             .single();
 
-          if (!assetError && newAsset) {
+          if (assetError) {
+            console.error(`❌ Error creating media_asset:`, assetError.message);
+          } else if (newAsset) {
             mediaAssetId = newAsset.id;
+            console.log(`✅ Created new media_asset ${mediaAssetId}`);
           }
         }
 
