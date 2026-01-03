@@ -122,13 +122,19 @@ const DeveloperPluginEditor = ({
 
   // Listen for AI-generated code from WorkspaceAIPanel
   useEffect(() => {
+    console.log('👂 DeveloperPluginEditor: Setting up AI code listener for plugin:', plugin?.id);
+
     const handleAICodeGenerated = async (event) => {
+      console.log('📥 DeveloperPluginEditor: Received plugin-ai-code-generated event', event.detail);
       const { pluginId, files, pluginStructure, code } = event.detail;
 
       // Only process if this is for our plugin
-      if (pluginId !== plugin?.id) return;
+      if (pluginId !== plugin?.id) {
+        console.log('⏭️ Skipping - event is for different plugin:', pluginId, 'vs', plugin?.id);
+        return;
+      }
 
-      console.log('🤖 Received AI-generated code for plugin:', pluginId, { files, pluginStructure, code });
+      console.log('🤖 Processing AI-generated code for plugin:', pluginId, { files, pluginStructure, code });
       setShowTerminal(true);
       addTerminalOutput('🤖 AI generated code received - saving to plugin...', 'info');
 

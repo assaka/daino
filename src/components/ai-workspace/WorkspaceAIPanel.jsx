@@ -509,20 +509,25 @@ const WorkspaceAIPanel = () => {
         // Check for various response structures the AI might return
         const hasGeneratedFiles = response.generatedFiles && response.generatedFiles.length > 0;
         const hasPluginStructure = response.plugin_structure?.main_file;
-        const isConversational = response.type === 'conversation' || response.isConversational;
+        const messageContent = response.message || response.explanation || response.content || '';
 
-        if (isConversational && !hasGeneratedFiles && !hasPluginStructure) {
-          // Pure conversational response - just show the message
-          addChatMessage({
-            role: 'assistant',
-            content: response.message || response.content || 'I can help you modify this plugin. What would you like to add or change?'
-          });
-        } else if (hasGeneratedFiles || hasPluginStructure) {
-          // Code was generated - show success and dispatch event
+        // Check if response contains code blocks (even in "conversational" responses)
+        const codeBlockMatch = messageContent.match(/```(?:javascript|js|jsx)?\n([\s\S]*?)```/);
+        const hasCodeBlock = !!codeBlockMatch;
+
+        console.log('🔍 Response analysis:', {
+          hasGeneratedFiles,
+          hasPluginStructure,
+          hasCodeBlock,
+          responseType: response.type
+        });
+
+        if (hasGeneratedFiles || hasPluginStructure) {
+          // Code was generated in structured format - show success and dispatch event
           const files = response.generatedFiles || [];
           const explanation = response.explanation || 'Plugin code generated successfully.';
 
-          console.log('✅ Code generated - dispatching event with:', {
+          console.log('✅ Structured code generated - dispatching event with:', {
             pluginId: pluginToEdit.id,
             filesCount: files.length,
             hasPluginStructure: !!response.plugin_structure
@@ -547,42 +552,34 @@ const WorkspaceAIPanel = () => {
               code: response.plugin_structure?.main_file || (files[0]?.code)
             }
           }));
+        } else if (hasCodeBlock) {
+          // Response contains code block in markdown - extract and save
+          console.log('📝 Found code block in response, extracting and saving...');
+          const extractedCode = codeBlockMatch[1];
+
+          addChatMessage({
+            role: 'assistant',
+            content: `✅ Code generated. Saving to plugin...\n\n${messageContent}`,
+            data: { type: 'plugin_code_generated' }
+          });
+
+          // Dispatch event with extracted code
+          console.log('🚀 Dispatching plugin-ai-code-generated event with extracted code');
+          window.dispatchEvent(new CustomEvent('plugin-ai-code-generated', {
+            detail: {
+              pluginId: pluginToEdit.id,
+              files: [{ name: 'hook.js', code: extractedCode }],
+              code: extractedCode
+            }
+          }));
         } else {
-          // Response has some data but not in expected format
-          // Try to extract code from response
-          console.log('⚠️ Response not in expected format, checking for code...');
-
-          const messageContent = response.message || response.explanation || '';
-
-          // Check if response contains code blocks
-          const codeMatch = messageContent.match(/```(?:javascript|js)?\n([\s\S]*?)```/);
-
-          if (codeMatch) {
-            console.log('📝 Found code block in response, extracting...');
-            const extractedCode = codeMatch[1];
-
-            addChatMessage({
-              role: 'assistant',
-              content: `✅ Code generated. Saving to plugin...\n\n${messageContent}`,
-              data: { type: 'plugin_code_generated' }
-            });
-
-            // Dispatch event with extracted code
-            window.dispatchEvent(new CustomEvent('plugin-ai-code-generated', {
-              detail: {
-                pluginId: pluginToEdit.id,
-                files: [{ name: 'hook.js', code: extractedCode }],
-                code: extractedCode
-              }
-            }));
-          } else {
-            // Just show the response as-is
-            addChatMessage({
-              role: 'assistant',
-              content: messageContent || 'Plugin updated.',
-              data: response
-            });
-          }
+          // Pure conversational response - just show the message
+          console.log('💬 Conversational response (no code detected)');
+          addChatMessage({
+            role: 'assistant',
+            content: messageContent || 'I can help you modify this plugin. What would you like to add or change?',
+            data: response
+          });
         }
 
         saveChatMessage('assistant', response.message || response.explanation || 'Plugin response');
