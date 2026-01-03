@@ -1565,12 +1565,10 @@ const WorkspaceAIPanel = () => {
                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700",
                     "disabled:opacity-50 disabled:cursor-not-allowed"
                   )}
-                  title={showPluginEditor && pluginToEdit ? 'Select AI for plugin code generation' : 'Select AI Provider'}
+                  title={showPluginEditor && pluginToEdit ? 'Select AI Provider for Plugin' : 'Select AI Provider for Editor'}
                 >
                   <span>{currentModel?.icon || '🤖'}</span>
-                  <span className="font-medium">
-                    {showPluginEditor && pluginToEdit ? 'Plugin' : ''} {currentModel ? PROVIDER_NAMES[currentModel.provider] : 'Loading...'}
-                  </span>
+                  <span className="font-medium">{currentModel ? PROVIDER_NAMES[currentModel.provider] : 'Loading...'}</span>
                   <ChevronDown className={cn("w-2.5 h-2.5 transition-transform", showModelDropdown && "rotate-180")} />
                 </button>
 
@@ -1578,7 +1576,7 @@ const WorkspaceAIPanel = () => {
                   <div className="absolute bottom-full left-0 mb-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
                     <div className="p-1.5 border-b border-gray-100 dark:border-gray-700">
                       <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2">
-                        {showPluginEditor && pluginToEdit ? 'Select AI for Plugin Generation' : 'Select AI Provider'}
+                        {showPluginEditor && pluginToEdit ? 'Select AI Provider for Plugin' : 'Select AI Provider for Editor'}
                       </p>
                     </div>
                     <div className="py-1">
