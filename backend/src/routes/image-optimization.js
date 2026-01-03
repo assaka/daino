@@ -205,7 +205,7 @@ router.get('/pricing', authMiddleware, async (req, res) => {
 router.post('/optimize',
   authMiddleware,
   body('provider').isIn(['openai', 'gemini', 'flux', 'qwen']).withMessage('Invalid provider'),
-  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert']).withMessage('Invalid operation'),
+  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom']).withMessage('Invalid operation'),
   body('image').notEmpty().withMessage('Image is required'),
   async (req, res) => {
     try {
@@ -254,7 +254,7 @@ router.post('/optimize',
         params
       });
 
-      // Deduct credits
+      // Deduct credits only on success
       if (userId) {
         await creditService.deduct(
           userId,
@@ -274,10 +274,18 @@ router.post('/optimize',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error optimizing image:', error);
+
+      // Parse error for user-friendly message
+      const parsedError = parseErrorMessage(error);
+
+      // No credits were deducted since error occurred before deduction
       res.status(500).json({
         success: false,
-        message: 'Failed to optimize image',
-        error: error.message
+        code: parsedError.code,
+        message: parsedError.message,
+        suggestion: parsedError.suggestion,
+        error: parsedError.originalError,
+        creditsDeducted: 0
       });
     }
   }
@@ -348,10 +356,15 @@ router.post('/remove-bg',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error removing background:', error);
+
+      const parsedError = parseErrorMessage(error);
       res.status(500).json({
         success: false,
-        message: 'Failed to remove background',
-        error: error.message
+        code: parsedError.code,
+        message: parsedError.message,
+        suggestion: parsedError.suggestion,
+        error: parsedError.originalError,
+        creditsDeducted: 0
       });
     }
   }
@@ -429,10 +442,15 @@ router.post('/stage',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error staging product:', error);
+
+      const parsedError = parseErrorMessage(error);
       res.status(500).json({
         success: false,
-        message: 'Failed to stage product',
-        error: error.message
+        code: parsedError.code,
+        message: parsedError.message,
+        suggestion: parsedError.suggestion,
+        error: parsedError.originalError,
+        creditsDeducted: 0
       });
     }
   }
@@ -504,10 +522,15 @@ router.post('/upscale',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error upscaling image:', error);
+
+      const parsedError = parseErrorMessage(error);
       res.status(500).json({
         success: false,
-        message: 'Failed to upscale image',
-        error: error.message
+        code: parsedError.code,
+        message: parsedError.message,
+        suggestion: parsedError.suggestion,
+        error: parsedError.originalError,
+        creditsDeducted: 0
       });
     }
   }
@@ -520,7 +543,7 @@ router.post('/upscale',
 router.post('/batch',
   authMiddleware,
   body('provider').isIn(['openai', 'gemini', 'flux', 'qwen']).withMessage('Invalid provider'),
-  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert']).withMessage('Invalid operation'),
+  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom']).withMessage('Invalid operation'),
   body('images').isArray({ min: 1, max: 20 }).withMessage('Images array required (1-20)'),
   async (req, res) => {
     try {
@@ -595,10 +618,15 @@ router.post('/batch',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error in batch operation:', error);
+
+      const parsedError = parseErrorMessage(error);
       res.status(500).json({
         success: false,
-        message: 'Failed to process batch',
-        error: error.message
+        code: parsedError.code,
+        message: parsedError.message,
+        suggestion: parsedError.suggestion,
+        error: parsedError.originalError,
+        creditsDeducted: 0
       });
     }
   }

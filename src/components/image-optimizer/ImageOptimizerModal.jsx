@@ -364,17 +364,28 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
             setCurrentFormat(response.result.format || 'png');
           }
         } else {
+          // Use structured error message from API
+          const errorMessage = response.suggestion
+            ? `${response.message} ${response.suggestion}`
+            : response.message || 'Failed';
           newResults.push({
             original: image,
             success: false,
-            error: response.message || 'Failed'
+            error: errorMessage,
+            code: response.code
           });
         }
       } catch (err) {
+        // Handle API errors with structured response
+        const errorData = err.response?.data || err;
+        const errorMessage = errorData.suggestion
+          ? `${errorData.message} ${errorData.suggestion}`
+          : errorData.message || err.message || 'Processing failed';
         newResults.push({
           original: image,
           success: false,
-          error: err.message || 'Processing failed'
+          error: errorMessage,
+          code: errorData.code
         });
       }
     }
@@ -395,7 +406,9 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         onOptimized({ results: newResults, creditsUsed: totalCredits });
       }
     } else {
-      setFlashMessage({ type: 'error', message: 'All images failed to process' });
+      // Show the first error message for better feedback
+      const firstError = newResults.find(r => !r.success)?.error || 'All images failed to process';
+      setFlashMessage({ type: 'error', message: firstError });
     }
   };
 
@@ -591,9 +604,12 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                             </span>
                           </div>
                           {cost !== undefined && (
-                            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                              {cost} cr
-                            </span>
+                            <div className="text-right">
+                              <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                                {cost} cr
+                              </span>
+                              <div className="text-[10px] text-gray-400 mt-0.5">${(cost * 0.10).toFixed(2)}</div>
+                            </div>
                           )}
                           {selectedProvider === providerId && (
                             <Check className="w-4 h-4 text-purple-600" />
@@ -659,9 +675,12 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                             <span className="text-xs text-gray-500">{op.description}</span>
                           </div>
                           {cost !== undefined && (
-                            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                              {cost} cr
-                            </span>
+                            <div className="text-right">
+                              <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                                {cost} cr
+                              </span>
+                              <div className="text-[10px] text-gray-400 mt-0.5">${(cost * 0.10).toFixed(2)}</div>
+                            </div>
                           )}
                         </button>
                       );
@@ -684,7 +703,10 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                     {costPerImage} credits × {imagesToProcess.length} image{imagesToProcess.length !== 1 ? 's' : ''}
                   </div>
                   <div className="text-lg font-bold text-purple-600">
-                    {totalCost?.toFixed(2)} credits total
+                    {totalCost?.toFixed(2)} credits
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    ${(totalCost * 0.10).toFixed(2)} USD
                   </div>
                 </div>
               ) : null}

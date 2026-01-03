@@ -1333,7 +1333,6 @@ export default function Categories() {
             <div className="p-4 bg-white rounded-lg border">
               <AIImageOptimizerGrid
                 filterType="categories"
-                categories={categories}
                 onRefresh={loadCategories}
                 showSearch={true}
               />
@@ -1845,7 +1844,7 @@ export default function Categories() {
           onClose={async () => {
             setOptimizerImage(null);
             // Refresh category data and categories list
-            if (selectedCategory) {
+            if (selectedCategory?.id) {
               try {
                 const freshCategory = await Category.findById(selectedCategory.id);
                 setSelectedCategory(freshCategory || selectedCategory);
@@ -1856,7 +1855,7 @@ export default function Categories() {
             // Refresh the categories list to show updated images
             loadCategories();
             // Re-open the category form with the same category
-            if (selectedCategory) {
+            if (selectedCategory?.id) {
               setShowCategoryForm(true);
             }
           }}
@@ -1870,7 +1869,7 @@ export default function Categories() {
           selectedFiles={[]}
           onOptimized={async () => {
             // Called after optimization - don't close modal, just refresh data
-            if (selectedCategory) {
+            if (selectedCategory?.id) {
               try {
                 const freshCategory = await Category.findById(selectedCategory.id);
                 setSelectedCategory(freshCategory || selectedCategory);

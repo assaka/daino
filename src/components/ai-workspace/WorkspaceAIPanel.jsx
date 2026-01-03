@@ -690,11 +690,9 @@ const WorkspaceAIPanel = () => {
 
         saveChatMessage('assistant', response.message || response.explanation || 'Plugin response');
 
-        // Dispatch credits update event to refresh balance in header
-        if (response.creditsDeducted) {
-          console.log(`💰 Credits deducted: ${response.creditsDeducted}, remaining: ${response.creditsRemaining}`);
-          window.dispatchEvent(new CustomEvent('creditsUpdated'));
-        }
+        // Always dispatch credits update event to refresh balance in header after plugin AI call
+        console.log(`💰 Credits info: deducted=${response.creditsDeducted}, remaining=${response.creditsRemaining}`);
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
 
         setIsProcessingAi(false);
         return;
@@ -782,6 +780,12 @@ const WorkspaceAIPanel = () => {
 
       // Save assistant message to chat history
       saveChatMessage('assistant', response.message || 'Processing complete.', response.data, response.creditsDeducted);
+
+      // Dispatch credits update event to refresh balance in header
+      if (response.creditsDeducted) {
+        console.log(`💰 Smart chat credits: deducted=${response.creditsDeducted}`);
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+      }
 
       // Auto-refresh preview and editor after styling or layout changes
       const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
