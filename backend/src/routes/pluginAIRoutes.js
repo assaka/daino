@@ -6,6 +6,10 @@ const express = require('express');
 const router = express.Router();
 const pluginAIService = require('../services/pluginAIService');
 const aiModelsService = require('../services/AIModelsService');
+const creditService = require('../services/credit-service');
+
+// Credit cost for plugin AI generation (per request)
+const PLUGIN_AI_CREDIT_COST = 5;
 
 /**
  * POST /api/plugins/ai/generate
@@ -14,14 +18,53 @@ const aiModelsService = require('../services/AIModelsService');
 router.post('/generate', async (req, res) => {
   try {
     const { mode, prompt, context } = req.body;
+    const userId = req.user?.id;
+    const storeId = context?.storeId || req.headers['x-store-id'];
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
+    // Check credits before generating
+    if (userId) {
+      const hasCredits = await creditService.hasEnoughCredits(userId, storeId, PLUGIN_AI_CREDIT_COST);
+      if (!hasCredits) {
+        const balance = await creditService.getBalance(userId, storeId);
+        return res.status(402).json({
+          success: false,
+          code: 'INSUFFICIENT_CREDITS',
+          message: `Insufficient credits. Required: ${PLUGIN_AI_CREDIT_COST}, Available: ${balance.toFixed(2)}`,
+          required: PLUGIN_AI_CREDIT_COST,
+          available: balance
+        });
+      }
+    }
+
     const result = await pluginAIService.generatePlugin(mode || 'nocode-ai', prompt, context);
 
-    res.json(result);
+    // Deduct credits after successful generation
+    let creditsDeducted = 0;
+    if (userId) {
+      await creditService.deduct(
+        userId,
+        storeId,
+        PLUGIN_AI_CREDIT_COST,
+        'plugin-ai-generation',
+        `Plugin AI: ${prompt.substring(0, 50)}...`,
+        { pluginId: context?.pluginId, mode }
+      );
+      creditsDeducted = PLUGIN_AI_CREDIT_COST;
+      console.log(`💰 Deducted ${PLUGIN_AI_CREDIT_COST} credits for plugin AI generation`);
+    }
+
+    // Get remaining balance
+    const creditsRemaining = userId ? await creditService.getBalance(userId, storeId) : null;
+
+    res.json({
+      ...result,
+      creditsDeducted,
+      creditsRemaining
+    });
   } catch (error) {
     console.error('Error generating plugin:', error);
     res.status(500).json({

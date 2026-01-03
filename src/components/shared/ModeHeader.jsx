@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import StoreSelector from '@/components/admin/StoreSelector';
-import { UserIcon, LogOut, ShoppingBag, Wallet, Users, Store as StoreIcon, KeyRound } from 'lucide-react';
+import { UserIcon, LogOut, ShoppingBag, Wallet, Users, Store as StoreIcon, KeyRound, Coins } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,16 +11,49 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { handleLogoutWithNavigate } from '@/utils/auth';
 import { createPageUrl, getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { Store } from '@/api/entities';
+import apiClient from '@/api/client';
 
 const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons = null, hideModeSwitcher = false, hideStoreSelector = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedStore = JSON.parse(localStorage.getItem('selectedStore') || '{}');
+  const [credits, setCredits] = useState(user?.credits || 0);
+  const [showBillingModal, setShowBillingModal] = useState(false);
 
-  // Test comment to trigger deployment sync
+  // Show credits badge only on plugins/ai-workspace pages
+  const showCredits = currentMode === 'plugins' || currentMode === 'aiworkspace';
+
+  // Fetch credits balance
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await apiClient.get('credits/balance');
+        if (response.balance !== undefined) {
+          setCredits(response.balance);
+        }
+      } catch (error) {
+        console.error('Error fetching credits:', error);
+      }
+    };
+
+    if (showCredits && user?.id) {
+      fetchCredits();
+    }
+
+    // Listen for credits updates
+    const handleCreditsUpdate = () => fetchCredits();
+    window.addEventListener('creditsUpdated', handleCreditsUpdate);
+    return () => window.removeEventListener('creditsUpdated', handleCreditsUpdate);
+  }, [user?.id, showCredits]);
 
   const switchToAdmin = () => {
     if (currentMode !== 'admin') {
@@ -109,6 +142,19 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
         <div className="flex items-center space-x-2">
           {/* Show StoreSelector on mobile/tablet */}
           {!hideStoreSelector && <StoreSelector className="hidden sm:flex" />}
+          {/* Credits Balance - mobile */}
+          {showCredits && (
+            <button
+              onClick={() => setShowBillingModal(true)}
+              className="flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full transition-colors"
+              title="Click to purchase credits"
+            >
+              <Coins className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-xs font-medium text-amber-700">
+                {credits?.toLocaleString() || 0}
+              </span>
+            </button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -270,6 +316,19 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
           )}
           {/* Hide StoreSelector on onboarding */}
           {!hideStoreSelector && <StoreSelector />}
+          {/* Credits Balance - shown on plugins/ai-workspace pages */}
+          {showCredits && (
+            <button
+              onClick={() => setShowBillingModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full transition-colors cursor-pointer"
+              title="Click to purchase credits"
+            >
+              <Coins className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-700">
+                {credits?.toLocaleString() || 0}
+              </span>
+            </button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -358,6 +417,39 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Billing Modal */}
+      <Dialog open={showBillingModal} onOpenChange={setShowBillingModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-amber-600" />
+              Credits Balance
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center py-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
+              <p className="text-sm text-gray-500 mb-1">Current Balance</p>
+              <p className="text-4xl font-bold text-amber-600">{credits?.toLocaleString() || 0}</p>
+              <p className="text-sm text-gray-500 mt-1">credits</p>
+            </div>
+            <div className="text-sm text-gray-600 space-y-2">
+              <p>• Plugin AI generation: <span className="font-medium">5 credits</span> per request</p>
+              <p>• Store uptime: <span className="font-medium">3 credits</span> per day</p>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                setShowBillingModal(false);
+                navigate(createPageUrl("Billing"));
+              }}
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Purchase Credits
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

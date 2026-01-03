@@ -151,14 +151,17 @@ const DeveloperPluginEditor = ({
               // Determine folder based on file type
               if (fileName.includes('controller') || fileName.includes('Controller')) {
                 filePath = `/controllers/${fileName}`;
-              } else if (fileName.includes('hook') || fileName.includes('Hook')) {
-                filePath = `/hooks/${fileName}`;
               } else if (fileName.includes('migration')) {
                 filePath = `/migrations/${fileName}`;
               } else if (fileName.includes('component') || fileName.endsWith('.jsx')) {
                 filePath = `/components/${fileName}`;
+              } else if (fileName.includes('entity') || fileName.endsWith('.json')) {
+                filePath = `/entities/${fileName}`;
               } else if (fileName === 'index.js' || fileName === 'main.js') {
                 filePath = `/${fileName}`;
+              } else if (fileName.endsWith('.js')) {
+                // Default: all other .js files go to /hooks/
+                filePath = `/hooks/${fileName}`;
               } else {
                 filePath = `/${fileName}`;
               }
