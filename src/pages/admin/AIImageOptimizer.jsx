@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wand2, Image, Package, FolderOpen, Search, Filter, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
+import { Wand2, Image, Package, FolderOpen, Search, Filter, Loader2, AlertCircle } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { Product, Category } from '@/api/entities';
+import { Product, Category, MediaAsset } from '@/api/entities';
 import { ImageOptimizerModal } from '@/components/image-optimizer';
 import { Input } from '@/components/ui/input';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -12,8 +12,9 @@ const AIImageOptimizer = () => {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [libraryFiles, setLibraryFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all'); // all, products, categories, no-image
+  const [filterType, setFilterType] = useState('all'); // all, products, categories, library
   const [flashMessage, setFlashMessage] = useState(null);
 
   // Optimizer modal state
@@ -21,21 +22,27 @@ const AIImageOptimizer = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedContext, setSelectedContext] = useState(null);
 
-  // Load products and categories
+  // Load products, categories, and library files
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
         const storeId = getSelectedStoreId();
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, libraryData] = await Promise.all([
           Product.filter({ store_id: storeId, limit: 500 }),
-          Category.filter({ store_id: storeId })
+          Category.filter({ store_id: storeId }),
+          MediaAsset.filter({ store_id: storeId, limit: 500 })
         ]);
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        // Filter only image files from library
+        const imageFiles = (Array.isArray(libraryData) ? libraryData : []).filter(f =>
+          f.file_url && (f.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.file_url))
+        );
+        setLibraryFiles(imageFiles);
       } catch (error) {
         console.error('Failed to load data:', error);
-        setFlashMessage({ type: 'error', message: 'Failed to load products and categories' });
+        setFlashMessage({ type: 'error', message: 'Failed to load data' });
       } finally {
         setLoading(false);
       }
@@ -124,8 +131,26 @@ const AIImageOptimizer = () => {
       });
     });
 
+    // Add library files (grouped as "Library")
+    if (libraryFiles.length > 0) {
+      items.push({
+        id: 'library',
+        type: 'library',
+        entityId: 'library',
+        name: 'File Library',
+        images: libraryFiles.map(file => ({
+          id: file.id,
+          url: file.file_url,
+          name: file.file_name || file.file_url?.split('/').pop(),
+          isPrimary: false,
+          assetId: file.id
+        })),
+        hasImages: true
+      });
+    }
+
     return items;
-  }, [products, categories]);
+  }, [products, categories, libraryFiles]);
 
   // Filter items
   const filteredItems = useMemo(() => {
@@ -142,6 +167,7 @@ const AIImageOptimizer = () => {
       // Type filter
       if (filterType === 'products' && item.type !== 'product') return false;
       if (filterType === 'categories' && item.type !== 'category') return false;
+      if (filterType === 'library' && item.type !== 'library') return false;
       if (filterType === 'no-image' && item.hasImages) return false;
       if (filterType === 'with-image' && !item.hasImages) return false;
 
@@ -153,9 +179,10 @@ const AIImageOptimizer = () => {
   const stats = useMemo(() => {
     const productImages = groupedItems.filter(i => i.type === 'product').reduce((sum, p) => sum + p.images.length, 0);
     const categoryImages = groupedItems.filter(i => i.type === 'category').reduce((sum, c) => sum + c.images.length, 0);
+    const libraryImages = libraryFiles.length;
     const noImages = groupedItems.filter(i => !i.hasImages).length;
-    return { productImages, categoryImages, noImages, total: productImages + categoryImages };
-  }, [groupedItems]);
+    return { productImages, categoryImages, libraryImages, noImages, total: productImages + categoryImages + libraryImages };
+  }, [groupedItems, libraryFiles]);
 
   const handleImageClick = (item, image) => {
     setSelectedImage({
@@ -179,12 +206,17 @@ const AIImageOptimizer = () => {
     setLoading(true);
     try {
       const storeId = getSelectedStoreId();
-      const [productsData, categoriesData] = await Promise.all([
+      const [productsData, categoriesData, libraryData] = await Promise.all([
         Product.filter({ store_id: storeId, limit: 500 }),
-        Category.filter({ store_id: storeId })
+        Category.filter({ store_id: storeId }),
+        MediaAsset.filter({ store_id: storeId, limit: 500 })
       ]);
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      const imageFiles = (Array.isArray(libraryData) ? libraryData : []).filter(f =>
+        f.file_url && (f.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.file_url))
+      );
+      setLibraryFiles(imageFiles);
     } catch (error) {
       console.error('Failed to reload data:', error);
     } finally {
@@ -218,7 +250,7 @@ const AIImageOptimizer = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 text-purple-600 mb-1">
             <Image className="w-4 h-4" />
@@ -229,21 +261,28 @@ const AIImageOptimizer = () => {
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 text-orange-600 mb-1">
             <Package className="w-4 h-4" />
-            <span className="text-sm font-medium">Product Images</span>
+            <span className="text-sm font-medium">Products</span>
           </div>
           <div className="text-2xl font-bold">{stats.productImages}</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 text-blue-600 mb-1">
             <FolderOpen className="w-4 h-4" />
-            <span className="text-sm font-medium">Category Images</span>
+            <span className="text-sm font-medium">Categories</span>
           </div>
           <div className="text-2xl font-bold">{stats.categoryImages}</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
+          <div className="flex items-center gap-2 text-green-600 mb-1">
+            <Image className="w-4 h-4" />
+            <span className="text-sm font-medium">Library</span>
+          </div>
+          <div className="text-2xl font-bold">{stats.libraryImages}</div>
+        </div>
+        <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 text-gray-500 mb-1">
             <AlertCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">Missing Images</span>
+            <span className="text-sm font-medium">Missing</span>
           </div>
           <div className="text-2xl font-bold">{stats.noImages}</div>
         </div>
@@ -271,7 +310,7 @@ const AIImageOptimizer = () => {
                 { value: 'all', label: 'All' },
                 { value: 'products', label: 'Products' },
                 { value: 'categories', label: 'Categories' },
-                { value: 'with-image', label: 'With Image' },
+                { value: 'library', label: 'Library' },
                 { value: 'no-image', label: 'No Image' }
               ].map(option => (
                 <button
@@ -304,81 +343,57 @@ const AIImageOptimizer = () => {
           <p className="text-gray-500">Try adjusting your filters or search query</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="bg-white rounded-lg border divide-y">
           {filteredItems.map(item => (
             <div
               key={item.id}
-              className="bg-white rounded-lg border overflow-hidden"
+              className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50"
             >
-              {/* Header with name */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b">
-                <div className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center",
-                  item.type === 'product' ? "bg-orange-100" : "bg-blue-100"
-                )}>
-                  {item.type === 'product' ? (
-                    <Package className="w-4 h-4 text-orange-600" />
-                  ) : (
-                    <FolderOpen className="w-4 h-4 text-blue-600" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded",
-                      item.type === 'product' ? "bg-orange-50 text-orange-600" : "bg-blue-50 text-blue-600"
-                    )}>
-                      {item.type === 'product' ? 'Product' : 'Category'}
-                    </span>
-                    {item.categoryName && (
-                      <>
-                        <ChevronRight className="w-3 h-3" />
-                        <span>{item.categoryName}</span>
-                      </>
-                    )}
-                    <span className="text-gray-400">•</span>
-                    <span>{item.images.length} image{item.images.length !== 1 ? 's' : ''}</span>
-                  </div>
-                </div>
+              {/* Type icon */}
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                item.type === 'product' ? "bg-orange-100" : item.type === 'category' ? "bg-blue-100" : "bg-green-100"
+              )}>
+                {item.type === 'product' ? (
+                  <Package className="w-4 h-4 text-orange-600" />
+                ) : item.type === 'category' ? (
+                  <FolderOpen className="w-4 h-4 text-blue-600" />
+                ) : (
+                  <Image className="w-4 h-4 text-green-600" />
+                )}
               </div>
 
-              {/* Images grid */}
-              <div className="p-4">
+              {/* Name */}
+              <div className="w-48 flex-shrink-0">
+                <p className="font-medium text-gray-900 truncate text-sm">{item.name}</p>
+                {item.categoryName && (
+                  <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
+                )}
+              </div>
+
+              {/* Thumbnails */}
+              <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1">
                 {item.images.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
-                    {item.images.map((image, idx) => (
-                      <div
-                        key={image.id}
-                        onClick={() => handleImageClick(item, image)}
-                        className="group relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all"
-                      >
-                        <img
-                          src={image.url}
-                          alt={`${item.name} - ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Wand2 className="w-6 h-6 text-white" />
-                        </div>
-
-                        {/* Primary badge */}
-                        {image.isPrimary && item.images.length > 1 && (
-                          <div className="absolute bottom-1 left-1 px-1.5 py-0.5 text-[10px] bg-green-500 text-white rounded">
-                            Primary
-                          </div>
-                        )}
+                  item.images.map((image, idx) => (
+                    <div
+                      key={image.id}
+                      onClick={() => handleImageClick(item, image)}
+                      className="group relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all flex-shrink-0"
+                    >
+                      <img
+                        src={image.url}
+                        alt={`${item.name} - ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Wand2 className="w-4 h-4 text-white" />
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))
                 ) : (
-                  <div className="flex items-center gap-3 py-4 text-gray-400">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="text-sm">No images - upload images to optimize them</span>
-                  </div>
+                  <span className="text-sm text-gray-400">No images</span>
                 )}
               </div>
             </div>
