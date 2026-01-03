@@ -12,12 +12,57 @@ const creditService = require('../services/credit-service');
 const PLUGIN_AI_CREDIT_COST = 5;
 
 /**
+ * Derive service key from model ID for credit tracking
+ * Maps model IDs to service credit cost keys
+ * @param {string} modelId - The model ID (e.g., 'claude-3-haiku-20240307', 'gpt-4o-mini')
+ * @returns {string|null} Service key or null if unknown
+ */
+function deriveServiceKey(modelId) {
+  if (!modelId) return null;
+
+  // Anthropic/Claude models
+  if (modelId.includes('claude')) {
+    if (modelId.includes('haiku')) return 'ai_plugin_claude_haiku';
+    if (modelId.includes('sonnet')) return 'ai_plugin_claude_sonnet';
+    if (modelId.includes('opus')) return 'ai_plugin_claude_opus';
+    return 'ai_plugin_claude_sonnet'; // Default Claude
+  }
+
+  // OpenAI models
+  if (modelId.includes('gpt')) {
+    if (modelId.includes('4o-mini')) return 'ai_plugin_openai_gpt4o_mini';
+    if (modelId.includes('4o')) return 'ai_plugin_openai_gpt4o';
+    if (modelId.includes('4')) return 'ai_plugin_openai_gpt4';
+    return 'ai_plugin_openai_gpt4o_mini'; // Default OpenAI
+  }
+
+  // Gemini models
+  if (modelId.includes('gemini')) {
+    if (modelId.includes('flash')) return 'ai_plugin_gemini_flash';
+    if (modelId.includes('pro')) return 'ai_plugin_gemini_pro';
+    return 'ai_plugin_gemini_flash'; // Default Gemini
+  }
+
+  // Groq models
+  if (modelId.includes('llama') || modelId.includes('groq')) {
+    return 'ai_plugin_groq_llama';
+  }
+
+  // DeepSeek models
+  if (modelId.includes('deepseek')) {
+    return 'ai_plugin_deepseek';
+  }
+
+  return null;
+}
+
+/**
  * POST /api/plugins/ai/generate
  * Generate plugin from natural language description
  */
 router.post('/generate', async (req, res) => {
   try {
-    const { mode, prompt, context } = req.body;
+    const { mode, prompt, context, modelId, serviceKey } = req.body;
     const userId = req.user?.id;
     const storeId = context?.storeId || req.headers['x-store-id'];
 
@@ -40,11 +85,15 @@ router.post('/generate', async (req, res) => {
       }
     }
 
-    const result = await pluginAIService.generatePlugin(mode || 'nocode-ai', prompt, context);
+    const result = await pluginAIService.generatePlugin(mode || 'nocode-ai', prompt, {
+      ...context,
+      modelId,
+      serviceKey
+    });
 
     // Deduct credits after successful generation
-    // Service key follows pattern: ai_plugin_claude_{model}
-    const serviceKey = 'ai_plugin_claude_haiku';
+    // Use serviceKey from request, fallback to deriving from modelId
+    const effectiveServiceKey = serviceKey || deriveServiceKey(modelId) || 'ai_plugin_claude_haiku';
     let creditsDeducted = 0;
     if (userId) {
       await creditService.deduct(
@@ -53,14 +102,15 @@ router.post('/generate', async (req, res) => {
         PLUGIN_AI_CREDIT_COST,
         `Plugin AI: ${prompt.substring(0, 50)}...`,  // description
         {  // metadata
-          service_type: serviceKey,
+          service_type: effectiveServiceKey,
           pluginId: context?.pluginId,
           pluginName: context?.pluginName,
-          mode: mode || 'developer'
+          mode: mode || 'developer',
+          modelId: modelId
         }
       );
       creditsDeducted = PLUGIN_AI_CREDIT_COST;
-      console.log(`💰 Deducted ${PLUGIN_AI_CREDIT_COST} credits for ${serviceKey}`);
+      console.log(`💰 Deducted ${PLUGIN_AI_CREDIT_COST} credits for ${effectiveServiceKey}`);
     }
 
     // Get remaining balance

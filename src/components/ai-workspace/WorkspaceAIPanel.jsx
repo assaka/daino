@@ -493,6 +493,8 @@ const WorkspaceAIPanel = () => {
         const response = await apiClient.post('plugins/ai/generate', {
           mode: 'developer',
           prompt: userMessage,
+          modelId: selectedModel,
+          serviceKey: currentModel?.serviceKey,
           context: {
             pluginId: pluginToEdit.id,
             pluginName: pluginToEdit.name,

@@ -25,7 +25,26 @@ const aiProvider = require('./ai-provider-service');
 
 class PluginAIService {
   constructor() {
-    this.model = 'claude-3-haiku-20240307';
+    // Default model (used when none specified)
+    this.defaultModel = 'claude-3-haiku-20240307';
+    this.defaultProvider = 'anthropic';
+  }
+
+  /**
+   * Map model ID to provider
+   * @param {string} modelId - Model ID
+   * @returns {string} Provider name
+   */
+  getProviderFromModel(modelId) {
+    if (!modelId) return this.defaultProvider;
+
+    if (modelId.includes('claude')) return 'anthropic';
+    if (modelId.includes('gpt')) return 'openai';
+    if (modelId.includes('gemini')) return 'gemini';
+    if (modelId.includes('llama') || modelId.includes('mixtral')) return 'groq';
+    if (modelId.includes('deepseek')) return 'deepseek';
+
+    return this.defaultProvider;
   }
 
   /**
@@ -74,12 +93,18 @@ class PluginAIService {
 
     const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
 
+    // Use model/provider from context if provided, otherwise use defaults
+    const modelId = context.modelId || this.defaultModel;
+    const provider = this.getProviderFromModel(modelId);
+
+    console.log(`🤖 Plugin AI using provider: ${provider}, model: ${modelId}`);
+
     const response = await aiProvider.chat([{
       role: 'user',
       content: this.buildUserPrompt(mode, userPrompt, context)
     }], {
-      provider: 'anthropic',
-      model: this.model,
+      provider,
+      model: modelId,
       maxTokens: 4096,
       temperature: 0.7,
       systemPrompt
@@ -90,8 +115,15 @@ class PluginAIService {
 
   /**
    * Generate code suggestions for developer mode
+   * @param {string} fileName - Name of file being edited
+   * @param {string} currentCode - Current code content
+   * @param {string} prompt - User's request
+   * @param {object} options - Optional options including modelId
    */
-  async generateCodeSuggestion(fileName, currentCode, prompt) {
+  async generateCodeSuggestion(fileName, currentCode, prompt, options = {}) {
+    const modelId = options.modelId || this.defaultModel;
+    const provider = this.getProviderFromModel(modelId);
+
     const response = await aiProvider.chat([{
       role: 'user',
       content: `File: ${fileName}
@@ -105,8 +137,8 @@ Request: ${prompt}
 
 Please provide the improved code.`
     }], {
-      provider: 'anthropic',
-      model: this.model,
+      provider,
+      model: modelId,
       maxTokens: 2048,
       temperature: 0.5,
       systemPrompt: `You are an expert JavaScript/React developer helping to improve plugin code.
@@ -118,16 +150,22 @@ Provide clean, production-ready code following best practices.`
 
   /**
    * Answer questions about plugin development
+   * @param {string} question - User's question
+   * @param {object} pluginContext - Context about the plugin
+   * @param {object} options - Optional options including modelId
    */
-  async answerQuestion(question, pluginContext) {
+  async answerQuestion(question, pluginContext, options = {}) {
+    const modelId = options.modelId || this.defaultModel;
+    const provider = this.getProviderFromModel(modelId);
+
     const response = await aiProvider.chat([{
       role: 'user',
       content: `Plugin context: ${JSON.stringify(pluginContext, null, 2)}
 
 Question: ${question}`
     }], {
-      provider: 'anthropic',
-      model: this.model,
+      provider,
+      model: modelId,
       maxTokens: 1024,
       temperature: 0.3,
       systemPrompt: `You are a helpful plugin development assistant. Answer questions clearly and concisely.
@@ -663,8 +701,12 @@ Be conversational, friendly, and guide them naturally through the process.`;
 
   /**
    * Generate smart contextual suggestions for next steps
+   * @param {object} params - Parameters including context, currentStep, pluginConfig, recentMessages, userMessage, modelId
    */
-  async generateSmartSuggestions({ context, currentStep, pluginConfig, recentMessages, userMessage }) {
+  async generateSmartSuggestions({ context, currentStep, pluginConfig, recentMessages, userMessage, modelId }) {
+    const effectiveModelId = modelId || this.defaultModel;
+    const provider = this.getProviderFromModel(effectiveModelId);
+
     const systemPrompt = `You are an AI assistant that generates helpful suggestions for building plugins.
 
 Based on the conversation context, generate 2-4 short, actionable questions or prompts that would help move the conversation forward.
@@ -689,8 +731,8 @@ Return ONLY a JSON array of 2-4 short suggestion strings, like:
         role: 'user',
         content: 'Generate suggestions for the next steps in this conversation.'
       }], {
-        provider: 'anthropic',
-        model: this.model,
+        provider,
+        model: effectiveModelId,
         maxTokens: 512,
         temperature: 0.8,
         systemPrompt
