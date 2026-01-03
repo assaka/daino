@@ -316,12 +316,30 @@ router.post('/replace', upload.single('file'), async (req, res) => {
     const ConnectionManager = require('../services/database/ConnectionManager');
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Use maybeSingle() to avoid error when not found
     const { data: mediaAsset, error: findError } = await tenantDb
       .from('media_assets')
-      .select('id, file_path, file_name')
+      .select('id, file_path, file_name, file_url')
       .eq('store_id', storeId)
       .eq('file_url', oldFileUrl)
-      .single();
+      .maybeSingle();
+
+    if (findError) {
+      console.warn(`   ⚠️ Error finding media_assets:`, findError.message);
+    }
+
+    if (!mediaAsset) {
+      console.log(`   ⚠️ No media_assets record found for URL: ${oldFileUrl}`);
+      // Try to find by partial URL match (in case of encoding differences)
+      const { data: allAssets } = await tenantDb
+        .from('media_assets')
+        .select('id, file_path, file_name, file_url')
+        .eq('store_id', storeId)
+        .limit(5);
+      console.log(`   📋 Sample media_assets URLs in store:`, allAssets?.map(a => a.file_url).slice(0, 3));
+    } else {
+      console.log(`   ✅ Found media_assets record: ${mediaAsset.id}`);
+    }
 
     // 2. Determine the replacement path
     let customPath = null;
