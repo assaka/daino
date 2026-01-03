@@ -37,7 +37,7 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
 import TranslationFields from '@/components/admin/TranslationFields';
 
-export default function CategoryForm({ category, onSubmit, onCancel, parentCategories }) {
+export default function CategoryForm({ category, onSubmit, onCancel, parentCategories, onOpenOptimizer }) {
   const { getSelectedStoreId } = useStoreSelection();
   const { availableLanguages } = useTranslation();
   const [formData, setFormData] = useState({
@@ -673,7 +673,19 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               variant="secondary"
               size="icon"
               className="absolute -top-2 right-6 h-6 w-6 bg-purple-100 hover:bg-purple-200 text-purple-600"
-              onClick={() => setShowImageOptimizer(true)}
+              onClick={() => {
+                // If parent provides onOpenOptimizer, use that (closes edit modal, shows optimizer)
+                if (onOpenOptimizer) {
+                  onOpenOptimizer({
+                    url: formData.image_url,
+                    name: formData.image_url?.split('/').pop(),
+                    id: formData.media_asset_id,
+                    folder: 'category'
+                  });
+                } else {
+                  setShowImageOptimizer(true);
+                }
+              }}
               disabled={savingImage}
               title="AI Optimize"
             >

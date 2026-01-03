@@ -65,6 +65,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageLoader } from "@/components/ui/page-loader";
 
 import CategoryForm from "@/components/admin/categories/CategoryForm";
+import { ImageOptimizerModal } from "@/components/image-optimizer";
 import { TranslationIndicator } from "@/components/admin/TranslationFields";
 import { getCategoryName, getCategoryDescription } from "@/utils/translationUtils";
 
@@ -97,6 +98,7 @@ export default function Categories() {
   const [categoryToDelete, setCategoryToDelete] = useState(null);
   const [rootCategoryToDelete, setRootCategoryToDelete] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [optimizerImage, setOptimizerImage] = useState(null);
 
   // Load user credits for AI translation checks
   const loadUserCredits = async () => {
@@ -1517,6 +1519,11 @@ export default function Categories() {
                   setShowCategoryForm(false);
                   setSelectedCategory(null);
                 }}
+                onOpenOptimizer={(imageData) => {
+                  // Close the category form and open optimizer
+                  setShowCategoryForm(false);
+                  setOptimizerImage(imageData);
+                }}
               />
             </div>
           </DialogContent>
@@ -1781,6 +1788,42 @@ export default function Categories() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Image Optimizer Modal */}
+        <ImageOptimizerModal
+          isOpen={!!optimizerImage}
+          onClose={() => {
+            setOptimizerImage(null);
+            // Re-open the category form with the same category
+            if (selectedCategory) {
+              setShowCategoryForm(true);
+            }
+          }}
+          storeId={getSelectedStoreId()}
+          fileToOptimize={optimizerImage ? {
+            url: optimizerImage.url,
+            name: optimizerImage.name,
+            id: optimizerImage.id,
+            folder: optimizerImage.folder || 'category'
+          } : null}
+          selectedFiles={[]}
+          onOptimized={async () => {
+            // Refresh category data and re-open form
+            if (selectedCategory) {
+              try {
+                const freshCategory = await Category.findById(selectedCategory.id);
+                setSelectedCategory(freshCategory || selectedCategory);
+              } catch (error) {
+                // Keep existing category if refresh fails
+              }
+            }
+            setOptimizerImage(null);
+            if (selectedCategory) {
+              setShowCategoryForm(true);
+            }
+          }}
+          setFlashMessage={setFlashMessage}
+        />
       </div>
     </div>
   );

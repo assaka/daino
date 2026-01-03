@@ -145,7 +145,7 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 1000) => {
   }
 };
 
-export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel }) {
+export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel, onOpenOptimizer }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const { currentLanguage } = useTranslation();
   const [flashMessage, setFlashMessage] = useState(null);
@@ -657,8 +657,18 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   };
 
   const openImageOptimizer = (image) => {
-    setImageToOptimize(image);
-    setShowImageOptimizer(true);
+    // If parent provides onOpenOptimizer, use that (closes edit modal, shows optimizer)
+    if (onOpenOptimizer) {
+      onOpenOptimizer({
+        url: image.url,
+        name: image.filepath || image.url?.split('/').pop(),
+        folder: 'product'
+      });
+    } else {
+      // Fallback to local modal
+      setImageToOptimize(image);
+      setShowImageOptimizer(true);
+    }
   };
 
   // Load existing variants for configurable products

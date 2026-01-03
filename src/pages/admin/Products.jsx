@@ -63,6 +63,7 @@ import ProductForm from "@/components/admin/products/ProductForm";
 import ProductFilters from "@/components/admin/products/ProductFilters";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
+import { ImageOptimizerModal } from "@/components/image-optimizer";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { SaveButton } from "@/components/ui/save-button";
@@ -136,6 +137,9 @@ export default function Products() {
   const [confirmModalTitle, setConfirmModalTitle] = useState('');
   const [confirmModalMessage, setConfirmModalMessage] = useState('');
   const [confirmModalAction, setConfirmModalAction] = useState(null);
+
+  // Image optimizer state
+  const [optimizerImage, setOptimizerImage] = useState(null);
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -1520,6 +1524,11 @@ export default function Products() {
                 setShowProductForm(false);
                 setSelectedProduct(null);
               }}
+              onOpenOptimizer={(imageData) => {
+                // Close the product form and open optimizer
+                setShowProductForm(false);
+                setOptimizerImage(imageData);
+              }}
             />
           </DialogContent>
         </Dialog>
@@ -1561,6 +1570,41 @@ export default function Products() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Image Optimizer Modal */}
+        <ImageOptimizerModal
+          isOpen={!!optimizerImage}
+          onClose={() => {
+            setOptimizerImage(null);
+            // Re-open the product form with the same product
+            if (selectedProduct) {
+              setShowProductForm(true);
+            }
+          }}
+          storeId={getSelectedStoreId()}
+          fileToOptimize={optimizerImage ? {
+            url: optimizerImage.url,
+            name: optimizerImage.name,
+            folder: optimizerImage.folder || 'product'
+          } : null}
+          selectedFiles={[]}
+          onOptimized={async () => {
+            // Refresh product data and re-open form
+            if (selectedProduct) {
+              try {
+                const freshProduct = await Product.findById(selectedProduct.id);
+                setSelectedProduct(freshProduct || selectedProduct);
+              } catch (error) {
+                // Keep existing product if refresh fails
+              }
+            }
+            setOptimizerImage(null);
+            if (selectedProduct) {
+              setShowProductForm(true);
+            }
+          }}
+          setFlashMessage={setFlashMessage}
+        />
       </div>
     </div>
   );
