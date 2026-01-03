@@ -312,10 +312,37 @@ router.post('/replace', upload.single('file'), async (req, res) => {
     console.log(`   Old URL: ${oldFileUrl}`);
     console.log(`   New file: ${req.file.originalname}`);
 
-    // 1. Upload the new file
+    // 1. First, find the existing media asset to get the actual storage path
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: mediaAsset, error: findError } = await tenantDb
+      .from('media_assets')
+      .select('id, file_path, file_name')
+      .eq('store_id', storeId)
+      .eq('file_url', oldFileUrl)
+      .single();
+
+    // 2. Determine the replacement path
+    let customPath = null;
+    let actualOldPath = oldFilePath;
+
+    if (mediaAsset && mediaAsset.file_path) {
+      // Use the existing organized path structure, just replace the filename extension if needed
+      const existingPath = mediaAsset.file_path;
+      const existingDir = existingPath.substring(0, existingPath.lastIndexOf('/'));
+      const newFileName = req.file.originalname;
+      customPath = `${existingDir}/${newFileName}`;
+      actualOldPath = existingPath;
+      console.log(`   Using existing path structure: ${customPath}`);
+    }
+
+    // 3. Upload the new file to the same location (or organized path if no existing asset)
     const uploadOptions = {
       folder: folder || 'library',
-      public: true
+      public: true,
+      useOrganizedStructure: !customPath, // Skip organized structure if we have customPath
+      customPath: customPath
     };
 
     const uploadResult = await storageManager.uploadFile(storeId, req.file, uploadOptions);
@@ -328,18 +355,6 @@ router.post('/replace', upload.single('file'), async (req, res) => {
     const newPath = uploadResult.path || uploadResult.fullPath;
 
     console.log(`   New URL: ${newUrl}`);
-
-    // 2. Update database references
-    const ConnectionManager = require('../services/database/ConnectionManager');
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    // Update media_assets - find by old URL and update
-    const { data: mediaAsset, error: findError } = await tenantDb
-      .from('media_assets')
-      .select('id')
-      .eq('store_id', storeId)
-      .eq('file_url', oldFileUrl)
-      .single();
 
     let mediaAssetUpdated = false;
     if (mediaAsset && !findError) {
@@ -377,14 +392,17 @@ router.post('/replace', upload.single('file'), async (req, res) => {
       }
     }
 
-    // 3. Delete old file from storage (optional, don't fail if this fails)
-    if (oldFilePath) {
+    // 4. Delete old file from storage if path changed (e.g., different extension)
+    // Only delete if old and new paths are different (otherwise we'd delete the file we just uploaded)
+    if (actualOldPath && actualOldPath !== newPath) {
       try {
-        await storageManager.deleteFile(storeId, oldFilePath);
-        console.log(`   ✅ Deleted old file from storage: ${oldFilePath}`);
+        await storageManager.deleteFile(storeId, actualOldPath);
+        console.log(`   ✅ Deleted old file from storage: ${actualOldPath}`);
       } catch (deleteErr) {
         console.warn(`   ⚠️ Could not delete old file (may already be gone): ${deleteErr.message}`);
       }
+    } else if (actualOldPath === newPath) {
+      console.log(`   ℹ️ Old and new paths are same, no deletion needed (file was overwritten)`);
     }
 
     res.json({

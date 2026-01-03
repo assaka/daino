@@ -350,16 +350,23 @@ class SupabaseStorageService extends StorageInterface {
       }
 
       // Upload using direct API call with proper authentication
+      // Use x-upsert header when customPath is provided (replace operation)
+      const shouldUpsert = !!options.customPath;
+      const headers = {
+        'Authorization': `Bearer ${apiKey}`,
+        'apikey': apiKey,
+        'Content-Type': file.mimetype || 'image/jpeg',
+        'Cache-Control': 'max-age=3600'
+      };
+      if (shouldUpsert) {
+        headers['x-upsert'] = 'true';
+      }
+
       const uploadResponse = await axios.post(
         `${storageUrl}/object/${bucketName}/${filePath}`,
         file.buffer || file,
         {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'apikey': apiKey,
-            'Content-Type': file.mimetype || 'image/jpeg',
-            'Cache-Control': 'max-age=3600'
-          },
+          headers,
           maxContentLength: Infinity,
           maxBodyLength: Infinity
         }
@@ -492,12 +499,15 @@ class SupabaseStorageService extends StorageInterface {
       console.log(`[SupabaseStorage] File path: ${filePath}`);
       console.log(`[SupabaseStorage] Content type: ${file.mimetype || 'image/jpeg'}`);
       
+      // Use upsert: true when customPath is provided (replace operation)
+      const shouldUpsert = !!options.customPath;
+
       const { data, error } = await client.storage
         .from(bucketName)
         .upload(filePath, file.buffer || file, {
           contentType: file.mimetype || 'image/jpeg',
           cacheControl: '3600',
-          upsert: false
+          upsert: shouldUpsert
         });
 
       if (error) {
