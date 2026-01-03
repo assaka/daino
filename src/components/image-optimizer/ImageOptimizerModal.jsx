@@ -131,7 +131,16 @@ const generateSmartPresets = (productContext) => {
     }
   }
 
-  // Always add a generic product-specific preset if we have a product name
+  // If no specific presets matched, add generic useful presets
+  if (presets.length === 0 && productContext.name) {
+    // Generic presets that work for most products
+    presets.push({ id: 'minimalist', label: '🤍 Minimalist', value: `${productContext.name} on a clean white background with soft shadows, professional product photography` });
+    presets.push({ id: 'lifestyle', label: '🏠 Lifestyle', value: `${productContext.name} in a stylish modern home interior with natural lighting` });
+    presets.push({ id: 'studio', label: '📸 Studio', value: `${productContext.name} with professional studio lighting, gradient background` });
+    presets.push({ id: 'natural', label: '🌿 Natural', value: `${productContext.name} with natural elements like plants and wood textures` });
+  }
+
+  // Always add a hero shot preset if we have a product name
   if (productContext.name) {
     presets.push({ id: 'product_hero', label: '⭐ Hero Shot', value: `Professional product photography of ${productContext.name} with dramatic studio lighting and clean background` });
   }
