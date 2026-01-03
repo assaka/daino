@@ -411,6 +411,43 @@ router.post('/replace', upload.single('file'), async (req, res) => {
       }
     }
 
+    // Update categories that have this image_url or media_asset_id
+    let categoriesUpdated = 0;
+
+    // First, update categories by media_asset_id (normalized approach)
+    if (mediaAsset) {
+      const { data: updatedByAssetId, error: catUpdateError } = await tenantDb
+        .from('categories')
+        .update({
+          image_url: newUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('media_asset_id', mediaAsset.id)
+        .select('id');
+
+      if (!catUpdateError && updatedByAssetId) {
+        categoriesUpdated += updatedByAssetId.length;
+        console.log(`   ✅ Updated ${updatedByAssetId.length} categories by media_asset_id`);
+      }
+    }
+
+    // Also update categories that have the old URL directly in image_url (for backwards compatibility)
+    const { data: updatedByUrl, error: catUrlUpdateError } = await tenantDb
+      .from('categories')
+      .update({
+        image_url: newUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('image_url', oldFileUrl)
+      .select('id');
+
+    if (!catUrlUpdateError && updatedByUrl) {
+      categoriesUpdated += updatedByUrl.length;
+      if (updatedByUrl.length > 0) {
+        console.log(`   ✅ Updated ${updatedByUrl.length} categories by direct image_url match`);
+      }
+    }
+
     // 4. Delete old file from storage if path changed (e.g., different extension)
     // Only delete if old and new paths are different (otherwise we'd delete the file we just uploaded)
     if (actualOldPath && actualOldPath !== newPath) {
@@ -432,6 +469,7 @@ router.post('/replace', upload.single('file'), async (req, res) => {
         path: newPath,
         mediaAssetUpdated,
         productFilesLinked,
+        categoriesUpdated,
         provider: uploadResult.provider
       }
     });

@@ -284,6 +284,13 @@ const AIImageOptimizerGrid = ({
     }
   };
 
+  // Count stats for filter badges (calculate before early returns)
+  const productCount = products.filter(p =>
+    (p.media_assets?.length > 0) || (p.product_files?.length > 0) || (p.images?.length > 0)
+  ).length;
+  const categoryCount = categories.filter(c => c.image_url).length;
+  const libraryCount = libraryFiles.length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -291,22 +298,6 @@ const AIImageOptimizerGrid = ({
       </div>
     );
   }
-
-  if (filteredItems.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <Image className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 text-sm">No images found</p>
-      </div>
-    );
-  }
-
-  // Count stats for filter badges
-  const productCount = products.filter(p =>
-    (p.media_assets?.length > 0) || (p.product_files?.length > 0) || (p.images?.length > 0)
-  ).length;
-  const categoryCount = categories.filter(c => c.image_url).length;
-  const libraryCount = libraryFiles.length;
 
   return (
     <div>
@@ -359,64 +350,71 @@ const AIImageOptimizerGrid = ({
       </div>
 
       {/* Grid */}
-      <div className="bg-white rounded-lg border divide-y">
-        {filteredItems.map(item => (
-          <div
-            key={item.id}
-            className={cn(
-              "flex items-center gap-4 px-4 hover:bg-gray-50",
-              compact ? "py-2" : "py-3"
-            )}
-          >
-            {/* Type icon */}
-            <div className={cn(
-              "rounded-lg flex items-center justify-center flex-shrink-0",
-              compact ? "w-6 h-6" : "w-8 h-8",
-              item.type === 'product' ? "bg-orange-100" : item.type === 'category' ? "bg-blue-100" : "bg-green-100"
-            )}>
-              {item.type === 'product' ? (
-                <Package className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-orange-600")} />
-              ) : item.type === 'category' ? (
-                <FolderOpen className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-blue-600")} />
-              ) : (
-                <Image className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-green-600")} />
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <Image className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">No images found</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border divide-y">
+          {filteredItems.map(item => (
+            <div
+              key={item.id}
+              className={cn(
+                "flex items-center gap-4 px-4 hover:bg-gray-50",
+                compact ? "py-2" : "py-3"
               )}
-            </div>
+            >
+              {/* Type icon */}
+              <div className={cn(
+                "rounded-lg flex items-center justify-center flex-shrink-0",
+                compact ? "w-6 h-6" : "w-8 h-8",
+                item.type === 'product' ? "bg-orange-100" : item.type === 'category' ? "bg-blue-100" : "bg-green-100"
+              )}>
+                {item.type === 'product' ? (
+                  <Package className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-orange-600")} />
+                ) : item.type === 'category' ? (
+                  <FolderOpen className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-blue-600")} />
+                ) : (
+                  <Image className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-green-600")} />
+                )}
+              </div>
 
-            {/* Name */}
-            <div className={cn("flex-shrink-0", compact ? "w-36" : "w-48")}>
-              <p className={cn("font-medium text-gray-900 truncate", compact ? "text-xs" : "text-sm")}>{item.name}</p>
-              {item.categoryName && (
-                <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
-              )}
-            </div>
+              {/* Name */}
+              <div className={cn("flex-shrink-0", compact ? "w-36" : "w-48")}>
+                <p className={cn("font-medium text-gray-900 truncate", compact ? "text-xs" : "text-sm")}>{item.name}</p>
+                {item.categoryName && (
+                  <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
+                )}
+              </div>
 
-            {/* Thumbnails */}
-            <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1">
-              {item.images.map((image, idx) => (
-                <div
-                  key={image.id}
-                  onClick={() => handleImageClick(item, image)}
-                  className={cn(
-                    "group relative rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all flex-shrink-0",
-                    compact ? "w-10 h-10" : "w-14 h-14"
-                  )}
-                >
-                  <img
-                    src={image.url}
-                    alt={`${item.name} - ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Wand2 className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-white")} />
+              {/* Thumbnails */}
+              <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1">
+                {item.images.map((image, idx) => (
+                  <div
+                    key={image.id}
+                    onClick={() => handleImageClick(item, image)}
+                    className={cn(
+                      "group relative rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all flex-shrink-0",
+                      compact ? "w-10 h-10" : "w-14 h-14"
+                    )}
+                  >
+                    <img
+                      src={image.url}
+                      alt={`${item.name} - ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Wand2 className={cn(compact ? "w-3 h-3" : "w-4 h-4", "text-white")} />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Optimizer Modal */}
       <ImageOptimizerModal
