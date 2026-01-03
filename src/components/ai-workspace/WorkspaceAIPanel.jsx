@@ -624,6 +624,13 @@ const WorkspaceAIPanel = () => {
         }
 
         saveChatMessage('assistant', response.message || response.explanation || 'Plugin response');
+
+        // Dispatch credits update event to refresh balance in header
+        if (response.creditsDeducted) {
+          console.log(`💰 Credits deducted: ${response.creditsDeducted}, remaining: ${response.creditsRemaining}`);
+          window.dispatchEvent(new CustomEvent('creditsUpdated'));
+        }
+
         setIsProcessingAi(false);
         return;
       }

@@ -1137,7 +1137,7 @@ app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code 
 app.use('/api/ai-models', aiModelsRoutes); // AI models configuration (public endpoint)
 app.use('/api/ai-learning', aiLearningRoutes); // AI training, feedback, and documentation management
 app.use('/api/image-optimization', imageOptimizationRoutes); // AI image optimization (compress, upscale, remove-bg, stage)
-app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
+app.use('/api/plugins/ai', authMiddleware, pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/ab-testing', abTestingRoutes);
 app.use('/api/analytics', analyticsRoutes);
