@@ -1586,7 +1586,7 @@ export default function Products() {
               }
             }
             // Refresh the products list to show updated images
-            loadProducts(currentPage);
+            loadData();
             // Re-open the product form with the same product
             if (selectedProduct) {
               setShowProductForm(true);

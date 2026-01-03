@@ -30,8 +30,7 @@ const STAGING_CONTEXTS = [
   { id: 'office', label: 'Home Office', value: 'professional home office with natural light' },
   { id: 'outdoor', label: 'Outdoor Patio', value: 'outdoor patio with garden view' },
   { id: 'fashion_model', label: 'Fashion Model', value: 'fashion model in studio setting' },
-  { id: 'flat_lay', label: 'Flat Lay', value: 'flat lay on marble surface with props' },
-  { id: 'custom', label: 'Custom...', value: '' }
+  { id: 'flat_lay', label: 'Flat Lay', value: 'flat lay on marble surface with props' }
 ];
 
 /**
@@ -70,7 +69,6 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
 
   // Operation-specific params
   const [stagingContext, setStagingContext] = useState(STAGING_CONTEXTS[0].value);
-  const [customContext, setCustomContext] = useState('');
   const [bgReplacement, setBgReplacement] = useState('transparent');
   const [upscaleScale, setUpscaleScale] = useState(2);
 
@@ -206,7 +204,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
       try {
         const params = {};
         if (selectedOperation === 'stage') {
-          params.context = stagingContext === '' ? customContext : stagingContext;
+          params.context = stagingContext;
           params.style = 'photorealistic';
           params.lighting = 'natural daylight';
         } else if (selectedOperation === 'remove_bg') {
@@ -579,14 +577,19 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           {selectedOperation === 'stage' && (
             <div className="mt-4 pt-4 border-t">
               <label className="text-xs font-medium text-gray-500 mb-2 block">Staging Context</label>
+              <input
+                type="text"
+                value={stagingContext}
+                onChange={(e) => setStagingContext(e.target.value)}
+                placeholder="Describe the environment (e.g., 'luxury penthouse with city view')"
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-2"
+                disabled={isProcessing}
+              />
               <div className="flex flex-wrap gap-1.5">
                 {STAGING_CONTEXTS.map((ctx) => (
                   <button
                     key={ctx.id}
-                    onClick={() => {
-                      setStagingContext(ctx.value);
-                      if (ctx.id !== 'custom') setCustomContext('');
-                    }}
+                    onClick={() => setStagingContext(ctx.value)}
                     disabled={isProcessing}
                     className={cn(
                       "px-2.5 py-1 text-xs rounded-full transition-colors",
@@ -599,16 +602,6 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                   </button>
                 ))}
               </div>
-              {stagingContext === '' && (
-                <input
-                  type="text"
-                  value={customContext}
-                  onChange={(e) => setCustomContext(e.target.value)}
-                  placeholder="Describe the environment (e.g., 'luxury penthouse with city view')"
-                  className="mt-2 w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  disabled={isProcessing}
-                />
-              )}
             </div>
           )}
 
