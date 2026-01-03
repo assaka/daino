@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2 } from 'lucide-react';
+import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
@@ -19,7 +19,8 @@ const OPERATIONS = {
   upscale: { name: 'Upscale', icon: Maximize, description: 'Enhance resolution' },
   remove_bg: { name: 'Remove Background', icon: Eraser, description: 'Remove or replace background' },
   stage: { name: 'Product Staging', icon: Package, description: 'Place in environment' },
-  convert: { name: 'Convert Format', icon: FileImage, description: 'WebP, AVIF optimization' }
+  convert: { name: 'Convert Format', icon: FileImage, description: 'WebP, AVIF optimization' },
+  custom: { name: 'Custom', icon: Sparkles, description: 'Custom AI instruction' }
 };
 
 // Staging context presets
@@ -176,7 +177,10 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   // Operation-specific params
   const [stagingContext, setStagingContext] = useState(STAGING_CONTEXTS[0].value);
   const [bgReplacement, setBgReplacement] = useState('transparent');
+  const [bgCustomColor, setBgCustomColor] = useState('#ffffff');
   const [upscaleScale, setUpscaleScale] = useState(2);
+  const [compressQuality, setCompressQuality] = useState(80);
+  const [convertFormat, setConvertFormat] = useState('webp');
 
   const providerDropdownRef = useRef(null);
   const operationDropdownRef = useRef(null);
@@ -315,9 +319,19 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           params.lighting = 'natural daylight';
         } else if (selectedOperation === 'remove_bg') {
           params.replacement = bgReplacement;
+          if (bgReplacement === 'custom') {
+            params.customColor = bgCustomColor;
+          }
         } else if (selectedOperation === 'upscale') {
           params.scale = upscaleScale;
           params.enhanceDetails = true;
+        } else if (selectedOperation === 'compress') {
+          params.quality = compressQuality;
+        } else if (selectedOperation === 'convert') {
+          params.format = convertFormat;
+          params.quality = compressQuality;
+        } else if (selectedOperation === 'custom') {
+          params.instruction = stagingContext;
         }
 
         let base64;
@@ -743,23 +757,49 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           {selectedOperation === 'remove_bg' && (
             <div className="mt-4 pt-4 border-t">
               <label className="text-xs font-medium text-gray-500 mb-2 block">Background Replacement</label>
-              <div className="flex gap-2">
-                {['transparent', 'white', 'black', 'gradient'].map((bg) => (
+              <div className="flex flex-wrap gap-2">
+                {['transparent', 'white', 'black', 'gradient', 'custom'].map((bg) => (
                   <button
                     key={bg}
                     onClick={() => setBgReplacement(bg)}
                     disabled={isProcessing}
                     className={cn(
-                      "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize",
+                      "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize flex items-center gap-1.5",
                       bgReplacement === bg
                         ? "bg-purple-100 text-purple-700 border border-purple-300"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     )}
                   >
+                    {bg === 'custom' && (
+                      <span
+                        className="w-3 h-3 rounded-full border border-gray-300"
+                        style={{ backgroundColor: bgCustomColor }}
+                      />
+                    )}
                     {bg}
                   </button>
                 ))}
               </div>
+              {bgReplacement === 'custom' && (
+                <div className="mt-3 flex items-center gap-3">
+                  <label className="text-xs text-gray-500">Pick Color:</label>
+                  <input
+                    type="color"
+                    value={bgCustomColor}
+                    onChange={(e) => setBgCustomColor(e.target.value)}
+                    disabled={isProcessing}
+                    className="w-8 h-8 rounded cursor-pointer border border-gray-300"
+                  />
+                  <input
+                    type="text"
+                    value={bgCustomColor}
+                    onChange={(e) => setBgCustomColor(e.target.value)}
+                    disabled={isProcessing}
+                    placeholder="#ffffff"
+                    className="w-24 px-2 py-1 text-xs border rounded"
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -783,6 +823,112 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {selectedOperation === 'compress' && (
+            <div className="mt-4 pt-4 border-t">
+              <label className="text-xs font-medium text-gray-500 mb-2 block">
+                Quality: {compressQuality}%
+              </label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  step="5"
+                  value={compressQuality}
+                  onChange={(e) => setCompressQuality(parseInt(e.target.value))}
+                  disabled={isProcessing}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                />
+                <div className="flex gap-1">
+                  {[50, 70, 80, 90].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => setCompressQuality(q)}
+                      disabled={isProcessing}
+                      className={cn(
+                        "px-2 py-1 text-xs rounded transition-colors",
+                        compressQuality === q
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      )}
+                    >
+                      {q}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Lower quality = smaller file size. 80% is recommended for most images.
+              </p>
+            </div>
+          )}
+
+          {selectedOperation === 'convert' && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex gap-6">
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block">Output Format</label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'webp', label: 'WebP', desc: 'Best compression' },
+                      { id: 'avif', label: 'AVIF', desc: 'Smallest size' },
+                      { id: 'png', label: 'PNG', desc: 'Lossless' },
+                      { id: 'jpeg', label: 'JPEG', desc: 'Universal' }
+                    ].map((fmt) => (
+                      <button
+                        key={fmt.id}
+                        onClick={() => setConvertFormat(fmt.id)}
+                        disabled={isProcessing}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-lg transition-colors flex flex-col items-center min-w-[70px]",
+                          convertFormat === fmt.id
+                            ? "bg-purple-100 text-purple-700 border border-purple-300"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        )}
+                      >
+                        <span className="font-medium">{fmt.label}</span>
+                        <span className="text-[10px] opacity-70">{fmt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(convertFormat === 'webp' || convertFormat === 'jpeg' || convertFormat === 'avif') && (
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-gray-500 mb-2 block">
+                      Quality: {compressQuality}%
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="5"
+                      value={compressQuality}
+                      onChange={(e) => setCompressQuality(parseInt(e.target.value))}
+                      disabled={isProcessing}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {selectedOperation === 'custom' && (
+            <div className="mt-4 pt-4 border-t">
+              <label className="text-xs font-medium text-gray-500 mb-2 block">Custom Instruction</label>
+              <textarea
+                value={stagingContext}
+                onChange={(e) => setStagingContext(e.target.value)}
+                placeholder="Describe what you want to do with this image (e.g., 'make the colors more vibrant', 'add a soft blur to the background', 'adjust lighting to look like sunset')"
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[80px] resize-y"
+                disabled={isProcessing}
+              />
+              <p className="text-xs text-gray-400 mt-2">
+                Enter any image modification instruction. AI will interpret and apply your request.
+              </p>
             </div>
           )}
         </div>

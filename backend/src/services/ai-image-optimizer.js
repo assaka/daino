@@ -33,7 +33,8 @@ const OPERATIONS = {
   UPSCALE: 'upscale',
   REMOVE_BG: 'remove_bg',
   STAGE: 'stage',
-  CONVERT: 'convert'
+  CONVERT: 'convert',
+  CUSTOM: 'custom'
 };
 
 // Service keys for credit costs
@@ -43,28 +44,32 @@ const SERVICE_KEYS = {
     upscale: 'ai_image_openai_upscale',
     remove_bg: 'ai_image_openai_remove_bg',
     stage: 'ai_image_openai_stage',
-    convert: 'ai_image_openai_convert'
+    convert: 'ai_image_openai_convert',
+    custom: 'ai_image_openai_custom'
   },
   gemini: {
     compress: 'ai_image_gemini_compress',
     upscale: 'ai_image_gemini_upscale',
     remove_bg: 'ai_image_gemini_remove_bg',
     stage: 'ai_image_gemini_stage',
-    convert: 'ai_image_gemini_convert'
+    convert: 'ai_image_gemini_convert',
+    custom: 'ai_image_gemini_custom'
   },
   flux: {
     compress: 'ai_image_flux_compress',
     upscale: 'ai_image_flux_upscale',
     remove_bg: 'ai_image_flux_remove_bg',
     stage: 'ai_image_flux_stage',
-    convert: 'ai_image_flux_convert'
+    convert: 'ai_image_flux_convert',
+    custom: 'ai_image_flux_custom'
   },
   qwen: {
     compress: 'ai_image_qwen_compress',
     upscale: 'ai_image_qwen_upscale',
     remove_bg: 'ai_image_qwen_remove_bg',
     stage: 'ai_image_qwen_stage',
-    convert: 'ai_image_qwen_convert'
+    convert: 'ai_image_qwen_convert',
+    custom: 'ai_image_qwen_custom'
   }
 };
 
@@ -198,7 +203,8 @@ class AIImageOptimizer {
       upscale: 'Upscale & Enhance',
       remove_bg: 'Remove Background',
       stage: 'Product Staging',
-      convert: 'Format Conversion'
+      convert: 'Format Conversion',
+      custom: 'Custom'
     };
     return names[operation] || operation;
   }
@@ -212,7 +218,8 @@ class AIImageOptimizer {
       upscale: 'Enhance resolution and reduce noise using AI',
       remove_bg: 'Automatically remove or replace backgrounds',
       stage: 'Place product in realistic environment (room, model, etc.)',
-      convert: 'Smart conversion to optimal formats (WebP, AVIF)'
+      convert: 'Smart conversion to optimal formats (WebP, AVIF)',
+      custom: 'Apply custom AI instructions to modify the image'
     };
     return descriptions[operation] || '';
   }
@@ -237,7 +244,8 @@ class AIImageOptimizer {
         upscale: 1.0,
         remove_bg: 1.0,
         stage: 2.0,
-        convert: 0.3
+        convert: 0.3,
+        custom: 2.0  // Same as staging
       };
       return defaults[operation] || 1.0;
     }
@@ -288,6 +296,9 @@ class AIImageOptimizer {
           break;
         case OPERATIONS.CONVERT:
           result = await providerInstance.convert(image, params);
+          break;
+        case OPERATIONS.CUSTOM:
+          result = await providerInstance.custom(image, params);
           break;
         default:
           throw new Error(`Unknown operation: ${operation}`);

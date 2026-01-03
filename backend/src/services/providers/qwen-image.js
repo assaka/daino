@@ -24,7 +24,7 @@ class QwenImageProvider {
   }
 
   getCapabilities() {
-    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert'];
+    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom'];
   }
 
   /**
@@ -243,6 +243,38 @@ class QwenImageProvider {
       imageUrl: outputUrl,
       format: 'png',
       requestedFormat: targetFormat
+    };
+  }
+
+  /**
+   * Custom image modification based on user instruction
+   */
+  async custom(image, params = {}) {
+    const { instruction = 'Enhance this image' } = params;
+    const imageData = await this.prepareImage(image);
+
+    const result = await this.request('/services/aigc/image2image/image-synthesis', {
+      model: 'wanx-v1',
+      input: {
+        image: imageData.url || `data:${imageData.mimeType};base64,${imageData.data}`,
+        prompt: instruction
+      },
+      parameters: {
+        style: '<auto>',
+        n: 1,
+        strength: 0.7
+      }
+    });
+
+    const outputUrl = result.output?.results?.[0]?.url;
+    if (!outputUrl) {
+      throw new Error('No output from Qwen');
+    }
+
+    return {
+      imageUrl: outputUrl,
+      format: 'png',
+      instruction
     };
   }
 

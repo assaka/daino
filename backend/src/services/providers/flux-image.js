@@ -27,7 +27,7 @@ class FluxImageProvider {
   }
 
   getCapabilities() {
-    return ['upscale', 'remove_bg', 'stage', 'convert'];
+    return ['upscale', 'remove_bg', 'stage', 'convert', 'custom'];
   }
 
   /**
@@ -225,6 +225,47 @@ class FluxImageProvider {
       format: 'png',
       requestedFormat: targetFormat
     };
+  }
+
+  /**
+   * Custom image modification based on user instruction
+   */
+  async custom(image, params = {}) {
+    const { instruction = 'Enhance this image' } = params;
+    const imageUrl = await this.ensureUrl(image);
+
+    if (this.useReplicate) {
+      // Use Flux ControlNet for image-guided generation with custom prompt
+      const output = await this.replicateRequest(
+        'xlabs-ai/flux-dev-controlnet:4312e0fe97b5ed7d54bd2e0dcafe76c7eb8057bc6b6f0d8bd22644fe40a76c1d',
+        {
+          image: imageUrl,
+          prompt: instruction,
+          num_inference_steps: 28,
+          guidance_scale: 3.5,
+          controlnet_conditioning_scale: 0.6
+        }
+      );
+
+      return {
+        imageUrl: Array.isArray(output) ? output[0] : output,
+        format: 'png',
+        instruction
+      };
+    } else {
+      const result = await this.falRequest('fal-ai/flux-pro/v1.1', {
+        image_url: imageUrl,
+        prompt: instruction,
+        num_inference_steps: 28,
+        guidance_scale: 3.5
+      });
+
+      return {
+        imageUrl: result.images?.[0]?.url,
+        format: 'png',
+        instruction
+      };
+    }
   }
 
   /**

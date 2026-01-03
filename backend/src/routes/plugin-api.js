@@ -2723,7 +2723,26 @@ router.delete('/registry/:id/files', async (req, res) => {
         // Silently fail
       }
     }
-    // Delete from plugin_scripts table
+    // Delete from plugin_hooks table
+    else if (normalizedPath.startsWith('hooks/')) {
+      // Convert file name to hook name: hooks/product.title.color.js -> product.title.color
+      const hookName = normalizedPath.replace('hooks/', '').replace('.js', '').replace(/_/g, '.');
+      attemptedTable = 'plugin_hooks';
+      try {
+        const { data, error } = await tenantDb
+          .from('plugin_hooks')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('hook_name', hookName)
+          .select();
+        if (!error && data && data.length > 0) {
+          deleted = true;
+        }
+      } catch (err) {
+        // Silently fail
+      }
+    }
+    // Delete from plugin_scripts table (fallback for other files)
     else {
       attemptedTable = 'plugin_scripts';
 

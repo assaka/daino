@@ -27,7 +27,7 @@ class OpenAIImageProvider {
   }
 
   getCapabilities() {
-    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert'];
+    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom'];
   }
 
   /**
@@ -163,6 +163,28 @@ class OpenAIImageProvider {
       format: 'png', // Will need server-side conversion to targetFormat
       requestedFormat: targetFormat,
       quality
+    };
+  }
+
+  /**
+   * Custom image modification based on user instruction
+   */
+  async custom(image, params = {}) {
+    const { instruction = 'Enhance this image' } = params;
+
+    const response = await this.client.images.edit({
+      model: 'gpt-image-1',
+      image: await this.prepareImage(image),
+      prompt: instruction,
+      size: params.size || '1024x1024'
+    });
+
+    const imageData = await this.extractImageFromResponse(response);
+
+    return {
+      image: imageData,
+      format: 'png',
+      instruction
     };
   }
 

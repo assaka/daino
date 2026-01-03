@@ -26,7 +26,7 @@ class GeminiImageProvider {
   }
 
   getCapabilities() {
-    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert'];
+    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom'];
   }
 
   /**
@@ -240,6 +240,26 @@ class GeminiImageProvider {
       format: imageResult.mimeType.split('/')[1] || 'png',
       requestedFormat: targetFormat,
       quality
+    };
+  }
+
+  /**
+   * Custom image modification based on user instruction
+   */
+  async custom(image, params = {}) {
+    const { instruction = 'Enhance this image' } = params;
+    const imageData = await this.prepareImage(image);
+    const prompt = `${instruction}. Generate the modified image.`;
+
+    const imageResult = await this.generateWithImage(imageData, prompt);
+    if (!imageResult) {
+      throw new Error('No image returned from Gemini');
+    }
+
+    return {
+      image: imageResult.data,
+      format: imageResult.mimeType.split('/')[1] || 'png',
+      instruction
     };
   }
 
