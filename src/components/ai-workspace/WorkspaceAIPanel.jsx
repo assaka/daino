@@ -1293,7 +1293,7 @@ const WorkspaceAIPanel = () => {
                     )}
 
                     {/* Credits Used */}
-                    {message.credits && message.role !== 'user' && (
+                    {message.credits > 0 && message.role !== 'user' && (
                       <p className="text-xs mt-2 opacity-70">
                         {message.credits} credits used
                       </p>

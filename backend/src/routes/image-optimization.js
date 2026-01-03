@@ -15,6 +15,91 @@ const { masterDbClient } = require('../database/masterConnection');
 const creditService = require('../services/credit-service');
 
 /**
+ * Parse error messages and return user-friendly versions
+ */
+function parseErrorMessage(error) {
+  const errorStr = error.message || String(error);
+
+  // OpenAI safety/content policy errors
+  if (errorStr.includes('safety system') || errorStr.includes('content policy')) {
+    return {
+      code: 'CONTENT_REJECTED',
+      message: 'The image was rejected by the AI safety system. This usually happens when the image contains content that violates usage policies.',
+      suggestion: 'Try using a different image or contact support if you believe this is an error.',
+      originalError: errorStr
+    };
+  }
+
+  // Rate limiting
+  if (errorStr.includes('rate limit') || errorStr.includes('429') || errorStr.includes('too many requests')) {
+    return {
+      code: 'RATE_LIMITED',
+      message: 'Too many requests. The AI service is temporarily rate limited.',
+      suggestion: 'Please wait a moment and try again.',
+      originalError: errorStr
+    };
+  }
+
+  // API key / authentication errors
+  if (errorStr.includes('API key') || errorStr.includes('authentication') || errorStr.includes('401') || errorStr.includes('403')) {
+    return {
+      code: 'PROVIDER_AUTH_ERROR',
+      message: 'Authentication error with the AI provider.',
+      suggestion: 'Please contact support to verify API configuration.',
+      originalError: errorStr
+    };
+  }
+
+  // Image format/size errors
+  if (errorStr.includes('format') || errorStr.includes('size') || errorStr.includes('too large') || errorStr.includes('unsupported')) {
+    return {
+      code: 'INVALID_IMAGE',
+      message: 'The image format or size is not supported.',
+      suggestion: 'Try using a JPEG or PNG image under 20MB.',
+      originalError: errorStr
+    };
+  }
+
+  // Timeout errors
+  if (errorStr.includes('timeout') || errorStr.includes('ETIMEDOUT') || errorStr.includes('ECONNRESET')) {
+    return {
+      code: 'TIMEOUT',
+      message: 'The operation timed out.',
+      suggestion: 'The AI service is taking too long. Please try again or use a smaller image.',
+      originalError: errorStr
+    };
+  }
+
+  // Network errors
+  if (errorStr.includes('ENOTFOUND') || errorStr.includes('network') || errorStr.includes('fetch failed')) {
+    return {
+      code: 'NETWORK_ERROR',
+      message: 'Network error connecting to the AI service.',
+      suggestion: 'Please check your connection and try again.',
+      originalError: errorStr
+    };
+  }
+
+  // Quota/billing errors
+  if (errorStr.includes('quota') || errorStr.includes('billing') || errorStr.includes('insufficient')) {
+    return {
+      code: 'PROVIDER_QUOTA',
+      message: 'The AI provider quota has been exceeded.',
+      suggestion: 'Please contact support.',
+      originalError: errorStr
+    };
+  }
+
+  // Default error
+  return {
+    code: 'OPTIMIZATION_FAILED',
+    message: 'Failed to process the image.',
+    suggestion: 'Please try again or use a different provider.',
+    originalError: errorStr
+  };
+}
+
+/**
  * Get available providers and their capabilities
  * GET /api/image-optimization/providers
  */
