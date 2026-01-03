@@ -12,6 +12,7 @@ const aiImageOptimizer = require('../services/ai-image-optimizer');
 const { OPERATIONS, SERVICE_KEYS } = require('../services/ai-image-optimizer');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 const { masterDbClient } = require('../database/masterConnection');
+const creditService = require('../services/credit-service');
 
 /**
  * Get available providers and their capabilities
@@ -133,6 +134,7 @@ router.post('/optimize',
 
       const { provider, operation, image, params = {} } = req.body;
       const storeId = req.storeId || req.headers['x-store-id'];
+      const userId = req.user?.id;
 
       // Get credit cost
       const serviceKey = SERVICE_KEYS[provider]?.[operation];
@@ -144,21 +146,17 @@ router.post('/optimize',
         console.warn(`[ImageOptimization] Using default cost for ${serviceKey}`);
       }
 
-      // Check if store has enough credits
-      if (storeId) {
-        const { data: store } = await masterDbClient
-          .from('stores')
-          .select('credits_balance')
-          .eq('id', storeId)
-          .single();
-
-        if (store && store.credits_balance < creditCost) {
+      // Check if user has enough credits
+      if (userId) {
+        const hasCredits = await creditService.hasEnoughCredits(userId, storeId, creditCost);
+        if (!hasCredits) {
+          const balance = await creditService.getBalance(userId);
           return res.status(402).json({
             success: false,
             code: 'INSUFFICIENT_CREDITS',
-            message: `Insufficient credits. Required: ${creditCost}, Available: ${store.credits_balance}`,
+            message: `Insufficient credits. Required: ${creditCost}, Available: ${balance}`,
             required: creditCost,
-            available: store.credits_balance
+            available: balance
           });
         }
       }
@@ -172,13 +170,16 @@ router.post('/optimize',
       });
 
       // Deduct credits
-      if (storeId) {
-        await masterDbClient.rpc('deduct_credits', {
-          p_store_id: storeId,
-          p_amount: creditCost,
-          p_service_key: serviceKey,
-          p_description: `Image ${operation} using ${provider}`
-        });
+      if (userId) {
+        await creditService.deduct(
+          userId,
+          storeId,
+          creditCost,
+          `Image ${operation} using ${provider}`,
+          { provider, operation },
+          null,
+          'ai_image_optimization'
+        );
       }
 
       res.json({
@@ -209,6 +210,7 @@ router.post('/remove-bg',
     try {
       const { provider = 'flux', image, replacement = 'transparent' } = req.body;
       const storeId = req.storeId || req.headers['x-store-id'];
+      const userId = req.user?.id;
 
       const serviceKey = SERVICE_KEYS[provider]?.remove_bg;
       let creditCost = 1;
@@ -220,20 +222,16 @@ router.post('/remove-bg',
       }
 
       // Check credits
-      if (storeId) {
-        const { data: store } = await masterDbClient
-          .from('stores')
-          .select('credits_balance')
-          .eq('id', storeId)
-          .single();
-
-        if (store && store.credits_balance < creditCost) {
+      if (userId) {
+        const hasCredits = await creditService.hasEnoughCredits(userId, storeId, creditCost);
+        if (!hasCredits) {
+          const balance = await creditService.getBalance(userId);
           return res.status(402).json({
             success: false,
             code: 'INSUFFICIENT_CREDITS',
             message: `Insufficient credits. Required: ${creditCost}`,
             required: creditCost,
-            available: store.credits_balance
+            available: balance
           });
         }
       }
@@ -246,13 +244,16 @@ router.post('/remove-bg',
       });
 
       // Deduct credits
-      if (storeId) {
-        await masterDbClient.rpc('deduct_credits', {
-          p_store_id: storeId,
-          p_amount: creditCost,
-          p_service_key: serviceKey,
-          p_description: `Background removal using ${provider}`
-        });
+      if (userId) {
+        await creditService.deduct(
+          userId,
+          storeId,
+          creditCost,
+          `Background removal using ${provider}`,
+          { provider, operation: 'remove_bg' },
+          null,
+          'ai_image_optimization'
+        );
       }
 
       res.json({

@@ -513,24 +513,65 @@ const WorkspaceAIPanel = () => {
 
         // Check if response contains code blocks (even in "conversational" responses)
         const codeBlockMatch = messageContent.match(/```(?:javascript|js|jsx)?\n([\s\S]*?)```/);
-        const hasCodeBlock = !!codeBlockMatch;
+        let hasCodeBlock = !!codeBlockMatch;
+
+        // Check if message contains embedded JSON with generatedFiles
+        let embeddedJson = null;
+        let embeddedFiles = null;
+        const jsonMatch = messageContent.match(/\{\s*"name"[\s\S]*?"generatedFiles"[\s\S]*?\[\s*\{[\s\S]*?\}\s*\]\s*[,\}]/);
+        if (jsonMatch) {
+          try {
+            // Try to extract and parse the JSON object from the message
+            const jsonStr = messageContent.match(/\{[\s\S]*"generatedFiles"[\s\S]*\]/)?.[0];
+            if (jsonStr) {
+              // Find the complete JSON object
+              let braceCount = 0;
+              let jsonEndIndex = 0;
+              for (let i = 0; i < messageContent.length; i++) {
+                if (messageContent[i] === '{') braceCount++;
+                if (messageContent[i] === '}') {
+                  braceCount--;
+                  if (braceCount === 0) {
+                    jsonEndIndex = i + 1;
+                    break;
+                  }
+                }
+              }
+              const startIndex = messageContent.indexOf('{');
+              if (startIndex !== -1 && jsonEndIndex > startIndex) {
+                const fullJson = messageContent.substring(startIndex, jsonEndIndex);
+                embeddedJson = JSON.parse(fullJson);
+                embeddedFiles = embeddedJson.generatedFiles;
+                console.log('📦 Found embedded JSON in message:', embeddedJson);
+              }
+            }
+          } catch (e) {
+            console.log('⚠️ Failed to parse embedded JSON:', e.message);
+          }
+        }
+
+        // Update flags based on embedded JSON
+        const actualGeneratedFiles = response.generatedFiles || embeddedFiles;
+        const actualHasGeneratedFiles = actualGeneratedFiles && actualGeneratedFiles.length > 0;
 
         console.log('🔍 Response analysis:', {
-          hasGeneratedFiles,
+          hasGeneratedFiles: actualHasGeneratedFiles,
           hasPluginStructure,
           hasCodeBlock,
+          hasEmbeddedJson: !!embeddedJson,
           responseType: response.type
         });
 
-        if (hasGeneratedFiles || hasPluginStructure) {
+        if (actualHasGeneratedFiles || hasPluginStructure) {
           // Code was generated in structured format - show success and dispatch event
-          const files = response.generatedFiles || [];
-          const explanation = response.explanation || 'Plugin code generated successfully.';
+          const files = actualGeneratedFiles || [];
+          const explanation = embeddedJson?.explanation || response.explanation || 'Plugin code generated successfully.';
 
           console.log('✅ Structured code generated - dispatching event with:', {
             pluginId: pluginToEdit.id,
             filesCount: files.length,
-            hasPluginStructure: !!response.plugin_structure
+            hasPluginStructure: !!response.plugin_structure,
+            fromEmbeddedJson: !!embeddedJson
           });
 
           addChatMessage({
@@ -539,7 +580,7 @@ const WorkspaceAIPanel = () => {
             data: {
               type: 'plugin_code_generated',
               files: files,
-              pluginStructure: response.plugin_structure
+              pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure
             }
           });
 
@@ -548,8 +589,8 @@ const WorkspaceAIPanel = () => {
             detail: {
               pluginId: pluginToEdit.id,
               files: files,
-              pluginStructure: response.plugin_structure,
-              code: response.plugin_structure?.main_file || (files[0]?.code)
+              pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure,
+              code: response.plugin_structure?.main_file || embeddedJson?.plugin_structure?.main_file || (files[0]?.code)
             }
           }));
         } else if (hasCodeBlock) {
