@@ -267,11 +267,11 @@ export default function XmlSitemap() {
                     product.images.slice(0, 10).forEach((img, idx) => {
                         const imageUrl = img.url || img.file_url || img;
                         if (imageUrl) {
+                            const caption = idx === 0 && product.description ? `\n      <image:caption>${escapeXml(product.description.substring(0, 256))}</image:caption>` : '';
                             xml += `
     <image:image>
       <image:loc>${imageUrl}</image:loc>
-      <image:title>${escapeXml(img.alt || product.name || 'Product Image')}${idx > 0 ? ` - Image ${idx + 1}` : ''}</image:title>
-      ${idx === 0 && product.description ? `<image:caption>${escapeXml(product.description.substring(0, 256))}</image:caption>` : ''}
+      <image:title>${escapeXml(img.alt || product.name || 'Product Image')}${idx > 0 ? ` - Image ${idx + 1}` : ''}</image:title>${caption}
     </image:image>`;
                         }
                     });
