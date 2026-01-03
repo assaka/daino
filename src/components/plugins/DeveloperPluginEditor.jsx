@@ -842,13 +842,21 @@ const DeveloperPluginEditor = ({
           created_by_name: 'Developer'
         });
 
-        if (versionResponse.success) {
+        console.log('📝 Version response:', versionResponse);
+        if (versionResponse?.success && versionResponse?.version) {
           addTerminalOutput(`✓ Version ${versionResponse.version.version_number} created`, 'success');
           setCurrentVersionId(versionResponse.version.id);
+        } else if (versionResponse?.error) {
+          console.warn('Version creation failed:', versionResponse.error);
+          addTerminalOutput(`⚠ Version not created: ${versionResponse.error}`, 'warning');
+        } else {
+          console.warn('Unexpected version response:', versionResponse);
+          addTerminalOutput(`⚠ Version creation status unclear`, 'warning');
         }
       } catch (versionError) {
-        console.warn('Failed to create version:', versionError);
-        addTerminalOutput(`⚠ Warning: Version not created`, 'warning');
+        console.error('Failed to create version:', versionError);
+        const errorMsg = versionError?.response?.data?.error || versionError?.message || 'Unknown error';
+        addTerminalOutput(`⚠ Warning: Version not created - ${errorMsg}`, 'warning');
       }
 
       setIsSaving(false);

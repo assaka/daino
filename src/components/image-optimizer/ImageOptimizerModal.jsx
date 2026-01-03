@@ -113,9 +113,11 @@ const generateSmartPresets = (productContext) => {
     presets.push({ id: 'luxury_display', label: '💎 Luxury Display', value: `${productContext.name} on black velvet with dramatic spotlight lighting` });
     presets.push({ id: 'lifestyle_jewelry', label: '✨ Lifestyle', value: `${productContext.name} in an elegant lifestyle setting with soft focus background` });
   }
-  if (name.includes('bag') || name.includes('purse') || name.includes('handbag') || name.includes('backpack')) {
+  if (name.includes('bag') || name.includes('purse') || name.includes('handbag') || name.includes('backpack') || name.includes('luggage') || name.includes('suitcase')) {
     presets.push({ id: 'fashion_shoot', label: '👜 Fashion Shoot', value: `${productContext.name} in a high-fashion photoshoot setting` });
     presets.push({ id: 'travel', label: '✈️ Travel', value: `${productContext.name} in an airport or travel lifestyle setting` });
+    presets.push({ id: 'outdoor_adventure', label: '🏔️ Outdoor Adventure', value: `${productContext.name} in an outdoor hiking or adventure setting with nature backdrop` });
+    presets.push({ id: 'urban_commute', label: '🚶 Urban Commute', value: `${productContext.name} in a stylish urban city street setting` });
   }
 
   // Category-based fallbacks
@@ -763,24 +765,26 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                   </div>
                 )}
 
-                {/* Generic presets */}
-                <div className="flex flex-wrap gap-1.5">
-                  {STAGING_CONTEXTS.map((ctx) => (
-                    <button
-                      key={ctx.id}
-                      onClick={() => setStagingContext(ctx.value)}
-                      disabled={isProcessing}
-                      className={cn(
-                        "px-2.5 py-1 text-xs rounded-full transition-colors",
-                        stagingContext === ctx.value
-                          ? "bg-purple-100 text-purple-700 border border-purple-300"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      )}
-                    >
-                      {ctx.label}
-                    </button>
-                  ))}
-                </div>
+                {/* Generic presets - only show if no smart presets */}
+                {smartPresets.length === 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {STAGING_CONTEXTS.map((ctx) => (
+                      <button
+                        key={ctx.id}
+                        onClick={() => setStagingContext(ctx.value)}
+                        disabled={isProcessing}
+                        className={cn(
+                          "px-2.5 py-1 text-xs rounded-full transition-colors",
+                          stagingContext === ctx.value
+                            ? "bg-purple-100 text-purple-700 border border-purple-300"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        )}
+                      >
+                        {ctx.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })()}

@@ -73,7 +73,8 @@ const AIImageOptimizerGrid = ({
         }
 
         if (filterType === 'all' || filterType === 'categories' || filterType === 'products') {
-          promises.push(Category.filter({ store_id: storeId }));
+          // Request all categories (high limit to get subcategories too)
+          promises.push(Category.filter({ store_id: storeId, limit: 1000 }));
         } else {
           promises.push(Promise.resolve(null));
         }
@@ -233,8 +234,12 @@ const AIImageOptimizerGrid = ({
       folder: item.type,
       id: image.assetId
     });
+    // For library files, use the file name; for products/categories use item name
+    const contextName = item.type === 'library'
+      ? (image.name?.replace(/\.[^/.]+$/, '') || 'Image') // Remove file extension
+      : item.name;
     setSelectedContext({
-      name: item.name,
+      name: contextName,
       category: item.categoryName
     });
     setOptimizerOpen(true);
