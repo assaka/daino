@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import apiClient from '@/api/client';
@@ -56,8 +56,11 @@ export const AI_OPERATIONS = {
 
 export const AIWorkspaceProvider = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { pluginId: urlPluginId } = useParams();
   const { getSelectedStoreId } = useStoreSelection();
   const draftsProvisionedRef = useRef(false);
+  const pluginLoadedFromUrlRef = useRef(false);
 
   // Page/Editor State
   const [selectedPageType, setSelectedPageType] = useState(PAGE_TYPES.PRODUCT);
@@ -209,6 +212,34 @@ export const AIWorkspaceProvider = ({ children }) => {
     }
   }, [location.state]);
 
+  // Load plugin from URL parameter (for page reload persistence)
+  useEffect(() => {
+    const loadPluginFromUrl = async () => {
+      // Only load if we have a URL plugin ID and haven't loaded yet
+      if (!urlPluginId || pluginLoadedFromUrlRef.current || pluginToEdit?.id === urlPluginId) {
+        return;
+      }
+
+      pluginLoadedFromUrlRef.current = true;
+      console.log('🔌 Loading plugin from URL:', urlPluginId);
+
+      try {
+        const response = await apiClient.get(`plugins/registry/${urlPluginId}`);
+        if (response.data) {
+          setPluginToEdit(response.data);
+          setShowPluginEditor(true);
+          console.log('✅ Plugin loaded from URL:', response.data.name);
+        }
+      } catch (error) {
+        console.error('Failed to load plugin from URL:', error);
+        // Navigate away from invalid plugin URL
+        navigate('/ai-workspace', { replace: true });
+      }
+    };
+
+    loadPluginFromUrl();
+  }, [urlPluginId, pluginToEdit?.id, navigate]);
+
   /**
    * Select a page type and update view mode accordingly
    */
@@ -334,7 +365,11 @@ export const AIWorkspaceProvider = ({ children }) => {
   const openPluginEditor = useCallback((plugin) => {
     setPluginToEdit(plugin);
     setShowPluginEditor(true);
-  }, []);
+    // Update URL to include plugin ID (for reload persistence)
+    if (plugin?.id) {
+      navigate(`/ai-workspace/plugin/${plugin.id}`, { replace: true });
+    }
+  }, [navigate]);
 
   /**
    * Close plugin editor
@@ -342,7 +377,10 @@ export const AIWorkspaceProvider = ({ children }) => {
   const closePluginEditor = useCallback(() => {
     setPluginToEdit(null);
     setShowPluginEditor(false);
-  }, []);
+    pluginLoadedFromUrlRef.current = false; // Reset so we can load again later
+    // Remove plugin ID from URL
+    navigate('/ai-workspace', { replace: true });
+  }, [navigate]);
 
   /**
    * Open AI Studio mode

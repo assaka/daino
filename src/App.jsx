@@ -489,6 +489,7 @@ function App() {
 
           {/* AI Workspace - Unified Editor + AI */}
           <Route path="/ai-workspace" element={<PageWrapper Component={Pages.AIWorkspace} pageName="AIWorkspace" />} />
+          <Route path="/ai-workspace/plugin/:pluginId" element={<PageWrapper Component={Pages.AIWorkspace} pageName="AIWorkspace" />} />
 
           {/* Custom Domain Routes (when accessed via custom domain like www.myshop.com) */}
           {/* These routes match only on actual custom store domains (not platform, dev, or hosting domains) */}

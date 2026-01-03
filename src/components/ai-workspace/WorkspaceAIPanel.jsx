@@ -502,21 +502,35 @@ const WorkspaceAIPanel = () => {
           }
         });
 
+        // Debug: Log full response to understand structure
+        console.log('🤖 Plugin AI Response:', JSON.stringify(response, null, 2));
+
         // Handle plugin AI response
-        if (response.type === 'conversation' || response.isConversational) {
-          // Conversational response - just show the message
+        // Check for various response structures the AI might return
+        const hasGeneratedFiles = response.generatedFiles && response.generatedFiles.length > 0;
+        const hasPluginStructure = response.plugin_structure?.main_file;
+        const isConversational = response.type === 'conversation' || response.isConversational;
+
+        if (isConversational && !hasGeneratedFiles && !hasPluginStructure) {
+          // Pure conversational response - just show the message
           addChatMessage({
             role: 'assistant',
             content: response.message || response.content || 'I can help you modify this plugin. What would you like to add or change?'
           });
-        } else if (response.generatedFiles || response.plugin_structure) {
-          // Code was generated - show success and notify user
+        } else if (hasGeneratedFiles || hasPluginStructure) {
+          // Code was generated - show success and dispatch event
           const files = response.generatedFiles || [];
           const explanation = response.explanation || 'Plugin code generated successfully.';
 
+          console.log('✅ Code generated - dispatching event with:', {
+            pluginId: pluginToEdit.id,
+            filesCount: files.length,
+            hasPluginStructure: !!response.plugin_structure
+          });
+
           addChatMessage({
             role: 'assistant',
-            content: `✅ ${explanation}\n\n${files.length > 0 ? `Generated ${files.length} file(s). The code is ready to be applied.` : ''}`,
+            content: `✅ ${explanation}\n\n${files.length > 0 ? `Generated ${files.length} file(s). Saving to plugin...` : 'Saving code to plugin...'}`,
             data: {
               type: 'plugin_code_generated',
               files: files,
@@ -534,12 +548,41 @@ const WorkspaceAIPanel = () => {
             }
           }));
         } else {
-          // Generic response
-          addChatMessage({
-            role: 'assistant',
-            content: response.message || response.explanation || 'Plugin updated.',
-            data: response
-          });
+          // Response has some data but not in expected format
+          // Try to extract code from response
+          console.log('⚠️ Response not in expected format, checking for code...');
+
+          const messageContent = response.message || response.explanation || '';
+
+          // Check if response contains code blocks
+          const codeMatch = messageContent.match(/```(?:javascript|js)?\n([\s\S]*?)```/);
+
+          if (codeMatch) {
+            console.log('📝 Found code block in response, extracting...');
+            const extractedCode = codeMatch[1];
+
+            addChatMessage({
+              role: 'assistant',
+              content: `✅ Code generated. Saving to plugin...\n\n${messageContent}`,
+              data: { type: 'plugin_code_generated' }
+            });
+
+            // Dispatch event with extracted code
+            window.dispatchEvent(new CustomEvent('plugin-ai-code-generated', {
+              detail: {
+                pluginId: pluginToEdit.id,
+                files: [{ name: 'hook.js', code: extractedCode }],
+                code: extractedCode
+              }
+            }));
+          } else {
+            // Just show the response as-is
+            addChatMessage({
+              role: 'assistant',
+              content: messageContent || 'Plugin updated.',
+              data: response
+            });
+          }
         }
 
         saveChatMessage('assistant', response.message || response.explanation || 'Plugin response');
