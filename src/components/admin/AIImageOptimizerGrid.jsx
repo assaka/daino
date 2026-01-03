@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wand2, Image, Package, FolderOpen, Search, Loader2 } from 'lucide-react';
+import { Wand2, Image, Package, FolderOpen, Search, Loader2, Filter } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Product, Category, MediaAsset } from '@/api/entities';
 import { ImageOptimizerModal } from '@/components/image-optimizer';
@@ -16,6 +16,7 @@ import { getProductName, getCategoryName } from '@/utils/translationUtils';
  * - categories: array - Optional pre-loaded categories (if not provided, will load)
  * - onRefresh: function - Called after optimization to refresh parent data
  * - showSearch: boolean - Whether to show search input (default: true)
+ * - showFilterBadges: boolean - Whether to show filter badges when filterType is 'all' (default: true)
  * - compact: boolean - Use compact layout (default: false)
  */
 const AIImageOptimizerGrid = ({
@@ -24,6 +25,7 @@ const AIImageOptimizerGrid = ({
   categories: externalCategories,
   onRefresh,
   showSearch = true,
+  showFilterBadges = true,
   compact = false
 }) => {
   const { getSelectedStoreId } = useStoreSelection();
@@ -33,6 +35,9 @@ const AIImageOptimizerGrid = ({
   const [libraryFiles, setLibraryFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [flashMessage, setFlashMessage] = useState(null);
+
+  // Local filter for 'all' mode
+  const [activeFilter, setActiveFilter] = useState('all');
 
   // Optimizer modal state
   const [optimizerOpen, setOptimizerOpen] = useState(false);
@@ -103,12 +108,15 @@ const AIImageOptimizerGrid = ({
     loadData();
   }, [getSelectedStoreId, filterType, externalProducts, externalCategories]);
 
+  // Effective filter (use activeFilter when filterType is 'all')
+  const effectiveFilter = filterType === 'all' ? activeFilter : filterType;
+
   // Build grouped items
   const groupedItems = useMemo(() => {
     const items = [];
 
     // Add products with their images
-    if (filterType === 'all' || filterType === 'products') {
+    if (effectiveFilter === 'all' || effectiveFilter === 'products') {
       products.forEach(product => {
         const images = [];
 
@@ -161,7 +169,7 @@ const AIImageOptimizerGrid = ({
     }
 
     // Add categories with their images
-    if (filterType === 'all' || filterType === 'categories') {
+    if (effectiveFilter === 'all' || effectiveFilter === 'categories') {
       categories.forEach(category => {
         if (category.image_url) {
           items.push({
@@ -182,7 +190,7 @@ const AIImageOptimizerGrid = ({
     }
 
     // Add library files
-    if (filterType === 'all' || filterType === 'library') {
+    if (effectiveFilter === 'all' || effectiveFilter === 'library') {
       if (libraryFiles.length > 0) {
         items.push({
           id: 'library',
@@ -201,7 +209,7 @@ const AIImageOptimizerGrid = ({
     }
 
     return items;
-  }, [products, categories, libraryFiles, filterType]);
+  }, [products, categories, libraryFiles, effectiveFilter]);
 
   // Filter items by search
   const filteredItems = useMemo(() => {

@@ -524,6 +524,12 @@ const WorkspaceAIPanel = () => {
         // Route to plugin AI service for code generation/modification
         console.log('🔌 Plugin editing mode - routing to plugin AI', pluginToEdit);
 
+        // Get recent conversation history for context (last 6 messages)
+        const recentHistory = chatMessages.slice(-6).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
         const response = await apiClient.post('plugins/ai/generate', {
           mode: 'developer',
           prompt: userMessage,
@@ -535,14 +541,10 @@ const WorkspaceAIPanel = () => {
             pluginSlug: pluginToEdit.slug,
             category: pluginToEdit.category,
             storeId: storeId,
-            // Include existing plugin files so AI can modify them instead of creating new ones
+            // Include existing plugin files so AI knows what exists
             existingFiles: pluginFiles?.map(f => ({ path: f.path, name: f.name })) || [],
-            // Include currently open file content for context
-            currentFile: selectedPluginFile ? {
-              path: selectedPluginFile.path,
-              name: selectedPluginFile.name,
-              content: selectedPluginFile.content
-            } : null
+            // Include conversation history so AI knows what was just created/modified
+            conversationHistory: recentHistory
           }
         });
 
@@ -550,6 +552,21 @@ const WorkspaceAIPanel = () => {
         console.log('🤖 Plugin AI Response:', JSON.stringify(response, null, 2));
 
         // Handle plugin AI response
+        // Check if AI is asking a clarifying question
+        if (response.question) {
+          const questionText = response.options
+            ? `${response.question}\n\nOptions:\n${response.options.map((o, i) => `${i + 1}. ${o}`).join('\n')}`
+            : response.question;
+
+          addChatMessage({
+            role: 'assistant',
+            content: questionText
+          });
+          saveChatMessage('assistant', questionText);
+          setIsProcessingAi(false);
+          return;
+        }
+
         // Check for various response structures the AI might return
         const hasGeneratedFiles = response.generatedFiles && response.generatedFiles.length > 0;
         const hasPluginStructure = response.plugin_structure?.main_file;

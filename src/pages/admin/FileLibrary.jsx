@@ -1636,7 +1636,7 @@ const FileLibrary = () => {
             }
           >
             <Wand2 className="w-4 h-4 mr-1" />
-            AI Optimizer
+            AI Image Optimizer
           </Button>
 
           {/* View toggles */}

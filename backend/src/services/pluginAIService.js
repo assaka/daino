@@ -535,16 +535,16 @@ Help them configure the plugin step-by-step. Suggest database tables, features, 
           ? `\n**Existing plugin files:**\n${context.existingFiles.map(f => `- ${f.path}`).join('\n')}`
           : '';
 
-        // Build current file context
-        const currentFileContext = context.currentFile
-          ? `\n**Currently open file:** ${context.currentFile.path}\n\`\`\`javascript\n${context.currentFile.content}\n\`\`\``
+        // Build conversation history context
+        const conversationContext = context.conversationHistory && context.conversationHistory.length > 0
+          ? `\n**Recent conversation:**\n${context.conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 200)}${m.content.length > 200 ? '...' : ''}`).join('\n')}`
           : '';
 
         prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (${context.pluginSlug || 'unknown'}).
 ${existingFilesList}
-${currentFileContext}
+${conversationContext}
 
-**Request:** ${userPrompt}
+**Current request:** ${userPrompt}
 
 RESPONSE FORMAT - Return ONLY this JSON, nothing else:
 {
@@ -554,11 +554,18 @@ RESPONSE FORMAT - Return ONLY this JSON, nothing else:
   "explanation": "One sentence describing what was added or modified."
 }
 
+OR if the request is unclear, ask for clarification:
+{
+  "question": "Which file would you like me to modify?",
+  "options": ["file1.js", "file2.js"]
+}
+
 RULES:
 - Return ONLY valid JSON, no markdown, no extra text
-- Keep explanation to 1 sentence max
-- **IMPORTANT: If modifying an existing file, use the SAME filename from "Existing plugin files"**
-- **If user says "change it" or refers to previous code, modify the currently open file**
+- **Look at the conversation history to understand what file was just created/modified**
+- **If user says "change it", "update that", etc., modify the file from the previous message**
+- **If unclear which file to modify, return a question asking for clarification**
+- Use the SAME filename from "Existing plugin files" when modifying
 - Generate minimal working code for the request
 - Use DainoStore plugin hooks (cart.add_item, product.view, etc.)`;
       } else {

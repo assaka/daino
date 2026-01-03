@@ -64,12 +64,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageLoader } from "@/components/ui/page-loader";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 import CategoryForm from "@/components/admin/categories/CategoryForm";
 import { ImageOptimizerModal } from "@/components/image-optimizer";
 import AIImageOptimizerGrid from "@/components/admin/AIImageOptimizerGrid";
 import { TranslationIndicator } from "@/components/admin/TranslationFields";
 import { getCategoryName, getCategoryDescription } from "@/utils/translationUtils";
+import { cn } from "@/lib/utils";
 
 export default function Categories() {
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
@@ -102,6 +108,7 @@ export default function Categories() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [optimizerImage, setOptimizerImage] = useState(null);
   const [aiOptimizerMode, setAiOptimizerMode] = useState(false);
+  const [navSettingsOpen, setNavSettingsOpen] = useState(true);
 
   // Load user credits for AI translation checks
   const loadUserCredits = async () => {
@@ -1060,15 +1067,31 @@ export default function Categories() {
         </div>
 
         {/* Root Category Selector and Settings */}
-        <Card className="material-elevation-1 border-0 mb-6">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {/* Store-wide Category Settings */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Category Navigation Settings
-                </h3>
+        <Collapsible
+          open={navSettingsOpen && !aiOptimizerMode}
+          onOpenChange={setNavSettingsOpen}
+          className="mb-6"
+        >
+          <Card className="material-elevation-1 border-0">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors py-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Settings className="w-5 h-5" />
+                    Category Navigation Settings
+                  </CardTitle>
+                  <ChevronDown className={cn(
+                    "w-5 h-5 text-gray-500 transition-transform",
+                    navSettingsOpen && !aiOptimizerMode ? "rotate-180" : ""
+                  )} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 pb-6 px-6">
+                <div className="space-y-4">
+                  {/* Store-wide Category Settings */}
+                  <div>
                 
                 {/* Root Category Selection */}
                 <div className="mb-4">
@@ -1183,10 +1206,12 @@ export default function Categories() {
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
         <Card className="material-elevation-1 border-0 mb-6">
           <CardContent className="p-6">
             <div className="space-y-4">
