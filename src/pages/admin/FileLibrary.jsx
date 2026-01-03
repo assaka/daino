@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Upload, File as FileIcon, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2 } from 'lucide-react';
+import { Upload, File as FileIcon, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2, LayoutGrid } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
@@ -7,6 +7,7 @@ import SaveButton from '@/components/ui/save-button';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import AIImageOptimizerGrid from '@/components/admin/AIImageOptimizerGrid';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1001,6 +1002,9 @@ const FileLibrary = () => {
   const [fileToDelete, setFileToDelete] = useState(null);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
 
+  // AI Image Optimizer Mode (shows all products, categories, and library images)
+  const [aiOptimizerMode, setAiOptimizerMode] = useState(false);
+
   // Selection handlers
   const toggleFileSelection = (fileId) => {
     setSelectedFileIds(prev =>
@@ -1621,16 +1625,32 @@ const FileLibrary = () => {
             {filteredFiles.length} file{filteredFiles.length !== 1 ? 's' : ''}
           </span>
 
+          {/* AI Optimizer Mode Toggle */}
+          <Button
+            onClick={() => setAiOptimizerMode(!aiOptimizerMode)}
+            variant={aiOptimizerMode ? "default" : "outline"}
+            size="sm"
+            className={aiOptimizerMode
+              ? "bg-purple-600 text-white hover:bg-purple-700"
+              : "border-purple-600 text-purple-600 hover:bg-purple-50"
+            }
+          >
+            <Wand2 className="w-4 h-4 mr-1" />
+            AI Optimizer
+          </Button>
+
           {/* View toggles */}
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+            disabled={aiOptimizerMode}
           >
             <Grid className="w-5 h-5" />
           </button>
           <button
             onClick={() => setViewMode('list')}
             className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+            disabled={aiOptimizerMode}
           >
             <List className="w-5 h-5" />
           </button>
@@ -1638,7 +1658,16 @@ const FileLibrary = () => {
       </div>
 
       {/* Files Display */}
-      {loading ? (
+      {aiOptimizerMode ? (
+        /* AI Image Optimizer Grid - Shows all products, categories, and library */
+        <div className="bg-white rounded-lg border p-4">
+          <AIImageOptimizerGrid
+            filterType="all"
+            onRefresh={loadFiles}
+            showSearch={true}
+          />
+        </div>
+      ) : loading ? (
         <PageLoader size="lg" fullScreen={false} className="py-12" text="Loading files..." />
       ) : filteredFiles.length === 0 ? (
         <div className="text-center py-12">

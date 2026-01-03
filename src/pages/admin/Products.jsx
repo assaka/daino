@@ -64,6 +64,7 @@ import ProductFilters from "@/components/admin/products/ProductFilters";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { ImageOptimizerModal } from "@/components/image-optimizer";
+import AIImageOptimizerGrid from "@/components/admin/AIImageOptimizerGrid";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { SaveButton } from "@/components/ui/save-button";
@@ -125,6 +126,9 @@ export default function Products() {
   const [editingTranslation, setEditingTranslation] = useState({}); // { productId: { lang: 'value' } }
   const [failedImages, setFailedImages] = useState(new Set()); // Track failed image loads
   const [translating, setTranslating] = useState({}); // { productId-langCode: boolean } for AI translation loading
+
+  // AI Image Optimizer Mode
+  const [aiOptimizerMode, setAiOptimizerMode] = useState(false);
 
   // FlashMessage state
   const [flashMessage, setFlashMessage] = useState(null);
@@ -974,10 +978,22 @@ export default function Products() {
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "border-blue-600 text-blue-600 hover:bg-blue-50"
               }`}
-              disabled={!selectedStore || products.length === 0}
+              disabled={!selectedStore || products.length === 0 || aiOptimizerMode}
             >
               <Languages className="w-4 h-4 mr-2" />
               Translation Mode
+            </Button>
+            <Button
+              onClick={() => setAiOptimizerMode(!aiOptimizerMode)}
+              variant={aiOptimizerMode ? "default" : "outline"}
+              className={`mr-2 ${aiOptimizerMode
+                ? "bg-purple-600 text-white hover:bg-purple-700"
+                : "border-purple-600 text-purple-600 hover:bg-purple-50"
+              }`}
+              disabled={!selectedStore || products.length === 0 || translationMode}
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              AI Optimizer
             </Button>
             <Button
               onClick={() => setShowBulkTranslateDialog(true)}
@@ -1165,7 +1181,20 @@ export default function Products() {
                     </div>
                   </div>
                 )}
-                
+
+                {/* AI Image Optimizer Grid Mode */}
+                {aiOptimizerMode ? (
+                  <div className="p-4">
+                    <AIImageOptimizerGrid
+                      filterType="products"
+                      products={products}
+                      categories={categories}
+                      onRefresh={loadData}
+                      showSearch={true}
+                    />
+                  </div>
+                ) : (
+
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1470,6 +1499,7 @@ export default function Products() {
                     </tbody>
                   </table>
                 </div>
+                )}
 
                 {/* Enhanced Pagination */}
                 {renderPagination(currentPage, calculatedTotalPages, handlePageChange)}

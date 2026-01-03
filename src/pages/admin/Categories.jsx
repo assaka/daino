@@ -24,7 +24,8 @@ import {
   Settings,
   TreePine,
   Filter,
-  Languages
+  Languages,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 
 import CategoryForm from "@/components/admin/categories/CategoryForm";
 import { ImageOptimizerModal } from "@/components/image-optimizer";
+import AIImageOptimizerGrid from "@/components/admin/AIImageOptimizerGrid";
 import { TranslationIndicator } from "@/components/admin/TranslationFields";
 import { getCategoryName, getCategoryDescription } from "@/utils/translationUtils";
 
@@ -99,6 +101,7 @@ export default function Categories() {
   const [rootCategoryToDelete, setRootCategoryToDelete] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
   const [optimizerImage, setOptimizerImage] = useState(null);
+  const [aiOptimizerMode, setAiOptimizerMode] = useState(false);
 
   // Load user credits for AI translation checks
   const loadUserCredits = async () => {
@@ -1022,9 +1025,21 @@ export default function Categories() {
               Delete All ({totalItems})
             </Button>
             <Button
+              onClick={() => setAiOptimizerMode(!aiOptimizerMode)}
+              variant={aiOptimizerMode ? "default" : "outline"}
+              className={`mr-2 ${aiOptimizerMode
+                ? "bg-purple-600 text-white hover:bg-purple-700"
+                : "border-purple-600 text-purple-600 hover:bg-purple-50"
+              }`}
+              disabled={!selectedStore || categories.length === 0}
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              AI Optimizer
+            </Button>
+            <Button
               onClick={() => setShowBulkTranslateDialog(true)}
               variant="outline"
-              className="mr-2border-blue-600 text-blue-600 hover:bg-blue-50"
+              className="mr-2 border-blue-600 text-blue-600 hover:bg-blue-50"
               disabled={!selectedStore || categories.length === 0}
             >
               <Languages className="w-4 h-4 mr-2" />
@@ -1287,8 +1302,18 @@ export default function Categories() {
               })()}
             </p>
           </div>
-          
-          {viewMode === 'hierarchical' ? (
+
+          {/* AI Image Optimizer Grid Mode */}
+          {aiOptimizerMode ? (
+            <div className="p-4 bg-white rounded-lg border">
+              <AIImageOptimizerGrid
+                filterType="categories"
+                categories={categories}
+                onRefresh={loadCategories}
+                showSearch={true}
+              />
+            </div>
+          ) : viewMode === 'hierarchical' ? (
             /* Hierarchical Tree View */
             <div className="space-y-0.5 min-h-[400px]">
               {(() => {
