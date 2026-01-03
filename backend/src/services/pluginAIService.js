@@ -419,45 +419,22 @@ For plugin generation: Return ONLY valid JSON following the exact structure show
 
       'developer': `${basePrompt}
 
-You work in DEVELOPER mode. Users are experienced developers.
+DEVELOPER MODE - Generate concise, production-ready code.
 
-YOUR CAPABILITIES:
-1. Discuss code architecture and implementation details
-2. Debug and optimize existing code
-3. Answer technical questions about plugin development
-4. Generate production-ready, well-architected plugin code
-5. Explain Sequelize ORM patterns and Node.js best practices
-
-CONVERSATION GUIDELINES:
-- Use technical terminology appropriately
-- Discuss patterns, best practices, and trade-offs
-- Reference the Plugin base class and available methods
-- Suggest performance optimizations and security improvements
-- If asked unrelated questions, redirect to plugin development topics
-
-RESPONSE FORMAT:
-For conversations/questions: Respond in plain text naturally.
-For code generation: Return ONLY valid JSON in this format:
+RESPONSE FORMAT - Always return ONLY valid JSON:
 {
-  "name": "Plugin Name",
-  "slug": "plugin-slug",
-  "description": "Technical description",
-  "category": "commerce|marketing|analytics|integration",
   "generatedFiles": [
-    {
-      "name": "index.js",
-      "code": "// Complete plugin code following DainoStore structure"
-    },
-    {
-      "name": "README.md",
-      "code": "# Technical documentation"
-    }
+    { "name": "filename.js", "code": "// working code" }
   ],
-  "explanation": "Technical explanation of architecture, patterns used, and implementation details",
-  "improvements": ["Suggested optimizations or enhancements"]
+  "explanation": "One sentence summary."
 }
 
-IMPORTANT: Always generate complete, production-ready plugins following the DainoStore Plugin architecture above.`
+RULES:
+- Return ONLY JSON, no markdown wrapping, no extra text before/after
+- Keep explanation to 1-2 sentences maximum
+- Generate only the files needed for the specific request
+- Do NOT include README.md unless specifically asked
+- Use DainoStore plugin hooks and patterns`
     };
 
     return modePrompts[mode] || basePrompt;
@@ -485,25 +462,23 @@ Help them configure the plugin step-by-step. Suggest database tables, features, 
     } else if (mode === 'developer') {
       // Check if we're editing an existing plugin (has pluginId/pluginName)
       if (context.pluginId || context.pluginName) {
-        prompt = `You are helping to modify an existing plugin.
+        prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (${context.pluginSlug || 'unknown'}).
 
-**Plugin Details:**
-- Name: ${context.pluginName || 'Unknown'}
-- ID: ${context.pluginId || 'Unknown'}
-- Slug: ${context.pluginSlug || 'unknown'}
-- Category: ${context.category || 'commerce'}
+**Request:** ${userPrompt}
 
-**User Request:** ${userPrompt}
+RESPONSE FORMAT - Return ONLY this JSON, nothing else:
+{
+  "generatedFiles": [
+    { "name": "filename.js", "code": "// your code here" }
+  ],
+  "explanation": "One sentence describing what was added."
+}
 
-Based on the user's request, generate the necessary code changes or new files for this plugin.
-If the user asks to add a feature (like "show a popup", "add an alert", "display a message"), generate the appropriate code that hooks into the DainoStore plugin system.
-
-For example:
-- For "show a popup in cart": Add code to the cart hook that displays a popup/modal
-- For "add a review feature": Generate the review component, database migration, and API endpoint
-- For "show an alert": Add JavaScript alert or notification code
-
-Generate production-ready code following the DainoStore plugin architecture.`;
+RULES:
+- Return ONLY valid JSON, no markdown, no extra text
+- Keep explanation to 1 sentence max
+- Generate minimal working code for the request
+- Use DainoStore plugin hooks (cart.add_item, product.view, etc.)`;
       } else {
         // Standard developer mode with current file context
         prompt = `Developer request: ${userPrompt}
