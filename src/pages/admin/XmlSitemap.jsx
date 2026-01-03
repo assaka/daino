@@ -262,34 +262,27 @@ export default function XmlSitemap() {
     <priority>${settings.product_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
 
-                // Add images if enabled
-                if (settings.sitemap_include_images) {
-                    // Main image
-                    if (product.image_url) {
-                        xml += `
-    <image:image>
-      <image:loc>${product.image_url}</image:loc>
-      <image:title>${escapeXml(product.name || 'Product Image')}</image:title>
-      ${product.description ? `<image:caption>${escapeXml(product.description.substring(0, 256))}</image:caption>` : ''}
-    </image:image>`;
-                    }
-                    // Gallery images
-                    if (product.gallery_images && Array.isArray(product.gallery_images)) {
-                        product.gallery_images.slice(0, 10).forEach((img, idx) => {
+                // Add images if enabled (product.images is an array of {url, alt, ...})
+                if (settings.sitemap_include_images && product.images && Array.isArray(product.images)) {
+                    product.images.slice(0, 10).forEach((img, idx) => {
+                        const imageUrl = img.url || img.file_url || img;
+                        if (imageUrl) {
                             xml += `
     <image:image>
-      <image:loc>${img.url || img}</image:loc>
-      <image:title>${escapeXml(product.name)} - Image ${idx + 1}</image:title>
+      <image:loc>${imageUrl}</image:loc>
+      <image:title>${escapeXml(img.alt || product.name || 'Product Image')}${idx > 0 ? ` - Image ${idx + 1}` : ''}</image:title>
+      ${idx === 0 && product.description ? `<image:caption>${escapeXml(product.description.substring(0, 256))}</image:caption>` : ''}
     </image:image>`;
-                        });
-                    }
+                        }
+                    });
                 }
 
                 // Add video if enabled and available
                 if (settings.sitemap_include_videos && product.video_url) {
+                    const thumbnailUrl = product.video_thumbnail || product.images?.[0]?.url || '';
                     xml += `
     <video:video>
-      <video:thumbnail_loc>${product.video_thumbnail || product.image_url || ''}</video:thumbnail_loc>
+      <video:thumbnail_loc>${thumbnailUrl}</video:thumbnail_loc>
       <video:title>${escapeXml(product.name || 'Product Video')}</video:title>
       <video:description>${escapeXml(product.description?.substring(0, 256) || product.name || '')}</video:description>
       <video:content_loc>${product.video_url}</video:content_loc>
