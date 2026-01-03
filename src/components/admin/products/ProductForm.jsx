@@ -15,8 +15,7 @@ import SaveButton from '@/components/ui/save-button';
 import FlashMessage from "@/components/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/admin/cms/MediaBrowser";
-import { ImageOptimizer } from '@/components/image-optimizer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ImageOptimizerModal } from '@/components/image-optimizer';
 import TranslationFields from "@/components/admin/TranslationFields";
 import {
   Accordion,
@@ -3312,36 +3311,21 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       />
 
       {/* AI Image Optimizer Modal */}
-      {showImageOptimizer && imageToOptimize && (
-        <Dialog open={showImageOptimizer} onOpenChange={setShowImageOptimizer}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-            <DialogHeader className="px-6 py-4 border-b flex flex-row items-center gap-3 bg-gray-50">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Wand2 className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <DialogTitle>AI Image Optimizer</DialogTitle>
-                <p className="text-sm text-gray-500">Optimize product image with AI</p>
-              </div>
-            </DialogHeader>
-            <div className="overflow-auto max-h-[calc(90vh-100px)]">
-              <ImageOptimizer
-                storeId={getSelectedStoreId()}
-                singleFile={{
-                  url: imageToOptimize.url,
-                  name: imageToOptimize.filepath || imageToOptimize.url.split('/').pop(),
-                  folder: 'product'
-                }}
-                onOptimized={handleOptimizedImage}
-                onClose={() => {
-                  setShowImageOptimizer(false);
-                  setImageToOptimize(null);
-                }}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <ImageOptimizerModal
+        isOpen={showImageOptimizer && !!imageToOptimize}
+        onClose={() => {
+          setShowImageOptimizer(false);
+          setImageToOptimize(null);
+        }}
+        storeId={getSelectedStoreId()}
+        fileToOptimize={imageToOptimize ? {
+          url: imageToOptimize.url,
+          name: imageToOptimize.filepath || imageToOptimize.url?.split('/').pop(),
+          folder: 'product'
+        } : null}
+        onOptimized={handleOptimizedImage}
+        setFlashMessage={setFlashMessage}
+      />
 
     </div>
   );

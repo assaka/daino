@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, AlertTriangle, Image as ImageIcon, X, Languages, Wand2 } from "lucide-react";
 import MediaBrowser from '@/components/admin/cms/MediaBrowser';
-import { ImageOptimizer } from '@/components/image-optimizer';
+import { ImageOptimizerModal } from '@/components/image-optimizer';
 import {
   Accordion,
   AccordionContent,
@@ -877,34 +877,19 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       />
 
       {/* AI Image Optimizer Modal */}
-      {showImageOptimizer && formData.image_url && (
-        <Dialog open={showImageOptimizer} onOpenChange={setShowImageOptimizer}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-            <DialogHeader className="px-6 py-4 border-b flex flex-row items-center gap-3 bg-gray-50">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Wand2 className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <DialogTitle>AI Image Optimizer</DialogTitle>
-                <p className="text-sm text-gray-500">Optimize category image with AI</p>
-              </div>
-            </DialogHeader>
-            <div className="overflow-auto max-h-[calc(90vh-100px)]">
-              <ImageOptimizer
-                storeId={getSelectedStoreId()}
-                singleFile={{
-                  url: formData.image_url,
-                  name: formData.image_url.split('/').pop(),
-                  id: formData.media_asset_id,
-                  folder: 'category'
-                }}
-                onOptimized={handleOptimizedImage}
-                onClose={() => setShowImageOptimizer(false)}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <ImageOptimizerModal
+        isOpen={showImageOptimizer && !!formData.image_url}
+        onClose={() => setShowImageOptimizer(false)}
+        storeId={getSelectedStoreId()}
+        fileToOptimize={{
+          url: formData.image_url,
+          name: formData.image_url?.split('/').pop(),
+          id: formData.media_asset_id,
+          folder: 'category'
+        }}
+        onOptimized={handleOptimizedImage}
+        setFlashMessage={setFlashMessage}
+      />
 
       {/* AI Translate Dialog */}
       <Dialog open={showAITranslateDialog} onOpenChange={setShowAITranslateDialog}>
