@@ -1589,7 +1589,8 @@ export default function Products() {
           } : null}
           selectedFiles={[]}
           onOptimized={async () => {
-            // Refresh product data and re-open form
+            // Refresh product data for when modal closes
+            // Don't close modal - user needs to save or cancel
             if (selectedProduct) {
               try {
                 const freshProduct = await Product.findById(selectedProduct.id);
@@ -1597,10 +1598,6 @@ export default function Products() {
               } catch (error) {
                 // Keep existing product if refresh fails
               }
-            }
-            setOptimizerImage(null);
-            if (selectedProduct) {
-              setShowProductForm(true);
             }
           }}
           setFlashMessage={setFlashMessage}

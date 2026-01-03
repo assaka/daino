@@ -1808,7 +1808,8 @@ export default function Categories() {
           } : null}
           selectedFiles={[]}
           onOptimized={async () => {
-            // Refresh category data and re-open form
+            // Refresh category data for when modal closes
+            // Don't close modal - user needs to save or cancel
             if (selectedCategory) {
               try {
                 const freshCategory = await Category.findById(selectedCategory.id);
@@ -1816,10 +1817,6 @@ export default function Categories() {
               } catch (error) {
                 // Keep existing category if refresh fails
               }
-            }
-            setOptimizerImage(null);
-            if (selectedCategory) {
-              setShowCategoryForm(true);
             }
           }}
           setFlashMessage={setFlashMessage}
