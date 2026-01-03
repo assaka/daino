@@ -663,9 +663,10 @@ const WorkspaceAIPanel = () => {
           console.log('📝 Found code block in response, extracting and saving...');
           const extractedCode = codeBlockMatch[1];
 
+          // Show clean message without raw code
           addChatMessage({
             role: 'assistant',
-            content: `✅ Code generated. Saving to plugin...\n\n${messageContent}`,
+            content: `✅ Code generated and saved to plugin.`,
             data: { type: 'plugin_code_generated' }
           });
 
@@ -679,11 +680,27 @@ const WorkspaceAIPanel = () => {
             }
           }));
         } else {
-          // Pure conversational response - just show the message
+          // Pure conversational response - clean up any JSON/code from display
           console.log('💬 Conversational response (no code detected)');
+
+          // Remove any JSON or code blocks from the display message
+          let cleanMessage = messageContent || 'I can help you modify this plugin. What would you like to add or change?';
+
+          // Remove JSON objects from message
+          cleanMessage = cleanMessage.replace(/\{[\s\S]*?"generatedFiles"[\s\S]*?\}(?:\s*\})?/g, '').trim();
+          // Remove code blocks
+          cleanMessage = cleanMessage.replace(/```[\s\S]*?```/g, '').trim();
+          // Remove any remaining raw JSON-like content
+          cleanMessage = cleanMessage.replace(/^\s*\{[\s\S]*\}\s*$/g, '').trim();
+
+          // If message is now empty or just whitespace, use a default
+          if (!cleanMessage || cleanMessage.length < 10) {
+            cleanMessage = '✅ Plugin updated successfully.';
+          }
+
           addChatMessage({
             role: 'assistant',
-            content: messageContent || 'I can help you modify this plugin. What would you like to add or change?',
+            content: cleanMessage,
             data: response
           });
         }

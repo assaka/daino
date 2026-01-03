@@ -34,118 +34,320 @@ const STAGING_CONTEXTS = [
   { id: 'flat_lay', label: 'Flat Lay', value: 'flat lay on marble surface with props' }
 ];
 
+// Smart staging preset generation using semantic category detection
+const STAGING_CATEGORIES = {
+  // Each category has: keywords (weighted), scenes with templates
+  winter_sports: {
+    keywords: ['snowboard', 'ski', 'snow', 'winter', 'alpine', 'ice', 'frost', 'cold weather'],
+    scenes: [
+      { id: 'snow_mountain', label: '🏔️ Snowy Mountain', template: '{product} on a pristine snowy mountain slope with dramatic alpine peaks, professional sports photography' },
+      { id: 'ski_resort', label: '🎿 Ski Resort', template: '{product} at a luxury ski resort with snow-covered trees and blue sky' }
+    ]
+  },
+  water_sports: {
+    keywords: ['surf', 'swim', 'beach', 'pool', 'water', 'dive', 'aqua', 'marine', 'ocean', 'sea'],
+    scenes: [
+      { id: 'beach', label: '🏖️ Beach', template: '{product} on a tropical beach with turquoise water and palm trees' },
+      { id: 'ocean', label: '🌊 Ocean Waves', template: '{product} with dramatic ocean waves in golden sunset light' }
+    ]
+  },
+  cycling: {
+    keywords: ['bike', 'bicycle', 'cycling', 'fiets', 'e-bike', 'ebike', 'mountain bike', 'road bike', 'bmx', 'pedal'],
+    scenes: [
+      { id: 'mountain_trail', label: '🚵 Mountain Trail', template: '{product} on a scenic mountain bike trail with forest backdrop' },
+      { id: 'urban_cycling', label: '🏙️ Urban Street', template: '{product} on a clean urban street with modern architecture' }
+    ]
+  },
+  outdoor_adventure: {
+    keywords: ['outdoor', 'camping', 'hiking', 'tent', 'trek', 'adventure', 'nature', 'trail', 'expedition', 'wilderness', 'backpack', 'rucksack'],
+    scenes: [
+      { id: 'campsite', label: '🏕️ Campsite', template: '{product} at a scenic campsite with mountains and forest' },
+      { id: 'hiking_trail', label: '🥾 Hiking Trail', template: '{product} on a beautiful hiking trail with panoramic nature views' },
+      { id: 'adventure', label: '🏔️ Adventure', template: '{product} in an outdoor adventure setting with dramatic landscape' }
+    ]
+  },
+  fitness: {
+    keywords: ['fitness', 'gym', 'workout', 'exercise', 'training', 'yoga', 'sport', 'athletic', 'dumbbell', 'weight', 'muscle', 'cardio'],
+    scenes: [
+      { id: 'gym', label: '💪 Gym', template: '{product} in a modern fitness gym environment with professional lighting' },
+      { id: 'home_workout', label: '🏠 Home Workout', template: '{product} in a bright home workout space' }
+    ]
+  },
+  kitchen_appliance: {
+    keywords: ['kitchen', 'cook', 'chef', 'food', 'appliance', 'fridge', 'refrigerator', 'oven', 'stove', 'microwave', 'blender', 'mixer', 'toaster'],
+    scenes: [
+      { id: 'modern_kitchen', label: '👨‍🍳 Modern Kitchen', template: '{product} in a sleek modern kitchen with marble countertops and pendant lights' },
+      { id: 'family_kitchen', label: '👨‍👩‍👧 Family Kitchen', template: '{product} in a warm family kitchen with wooden accents' }
+    ]
+  },
+  laundry: {
+    keywords: ['washer', 'washing', 'dryer', 'laundry', 'clean', 'wash'],
+    scenes: [
+      { id: 'laundry_room', label: '🧺 Modern Laundry', template: '{product} in a bright modern laundry room with plants and natural light' },
+      { id: 'utility_room', label: '🏠 Utility Room', template: '{product} in a clean organized utility room' }
+    ]
+  },
+  coffee: {
+    keywords: ['coffee', 'espresso', 'cappuccino', 'latte', 'barista', 'brew', 'cafe'],
+    scenes: [
+      { id: 'coffee_bar', label: '☕ Coffee Bar', template: '{product} on a stylish coffee bar with exposed brick and warm lighting' },
+      { id: 'cafe', label: '🥐 Café Style', template: '{product} in a cozy European café setting' }
+    ]
+  },
+  seating: {
+    keywords: ['sofa', 'couch', 'chair', 'armchair', 'seat', 'lounge', 'recliner', 'bench', 'stool'],
+    scenes: [
+      { id: 'living_room', label: '🛋️ Living Room', template: '{product} in a bright Scandinavian living room with plants and natural light' },
+      { id: 'luxury_lounge', label: '✨ Luxury Lounge', template: '{product} in an elegant luxury lounge with art deco elements' }
+    ]
+  },
+  bedroom: {
+    keywords: ['bed', 'mattress', 'sleep', 'pillow', 'bedroom', 'duvet', 'blanket', 'nightstand'],
+    scenes: [
+      { id: 'master_bedroom', label: '🛏️ Master Bedroom', template: '{product} in a serene master bedroom with soft linens and morning light' },
+      { id: 'hotel_suite', label: '🏨 Hotel Suite', template: '{product} in a five-star hotel suite with city view' }
+    ]
+  },
+  office: {
+    keywords: ['desk', 'office', 'work', 'bureau', 'workspace', 'study', 'professional'],
+    scenes: [
+      { id: 'home_office', label: '💻 Home Office', template: '{product} in a productive home office with plants and natural light' },
+      { id: 'executive_office', label: '🏢 Executive Office', template: '{product} in a prestigious executive office with city skyline view' }
+    ]
+  },
+  dining: {
+    keywords: ['table', 'dining', 'dinner', 'eat', 'meal', 'restaurant'],
+    scenes: [
+      { id: 'dining_room', label: '🍽️ Dining Room', template: '{product} in an elegant dining room with chandelier and table setting' }
+    ]
+  },
+  lighting: {
+    keywords: ['lamp', 'light', 'chandelier', 'pendant', 'bulb', 'led', 'illuminate', 'glow'],
+    scenes: [
+      { id: 'cozy_interior', label: '💡 Cozy Interior', template: '{product} illuminating a cozy interior space with warm ambiance' },
+      { id: 'modern_space', label: '✨ Modern Space', template: '{product} in a sleek modern interior with clean lines' }
+    ]
+  },
+  storage: {
+    keywords: ['shelf', 'storage', 'cabinet', 'bookcase', 'wardrobe', 'closet', 'drawer', 'organizer'],
+    scenes: [
+      { id: 'styled_room', label: '📚 Styled Room', template: '{product} in a beautifully styled room with decorative objects' }
+    ]
+  },
+  display_screen: {
+    keywords: ['tv', 'television', 'monitor', 'screen', 'display', 'panel', 'oled', 'lcd'],
+    scenes: [
+      { id: 'entertainment', label: '📺 Entertainment Room', template: '{product} in a modern entertainment room with ambient lighting' },
+      { id: 'gaming_setup', label: '🎮 Gaming Setup', template: '{product} in an immersive gaming setup with RGB lighting' }
+    ]
+  },
+  mobile_tech: {
+    keywords: ['phone', 'tablet', 'laptop', 'computer', 'smartphone', 'notebook', 'ipad', 'macbook', 'mobile', 'device'],
+    scenes: [
+      { id: 'workspace', label: '💼 Workspace', template: '{product} on a clean minimalist desk workspace' },
+      { id: 'lifestyle_tech', label: '☕ Lifestyle', template: '{product} in a lifestyle setting with coffee and creative props' }
+    ]
+  },
+  audio: {
+    keywords: ['speaker', 'audio', 'headphone', 'earphone', 'sound', 'music', 'bluetooth', 'wireless', 'stereo', 'bass'],
+    scenes: [
+      { id: 'music_studio', label: '🎵 Music Studio', template: '{product} in a professional music studio environment' },
+      { id: 'living_audio', label: '🔊 Living Room', template: '{product} in a stylish living room with vinyl records' }
+    ]
+  },
+  camera: {
+    keywords: ['camera', 'lens', 'photo', 'video', 'drone', 'tripod', 'dslr', 'mirrorless'],
+    scenes: [
+      { id: 'photo_studio', label: '📷 Photo Studio', template: '{product} in a professional photography studio' },
+      { id: 'creative_desk', label: '🎨 Creative Desk', template: '{product} on a creative workspace with photography props' }
+    ]
+  },
+  footwear: {
+    keywords: ['shoe', 'sneaker', 'boot', 'sandal', 'heel', 'loafer', 'trainer', 'footwear', 'running'],
+    scenes: [
+      { id: 'street_style', label: '👟 Street Style', template: '{product} in an urban street style photoshoot' },
+      { id: 'shoe_display', label: '🏪 Boutique Display', template: '{product} on a luxury boutique shelf display' }
+    ]
+  },
+  jewelry: {
+    keywords: ['watch', 'jewelry', 'ring', 'necklace', 'bracelet', 'earring', 'pendant', 'gold', 'silver', 'diamond', 'gem'],
+    scenes: [
+      { id: 'luxury_display', label: '💎 Luxury Display', template: '{product} on black velvet with dramatic spotlight lighting' },
+      { id: 'lifestyle_jewelry', label: '✨ Lifestyle', template: '{product} in an elegant lifestyle setting with soft focus' }
+    ]
+  },
+  bags: {
+    keywords: ['bag', 'purse', 'handbag', 'backpack', 'luggage', 'suitcase', 'tote', 'clutch', 'messenger', 'duffel', 'carry', 'travel'],
+    scenes: [
+      { id: 'fashion_shoot', label: '👜 Fashion Shoot', template: '{product} in a high-fashion photoshoot setting' },
+      { id: 'travel', label: '✈️ Travel', template: '{product} in an airport or travel lifestyle setting' },
+      { id: 'outdoor_bag', label: '🏔️ Outdoor', template: '{product} in an outdoor adventure setting with nature backdrop' },
+      { id: 'urban_commute', label: '🚶 Urban', template: '{product} in a stylish urban city street setting' }
+    ]
+  },
+  clothing: {
+    keywords: ['clothing', 'dress', 'shirt', 'pants', 'jacket', 'coat', 'sweater', 'hoodie', 'jeans', 'skirt', 'blouse', 'wear', 'fashion', 'apparel'],
+    scenes: [
+      { id: 'fashion_model', label: '👗 Fashion Model', template: 'Model wearing {product} in professional fashion photography studio' },
+      { id: 'lifestyle_fashion', label: '🌆 Urban Lifestyle', template: '{product} in an urban lifestyle photoshoot setting' }
+    ]
+  },
+  eyewear: {
+    keywords: ['sunglasses', 'glasses', 'eyewear', 'optical', 'frame', 'lens'],
+    scenes: [
+      { id: 'beach_style', label: '🏖️ Beach Style', template: '{product} in a sunny beach lifestyle setting' },
+      { id: 'fashion_portrait', label: '👤 Fashion Portrait', template: 'Model wearing {product} in fashion portrait style' }
+    ]
+  },
+  beauty: {
+    keywords: ['makeup', 'cosmetic', 'lipstick', 'foundation', 'mascara', 'beauty', 'skincare', 'cream', 'serum', 'lotion', 'palette'],
+    scenes: [
+      { id: 'beauty_flat', label: '💄 Beauty Flat Lay', template: '{product} in a luxurious beauty flat lay with marble and flowers' },
+      { id: 'vanity', label: '💋 Vanity Setup', template: '{product} on an elegant vanity with soft lighting' }
+    ]
+  },
+  fragrance: {
+    keywords: ['perfume', 'fragrance', 'cologne', 'scent', 'aroma', 'eau de'],
+    scenes: [
+      { id: 'luxury_perfume', label: '✨ Luxury Setting', template: '{product} in a luxury fragrance photography setting with reflections' }
+    ]
+  },
+  food_beverage: {
+    keywords: ['food', 'snack', 'chocolate', 'candy', 'cookie', 'cake', 'drink', 'beverage', 'wine', 'beer', 'tea', 'gourmet'],
+    scenes: [
+      { id: 'food_styling', label: '🍽️ Food Styling', template: '{product} in professional food photography styling with garnishes' },
+      { id: 'rustic_table', label: '🪵 Rustic Table', template: '{product} on a rustic wooden table with natural props' }
+    ]
+  },
+  baby_kids: {
+    keywords: ['baby', 'kid', 'child', 'toy', 'nursery', 'stroller', 'play', 'infant', 'toddler'],
+    scenes: [
+      { id: 'nursery', label: '👶 Nursery', template: '{product} in a bright, cheerful nursery room' },
+      { id: 'playroom', label: '🧸 Playroom', template: '{product} in a colorful children\'s playroom' }
+    ]
+  },
+  garden: {
+    keywords: ['garden', 'plant', 'flower', 'pot', 'outdoor', 'patio', 'bbq', 'grill', 'yard', 'lawn', 'green'],
+    scenes: [
+      { id: 'garden', label: '🌿 Garden', template: '{product} in a beautiful garden setting with greenery' },
+      { id: 'terrace', label: '☀️ Sunny Terrace', template: '{product} on a sunny terrace with outdoor ambiance' }
+    ]
+  },
+  pets: {
+    keywords: ['pet', 'dog', 'cat', 'puppy', 'kitten', 'animal', 'collar', 'leash', 'bowl', 'treat'],
+    scenes: [
+      { id: 'pet_home', label: '🐕 Pet at Home', template: '{product} in a cozy home setting with a happy pet' },
+      { id: 'pet_outdoor', label: '🌳 Pet Outdoors', template: '{product} in an outdoor park setting with nature' }
+    ]
+  },
+  tools: {
+    keywords: ['tool', 'drill', 'saw', 'hammer', 'hardware', 'screw', 'wrench', 'plier', 'power tool', 'hand tool'],
+    scenes: [
+      { id: 'workshop', label: '🔧 Workshop', template: '{product} in a professional workshop environment' },
+      { id: 'diy_project', label: '🏠 DIY Project', template: '{product} in a home DIY project setting' }
+    ]
+  },
+  art: {
+    keywords: ['art', 'paint', 'canvas', 'craft', 'draw', 'pencil', 'brush', 'creative', 'artist'],
+    scenes: [
+      { id: 'art_studio', label: '🎨 Art Studio', template: '{product} in a creative art studio with natural light' }
+    ]
+  },
+  automotive: {
+    keywords: ['car', 'auto', 'vehicle', 'motor', 'tire', 'wheel', 'drive', 'automotive'],
+    scenes: [
+      { id: 'showroom', label: '🚗 Showroom', template: '{product} in a premium automotive showroom with dramatic lighting' },
+      { id: 'road', label: '🛣️ Open Road', template: '{product} on a scenic open road with beautiful landscape' }
+    ]
+  },
+  home_decor: {
+    keywords: ['decor', 'decoration', 'vase', 'frame', 'mirror', 'rug', 'curtain', 'cushion', 'pillow', 'art', 'wall'],
+    scenes: [
+      { id: 'styled_interior', label: '🏠 Styled Interior', template: '{product} in a beautifully styled modern interior' },
+      { id: 'minimalist_space', label: '🤍 Minimalist', template: '{product} in a clean minimalist space with natural light' }
+    ]
+  }
+};
+
+// Tokenize and normalize text for matching
+const tokenize = (text) => {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')  // Remove special chars
+    .split(/\s+/)                    // Split on whitespace
+    .filter(w => w.length > 2);      // Remove short words
+};
+
+// Calculate match score between tokens and keywords
+const calculateScore = (tokens, keywords) => {
+  let score = 0;
+  const tokenSet = new Set(tokens);
+  const tokenString = tokens.join(' ');
+
+  for (const keyword of keywords) {
+    // Exact token match (highest weight)
+    if (tokenSet.has(keyword)) {
+      score += 3;
+    }
+    // Partial match within tokens (medium weight)
+    else if (tokens.some(t => t.includes(keyword) || keyword.includes(t))) {
+      score += 2;
+    }
+    // Substring match in full text (lower weight)
+    else if (tokenString.includes(keyword)) {
+      score += 1;
+    }
+  }
+  return score;
+};
+
 // Generate smart staging presets based on product context
 const generateSmartPresets = (productContext) => {
   if (!productContext?.name) return [];
 
-  const name = productContext.name.toLowerCase();
-  const category = (productContext.category || '').toLowerCase();
+  const productName = productContext.name;
+  const searchText = `${productName} ${productContext.category || ''}`;
+  const tokens = tokenize(searchText);
+
+  // Score each category
+  const categoryScores = [];
+  for (const [categoryId, category] of Object.entries(STAGING_CATEGORIES)) {
+    const score = calculateScore(tokens, category.keywords);
+    if (score > 0) {
+      categoryScores.push({ categoryId, category, score });
+    }
+  }
+
+  // Sort by score and take top matches
+  categoryScores.sort((a, b) => b.score - a.score);
+  const topCategories = categoryScores.slice(0, 3); // Max 3 categories
+
+  // Build presets from matched categories
   const presets = [];
+  const seenIds = new Set();
 
-  // Sports & Outdoor equipment
-  if (name.includes('snowboard') || name.includes('ski') || name.includes('snow')) {
-    presets.push({ id: 'snow_mountain', label: '🏔️ Snowy Mountain', value: `${productContext.name} on a pristine snowy mountain slope with dramatic alpine peaks in background, professional sports photography` });
-    presets.push({ id: 'ski_resort', label: '🎿 Ski Resort', value: `${productContext.name} at a luxury ski resort with snow-covered trees and blue sky` });
-  }
-  if (name.includes('surf') || name.includes('beach') || name.includes('swim')) {
-    presets.push({ id: 'beach', label: '🏖️ Beach', value: `${productContext.name} on a tropical beach with turquoise water and palm trees` });
-    presets.push({ id: 'ocean', label: '🌊 Ocean Waves', value: `${productContext.name} with dramatic ocean waves in golden sunset light` });
-  }
-  if (name.includes('bike') || name.includes('bicycle') || name.includes('cycling')) {
-    presets.push({ id: 'mountain_trail', label: '🚵 Mountain Trail', value: `${productContext.name} on a scenic mountain bike trail with forest backdrop` });
-    presets.push({ id: 'urban_street', label: '🏙️ Urban Street', value: `${productContext.name} on a clean urban street with modern architecture` });
-  }
-
-  // Kitchen & Home appliances
-  if (name.includes('washer') || name.includes('washing') || name.includes('dryer') || name.includes('laundry')) {
-    presets.push({ id: 'laundry_room', label: '🧺 Modern Laundry', value: `${productContext.name} in a bright modern laundry room with plants and natural light` });
-    presets.push({ id: 'utility_room', label: '🏠 Utility Room', value: `${productContext.name} in a clean organized utility room with white cabinets` });
-  }
-  if (name.includes('fridge') || name.includes('refrigerator') || name.includes('freezer')) {
-    presets.push({ id: 'modern_kitchen', label: '👨‍🍳 Modern Kitchen', value: `${productContext.name} in a sleek modern kitchen with marble countertops and pendant lights` });
-    presets.push({ id: 'family_kitchen', label: '👨‍👩‍👧 Family Kitchen', value: `${productContext.name} in a warm family kitchen with wooden accents` });
-  }
-  if (name.includes('oven') || name.includes('stove') || name.includes('cooktop') || name.includes('range')) {
-    presets.push({ id: 'chef_kitchen', label: '👨‍🍳 Chef Kitchen', value: `${productContext.name} in a professional chef's kitchen with stainless steel and tile backsplash` });
-  }
-  if (name.includes('coffee') || name.includes('espresso')) {
-    presets.push({ id: 'coffee_bar', label: '☕ Coffee Bar', value: `${productContext.name} on a stylish coffee bar with exposed brick and warm lighting` });
-    presets.push({ id: 'cafe', label: '🥐 Café Style', value: `${productContext.name} in a cozy European café setting` });
-  }
-
-  // Furniture
-  if (name.includes('sofa') || name.includes('couch') || name.includes('chair') || name.includes('armchair')) {
-    presets.push({ id: 'living_space', label: '🛋️ Living Space', value: `${productContext.name} in a bright Scandinavian living room with plants and natural light` });
-    presets.push({ id: 'luxury_lounge', label: '✨ Luxury Lounge', value: `${productContext.name} in an elegant luxury lounge with art deco elements` });
-  }
-  if (name.includes('bed') || name.includes('mattress')) {
-    presets.push({ id: 'master_bedroom', label: '🛏️ Master Bedroom', value: `${productContext.name} in a serene master bedroom with soft linens and morning light` });
-    presets.push({ id: 'hotel_suite', label: '🏨 Hotel Suite', value: `${productContext.name} in a five-star hotel suite with city view` });
-  }
-  if (name.includes('desk') || name.includes('office')) {
-    presets.push({ id: 'home_office', label: '💻 Home Office', value: `${productContext.name} in a productive home office with plants and motivational decor` });
-    presets.push({ id: 'executive_office', label: '🏢 Executive Office', value: `${productContext.name} in a prestigious executive office with city skyline view` });
-  }
-  if (name.includes('table') || name.includes('dining')) {
-    presets.push({ id: 'dining_room', label: '🍽️ Dining Room', value: `${productContext.name} in an elegant dining room with chandelier and table setting` });
-  }
-
-  // Electronics
-  if (name.includes('tv') || name.includes('television') || name.includes('monitor') || name.includes('screen')) {
-    presets.push({ id: 'entertainment', label: '📺 Entertainment Room', value: `${productContext.name} in a modern entertainment room with ambient lighting` });
-    presets.push({ id: 'gaming_setup', label: '🎮 Gaming Setup', value: `${productContext.name} in an immersive gaming setup with RGB lighting` });
-  }
-  if (name.includes('phone') || name.includes('tablet') || name.includes('laptop') || name.includes('computer')) {
-    presets.push({ id: 'workspace', label: '💼 Workspace', value: `${productContext.name} on a clean minimalist desk workspace` });
-    presets.push({ id: 'lifestyle', label: '☕ Lifestyle', value: `${productContext.name} in a lifestyle setting with coffee and notebook` });
-  }
-  if (name.includes('speaker') || name.includes('audio') || name.includes('headphone')) {
-    presets.push({ id: 'music_studio', label: '🎵 Music Studio', value: `${productContext.name} in a professional music studio environment` });
-    presets.push({ id: 'living_audio', label: '🔊 Living Room', value: `${productContext.name} in a stylish living room with vinyl records` });
-  }
-
-  // Fashion & Clothing
-  if (name.includes('shoe') || name.includes('sneaker') || name.includes('boot') || name.includes('sandal')) {
-    presets.push({ id: 'street_style', label: '👟 Street Style', value: `${productContext.name} in an urban street style photoshoot setting` });
-    presets.push({ id: 'shoe_display', label: '🏪 Boutique Display', value: `${productContext.name} on a luxury boutique shelf display` });
-  }
-  if (name.includes('watch') || name.includes('jewelry') || name.includes('ring') || name.includes('necklace')) {
-    presets.push({ id: 'luxury_display', label: '💎 Luxury Display', value: `${productContext.name} on black velvet with dramatic spotlight lighting` });
-    presets.push({ id: 'lifestyle_jewelry', label: '✨ Lifestyle', value: `${productContext.name} in an elegant lifestyle setting with soft focus background` });
-  }
-  if (name.includes('bag') || name.includes('purse') || name.includes('handbag') || name.includes('backpack') || name.includes('luggage') || name.includes('suitcase')) {
-    presets.push({ id: 'fashion_shoot', label: '👜 Fashion Shoot', value: `${productContext.name} in a high-fashion photoshoot setting` });
-    presets.push({ id: 'travel', label: '✈️ Travel', value: `${productContext.name} in an airport or travel lifestyle setting` });
-    presets.push({ id: 'outdoor_adventure', label: '🏔️ Outdoor Adventure', value: `${productContext.name} in an outdoor hiking or adventure setting with nature backdrop` });
-    presets.push({ id: 'urban_commute', label: '🚶 Urban Commute', value: `${productContext.name} in a stylish urban city street setting` });
-  }
-
-  // Category-based fallbacks
-  if (presets.length === 0 && category) {
-    if (category.includes('kitchen') || category.includes('appliance')) {
-      presets.push({ id: 'smart_kitchen', label: '🏠 Smart Kitchen', value: `${productContext.name} in a modern smart kitchen with clean lines` });
-    }
-    if (category.includes('outdoor') || category.includes('garden')) {
-      presets.push({ id: 'garden', label: '🌿 Garden', value: `${productContext.name} in a beautiful garden setting with greenery` });
-    }
-    if (category.includes('sport') || category.includes('fitness')) {
-      presets.push({ id: 'gym', label: '💪 Gym', value: `${productContext.name} in a modern fitness gym environment` });
+  for (const { category } of topCategories) {
+    for (const scene of category.scenes) {
+      if (!seenIds.has(scene.id)) {
+        seenIds.add(scene.id);
+        presets.push({
+          id: scene.id,
+          label: scene.label,
+          value: scene.template.replace('{product}', productName)
+        });
+      }
     }
   }
 
-  // If no specific presets matched, add generic useful presets
-  if (presets.length === 0 && productContext.name) {
-    // Generic presets that work for most products
-    presets.push({ id: 'minimalist', label: '🤍 Minimalist', value: `${productContext.name} on a clean white background with soft shadows, professional product photography` });
-    presets.push({ id: 'lifestyle', label: '🏠 Lifestyle', value: `${productContext.name} in a stylish modern home interior with natural lighting` });
-    presets.push({ id: 'studio', label: '📸 Studio', value: `${productContext.name} with professional studio lighting, gradient background` });
-    presets.push({ id: 'natural', label: '🌿 Natural', value: `${productContext.name} with natural elements like plants and wood textures` });
+  // If no specific matches, add generic presets
+  if (presets.length === 0) {
+    presets.push({ id: 'minimalist', label: '🤍 Minimalist', value: `${productName} on a clean white background with soft shadows, professional product photography` });
+    presets.push({ id: 'lifestyle', label: '🏠 Lifestyle', value: `${productName} in a stylish modern home interior with natural lighting` });
+    presets.push({ id: 'studio', label: '📸 Studio', value: `${productName} with professional studio lighting, gradient background` });
+    presets.push({ id: 'natural', label: '🌿 Natural', value: `${productName} with natural elements like plants and wood textures` });
   }
 
-  // Always add a hero shot preset if we have a product name
-  if (productContext.name) {
-    presets.push({ id: 'product_hero', label: '⭐ Hero Shot', value: `Professional product photography of ${productContext.name} with dramatic studio lighting and clean background` });
-  }
+  // Always add hero shot
+  presets.push({ id: 'product_hero', label: '⭐ Hero Shot', value: `Professional product photography of ${productName} with dramatic studio lighting and clean background` });
 
   return presets;
 };

@@ -566,6 +566,8 @@ OR if the request is unclear, ask for clarification:
 
 RULES:
 - Return ONLY valid JSON, no markdown, no extra text
+- **MINIMAL OUTPUT** - Only requested file(s), no README or docs
+- **Short explanation** - Max 10 words
 - **Look at the conversation history to understand what file was just created/modified**
 - **If user says "change it", "update that", etc., modify the file from the previous message**
 - **IMPORTANT: When modifying, keep ALL existing logic and only change what was requested**

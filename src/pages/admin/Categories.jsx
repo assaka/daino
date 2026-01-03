@@ -1331,6 +1331,9 @@ export default function Categories() {
           {/* AI Image Optimizer Grid Mode */}
           {aiOptimizerMode ? (
             <div className="p-4 bg-white rounded-lg border">
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                <span className="font-medium">Note:</span> Only categories with images are shown in this view.
+              </div>
               <AIImageOptimizerGrid
                 filterType="categories"
                 onRefresh={loadCategories}
