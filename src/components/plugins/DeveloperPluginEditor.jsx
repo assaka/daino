@@ -122,29 +122,119 @@ const DeveloperPluginEditor = ({
 
   // Listen for AI-generated code from WorkspaceAIPanel
   useEffect(() => {
-    const handleAICodeGenerated = (event) => {
+    const handleAICodeGenerated = async (event) => {
       const { pluginId, files, pluginStructure, code } = event.detail;
 
       // Only process if this is for our plugin
       if (pluginId !== plugin?.id) return;
 
       console.log('🤖 Received AI-generated code for plugin:', pluginId, { files, pluginStructure, code });
+      setShowTerminal(true);
+      addTerminalOutput('🤖 AI generated code received - saving to plugin...', 'info');
 
-      if (code && selectedFile) {
-        // Apply code to current file
-        setFileContent(code);
-        addTerminalOutput('✓ AI generated code applied to current file', 'success');
-        setShowTerminal(true);
-      } else if (files && files.length > 0) {
-        // Multiple files generated - reload the file tree
-        addTerminalOutput(`✓ AI generated ${files.length} file(s) - refreshing...`, 'success');
-        setShowTerminal(true);
-        loadPluginFiles();
-      } else if (pluginStructure?.main_file) {
-        // Main file code generated
-        setFileContent(pluginStructure.main_file);
-        addTerminalOutput('✓ AI generated main plugin code', 'success');
-        setShowTerminal(true);
+      try {
+        // Handle generated files array
+        if (files && files.length > 0) {
+          for (const file of files) {
+            const fileName = file.name || 'index.js';
+            const fileCode = file.code || '';
+
+            // Determine file path based on file name/type
+            let filePath = fileName;
+            if (!fileName.startsWith('/')) {
+              // Determine folder based on file type
+              if (fileName.includes('controller') || fileName.includes('Controller')) {
+                filePath = `/controllers/${fileName}`;
+              } else if (fileName.includes('hook') || fileName.includes('Hook')) {
+                filePath = `/hooks/${fileName}`;
+              } else if (fileName.includes('migration')) {
+                filePath = `/migrations/${fileName}`;
+              } else if (fileName.includes('component') || fileName.endsWith('.jsx')) {
+                filePath = `/components/${fileName}`;
+              } else if (fileName === 'index.js' || fileName === 'main.js') {
+                filePath = `/${fileName}`;
+              } else {
+                filePath = `/${fileName}`;
+              }
+            }
+
+            // Save file to plugin
+            await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+              path: filePath,
+              content: fileCode
+            });
+            addTerminalOutput(`   ✓ Saved: ${filePath}`, 'success');
+          }
+
+          addTerminalOutput('✅ All files saved successfully!', 'success');
+
+          // Refresh file tree
+          await loadPluginFiles();
+          addTerminalOutput('🔄 File tree refreshed', 'info');
+        }
+
+        // Handle plugin_structure with main_file
+        else if (pluginStructure?.main_file) {
+          const mainCode = pluginStructure.main_file;
+
+          // Save as index.js (main plugin file)
+          await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+            path: '/index.js',
+            content: mainCode
+          });
+          addTerminalOutput('   ✓ Saved: /index.js', 'success');
+
+          // Also save manifest if provided
+          if (pluginStructure.manifest) {
+            await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+              path: '/manifest.json',
+              content: JSON.stringify(pluginStructure.manifest, null, 2)
+            });
+            addTerminalOutput('   ✓ Saved: /manifest.json', 'success');
+          }
+
+          addTerminalOutput('✅ Plugin files saved successfully!', 'success');
+
+          // Refresh file tree
+          await loadPluginFiles();
+          addTerminalOutput('🔄 File tree refreshed', 'info');
+        }
+
+        // Handle raw code for current file
+        else if (code && selectedFile) {
+          // Apply code to current file and save
+          setFileContent(code);
+
+          await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+            path: selectedFile.path,
+            content: code
+          });
+          setOriginalContent(code);
+          addTerminalOutput(`   ✓ Saved: ${selectedFile.path}`, 'success');
+          addTerminalOutput('✅ Code saved to current file!', 'success');
+        }
+
+        // Handle raw code without selected file - save as new hook file
+        else if (code) {
+          // Generate a hook file name based on content or timestamp
+          const hookFileName = `hook_${Date.now()}.js`;
+          const hookPath = `/hooks/${hookFileName}`;
+
+          await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+            path: hookPath,
+            content: code
+          });
+          addTerminalOutput(`   ✓ Saved: ${hookPath}`, 'success');
+          addTerminalOutput('✅ New hook file created!', 'success');
+
+          // Refresh file tree
+          await loadPluginFiles();
+          addTerminalOutput('🔄 File tree refreshed', 'info');
+        }
+
+      } catch (error) {
+        console.error('Error saving AI-generated code:', error);
+        addTerminalOutput(`❌ Error saving files: ${error.message}`, 'error');
       }
     };
 
