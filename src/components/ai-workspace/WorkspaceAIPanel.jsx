@@ -118,7 +118,9 @@ const WorkspaceAIPanel = () => {
     triggerConfigurationRefresh,
     // Plugin editing context
     pluginToEdit,
-    showPluginEditor
+    showPluginEditor,
+    pluginFiles,
+    selectedPluginFile
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -532,7 +534,15 @@ const WorkspaceAIPanel = () => {
             pluginName: pluginToEdit.name,
             pluginSlug: pluginToEdit.slug,
             category: pluginToEdit.category,
-            storeId: storeId
+            storeId: storeId,
+            // Include existing plugin files so AI can modify them instead of creating new ones
+            existingFiles: pluginFiles?.map(f => ({ path: f.path, name: f.name })) || [],
+            // Include currently open file content for context
+            currentFile: selectedPluginFile ? {
+              path: selectedPluginFile.path,
+              name: selectedPluginFile.name,
+              content: selectedPluginFile.content
+            } : null
           }
         });
 

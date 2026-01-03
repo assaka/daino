@@ -993,7 +993,7 @@ export default function Products() {
               disabled={!selectedStore || products.length === 0 || translationMode}
             >
               <Wand2 className="w-4 h-4 mr-2" />
-              AI Optimizer
+              AI Image Optimizer
             </Button>
             <Button
               onClick={() => setShowBulkTranslateDialog(true)}

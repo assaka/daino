@@ -40,6 +40,7 @@ import CodeEditor from '@/components/ai-workspace/CodeEditor.jsx';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 import EventSelector from '@/components/plugins/EventSelector';
+import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import VersionHistoryPanel from '@/components/ai-workspace/VersionHistoryPanel';
 import VersionCompareModal from '@/components/ai-workspace/VersionCompareModal';
 import VersionRestoreModal from '@/components/ai-workspace/VersionRestoreModal';
@@ -56,6 +57,9 @@ const DeveloperPluginEditor = ({
 }) => {
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+
+  // Get context setters to share file state with AI panel
+  const { setPluginFiles, setSelectedPluginFile } = useAIWorkspace();
   const [fileContent, setFileContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root']));
@@ -253,6 +257,42 @@ const DeveloperPluginEditor = ({
       window.removeEventListener('plugin-ai-code-generated', handleAICodeGenerated);
     };
   }, [plugin?.id, selectedFile]);
+
+  // Sync fileTree with AIWorkspaceContext for AI assistant context
+  useEffect(() => {
+    if (setPluginFiles && fileTree.length > 0) {
+      // Flatten file tree to get list of files with paths and content
+      const flattenFiles = (nodes, parentPath = '') => {
+        let files = [];
+        for (const node of nodes) {
+          const fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+          if (node.type === 'file') {
+            files.push({
+              path: fullPath,
+              name: node.name,
+              content: node.content || ''
+            });
+          } else if (node.children) {
+            files = files.concat(flattenFiles(node.children, fullPath));
+          }
+        }
+        return files;
+      };
+      const flatFiles = flattenFiles(fileTree);
+      setPluginFiles(flatFiles);
+    }
+  }, [fileTree, setPluginFiles]);
+
+  // Sync selectedFile with AIWorkspaceContext
+  useEffect(() => {
+    if (setSelectedPluginFile) {
+      setSelectedPluginFile(selectedFile ? {
+        path: selectedFile.path || selectedFile.name,
+        name: selectedFile.name,
+        content: fileContent
+      } : null);
+    }
+  }, [selectedFile, fileContent, setSelectedPluginFile]);
 
   const loadPluginFiles = async () => {
     try {

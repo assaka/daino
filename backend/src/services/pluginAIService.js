@@ -530,7 +530,19 @@ Help them configure the plugin step-by-step. Suggest database tables, features, 
     } else if (mode === 'developer') {
       // Check if we're editing an existing plugin (has pluginId/pluginName)
       if (context.pluginId || context.pluginName) {
+        // Build existing files list for context
+        const existingFilesList = context.existingFiles && context.existingFiles.length > 0
+          ? `\n**Existing plugin files:**\n${context.existingFiles.map(f => `- ${f.path}`).join('\n')}`
+          : '';
+
+        // Build current file context
+        const currentFileContext = context.currentFile
+          ? `\n**Currently open file:** ${context.currentFile.path}\n\`\`\`javascript\n${context.currentFile.content}\n\`\`\``
+          : '';
+
         prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (${context.pluginSlug || 'unknown'}).
+${existingFilesList}
+${currentFileContext}
 
 **Request:** ${userPrompt}
 
@@ -539,12 +551,14 @@ RESPONSE FORMAT - Return ONLY this JSON, nothing else:
   "generatedFiles": [
     { "name": "filename.js", "code": "// your code here" }
   ],
-  "explanation": "One sentence describing what was added."
+  "explanation": "One sentence describing what was added or modified."
 }
 
 RULES:
 - Return ONLY valid JSON, no markdown, no extra text
 - Keep explanation to 1 sentence max
+- **IMPORTANT: If modifying an existing file, use the SAME filename from "Existing plugin files"**
+- **If user says "change it" or refers to previous code, modify the currently open file**
 - Generate minimal working code for the request
 - Use DainoStore plugin hooks (cart.add_item, product.view, etc.)`;
       } else {

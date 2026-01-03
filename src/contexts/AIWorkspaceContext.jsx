@@ -86,6 +86,8 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Plugin editing state
   const [pluginToEdit, setPluginToEdit] = useState(null);
   const [showPluginEditor, setShowPluginEditor] = useState(false);
+  const [pluginFiles, setPluginFiles] = useState([]); // Current plugin's files for AI context
+  const [selectedPluginFile, setSelectedPluginFile] = useState(null); // Currently open file in editor
 
   // AI Studio state (ChatInterface for creating plugins)
   const [showAiStudio, setShowAiStudio] = useState(false);
@@ -490,6 +492,10 @@ export const AIWorkspaceProvider = ({ children }) => {
     showPluginEditor,
     openPluginEditor,
     closePluginEditor,
+    pluginFiles,
+    setPluginFiles,
+    selectedPluginFile,
+    setSelectedPluginFile,
 
     // AI Studio
     showAiStudio,
@@ -546,6 +552,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     editorSidebarVisible,
     pluginToEdit,
     showPluginEditor,
+    pluginFiles,
+    selectedPluginFile,
     selectPage,
     toggleEditorMode,
     applyAiSlotChange,

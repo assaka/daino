@@ -1034,7 +1034,7 @@ export default function Categories() {
               disabled={!selectedStore || categories.length === 0}
             >
               <Wand2 className="w-4 h-4 mr-2" />
-              AI Optimizer
+              AI Image Optimizer
             </Button>
             <Button
               onClick={() => setShowBulkTranslateDialog(true)}
