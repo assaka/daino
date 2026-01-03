@@ -291,6 +291,7 @@ router.post('/stage',
         lighting = 'natural daylight'
       } = req.body;
       const storeId = req.storeId || req.headers['x-store-id'];
+      const userId = req.user?.id;
 
       const serviceKey = SERVICE_KEYS[provider]?.stage;
       let creditCost = 2;
@@ -302,20 +303,16 @@ router.post('/stage',
       }
 
       // Check credits
-      if (storeId) {
-        const { data: store } = await masterDbClient
-          .from('stores')
-          .select('credits_balance')
-          .eq('id', storeId)
-          .single();
-
-        if (store && store.credits_balance < creditCost) {
+      if (userId) {
+        const hasCredits = await creditService.hasEnoughCredits(userId, storeId, creditCost);
+        if (!hasCredits) {
+          const balance = await creditService.getBalance(userId);
           return res.status(402).json({
             success: false,
             code: 'INSUFFICIENT_CREDITS',
             message: `Insufficient credits. Required: ${creditCost}`,
             required: creditCost,
-            available: store.credits_balance
+            available: balance
           });
         }
       }
@@ -328,13 +325,16 @@ router.post('/stage',
       });
 
       // Deduct credits
-      if (storeId) {
-        await masterDbClient.rpc('deduct_credits', {
-          p_store_id: storeId,
-          p_amount: creditCost,
-          p_service_key: serviceKey,
-          p_description: `Product staging in ${context} using ${provider}`
-        });
+      if (userId) {
+        await creditService.deduct(
+          userId,
+          storeId,
+          creditCost,
+          `Product staging in ${context} using ${provider}`,
+          { provider, operation: 'stage', context },
+          null,
+          'ai_image_optimization'
+        );
       }
 
       res.json({
@@ -366,6 +366,7 @@ router.post('/upscale',
     try {
       const { provider = 'flux', image, scale = 2, enhanceDetails = true } = req.body;
       const storeId = req.storeId || req.headers['x-store-id'];
+      const userId = req.user?.id;
 
       const serviceKey = SERVICE_KEYS[provider]?.upscale;
       let creditCost = 1;
@@ -377,20 +378,16 @@ router.post('/upscale',
       }
 
       // Check credits
-      if (storeId) {
-        const { data: store } = await masterDbClient
-          .from('stores')
-          .select('credits_balance')
-          .eq('id', storeId)
-          .single();
-
-        if (store && store.credits_balance < creditCost) {
+      if (userId) {
+        const hasCredits = await creditService.hasEnoughCredits(userId, storeId, creditCost);
+        if (!hasCredits) {
+          const balance = await creditService.getBalance(userId);
           return res.status(402).json({
             success: false,
             code: 'INSUFFICIENT_CREDITS',
             message: `Insufficient credits. Required: ${creditCost}`,
             required: creditCost,
-            available: store.credits_balance
+            available: balance
           });
         }
       }
@@ -403,13 +400,16 @@ router.post('/upscale',
       });
 
       // Deduct credits
-      if (storeId) {
-        await masterDbClient.rpc('deduct_credits', {
-          p_store_id: storeId,
-          p_amount: creditCost,
-          p_service_key: serviceKey,
-          p_description: `Image upscale ${scale}x using ${provider}`
-        });
+      if (userId) {
+        await creditService.deduct(
+          userId,
+          storeId,
+          creditCost,
+          `Image upscale ${scale}x using ${provider}`,
+          { provider, operation: 'upscale', scale },
+          null,
+          'ai_image_optimization'
+        );
       }
 
       res.json({
@@ -449,6 +449,7 @@ router.post('/batch',
 
       const { provider, operation, images, params = {}, concurrency = 3 } = req.body;
       const storeId = req.storeId || req.headers['x-store-id'];
+      const userId = req.user?.id;
 
       // Calculate total cost
       const serviceKey = SERVICE_KEYS[provider]?.[operation];
@@ -463,20 +464,16 @@ router.post('/batch',
       const totalCost = creditCostPerImage * images.length;
 
       // Check credits
-      if (storeId) {
-        const { data: store } = await masterDbClient
-          .from('stores')
-          .select('credits_balance')
-          .eq('id', storeId)
-          .single();
-
-        if (store && store.credits_balance < totalCost) {
+      if (userId) {
+        const hasCredits = await creditService.hasEnoughCredits(userId, storeId, totalCost);
+        if (!hasCredits) {
+          const balance = await creditService.getBalance(userId);
           return res.status(402).json({
             success: false,
             code: 'INSUFFICIENT_CREDITS',
-            message: `Insufficient credits. Required: ${totalCost}, Available: ${store.credits_balance}`,
+            message: `Insufficient credits. Required: ${totalCost}, Available: ${balance}`,
             required: totalCost,
-            available: store.credits_balance
+            available: balance
           });
         }
       }
@@ -493,13 +490,16 @@ router.post('/batch',
       const successfulCount = result.successful;
       const actualCost = creditCostPerImage * successfulCount;
 
-      if (storeId && actualCost > 0) {
-        await masterDbClient.rpc('deduct_credits', {
-          p_store_id: storeId,
-          p_amount: actualCost,
-          p_service_key: serviceKey,
-          p_description: `Batch ${operation}: ${successfulCount} images using ${provider}`
-        });
+      if (userId && actualCost > 0) {
+        await creditService.deduct(
+          userId,
+          storeId,
+          actualCost,
+          `Batch ${operation}: ${successfulCount} images using ${provider}`,
+          { provider, operation, imageCount: successfulCount },
+          null,
+          'ai_image_optimization'
+        );
       }
 
       res.json({
