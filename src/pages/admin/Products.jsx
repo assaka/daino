@@ -1574,8 +1574,19 @@ export default function Products() {
         {/* Image Optimizer Modal */}
         <ImageOptimizerModal
           isOpen={!!optimizerImage}
-          onClose={() => {
+          onClose={async () => {
             setOptimizerImage(null);
+            // Refresh product data and products list
+            if (selectedProduct) {
+              try {
+                const freshProduct = await Product.findById(selectedProduct.id);
+                setSelectedProduct(freshProduct || selectedProduct);
+              } catch (error) {
+                // Keep existing product if refresh fails
+              }
+            }
+            // Refresh the products list to show updated images
+            loadProducts(currentPage);
             // Re-open the product form with the same product
             if (selectedProduct) {
               setShowProductForm(true);
@@ -1589,8 +1600,7 @@ export default function Products() {
           } : null}
           selectedFiles={[]}
           onOptimized={async () => {
-            // Refresh product data for when modal closes
-            // Don't close modal - user needs to save or cancel
+            // Called after optimization - don't close modal, just refresh data
             if (selectedProduct) {
               try {
                 const freshProduct = await Product.findById(selectedProduct.id);

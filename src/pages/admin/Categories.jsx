@@ -1792,8 +1792,19 @@ export default function Categories() {
         {/* Image Optimizer Modal */}
         <ImageOptimizerModal
           isOpen={!!optimizerImage}
-          onClose={() => {
+          onClose={async () => {
             setOptimizerImage(null);
+            // Refresh category data and categories list
+            if (selectedCategory) {
+              try {
+                const freshCategory = await Category.findById(selectedCategory.id);
+                setSelectedCategory(freshCategory || selectedCategory);
+              } catch (error) {
+                // Keep existing category if refresh fails
+              }
+            }
+            // Refresh the categories list to show updated images
+            loadCategories();
             // Re-open the category form with the same category
             if (selectedCategory) {
               setShowCategoryForm(true);
@@ -1808,8 +1819,7 @@ export default function Categories() {
           } : null}
           selectedFiles={[]}
           onOptimized={async () => {
-            // Refresh category data for when modal closes
-            // Don't close modal - user needs to save or cancel
+            // Called after optimization - don't close modal, just refresh data
             if (selectedCategory) {
               try {
                 const freshCategory = await Category.findById(selectedCategory.id);

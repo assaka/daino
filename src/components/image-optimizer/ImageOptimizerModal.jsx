@@ -271,6 +271,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
 
     if (successCount > 0) {
       setFlashMessage({ type: 'success', message: `Optimized ${successCount}/${itemsToProcess.length} images (${totalCredits.toFixed(2)} credits used)` });
+      // Dispatch event to refresh credits in sidebar
+      window.dispatchEvent(new CustomEvent('creditsUpdated'));
       if (onOptimized) {
         onOptimized({ results: newResults, creditsUsed: totalCredits });
       }
@@ -316,7 +318,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           }
           setFlashMessage({ type: 'success', message: msg });
           if (onOptimized) onOptimized({ applied: true, refresh: true });
-          onClose();
+          // Don't close modal - user can close manually with Cancel/X
         } else {
           throw new Error(replaceResponse.error || 'Replace failed');
         }
