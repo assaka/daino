@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, AlertTriangle, Image as ImageIcon, X, Languages } from "lucide-react";
+import { Search, AlertTriangle, Image as ImageIcon, X, Languages, Wand2 } from "lucide-react";
 import MediaBrowser from '@/components/admin/cms/MediaBrowser';
+import { ImageOptimizer } from '@/components/image-optimizer';
 import {
   Accordion,
   AccordionContent,
@@ -68,6 +69,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [savingImage, setSavingImage] = useState(false);
+  const [showImageOptimizer, setShowImageOptimizer] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [showAITranslateDialog, setShowAITranslateDialog] = useState(false);
   const [translateFromLang, setTranslateFromLang] = useState('en');
@@ -246,6 +248,16 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       }
     }
     setShowMediaBrowser(false);
+  };
+
+  // Handle optimized image from AI optimizer
+  const handleOptimizedImage = (result) => {
+    if (result.applied && result.refresh) {
+      // Image was replaced in storage, just close the modal
+      // The URL might have changed if format changed, so we should refresh
+      setShowImageOptimizer(false);
+      setFlashMessage({ type: 'success', message: 'Image optimized successfully' });
+    }
   };
 
   const createRedirectForSlugChange = async () => {
@@ -655,6 +667,19 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
               </div>
             )}
+            {/* AI Optimize button */}
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="absolute -top-2 right-6 h-6 w-6 bg-purple-100 hover:bg-purple-200 text-purple-600"
+              onClick={() => setShowImageOptimizer(true)}
+              disabled={savingImage}
+              title="AI Optimize"
+            >
+              <Wand2 className="h-3 w-3" />
+            </Button>
+            {/* Delete button */}
             <Button
               type="button"
               variant="destructive"
@@ -850,6 +875,36 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         allowMultiple={false}
         uploadFolder="category"
       />
+
+      {/* AI Image Optimizer Modal */}
+      {showImageOptimizer && formData.image_url && (
+        <Dialog open={showImageOptimizer} onOpenChange={setShowImageOptimizer}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 py-4 border-b flex flex-row items-center gap-3 bg-gray-50">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <Wand2 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <DialogTitle>AI Image Optimizer</DialogTitle>
+                <p className="text-sm text-gray-500">Optimize category image with AI</p>
+              </div>
+            </DialogHeader>
+            <div className="overflow-auto max-h-[calc(90vh-100px)]">
+              <ImageOptimizer
+                storeId={getSelectedStoreId()}
+                singleFile={{
+                  url: formData.image_url,
+                  name: formData.image_url.split('/').pop(),
+                  id: formData.media_asset_id,
+                  folder: 'category'
+                }}
+                onOptimized={handleOptimizedImage}
+                onClose={() => setShowImageOptimizer(false)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* AI Translate Dialog */}
       <Dialog open={showAITranslateDialog} onOpenChange={setShowAITranslateDialog}>

@@ -10,11 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2, CheckCircle, AlertCircle, Languages } from "lucide-react";
+import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2, CheckCircle, AlertCircle, Languages, Wand2 } from "lucide-react";
 import SaveButton from '@/components/ui/save-button';
 import FlashMessage from "@/components/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/admin/cms/MediaBrowser";
+import { ImageOptimizer } from '@/components/image-optimizer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TranslationFields from "@/components/admin/TranslationFields";
 import {
   Accordion,
@@ -207,6 +209,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [currentAttributeCode, setCurrentAttributeCode] = useState(null);
   const [deleteFileDialog, setDeleteFileDialog] = useState({ open: false, fileId: null, fileName: null, loading: false });
+  const [showImageOptimizer, setShowImageOptimizer] = useState(false);
+  const [imageToOptimize, setImageToOptimize] = useState(null);
 
   // Simplified product image system state
   const imageInputRef = useRef(null);
@@ -641,6 +645,21 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       console.error('❌ Error saving product image:', error);
       throw error;
     }
+  };
+
+  // Handle optimized image from AI optimizer
+  const handleOptimizedImage = (result) => {
+    if (result.applied && result.refresh) {
+      // Image was replaced in storage, close the modal
+      setShowImageOptimizer(false);
+      setImageToOptimize(null);
+      setFlashMessage({ type: 'success', message: 'Image optimized successfully' });
+    }
+  };
+
+  const openImageOptimizer = (image) => {
+    setImageToOptimize(image);
+    setShowImageOptimizer(true);
   };
 
   // Load existing variants for configurable products
@@ -1822,17 +1841,33 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     alt={`Product image ${index + 1}`}
                     className="w-full h-32 object-cover"
                   />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleImageRemove(index)}
-                    disabled={loading || uploadingImage}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  
+                  {/* Action buttons - shown on hover */}
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* AI Optimize button */}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-6 w-6 bg-purple-100 hover:bg-purple-200 text-purple-600"
+                      onClick={() => openImageOptimizer(image)}
+                      disabled={loading || uploadingImage}
+                      title="AI Optimize"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                    </Button>
+                    {/* Delete button */}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleImageRemove(index)}
+                      disabled={loading || uploadingImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
                   {/* Image info */}
                   <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
                     <p className="truncate">{image.filepath}</p>
@@ -3275,6 +3310,38 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         confirmText="Delete"
         loading={deleteFileDialog.loading}
       />
+
+      {/* AI Image Optimizer Modal */}
+      {showImageOptimizer && imageToOptimize && (
+        <Dialog open={showImageOptimizer} onOpenChange={setShowImageOptimizer}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 py-4 border-b flex flex-row items-center gap-3 bg-gray-50">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <Wand2 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <DialogTitle>AI Image Optimizer</DialogTitle>
+                <p className="text-sm text-gray-500">Optimize product image with AI</p>
+              </div>
+            </DialogHeader>
+            <div className="overflow-auto max-h-[calc(90vh-100px)]">
+              <ImageOptimizer
+                storeId={getSelectedStoreId()}
+                singleFile={{
+                  url: imageToOptimize.url,
+                  name: imageToOptimize.filepath || imageToOptimize.url.split('/').pop(),
+                  folder: 'product'
+                }}
+                onOptimized={handleOptimizedImage}
+                onClose={() => {
+                  setShowImageOptimizer(false);
+                  setImageToOptimize(null);
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   );
