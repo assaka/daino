@@ -381,6 +381,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
     setIsApplying(false);
   };
 
+  console.log('[ImageOptimizerModal] Render check:', { isOpen, fileToOptimize, singleFile });
+
   if (!isOpen) return null;
 
   const costPerImage = getCostPerImage();
