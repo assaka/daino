@@ -1075,7 +1075,7 @@ export default function Plugins() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate('/ai-workspace', { state: { plugin } })}
+                            onClick={() => navigate(`/ai-workspace/plugin/${plugin.id}`, { state: { plugin } })}
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
                             Edit
