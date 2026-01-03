@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wand2, Sparkles, Image, Package, FolderOpen, Search, Filter, Grid, List, Loader2, AlertCircle } from 'lucide-react';
+import { Wand2, Image, Package, FolderOpen, Search, Filter, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Product, Category } from '@/api/entities';
 import { ImageOptimizerModal } from '@/components/image-optimizer';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { cn } from '@/lib/utils';
@@ -15,7 +14,6 @@ const AIImageOptimizer = () => {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all'); // all, products, categories, no-image
-  const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [flashMessage, setFlashMessage] = useState(null);
 
   // Optimizer modal state
@@ -45,23 +43,21 @@ const AIImageOptimizer = () => {
     loadData();
   }, [getSelectedStoreId]);
 
-  // Build image items from products and categories
-  const imageItems = useMemo(() => {
+  // Build grouped items (product/category with their images)
+  const groupedItems = useMemo(() => {
     const items = [];
 
-    // Add product images
+    // Add products with their images
     products.forEach(product => {
+      const images = [];
+
       // Main image from media_assets
       if (product.media_assets?.length > 0) {
         product.media_assets.forEach((asset, idx) => {
-          items.push({
-            id: `product-${product.id}-asset-${asset.id}`,
-            type: 'product',
-            entityId: product.id,
-            entityName: product.name,
-            categoryName: categories.find(c => c.id === product.category_id)?.name,
-            imageUrl: asset.file_url,
-            imageName: asset.file_name,
+          images.push({
+            id: asset.id,
+            url: asset.file_url,
+            name: asset.file_name,
             isPrimary: idx === 0,
             assetId: asset.id
           });
@@ -70,14 +66,10 @@ const AIImageOptimizer = () => {
       // Fallback to product_files
       else if (product.product_files?.length > 0) {
         product.product_files.filter(f => f.media_asset?.file_url).forEach((file, idx) => {
-          items.push({
-            id: `product-${product.id}-file-${file.id}`,
-            type: 'product',
-            entityId: product.id,
-            entityName: product.name,
-            categoryName: categories.find(c => c.id === product.category_id)?.name,
-            imageUrl: file.media_asset.file_url,
-            imageName: file.media_asset.file_name,
+          images.push({
+            id: file.id,
+            url: file.media_asset.file_url,
+            name: file.media_asset.file_name,
             isPrimary: file.is_primary || idx === 0,
             assetId: file.media_asset_id
           });
@@ -88,59 +80,48 @@ const AIImageOptimizer = () => {
         product.images.forEach((img, idx) => {
           const url = typeof img === 'string' ? img : img.url;
           if (url) {
-            items.push({
-              id: `product-${product.id}-img-${idx}`,
-              type: 'product',
-              entityId: product.id,
-              entityName: product.name,
-              categoryName: categories.find(c => c.id === product.category_id)?.name,
-              imageUrl: url,
-              imageName: url.split('/').pop(),
+            images.push({
+              id: `img-${idx}`,
+              url: url,
+              name: url.split('/').pop(),
               isPrimary: idx === 0
             });
           }
         });
       }
-      // Product with no images
-      else {
-        items.push({
-          id: `product-${product.id}-noimg`,
-          type: 'product',
-          entityId: product.id,
-          entityName: product.name,
-          categoryName: categories.find(c => c.id === product.category_id)?.name,
-          imageUrl: null,
-          imageName: null,
-          isPrimary: true,
-          noImage: true
-        });
-      }
+
+      items.push({
+        id: `product-${product.id}`,
+        type: 'product',
+        entityId: product.id,
+        name: product.name,
+        categoryName: categories.find(c => c.id === product.category_id)?.name,
+        images: images,
+        hasImages: images.length > 0
+      });
     });
 
-    // Add category images
+    // Add categories with their images
     categories.forEach(category => {
+      const images = [];
       if (category.image_url) {
-        items.push({
-          id: `category-${category.id}`,
-          type: 'category',
-          entityId: category.id,
-          entityName: category.name || category.translations?.en?.name || 'Unnamed Category',
-          imageUrl: category.image_url,
-          imageName: category.image_url.split('/').pop(),
-          isPrimary: true
-        });
-      } else {
-        items.push({
-          id: `category-${category.id}-noimg`,
-          type: 'category',
-          entityId: category.id,
-          entityName: category.name || category.translations?.en?.name || 'Unnamed Category',
-          imageUrl: null,
-          imageName: null,
+        images.push({
+          id: `cat-img-${category.id}`,
+          url: category.image_url,
+          name: category.image_url.split('/').pop(),
           isPrimary: true,
-          noImage: true
+          assetId: category.media_asset_id
         });
       }
+
+      items.push({
+        id: `category-${category.id}`,
+        type: 'category',
+        entityId: category.id,
+        name: category.name || category.translations?.en?.name || 'Unnamed Category',
+        images: images,
+        hasImages: images.length > 0
+      });
     });
 
     return items;
@@ -148,11 +129,11 @@ const AIImageOptimizer = () => {
 
   // Filter items
   const filteredItems = useMemo(() => {
-    return imageItems.filter(item => {
+    return groupedItems.filter(item => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (!item.entityName?.toLowerCase().includes(query) &&
+        if (!item.name?.toLowerCase().includes(query) &&
             !item.categoryName?.toLowerCase().includes(query)) {
           return false;
         }
@@ -161,35 +142,30 @@ const AIImageOptimizer = () => {
       // Type filter
       if (filterType === 'products' && item.type !== 'product') return false;
       if (filterType === 'categories' && item.type !== 'category') return false;
-      if (filterType === 'no-image' && !item.noImage) return false;
-      if (filterType === 'with-image' && item.noImage) return false;
+      if (filterType === 'no-image' && item.hasImages) return false;
+      if (filterType === 'with-image' && !item.hasImages) return false;
 
       return true;
     });
-  }, [imageItems, searchQuery, filterType]);
+  }, [groupedItems, searchQuery, filterType]);
 
   // Stats
   const stats = useMemo(() => {
-    const productImages = imageItems.filter(i => i.type === 'product' && !i.noImage).length;
-    const categoryImages = imageItems.filter(i => i.type === 'category' && !i.noImage).length;
-    const noImages = imageItems.filter(i => i.noImage).length;
+    const productImages = groupedItems.filter(i => i.type === 'product').reduce((sum, p) => sum + p.images.length, 0);
+    const categoryImages = groupedItems.filter(i => i.type === 'category').reduce((sum, c) => sum + c.images.length, 0);
+    const noImages = groupedItems.filter(i => !i.hasImages).length;
     return { productImages, categoryImages, noImages, total: productImages + categoryImages };
-  }, [imageItems]);
+  }, [groupedItems]);
 
-  const handleImageClick = (item) => {
-    if (item.noImage) {
-      setFlashMessage({ type: 'warning', message: 'This item has no image. Upload an image first.' });
-      return;
-    }
-
+  const handleImageClick = (item, image) => {
     setSelectedImage({
-      url: item.imageUrl,
-      name: item.imageName,
+      url: image.url,
+      name: image.name,
       folder: item.type,
-      id: item.assetId
+      id: image.assetId
     });
     setSelectedContext({
-      name: item.entityName,
+      name: item.name,
       category: item.categoryName
     });
     setOptimizerOpen(true);
@@ -313,32 +289,10 @@ const AIImageOptimizer = () => {
               ))}
             </div>
           </div>
-
-          {/* View Mode */}
-          <div className="flex gap-1 border rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                "p-1.5 rounded",
-                viewMode === 'grid' ? "bg-gray-100" : "hover:bg-gray-50"
-              )}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                "p-1.5 rounded",
-                viewMode === 'list' ? "bg-gray-100" : "hover:bg-gray-50"
-              )}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Image Grid/List */}
+      {/* Products/Categories with Images */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
@@ -346,127 +300,87 @@ const AIImageOptimizer = () => {
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-20">
           <Image className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
           <p className="text-gray-500">Try adjusting your filters or search query</p>
         </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {filteredItems.map(item => (
-            <div
-              key={item.id}
-              onClick={() => handleImageClick(item)}
-              className={cn(
-                "group relative bg-white rounded-lg border overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:border-purple-300",
-                item.noImage && "opacity-60"
-              )}
-            >
-              {/* Image */}
-              <div className="aspect-square bg-gray-100 relative">
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.entityName}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image className="w-8 h-8 text-gray-300" />
-                  </div>
-                )}
-
-                {/* Hover overlay */}
-                {!item.noImage && (
-                  <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="text-center text-white">
-                      <Wand2 className="w-8 h-8 mx-auto mb-2" />
-                      <span className="text-sm font-medium">Optimize</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Type badge */}
-                <div className={cn(
-                  "absolute top-2 left-2 px-2 py-0.5 text-xs rounded-full",
-                  item.type === 'product'
-                    ? "bg-orange-100 text-orange-700"
-                    : "bg-blue-100 text-blue-700"
-                )}>
-                  {item.type === 'product' ? 'Product' : 'Category'}
-                </div>
-
-                {/* Primary badge */}
-                {item.isPrimary && !item.noImage && (
-                  <div className="absolute top-2 right-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
-                    Primary
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="p-2">
-                <p className="text-sm font-medium text-gray-900 truncate">{item.entityName}</p>
-                {item.categoryName && (
-                  <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="bg-white rounded-lg border divide-y">
+        <div className="space-y-4">
           {filteredItems.map(item => (
             <div
               key={item.id}
-              onClick={() => handleImageClick(item)}
-              className={cn(
-                "flex items-center gap-4 p-4 cursor-pointer hover:bg-purple-50 transition-colors",
-                item.noImage && "opacity-60"
-              )}
+              className="bg-white rounded-lg border overflow-hidden"
             >
-              {/* Thumbnail */}
-              <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.entityName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image className="w-6 h-6 text-gray-300" />
+              {/* Header with name */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b">
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  item.type === 'product' ? "bg-orange-100" : "bg-blue-100"
+                )}>
+                  {item.type === 'product' ? (
+                    <Package className="w-4 h-4 text-orange-600" />
+                  ) : (
+                    <FolderOpen className="w-4 h-4 text-blue-600" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded",
+                      item.type === 'product' ? "bg-orange-50 text-orange-600" : "bg-blue-50 text-blue-600"
+                    )}>
+                      {item.type === 'product' ? 'Product' : 'Category'}
+                    </span>
+                    {item.categoryName && (
+                      <>
+                        <ChevronRight className="w-3 h-3" />
+                        <span>{item.categoryName}</span>
+                      </>
+                    )}
+                    <span className="text-gray-400">•</span>
+                    <span>{item.images.length} image{item.images.length !== 1 ? 's' : ''}</span>
                   </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">{item.entityName}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={cn(
-                    "px-2 py-0.5 text-xs rounded-full",
-                    item.type === 'product'
-                      ? "bg-orange-100 text-orange-700"
-                      : "bg-blue-100 text-blue-700"
-                  )}>
-                    {item.type === 'product' ? 'Product' : 'Category'}
-                  </span>
-                  {item.categoryName && (
-                    <span className="text-xs text-gray-500">{item.categoryName}</span>
-                  )}
-                  {item.isPrimary && !item.noImage && (
-                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Primary</span>
-                  )}
                 </div>
               </div>
 
-              {/* Action */}
-              {!item.noImage && (
-                <Button size="sm" variant="outline" className="gap-2">
-                  <Wand2 className="w-4 h-4" />
-                  Optimize
-                </Button>
-              )}
+              {/* Images grid */}
+              <div className="p-4">
+                {item.images.length > 0 ? (
+                  <div className="flex flex-wrap gap-3">
+                    {item.images.map((image, idx) => (
+                      <div
+                        key={image.id}
+                        onClick={() => handleImageClick(item, image)}
+                        className="group relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all"
+                      >
+                        <img
+                          src={image.url}
+                          alt={`${item.name} - ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Wand2 className="w-6 h-6 text-white" />
+                        </div>
+
+                        {/* Primary badge */}
+                        {image.isPrimary && item.images.length > 1 && (
+                          <div className="absolute bottom-1 left-1 px-1.5 py-0.5 text-[10px] bg-green-500 text-white rounded">
+                            Primary
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 py-4 text-gray-400">
+                    <AlertCircle className="w-5 h-5" />
+                    <span className="text-sm">No images - upload images to optimize them</span>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

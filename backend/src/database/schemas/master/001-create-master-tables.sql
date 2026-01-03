@@ -319,6 +319,25 @@ VALUES
   ('plugin_marketplace', 'Plugin Purchase', 'plugin_management', 0.00, 'flat_rate', 'Purchase plugins from marketplace', true, false, 50)
 ON CONFLICT (service_key) DO NOTHING;
 
+-- Plugin AI Service Credit Costs (multi-provider support)
+INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active, is_visible, display_order, metadata)
+VALUES
+  -- Claude/Anthropic
+  ('ai_plugin_claude_haiku', 'Plugin AI - Claude Haiku', 'ai_services', 5.0000, 'per_use', 'Claude 3 Haiku - Fast plugin generation', true, true, 60, '{"note": "Fast and affordable", "model": "claude-3-haiku-20240307", "provider": "anthropic"}'),
+  ('ai_plugin_claude_sonnet', 'Plugin AI - Claude Sonnet', 'ai_services', 10.0000, 'per_use', 'Claude 3.5 Sonnet - Balanced plugin generation', true, true, 61, '{"note": "Best balance of speed and quality", "model": "claude-3-5-sonnet-20241022", "provider": "anthropic"}'),
+  ('ai_plugin_claude_opus', 'Plugin AI - Claude Opus', 'ai_services', 20.0000, 'per_use', 'Claude 3 Opus - Premium plugin generation', true, true, 62, '{"note": "Highest quality", "model": "claude-3-opus-20240229", "provider": "anthropic"}'),
+  -- OpenAI
+  ('ai_plugin_openai_gpt4o_mini', 'Plugin AI - GPT-4o Mini', 'ai_services', 5.0000, 'per_use', 'GPT-4o Mini - Fast OpenAI plugin generation', true, true, 63, '{"note": "Fast and affordable", "model": "gpt-4o-mini", "provider": "openai"}'),
+  ('ai_plugin_openai_gpt4o', 'Plugin AI - GPT-4o', 'ai_services', 12.0000, 'per_use', 'GPT-4o - Premium OpenAI plugin generation', true, true, 64, '{"note": "Latest GPT-4 model", "model": "gpt-4o", "provider": "openai"}'),
+  -- Gemini
+  ('ai_plugin_gemini_flash', 'Plugin AI - Gemini Flash', 'ai_services', 3.0000, 'per_use', 'Gemini 2.0 Flash - Ultra fast plugin generation', true, true, 65, '{"note": "Fastest Gemini model", "model": "gemini-2.0-flash", "provider": "gemini"}'),
+  ('ai_plugin_gemini_pro', 'Plugin AI - Gemini Pro', 'ai_services', 8.0000, 'per_use', 'Gemini Pro - Advanced plugin generation', true, true, 66, '{"note": "Advanced reasoning", "model": "gemini-pro", "provider": "gemini"}'),
+  -- Groq
+  ('ai_plugin_groq_llama', 'Plugin AI - Groq Llama', 'ai_services', 2.0000, 'per_use', 'Llama 3.3 70B on Groq - Lightning fast', true, true, 67, '{"note": "Fastest inference", "model": "llama-3.3-70b-versatile", "provider": "groq"}'),
+  -- DeepSeek
+  ('ai_plugin_deepseek', 'Plugin AI - DeepSeek', 'ai_services', 3.0000, 'per_use', 'DeepSeek Chat - Cost-effective plugin generation', true, true, 68, '{"note": "Cost-effective coding model", "model": "deepseek-chat", "provider": "deepseek"}')
+ON CONFLICT (service_key) DO NOTHING;
+
 -- ============================================
 -- TRIGGERS FOR UPDATED_AT
 -- ============================================
