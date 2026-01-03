@@ -83,7 +83,10 @@ const WorkspaceAIPanel = () => {
     chatMaximized,
     toggleChatMaximized,
     refreshPreview,
-    triggerConfigurationRefresh
+    triggerConfigurationRefresh,
+    // Plugin editing context
+    pluginToEdit,
+    showPluginEditor
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -479,6 +482,72 @@ const WorkspaceAIPanel = () => {
     setIsProcessingAi(true);
 
     try {
+      // Check if we're in plugin editing mode
+      const isPluginEditMode = showPluginEditor && pluginToEdit;
+
+      if (isPluginEditMode) {
+        // === PLUGIN EDITING MODE ===
+        // Route to plugin AI service for code generation/modification
+        console.log('🔌 Plugin editing mode - routing to plugin AI', pluginToEdit);
+
+        const response = await apiClient.post('plugins/ai/generate', {
+          mode: 'developer',
+          prompt: userMessage,
+          context: {
+            pluginId: pluginToEdit.id,
+            pluginName: pluginToEdit.name,
+            pluginSlug: pluginToEdit.slug,
+            category: pluginToEdit.category,
+            storeId: storeId
+          }
+        });
+
+        // Handle plugin AI response
+        if (response.type === 'conversation' || response.isConversational) {
+          // Conversational response - just show the message
+          addChatMessage({
+            role: 'assistant',
+            content: response.message || response.content || 'I can help you modify this plugin. What would you like to add or change?'
+          });
+        } else if (response.generatedFiles || response.plugin_structure) {
+          // Code was generated - show success and notify user
+          const files = response.generatedFiles || [];
+          const explanation = response.explanation || 'Plugin code generated successfully.';
+
+          addChatMessage({
+            role: 'assistant',
+            content: `✅ ${explanation}\n\n${files.length > 0 ? `Generated ${files.length} file(s). The code is ready to be applied.` : ''}`,
+            data: {
+              type: 'plugin_code_generated',
+              files: files,
+              pluginStructure: response.plugin_structure
+            }
+          });
+
+          // Dispatch event so DeveloperPluginEditor can pick up the generated code
+          window.dispatchEvent(new CustomEvent('plugin-ai-code-generated', {
+            detail: {
+              pluginId: pluginToEdit.id,
+              files: files,
+              pluginStructure: response.plugin_structure,
+              code: response.plugin_structure?.main_file || (files[0]?.code)
+            }
+          }));
+        } else {
+          // Generic response
+          addChatMessage({
+            role: 'assistant',
+            content: response.message || response.explanation || 'Plugin updated.',
+            data: response
+          });
+        }
+
+        saveChatMessage('assistant', response.message || response.explanation || 'Plugin response');
+        setIsProcessingAi(false);
+        return;
+      }
+
+      // === NORMAL SLOT EDITING MODE ===
       // Generate slot context for AI
       const slotContext = aiWorkspaceSlotProcessor.generateSlotContext(
         selectedPageType,

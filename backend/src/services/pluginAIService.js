@@ -483,7 +483,30 @@ Current configuration: ${JSON.stringify(context, null, 2)}
 
 Help them configure the plugin step-by-step. Suggest database tables, features, and UI components.`;
     } else if (mode === 'developer') {
-      prompt = `Developer request: ${userPrompt}
+      // Check if we're editing an existing plugin (has pluginId/pluginName)
+      if (context.pluginId || context.pluginName) {
+        prompt = `You are helping to modify an existing plugin.
+
+**Plugin Details:**
+- Name: ${context.pluginName || 'Unknown'}
+- ID: ${context.pluginId || 'Unknown'}
+- Slug: ${context.pluginSlug || 'unknown'}
+- Category: ${context.category || 'commerce'}
+
+**User Request:** ${userPrompt}
+
+Based on the user's request, generate the necessary code changes or new files for this plugin.
+If the user asks to add a feature (like "show a popup", "add an alert", "display a message"), generate the appropriate code that hooks into the DainoStore plugin system.
+
+For example:
+- For "show a popup in cart": Add code to the cart hook that displays a popup/modal
+- For "add a review feature": Generate the review component, database migration, and API endpoint
+- For "show an alert": Add JavaScript alert or notification code
+
+Generate production-ready code following the DainoStore plugin architecture.`;
+      } else {
+        // Standard developer mode with current file context
+        prompt = `Developer request: ${userPrompt}
 
 Current file: ${context.currentFile?.name || 'N/A'}
 Current code:
@@ -492,6 +515,7 @@ ${context.currentCode || '// Empty file'}
 \`\`\`
 
 Provide production-ready code with proper error handling and best practices.`;
+      }
     }
 
     return prompt;

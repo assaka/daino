@@ -120,6 +120,41 @@ const DeveloperPluginEditor = ({
     loadPluginFiles();
   }, [plugin]);
 
+  // Listen for AI-generated code from WorkspaceAIPanel
+  useEffect(() => {
+    const handleAICodeGenerated = (event) => {
+      const { pluginId, files, pluginStructure, code } = event.detail;
+
+      // Only process if this is for our plugin
+      if (pluginId !== plugin?.id) return;
+
+      console.log('🤖 Received AI-generated code for plugin:', pluginId, { files, pluginStructure, code });
+
+      if (code && selectedFile) {
+        // Apply code to current file
+        setFileContent(code);
+        addTerminalOutput('✓ AI generated code applied to current file', 'success');
+        setShowTerminal(true);
+      } else if (files && files.length > 0) {
+        // Multiple files generated - reload the file tree
+        addTerminalOutput(`✓ AI generated ${files.length} file(s) - refreshing...`, 'success');
+        setShowTerminal(true);
+        loadPluginFiles();
+      } else if (pluginStructure?.main_file) {
+        // Main file code generated
+        setFileContent(pluginStructure.main_file);
+        addTerminalOutput('✓ AI generated main plugin code', 'success');
+        setShowTerminal(true);
+      }
+    };
+
+    window.addEventListener('plugin-ai-code-generated', handleAICodeGenerated);
+
+    return () => {
+      window.removeEventListener('plugin-ai-code-generated', handleAICodeGenerated);
+    };
+  }, [plugin?.id, selectedFile]);
+
   const loadPluginFiles = async () => {
     try {
       if (!plugin?.id) {
