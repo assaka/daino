@@ -6,6 +6,7 @@ import { ImageOptimizerModal } from '@/components/image-optimizer';
 import { Input } from '@/components/ui/input';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { cn } from '@/lib/utils';
+import { getProductName, getCategoryName } from '@/utils/translationUtils';
 
 const AIImageOptimizer = () => {
   const { getSelectedStoreId } = useStoreSelection();
@@ -99,12 +100,13 @@ const AIImageOptimizer = () => {
         });
       }
 
+      const productCategory = categories.find(c => c.id === product.category_id);
       items.push({
         id: `product-${product.id}`,
         type: 'product',
         entityId: product.id,
-        name: product.name,
-        categoryName: categories.find(c => c.id === product.category_id)?.name,
+        name: getProductName(product) || product.name || 'Unnamed Product',
+        categoryName: productCategory ? getCategoryName(productCategory) : null,
         images: images,
         hasImages: images.length > 0
       });
@@ -127,7 +129,7 @@ const AIImageOptimizer = () => {
         id: `category-${category.id}`,
         type: 'category',
         entityId: category.id,
-        name: category.name || category.translations?.en?.name || 'Unnamed Category',
+        name: getCategoryName(category) || category.name || 'Unnamed Category',
         images: images,
         hasImages: images.length > 0
       });

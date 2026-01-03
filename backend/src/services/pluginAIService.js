@@ -22,12 +22,38 @@
 
 const aiContextService = require('./aiContextService');
 const aiProvider = require('./ai-provider-service');
+const aiModelsService = require('./AIModelsService');
 
 class PluginAIService {
   constructor() {
     // Default model (used when none specified)
     this.defaultModel = 'claude-3-haiku-20240307';
     this.defaultProvider = 'anthropic';
+  }
+
+  /**
+   * Resolve model ID to full API model name
+   * Converts short IDs like 'claude-haiku' to full names like 'claude-3-5-haiku-20241022'
+   * @param {string} modelId - Short or full model ID
+   * @returns {Promise<string>} Full API model name
+   */
+  async resolveModelId(modelId) {
+    if (!modelId) return this.defaultModel;
+
+    // If it looks like a full model name (contains version date), use as-is
+    if (modelId.match(/\d{8}$/)) {
+      return modelId;
+    }
+
+    // Try to resolve via AIModelsService
+    try {
+      const apiModel = await aiModelsService.getApiModel(modelId);
+      if (apiModel) return apiModel;
+    } catch (err) {
+      console.warn(`Failed to resolve model ID ${modelId}:`, err.message);
+    }
+
+    return this.defaultModel;
   }
 
   /**
@@ -94,17 +120,19 @@ class PluginAIService {
     const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
 
     // Use model/provider from context if provided, otherwise use defaults
-    const modelId = context.modelId || this.defaultModel;
-    const provider = this.getProviderFromModel(modelId);
+    // Resolve short model IDs (e.g., 'claude-haiku') to full API names (e.g., 'claude-3-5-haiku-20241022')
+    const shortModelId = context.modelId || this.defaultModel;
+    const resolvedModel = await this.resolveModelId(shortModelId);
+    const provider = this.getProviderFromModel(shortModelId);
 
-    console.log(`🤖 Plugin AI using provider: ${provider}, model: ${modelId}`);
+    console.log(`🤖 Plugin AI using provider: ${provider}, model: ${resolvedModel} (from ${shortModelId})`);
 
     const response = await aiProvider.chat([{
       role: 'user',
       content: this.buildUserPrompt(mode, userPrompt, context)
     }], {
       provider,
-      model: modelId,
+      model: resolvedModel,
       maxTokens: 4096,
       temperature: 0.7,
       systemPrompt
@@ -121,8 +149,9 @@ class PluginAIService {
    * @param {object} options - Optional options including modelId
    */
   async generateCodeSuggestion(fileName, currentCode, prompt, options = {}) {
-    const modelId = options.modelId || this.defaultModel;
-    const provider = this.getProviderFromModel(modelId);
+    const shortModelId = options.modelId || this.defaultModel;
+    const resolvedModel = await this.resolveModelId(shortModelId);
+    const provider = this.getProviderFromModel(shortModelId);
 
     const response = await aiProvider.chat([{
       role: 'user',
@@ -138,7 +167,7 @@ Request: ${prompt}
 Please provide the improved code.`
     }], {
       provider,
-      model: modelId,
+      model: resolvedModel,
       maxTokens: 2048,
       temperature: 0.5,
       systemPrompt: `You are an expert JavaScript/React developer helping to improve plugin code.
@@ -155,8 +184,9 @@ Provide clean, production-ready code following best practices.`
    * @param {object} options - Optional options including modelId
    */
   async answerQuestion(question, pluginContext, options = {}) {
-    const modelId = options.modelId || this.defaultModel;
-    const provider = this.getProviderFromModel(modelId);
+    const shortModelId = options.modelId || this.defaultModel;
+    const resolvedModel = await this.resolveModelId(shortModelId);
+    const provider = this.getProviderFromModel(shortModelId);
 
     const response = await aiProvider.chat([{
       role: 'user',
@@ -165,7 +195,7 @@ Provide clean, production-ready code following best practices.`
 Question: ${question}`
     }], {
       provider,
-      model: modelId,
+      model: resolvedModel,
       maxTokens: 1024,
       temperature: 0.3,
       systemPrompt: `You are a helpful plugin development assistant. Answer questions clearly and concisely.
@@ -704,8 +734,9 @@ Be conversational, friendly, and guide them naturally through the process.`;
    * @param {object} params - Parameters including context, currentStep, pluginConfig, recentMessages, userMessage, modelId
    */
   async generateSmartSuggestions({ context, currentStep, pluginConfig, recentMessages, userMessage, modelId }) {
-    const effectiveModelId = modelId || this.defaultModel;
-    const provider = this.getProviderFromModel(effectiveModelId);
+    const shortModelId = modelId || this.defaultModel;
+    const resolvedModel = await this.resolveModelId(shortModelId);
+    const provider = this.getProviderFromModel(shortModelId);
 
     const systemPrompt = `You are an AI assistant that generates helpful suggestions for building plugins.
 
@@ -732,7 +763,7 @@ Return ONLY a JSON array of 2-4 short suggestion strings, like:
         content: 'Generate suggestions for the next steps in this conversation.'
       }], {
         provider,
-        model: effectiveModelId,
+        model: resolvedModel,
         maxTokens: 512,
         temperature: 0.8,
         systemPrompt
