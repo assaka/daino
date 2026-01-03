@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import StoreSelector from '@/components/admin/StoreSelector';
-import { UserIcon, LogOut, ShoppingBag, Wallet, Users, Store as StoreIcon, KeyRound, Coins } from 'lucide-react';
+import { UserIcon, LogOut, ShoppingBag, Wallet, Users, Store as StoreIcon, KeyRound, Coins, Wand2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -306,6 +306,23 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 AI Workspace
               </Button>
             </div>
+          )}
+
+          {/* AI Image Optimizer Quick Access */}
+          {currentMode === 'admin' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin/ai-image-optimizer')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location.pathname === '/admin/ai-image-optimizer'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'text-gray-600 hover:text-purple-700 hover:bg-purple-50'
+              }`}
+            >
+              <Wand2 className="w-4 h-4 mr-1.5" />
+              AI Image Optimizer
+            </Button>
           )}
         </div>
         <div className="flex items-center space-x-4">

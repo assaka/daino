@@ -301,15 +301,50 @@ const AIImageOptimizerGrid = ({
     );
   }
 
+  // Count stats for filter badges
+  const productCount = products.filter(p =>
+    (p.media_assets?.length > 0) || (p.product_files?.length > 0) || (p.images?.length > 0)
+  ).length;
+  const categoryCount = categories.filter(c => c.image_url).length;
+  const libraryCount = libraryFiles.length;
+
   return (
     <div>
-      {/* Header with stats and search */}
-      <div className="flex items-center justify-between gap-4 mb-4">
+      {/* Header with stats, filter badges, and search */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Wand2 className="w-4 h-4 text-purple-600" />
           <span className="font-medium">{totalImages} images</span>
           <span className="text-gray-400">• Click to optimize</span>
         </div>
+
+        {/* Filter badges - only show when filterType is 'all' */}
+        {filterType === 'all' && showFilterBadges && (
+          <div className="flex items-center gap-1">
+            <Filter className="w-4 h-4 text-gray-400 mr-1" />
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'products', label: `Products (${productCount})`, icon: Package },
+              { value: 'categories', label: `Categories (${categoryCount})`, icon: FolderOpen },
+              { value: 'library', label: `Library (${libraryCount})`, icon: Image }
+            ].map(option => (
+              <button
+                key={option.value}
+                onClick={() => setActiveFilter(option.value)}
+                className={cn(
+                  "px-3 py-1.5 text-xs rounded-full transition-colors flex items-center gap-1",
+                  activeFilter === option.value
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                )}
+              >
+                {option.icon && <option.icon className="w-3 h-3" />}
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {showSearch && (
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
