@@ -68,7 +68,12 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       navigate('/plugins');
     }
   };
-
+  const switchToAIImageOptimizer = () => {
+    if (currentMode !== 'aiimageoptimizer') {
+      currentMode = 'aiimageoptimizer';
+      navigate('/ai-image-optimizer');
+    }
+  };
   const switchToAIWorkspace = () => {
     if (currentMode !== 'aiworkspace') {
       currentMode = 'aiworkspace';
@@ -115,7 +120,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 }`}
               >
                 Plugins
-                <span className="ml-1 px-1 py-0.5 text-[9px] font-semibold bg-amber-100 text-amber-700 rounded">
+                <span className="hidden sm:block ml-1 px-1 py-0.5 text-[9px] font-semibold bg-amber-100 text-amber-700 rounded">
                   Experimental
                 </span>
               </Button>
@@ -130,6 +135,18 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
                 }`}
               >
                 AI Workspace
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAIImageOptimizer}
+                className={`hidden sm:block px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'aiimageoptimizer'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                AI Image Optimizer
               </Button>
             </div>
           )}
