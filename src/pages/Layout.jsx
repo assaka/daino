@@ -71,7 +71,8 @@ import {
   Cloud,
   MessageSquare,
   LayoutList,
-  Rss
+  Rss,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -123,7 +124,7 @@ const iconMap = {
   KeyRound, FileCode, Box, Users, BarChart2, BookOpen, Book, Mail, Shield,
   LifeBuoy, Plus, Package, Puzzle, ChevronRight, Building2, Crown, Receipt,
   Truck, Calendar, Upload, Camera, Search, BarChart3, Bot, Wallet, RefreshCw,
-  Link: LinkIcon, Share2, Activity, FlaskConical, Image, Database, Cloud, Rss
+  Link: LinkIcon, Share2, Activity, FlaskConical, Image, Database, Cloud, Rss, Wand2
 };
 
 function getIconComponent(iconName) {

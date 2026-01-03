@@ -3333,6 +3333,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           name: imageToOptimize.filepath || imageToOptimize.url?.split('/').pop(),
           folder: 'product'
         } : null}
+        productContext={{
+          name: formData.name,
+          category: formData.category_ids?.length > 0
+            ? getCategoryName(categories.find(c => c.id === formData.category_ids[0]))
+            : null
+        }}
         onOptimized={handleOptimizedImage}
         setFlashMessage={setFlashMessage}
       />

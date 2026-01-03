@@ -14,11 +14,12 @@ const allNavItems = [
   // Catalog
   { key: 'categories', label: 'Categories', icon: 'Tag', route: '/admin/categories', order: 10, category: 'catalog' },
   { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', order: 11, category: 'catalog' },
-  { key: 'attributes', label: 'Attributes', icon: 'Box', route: '/admin/attributes', order: 12, category: 'catalog' },
-  { key: 'custom_option_rules', label: 'Custom Options', icon: 'Settings', route: '/admin/custom-option-rules', order: 13, category: 'catalog' },
-  { key: 'product_tabs', label: 'Product Tabs', icon: 'FileText', route: '/admin/product-tabs', order: 14, category: 'catalog' },
-  { key: 'product_labels', label: 'Product Labels', icon: 'Tag', route: '/admin/product-labels', order: 15, category: 'catalog' },
-  { key: 'stock_settings', label: 'Stock Settings', icon: 'Package', route: '/admin/stock-settings', order: 16, category: 'catalog' },
+  { key: 'ai_image_optimizer_catalog', label: 'AI Image Optimizer', icon: 'Wand2', route: '/admin/ai-image-optimizer', order: 12, category: 'catalog', type: 'new' },
+  { key: 'attributes', label: 'Attributes', icon: 'Box', route: '/admin/attributes', order: 13, category: 'catalog' },
+  { key: 'custom_option_rules', label: 'Custom Options', icon: 'Settings', route: '/admin/custom-option-rules', order: 14, category: 'catalog' },
+  { key: 'product_tabs', label: 'Product Tabs', icon: 'FileText', route: '/admin/product-tabs', order: 15, category: 'catalog' },
+  { key: 'product_labels', label: 'Product Labels', icon: 'Tag', route: '/admin/product-labels', order: 16, category: 'catalog' },
+  { key: 'stock_settings', label: 'Stock Settings', icon: 'Package', route: '/admin/stock-settings', order: 17, category: 'catalog' },
 
   // Sales
   { key: 'orders', label: 'Orders', icon: 'Receipt', route: '/admin/orders', order: 20, category: 'sales' },
@@ -33,6 +34,7 @@ const allNavItems = [
   { key: 'cms_blocks', label: 'CMS Blocks', icon: 'FileText', route: '/admin/cms-blocks', order: 30, category: 'content' },
   { key: 'cms_pages', label: 'CMS Pages', icon: 'FileText', route: '/admin/cms-pages', order: 31, category: 'content' },
   { key: 'file_library', label: 'File Library', icon: 'Upload', route: '/admin/file-library', order: 32, category: 'content' },
+  { key: 'ai_image_optimizer_content', label: 'AI Image Optimizer', icon: 'Wand2', route: '/admin/ai-image-optimizer', order: 33, category: 'content', type: 'new' },
 
   // Analytics (tracking & insights)
   { key: 'analytics', label: 'Analytics', icon: 'BarChart3', route: '/admin/analytics', order: 40, category: 'analytics' },

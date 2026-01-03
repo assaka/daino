@@ -28,11 +28,13 @@ const AIImageOptimizer = () => {
       setLoading(true);
       try {
         const storeId = getSelectedStoreId();
-        const [productsData, categoriesData, libraryData] = await Promise.all([
-          Product.filter({ store_id: storeId, limit: 500 }),
+        const [productsResult, categoriesData, libraryData] = await Promise.all([
+          Product.findPaginated(1, 500, { store_id: storeId }),
           Category.filter({ store_id: storeId }),
           MediaAsset.filter({ store_id: storeId, limit: 500 })
         ]);
+        // findPaginated returns { data: [...], pagination: {...} }
+        const productsData = productsResult?.data || productsResult || [];
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         // Filter only image files from library

@@ -899,6 +899,10 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           id: formData.media_asset_id,
           folder: 'category'
         }}
+        productContext={{
+          name: formData.name,
+          category: 'Category'
+        }}
         onOptimized={handleOptimizedImage}
         setFlashMessage={setFlashMessage}
       />
