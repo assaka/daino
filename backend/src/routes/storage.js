@@ -360,7 +360,8 @@ router.post('/replace', upload.single('file'), async (req, res) => {
       folder: folder || 'library',
       public: true,
       useOrganizedStructure: !customPath, // Skip organized structure if we have customPath
-      customPath: customPath
+      customPath: customPath,
+      skipMediaAssetTracking: !!mediaAsset // Skip auto-tracking if we'll update the record ourselves
     };
 
     const uploadResult = await storageManager.uploadFile(storeId, req.file, uploadOptions);

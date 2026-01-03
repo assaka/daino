@@ -296,6 +296,16 @@ class StorageManager {
       
       // Track file in media_assets table for all uploads
       // This ensures category, product, and library uploads all appear in Media Library
+      // Skip if caller will handle media_assets tracking (e.g., replace operations)
+      if (options.skipMediaAssetTracking) {
+        console.log(`📦 Skipping media_assets tracking (caller will handle)`);
+        return {
+          ...result,
+          provider: storeProvider.type,
+          fallbackUsed: false
+        };
+      }
+
       try {
         // Determine the folder based on upload type with new consolidated structure
         // Use simple folder names for database, not full paths
