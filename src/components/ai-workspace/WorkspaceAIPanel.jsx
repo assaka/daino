@@ -43,7 +43,39 @@ const PROVIDER_NAMES = {
   anthropic: 'Claude',
   openai: 'OpenAI',
   gemini: 'Gemini',
-  groq: 'Groq'
+  groq: 'Groq',
+  deepseek: 'DeepSeek'
+};
+
+// Plugin AI credit costs by model ID pattern (matches service_credit_costs table)
+const PLUGIN_CREDIT_COSTS = {
+  // Claude/Anthropic
+  'claude-3-haiku': 5,
+  'claude-3-5-sonnet': 10,
+  'claude-3-sonnet': 10,
+  'claude-3-opus': 20,
+  // OpenAI
+  'gpt-4o-mini': 5,
+  'gpt-4o': 12,
+  'gpt-4': 15,
+  // Gemini
+  'gemini-2.0-flash': 3,
+  'gemini-1.5-flash': 3,
+  'gemini-pro': 8,
+  // Groq
+  'llama': 2,
+  'mixtral': 2,
+  // DeepSeek
+  'deepseek': 3
+};
+
+// Get plugin credit cost for a model
+const getPluginCredits = (modelId) => {
+  if (!modelId) return 5; // default
+  for (const [pattern, cost] of Object.entries(PLUGIN_CREDIT_COSTS)) {
+    if (modelId.includes(pattern)) return cost;
+  }
+  return 5; // default fallback
 };
 
 // Get saved model preference
@@ -1605,8 +1637,15 @@ const WorkspaceAIPanel = () => {
                             </span>
                             <span className="text-[10px] text-gray-500 dark:text-gray-400">{model.name}</span>
                           </div>
-                          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                            {model.credits} cr
+                          <span className={cn(
+                            "text-[10px] font-medium",
+                            showPluginEditor && pluginToEdit
+                              ? "text-purple-500 dark:text-purple-400"
+                              : "text-gray-500 dark:text-gray-400"
+                          )}>
+                            {showPluginEditor && pluginToEdit
+                              ? getPluginCredits(model.id)
+                              : model.credits} cr
                           </span>
                         </button>
                       ))}
