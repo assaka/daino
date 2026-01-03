@@ -1575,22 +1575,25 @@ export default function Products() {
         <ImageOptimizerModal
           isOpen={!!optimizerImage}
           onClose={async () => {
+            // Store product ID before clearing state
+            const productId = selectedProduct?.id;
             setOptimizerImage(null);
+
             // Refresh product data and products list
-            if (selectedProduct) {
+            if (productId) {
               try {
-                const freshProduct = await Product.findById(selectedProduct.id);
-                setSelectedProduct(freshProduct || selectedProduct);
+                const freshProduct = await Product.findById(productId);
+                if (freshProduct) {
+                  setSelectedProduct(freshProduct);
+                }
               } catch (error) {
-                // Keep existing product if refresh fails
+                console.error('Failed to refresh product:', error);
               }
-            }
-            // Refresh the products list to show updated images
-            loadData();
-            // Re-open the product form with the same product
-            if (selectedProduct) {
+              // Re-open the product form
               setShowProductForm(true);
             }
+            // Refresh the products list to show updated images
+            await loadData();
           }}
           storeId={getSelectedStoreId()}
           fileToOptimize={optimizerImage ? {
@@ -1599,14 +1602,20 @@ export default function Products() {
             folder: optimizerImage.folder || 'product'
           } : null}
           selectedFiles={[]}
+          productContext={selectedProduct ? {
+            name: selectedProduct.name,
+            category: categories.find(c => c.id === selectedProduct.category_id)?.name
+          } : null}
           onOptimized={async () => {
-            // Called after optimization - don't close modal, just refresh data
-            if (selectedProduct) {
+            // Called after optimization - refresh data
+            if (selectedProduct?.id) {
               try {
                 const freshProduct = await Product.findById(selectedProduct.id);
-                setSelectedProduct(freshProduct || selectedProduct);
+                if (freshProduct) {
+                  setSelectedProduct(freshProduct);
+                }
               } catch (error) {
-                // Keep existing product if refresh fails
+                console.error('Failed to refresh product:', error);
               }
             }
           }}

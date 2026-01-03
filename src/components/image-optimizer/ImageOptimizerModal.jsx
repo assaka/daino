@@ -33,6 +33,111 @@ const STAGING_CONTEXTS = [
   { id: 'flat_lay', label: 'Flat Lay', value: 'flat lay on marble surface with props' }
 ];
 
+// Generate smart staging presets based on product context
+const generateSmartPresets = (productContext) => {
+  if (!productContext?.name) return [];
+
+  const name = productContext.name.toLowerCase();
+  const category = (productContext.category || '').toLowerCase();
+  const presets = [];
+
+  // Sports & Outdoor equipment
+  if (name.includes('snowboard') || name.includes('ski') || name.includes('snow')) {
+    presets.push({ id: 'snow_mountain', label: '🏔️ Snowy Mountain', value: `${productContext.name} on a pristine snowy mountain slope with dramatic alpine peaks in background, professional sports photography` });
+    presets.push({ id: 'ski_resort', label: '🎿 Ski Resort', value: `${productContext.name} at a luxury ski resort with snow-covered trees and blue sky` });
+  }
+  if (name.includes('surf') || name.includes('beach') || name.includes('swim')) {
+    presets.push({ id: 'beach', label: '🏖️ Beach', value: `${productContext.name} on a tropical beach with turquoise water and palm trees` });
+    presets.push({ id: 'ocean', label: '🌊 Ocean Waves', value: `${productContext.name} with dramatic ocean waves in golden sunset light` });
+  }
+  if (name.includes('bike') || name.includes('bicycle') || name.includes('cycling')) {
+    presets.push({ id: 'mountain_trail', label: '🚵 Mountain Trail', value: `${productContext.name} on a scenic mountain bike trail with forest backdrop` });
+    presets.push({ id: 'urban_street', label: '🏙️ Urban Street', value: `${productContext.name} on a clean urban street with modern architecture` });
+  }
+
+  // Kitchen & Home appliances
+  if (name.includes('washer') || name.includes('washing') || name.includes('dryer') || name.includes('laundry')) {
+    presets.push({ id: 'laundry_room', label: '🧺 Modern Laundry', value: `${productContext.name} in a bright modern laundry room with plants and natural light` });
+    presets.push({ id: 'utility_room', label: '🏠 Utility Room', value: `${productContext.name} in a clean organized utility room with white cabinets` });
+  }
+  if (name.includes('fridge') || name.includes('refrigerator') || name.includes('freezer')) {
+    presets.push({ id: 'modern_kitchen', label: '👨‍🍳 Modern Kitchen', value: `${productContext.name} in a sleek modern kitchen with marble countertops and pendant lights` });
+    presets.push({ id: 'family_kitchen', label: '👨‍👩‍👧 Family Kitchen', value: `${productContext.name} in a warm family kitchen with wooden accents` });
+  }
+  if (name.includes('oven') || name.includes('stove') || name.includes('cooktop') || name.includes('range')) {
+    presets.push({ id: 'chef_kitchen', label: '👨‍🍳 Chef Kitchen', value: `${productContext.name} in a professional chef's kitchen with stainless steel and tile backsplash` });
+  }
+  if (name.includes('coffee') || name.includes('espresso')) {
+    presets.push({ id: 'coffee_bar', label: '☕ Coffee Bar', value: `${productContext.name} on a stylish coffee bar with exposed brick and warm lighting` });
+    presets.push({ id: 'cafe', label: '🥐 Café Style', value: `${productContext.name} in a cozy European café setting` });
+  }
+
+  // Furniture
+  if (name.includes('sofa') || name.includes('couch') || name.includes('chair') || name.includes('armchair')) {
+    presets.push({ id: 'living_space', label: '🛋️ Living Space', value: `${productContext.name} in a bright Scandinavian living room with plants and natural light` });
+    presets.push({ id: 'luxury_lounge', label: '✨ Luxury Lounge', value: `${productContext.name} in an elegant luxury lounge with art deco elements` });
+  }
+  if (name.includes('bed') || name.includes('mattress')) {
+    presets.push({ id: 'master_bedroom', label: '🛏️ Master Bedroom', value: `${productContext.name} in a serene master bedroom with soft linens and morning light` });
+    presets.push({ id: 'hotel_suite', label: '🏨 Hotel Suite', value: `${productContext.name} in a five-star hotel suite with city view` });
+  }
+  if (name.includes('desk') || name.includes('office')) {
+    presets.push({ id: 'home_office', label: '💻 Home Office', value: `${productContext.name} in a productive home office with plants and motivational decor` });
+    presets.push({ id: 'executive_office', label: '🏢 Executive Office', value: `${productContext.name} in a prestigious executive office with city skyline view` });
+  }
+  if (name.includes('table') || name.includes('dining')) {
+    presets.push({ id: 'dining_room', label: '🍽️ Dining Room', value: `${productContext.name} in an elegant dining room with chandelier and table setting` });
+  }
+
+  // Electronics
+  if (name.includes('tv') || name.includes('television') || name.includes('monitor') || name.includes('screen')) {
+    presets.push({ id: 'entertainment', label: '📺 Entertainment Room', value: `${productContext.name} in a modern entertainment room with ambient lighting` });
+    presets.push({ id: 'gaming_setup', label: '🎮 Gaming Setup', value: `${productContext.name} in an immersive gaming setup with RGB lighting` });
+  }
+  if (name.includes('phone') || name.includes('tablet') || name.includes('laptop') || name.includes('computer')) {
+    presets.push({ id: 'workspace', label: '💼 Workspace', value: `${productContext.name} on a clean minimalist desk workspace` });
+    presets.push({ id: 'lifestyle', label: '☕ Lifestyle', value: `${productContext.name} in a lifestyle setting with coffee and notebook` });
+  }
+  if (name.includes('speaker') || name.includes('audio') || name.includes('headphone')) {
+    presets.push({ id: 'music_studio', label: '🎵 Music Studio', value: `${productContext.name} in a professional music studio environment` });
+    presets.push({ id: 'living_audio', label: '🔊 Living Room', value: `${productContext.name} in a stylish living room with vinyl records` });
+  }
+
+  // Fashion & Clothing
+  if (name.includes('shoe') || name.includes('sneaker') || name.includes('boot') || name.includes('sandal')) {
+    presets.push({ id: 'street_style', label: '👟 Street Style', value: `${productContext.name} in an urban street style photoshoot setting` });
+    presets.push({ id: 'shoe_display', label: '🏪 Boutique Display', value: `${productContext.name} on a luxury boutique shelf display` });
+  }
+  if (name.includes('watch') || name.includes('jewelry') || name.includes('ring') || name.includes('necklace')) {
+    presets.push({ id: 'luxury_display', label: '💎 Luxury Display', value: `${productContext.name} on black velvet with dramatic spotlight lighting` });
+    presets.push({ id: 'lifestyle_jewelry', label: '✨ Lifestyle', value: `${productContext.name} in an elegant lifestyle setting with soft focus background` });
+  }
+  if (name.includes('bag') || name.includes('purse') || name.includes('handbag') || name.includes('backpack')) {
+    presets.push({ id: 'fashion_shoot', label: '👜 Fashion Shoot', value: `${productContext.name} in a high-fashion photoshoot setting` });
+    presets.push({ id: 'travel', label: '✈️ Travel', value: `${productContext.name} in an airport or travel lifestyle setting` });
+  }
+
+  // Category-based fallbacks
+  if (presets.length === 0 && category) {
+    if (category.includes('kitchen') || category.includes('appliance')) {
+      presets.push({ id: 'smart_kitchen', label: '🏠 Smart Kitchen', value: `${productContext.name} in a modern smart kitchen with clean lines` });
+    }
+    if (category.includes('outdoor') || category.includes('garden')) {
+      presets.push({ id: 'garden', label: '🌿 Garden', value: `${productContext.name} in a beautiful garden setting with greenery` });
+    }
+    if (category.includes('sport') || category.includes('fitness')) {
+      presets.push({ id: 'gym', label: '💪 Gym', value: `${productContext.name} in a modern fitness gym environment` });
+    }
+  }
+
+  // Always add a generic product-specific preset if we have a product name
+  if (productContext.name) {
+    presets.push({ id: 'product_hero', label: '⭐ Hero Shot', value: `Professional product photography of ${productContext.name} with dramatic studio lighting and clean background` });
+  }
+
+  return presets;
+};
+
 /**
  * ImageOptimizerModal - Modal for AI image optimization with cost display
  *
@@ -42,10 +147,11 @@ const STAGING_CONTEXTS = [
  * - storeId: string - Current store ID
  * - fileToOptimize: object - Single file to optimize { url, name, folder, id?, size? }
  * - selectedFiles: array - Multiple files for bulk mode (optional)
+ * - productContext: object - Product info for smart presets { name, category }
  * - onOptimized: function - Called when optimization is applied { applied, refresh }
  * - setFlashMessage: function - To show success/error messages
  */
-const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, onOptimized, setFlashMessage }) => {
+const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, productContext, onOptimized, setFlashMessage }) => {
   const [pricing, setPricing] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState('openai');
@@ -574,36 +680,67 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           </div>
 
           {/* Operation-specific options */}
-          {selectedOperation === 'stage' && (
-            <div className="mt-4 pt-4 border-t">
-              <label className="text-xs font-medium text-gray-500 mb-2 block">Staging Context</label>
-              <input
-                type="text"
-                value={stagingContext}
-                onChange={(e) => setStagingContext(e.target.value)}
-                placeholder="Describe the environment (e.g., 'luxury penthouse with city view')"
-                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-2"
-                disabled={isProcessing}
-              />
-              <div className="flex flex-wrap gap-1.5">
-                {STAGING_CONTEXTS.map((ctx) => (
-                  <button
-                    key={ctx.id}
-                    onClick={() => setStagingContext(ctx.value)}
-                    disabled={isProcessing}
-                    className={cn(
-                      "px-2.5 py-1 text-xs rounded-full transition-colors",
-                      stagingContext === ctx.value
-                        ? "bg-purple-100 text-purple-700 border border-purple-300"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    )}
-                  >
-                    {ctx.label}
-                  </button>
-                ))}
+          {selectedOperation === 'stage' && (() => {
+            const smartPresets = generateSmartPresets(productContext);
+            return (
+              <div className="mt-4 pt-4 border-t">
+                <label className="text-xs font-medium text-gray-500 mb-2 block">Staging Context</label>
+                <input
+                  type="text"
+                  value={stagingContext}
+                  onChange={(e) => setStagingContext(e.target.value)}
+                  placeholder="Describe the environment (e.g., 'luxury penthouse with city view')"
+                  className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-3"
+                  disabled={isProcessing}
+                />
+
+                {/* Smart presets based on product */}
+                {smartPresets.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-purple-600">✨ Suggested for {productContext?.name}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {smartPresets.map((ctx) => (
+                        <button
+                          key={ctx.id}
+                          onClick={() => setStagingContext(ctx.value)}
+                          disabled={isProcessing}
+                          className={cn(
+                            "px-2.5 py-1.5 text-xs rounded-full transition-colors border",
+                            stagingContext === ctx.value
+                              ? "bg-purple-100 text-purple-700 border-purple-300"
+                              : "bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100"
+                          )}
+                        >
+                          {ctx.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Generic presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  {STAGING_CONTEXTS.map((ctx) => (
+                    <button
+                      key={ctx.id}
+                      onClick={() => setStagingContext(ctx.value)}
+                      disabled={isProcessing}
+                      className={cn(
+                        "px-2.5 py-1 text-xs rounded-full transition-colors",
+                        stagingContext === ctx.value
+                          ? "bg-purple-100 text-purple-700 border border-purple-300"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      )}
+                    >
+                      {ctx.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {selectedOperation === 'remove_bg' && (
             <div className="mt-4 pt-4 border-t">
