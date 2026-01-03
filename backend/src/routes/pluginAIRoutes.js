@@ -49,9 +49,13 @@ router.post('/generate', async (req, res) => {
         userId,
         storeId,
         PLUGIN_AI_CREDIT_COST,
-        'plugin-ai-generation',
-        `Plugin AI: ${prompt.substring(0, 50)}...`,
-        { pluginId: context?.pluginId, mode }
+        `Plugin AI: ${prompt.substring(0, 50)}...`,  // description
+        {  // metadata
+          service_type: 'plugin_ai_generation',
+          pluginId: context?.pluginId,
+          pluginName: context?.pluginName,
+          mode: mode || 'developer'
+        }
       );
       creditsDeducted = PLUGIN_AI_CREDIT_COST;
       console.log(`💰 Deducted ${PLUGIN_AI_CREDIT_COST} credits for plugin AI generation`);
