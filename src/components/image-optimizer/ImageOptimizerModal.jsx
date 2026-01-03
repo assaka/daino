@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
-import { Undo2 } from 'lucide-react';
 
 // Provider display info
 const PROVIDERS = {
@@ -388,8 +388,9 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const costPerImage = getCostPerImage();
   const totalCost = getTotalCost();
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  // Use portal to render at document body level (escape parent modal z-index)
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
@@ -909,7 +910,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
