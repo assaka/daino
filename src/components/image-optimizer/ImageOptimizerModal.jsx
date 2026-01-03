@@ -511,7 +511,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
+        <div className="px-6 py-2 lg:py-4 border-b flex items-center justify-between bg-gray-50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
               <Wand2 className="w-5 h-5 text-purple-600" />
@@ -536,7 +536,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         </div>
 
         {/* Provider & Operation Selection */}
-        <div className="px-6 py-4 border-b bg-white">
+        <div className="px-6 py-1 lg:py-4 border-b bg-white">
           <div className="flex flex-wrap items-center gap-4">
             {/* Provider Dropdown */}
             <div className="relative" ref={providerDropdownRef}>
@@ -545,7 +545,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                 onClick={() => setShowProviderDropdown(!showProviderDropdown)}
                 disabled={isProcessing || pricingLoading}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all min-w-[140px]",
+                  "flex items-center gap-2 px-3 py-1 lg:py-2 text-sm rounded-lg transition-all min-w-[140px]",
                   "border border-gray-200 bg-white",
                   "hover:bg-gray-50",
                   "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -613,7 +613,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                 onClick={() => setShowOperationDropdown(!showOperationDropdown)}
                 disabled={isProcessing}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all min-w-[180px]",
+                  "flex items-center gap-2 px-3 lg:py-2 text-sm rounded-lg transition-all min-w-[180px]",
                   "border border-gray-200 bg-white",
                   "hover:bg-gray-50",
                   "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -695,7 +695,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           {selectedOperation === 'stage' && (() => {
             const smartPresets = generateSmartPresets(productContext);
             return (
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-2 lg:mt-4 py-2 lg:pt-4 border-t">
                 <label className="text-xs font-medium text-gray-500 mb-2 block">Staging Context</label>
                 <input
                   type="text"
@@ -755,7 +755,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           })()}
 
           {selectedOperation === 'remove_bg' && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-2 lg:mt-4 py-2 lg:pt-4 border-t">
               <label className="text-xs font-medium text-gray-500 mb-2 block">Background Replacement</label>
               <div className="flex flex-wrap gap-2">
                 {['transparent', 'white', 'black', 'gradient', 'custom'].map((bg) => (
@@ -804,7 +804,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           )}
 
           {selectedOperation === 'upscale' && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-2 lg:mt-4 py-2 lg:pt-4 border-t">
               <label className="text-xs font-medium text-gray-500 mb-2 block">Upscale Factor</label>
               <div className="flex gap-2">
                 {[2, 3, 4].map((scale) => (
@@ -827,7 +827,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           )}
 
           {selectedOperation === 'compress' && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-2 lg:mt-4 py-2 lg:pt-4 border-t">
               <label className="text-xs font-medium text-gray-500 mb-2 block">
                 Quality: {compressQuality}%
               </label>
@@ -867,7 +867,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           )}
 
           {selectedOperation === 'convert' && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-2 lg:mt-4 py-2 lg:pt-4 border-t">
               <div className="flex gap-6">
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-2 block">Output Format</label>
@@ -917,7 +917,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           )}
 
           {selectedOperation === 'custom' && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-2 lg:mt-4 py-2 lg:pt-4 border-t">
               <label className="text-xs font-medium text-gray-500 mb-2 block">Custom Instruction</label>
               <textarea
                 value={stagingContext}
@@ -934,9 +934,9 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto py-2 px-6 lg:p-6">
           {isProcessing && (
-            <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+            <div className="mb-2 lg:mb-4 px-3 py-1 lg:p-3 bg-purple-50 rounded-lg">
               <div className="flex items-center gap-2 text-purple-700 text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Processing {processedCount} of {isBulkMode ? imagesToProcess.length : 1}...</span>
