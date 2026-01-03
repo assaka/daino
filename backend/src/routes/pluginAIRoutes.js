@@ -43,6 +43,8 @@ router.post('/generate', async (req, res) => {
     const result = await pluginAIService.generatePlugin(mode || 'nocode-ai', prompt, context);
 
     // Deduct credits after successful generation
+    // Service key follows pattern: ai_plugin_claude_{model}
+    const serviceKey = 'ai_plugin_claude_haiku';
     let creditsDeducted = 0;
     if (userId) {
       await creditService.deduct(
@@ -51,14 +53,14 @@ router.post('/generate', async (req, res) => {
         PLUGIN_AI_CREDIT_COST,
         `Plugin AI: ${prompt.substring(0, 50)}...`,  // description
         {  // metadata
-          service_type: 'plugin_ai_generation',
+          service_type: serviceKey,
           pluginId: context?.pluginId,
           pluginName: context?.pluginName,
           mode: mode || 'developer'
         }
       );
       creditsDeducted = PLUGIN_AI_CREDIT_COST;
-      console.log(`💰 Deducted ${PLUGIN_AI_CREDIT_COST} credits for plugin AI generation`);
+      console.log(`💰 Deducted ${PLUGIN_AI_CREDIT_COST} credits for ${serviceKey}`);
     }
 
     // Get remaining balance
