@@ -530,14 +530,18 @@ Help them configure the plugin step-by-step. Suggest database tables, features, 
     } else if (mode === 'developer') {
       // Check if we're editing an existing plugin (has pluginId/pluginName)
       if (context.pluginId || context.pluginName) {
-        // Build existing files list for context
-        const existingFilesList = context.existingFiles && context.existingFiles.length > 0
-          ? `\n**Existing plugin files:**\n${context.existingFiles.map(f => `- ${f.path}`).join('\n')}`
-          : '';
+        // Build existing files list with content for context
+        let existingFilesList = '';
+        if (context.existingFiles && context.existingFiles.length > 0) {
+          existingFilesList = '\n**Existing plugin files:**';
+          for (const file of context.existingFiles) {
+            existingFilesList += `\n\n--- ${file.path} ---\n\`\`\`javascript\n${file.content || '// Empty file'}\n\`\`\``;
+          }
+        }
 
         // Build conversation history context
         const conversationContext = context.conversationHistory && context.conversationHistory.length > 0
-          ? `\n**Recent conversation:**\n${context.conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 200)}${m.content.length > 200 ? '...' : ''}`).join('\n')}`
+          ? `\n**Recent conversation:**\n${context.conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 300)}${m.content.length > 300 ? '...' : ''}`).join('\n')}`
           : '';
 
         prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (${context.pluginSlug || 'unknown'}).
@@ -564,9 +568,10 @@ RULES:
 - Return ONLY valid JSON, no markdown, no extra text
 - **Look at the conversation history to understand what file was just created/modified**
 - **If user says "change it", "update that", etc., modify the file from the previous message**
+- **IMPORTANT: When modifying, keep ALL existing logic and only change what was requested**
+- **Use the EXACT same filename/path from "Existing plugin files" when modifying**
 - **If unclear which file to modify, return a question asking for clarification**
-- Use the SAME filename from "Existing plugin files" when modifying
-- Generate minimal working code for the request
+- Generate the COMPLETE file content, not just the changes
 - Use DainoStore plugin hooks (cart.add_item, product.view, etc.)`;
       } else {
         // Standard developer mode with current file context

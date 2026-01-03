@@ -151,8 +151,12 @@ const DeveloperPluginEditor = ({
 
             // Determine file path based on file name/type
             let filePath = fileName;
-            if (!fileName.startsWith('/')) {
-              // Determine folder based on file type
+
+            // If filename already has a path (contains /), use it as-is with leading slash
+            if (fileName.includes('/') && !fileName.startsWith('/')) {
+              filePath = `/${fileName}`;
+            } else if (!fileName.startsWith('/')) {
+              // No path in filename - determine folder based on file type
               if (fileName.includes('controller') || fileName.includes('Controller')) {
                 filePath = `/controllers/${fileName}`;
               } else if (fileName.includes('migration')) {

@@ -541,8 +541,12 @@ const WorkspaceAIPanel = () => {
             pluginSlug: pluginToEdit.slug,
             category: pluginToEdit.category,
             storeId: storeId,
-            // Include existing plugin files so AI knows what exists
-            existingFiles: pluginFiles?.map(f => ({ path: f.path, name: f.name })) || [],
+            // Include existing plugin files with content so AI can modify them properly
+            existingFiles: pluginFiles?.map(f => ({
+              path: f.path,
+              name: f.name,
+              content: f.content || ''
+            })) || [],
             // Include conversation history so AI knows what was just created/modified
             conversationHistory: recentHistory
           }
