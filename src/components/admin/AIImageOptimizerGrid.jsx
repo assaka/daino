@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Wand2, Image, Package, FolderOpen, Search, Loader2, Filter } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { Product, Category, MediaAsset } from '@/api/entities';
+import { Product, Category } from '@/api/entities';
+import apiClient from '@/api/client';
 import { ImageOptimizerModal } from '@/components/image-optimizer';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -80,7 +81,25 @@ const AIImageOptimizerGrid = ({
         }
 
         if (filterType === 'all' || filterType === 'library') {
-          promises.push(MediaAsset.filter({ store_id: storeId, limit: 500 }));
+          promises.push(
+            apiClient.get('/storage/list').then(response => {
+              const files = response.data?.files || response.files || [];
+              // Filter to only library images (exclude product/category folders)
+              return files.filter(f => {
+                const url = f.url || f.publicUrl;
+                const path = f.path || '';
+                const isImage = f.mimeType?.startsWith('image/') ||
+                  /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
+                const isLibrary = !path.startsWith('product/') && !path.startsWith('category/');
+                return url && isImage && isLibrary;
+              }).map(f => ({
+                id: f.id || f.path,
+                file_url: f.url || f.publicUrl,
+                file_name: f.name || f.path?.split('/').pop(),
+                mime_type: f.mimeType
+              }));
+            })
+          );
         } else {
           promises.push(Promise.resolve(null));
         }
@@ -265,7 +284,22 @@ const AIImageOptimizerGrid = ({
             ? Category.filter({ store_id: storeId })
             : Promise.resolve(null),
           filterType === 'all' || filterType === 'library'
-            ? MediaAsset.filter({ store_id: storeId, limit: 500 })
+            ? apiClient.get('/storage/list').then(response => {
+                const files = response.data?.files || response.files || [];
+                return files.filter(f => {
+                  const url = f.url || f.publicUrl;
+                  const path = f.path || '';
+                  const isImage = f.mimeType?.startsWith('image/') ||
+                    /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
+                  const isLibrary = !path.startsWith('product/') && !path.startsWith('category/');
+                  return url && isImage && isLibrary;
+                }).map(f => ({
+                  id: f.id || f.path,
+                  file_url: f.url || f.publicUrl,
+                  file_name: f.name || f.path?.split('/').pop(),
+                  mime_type: f.mimeType
+                }));
+              })
             : Promise.resolve(null)
         ]);
         if (productsResult) {
@@ -276,10 +310,7 @@ const AIImageOptimizerGrid = ({
           setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         }
         if (libraryData) {
-          const imageFiles = (Array.isArray(libraryData) ? libraryData : []).filter(f =>
-            f.file_url && (f.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.file_url))
-          );
-          setLibraryFiles(imageFiles);
+          setLibraryFiles(Array.isArray(libraryData) ? libraryData : []);
         }
       } catch (error) {
         console.error('Failed to reload data:', error);
