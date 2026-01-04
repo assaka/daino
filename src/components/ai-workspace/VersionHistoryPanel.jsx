@@ -393,7 +393,7 @@ const VersionHistoryPanel = ({
                           </div>
 
                           {/* Actions - vertical stack on right */}
-                          <div style={{ display: 'block', marginRight: '-30px' }}>
+                          <div style={{ display: 'block', marginRight: '-15px', minWidth: '32px' }}>
                             <button
                               onClick={() => toggleVersionSelection(version.id)}
                               className={`block p-1.5 rounded hover:bg-gray-100 mb-1 ${isSelected ? 'bg-blue-100' : ''}`}
