@@ -323,107 +323,110 @@ const VersionHistoryPanel = ({
                       }`} />
 
                       {/* Version card */}
-                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow relative">
-                        {/* Actions - absolute positioned on right */}
-                        <div style={{ position: 'absolute', right: '8px', top: '8px' }}>
-                          <button
-                            onClick={() => toggleVersionSelection(version.id)}
-                            className={`block p-1.5 rounded hover:bg-gray-100 mb-1 ${isSelected ? 'bg-blue-100' : ''}`}
-                            title="Select for comparison"
-                          >
-                            <GitCompare className="w-4 h-4" />
-                          </button>
+                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow">
+                        {/* Content wrapper - flex with 2 children */}
+                        <div className="flex gap-2">
+                          {/* Patch data */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => toggleExpanded(version.id)}
+                                className="p-0 hover:bg-transparent"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </button>
 
-                          <button
-                            onClick={() => onViewVersion && onViewVersion(version.id)}
-                            className="block p-1.5 rounded hover:bg-gray-100 mb-1"
-                            title="View version code"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                              <span className="font-mono text-sm font-semibold">
+                                {version.version_number}
+                              </span>
 
-                          {!version.is_current && (
-                            <button
-                              onClick={() => onRestore(version.id)}
-                              className="block p-1.5 rounded hover:bg-gray-100 mb-1"
-                              title="Restore to this version"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
-                          )}
+                              {getTypeBadge(version)}
 
-                          <button
-                            className="block p-1.5 rounded hover:bg-gray-100"
-                            title="Download version"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="pr-10">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              onClick={() => toggleExpanded(version.id)}
-                              className="p-0 hover:bg-transparent"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                              {version.is_current && (
+                                <Badge variant="default" className="bg-green-500 text-white">
+                                  Current
+                                </Badge>
                               )}
-                            </button>
 
-                            <span className="font-mono text-sm font-semibold">
-                              {version.version_number}
-                            </span>
+                              {version.is_published && (
+                                <Badge variant="default" className="bg-purple-500 text-white">
+                                  <Tag className="w-3 h-3 mr-1" />
+                                  Published
+                                </Badge>
+                              )}
 
-                            {getTypeBadge(version)}
+                              {/* Tags */}
+                              {version.tags && version.tags.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  {version.tags.map((tag, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">
+                                      {tag.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
 
-                            {version.is_current && (
-                              <Badge variant="default" className="bg-green-500 text-white">
-                                Current
-                              </Badge>
-                            )}
+                            {/* Commit message */}
+                            <p className="text-sm text-muted-foreground mt-1 truncate">
+                              {version.commit_message || 'No message'}
+                            </p>
 
-                            {version.is_published && (
-                              <Badge variant="default" className="bg-purple-500 text-white">
-                                <Tag className="w-3 h-3 mr-1" />
-                                Published
-                              </Badge>
-                            )}
+                            {/* Stats */}
+                            {getStatsDisplay(version)}
 
-                            {/* Tags */}
-                            {version.tags && version.tags.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                {version.tags.map((tag, i) => (
-                                  <Badge key={i} variant="outline" className="text-xs">
-                                    {tag.name}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
+                            {/* Metadata */}
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span>{formatDate(version.created_at)}</span>
+                              {version.created_by_name && (
+                                <span>by {version.created_by_name}</span>
+                              )}
+                              {version.snapshot_distance > 0 && (
+                                <span className="text-blue-600">
+                                  +{version.snapshot_distance} from snapshot
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Commit message */}
-                          <p className="text-sm text-muted-foreground mt-1 truncate">
-                            {version.commit_message || 'No message'}
-                          </p>
+                          {/* Actions buttons */}
+                          <div className="flex-shrink-0">
+                            <button
+                              onClick={() => toggleVersionSelection(version.id)}
+                              className={`block p-1.5 rounded hover:bg-gray-100 mb-1 ${isSelected ? 'bg-blue-100' : ''}`}
+                              title="Select for comparison"
+                            >
+                              <GitCompare className="w-4 h-4" />
+                            </button>
 
-                          {/* Stats */}
-                          {getStatsDisplay(version)}
+                            <button
+                              onClick={() => onViewVersion && onViewVersion(version.id)}
+                              className="block p-1.5 rounded hover:bg-gray-100 mb-1"
+                              title="View version code"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
 
-                          {/* Metadata */}
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span>{formatDate(version.created_at)}</span>
-                            {version.created_by_name && (
-                              <span>by {version.created_by_name}</span>
+                            {!version.is_current && (
+                              <button
+                                onClick={() => onRestore(version.id)}
+                                className="block p-1.5 rounded hover:bg-gray-100 mb-1"
+                                title="Restore to this version"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
                             )}
-                            {version.snapshot_distance > 0 && (
-                              <span className="text-blue-600">
-                                +{version.snapshot_distance} from snapshot
-                              </span>
-                            )}
+
+                            <button
+                              className="block p-1.5 rounded hover:bg-gray-100"
+                              title="Download version"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
