@@ -109,7 +109,11 @@ const WorkspaceHeader = () => {
     const fetchCredits = async () => {
       try {
         const response = await apiClient.get('credits/balance');
-        if (response?.balance !== undefined) {
+        console.log('💰 Credits balance response:', response);
+        // Handle various response formats: {data:{balance:X}}, {balance:X}, or just X
+        if (response?.data?.balance !== undefined) {
+          setCredits(response.data.balance);
+        } else if (response?.balance !== undefined) {
           setCredits(response.balance);
         } else if (typeof response === 'number') {
           setCredits(response);
