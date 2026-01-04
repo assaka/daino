@@ -392,48 +392,44 @@ const VersionHistoryPanel = ({
                             </div>
                           </div>
 
-                          {/* Actions - top right */}
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleVersionSelection(version.id)}
-                                className={isSelected ? 'bg-blue-100' : ''}
-                                title="Select for comparison"
-                              >
-                                <GitCompare className="w-4 h-4" />
-                              </Button>
+                          {/* Actions - vertical stack on right */}
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleVersionSelection(version.id)}
+                              className={isSelected ? 'bg-blue-100' : ''}
+                              title="Select for comparison"
+                            >
+                              <GitCompare className="w-4 h-4" />
+                            </Button>
 
-                              {!version.is_current && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onRestore(version.id)}
-                                  title="Restore to this version"
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </Button>
-                              )}
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Download version"
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            {/* View button */}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => onViewVersion && onViewVersion(version.id)}
                               title="View version code"
-                              className="text-muted-foreground hover:text-primary"
                             >
-                              <Eye className="w-4 h-4 mr-1" />
-                              <span className="text-xs">View</span>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+
+                            {!version.is_current && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onRestore(version.id)}
+                                title="Restore to this version"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </Button>
+                            )}
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Download version"
+                            >
+                              <Download className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
