@@ -2746,6 +2746,9 @@ router.delete('/registry/:id/files', async (req, res) => {
     else {
       attemptedTable = 'plugin_scripts';
 
+      // Get the base filename without path prefixes
+      const baseFileName = normalizedPath.split('/').pop();
+
       // Try multiple path variations to match the file
       const pathVariations = [
         normalizedPath,
@@ -2754,6 +2757,19 @@ router.delete('/registry/:id/files', async (req, res) => {
         normalizedPath.replace(/^\/+/, ''),
         path.replace(/^\/+/, ''),
         path.replace(/^src\//, ''),
+        // Also try with pages/ prefix for page components like settings.jsx
+        `pages/${normalizedPath}`,
+        `pages/${path.replace(/^\/+/, '')}`,
+        `pages/${baseFileName}`,
+        // And components/ prefix
+        `components/${normalizedPath}`,
+        `components/${path.replace(/^\/+/, '')}`,
+        `components/${baseFileName}`,
+        // Try just the base filename
+        baseFileName,
+        // Try removing pages/ or components/ prefix if present
+        normalizedPath.replace(/^pages\//, ''),
+        normalizedPath.replace(/^components\//, ''),
       ];
 
       // Remove duplicates
@@ -2774,6 +2790,24 @@ router.delete('/registry/:id/files', async (req, res) => {
           }
         } catch (err) {
           // Continue to next variation
+        }
+      }
+
+      // If still not deleted, try a LIKE query to match file ending with the base filename
+      if (!deleted && baseFileName) {
+        try {
+          const { data, error } = await tenantDb
+            .from('plugin_scripts')
+            .delete()
+            .eq('plugin_id', id)
+            .like('file_name', `%${baseFileName}`)
+            .select();
+
+          if (!error && data && data.length > 0) {
+            deleted = true;
+          }
+        } catch (err) {
+          // Continue
         }
       }
     }
