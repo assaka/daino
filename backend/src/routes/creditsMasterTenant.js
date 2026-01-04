@@ -149,11 +149,13 @@ router.get('/balance', authMiddleware, async (req, res) => {
     // Get balance from users.credits (single source of truth)
     const balance = await creditService.getBalance(userId, storeId);
 
-    // Sync to tenant DB cache
-    try {
-      await syncBalanceToTenant(storeId, balance);
-    } catch (syncError) {
-      console.warn('Failed to sync balance to tenant:', syncError.message);
+    // Sync to tenant DB cache (only if user has a store)
+    if (storeId) {
+      try {
+        await syncBalanceToTenant(storeId, balance);
+      } catch (syncError) {
+        console.warn('Failed to sync balance to tenant:', syncError.message);
+      }
     }
 
     res.json({

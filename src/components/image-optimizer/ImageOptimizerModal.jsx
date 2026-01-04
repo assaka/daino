@@ -309,13 +309,17 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const imagesToProcess = singleFile ? [singleFile] : selectedFiles || [];
 
   // Initialize original/current image for single mode
+  // Reset state whenever the modal opens or the file changes
   useEffect(() => {
     if (isOpen && singleFile) {
+      // Always reset to ensure fresh state for new image
       setOriginalImage(singleFile);
       setCurrentImage(null);
       setCurrentFormat('png');
       setImageHistory([]);
       setFormatHistory([]);
+      setResults([]);
+      setError(null);
       setOriginalSize(singleFile.size || null);
 
       if (!singleFile.size && singleFile.url) {
@@ -327,7 +331,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           .catch(() => {});
       }
     }
-  }, [isOpen, singleFile?.id, singleFile?.url]);
+    // Use URL as primary identifier since id might be undefined for some items
+  }, [isOpen, singleFile?.url]);
 
   // Fetch pricing on mount
   useEffect(() => {

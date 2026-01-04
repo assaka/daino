@@ -317,12 +317,38 @@ router.post('/replace', upload.single('file'), async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Use maybeSingle() to avoid error when not found
-    const { data: mediaAsset, error: findError } = await tenantDb
+    let mediaAsset = null;
+    let findError = null;
+
+    // Try exact URL match first
+    const exactMatch = await tenantDb
       .from('media_assets')
       .select('id, file_path, file_name, file_url')
       .eq('store_id', storeId)
       .eq('file_url', oldFileUrl)
       .maybeSingle();
+
+    mediaAsset = exactMatch.data;
+    findError = exactMatch.error;
+
+    // If no exact match, try matching by filename (handles URL encoding differences)
+    if (!mediaAsset && !findError && oldFileUrl) {
+      const filename = oldFileUrl.split('/').pop()?.split('?')[0];
+      if (filename) {
+        console.log(`   🔍 Trying filename match: ${filename}`);
+        const { data: filenameMatch } = await tenantDb
+          .from('media_assets')
+          .select('id, file_path, file_name, file_url')
+          .eq('store_id', storeId)
+          .eq('file_name', filename)
+          .maybeSingle();
+
+        if (filenameMatch) {
+          mediaAsset = filenameMatch;
+          console.log(`   ✅ Found by filename match: ${filenameMatch.id}`);
+        }
+      }
+    }
 
     if (findError) {
       console.warn(`   ⚠️ Error finding media_assets:`, findError.message);
@@ -330,15 +356,10 @@ router.post('/replace', upload.single('file'), async (req, res) => {
 
     if (!mediaAsset) {
       console.log(`   ⚠️ No media_assets record found for URL: ${oldFileUrl}`);
-      // Try to find by partial URL match (in case of encoding differences)
-      const { data: allAssets } = await tenantDb
-        .from('media_assets')
-        .select('id, file_path, file_name, file_url')
-        .eq('store_id', storeId)
-        .limit(5);
-      console.log(`   📋 Sample media_assets URLs in store:`, allAssets?.map(a => a.file_url).slice(0, 3));
+    } else if (!exactMatch.data) {
+      // Already logged above for filename match
     } else {
-      console.log(`   ✅ Found media_assets record: ${mediaAsset.id}`);
+      console.log(`   ✅ Found media_assets record by exact URL: ${mediaAsset.id}`);
     }
 
     // 2. Determine the replacement path
@@ -445,6 +466,26 @@ router.post('/replace', upload.single('file'), async (req, res) => {
       categoriesUpdated += updatedByUrl.length;
       if (updatedByUrl.length > 0) {
         console.log(`   ✅ Updated ${updatedByUrl.length} categories by direct image_url match`);
+      }
+    }
+
+    // If still no categories updated, try matching by filename in URL (handles encoding differences)
+    if (categoriesUpdated === 0 && oldFileUrl) {
+      const filename = oldFileUrl.split('/').pop()?.split('?')[0];
+      if (filename) {
+        const { data: updatedByFilename, error: catFilenameError } = await tenantDb
+          .from('categories')
+          .update({
+            image_url: newUrl,
+            updated_at: new Date().toISOString()
+          })
+          .like('image_url', `%${filename}`)
+          .select('id');
+
+        if (!catFilenameError && updatedByFilename && updatedByFilename.length > 0) {
+          categoriesUpdated += updatedByFilename.length;
+          console.log(`   ✅ Updated ${updatedByFilename.length} categories by filename pattern match`);
+        }
       }
     }
 
