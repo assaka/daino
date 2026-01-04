@@ -41,9 +41,10 @@ class DemoDataProvisioningService {
    * @param {string} imageUrl - URL to download from
    * @param {string} productSku - Product SKU for filename
    * @param {number} index - Image index
+   * @param {string} folder - Storage folder (default: 'products')
    * @returns {Promise<Object>} { url, path } or null if failed
    */
-  async downloadAndStoreImage(imageUrl, productSku, index = 0) {
+  async downloadAndStoreImage(imageUrl, productSku, index = 0, folder = 'products') {
     try {
       console.log(`📷 Demo: Downloading image for ${productSku}-${index}...`);
 
@@ -82,10 +83,10 @@ class DemoDataProvisioningService {
         originalname: filename
       };
 
-      // Upload to storage - just pass 'products', storage service adds d/e subdirs
+      // Upload to storage - storage service adds d/e subdirs
       // Pass demo: true so media_assets record is marked as demo
       const uploadResult = await StorageManager.uploadFile(this.storeId, fileObject, {
-        folder: 'products',
+        folder: folder,
         public: true,
         demo: true
       });
@@ -227,7 +228,7 @@ class DemoDataProvisioningService {
       // Download and store category image - StorageManager creates media_assets record with demo=true
       let mediaAssetId = null;
       if (cat.image_url) {
-        const storedImage = await this.downloadAndStoreImage(cat.image_url, `category-${cat.slug}`, 0);
+        const storedImage = await this.downloadAndStoreImage(cat.image_url, `category-${cat.slug}`, 0, 'category');
         if (storedImage && storedImage.mediaAssetId) {
           mediaAssetId = storedImage.mediaAssetId;
         }
