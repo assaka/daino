@@ -74,7 +74,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
   const switchToAIImageOptimizer = () => {
     if (currentMode !== 'aiimageoptimizer') {
       currentMode = 'aiimageoptimizer';
-      navigate('/ai-image-optimizer');
+      navigate('/admin/ai-image-optimizer');
     }
   };
   const switchToAIWorkspace = () => {
