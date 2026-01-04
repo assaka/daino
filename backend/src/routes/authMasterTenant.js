@@ -20,6 +20,8 @@ const { masterDbClient } = require('../database/masterConnection');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const masterEmailService = require('../services/master-email-service');
+const passport = require('../config/passport');
+const jwt = require('jsonwebtoken');
 
 /**
  * POST /api/auth/register
@@ -1959,6 +1961,90 @@ router.post('/store-owner/reset-password', async (req, res) => {
       success: false,
       error: 'Server error. Please try again later.'
     });
+  }
+});
+
+// ============================================
+// Google OAuth Routes for Store Owners
+// ============================================
+
+/**
+ * GET /api/auth/google
+ * Initiate Google OAuth for store owners
+ */
+router.get('/google', (req, res, next) => {
+  // Check if Google OAuth is configured
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.status(503).json({
+      success: false,
+      message: 'Google OAuth is not configured. Please contact support.'
+    });
+  }
+
+  // Store the redirect URL in session for after callback
+  const redirectUrl = req.query.redirect || '/admin/onboarding';
+  req.session = req.session || {};
+  req.session.oauthRedirect = redirectUrl;
+
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+  })(req, res, next);
+});
+
+/**
+ * GET /api/auth/google/callback
+ * Google OAuth callback - creates/updates user and redirects with token
+ */
+router.get('/google/callback', (req, res, next) => {
+  const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+
+  passport.authenticate('google', {
+    failureRedirect: `${corsOrigin}/admin/auth?error=oauth_failed`,
+    session: false
+  })(req, res, next);
+}, async (req, res) => {
+  try {
+    const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+    const user = req.user;
+
+    if (!user) {
+      console.error('❌ Google OAuth callback: No user returned');
+      return res.redirect(`${corsOrigin}/admin/auth?error=oauth_failed`);
+    }
+
+    // Get user's store if they have one
+    const { data: stores } = await masterDbClient
+      .from('stores')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1);
+
+    const storeId = stores?.[0]?.id || null;
+
+    // Generate JWT token for the user
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role || 'store_owner',
+        first_name: user.first_name,
+        last_name: user.last_name,
+        store_id: storeId
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    console.log('✅ Google OAuth successful for:', user.email);
+
+    // Redirect to frontend with token
+    const redirectPath = req.session?.oauthRedirect || '/admin/onboarding';
+    res.redirect(`${corsOrigin}/admin/auth?token=${token}&oauth=success&redirect=${encodeURIComponent(redirectPath)}`);
+  } catch (error) {
+    console.error('❌ Google OAuth callback error:', error);
+    const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+    res.redirect(`${corsOrigin}/admin/auth?error=oauth_failed`);
   }
 });
 
