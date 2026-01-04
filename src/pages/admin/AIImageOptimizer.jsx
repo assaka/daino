@@ -44,19 +44,21 @@ const AIImageOptimizer = () => {
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-        // Load library files from media_assets with folder='library'
+        // Load library files from media_assets (images not tied to products/categories)
         try {
-          const libraryResponse = await apiClient.get('/storage/media-assets?folder=library');
+          const libraryResponse = await apiClient.get('/storage/media-assets?limit=500');
           const files = libraryResponse.files || [];
-          // Filter only image files
+          // Filter image files that are NOT product or category images
           const imageFiles = files.filter(f =>
             f.url && (f.mimeType?.startsWith('image/') ||
-              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '')) &&
+            f.folder !== 'product' && f.folder !== 'category'
           ).map(f => ({
             id: f.id || f.media_asset_id,
             file_url: f.url,
             file_name: f.name,
-            mime_type: f.mimeType
+            mime_type: f.mimeType,
+            folder: f.folder
           }));
           setLibraryFiles(imageFiles);
         } catch (storageError) {
@@ -233,18 +235,20 @@ const AIImageOptimizer = () => {
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-      // Load library files from media_assets with folder='library'
+      // Load library files from media_assets (images not tied to products/categories)
       try {
-        const libraryResponse = await apiClient.get('/storage/media-assets?folder=library');
+        const libraryResponse = await apiClient.get('/storage/media-assets?limit=500');
         const files = libraryResponse.files || [];
         const imageFiles = files.filter(f =>
           f.url && (f.mimeType?.startsWith('image/') ||
-            /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
+            /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '')) &&
+          f.folder !== 'product' && f.folder !== 'category'
         ).map(f => ({
           id: f.id || f.media_asset_id,
           file_url: f.url,
           file_name: f.name,
-          mime_type: f.mimeType
+          mime_type: f.mimeType,
+          folder: f.folder
         }));
         setLibraryFiles(imageFiles);
       } catch (storageError) {
