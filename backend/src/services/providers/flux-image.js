@@ -308,7 +308,8 @@ class FluxImageProvider {
     // When reference image is provided, enhance prompt to incorporate the product
     let enhancedPrompt = prompt;
     if (referenceImageUrl) {
-      enhancedPrompt = `Using the provided product image as reference, ${prompt}. Incorporate the exact product shown in the reference image into the scene. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+      // For product placement, be very specific about maintaining the exact product
+      enhancedPrompt = `${prompt}. The exact product from the reference image must be clearly visible and prominently featured. ${stylePrompts[style] || stylePrompts.photorealistic}`;
     } else {
       enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
     }
@@ -317,34 +318,52 @@ class FluxImageProvider {
       let output;
 
       if (referenceImageUrl) {
-        // Use Flux Redux for image-to-image with reference
-        // Falls back to regular generation if redux fails
+        // Try Flux Fill (inpainting) for better product placement
+        // This model better preserves the reference image content
         try {
           output = await this.replicateRequest(
-            'black-forest-labs/flux-redux-dev',
+            'black-forest-labs/flux-fill-dev',
             {
               prompt: enhancedPrompt,
               image: referenceImageUrl,
               num_outputs: numImages,
-              aspect_ratio: aspectRatio,
               output_format: 'png',
               output_quality: 100,
-              prompt_strength: 0.8 // Balance between prompt and reference image
+              guidance: 3.5 // Lower guidance keeps more of original image
             }
           );
-        } catch (e) {
-          console.log('[FluxProvider] Redux failed, using standard generation with reference in prompt:', e.message);
-          // Fallback to standard generation but mention reference in prompt
-          output = await this.replicateRequest(
-            'black-forest-labs/flux-schnell',
-            {
-              prompt: enhancedPrompt,
-              num_outputs: numImages,
-              aspect_ratio: aspectRatio,
-              output_format: 'png',
-              output_quality: 100
-            }
-          );
+        } catch (fillError) {
+          console.log('[FluxProvider] Fill failed, trying Flux Dev img2img:', fillError.message);
+
+          // Try Flux Dev with image-to-image
+          try {
+            output = await this.replicateRequest(
+              'black-forest-labs/flux-dev',
+              {
+                prompt: enhancedPrompt,
+                image: referenceImageUrl,
+                num_outputs: numImages,
+                aspect_ratio: aspectRatio,
+                output_format: 'png',
+                output_quality: 100,
+                prompt_strength: 0.6, // Lower = more of original image preserved
+                num_inference_steps: 28
+              }
+            );
+          } catch (devError) {
+            console.log('[FluxProvider] Dev img2img failed, using Schnell:', devError.message);
+            // Final fallback to standard generation
+            output = await this.replicateRequest(
+              'black-forest-labs/flux-schnell',
+              {
+                prompt: enhancedPrompt,
+                num_outputs: numImages,
+                aspect_ratio: aspectRatio,
+                output_format: 'png',
+                output_quality: 100
+              }
+            );
+          }
         }
       } else {
         // Standard text-to-image generation

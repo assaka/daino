@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Wand2, Image, Package, FolderOpen, Search, Filter, Loader2, AlertCircle, ImagePlus } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { Product, Category, MediaAsset } from '@/api/entities';
+import { Product, Category } from '@/api/entities';
+import apiClient from '@/api/client';
 import { ImageOptimizerModal } from '@/components/image-optimizer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,20 +32,38 @@ const AIImageOptimizer = () => {
       setLoading(true);
       try {
         const storeId = getSelectedStoreId();
-        const [productsResult, categoriesData, libraryData] = await Promise.all([
+
+        // Load products and categories from database
+        const [productsResult, categoriesData] = await Promise.all([
           Product.findPaginated(1, 500, { store_id: storeId }),
-          Category.filter({ store_id: storeId }),
-          MediaAsset.filter({ store_id: storeId, limit: 500 })
+          Category.filter({ store_id: storeId })
         ]);
+
         // findPaginated returns { data: [...], pagination: {...} }
         const productsData = productsResult?.data || productsResult || [];
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        // Filter only image files from library
-        const imageFiles = (Array.isArray(libraryData) ? libraryData : []).filter(f =>
-          f.file_url && (f.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.file_url))
-        );
-        setLibraryFiles(imageFiles);
+
+        // Load library files from storage API (same as FileLibrary)
+        try {
+          const storageResponse = await apiClient.get('/storage/list');
+          if (storageResponse.success && storageResponse.files) {
+            // Filter only image files
+            const imageFiles = storageResponse.files.filter(f =>
+              f.url && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
+                /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url))
+            ).map(f => ({
+              id: f.id || f.name,
+              file_url: f.url || f.publicUrl,
+              file_name: f.name,
+              mime_type: f.mimeType || f.metadata?.mimetype
+            }));
+            setLibraryFiles(imageFiles);
+          }
+        } catch (storageError) {
+          console.warn('Failed to load storage files:', storageError);
+          setLibraryFiles([]);
+        }
       } catch (error) {
         console.error('Failed to load data:', error);
         setFlashMessage({ type: 'error', message: 'Failed to load data' });
