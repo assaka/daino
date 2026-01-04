@@ -413,24 +413,18 @@ class UserService extends BaseEntity {
   // Get current user (alias for auth/me) - fetches user based on current token
   async me() {
     try {
-      console.log('📡 User.me(): Calling auth/me endpoint');
       const response = await apiClient.get('auth/me');
-      console.log('📡 User.me(): Raw response:', response);
       const data = response.data || response;
-      console.log('📡 User.me(): Extracted data:', data);
       // Handle case where data is returned as an array
       const user = Array.isArray(data) ? data[0] : data;
-      console.log('📡 User.me(): Final user object:', user);
 
       // Ensure we return null if no valid user data
       if (!user || !user.id) {
-        console.log('📡 User.me(): No valid user id, returning null');
         return null;
       }
 
       return user;
     } catch (error) {
-      console.error('📡 User.me(): Error caught:', error.message, 'Status:', error.status);
       // Clear invalid token if authentication fails
       if (error.status === 401 || error.status === 403) {
         apiClient.setToken(null);
