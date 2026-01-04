@@ -44,26 +44,23 @@ const AIImageOptimizer = () => {
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-        // Load library files from unified storage API (works with any provider)
+        // Load library files from media_assets with folder='library'
         try {
-          const storageResponse = await apiClient.get('/storage/list');
-          // Unified endpoint returns { success, data: { files, total, provider } }
-          const files = storageResponse.data?.files || storageResponse.files || [];
-          if (files.length > 0) {
-            // Filter only image files
-            const imageFiles = files.filter(f =>
-              (f.url || f.publicUrl) && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
-                /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
-            ).map(f => ({
-              id: f.id || f.name,
-              file_url: f.url || f.publicUrl,
-              file_name: f.name,
-              mime_type: f.mimeType || f.metadata?.mimetype
-            }));
-            setLibraryFiles(imageFiles);
-          }
+          const libraryResponse = await apiClient.get('/storage/media-assets?folder=library');
+          const files = libraryResponse.files || [];
+          // Filter only image files
+          const imageFiles = files.filter(f =>
+            f.url && (f.mimeType?.startsWith('image/') ||
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
+          ).map(f => ({
+            id: f.id || f.media_asset_id,
+            file_url: f.url,
+            file_name: f.name,
+            mime_type: f.mimeType
+          }));
+          setLibraryFiles(imageFiles);
         } catch (storageError) {
-          console.warn('Failed to load storage files:', storageError);
+          console.warn('Failed to load library files:', storageError);
           setLibraryFiles([]);
         }
       } catch (error) {
@@ -158,23 +155,7 @@ const AIImageOptimizer = () => {
       });
     });
 
-    // Add library files (grouped as "Library")
-    if (libraryFiles.length > 0) {
-      items.push({
-        id: 'library',
-        type: 'library',
-        entityId: 'library',
-        name: 'File Library',
-        images: libraryFiles.map(file => ({
-          id: file.id,
-          url: file.file_url,
-          name: file.file_name || file.file_url?.split('/').pop(),
-          isPrimary: false,
-          assetId: file.id
-        })),
-        hasImages: true
-      });
-    }
+    // Library files are handled separately in the grid view
 
     return items;
   }, [products, categories, libraryFiles]);
@@ -191,10 +172,10 @@ const AIImageOptimizer = () => {
         }
       }
 
-      // Type filter
+      // Type filter (library is handled separately)
       if (filterType === 'products' && item.type !== 'product') return false;
       if (filterType === 'categories' && item.type !== 'category') return false;
-      if (filterType === 'library' && item.type !== 'library') return false;
+      if (filterType === 'library') return false; // Library shown in grid view
       if (filterType === 'no-image' && item.hasImages) return false;
       if (filterType === 'with-image' && !item.hasImages) return false;
 
@@ -252,25 +233,22 @@ const AIImageOptimizer = () => {
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-      // Load library files from unified storage API (works with any provider)
+      // Load library files from media_assets with folder='library'
       try {
-        const storageResponse = await apiClient.get('/storage/list');
-        // Unified endpoint returns { success, data: { files, total, provider } }
-        const files = storageResponse.data?.files || storageResponse.files || [];
-        if (files.length > 0) {
-          const imageFiles = files.filter(f =>
-            (f.url || f.publicUrl) && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
-              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
-          ).map(f => ({
-            id: f.id || f.name,
-            file_url: f.url || f.publicUrl,
-            file_name: f.name,
-            mime_type: f.mimeType || f.metadata?.mimetype
-          }));
-          setLibraryFiles(imageFiles);
-        }
+        const libraryResponse = await apiClient.get('/storage/media-assets?folder=library');
+        const files = libraryResponse.files || [];
+        const imageFiles = files.filter(f =>
+          f.url && (f.mimeType?.startsWith('image/') ||
+            /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
+        ).map(f => ({
+          id: f.id || f.media_asset_id,
+          file_url: f.url,
+          file_name: f.name,
+          mime_type: f.mimeType
+        }));
+        setLibraryFiles(imageFiles);
       } catch (storageError) {
-        console.warn('Failed to load storage files:', storageError);
+        console.warn('Failed to load library files:', storageError);
         setLibraryFiles([]);
       }
     } catch (error) {
@@ -401,6 +379,47 @@ const AIImageOptimizer = () => {
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
         </div>
+      ) : filterType === 'library' ? (
+        /* Library Grid View */
+        libraryFiles.length === 0 ? (
+          <div className="text-center py-20">
+            <Image className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No library images</h3>
+            <p className="text-gray-500">Upload images to your library or generate new ones with AI</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border p-4">
+            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+              {libraryFiles
+                .filter(file => !searchQuery || file.file_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((file) => (
+                <div
+                  key={file.id}
+                  onClick={() => handleImageClick(
+                    { type: 'library', name: file.file_name },
+                    { id: file.id, url: file.file_url, name: file.file_name, assetId: file.id }
+                  )}
+                  className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all"
+                >
+                  <img
+                    src={file.file_url}
+                    alt={file.file_name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Wand2 className="w-5 h-5 text-white" />
+                  </div>
+                  {/* File name tooltip */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                    {file.file_name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-20">
           <Image className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -417,14 +436,12 @@ const AIImageOptimizer = () => {
               {/* Type icon */}
               <div className={cn(
                 "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                item.type === 'product' ? "bg-orange-100" : item.type === 'category' ? "bg-blue-100" : "bg-green-100"
+                item.type === 'product' ? "bg-orange-100" : "bg-blue-100"
               )}>
                 {item.type === 'product' ? (
                   <Package className="w-4 h-4 text-orange-600" />
-                ) : item.type === 'category' ? (
-                  <FolderOpen className="w-4 h-4 text-blue-600" />
                 ) : (
-                  <Image className="w-4 h-4 text-green-600" />
+                  <FolderOpen className="w-4 h-4 text-blue-600" />
                 )}
               </div>
 
