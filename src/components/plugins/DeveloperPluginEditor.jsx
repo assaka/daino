@@ -249,6 +249,21 @@ const DeveloperPluginEditor = ({
           addTerminalOutput('🔄 File tree refreshed', 'info');
         }
 
+        // Create version after AI-generated files are saved
+        try {
+          addTerminalOutput('📝 Creating version...', 'info');
+          const versionResponse = await apiClient.post(`plugins/${plugin.id}/versions`, {
+            commit_message: 'AI-generated code',
+            created_by_name: 'AI Assistant'
+          });
+          if (versionResponse?.success && versionResponse?.version) {
+            addTerminalOutput(`✓ Version ${versionResponse.version.version_number} created`, 'success');
+          }
+        } catch (versionError) {
+          console.warn('Failed to create version:', versionError);
+          addTerminalOutput('⚠ Version not created', 'warning');
+        }
+
       } catch (error) {
         console.error('Error saving AI-generated code:', error);
         addTerminalOutput(`❌ Error saving files: ${error.message}`, 'error');
