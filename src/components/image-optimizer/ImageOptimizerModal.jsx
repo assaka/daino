@@ -35,6 +35,7 @@ const GENERATION_STYLES = [
   { id: 'illustration', label: 'Illustration', icon: '✏️' }
 ];
 
+
 // Aspect ratio options
 const ASPECT_RATIOS = [
   { id: '1:1', label: 'Square', width: 1024, height: 1024 },
@@ -321,6 +322,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [error, setError] = useState(null);
   const [applyToOriginal, setApplyToOriginal] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [referenceImage, setReferenceImage] = useState(null); // For product reference in generation
 
   // For single image mode
   const [currentImage, setCurrentImage] = useState(null);
@@ -665,13 +668,17 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
 
       if (isGenerateMode) {
         // For generated images, always save as new file to library
+        // Uses unified storage manager - works with Supabase, S3, GCS, or local storage
         const newName = `generated-${Date.now()}.${format}`;
         const file = new File([blob], newName, { type: `image/${format}` });
-        const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
+        const uploadResponse = await apiClient.uploadFile('/storage/upload', file, { folder: 'library', public: 'true' });
 
         if (uploadResponse.success) {
           setFlashMessage({ type: 'success', message: `Saved "${newName}" to library` });
+          setJustSaved(true);
+          setTimeout(() => setJustSaved(false), 2000);
           if (onOptimized) onOptimized({ applied: true, refresh: true });
+          if (onApply) onApply({ applied: true, refresh: true });
         } else {
           throw new Error('Upload failed');
         }
@@ -1644,13 +1651,18 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
               {isGenerateMode && currentImage && (
                 <Button
                   onClick={handleApply}
-                  disabled={isApplying}
-                  className="bg-green-600 hover:bg-green-700"
+                  disabled={isApplying || justSaved}
+                  className={justSaved ? "bg-green-500" : "bg-green-600 hover:bg-green-700"}
                 >
                   {isApplying ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Saving...
+                    </>
+                  ) : justSaved ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Saved!
                     </>
                   ) : (
                     <>
