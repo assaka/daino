@@ -1,7 +1,7 @@
 // Admin/Store Owner API Client - Always requires authentication
 class AdminApiClient {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://backend.dainostore.com';
     this.token = localStorage.getItem('store_owner_auth_token');
 
     // Admin client always requires authentication

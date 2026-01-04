@@ -1,7 +1,7 @@
 // Storefront API Client - Public by default, optional customer authentication
 class StorefrontApiClient {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://backend.dainostore.com';
     this.currentStoreSlug = null;
     this.currentStoreId = null;
     this.customerToken = null;

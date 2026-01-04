@@ -3,7 +3,7 @@ import { apiDebugger } from '../utils/api-debugger.js';
 
 class ApiClient {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://backend.dainostore.com';
     this.apiVersion = import.meta.env.VITE_API_VERSION || 'v1';
     
     // Check if user was explicitly logged out (persists across page reloads)

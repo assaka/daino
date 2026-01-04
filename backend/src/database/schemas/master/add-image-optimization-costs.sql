@@ -47,6 +47,7 @@ ON CONFLICT (service_key) DO UPDATE SET
 -- ============================================
 -- Flux Image Optimization Costs
 -- (High quality generation, good for staging)
+-- Pricing from BFL direct API (api.bfl.ml)
 -- ============================================
 INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active, is_visible, display_order, metadata)
 VALUES
@@ -56,7 +57,12 @@ VALUES
   ('ai_image_flux_stage', 'Flux Product Staging', 'ai_services', 1.8, 'per_use', 'Place product in realistic environment using Flux', true, true, 123, '{"provider": "flux", "operation": "stage", "icon": "⚡"}'),
   ('ai_image_flux_convert', 'Flux Format Convert', 'ai_services', 0.2, 'per_use', 'Smart format conversion using Flux', true, true, 124, '{"provider": "flux", "operation": "convert", "icon": "⚡"}'),
   ('ai_image_flux_custom', 'Flux Custom', 'ai_services', 1.8, 'per_use', 'Custom AI image modification using Flux', true, true, 125, '{"provider": "flux", "operation": "custom", "icon": "⚡"}'),
-  ('ai_image_flux_generate', 'Flux Image Generation', 'ai_services', 3.0, 'per_use', 'Generate new images from text using Flux', true, true, 126, '{"provider": "flux", "operation": "generate", "icon": "⚡"}')
+  -- Flux Generation by model variant (BFL direct pricing)
+  ('ai_image_flux_generate_pro', 'Flux Pro 1.1 Generation', 'ai_services', 0.5, 'per_use', 'Generate images using Flux Pro 1.1 (~$0.05/image) - highest quality', true, true, 126, '{"provider": "flux", "operation": "generate", "model": "flux-pro-1.1", "icon": "⚡"}'),
+  ('ai_image_flux_generate_dev', 'Flux Dev Generation', 'ai_services', 0.25, 'per_use', 'Generate images using Flux Dev (~$0.025/image) - balanced quality/cost', true, true, 127, '{"provider": "flux", "operation": "generate", "model": "flux-dev", "icon": "⚡"}'),
+  ('ai_image_flux_generate_schnell', 'Flux Schnell Generation', 'ai_services', 0.03, 'per_use', 'Generate images using Flux Schnell (~$0.003/image) - fastest, budget option', true, true, 128, '{"provider": "flux", "operation": "generate", "model": "flux-schnell", "icon": "⚡"}'),
+  -- Legacy generic entry for backwards compatibility
+  ('ai_image_flux_generate', 'Flux Image Generation', 'ai_services', 0.5, 'per_use', 'Generate new images from text using Flux Pro 1.1', true, true, 129, '{"provider": "flux", "operation": "generate", "icon": "⚡"}')
 ON CONFLICT (service_key) DO UPDATE SET
   cost_per_unit = EXCLUDED.cost_per_unit,
   description = EXCLUDED.description,
@@ -89,6 +95,11 @@ ON CONFLICT (service_key) DO UPDATE SET
 -- ----------|----------|---------|-----------|-------|---------|--------|----------
 -- OpenAI    | 0.5 cr   | 1.5 cr  | 1.5 cr    | 2.5 cr| 0.3 cr  | 2.5 cr | 4.0 cr
 -- Gemini    | 0.3 cr   | 0.8 cr  | 0.8 cr    | 1.5 cr| 0.2 cr  | 1.5 cr | 2.5 cr
--- Flux      | 0.4 cr   | 0.6 cr  | 0.5 cr    | 1.8 cr| 0.2 cr  | 1.8 cr | 3.0 cr
+-- Flux      | 0.4 cr   | 0.6 cr  | 0.5 cr    | 1.8 cr| 0.2 cr  | 1.8 cr | (see below)
 -- Qwen      | 0.2 cr   | 0.5 cr  | 0.5 cr    | 1.2 cr| 0.15 cr | 1.2 cr | 2.0 cr
+-- ============================================
+-- Flux Generation Models (BFL direct API pricing):
+-- - Flux Pro 1.1:  0.5 cr  (~$0.05/image) - highest quality
+-- - Flux Dev:      0.25 cr (~$0.025/image) - balanced
+-- - Flux Schnell:  0.03 cr (~$0.003/image) - fastest/cheapest
 -- ============================================
