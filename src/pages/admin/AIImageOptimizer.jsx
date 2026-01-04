@@ -44,14 +44,16 @@ const AIImageOptimizer = () => {
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-        // Load library files from storage API (same as FileLibrary)
+        // Load library files from unified storage API (works with any provider)
         try {
-          const storageResponse = await apiClient.get('/supabase/storage/list');
-          if (storageResponse.success && storageResponse.files) {
+          const storageResponse = await apiClient.get('/storage/list');
+          // Unified endpoint returns { success, data: { files, total, provider } }
+          const files = storageResponse.data?.files || storageResponse.files || [];
+          if (files.length > 0) {
             // Filter only image files
-            const imageFiles = storageResponse.files.filter(f =>
-              f.url && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
-                /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url))
+            const imageFiles = files.filter(f =>
+              (f.url || f.publicUrl) && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
+                /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
             ).map(f => ({
               id: f.id || f.name,
               file_url: f.url || f.publicUrl,
@@ -250,13 +252,15 @@ const AIImageOptimizer = () => {
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-      // Load library files from storage API (same as initial load)
+      // Load library files from unified storage API (works with any provider)
       try {
-        const storageResponse = await apiClient.get('/supabase/storage/list');
-        if (storageResponse.success && storageResponse.files) {
-          const imageFiles = storageResponse.files.filter(f =>
-            f.url && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
-              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url))
+        const storageResponse = await apiClient.get('/storage/list');
+        // Unified endpoint returns { success, data: { files, total, provider } }
+        const files = storageResponse.data?.files || storageResponse.files || [];
+        if (files.length > 0) {
+          const imageFiles = files.filter(f =>
+            (f.url || f.publicUrl) && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || ''))
           ).map(f => ({
             id: f.id || f.name,
             file_url: f.url || f.publicUrl,
