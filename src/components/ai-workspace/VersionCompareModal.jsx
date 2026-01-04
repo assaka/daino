@@ -56,41 +56,72 @@ const VersionCompareModal = ({
         ...(storeId && storeId !== 'undefined' ? { 'x-store-id': storeId } : {})
       };
 
-      // Load both version details with full reconstructed state
-      const [fromResponse, toResponse, comparisonResponse] = await Promise.all([
-        fetch(`/api/plugins/${pluginId}/versions/${fromVersionId}`, { headers }),
-        fetch(`/api/plugins/${pluginId}/versions/${toVersionId}`, { headers }),
-        fetch(`/api/plugins/${pluginId}/versions/compare?from=${fromVersionId}&to=${toVersionId}`, { headers })
-      ]);
+      const isComparingWithCurrent = toVersionId === 'current';
 
-      if (!fromResponse.ok || !toResponse.ok || !comparisonResponse.ok) {
-        throw new Error('Failed to load comparison data');
-      }
-
+      // Load from version
+      const fromResponse = await fetch(`/api/plugins/${pluginId}/versions/${fromVersionId}`, { headers });
+      if (!fromResponse.ok) throw new Error('Failed to load from version');
       const fromData = await fromResponse.json();
-      const toData = await toResponse.json();
-      const comparisonData = await comparisonResponse.json();
+
+      let toData, comparisonData;
+
+      if (isComparingWithCurrent) {
+        // Load current plugin state instead of a version
+        const currentResponse = await fetch(`/api/plugins/registry/${pluginId}`, { headers });
+        if (!currentResponse.ok) throw new Error('Failed to load current state');
+        const currentPlugin = await currentResponse.json();
+
+        // Build a "current" version object from plugin data
+        toData = {
+          version: {
+            version_number: 'Current',
+            version_type: 'current',
+            commit_message: 'Current state (unsaved changes)',
+            is_current: true,
+            created_at: new Date().toISOString(),
+            reconstructed_state: extractCurrentPluginState(currentPlugin)
+          }
+        };
+
+        // Compare with current - fetch comparison or build locally
+        const compResponse = await fetch(`/api/plugins/${pluginId}/versions/compare?from=${fromVersionId}&to=current`, { headers });
+        if (compResponse.ok) {
+          comparisonData = await compResponse.json();
+        } else {
+          // Build comparison locally if API doesn't support 'current'
+          comparisonData = { comparison: buildLocalComparison(fromData.version, toData.version) };
+        }
+      } else {
+        // Normal version-to-version comparison
+        const [toResponse, compResponse] = await Promise.all([
+          fetch(`/api/plugins/${pluginId}/versions/${toVersionId}`, { headers }),
+          fetch(`/api/plugins/${pluginId}/versions/compare?from=${fromVersionId}&to=${toVersionId}`, { headers })
+        ]);
+
+        if (!toResponse.ok || !compResponse.ok) {
+          throw new Error('Failed to load comparison data');
+        }
+
+        toData = await toResponse.json();
+        comparisonData = await compResponse.json();
+      }
 
       setFromVersion(fromData.version);
       setToVersion(toData.version);
       setComparison(comparisonData.comparison);
 
       // Extract reconstructed states from version data
-      // For snapshots, use snapshot_data; for patches, we need to reconstruct
       const fromReconstructed = extractStateFromVersion(fromData.version);
       const toReconstructed = extractStateFromVersion(toData.version);
 
       console.log('🔍 VersionCompareModal loaded:', {
         fromVersion: fromData.version.version_number,
         toVersion: toData.version.version_number,
+        isComparingWithCurrent,
         comparison_files_changed: comparisonData.comparison?.files_changed,
         comparison_summary_length: comparisonData.comparison?.summary?.length,
         fromState_keys: fromReconstructed ? Object.keys(fromReconstructed) : null,
-        toState_keys: toReconstructed ? Object.keys(toReconstructed) : null,
-        fromState_hooks: fromReconstructed?.hooks?.length || 0,
-        toState_hooks: toReconstructed?.hooks?.length || 0,
-        fromState_hooks_data: fromReconstructed?.hooks,
-        toState_hooks_data: toReconstructed?.hooks
+        toState_keys: toReconstructed ? Object.keys(toReconstructed) : null
       });
 
       setFromState(fromReconstructed);
@@ -101,13 +132,58 @@ const VersionCompareModal = ({
         console.log('📌 Auto-selecting first changed component:', comparisonData.comparison.summary[0]);
         setSelectedComponent(comparisonData.comparison.summary[0]);
       } else {
-        console.warn('⚠️  No changed components found in comparison');
+        // If no comparison summary, show all component types that have data
+        const availableTypes = componentTypes.filter(type =>
+          (fromReconstructed?.[type]?.length > 0) || (toReconstructed?.[type]?.length > 0)
+        );
+        if (availableTypes.length > 0) {
+          setSelectedComponent({ component_type: availableTypes[0], change_type: 'modified' });
+        }
       }
     } catch (error) {
       console.error('Failed to load comparison:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Extract current plugin state from registry data
+  const extractCurrentPluginState = (plugin) => {
+    return {
+      hooks: plugin.hooks || [],
+      events: plugin.events || [],
+      scripts: plugin.scripts || [],
+      widgets: plugin.widgets || [],
+      controllers: plugin.controllers || [],
+      entities: plugin.entities || []
+    };
+  };
+
+  // Build local comparison when API doesn't support 'current'
+  const buildLocalComparison = (fromVersion, toVersion) => {
+    const fromState = extractStateFromVersion(fromVersion);
+    const toState = extractStateFromVersion(toVersion);
+
+    const summary = [];
+    for (const type of componentTypes) {
+      const fromCount = fromState?.[type]?.length || 0;
+      const toCount = toState?.[type]?.length || 0;
+      if (fromCount > 0 || toCount > 0) {
+        summary.push({
+          component_type: type,
+          change_type: fromCount === 0 ? 'added' : toCount === 0 ? 'deleted' : 'modified',
+          operations_count: Math.abs(toCount - fromCount) || 1
+        });
+      }
+    }
+
+    return {
+      files_changed: summary.length,
+      lines_added: 0,
+      lines_deleted: 0,
+      components_modified: summary.length,
+      summary
+    };
   };
 
   // Extract state from version data

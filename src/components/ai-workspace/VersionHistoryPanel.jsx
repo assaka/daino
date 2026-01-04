@@ -33,6 +33,7 @@ const VersionHistoryPanel = ({
   pluginId,
   onClose,
   onCompare,
+  onCompareWithCurrent,
   onRestore,
   onViewVersion,
   className = ''
@@ -252,6 +253,17 @@ const VersionHistoryPanel = ({
         </div>
 
         {/* Compare action */}
+        {selectedVersions.length === 1 && (
+          <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
+            <span className="text-sm text-green-800">
+              1 version selected - compare with current or select another
+            </span>
+            <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => onCompareWithCurrent && onCompareWithCurrent(selectedVersions[0])}>
+              <GitCompare className="w-4 h-4 mr-1" />
+              Compare with Current
+            </Button>
+          </div>
+        )}
         {selectedVersions.length === 2 && (
           <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md flex items-center justify-between">
             <span className="text-sm text-blue-800">

@@ -928,6 +928,13 @@ const DeveloperPluginEditor = ({
     setShowVersionHistory(false);
   };
 
+  const handleCompareWithCurrent = (versionId) => {
+    // Compare selected version with current state (use 'current' as special marker)
+    setCompareVersions({ from: versionId, to: 'current' });
+    setShowVersionCompare(true);
+    setShowVersionHistory(false);
+  };
+
   const handleRestoreVersion = (versionId) => {
     setRestoreVersionId(versionId);
     setShowVersionRestore(true);
@@ -2544,6 +2551,7 @@ const DeveloperPluginEditor = ({
             pluginId={plugin.id}
             onClose={() => setShowVersionHistory(false)}
             onCompare={handleCompareVersions}
+            onCompareWithCurrent={handleCompareWithCurrent}
             onRestore={handleRestoreVersion}
             onViewVersion={(versionId) => {
               setViewingVersionId(versionId);
