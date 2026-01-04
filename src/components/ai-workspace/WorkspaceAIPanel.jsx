@@ -581,13 +581,44 @@ const WorkspaceAIPanel = () => {
         let embeddedFiles = null;
         if (messageContent.trim().startsWith('{') && messageContent.includes('generatedFiles')) {
           try {
-            embeddedJson = JSON.parse(messageContent);
+            // Fix common JSON issues: escape unescaped newlines inside string values
+            let fixedJson = messageContent;
+            // Replace actual newlines inside strings with escaped newlines
+            // This regex finds strings and escapes newlines within them
+            fixedJson = fixedJson.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+              return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+            });
+
+            embeddedJson = JSON.parse(fixedJson);
             embeddedFiles = embeddedJson.generatedFiles;
             console.log('📦 Parsed message as JSON:', embeddedJson);
             // Use the explanation from the parsed JSON
             messageContent = embeddedJson.explanation || 'Plugin updated.';
           } catch (e) {
             console.log('⚠️ Message looks like JSON but failed to parse:', e.message);
+            // Try one more approach: extract generatedFiles manually with regex
+            try {
+              const filesMatch = messageContent.match(/"generatedFiles"\s*:\s*\[([\s\S]*?)\]\s*[,}]/);
+              const explanationMatch = messageContent.match(/"explanation"\s*:\s*"([^"]+)"/);
+              if (filesMatch) {
+                // Extract file objects manually
+                const filesStr = filesMatch[1];
+                const fileMatches = filesStr.matchAll(/"name"\s*:\s*"([^"]+)"[\s\S]*?"code"\s*:\s*"([\s\S]*?)(?:"\s*})/g);
+                embeddedFiles = [];
+                for (const match of fileMatches) {
+                  embeddedFiles.push({
+                    name: match[1],
+                    code: match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+                  });
+                }
+                if (embeddedFiles.length > 0) {
+                  console.log('📦 Extracted files via regex:', embeddedFiles);
+                  messageContent = explanationMatch ? explanationMatch[1] : 'Plugin updated.';
+                }
+              }
+            } catch (e2) {
+              console.log('⚠️ Regex extraction also failed:', e2.message);
+            }
           }
         }
 
