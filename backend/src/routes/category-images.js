@@ -87,23 +87,19 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
       });
     }
 
-    // Update category image_url
+    // Update category with media_asset_id (image_url is deprecated)
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Use media_asset_id if available from upload
+    if (uploadResult.mediaAssetId) {
+      updateData.media_asset_id = uploadResult.mediaAssetId;
+    }
+
     await tenantDb
       .from('categories')
-      .update({
-        image_url: uploadResult.publicUrl || uploadResult.url,
-        // Store additional metadata in a separate field if needed
-        image_metadata: {
-          filename: uploadResult.filename,
-          path: uploadResult.path,
-          bucket: uploadResult.bucket,
-          size: uploadResult.size,
-          provider: 'supabase',
-          uploaded_at: new Date().toISOString(),
-          original_name: req.file.originalname
-        },
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', categoryId);
 
     res.json({
@@ -246,21 +242,42 @@ router.get('/:categoryId/images', async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
-    const category = await Category.findOne({
-      where: {
-        id: categoryId,
-        store_id: storeId
-      },
-      attributes: ['id', 'name', 'image_url', 'image_metadata', 'banner_images']
-    });
+    const { data: category, error: catError } = await tenantDb
+      .from('categories')
+      .select('id, slug, media_asset_id, banner_images')
+      .eq('id', categoryId)
+      .eq('store_id', storeId)
+      .maybeSingle();
 
-    if (!category) {
+    if (!category || catError) {
       return res.status(404).json({
         success: false,
         error: 'Category not found or access denied'
       });
     }
 
+    // Fetch media_asset for main image
+    let mainImageUrl = null;
+    if (category.media_asset_id) {
+      const { data: mediaAsset } = await tenantDb
+        .from('media_assets')
+        .select('file_url')
+        .eq('id', category.media_asset_id)
+        .maybeSingle();
+      if (mediaAsset) {
+        mainImageUrl = mediaAsset.file_url;
+      }
+    }
+
+    // Get category name from translations
+    const { data: trans } = await tenantDb
+      .from('category_translations')
+      .select('name')
+      .eq('category_id', categoryId)
+      .eq('language_code', 'en')
+      .maybeSingle();
+
+    const categoryName = trans?.name || category.slug;
     const banners = category.banner_images || [];
 
     // Sort banners by sort_order
@@ -270,10 +287,10 @@ router.get('/:categoryId/images', async (req, res) => {
       success: true,
       data: {
         category_id: categoryId,
-        category_name: category.name,
+        category_name: categoryName,
         main_image: {
-          url: category.image_url,
-          metadata: category.image_metadata
+          url: mainImageUrl,
+          media_asset_id: category.media_asset_id
         },
         banner_images: banners,
         total_banners: banners.length
@@ -316,55 +333,44 @@ router.delete('/:categoryId/image', async (req, res) => {
       });
     }
 
-    if (!category.image_url) {
+    if (!category.media_asset_id) {
       return res.status(404).json({
         success: false,
         error: 'No main image to delete'
       });
     }
 
-    // Try to delete from Supabase storage
-    try {
-      let imagePath = null;
+    // Get media_asset to find file path
+    const { data: mediaAsset } = await tenantDb
+      .from('media_assets')
+      .select('id, file_path, file_url')
+      .eq('id', category.media_asset_id)
+      .maybeSingle();
 
-      // Extract path from Supabase URL or use metadata
-      if (category.image_metadata?.path) {
-        imagePath = category.image_metadata.path;
-      } else if (category.image_url && category.image_url.includes('supabase')) {
-        // Extract path from Supabase URL structure
-        const url = new URL(category.image_url);
-        const pathParts = url.pathname.split('/');
-        // Supabase URLs: /storage/v1/object/public/bucket/path
-        if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
-          const bucketIndex = pathParts.indexOf('public') + 1;
-          imagePath = pathParts.slice(bucketIndex + 1).join('/');
-        }
-      } else if (category.image_metadata?.filename) {
-        // Fallback: construct organized path
-        const nameWithoutExt = category.image_metadata.filename.substring(0, category.image_metadata.filename.lastIndexOf('.')) || category.image_metadata.filename;
-        const cleanName = nameWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (cleanName.length >= 2) {
-          imagePath = `categories/${cleanName[0]}/${cleanName[1]}/${category.image_metadata.filename}`;
-        } else {
-          imagePath = `categories/misc/${category.image_metadata.filename}`;
-        }
+    // Try to delete from storage
+    if (mediaAsset?.file_path) {
+      try {
+        await storageManager.deleteFile(storeId, mediaAsset.file_path);
+        console.log(`✅ Deleted main image from storage: ${mediaAsset.file_path}`);
+      } catch (deleteError) {
+        console.warn('Could not delete main image from storage:', deleteError.message);
+        // Continue with database deletion even if storage deletion fails
       }
-
-      if (imagePath) {
-        await storageManager.deleteFile(storeId, imagePath, category.image_metadata?.bucket);
-        console.log(`✅ Deleted main image from storage: ${imagePath}`);
-      }
-    } catch (deleteError) {
-      console.warn('Could not delete main image from Supabase storage:', deleteError.message);
-      // Continue with database deletion even if storage deletion fails
     }
 
-    // Remove image from category
+    // Delete media_asset record
+    if (mediaAsset) {
+      await tenantDb
+        .from('media_assets')
+        .delete()
+        .eq('id', mediaAsset.id);
+    }
+
+    // Remove media_asset_id from category
     await tenantDb
       .from('categories')
       .update({
-        image_url: null,
-        image_metadata: null,
+        media_asset_id: null,
         updated_at: new Date().toISOString()
       })
       .eq('id', categoryId);

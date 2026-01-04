@@ -79,16 +79,42 @@ router.get('/', cacheCategories(600), async (req, res) => {
       transMap[t.category_id][t.language_code] = t;
     });
 
-    // Apply translations
+    // Fetch media_assets for categories that have media_asset_id
+    const mediaAssetIds = (categories || [])
+      .filter(c => c.media_asset_id)
+      .map(c => c.media_asset_id);
+
+    let mediaAssetsMap = {};
+    if (mediaAssetIds.length > 0) {
+      const { data: mediaAssets } = await tenantDb
+        .from('media_assets')
+        .select('id, file_url')
+        .in('id', mediaAssetIds);
+
+      if (mediaAssets) {
+        mediaAssets.forEach(ma => {
+          mediaAssetsMap[ma.id] = ma;
+        });
+      }
+    }
+
+    // Apply translations and populate image_url from media_asset
     const categoriesWithTrans = (categories || []).map(cat => {
       const trans = transMap[cat.id];
       const reqLang = trans?.[lang];
       const enLang = trans?.['en'];
 
+      // Get image_url from media_asset if available
+      let imageUrl = cat.image_url; // fallback to legacy field
+      if (cat.media_asset_id && mediaAssetsMap[cat.media_asset_id]) {
+        imageUrl = mediaAssetsMap[cat.media_asset_id].file_url;
+      }
+
       return {
         ...cat,
         name: reqLang?.name || enLang?.name || cat.slug || cat.name,
-        description: reqLang?.description || enLang?.description || null
+        description: reqLang?.description || enLang?.description || null,
+        image_url: imageUrl
       };
     });
 
@@ -171,10 +197,24 @@ router.get('/by-slug/:slug/full', cacheCategories(300), async (req, res) => {
     const reqLang = transMap[lang];
     const enLang = transMap['en'];
 
+    // Fetch media_asset for category image if exists
+    let categoryImageUrl = category.image_url; // fallback to legacy
+    if (category.media_asset_id) {
+      const { data: mediaAsset } = await tenantDb
+        .from('media_assets')
+        .select('file_url')
+        .eq('id', category.media_asset_id)
+        .maybeSingle();
+      if (mediaAsset) {
+        categoryImageUrl = mediaAsset.file_url;
+      }
+    }
+
     const categoryWithTrans = {
       ...category,
       name: reqLang?.name || enLang?.name || category.slug || category.name,
-      description: reqLang?.description || enLang?.description || null
+      description: reqLang?.description || enLang?.description || null,
+      image_url: categoryImageUrl
     };
 
     // 2. Load products for this category
@@ -349,10 +389,24 @@ router.get('/:id', cacheCategories(600), async (req, res) => {
     const reqLang = transMap[lang];
     const enLang = transMap['en'];
 
+    // Fetch media_asset for category image if exists
+    let categoryImageUrl = category.image_url; // fallback to legacy
+    if (category.media_asset_id) {
+      const { data: mediaAsset } = await tenantDb
+        .from('media_assets')
+        .select('file_url')
+        .eq('id', category.media_asset_id)
+        .maybeSingle();
+      if (mediaAsset) {
+        categoryImageUrl = mediaAsset.file_url;
+      }
+    }
+
     const categoryWithTrans = {
       ...category,
       name: reqLang?.name || enLang?.name || category.slug || category.name,
-      description: reqLang?.description || enLang?.description || null
+      description: reqLang?.description || enLang?.description || null,
+      image_url: categoryImageUrl
     };
 
     res.json({

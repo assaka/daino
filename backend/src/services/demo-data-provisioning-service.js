@@ -224,6 +224,15 @@ class DemoDataProvisioningService {
     for (const cat of categories) {
       const parentId = uuidv4();
 
+      // Download and store category image - StorageManager creates media_assets record with demo=true
+      let mediaAssetId = null;
+      if (cat.image_url) {
+        const storedImage = await this.downloadAndStoreImage(cat.image_url, `category-${cat.slug}`, 0);
+        if (storedImage && storedImage.mediaAssetId) {
+          mediaAssetId = storedImage.mediaAssetId;
+        }
+      }
+
       // Insert parent category (as child of root-catalog if it exists)
       const { error: catError } = await this.tenantDb
         .from('categories')
@@ -231,7 +240,7 @@ class DemoDataProvisioningService {
           id: parentId,
           store_id: this.storeId,
           slug: cat.slug,
-          image_url: cat.image_url,
+          media_asset_id: mediaAssetId,
           parent_id: rootCategoryId || null,
           sort_order: categories.indexOf(cat),
           is_active: true,
