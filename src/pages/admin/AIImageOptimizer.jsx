@@ -239,17 +239,36 @@ const AIImageOptimizer = () => {
     setLoading(true);
     try {
       const storeId = getSelectedStoreId();
-      const [productsData, categoriesData, libraryData] = await Promise.all([
-        Product.filter({ store_id: storeId, limit: 500 }),
-        Category.filter({ store_id: storeId }),
-        MediaAsset.filter({ store_id: storeId, limit: 500 })
+
+      // Load products and categories from database
+      const [productsResult, categoriesData] = await Promise.all([
+        Product.findPaginated(1, 500, { store_id: storeId }),
+        Category.filter({ store_id: storeId })
       ]);
+
+      const productsData = productsResult?.data || productsResult || [];
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-      const imageFiles = (Array.isArray(libraryData) ? libraryData : []).filter(f =>
-        f.file_url && (f.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.file_url))
-      );
-      setLibraryFiles(imageFiles);
+
+      // Load library files from storage API (same as initial load)
+      try {
+        const storageResponse = await apiClient.get('/storage/list');
+        if (storageResponse.success && storageResponse.files) {
+          const imageFiles = storageResponse.files.filter(f =>
+            f.url && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url))
+          ).map(f => ({
+            id: f.id || f.name,
+            file_url: f.url || f.publicUrl,
+            file_name: f.name,
+            mime_type: f.mimeType || f.metadata?.mimetype
+          }));
+          setLibraryFiles(imageFiles);
+        }
+      } catch (storageError) {
+        console.warn('Failed to load storage files:', storageError);
+        setLibraryFiles([]);
+      }
     } catch (error) {
       console.error('Failed to reload data:', error);
     } finally {
