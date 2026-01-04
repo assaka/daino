@@ -323,7 +323,7 @@ const VersionHistoryPanel = ({
                       }`} />
 
                       {/* Version card */}
-                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow relative">
+                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow">
                         {/* Header */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -393,48 +393,50 @@ const VersionHistoryPanel = ({
                           </div>
 
                           {/* Actions - top right */}
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleVersionSelection(version.id)}
-                              className={isSelected ? 'bg-blue-100' : ''}
-                              title="Select for comparison"
-                            >
-                              <GitCompare className="w-4 h-4" />
-                            </Button>
-
-                            {!version.is_current && (
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => onRestore(version.id)}
-                                title="Restore to this version"
+                                onClick={() => toggleVersionSelection(version.id)}
+                                className={isSelected ? 'bg-blue-100' : ''}
+                                title="Select for comparison"
                               >
-                                <RotateCcw className="w-4 h-4" />
+                                <GitCompare className="w-4 h-4" />
                               </Button>
-                            )}
 
+                              {!version.is_current && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onRestore(version.id)}
+                                  title="Restore to this version"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Download version"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            {/* View button */}
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Download version"
+                              onClick={() => onViewVersion && onViewVersion(version.id)}
+                              title="View version code"
+                              className="text-muted-foreground hover:text-primary"
                             >
-                              <Download className="w-4 h-4" />
+                              <Eye className="w-4 h-4 mr-1" />
+                              <span className="text-xs">View</span>
                             </Button>
                           </div>
                         </div>
-
-                        {/* View button - bottom right */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewVersion && onViewVersion(version.id)}
-                          title="View version code"
-                          className="absolute bottom-2 right-2 text-muted-foreground hover:text-primary"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
 
                         {/* Expanded details */}
                         {isExpanded && version.changelog && (
