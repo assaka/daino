@@ -21,7 +21,6 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const masterEmailService = require('../services/master-email-service');
 const passport = require('../config/passport');
-const jwt = require('jsonwebtoken');
 
 /**
  * POST /api/auth/register
@@ -2025,25 +2024,14 @@ router.get('/google/callback', (req, res, next) => {
 
     const storeId = stores?.[0]?.id || null;
 
-    // Generate JWT token for the user
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role || 'store_owner',
-        first_name: user.first_name,
-        last_name: user.last_name,
-        store_id: storeId
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate JWT token using the standard token generator
+    const tokens = generateTokenPair(user, storeId);
 
     console.log('✅ Google OAuth successful for:', user.email);
 
     // Redirect to frontend with token
     const redirectPath = req.session?.oauthRedirect || '/admin/onboarding';
-    res.redirect(`${corsOrigin}/admin/auth?token=${token}&oauth=success&redirect=${encodeURIComponent(redirectPath)}`);
+    res.redirect(`${corsOrigin}/admin/auth?token=${tokens.accessToken}&oauth=success&redirect=${encodeURIComponent(redirectPath)}`);
   } catch (error) {
     console.error('❌ Google OAuth callback error:', error);
     const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
