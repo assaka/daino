@@ -27,7 +27,7 @@ class FluxImageProvider {
   }
 
   getCapabilities() {
-    return ['upscale', 'remove_bg', 'stage', 'convert', 'custom'];
+    return ['upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate'];
   }
 
   /**
@@ -266,6 +266,103 @@ class FluxImageProvider {
         instruction
       };
     }
+  }
+
+  /**
+   * Generate new image from text prompt
+   */
+  async generate(params = {}) {
+    const {
+      prompt = 'A beautiful product photo',
+      style = 'photorealistic',
+      aspectRatio = '1:1',
+      numImages = 1
+    } = params;
+
+    // Map aspect ratios to dimensions
+    const aspectRatioMap = {
+      '1:1': { width: 1024, height: 1024 },
+      '16:9': { width: 1344, height: 768 },
+      '9:16': { width: 768, height: 1344 },
+      '4:3': { width: 1152, height: 896 },
+      '3:4': { width: 896, height: 1152 },
+      '3:2': { width: 1216, height: 832 },
+      '2:3': { width: 832, height: 1216 }
+    };
+
+    const dimensions = aspectRatioMap[aspectRatio] || aspectRatioMap['1:1'];
+
+    // Build enhanced prompt with style
+    const stylePrompts = {
+      photorealistic: 'highly detailed professional photograph, realistic lighting, sharp focus, 8k resolution',
+      artistic: 'artistic style, creative composition, vibrant colors, expressive brushstrokes',
+      illustration: 'digital illustration, clean lines, detailed artwork, professional quality',
+      'product-photo': 'professional product photography, clean white background, studio lighting, commercial quality',
+      'lifestyle': 'lifestyle photography, natural setting, warm lighting, authentic feel',
+      'minimalist': 'minimalist style, clean design, simple composition, elegant',
+      'cinematic': 'cinematic lighting, dramatic atmosphere, movie still quality, professional cinematography'
+    };
+
+    const enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+
+    if (this.useReplicate) {
+      // Use Flux Schnell for fast generation or Flux Dev for higher quality
+      const output = await this.replicateRequest(
+        'black-forest-labs/flux-schnell',
+        {
+          prompt: enhancedPrompt,
+          num_outputs: numImages,
+          aspect_ratio: aspectRatio,
+          output_format: 'png',
+          output_quality: 100
+        }
+      );
+
+      // Convert URL to base64
+      const imageUrl = Array.isArray(output) ? output[0] : output;
+      const base64 = await this.urlToBase64(imageUrl);
+
+      return {
+        image: base64,
+        imageUrl,
+        format: 'png',
+        prompt: enhancedPrompt,
+        style,
+        aspectRatio,
+        dimensions
+      };
+    } else {
+      // Use fal.ai Flux
+      const result = await this.falRequest('fal-ai/flux/schnell', {
+        prompt: enhancedPrompt,
+        image_size: dimensions,
+        num_images: numImages,
+        enable_safety_checker: true
+      });
+
+      const imageUrl = result.images?.[0]?.url;
+      const base64 = await this.urlToBase64(imageUrl);
+
+      return {
+        image: base64,
+        imageUrl,
+        format: 'png',
+        prompt: enhancedPrompt,
+        style,
+        aspectRatio,
+        dimensions
+      };
+    }
+  }
+
+  /**
+   * Convert URL to base64
+   */
+  async urlToBase64(url) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return buffer.toString('base64');
   }
 
   /**

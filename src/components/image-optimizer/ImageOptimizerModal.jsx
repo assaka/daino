@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2, Sparkles } from 'lucide-react';
+import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2, Sparkles, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
@@ -15,6 +15,7 @@ const PROVIDERS = {
 
 // Operation display info
 const OPERATIONS = {
+  generate: { name: 'Generate', icon: ImagePlus, description: 'Create new images from text' },
   compress: { name: 'Compress', icon: FileImage, description: 'Optimize quality & size' },
   upscale: { name: 'Upscale', icon: Maximize, description: 'Enhance resolution' },
   remove_bg: { name: 'Remove Background', icon: Eraser, description: 'Remove or replace background' },
@@ -22,6 +23,26 @@ const OPERATIONS = {
   convert: { name: 'Convert Format', icon: FileImage, description: 'WebP, AVIF optimization' },
   custom: { name: 'Custom', icon: Sparkles, description: 'Custom AI instruction' }
 };
+
+// Style presets for image generation
+const GENERATION_STYLES = [
+  { id: 'photorealistic', label: 'Photorealistic', icon: '📷' },
+  { id: 'product-photo', label: 'Product Photo', icon: '🛍️' },
+  { id: 'lifestyle', label: 'Lifestyle', icon: '🏠' },
+  { id: 'minimalist', label: 'Minimalist', icon: '⬜' },
+  { id: 'cinematic', label: 'Cinematic', icon: '🎬' },
+  { id: 'artistic', label: 'Artistic', icon: '🎨' },
+  { id: 'illustration', label: 'Illustration', icon: '✏️' }
+];
+
+// Aspect ratio options
+const ASPECT_RATIOS = [
+  { id: '1:1', label: 'Square', width: 1024, height: 1024 },
+  { id: '16:9', label: 'Landscape', width: 1344, height: 768 },
+  { id: '9:16', label: 'Portrait', width: 768, height: 1344 },
+  { id: '4:3', label: 'Standard', width: 1152, height: 896 },
+  { id: '3:2', label: 'Photo', width: 1216, height: 832 }
+];
 
 // Staging context presets
 const STAGING_CONTEXTS = [
@@ -275,6 +296,12 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [pricingLoading, setPricingLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState('openai');
   const [selectedOperation, setSelectedOperation] = useState('remove_bg');
+
+  // Generation-specific state
+  const [generatePrompt, setGeneratePrompt] = useState('');
+  const [generateStyle, setGenerateStyle] = useState('photorealistic');
+  const [generateAspectRatio, setGenerateAspectRatio] = useState('1:1');
+  const [generationHistory, setGenerationHistory] = useState([]);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showOperationDropdown, setShowOperationDropdown] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -307,6 +334,9 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const singleFile = fileToOptimize || (selectedFiles?.length === 1 ? selectedFiles[0] : null);
   const isBulkMode = !singleFile && selectedFiles?.length > 1;
   const imagesToProcess = singleFile ? [singleFile] : selectedFiles || [];
+
+  // Check if we're in generate mode (no source image needed)
+  const isGenerateMode = selectedOperation === 'generate';
 
   // Initialize original/current image for single mode
   // Reset state whenever the modal opens or the file changes
@@ -379,8 +409,10 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const getTotalCost = useCallback(() => {
     const costPerImage = getCostPerImage();
     if (costPerImage === null) return null;
+    // For generate mode, always 1 image at a time
+    if (isGenerateMode) return costPerImage;
     return costPerImage * imagesToProcess.length;
-  }, [getCostPerImage, imagesToProcess.length]);
+  }, [getCostPerImage, imagesToProcess.length, isGenerateMode]);
 
   const formatBytes = (bytes) => {
     if (!bytes) return '—';
@@ -418,7 +450,72 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
     });
   };
 
+  // Handle image generation
+  const handleGenerate = async () => {
+    if (!generatePrompt.trim()) {
+      setError('Please enter a prompt to generate an image');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.post('/image-optimization/generate', {
+        provider: selectedProvider,
+        prompt: generatePrompt,
+        style: generateStyle,
+        aspectRatio: generateAspectRatio
+      });
+
+      if (response.success) {
+        const generatedImage = {
+          id: Date.now(),
+          prompt: generatePrompt,
+          style: generateStyle,
+          aspectRatio: generateAspectRatio,
+          image: response.result.image,
+          format: response.result.format || 'png',
+          credits: response.creditsDeducted,
+          timestamp: new Date()
+        };
+
+        setGenerationHistory(prev => [generatedImage, ...prev]);
+        setCurrentImage(response.result.image);
+        setCurrentFormat(response.result.format || 'png');
+
+        setFlashMessage({
+          type: 'success',
+          message: `Image generated (${response.creditsDeducted?.toFixed(2)} credits used)`
+        });
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+
+        if (onOptimized) {
+          onOptimized({ generated: true, result: generatedImage });
+        }
+      } else {
+        const errorMessage = response.suggestion
+          ? `${response.message} ${response.suggestion}`
+          : response.message || 'Generation failed';
+        setError(errorMessage);
+      }
+    } catch (err) {
+      const errorData = err.response?.data || err;
+      const errorMessage = errorData.suggestion
+        ? `${errorData.message} ${errorData.suggestion}`
+        : errorData.message || err.message || 'Generation failed';
+      setError(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleOptimize = async () => {
+    // Handle generate mode separately
+    if (isGenerateMode) {
+      return handleGenerate();
+    }
+
     if (isBulkMode && imagesToProcess.length === 0) return;
     if (!isBulkMode && !singleFile) return;
 
@@ -536,13 +633,16 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   };
 
   const handleApply = async () => {
-    if (!currentImage || !singleFile) return;
+    if (!currentImage) return;
+
+    // For generate mode, we don't need a singleFile
+    if (!isGenerateMode && !singleFile) return;
+
     setIsApplying(true);
 
     try {
       const format = currentFormat || 'png';
       const base64Data = currentImage;
-      const originalName = singleFile.name || 'image';
 
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
@@ -552,7 +652,20 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: `image/${format}` });
 
-      if (applyToOriginal) {
+      if (isGenerateMode) {
+        // For generated images, always save as new file to library
+        const newName = `generated-${Date.now()}.${format}`;
+        const file = new File([blob], newName, { type: `image/${format}` });
+        const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
+
+        if (uploadResponse.success) {
+          setFlashMessage({ type: 'success', message: `Saved "${newName}" to library` });
+          if (onOptimized) onOptimized({ applied: true, refresh: true });
+        } else {
+          throw new Error('Upload failed');
+        }
+      } else if (applyToOriginal) {
+        const originalName = singleFile.name || 'image';
         const fileFolder = singleFile.folder || singleFile.path?.split('/')[0] || 'library';
         const filePath = `${fileFolder}/${singleFile.name}`;
         const newName = originalName.replace(/\.[^.]+$/, `.${format}`);
@@ -577,6 +690,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           throw new Error(replaceResponse.error || 'Replace failed');
         }
       } else {
+        const originalName = singleFile.name || 'image';
         const newName = `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
         const file = new File([blob], newName, { type: `image/${format}` });
         const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
@@ -649,17 +763,28 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         {/* Modal Header */}
         <div className="px-6 py-2 lg:py-4 border-b flex items-center justify-between bg-gray-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-              <Wand2 className="w-5 h-5 text-purple-600" />
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center",
+              isGenerateMode ? "bg-indigo-100" : "bg-purple-100"
+            )}>
+              {isGenerateMode ? (
+                <ImagePlus className="w-5 h-5 text-indigo-600" />
+              ) : (
+                <Wand2 className="w-5 h-5 text-purple-600" />
+              )}
             </div>
             <div>
               <h2 className="text-lg font-semibold">
-                {isBulkMode
-                  ? `AI Optimize ${imagesToProcess.length} Images`
-                  : 'AI Image Optimizer'}
+                {isGenerateMode
+                  ? 'AI Image Generator'
+                  : isBulkMode
+                    ? `AI Optimize ${imagesToProcess.length} Images`
+                    : 'AI Image Optimizer'}
               </h2>
               <p className="text-sm text-gray-500">
-                Select provider and operation below
+                {isGenerateMode
+                  ? 'Create new images from text descriptions'
+                  : 'Select provider and operation below'}
               </p>
             </div>
           </div>
@@ -823,7 +948,10 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
               ) : costPerImage !== null ? (
                 <div>
                   <div className="text-xs text-gray-500">
-                    {costPerImage} credits × {imagesToProcess.length} image{imagesToProcess.length !== 1 ? 's' : ''}
+                    {isGenerateMode
+                      ? `${costPerImage} credits per generation`
+                      : `${costPerImage} credits × ${imagesToProcess.length} image${imagesToProcess.length !== 1 ? 's' : ''}`
+                    }
                   </div>
                   <div className="text-lg font-bold text-purple-600">
                     {totalCost?.toFixed(2)} credits
@@ -1082,7 +1210,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
 
         {/* Modal Content */}
         <div className="flex-1 overflow-auto py-2 px-6 lg:p-6">
-          {isProcessing && (
+          {isProcessing && !isGenerateMode && (
             <div className="mb-2 lg:mb-4 px-3 py-1 lg:p-3 bg-purple-50 rounded-lg">
               <div className="flex items-center gap-2 text-purple-700 text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -1097,7 +1225,170 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
             </div>
           )}
 
-          {!isBulkMode ? (
+          {/* Generate Mode - Chat on left, Preview on right */}
+          {isGenerateMode ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+              {/* Left: Chat-style prompt area */}
+              <div className="flex flex-col space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <ImagePlus className="w-4 h-4" />
+                  Describe your image
+                </h3>
+
+                {/* Prompt Input */}
+                <div className="flex-1 flex flex-col">
+                  <textarea
+                    value={generatePrompt}
+                    onChange={(e) => setGeneratePrompt(e.target.value)}
+                    placeholder="Describe the image you want to create...&#10;&#10;Example: A professional product photo of a sleek smartwatch on a white marble surface with soft shadows and elegant lighting"
+                    className="w-full flex-1 min-h-[120px] px-4 py-3 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                    disabled={isProcessing}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.ctrlKey && !isProcessing) {
+                        handleGenerate();
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Press Ctrl+Enter to generate
+                  </p>
+                </div>
+
+                {/* Style Selection */}
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block">Style</label>
+                  <div className="flex flex-wrap gap-2">
+                    {GENERATION_STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => setGenerateStyle(style.id)}
+                        disabled={isProcessing}
+                        className={cn(
+                          "px-3 py-1.5 text-xs rounded-full transition-colors flex items-center gap-1.5",
+                          generateStyle === style.id
+                            ? "bg-purple-100 text-purple-700 border border-purple-300"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        )}
+                      >
+                        <span>{style.icon}</span>
+                        {style.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Aspect Ratio Selection */}
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block">Aspect Ratio</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ASPECT_RATIOS.map((ar) => (
+                      <button
+                        key={ar.id}
+                        onClick={() => setGenerateAspectRatio(ar.id)}
+                        disabled={isProcessing}
+                        className={cn(
+                          "px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-2",
+                          generateAspectRatio === ar.id
+                            ? "bg-purple-100 text-purple-700 border border-purple-300"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        )}
+                      >
+                        <span className="font-medium">{ar.id}</span>
+                        <span className="text-gray-400">({ar.label})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Generation History */}
+                {generationHistory.length > 0 && (
+                  <div className="mt-4">
+                    <label className="text-xs font-medium text-gray-500 mb-2 block">History</label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {generationHistory.slice(0, 5).map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setCurrentImage(item.image);
+                            setCurrentFormat(item.format);
+                          }}
+                          className="w-full flex items-center gap-2 p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <img
+                            src={`data:image/${item.format};base64,${item.image}`}
+                            alt=""
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-700 truncate">{item.prompt}</p>
+                            <p className="text-[10px] text-gray-400">{item.style} - {item.aspectRatio}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Preview area */}
+              <div className="flex flex-col space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  {currentImage ? 'Generated Image' : 'Preview'}
+                </h3>
+                <div className={cn(
+                  "flex-1 border rounded-lg overflow-hidden flex flex-col",
+                  currentImage ? "border-green-300 bg-green-50" : "bg-gray-50"
+                )}>
+                  <div className="flex-1 min-h-[280px] flex items-center justify-center bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZjBmMGYwIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmMGYwZjAiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')]">
+                    {isProcessing ? (
+                      <div className="text-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Generating your image...</p>
+                        <p className="text-xs text-gray-400 mt-1">This may take a few seconds</p>
+                      </div>
+                    ) : currentImage ? (
+                      <img
+                        src={`data:image/${currentFormat};base64,${currentImage}`}
+                        alt="Generated"
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-center text-gray-400">
+                        <ImagePlus className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Your generated image will appear here</p>
+                        <p className="text-xs mt-1">Enter a prompt and click Generate</p>
+                      </div>
+                    )}
+                  </div>
+                  {currentImage && (
+                    <div className="p-2 text-xs border-t flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-600 flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          Generated
+                        </span>
+                        <span className="text-gray-400">{formatBytes(getBase64Size(currentImage))}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = `data:image/${currentFormat};base64,${currentImage}`;
+                          link.download = `generated-${Date.now()}.${currentFormat}`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                        title="Download"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : !isBulkMode ? (
             <div>
               <div className="grid grid-cols-2 gap-6">
                 {/* Original Image */}
@@ -1266,7 +1557,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         <div className="px-6 py-4 border-t bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {((!isBulkMode && currentImage) || (isBulkMode && results.filter(r => r.success).length > 0)) && (
+              {/* Show save options for generated or optimized images */}
+              {currentImage && !isGenerateMode && !isBulkMode && (
                 <>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
@@ -1275,13 +1567,11 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                       onChange={(e) => setApplyToOriginal(e.target.checked)}
                       className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                     />
-                    <span className="text-gray-700">
-                      Replace original{isBulkMode ? 's' : ''}
-                    </span>
+                    <span className="text-gray-700">Replace original</span>
                   </label>
 
                   <Button
-                    onClick={isBulkMode ? handleApplyAll : handleApply}
+                    onClick={handleApply}
                     disabled={isApplying}
                     className={applyToOriginal
                       ? "bg-orange-600 hover:bg-orange-700"
@@ -1296,32 +1586,95 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                     ) : (
                       <>
                         <Check className="w-4 h-4 mr-2" />
-                        {isBulkMode
-                          ? (applyToOriginal ? 'Replace All' : 'Save Copies') + ` (${results.filter(r => r.success && !r.applied).length})`
-                          : (applyToOriginal ? 'Replace Original' : 'Save as Copy')
-                        }
+                        {applyToOriginal ? 'Replace Original' : 'Save as Copy'}
                       </>
                     )}
                   </Button>
                 </>
+              )}
+
+              {/* Bulk mode save options */}
+              {isBulkMode && results.filter(r => r.success).length > 0 && (
+                <>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={applyToOriginal}
+                      onChange={(e) => setApplyToOriginal(e.target.checked)}
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-700">Replace originals</span>
+                  </label>
+
+                  <Button
+                    onClick={handleApplyAll}
+                    disabled={isApplying}
+                    className={applyToOriginal
+                      ? "bg-orange-600 hover:bg-orange-700"
+                      : "bg-green-600 hover:bg-green-700"
+                    }
+                  >
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        {(applyToOriginal ? 'Replace All' : 'Save Copies') + ` (${results.filter(r => r.success && !r.applied).length})`}
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
+
+              {/* Generate mode - Save to library button */}
+              {isGenerateMode && currentImage && (
+                <Button
+                  onClick={handleApply}
+                  disabled={isApplying}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isApplying ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save to Library
+                    </>
+                  )}
+                </Button>
               )}
             </div>
 
             <div className="flex gap-2">
               <Button
                 onClick={handleOptimize}
-                disabled={isProcessing || (!isBulkMode && !singleFile) || (isBulkMode && imagesToProcess.length === 0)}
+                disabled={isProcessing || (!isGenerateMode && !isBulkMode && !singleFile) || (!isGenerateMode && isBulkMode && imagesToProcess.length === 0) || (isGenerateMode && !generatePrompt.trim())}
                 className="bg-purple-600 hover:bg-purple-700"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
+                    {isGenerateMode ? 'Generating...' : 'Processing...'}
                   </>
                 ) : (
                   <>
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    {currentImage || results.length > 0 ? 'Run Again' : 'Optimize'}
+                    {isGenerateMode ? (
+                      <>
+                        <ImagePlus className="w-4 h-4 mr-2" />
+                        {currentImage ? 'Generate Again' : 'Generate'}
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        {currentImage || results.length > 0 ? 'Run Again' : 'Optimize'}
+                      </>
+                    )}
                   </>
                 )}
               </Button>

@@ -27,7 +27,7 @@ class OpenAIImageProvider {
   }
 
   getCapabilities() {
-    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom'];
+    return ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate'];
   }
 
   /**
@@ -185,6 +185,65 @@ class OpenAIImageProvider {
       image: imageData,
       format: 'png',
       instruction
+    };
+  }
+
+  /**
+   * Generate new image from text prompt using DALL-E 3
+   */
+  async generate(params = {}) {
+    const {
+      prompt = 'A beautiful product photo',
+      style = 'photorealistic',
+      aspectRatio = '1:1',
+      quality = 'hd'
+    } = params;
+
+    // Map aspect ratios to DALL-E 3 sizes
+    // DALL-E 3 supports: 1024x1024, 1024x1792, 1792x1024
+    const sizeMap = {
+      '1:1': '1024x1024',
+      '16:9': '1792x1024',
+      '9:16': '1024x1792',
+      '4:3': '1792x1024',
+      '3:4': '1024x1792',
+      '3:2': '1792x1024',
+      '2:3': '1024x1792'
+    };
+
+    const size = sizeMap[aspectRatio] || '1024x1024';
+
+    // Build enhanced prompt with style
+    const stylePrompts = {
+      photorealistic: 'highly detailed professional photograph, realistic lighting, sharp focus, 8k resolution',
+      artistic: 'artistic style, creative composition, vibrant colors, expressive brushstrokes',
+      illustration: 'digital illustration, clean lines, detailed artwork, professional quality',
+      'product-photo': 'professional product photography, clean white background, studio lighting, commercial quality',
+      'lifestyle': 'lifestyle photography, natural setting, warm lighting, authentic feel',
+      'minimalist': 'minimalist style, clean design, simple composition, elegant',
+      'cinematic': 'cinematic lighting, dramatic atmosphere, movie still quality, professional cinematography'
+    };
+
+    const enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+
+    const response = await this.client.images.generate({
+      model: 'dall-e-3',
+      prompt: enhancedPrompt,
+      n: 1,
+      size,
+      quality,
+      response_format: 'b64_json'
+    });
+
+    const imageData = response.data[0].b64_json;
+
+    return {
+      image: imageData,
+      format: 'png',
+      prompt: enhancedPrompt,
+      style,
+      aspectRatio,
+      revisedPrompt: response.data[0].revised_prompt
     };
   }
 

@@ -205,7 +205,7 @@ router.get('/pricing', authMiddleware, async (req, res) => {
 router.post('/optimize',
   authMiddleware,
   body('provider').isIn(['openai', 'gemini', 'flux', 'qwen']).withMessage('Invalid provider'),
-  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom']).withMessage('Invalid operation'),
+  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate']).withMessage('Invalid operation'),
   body('image').notEmpty().withMessage('Image is required'),
   async (req, res) => {
     try {
@@ -543,7 +543,7 @@ router.post('/upscale',
 router.post('/batch',
   authMiddleware,
   body('provider').isIn(['openai', 'gemini', 'flux', 'qwen']).withMessage('Invalid provider'),
-  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom']).withMessage('Invalid operation'),
+  body('operation').isIn(['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate']).withMessage('Invalid operation'),
   body('images').isArray({ min: 1, max: 20 }).withMessage('Images array required (1-20)'),
   async (req, res) => {
     try {
@@ -618,6 +618,102 @@ router.post('/batch',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error in batch operation:', error);
+
+      const parsedError = parseErrorMessage(error);
+      res.status(500).json({
+        success: false,
+        code: parsedError.code,
+        message: parsedError.message,
+        suggestion: parsedError.suggestion,
+        error: parsedError.originalError,
+        creditsDeducted: 0
+      });
+    }
+  }
+);
+
+/**
+ * Generate new image from text prompt
+ * POST /api/image-optimization/generate
+ */
+router.post('/generate',
+  authMiddleware,
+  body('provider').optional().isIn(['openai', 'flux']).withMessage('Invalid provider for generation'),
+  body('prompt').notEmpty().withMessage('Prompt is required'),
+  body('style').optional().isString(),
+  body('aspectRatio').optional().isIn(['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3']),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array()
+        });
+      }
+
+      const {
+        provider = 'flux',
+        prompt,
+        style = 'photorealistic',
+        aspectRatio = '1:1'
+      } = req.body;
+      const storeId = req.storeId || req.headers['x-store-id'];
+      const userId = req.user?.id;
+
+      // Get credit cost for generation
+      const serviceKey = SERVICE_KEYS[provider]?.generate;
+      let creditCost = 3; // Default for generation
+
+      try {
+        creditCost = await ServiceCreditCost.getCostByKey(serviceKey);
+      } catch (e) {
+        console.warn(`[ImageOptimization] Using default cost for ${serviceKey}`);
+      }
+
+      // Check if user has enough credits
+      if (userId) {
+        const hasCredits = await creditService.hasEnoughCredits(userId, storeId, creditCost);
+        if (!hasCredits) {
+          const balance = await creditService.getBalance(userId);
+          return res.status(402).json({
+            success: false,
+            code: 'INSUFFICIENT_CREDITS',
+            message: `Insufficient credits. Required: ${creditCost}, Available: ${balance}`,
+            required: creditCost,
+            available: balance
+          });
+        }
+      }
+
+      // Generate the image
+      const result = await aiImageOptimizer.optimize({
+        provider,
+        operation: 'generate',
+        image: null, // No source image for generation
+        params: { prompt, style, aspectRatio }
+      });
+
+      // Deduct credits only on success
+      if (userId) {
+        await creditService.deduct(
+          userId,
+          storeId,
+          creditCost,
+          `AI Image generation using ${provider}`,
+          { provider, operation: 'generate', prompt: prompt.substring(0, 100) },
+          null,
+          'ai_image_generation'
+        );
+      }
+
+      res.json({
+        success: true,
+        ...result,
+        creditsDeducted: creditCost
+      });
+    } catch (error) {
+      console.error('[ImageOptimization] Error generating image:', error);
 
       const parsedError = parseErrorMessage(error);
       res.status(500).json({

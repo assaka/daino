@@ -34,7 +34,8 @@ const OPERATIONS = {
   REMOVE_BG: 'remove_bg',
   STAGE: 'stage',
   CONVERT: 'convert',
-  CUSTOM: 'custom'
+  CUSTOM: 'custom',
+  GENERATE: 'generate'
 };
 
 // Service keys for credit costs
@@ -45,7 +46,8 @@ const SERVICE_KEYS = {
     remove_bg: 'ai_image_openai_remove_bg',
     stage: 'ai_image_openai_stage',
     convert: 'ai_image_openai_convert',
-    custom: 'ai_image_openai_custom'
+    custom: 'ai_image_openai_custom',
+    generate: 'ai_image_openai_generate'
   },
   gemini: {
     compress: 'ai_image_gemini_compress',
@@ -53,7 +55,8 @@ const SERVICE_KEYS = {
     remove_bg: 'ai_image_gemini_remove_bg',
     stage: 'ai_image_gemini_stage',
     convert: 'ai_image_gemini_convert',
-    custom: 'ai_image_gemini_custom'
+    custom: 'ai_image_gemini_custom',
+    generate: 'ai_image_gemini_generate'
   },
   flux: {
     compress: 'ai_image_flux_compress',
@@ -61,7 +64,8 @@ const SERVICE_KEYS = {
     remove_bg: 'ai_image_flux_remove_bg',
     stage: 'ai_image_flux_stage',
     convert: 'ai_image_flux_convert',
-    custom: 'ai_image_flux_custom'
+    custom: 'ai_image_flux_custom',
+    generate: 'ai_image_flux_generate'
   },
   qwen: {
     compress: 'ai_image_qwen_compress',
@@ -69,7 +73,8 @@ const SERVICE_KEYS = {
     remove_bg: 'ai_image_qwen_remove_bg',
     stage: 'ai_image_qwen_stage',
     convert: 'ai_image_qwen_convert',
-    custom: 'ai_image_qwen_custom'
+    custom: 'ai_image_qwen_custom',
+    generate: 'ai_image_qwen_generate'
   }
 };
 
@@ -204,7 +209,8 @@ class AIImageOptimizer {
       remove_bg: 'Remove Background',
       stage: 'Product Staging',
       convert: 'Format Conversion',
-      custom: 'Custom'
+      custom: 'Custom',
+      generate: 'Generate Image'
     };
     return names[operation] || operation;
   }
@@ -219,7 +225,8 @@ class AIImageOptimizer {
       remove_bg: 'Automatically remove or replace backgrounds',
       stage: 'Place product in realistic environment (room, model, etc.)',
       convert: 'Smart conversion to optimal formats (WebP, AVIF)',
-      custom: 'Apply custom AI instructions to modify the image'
+      custom: 'Apply custom AI instructions to modify the image',
+      generate: 'Create new images from text descriptions using AI'
     };
     return descriptions[operation] || '';
   }
@@ -245,7 +252,8 @@ class AIImageOptimizer {
         remove_bg: 1.0,
         stage: 2.0,
         convert: 0.3,
-        custom: 2.0  // Same as staging
+        custom: 2.0,
+        generate: 3.0  // Image generation from scratch
       };
       return defaults[operation] || 1.0;
     }
@@ -299,6 +307,9 @@ class AIImageOptimizer {
           break;
         case OPERATIONS.CUSTOM:
           result = await providerInstance.custom(image, params);
+          break;
+        case OPERATIONS.GENERATE:
+          result = await providerInstance.generate(params);
           break;
         default:
           throw new Error(`Unknown operation: ${operation}`);
