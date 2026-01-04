@@ -339,12 +339,15 @@ router.post('/login', async (req, res) => {
         });
       }
 
-      // Get user's first active store (using Supabase client)
+      // Get user's first active store with connected database (using Supabase client)
+      // CRITICAL: Must have is_active=true AND status NOT pending_database
       const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
-        .select('*')
+        .select('id, name, slug, is_active, status')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .eq('is_active', true)
+        .neq('status', 'pending_database')
+        .order('created_at', { ascending: true })
         .limit(1);
 
       if (!storesError && stores && stores.length > 0) {
