@@ -2742,6 +2742,47 @@ router.delete('/registry/:id/files', async (req, res) => {
         // Silently fail
       }
     }
+    // Delete from plugin_admin_pages table (for admin page files like settings.jsx)
+    else if (normalizedPath.endsWith('.jsx') || normalizedPath.endsWith('.tsx')) {
+      attemptedTable = 'plugin_admin_pages';
+
+      // Extract page key from filename (settings.jsx -> settings)
+      const baseFileName = normalizedPath.split('/').pop();
+      const pageKey = baseFileName.replace(/\.(jsx|tsx)$/, '');
+
+      try {
+        const { data, error } = await tenantDb
+          .from('plugin_admin_pages')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('page_key', pageKey)
+          .select();
+
+        if (!error && data && data.length > 0) {
+          deleted = true;
+        }
+      } catch (err) {
+        // Continue to fallback
+      }
+
+      // Also try matching by route if page_key didn't work
+      if (!deleted) {
+        try {
+          const { data, error } = await tenantDb
+            .from('plugin_admin_pages')
+            .delete()
+            .eq('plugin_id', id)
+            .like('route', `%${pageKey}%`)
+            .select();
+
+          if (!error && data && data.length > 0) {
+            deleted = true;
+          }
+        } catch (err) {
+          // Continue to fallback
+        }
+      }
+    }
     // Delete from plugin_scripts table (fallback for other files)
     else {
       attemptedTable = 'plugin_scripts';
