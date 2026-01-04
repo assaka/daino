@@ -397,20 +397,20 @@ const VersionHistoryPanel = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => onViewVersion && onViewVersion(version.id)}
-                              title="View version code"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               onClick={() => toggleVersionSelection(version.id)}
                               className={isSelected ? 'bg-blue-100' : ''}
                               title="Select for comparison"
                             >
                               <GitCompare className="w-4 h-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onViewVersion && onViewVersion(version.id)}
+                              title="View version code"
+                            >
+                              <Eye className="w-4 h-4" />
                             </Button>
 
                             {!version.is_current && (
