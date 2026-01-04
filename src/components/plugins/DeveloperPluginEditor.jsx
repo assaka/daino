@@ -44,6 +44,7 @@ import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import VersionHistoryPanel from '@/components/ai-workspace/VersionHistoryPanel';
 import VersionCompareModal from '@/components/ai-workspace/VersionCompareModal';
 import VersionRestoreModal from '@/components/ai-workspace/VersionRestoreModal';
+import VersionViewModal from '@/components/ai-workspace/VersionViewModal';
 
 const DeveloperPluginEditor = ({
   plugin,
@@ -102,8 +103,10 @@ const DeveloperPluginEditor = ({
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showVersionCompare, setShowVersionCompare] = useState(false);
   const [showVersionRestore, setShowVersionRestore] = useState(false);
+  const [showVersionView, setShowVersionView] = useState(false);
   const [compareVersions, setCompareVersions] = useState({ from: null, to: null });
   const [restoreVersionId, setRestoreVersionId] = useState(null);
+  const [viewingVersionId, setViewingVersionId] = useState(null);
   const [currentVersionId, setCurrentVersionId] = useState(null);
 
   // Convert absolute viewport percentages to relative percentages within this component
@@ -2542,6 +2545,10 @@ const DeveloperPluginEditor = ({
             onClose={() => setShowVersionHistory(false)}
             onCompare={handleCompareVersions}
             onRestore={handleRestoreVersion}
+            onViewVersion={(versionId) => {
+              setViewingVersionId(versionId);
+              setShowVersionView(true);
+            }}
           />
         </div>
       )}
@@ -2563,6 +2570,18 @@ const DeveloperPluginEditor = ({
           currentVersionId={currentVersionId}
           onClose={() => setShowVersionRestore(false)}
           onSuccess={handleRestoreSuccess}
+        />
+      )}
+
+      {showVersionView && viewingVersionId && (
+        <VersionViewModal
+          pluginId={plugin.id}
+          versionId={viewingVersionId}
+          onClose={() => {
+            setShowVersionView(false);
+            setViewingVersionId(null);
+          }}
+          onRestore={handleRestoreVersion}
         />
       )}
     </div>

@@ -15,7 +15,8 @@ import {
   Filter,
   Search,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 
 /**
@@ -33,6 +34,7 @@ const VersionHistoryPanel = ({
   onClose,
   onCompare,
   onRestore,
+  onViewVersion,
   className = ''
 }) => {
   const [versions, setVersions] = useState([]);
@@ -380,6 +382,15 @@ const VersionHistoryPanel = ({
 
                           {/* Actions */}
                           <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onViewVersion && onViewVersion(version.id)}
+                              title="View version code"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+
                             <Button
                               variant="ghost"
                               size="sm"
