@@ -87,21 +87,18 @@ const AIImageOptimizerGrid = ({
               // Filter to only library images (exclude product/category folders)
               return files.filter(f => {
                 const url = f.url || f.publicUrl;
-                const path = (f.path || f.fullPath || '').toLowerCase();
                 const folder = (f.folder || '').toLowerCase();
-                const isImage = f.mimeType?.startsWith('image/') ||
+                const mimeType = f.mimetype || f.mimeType || '';
+                const isImage = mimeType.startsWith('image/') ||
                   /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-                // Check if file is in product or category folder (path may include storeId prefix)
-                const isProductOrCategory = path.includes('/product/') || path.includes('/category/') ||
-                  path.startsWith('product/') || path.startsWith('category/') ||
-                  folder === 'product' || folder === 'category';
-                const isLibrary = !isProductOrCategory;
+                // Use database folder as authoritative source - only show library files
+                const isLibrary = folder === 'library' || folder === '';
                 return url && isImage && isLibrary;
               }).map(f => ({
-                id: f.id || f.path,
+                id: f.id || f.fullPath,
                 file_url: f.url || f.publicUrl,
-                file_name: f.name || f.path?.split('/').pop(),
-                mime_type: f.mimeType
+                file_name: f.name || f.fullPath?.split('/').pop(),
+                mime_type: f.mimetype || f.mimeType
               }));
             })
           );
@@ -293,21 +290,18 @@ const AIImageOptimizerGrid = ({
                 const files = response.data?.files || response.files || [];
                 return files.filter(f => {
                   const url = f.url || f.publicUrl;
-                  const path = (f.path || f.fullPath || '').toLowerCase();
                   const folder = (f.folder || '').toLowerCase();
-                  const isImage = f.mimeType?.startsWith('image/') ||
+                  const mimeType = f.mimetype || f.mimeType || '';
+                  const isImage = mimeType.startsWith('image/') ||
                     /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-                  // Check if file is in product or category folder (path may include storeId prefix)
-                  const isProductOrCategory = path.includes('/product/') || path.includes('/category/') ||
-                    path.startsWith('product/') || path.startsWith('category/') ||
-                    folder === 'product' || folder === 'category';
-                  const isLibrary = !isProductOrCategory;
+                  // Use database folder as authoritative source - only show library files
+                  const isLibrary = folder === 'library' || folder === '';
                   return url && isImage && isLibrary;
                 }).map(f => ({
-                  id: f.id || f.path,
+                  id: f.id || f.fullPath,
                   file_url: f.url || f.publicUrl,
-                  file_name: f.name || f.path?.split('/').pop(),
-                  mime_type: f.mimeType
+                  file_name: f.name || f.fullPath?.split('/').pop(),
+                  mime_type: f.mimetype || f.mimeType
                 }));
               })
             : Promise.resolve(null)

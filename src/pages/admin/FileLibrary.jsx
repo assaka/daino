@@ -1123,11 +1123,11 @@ const FileLibrary = () => {
             name: file.name,
             url: imageUrl,
             size: file.metadata?.size || file.size || 0,
-            mimeType: file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
+            mimeType: file.mimetype || file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
             uploadedAt: file.created_at || file.updated_at || new Date().toISOString(),
             path: filePath,
             fullPath: file.fullPath || filePath || `library/${file.name}`,
-            folder: file.folder || ''
+            folder: file.folder || 'library'
           };
         });
 
@@ -1435,25 +1435,20 @@ const FileLibrary = () => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       file.mimeType?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Entity filter - check path/fullPath/folder for folder patterns (path may include storeId prefix)
+    // Entity filter - use database folder as authoritative source
     let matchesEntity = true;
     if (entityFilter !== 'all') {
-      const path = (file.path || file.fullPath || '').toLowerCase();
-      const folder = (file.folder || '').toLowerCase();
-
-      // Check if file is in product or category folder
-      const isProduct = path.includes('/product/') || path.startsWith('product/') || folder === 'product';
-      const isCategory = path.includes('/category/') || path.startsWith('category/') || folder === 'category';
+      const folder = (file.folder || 'library').toLowerCase();
 
       if (entityFilter === 'library') {
-        // Library: exclude product and category folders
-        matchesEntity = !isProduct && !isCategory;
+        // Library: files with folder = 'library' or empty
+        matchesEntity = folder === 'library' || folder === '';
       } else if (entityFilter === 'products') {
-        // Products: match 'product' folder
-        matchesEntity = isProduct;
+        // Products: files with folder = 'product'
+        matchesEntity = folder === 'product' || folder === 'products';
       } else if (entityFilter === 'categories') {
-        // Categories: match 'category' folder
-        matchesEntity = isCategory;
+        // Categories: files with folder = 'category'
+        matchesEntity = folder === 'category' || folder === 'categories';
       }
     }
 
