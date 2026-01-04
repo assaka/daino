@@ -280,10 +280,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     const oauth = searchParams.get('oauth');
     const errorParam = searchParams.get('error');
 
+    console.log('🔐 OAuth useEffect:', { token: token?.substring(0, 20) + '...', oauth, errorParam });
+
     if (token && oauth === 'success') {
+      console.log('🎯 OAuth: Token detected, setting token and checking auth status');
       apiClient.setToken(token);
       checkAuthStatus();
     } else if (errorParam) {
+      console.log('❌ OAuth: Error param detected:', errorParam);
       setError(getErrorMessage(errorParam));
     } else {
       // Check if user is already logged in based on role
@@ -308,21 +312,27 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
 
   const checkAuthStatus = async () => {
     try {
-      
+
       if (apiClient.isLoggedOut) {
+        console.log('🔒 OAuth: apiClient.isLoggedOut is true, returning');
         return;
       }
 
+      console.log('🔑 OAuth: Calling User.me() with token:', apiClient.getToken()?.substring(0, 20) + '...');
       const user = await User.me();
-      
+      console.log('👤 OAuth: User.me() returned:', user);
+
       if (!user) {
+        console.log('❌ OAuth: No user returned from User.me()');
         return;
       }
-      
+
       // CRITICAL FIX: Store user data in localStorage
       const currentToken = apiClient.getToken();
+      console.log('💾 OAuth: Saving to localStorage, token exists:', !!currentToken, 'user.role:', user.role);
       if (currentToken && user) {
         setRoleBasedAuthData(user, currentToken);
+        console.log('✅ OAuth: setRoleBasedAuthData called successfully');
       }
 
       // Redirect based on user role and expected role
