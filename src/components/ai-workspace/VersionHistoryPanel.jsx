@@ -393,44 +393,39 @@ const VersionHistoryPanel = ({
                           </div>
 
                           {/* Actions - vertical stack on right */}
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                          <div className="flex flex-col gap-1 flex-shrink-0 ml-2">
+                            <button
                               onClick={() => toggleVersionSelection(version.id)}
-                              className={isSelected ? 'bg-blue-100' : ''}
+                              className={`p-1.5 rounded hover:bg-gray-100 ${isSelected ? 'bg-blue-100' : ''}`}
                               title="Select for comparison"
                             >
                               <GitCompare className="w-4 h-4" />
-                            </Button>
+                            </button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
                               onClick={() => onViewVersion && onViewVersion(version.id)}
+                              className="p-1.5 rounded hover:bg-gray-100"
                               title="View version code"
                             >
                               <Eye className="w-4 h-4" />
-                            </Button>
+                            </button>
 
                             {!version.is_current && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
+                              <button
                                 onClick={() => onRestore(version.id)}
+                                className="p-1.5 rounded hover:bg-gray-100"
                                 title="Restore to this version"
                               >
                                 <RotateCcw className="w-4 h-4" />
-                              </Button>
+                              </button>
                             )}
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
+                              className="p-1.5 rounded hover:bg-gray-100"
                               title="Download version"
                             >
                               <Download className="w-4 h-4" />
-                            </Button>
+                            </button>
                           </div>
                         </div>
 
