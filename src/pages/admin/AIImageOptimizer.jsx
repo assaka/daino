@@ -180,14 +180,19 @@ const AIImageOptimizer = () => {
     });
   }, [groupedItems, searchQuery, filterType]);
 
-  // Stats
+  // Stats - calculate from original data, not filtered groupedItems
   const stats = useMemo(() => {
     const productImages = groupedItems.filter(i => i.type === 'product').reduce((sum, p) => sum + p.images.length, 0);
     const categoryImages = groupedItems.filter(i => i.type === 'category').reduce((sum, c) => sum + c.images.length, 0);
     const libraryImages = libraryFiles.length;
-    const noImages = groupedItems.filter(i => !i.hasImages).length;
+    // Count products/categories without images from original arrays
+    const productsWithoutImages = products.filter(p =>
+      !p.media_assets?.length && !p.product_files?.length && !p.images?.length
+    ).length;
+    const categoriesWithoutImages = categories.filter(c => !c.image_url).length;
+    const noImages = productsWithoutImages + categoriesWithoutImages;
     return { productImages, categoryImages, libraryImages, noImages, total: productImages + categoryImages + libraryImages };
-  }, [groupedItems, libraryFiles]);
+  }, [groupedItems, libraryFiles, products, categories]);
 
   const handleImageClick = (item, image) => {
     setSelectedImage({
