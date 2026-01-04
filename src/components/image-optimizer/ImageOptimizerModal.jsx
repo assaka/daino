@@ -687,7 +687,6 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           setJustSaved(true);
           setTimeout(() => setJustSaved(false), 2000);
           if (onOptimized) onOptimized({ applied: true, refresh: true });
-          if (onApply) onApply({ applied: true, refresh: true });
         } else {
           throw new Error('Upload failed');
         }

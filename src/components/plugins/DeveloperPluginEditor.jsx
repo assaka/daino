@@ -130,7 +130,7 @@ const DeveloperPluginEditor = ({
 
     const handleAICodeGenerated = async (event) => {
       console.log('📥 DeveloperPluginEditor: Received plugin-ai-code-generated event', event.detail);
-      const { pluginId, files, pluginStructure, code } = event.detail;
+      const { pluginId, files, pluginStructure, code, taskName } = event.detail;
 
       // Only process if this is for our plugin
       if (pluginId !== plugin?.id) {
@@ -138,9 +138,12 @@ const DeveloperPluginEditor = ({
         return;
       }
 
-      console.log('🤖 Processing AI-generated code for plugin:', pluginId, { files, pluginStructure, code });
+      console.log('🤖 Processing AI-generated code for plugin:', pluginId, { files, pluginStructure, code, taskName });
       setShowTerminal(true);
       addTerminalOutput('🤖 AI generated code received - saving to plugin...', 'info');
+
+      // Track which files were modified for reload
+      const modifiedPaths = [];
 
       try {
         // Handle generated files array
@@ -180,14 +183,11 @@ const DeveloperPluginEditor = ({
               path: filePath,
               content: fileCode
             });
+            modifiedPaths.push(filePath);
             addTerminalOutput(`   ✓ Saved: ${filePath}`, 'success');
           }
 
           addTerminalOutput('✅ All files saved successfully!', 'success');
-
-          // Refresh file tree
-          await loadPluginFiles();
-          addTerminalOutput('🔄 File tree refreshed', 'info');
         }
 
         // Handle plugin_structure with main_file
@@ -199,6 +199,7 @@ const DeveloperPluginEditor = ({
             path: '/index.js',
             content: mainCode
           });
+          modifiedPaths.push('/index.js');
           addTerminalOutput('   ✓ Saved: /index.js', 'success');
 
           // Also save manifest if provided
@@ -207,14 +208,11 @@ const DeveloperPluginEditor = ({
               path: '/manifest.json',
               content: JSON.stringify(pluginStructure.manifest, null, 2)
             });
+            modifiedPaths.push('/manifest.json');
             addTerminalOutput('   ✓ Saved: /manifest.json', 'success');
           }
 
           addTerminalOutput('✅ Plugin files saved successfully!', 'success');
-
-          // Refresh file tree
-          await loadPluginFiles();
-          addTerminalOutput('🔄 File tree refreshed', 'info');
         }
 
         // Handle raw code for current file
@@ -227,6 +225,7 @@ const DeveloperPluginEditor = ({
             content: code
           });
           setOriginalContent(code);
+          modifiedPaths.push(selectedFile.path);
           addTerminalOutput(`   ✓ Saved: ${selectedFile.path}`, 'success');
           addTerminalOutput('✅ Code saved to current file!', 'success');
         }
@@ -241,27 +240,50 @@ const DeveloperPluginEditor = ({
             path: hookPath,
             content: code
           });
+          modifiedPaths.push(hookPath);
           addTerminalOutput(`   ✓ Saved: ${hookPath}`, 'success');
           addTerminalOutput('✅ New hook file created!', 'success');
+        }
 
-          // Refresh file tree
+        // Refresh file tree after any save
+        if (modifiedPaths.length > 0) {
           await loadPluginFiles();
           addTerminalOutput('🔄 File tree refreshed', 'info');
+
+          // If the currently selected file was modified, reload its content
+          if (selectedFile && modifiedPaths.some(p => p === selectedFile.path || p.endsWith(selectedFile.name))) {
+            const response = await apiClient.get(`plugins/registry/${plugin.id}`);
+            if (response?.files) {
+              const updatedFile = response.files.find(f => f.path === selectedFile.path);
+              if (updatedFile?.content) {
+                setFileContent(updatedFile.content);
+                setOriginalContent(updatedFile.content);
+                addTerminalOutput('📝 Editor content reloaded', 'info');
+              }
+            }
+          }
         }
 
         // Create version after AI-generated files are saved
-        try {
-          addTerminalOutput('📝 Creating version...', 'info');
-          const versionResponse = await apiClient.post(`plugins/${plugin.id}/versions`, {
-            commit_message: 'AI-generated code',
-            created_by_name: 'AI Assistant'
-          });
-          if (versionResponse?.success && versionResponse?.version) {
-            addTerminalOutput(`✓ Version ${versionResponse.version.version_number} created`, 'success');
+        if (modifiedPaths.length > 0) {
+          try {
+            // Use task name for commit message, truncate if too long
+            const commitMessage = taskName
+              ? (taskName.length > 100 ? taskName.substring(0, 100) + '...' : taskName)
+              : 'AI-generated code';
+
+            addTerminalOutput('📝 Creating version...', 'info');
+            const versionResponse = await apiClient.post(`plugins/${plugin.id}/versions`, {
+              commit_message: commitMessage,
+              created_by_name: 'AI Assistant'
+            });
+            if (versionResponse?.success && versionResponse?.version) {
+              addTerminalOutput(`✓ Version ${versionResponse.version.version_number} created`, 'success');
+            }
+          } catch (versionError) {
+            console.warn('Failed to create version:', versionError);
+            addTerminalOutput('⚠ Version not created', 'warning');
           }
-        } catch (versionError) {
-          console.warn('Failed to create version:', versionError);
-          addTerminalOutput('⚠ Version not created', 'warning');
         }
 
       } catch (error) {

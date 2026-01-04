@@ -711,7 +711,8 @@ const WorkspaceAIPanel = () => {
               files: files,
               adminPages: adminPages,
               pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure,
-              code: response.plugin_structure?.main_file || embeddedJson?.plugin_structure?.main_file || (files[0]?.code)
+              code: response.plugin_structure?.main_file || embeddedJson?.plugin_structure?.main_file || (files[0]?.code),
+              taskName: userMessage // Pass the user's request for version commit message
             }
           }));
 
@@ -747,7 +748,8 @@ const WorkspaceAIPanel = () => {
             detail: {
               pluginId: pluginToEdit.id,
               files: [{ name: 'hook.js', code: extractedCode }],
-              code: extractedCode
+              code: extractedCode,
+              taskName: userMessage // Pass the user's request for version commit message
             }
           }));
         } else {
