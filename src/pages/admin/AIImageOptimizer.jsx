@@ -44,25 +44,19 @@ const AIImageOptimizer = () => {
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-        // Load library files from unified storage endpoint (works with any provider)
+        // Load library files from media_assets where folder='library'
         try {
-          const storageResponse = await apiClient.get('/storage/list');
-          // Unified endpoint returns { success, data: { files, ... } }
-          const files = storageResponse.data?.files || storageResponse.files || [];
-          // Filter only image files NOT in product/category folders
+          const response = await apiClient.get('/storage/media-assets?folder=library');
+          const files = response.files || [];
           const imageFiles = files.filter(f => {
-            const url = f.url || f.publicUrl;
-            const path = f.path || '';
-            const isImage = f.mimeType?.startsWith('image/') ||
-              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-            const isLibrary = !path.startsWith('product/') && !path.startsWith('category/');
-            return url && isImage && isLibrary;
+            const mimeType = f.mimeType || '';
+            return f.url && (mimeType.startsWith('image/') ||
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url));
           }).map(f => ({
-            id: f.id || f.name,
-            file_url: f.url || f.publicUrl,
+            id: f.id,
+            file_url: f.url,
             file_name: f.name,
-            mime_type: f.mimeType || f.metadata?.mimetype,
-            folder: f.folder || 'library'
+            mime_type: f.mimeType
           }));
           setLibraryFiles(imageFiles);
         } catch (storageError) {

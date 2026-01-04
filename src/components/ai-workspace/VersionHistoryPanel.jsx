@@ -6,7 +6,6 @@ import {
   Clock,
   GitBranch,
   Tag,
-  Download,
   RotateCcw,
   GitCompare,
   Package,
@@ -414,19 +413,12 @@ const VersionHistoryPanel = ({
                             {!version.is_current && (
                               <button
                                 onClick={() => onRestore(version.id)}
-                                className="block p-1.5 rounded hover:bg-gray-100 mb-1"
+                                className="block p-1.5 rounded hover:bg-gray-100"
                                 title="Restore to this version"
                               >
                                 <RotateCcw className="w-4 h-4" />
                               </button>
                             )}
-
-                            <button
-                              className="block p-1.5 rounded hover:bg-gray-100"
-                              title="Download version"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
                           </div>
                         </div>
 
