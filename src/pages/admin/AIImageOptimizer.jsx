@@ -420,67 +420,113 @@ const AIImageOptimizer = () => {
             </div>
           </div>
         )
-      ) : filteredItems.length === 0 ? (
-        <div className="text-center py-20">
-          <Image className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
-          <p className="text-gray-500">Try adjusting your filters or search query</p>
-        </div>
       ) : (
-        <div className="bg-white rounded-lg border divide-y">
-          {filteredItems.map(item => (
-            <div
-              key={item.id}
-              className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50"
-            >
-              {/* Type icon */}
-              <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                item.type === 'product' ? "bg-orange-100" : "bg-blue-100"
-              )}>
-                {item.type === 'product' ? (
-                  <Package className="w-4 h-4 text-orange-600" />
-                ) : (
-                  <FolderOpen className="w-4 h-4 text-blue-600" />
-                )}
-              </div>
+        <>
+          {/* Products/Categories List */}
+          {filteredItems.length > 0 && (
+            <div className="bg-white rounded-lg border divide-y">
+              {filteredItems.map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50"
+                >
+                  {/* Type icon */}
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                    item.type === 'product' ? "bg-orange-100" : "bg-blue-100"
+                  )}>
+                    {item.type === 'product' ? (
+                      <Package className="w-4 h-4 text-orange-600" />
+                    ) : (
+                      <FolderOpen className="w-4 h-4 text-blue-600" />
+                    )}
+                  </div>
 
-              {/* Name */}
-              <div className="w-48 flex-shrink-0">
-                <p className="font-medium text-gray-900 truncate text-sm">{item.name}</p>
-                {item.categoryName && (
-                  <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
-                )}
-              </div>
+                  {/* Name */}
+                  <div className="w-48 flex-shrink-0">
+                    <p className="font-medium text-gray-900 truncate text-sm">{item.name}</p>
+                    {item.categoryName && (
+                      <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
+                    )}
+                  </div>
 
-              {/* Thumbnails */}
-              <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1">
-                {item.images.length > 0 ? (
-                  item.images.map((image, idx) => (
+                  {/* Thumbnails */}
+                  <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1">
+                    {item.images.length > 0 ? (
+                      item.images.map((image, idx) => (
+                        <div
+                          key={image.id}
+                          onClick={() => handleImageClick(item, image)}
+                          className="group relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all flex-shrink-0"
+                        >
+                          <img
+                            src={image.url}
+                            alt={`${item.name} - ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Wand2 className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-400">No images</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Library Grid (shown in All view) */}
+          {filterType === 'all' && libraryFiles.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Image className="w-4 h-4 text-green-600" />
+                </div>
+                <h3 className="font-medium text-gray-900">Library ({libraryFiles.length})</h3>
+              </div>
+              <div className="bg-white rounded-lg border p-4">
+                <div className="grid grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
+                  {libraryFiles
+                    .filter(file => !searchQuery || file.file_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((file) => (
                     <div
-                      key={image.id}
-                      onClick={() => handleImageClick(item, image)}
-                      className="group relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all flex-shrink-0"
+                      key={file.id}
+                      onClick={() => handleImageClick(
+                        { type: 'library', name: file.file_name },
+                        { id: file.id, url: file.file_url, name: file.file_name, assetId: file.id }
+                      )}
+                      className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer border-2 border-transparent hover:border-purple-400 transition-all"
                     >
                       <img
-                        src={image.url}
-                        alt={`${item.name} - ${idx + 1}`}
+                        src={file.file_url}
+                        alt={file.file_name}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      {/* Hover overlay */}
                       <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Wand2 className="w-4 h-4 text-white" />
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-400">No images</span>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Empty state */}
+          {filteredItems.length === 0 && (filterType !== 'all' || libraryFiles.length === 0) && (
+            <div className="text-center py-20">
+              <Image className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+              <p className="text-gray-500">Try adjusting your filters or search query</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Optimizer Modal */}
