@@ -175,11 +175,10 @@ class AkeneoIntegration {
             const existingCategory = existingCategories && existingCategories.length > 0 ? existingCategories[0] : null;
 
             if (existingCategory) {
-              // Prepare update data
+              // Prepare update data (image_url deprecated, use media_asset_id)
               const updateData = {
                 name: category.name,
                 description: category.description,
-                image_url: category.image_url,
                 sort_order: category.sort_order,
                 is_active: category.is_active,
                 hide_in_menu: category.hide_in_menu,

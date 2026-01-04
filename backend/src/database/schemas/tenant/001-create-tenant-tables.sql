@@ -1375,8 +1375,7 @@ CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   slug VARCHAR(255) NOT NULL,
-  image_url TEXT,
-  media_asset_id UUID, -- FK added via ALTER TABLE after media_assets is created
+  media_asset_id UUID, -- FK added via ALTER TABLE after media_assets is created (category image)
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
   hide_in_menu BOOLEAN DEFAULT false,

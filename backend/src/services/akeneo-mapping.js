@@ -63,7 +63,6 @@ class AkeneoMapping {
       name: categoryName,
       slug: this.generateSlug(slugSource),
       description: null,
-      image_url: null,
       sort_order: 0,
       is_active: settings.setNewActive !== undefined ? settings.setNewActive : true,
       hide_in_menu: settings.hideFromMenu || false,

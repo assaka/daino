@@ -432,60 +432,18 @@ router.post('/replace', upload.single('file'), async (req, res) => {
       }
     }
 
-    // Update categories that have this image_url or media_asset_id
-    let categoriesUpdated = 0;
-
-    // First, update categories by media_asset_id (normalized approach)
+    // Count categories linked to this media_asset
+    // Note: Categories now use media_asset_id FK - the URL comes from the media_asset relationship
+    let categoriesLinked = 0;
     if (mediaAsset) {
-      const { data: updatedByAssetId, error: catUpdateError } = await tenantDb
+      const { data: linkedCategories, error: catFindError } = await tenantDb
         .from('categories')
-        .update({
-          image_url: newUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('media_asset_id', mediaAsset.id)
-        .select('id');
+        .select('id')
+        .eq('media_asset_id', mediaAsset.id);
 
-      if (!catUpdateError && updatedByAssetId) {
-        categoriesUpdated += updatedByAssetId.length;
-        console.log(`   ✅ Updated ${updatedByAssetId.length} categories by media_asset_id`);
-      }
-    }
-
-    // Also update categories that have the old URL directly in image_url (for backwards compatibility)
-    const { data: updatedByUrl, error: catUrlUpdateError } = await tenantDb
-      .from('categories')
-      .update({
-        image_url: newUrl,
-        updated_at: new Date().toISOString()
-      })
-      .eq('image_url', oldFileUrl)
-      .select('id');
-
-    if (!catUrlUpdateError && updatedByUrl) {
-      categoriesUpdated += updatedByUrl.length;
-      if (updatedByUrl.length > 0) {
-        console.log(`   ✅ Updated ${updatedByUrl.length} categories by direct image_url match`);
-      }
-    }
-
-    // If still no categories updated, try matching by filename in URL (handles encoding differences)
-    if (categoriesUpdated === 0 && oldFileUrl) {
-      const filename = oldFileUrl.split('/').pop()?.split('?')[0];
-      if (filename) {
-        const { data: updatedByFilename, error: catFilenameError } = await tenantDb
-          .from('categories')
-          .update({
-            image_url: newUrl,
-            updated_at: new Date().toISOString()
-          })
-          .like('image_url', `%${filename}`)
-          .select('id');
-
-        if (!catFilenameError && updatedByFilename && updatedByFilename.length > 0) {
-          categoriesUpdated += updatedByFilename.length;
-          console.log(`   ✅ Updated ${updatedByFilename.length} categories by filename pattern match`);
-        }
+      if (!catFindError && linkedCategories) {
+        categoriesLinked = linkedCategories.length;
+        console.log(`   ℹ️ ${categoriesLinked} categories linked via media_asset_id`);
       }
     }
 
@@ -510,7 +468,7 @@ router.post('/replace', upload.single('file'), async (req, res) => {
         path: newPath,
         mediaAssetUpdated,
         productFilesLinked,
-        categoriesUpdated,
+        categoriesLinked,
         provider: uploadResult.provider
       }
     });

@@ -2,12 +2,10 @@
  * Credits Routes (Master-Tenant Architecture)
  *
  * GET /api/credits/balance - Get current credit balance
- * GET /api/credits/balance/cached - Get cached balance (fast)
  * GET /api/credits/transactions - Get transaction history
  * GET /api/credits/uptime-report - Get store uptime report with daily charges
  * POST /api/credits/purchase - Purchase credits
  * POST /api/credits/spend - Spend credits (internal use)
- * POST /api/credits/sync - Sync balance to tenant cache
  */
 
 const express = require('express');
@@ -15,7 +13,6 @@ const router = express.Router();
 const CreditTransaction = require('../models/CreditTransaction');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { masterDbClient } = require('../database/masterConnection');
-const ConnectionManager = require('../services/database/ConnectionManager');
 const creditService = require('../services/credit-service');
 
 /**
@@ -149,15 +146,6 @@ router.get('/balance', authMiddleware, async (req, res) => {
     // Get balance from users.credits (single source of truth)
     const balance = await creditService.getBalance(userId, storeId);
 
-    // Sync to tenant DB cache (only if user has a store)
-    if (storeId) {
-      try {
-        await syncBalanceToTenant(storeId, balance);
-      } catch (syncError) {
-        console.warn('Failed to sync balance to tenant:', syncError.message);
-      }
-    }
-
     res.json({
       success: true,
       data: {
@@ -170,52 +158,6 @@ router.get('/balance', authMiddleware, async (req, res) => {
       success: false,
       error: 'Failed to get credit balance'
     });
-  }
-});
-
-/**
- * GET /api/credits/balance/cached
- * Get cached balance from tenant DB (fast, may be stale)
- */
-router.get('/balance/cached', authMiddleware, async (req, res) => {
-  try {
-    const storeId = req.user.store_id;
-
-    // Try to get from tenant DB cache
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    const { data: cached, error } = await tenantDb
-      .from('credit_balance_cache')
-      .select('*')
-      .eq('store_id', storeId)
-      .single();
-
-    if (error || !cached) {
-      // Cache miss - redirect to fresh endpoint
-      return res.redirect('/api/credits/balance');
-    }
-
-    // Check if cache is stale (> 5 minutes)
-    const cacheAge = Date.now() - new Date(cached.last_synced_at).getTime();
-    const isStale = cacheAge > 5 * 60 * 1000;
-
-    if (isStale) {
-      // Redirect to fresh endpoint
-      return res.redirect('/api/credits/balance');
-    }
-
-    res.json({
-      success: true,
-      data: {
-        balance: parseFloat(cached.balance),
-        cached: true,
-        last_synced: cached.last_synced_at
-      }
-    });
-  } catch (error) {
-    console.error('Get cached balance error:', error);
-    // Fallback to fresh balance
-    return res.redirect('/api/credits/balance');
   }
 });
 
@@ -346,9 +288,6 @@ router.post('/purchase', authMiddleware, async (req, res) => {
     await creditService.completePurchaseTransaction(transaction.id);
     const newBalance = await creditService.getBalance(userId, storeId);
 
-    // Sync to tenant cache
-    await syncBalanceToTenant(storeId, newBalance);
-
     res.json({
       success: true,
       message: `Successfully purchased ${amount} credits`,
@@ -416,9 +355,6 @@ router.post('/spend', authMiddleware, async (req, res) => {
       serviceKey || 'manual_spend'
     );
 
-    // Sync balance to tenant cache
-    await syncBalanceToTenant(storeId, result.remaining_balance);
-
     res.json({
       success: true,
       message: `${amount} credits spent successfully`,
@@ -436,60 +372,5 @@ router.post('/spend', authMiddleware, async (req, res) => {
     });
   }
 });
-
-/**
- * POST /api/credits/sync
- * Force sync balance from master to tenant cache
- */
-router.post('/sync', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const storeId = req.user.store_id;
-
-    // Get balance from users.credits (single source of truth)
-    const balance = await creditService.getBalance(userId, storeId);
-
-    await syncBalanceToTenant(storeId, balance);
-
-    res.json({
-      success: true,
-      message: 'Balance synced to tenant cache',
-      data: {
-        balance: balance
-      }
-    });
-  } catch (error) {
-    console.error('Sync balance error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to sync balance'
-    });
-  }
-});
-
-/**
- * Helper: Sync balance to tenant DB cache
- * @private
- */
-async function syncBalanceToTenant(storeId, balance) {
-  try {
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    const { error } = await tenantDb
-      .from('credit_balance_cache')
-      .upsert({
-        store_id: storeId,
-        balance: parseFloat(balance),
-        last_synced_at: new Date().toISOString()
-      });
-
-    if (error) {
-      console.error('Sync to tenant failed:', error);
-    }
-  } catch (error) {
-    console.error('Sync to tenant error:', error);
-    // Don't throw - sync is optional
-  }
-}
 
 module.exports = router;

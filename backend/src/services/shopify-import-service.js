@@ -213,6 +213,24 @@ class ShopifyImportService {
 
       const existingCategory = existingCategories && existingCategories.length > 0 ? existingCategories[0] : null;
 
+      // Handle collection image - download and create media_asset
+      let imageUrl = null;
+      let mediaAssetId = null;
+
+      if (collection.image && collection.image.src) {
+        try {
+          console.log(`📷 Downloading collection image for "${collection.title}": ${collection.image.src.substring(0, 60)}...`);
+          const storedImage = await this.downloadAndStoreCollectionImage(collection.image.src, collection.handle);
+          if (storedImage) {
+            imageUrl = storedImage.url;
+            mediaAssetId = storedImage.mediaAssetId;
+            console.log(`✅ Stored collection image: ${imageUrl}, mediaAssetId: ${mediaAssetId}`);
+          }
+        } catch (imgError) {
+          console.warn(`⚠️ Failed to download collection image for "${collection.title}":`, imgError.message);
+        }
+      }
+
       const categoryData = {
         name: collection.title,
         description: collection.body_html || '',
@@ -229,6 +247,11 @@ class ShopifyImportService {
         updated_at: new Date().toISOString()
       };
 
+      // Add media_asset_id if we have an image (image_url is deprecated)
+      if (mediaAssetId) {
+        categoryData.media_asset_id = mediaAssetId;
+      }
+
       if (existingCategory) {
         const { data, error } = await tenantDb
           .from('categories')
@@ -238,7 +261,7 @@ class ShopifyImportService {
           .single();
 
         if (error) throw error;
-        console.log(`Updated collection: ${collection.title}`);
+        console.log(`Updated collection: ${collection.title}${imageUrl ? ' (with image)' : ''}`);
         return data;
       } else {
         const { data, error } = await tenantDb
@@ -252,12 +275,63 @@ class ShopifyImportService {
           .single();
 
         if (error) throw error;
-        console.log(`Created collection: ${collection.title}`);
+        console.log(`Created collection: ${collection.title}${imageUrl ? ' (with image)' : ''}`);
         return data;
       }
     } catch (error) {
       console.error(`Error importing collection ${collection.title}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Download and store a collection image
+   */
+  async downloadAndStoreCollectionImage(imageUrl, collectionHandle) {
+    try {
+      // Fetch the image
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
+      const buffer = await response.buffer();
+
+      // Determine file extension and mime type from URL or response
+      const urlPath = new URL(imageUrl).pathname;
+      let ext = urlPath.substring(urlPath.lastIndexOf('.')).toLowerCase().split('?')[0];
+      let mimeType = 'image/jpeg';
+
+      if (ext === '.png') mimeType = 'image/png';
+      else if (ext === '.gif') mimeType = 'image/gif';
+      else if (ext === '.webp') mimeType = 'image/webp';
+      else ext = '.jpg';
+
+      // Generate filename
+      const filename = `${collectionHandle}${ext}`;
+
+      // Create file object for StorageManager
+      const fileObject = {
+        buffer: buffer,
+        originalname: filename,
+        mimetype: mimeType,
+        size: buffer.length
+      };
+
+      // Upload using StorageManager - creates media_assets record
+      const uploadResult = await StorageManager.uploadFile(this.storeId, fileObject, {
+        folder: 'category',
+        public: true,
+        type: 'category'
+      });
+
+      return {
+        url: uploadResult.url,
+        mediaAssetId: uploadResult.mediaAssetId
+      };
+    } catch (error) {
+      console.error(`Error downloading collection image:`, error);
+      return null;
     }
   }
 
