@@ -44,23 +44,27 @@ const AIImageOptimizer = () => {
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-        // Load library files from media_assets (images not tied to products/categories)
+        // Load library files from storage (same as FileLibrary)
         try {
-          const libraryResponse = await apiClient.get('/storage/media-assets?limit=500');
-          const files = libraryResponse.files || [];
-          // Filter image files that are NOT product or category images
-          const imageFiles = files.filter(f =>
-            f.url && (f.mimeType?.startsWith('image/') ||
-              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '')) &&
-            f.folder !== 'product' && f.folder !== 'category'
-          ).map(f => ({
-            id: f.id || f.media_asset_id,
-            file_url: f.url,
-            file_name: f.name,
-            mime_type: f.mimeType,
-            folder: f.folder
-          }));
-          setLibraryFiles(imageFiles);
+          const storageResponse = await apiClient.get('/supabase/storage/list');
+          if (storageResponse.success && storageResponse.files) {
+            // Filter only image files in library folder (not product/category)
+            const imageFiles = storageResponse.files.filter(f => {
+              const isImage = f.mimeType?.startsWith('image/') ||
+                /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '');
+              const isLibrary = f.folder === 'library' ||
+                (f.path && f.path.startsWith('library/')) ||
+                (!f.path?.startsWith('product/') && !f.path?.startsWith('category/'));
+              return f.url && isImage && isLibrary;
+            }).map(f => ({
+              id: f.id || f.name,
+              file_url: f.url || f.publicUrl,
+              file_name: f.name,
+              mime_type: f.mimeType || f.metadata?.mimetype,
+              folder: f.folder || 'library'
+            }));
+            setLibraryFiles(imageFiles);
+          }
         } catch (storageError) {
           console.warn('Failed to load library files:', storageError);
           setLibraryFiles([]);
@@ -235,22 +239,26 @@ const AIImageOptimizer = () => {
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-      // Load library files from media_assets (images not tied to products/categories)
+      // Load library files from storage (same as FileLibrary)
       try {
-        const libraryResponse = await apiClient.get('/storage/media-assets?limit=500');
-        const files = libraryResponse.files || [];
-        const imageFiles = files.filter(f =>
-          f.url && (f.mimeType?.startsWith('image/') ||
-            /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '')) &&
-          f.folder !== 'product' && f.folder !== 'category'
-        ).map(f => ({
-          id: f.id || f.media_asset_id,
-          file_url: f.url,
-          file_name: f.name,
-          mime_type: f.mimeType,
-          folder: f.folder
-        }));
-        setLibraryFiles(imageFiles);
+        const storageResponse = await apiClient.get('/supabase/storage/list');
+        if (storageResponse.success && storageResponse.files) {
+          const imageFiles = storageResponse.files.filter(f => {
+            const isImage = f.mimeType?.startsWith('image/') ||
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '');
+            const isLibrary = f.folder === 'library' ||
+              (f.path && f.path.startsWith('library/')) ||
+              (!f.path?.startsWith('product/') && !f.path?.startsWith('category/'));
+            return f.url && isImage && isLibrary;
+          }).map(f => ({
+            id: f.id || f.name,
+            file_url: f.url || f.publicUrl,
+            file_name: f.name,
+            mime_type: f.mimeType || f.metadata?.mimetype,
+            folder: f.folder || 'library'
+          }));
+          setLibraryFiles(imageFiles);
+        }
       } catch (storageError) {
         console.warn('Failed to load library files:', storageError);
         setLibraryFiles([]);
