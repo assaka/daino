@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Upload, File as FileIcon, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2, LayoutGrid } from 'lucide-react';
+import { Upload, File as FileIcon, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings, Wand2, Package, FolderOpen, Filter, CheckSquare, ChevronDown, Loader2, Sparkles, Maximize, Eraser, FileImage, Undo2, LayoutGrid, ImagePlus } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
@@ -8,6 +8,7 @@ import { PageLoader } from '@/components/ui/page-loader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import AIImageOptimizerGrid from '@/components/admin/AIImageOptimizerGrid';
+import ImageOptimizerModal from '@/components/image-optimizer/ImageOptimizerModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1005,6 +1006,9 @@ const FileLibrary = () => {
   // AI Image Optimizer Mode (shows all products, categories, and library images)
   const [aiOptimizerMode, setAiOptimizerMode] = useState(false);
 
+  // AI Image Generator Modal
+  const [generatorOpen, setGeneratorOpen] = useState(false);
+
   // Selection handlers
   const toggleFileSelection = (fileId) => {
     setSelectedFileIds(prev =>
@@ -1035,6 +1039,20 @@ const FileLibrary = () => {
     setOptimizerOpen(false);
     setFileToOptimize(null);
     setSelectedFileIds([]);
+  };
+
+  // AI Image Generator handlers
+  const openGenerator = () => {
+    setGeneratorOpen(true);
+  };
+
+  const closeGenerator = () => {
+    setGeneratorOpen(false);
+  };
+
+  const handleGeneratedImage = () => {
+    // Reload files to show newly generated image
+    loadFiles();
   };
 
   // File type icons
@@ -1639,6 +1657,17 @@ const FileLibrary = () => {
             AI Image Optimizer
           </Button>
 
+          {/* Generate New Image Button */}
+          <Button
+            onClick={openGenerator}
+            variant="outline"
+            size="sm"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+          >
+            <ImagePlus className="w-4 h-4 mr-1" />
+            Generate Image
+          </Button>
+
           {/* View toggles */}
           <button
             onClick={() => setViewMode('grid')}
@@ -1934,6 +1963,17 @@ const FileLibrary = () => {
           selectedFiles={filteredFiles.filter(f => selectedFileIds.includes(f.id))}
           onOptimized={handleOptimizedImage}
           setFlashMessage={setFlashMessage}
+        />
+      )}
+
+      {/* AI Image Generator Modal */}
+      {generatorOpen && (
+        <ImageOptimizerModal
+          isOpen={generatorOpen}
+          onClose={closeGenerator}
+          storeId={selectedStore?.id}
+          defaultOperation="generate"
+          onApply={handleGeneratedImage}
         />
       )}
 
