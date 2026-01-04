@@ -41,16 +41,29 @@ export default function MarketingLogin() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Check if already logged in
+  // Handle OAuth callback and check if already logged in
   useEffect(() => {
     // CRITICAL: Clear logout flag when on auth page to allow fresh login
     // This prevents the "Session has been terminated" error loop
     localStorage.removeItem('user_logged_out');
     apiClient.isLoggedOut = false;
 
-    const token = localStorage.getItem('store_owner_auth_token');
-    if (token) {
+    // Check for OAuth callback params
+    const oauthToken = searchParams.get('token');
+    const oauth = searchParams.get('oauth');
+    const redirectParam = searchParams.get('redirect');
+
+    if (oauthToken && oauth === 'success') {
+      // Handle Google OAuth callback
+      handleOAuthCallback(oauthToken, redirectParam);
+      return;
+    }
+
+    // Check if already logged in
+    const existingToken = localStorage.getItem('store_owner_auth_token');
+    if (existingToken) {
       navigate('/admin/dashboard', { replace: true });
+      return;
     }
 
     // Check for error params
@@ -61,6 +74,70 @@ export default function MarketingLogin() {
       setError('Authentication failed. Please try again.');
     }
   }, [navigate, searchParams]);
+
+  // Handle OAuth callback (Google login)
+  const handleOAuthCallback = async (token, redirectUrl) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // Set the token
+      localStorage.setItem('store_owner_auth_token', token);
+      apiClient.setToken(token);
+
+      // Fetch user data
+      const user = await User.me();
+
+      if (!user || !user.id) {
+        throw new Error('Failed to get user data');
+      }
+
+      // Save user data to localStorage
+      setRoleBasedAuthData(user, token);
+
+      // Fetch stores and redirect
+      try {
+        const dropdownResponse = await apiClient.get('/stores/dropdown');
+        const stores = dropdownResponse.data || dropdownResponse;
+
+        if (stores && stores.length > 0) {
+          const selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores[0];
+
+          if (selectedStore) {
+            localStorage.setItem('selectedStoreId', selectedStore.id);
+            localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code || '');
+            localStorage.setItem('selectedStoreName', selectedStore.name);
+          }
+
+          // Redirect to requested URL or dashboard
+          if (redirectUrl) {
+            window.location.href = decodeURIComponent(redirectUrl);
+          } else {
+            window.location.href = createAdminUrl("DASHBOARD");
+          }
+        } else {
+          // No stores - redirect to onboarding
+          if (redirectUrl) {
+            window.location.href = decodeURIComponent(redirectUrl);
+          } else {
+            navigate('/admin/onboarding', { replace: true });
+          }
+        }
+      } catch (storeError) {
+        console.error('Error fetching stores:', storeError);
+        // Still logged in, just go to onboarding
+        navigate('/admin/onboarding', { replace: true });
+      }
+    } catch (err) {
+      console.error('OAuth callback error:', err);
+      // Clear invalid token
+      localStorage.removeItem('store_owner_auth_token');
+      apiClient.setToken(null);
+      setError('Google login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
