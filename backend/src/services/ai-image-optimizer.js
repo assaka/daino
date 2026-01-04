@@ -110,14 +110,16 @@ class AIImageOptimizer {
       }
     }
 
-    // Flux (via Replicate or fal.ai)
-    if (process.env.REPLICATE_API_TOKEN || process.env.FAL_API_KEY) {
+    // Flux (via BFL direct, Replicate, or fal.ai)
+    if (process.env.BFL_API_KEY || process.env.REPLICATE_API_TOKEN || process.env.FAL_API_KEY) {
       try {
         this.providers.flux = new FluxImageProvider({
+          bflApiKey: process.env.BFL_API_KEY,
           replicateToken: process.env.REPLICATE_API_TOKEN,
           falApiKey: process.env.FAL_API_KEY
         });
-        console.log('[AIImageOptimizer] Flux provider initialized');
+        const backend = process.env.BFL_API_KEY ? 'BFL direct' : (process.env.REPLICATE_API_TOKEN ? 'Replicate' : 'fal.ai');
+        console.log(`[AIImageOptimizer] Flux provider initialized (${backend})`);
       } catch (error) {
         console.warn('[AIImageOptimizer] Failed to initialize Flux provider:', error.message);
       }

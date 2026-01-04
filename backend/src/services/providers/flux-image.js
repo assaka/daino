@@ -1,21 +1,26 @@
 /**
  * Flux Image Provider
  *
- * Uses Flux models via Replicate or fal.ai for image operations
- * Flux is excellent for high-quality image generation and editing
+ * Uses Flux models via:
+ * 1. Direct BFL API (api.bfl.ml) - Recommended, direct from Black Forest Labs
+ * 2. Replicate
+ * 3. fal.ai
  */
 
 class FluxImageProvider {
   constructor(options = {}) {
+    this.bflApiKey = options.bflApiKey;
     this.replicateToken = options.replicateToken;
     this.falApiKey = options.falApiKey;
 
-    if (!this.replicateToken && !this.falApiKey) {
-      throw new Error('Either Replicate token or fal.ai API key is required');
+    if (!this.bflApiKey && !this.replicateToken && !this.falApiKey) {
+      throw new Error('BFL API key, Replicate token, or fal.ai API key is required');
     }
 
     this.name = 'flux';
-    this.useReplicate = !!this.replicateToken;
+    // Priority: BFL direct > Replicate > fal.ai
+    this.useBFL = !!this.bflApiKey;
+    this.useReplicate = !this.useBFL && !!this.replicateToken;
   }
 
   getDisplayName() {
@@ -89,6 +94,66 @@ class FluxImageProvider {
     }
 
     return response.json();
+  }
+
+  /**
+   * Make request to BFL API (api.bfl.ml)
+   */
+  async bflRequest(endpoint, input) {
+    const response = await fetch(`https://api.bfl.ml/v1/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'X-Key': this.bflApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(input)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || error.message || 'BFL API error');
+    }
+
+    const result = await response.json();
+
+    // BFL returns a task ID, poll for completion
+    if (result.id) {
+      return this.bflPollResult(result.id);
+    }
+
+    return result;
+  }
+
+  /**
+   * Poll BFL API for task result
+   */
+  async bflPollResult(taskId) {
+    const maxAttempts = 60; // 60 seconds max
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const response = await fetch(`https://api.bfl.ml/v1/get_result?id=${taskId}`, {
+        headers: { 'X-Key': this.bflApiKey }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get BFL result');
+      }
+
+      const result = await response.json();
+
+      if (result.status === 'Ready') {
+        return result.result;
+      } else if (result.status === 'Error') {
+        throw new Error(result.error || 'BFL task failed');
+      }
+
+      // Wait 1 second before polling again
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+    }
+
+    throw new Error('BFL task timed out');
   }
 
   /**
@@ -312,6 +377,40 @@ class FluxImageProvider {
       enhancedPrompt = `${prompt}. The exact product from the reference image must be clearly visible and prominently featured. ${stylePrompts[style] || stylePrompts.photorealistic}`;
     } else {
       enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+    }
+
+    // Use BFL direct API (recommended)
+    if (this.useBFL) {
+      const bflParams = {
+        prompt: enhancedPrompt,
+        width: dimensions.width,
+        height: dimensions.height
+      };
+
+      // Use flux-pro-1.1 for best quality, or flux-dev for cost savings
+      const endpoint = referenceImageUrl ? 'flux-pro-1.1' : 'flux-pro-1.1';
+
+      if (referenceImageUrl) {
+        bflParams.image_url = referenceImageUrl;
+        bflParams.strength = 0.7; // Balance between prompt and reference
+      }
+
+      const result = await this.bflRequest(endpoint, bflParams);
+
+      // BFL returns { sample: "url" }
+      const imageUrl = result.sample;
+      const base64 = await this.urlToBase64(imageUrl);
+
+      return {
+        image: base64,
+        imageUrl,
+        format: 'png',
+        prompt: enhancedPrompt,
+        style,
+        aspectRatio,
+        dimensions,
+        usedReference: !!referenceImageUrl
+      };
     }
 
     if (this.useReplicate) {
