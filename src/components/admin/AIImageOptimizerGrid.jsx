@@ -82,31 +82,18 @@ const AIImageOptimizerGrid = ({
 
         if (filterType === 'all' || filterType === 'library') {
           promises.push(
-            apiClient.get('/storage/list').then(response => {
-              const files = response.data?.files || response.files || [];
-              // Filter to only library images (exclude product/category folders)
+            apiClient.get('/storage/media-assets?folder=library').then(response => {
+              const files = response.files || [];
               return files.filter(f => {
-                const url = f.url || f.publicUrl || '';
-                const folder = (f.folder || '').toLowerCase();
-                const path = (f.fullPath || f.path || '').toLowerCase();
-                const mimeType = f.mimetype || f.mimeType || '';
-                const isImage = mimeType.startsWith('image/') ||
-                  /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-
-                // Determine file type from folder or path/URL
-                const isProductFile = folder === 'product' ||
-                  (!folder && (path.includes('/product/') || url.toLowerCase().includes('/product/')));
-                const isCategoryFile = folder === 'category' ||
-                  (!folder && (path.includes('/category/') || url.toLowerCase().includes('/category/')));
-
-                // Library = explicitly library OR not product/category
-                const isLibrary = folder === 'library' || (!isProductFile && !isCategoryFile);
-                return url && isImage && isLibrary;
+                const url = f.url;
+                const mimeType = f.mimeType || '';
+                return url && (mimeType.startsWith('image/') ||
+                  /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url));
               }).map(f => ({
-                id: f.id || f.fullPath,
-                file_url: f.url || f.publicUrl,
-                file_name: f.name || f.fullPath?.split('/').pop(),
-                mime_type: f.mimetype || f.mimeType
+                id: f.id,
+                file_url: f.url,
+                file_name: f.name,
+                mime_type: f.mimeType
               }));
             })
           );
@@ -294,30 +281,18 @@ const AIImageOptimizerGrid = ({
             ? Category.filter({ store_id: storeId })
             : Promise.resolve(null),
           filterType === 'all' || filterType === 'library'
-            ? apiClient.get('/storage/list').then(response => {
-                const files = response.data?.files || response.files || [];
+            ? apiClient.get('/storage/media-assets?folder=library').then(response => {
+                const files = response.files || [];
                 return files.filter(f => {
-                  const url = f.url || f.publicUrl || '';
-                  const folder = (f.folder || '').toLowerCase();
-                  const path = (f.fullPath || f.path || '').toLowerCase();
-                  const mimeType = f.mimetype || f.mimeType || '';
-                  const isImage = mimeType.startsWith('image/') ||
-                    /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-
-                  // Determine file type from folder or path/URL
-                  const isProductFile = folder === 'product' ||
-                    (!folder && (path.includes('/product/') || url.toLowerCase().includes('/product/')));
-                  const isCategoryFile = folder === 'category' ||
-                    (!folder && (path.includes('/category/') || url.toLowerCase().includes('/category/')));
-
-                  // Library = explicitly library OR not product/category
-                  const isLibrary = folder === 'library' || (!isProductFile && !isCategoryFile);
-                  return url && isImage && isLibrary;
+                  const url = f.url;
+                  const mimeType = f.mimeType || '';
+                  return url && (mimeType.startsWith('image/') ||
+                    /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url));
                 }).map(f => ({
-                  id: f.id || f.fullPath,
-                  file_url: f.url || f.publicUrl,
-                  file_name: f.name || f.fullPath?.split('/').pop(),
-                  mime_type: f.mimetype || f.mimeType
+                  id: f.id,
+                  file_url: f.url,
+                  file_name: f.name,
+                  mime_type: f.mimeType
                 }));
               })
             : Promise.resolve(null)

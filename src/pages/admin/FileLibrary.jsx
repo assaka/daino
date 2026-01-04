@@ -1435,26 +1435,17 @@ const FileLibrary = () => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       file.mimeType?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Entity filter - use folder, fallback to path/URL detection
+    // Entity filter - just use folder from media_assets
     let matchesEntity = true;
     if (entityFilter !== 'all') {
       const folder = (file.folder || '').toLowerCase();
-      const path = (file.fullPath || file.path || '').toLowerCase();
-      const url = (file.url || '').toLowerCase();
-
-      // Determine file type from folder or path/URL
-      const isProductFile = folder === 'product' || folder === 'products' ||
-        (!folder && (path.includes('/product/') || url.includes('/product/')));
-      const isCategoryFile = folder === 'category' || folder === 'categories' ||
-        (!folder && (path.includes('/category/') || url.includes('/category/')));
 
       if (entityFilter === 'library') {
-        // Library: explicitly library OR not product/category
-        matchesEntity = folder === 'library' || (!isProductFile && !isCategoryFile);
+        matchesEntity = folder === 'library';
       } else if (entityFilter === 'products') {
-        matchesEntity = isProductFile;
+        matchesEntity = folder === 'product';
       } else if (entityFilter === 'categories') {
-        matchesEntity = isCategoryFile;
+        matchesEntity = folder === 'category';
       }
     }
 

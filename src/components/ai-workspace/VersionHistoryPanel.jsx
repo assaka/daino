@@ -323,7 +323,7 @@ const VersionHistoryPanel = ({
                       }`} />
 
                       {/* Version card */}
-                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow mr-2">
+                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow" style={{ maxWidth: 'calc(100% - 8px)' }}>
                         {/* Content wrapper - flex with 2 children */}
                         <div className="flex gap-2">
                           {/* Patch data */}
