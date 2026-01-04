@@ -2742,8 +2742,9 @@ router.delete('/registry/:id/files', async (req, res) => {
         // Silently fail
       }
     }
-    // Delete from plugin_admin_pages table (for admin page files like settings.jsx)
-    else if (normalizedPath.endsWith('.jsx') || normalizedPath.endsWith('.tsx')) {
+    // Delete from plugin_admin_pages table (only for admin page files like admin/settings.jsx)
+    else if ((normalizedPath.includes('admin/') || normalizedPath.startsWith('admin')) &&
+             (normalizedPath.endsWith('.jsx') || normalizedPath.endsWith('.tsx'))) {
       attemptedTable = 'plugin_admin_pages';
 
       // Extract page key from filename (settings.jsx -> settings)
