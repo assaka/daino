@@ -46,6 +46,35 @@ const ASPECT_RATIOS = [
   { id: '3:2', label: 'Photo', width: 1216, height: 832 }
 ];
 
+// Generate short filename from prompt
+const generateFilenameFromPrompt = (prompt) => {
+  if (!prompt) return `image-${Date.now()}`;
+
+  // Common stop words to filter out
+  const stopWords = new Set([
+    'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+    'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+    'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need',
+    'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+    'create', 'make', 'generate', 'show', 'display', 'image', 'photo', 'picture'
+  ]);
+
+  // Extract meaningful words
+  const words = prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.has(word))
+    .slice(0, 4); // Take first 4 meaningful words
+
+  if (words.length === 0) return `image-${Date.now()}`;
+
+  // Create kebab-case filename with short timestamp
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
+  return `${words.join('-')}-${timestamp}`;
+};
+
 // Staging context presets
 const STAGING_CONTEXTS = [
   { id: 'living_room', label: 'Modern Living Room', value: 'modern minimalist living room with natural light' },
@@ -678,7 +707,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
       if (isGenerateMode) {
         // For generated images, always save as new file to library
         // Uses unified storage manager - works with Supabase, S3, GCS, or local storage
-        const newName = `generated-${Date.now()}.${format}`;
+        const newName = `${generateFilenameFromPrompt(generatePrompt)}.${format}`;
         const file = new File([blob], newName, { type: `image/${format}` });
         const uploadResponse = await apiClient.uploadFile('/storage/upload', file, { folder: 'library', public: 'true' });
 
