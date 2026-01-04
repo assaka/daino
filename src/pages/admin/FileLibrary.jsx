@@ -1104,40 +1104,25 @@ const FileLibrary = () => {
     try {
       setLoading(true);
 
-      // Use unified storage endpoint - works with Supabase, GCS, S3, Cloudflare, etc.
-      const response = await apiClient.get('/storage/list');
+      // Use media-assets endpoint - queries media_assets table directly with folder info
+      const response = await apiClient.get('/storage/media-assets?limit=1000');
 
-      // Unified endpoint returns { success, data: { files, ... } }
-      const files = response.data?.files || response.files;
-      if (response.success && files) {
-        // Provider name comes from status check
-
-        // Transform response to FileLibrary format
-        const rawFiles = files || [];
-
-        const transformedFiles = rawFiles.map(file => {
-          const imageUrl = file.url || file.publicUrl || file.name;
-          const filePath = file.path || file.fullPath || '';
-          return {
-            id: file.id || file.name,
-            name: file.name,
-            url: imageUrl,
-            size: file.metadata?.size || file.size || 0,
-            mimeType: file.mimetype || file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
-            uploadedAt: file.created_at || file.updated_at || new Date().toISOString(),
-            path: filePath,
-            fullPath: file.fullPath || filePath || `library/${file.name}`,
-            folder: file.folder || 'library'
-          };
-        });
+      if (response.success && response.files) {
+        const transformedFiles = response.files.map(file => ({
+          id: file.id,
+          name: file.name,
+          url: file.url,
+          size: file.size || 0,
+          mimeType: file.mimeType || 'application/octet-stream',
+          uploadedAt: file.createdAt || new Date().toISOString(),
+          path: file.path || '',
+          fullPath: file.path || '',
+          folder: file.folder || ''
+        }));
 
         setFiles(transformedFiles);
       } else {
         setFiles([]);
-        // If no files but successful response, still set provider
-        if (response.success) {
-          setStorageProvider('Supabase');
-        }
       }
     } catch (error) {
       console.error('❌ FileLibrary: Error loading files:', error);
