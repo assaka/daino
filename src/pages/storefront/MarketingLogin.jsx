@@ -80,15 +80,21 @@ export default function MarketingLogin() {
     setLoading(true);
     setError('');
 
+    console.log('🔐 OAuth callback started, token:', token?.substring(0, 30) + '...');
+
     try {
       // Set the token
       localStorage.setItem('store_owner_auth_token', token);
       apiClient.setToken(token);
+      console.log('✅ Token saved to localStorage and apiClient');
 
       // Fetch user data
+      console.log('📡 Calling User.me()...');
       const user = await User.me();
+      console.log('👤 User.me() returned:', user);
 
       if (!user || !user.id) {
+        console.error('❌ Invalid user data:', user);
         throw new Error('Failed to get user data');
       }
 
