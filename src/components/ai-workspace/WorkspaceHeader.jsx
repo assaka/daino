@@ -100,8 +100,35 @@ const WorkspaceHeader = () => {
   const [newPluginData, setNewPluginData] = useState({ name: '', description: '', category: 'integration' });
   const [creatingPlugin, setCreatingPlugin] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [credits, setCredits] = useState(0);
 
   const storeId = getSelectedStoreId();
+
+  // Fetch and listen for credits updates
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await apiClient.get('credits/balance');
+        if (response?.balance !== undefined) {
+          setCredits(response.balance);
+        } else if (typeof response === 'number') {
+          setCredits(response);
+        }
+      } catch (error) {
+        console.error('Error fetching credits:', error);
+      }
+    };
+
+    fetchCredits();
+
+    // Listen for credits updates
+    const handleCreditsUpdate = () => {
+      console.log('📊 WorkspaceHeader: Credits update event received');
+      fetchCredits();
+    };
+    window.addEventListener('creditsUpdated', handleCreditsUpdate);
+    return () => window.removeEventListener('creditsUpdated', handleCreditsUpdate);
+  }, []);
 
   // Load user's plugins
   useEffect(() => {
@@ -364,6 +391,12 @@ const WorkspaceHeader = () => {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Credits display */}
+      <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded-full">
+        <Coins className="h-3.5 w-3.5 text-amber-600" />
+        <span className="text-xs font-medium text-amber-700">{credits?.toLocaleString() || 0}</span>
       </div>
 
       {/* Right section: Editor + Plugins buttons */}
