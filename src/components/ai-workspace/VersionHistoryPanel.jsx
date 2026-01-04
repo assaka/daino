@@ -393,10 +393,10 @@ const VersionHistoryPanel = ({
                           </div>
 
                           {/* Actions - vertical stack on right */}
-                          <div className="flex flex-col gap-1 flex-shrink-0 ml-2">
+                          <div style={{ display: 'block', minWidth: '32px' }}>
                             <button
                               onClick={() => toggleVersionSelection(version.id)}
-                              className={`p-1.5 rounded hover:bg-gray-100 ${isSelected ? 'bg-blue-100' : ''}`}
+                              className={`block p-1.5 rounded hover:bg-gray-100 mb-1 ${isSelected ? 'bg-blue-100' : ''}`}
                               title="Select for comparison"
                             >
                               <GitCompare className="w-4 h-4" />
@@ -404,7 +404,7 @@ const VersionHistoryPanel = ({
 
                             <button
                               onClick={() => onViewVersion && onViewVersion(version.id)}
-                              className="p-1.5 rounded hover:bg-gray-100"
+                              className="block p-1.5 rounded hover:bg-gray-100 mb-1"
                               title="View version code"
                             >
                               <Eye className="w-4 h-4" />
@@ -413,7 +413,7 @@ const VersionHistoryPanel = ({
                             {!version.is_current && (
                               <button
                                 onClick={() => onRestore(version.id)}
-                                className="p-1.5 rounded hover:bg-gray-100"
+                                className="block p-1.5 rounded hover:bg-gray-100 mb-1"
                                 title="Restore to this version"
                               >
                                 <RotateCcw className="w-4 h-4" />
@@ -421,7 +421,7 @@ const VersionHistoryPanel = ({
                             )}
 
                             <button
-                              className="p-1.5 rounded hover:bg-gray-100"
+                              className="block p-1.5 rounded hover:bg-gray-100"
                               title="Download version"
                             >
                               <Download className="w-4 h-4" />
