@@ -1077,19 +1077,16 @@ const FileLibrary = () => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
-  // Check for storage provider and connection status
+  // Check for storage provider and connection status (unified - works with any provider)
   const checkStorageProvider = async () => {
     try {
-      // Use the same endpoint as FilePickerModal for consistency
-      const response = await apiClient.get('/supabase/storage/stats');
+      const response = await apiClient.get('/storage/status');
 
-      if (response.success) {
-        // Since we're using Supabase storage, set it directly
-        setStorageProvider('Supabase');
+      if (response.success && response.configured) {
+        setStorageProvider(response.provider || 'Storage');
         setStorageConnected(true);
         setStorageError(null);
-
-        return 'supabase';
+        return response.provider;
       } else {
         setStorageConnected(false);
         setStorageError('Storage connection failed');
@@ -1102,21 +1099,21 @@ const FileLibrary = () => {
     return null;
   };
 
-  // Load files from current storage provider
+  // Load files from current storage provider (unified - works with any provider)
   const loadFiles = async () => {
     try {
       setLoading(true);
 
-      // Use Supabase storage endpoint - backend determines bucket name for the store
-      const response = await apiClient.get('/supabase/storage/list');
-      
-      // Check if we have valid storage data (same format as FilePickerModal)
-      if (response.success && response.files) {
-        // Set provider name for Supabase
-        setStorageProvider('Supabase');
+      // Use unified storage endpoint - works with Supabase, GCS, S3, Cloudflare, etc.
+      const response = await apiClient.get('/storage/list');
 
-        // Transform response to FileLibrary format (same as FilePickerModal)
-        const rawFiles = response.files || [];
+      // Unified endpoint returns { success, data: { files, ... } }
+      const files = response.data?.files || response.files;
+      if (response.success && files) {
+        // Provider name comes from status check
+
+        // Transform response to FileLibrary format
+        const rawFiles = files || [];
 
         const transformedFiles = rawFiles.map(file => {
           const imageUrl = file.url || file.publicUrl || file.name;
@@ -1336,8 +1333,8 @@ const FileLibrary = () => {
       // Get store ID from localStorage
       const selectedStoreId = localStorage.getItem('selectedStoreId');
 
-      // Use Supabase storage delete endpoint (matches the list endpoint we use)
-      const response = await fetch('/api/supabase/storage/delete', {
+      // Use unified storage delete endpoint (works with any provider)
+      const response = await fetch('/api/storage/delete', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -1345,7 +1342,7 @@ const FileLibrary = () => {
           'x-store-id': selectedStoreId || ''
         },
         body: JSON.stringify({
-          path: filePath
+          imagePath: filePath
         })
       });
 
@@ -1388,7 +1385,7 @@ const FileLibrary = () => {
         // Use fullPath from the file object
         const filePath = file.fullPath || `library/${file.name}`;
 
-        const response = await fetch('/api/supabase/storage/delete', {
+        const response = await fetch('/api/storage/delete', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -1396,7 +1393,7 @@ const FileLibrary = () => {
             'x-store-id': selectedStoreId || ''
           },
           body: JSON.stringify({
-            path: filePath
+            imagePath: filePath
           })
         });
 
