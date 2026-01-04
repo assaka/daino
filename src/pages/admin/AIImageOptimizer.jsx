@@ -44,27 +44,27 @@ const AIImageOptimizer = () => {
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-        // Load library files from storage (same as FileLibrary)
+        // Load library files from unified storage endpoint (works with any provider)
         try {
-          const storageResponse = await apiClient.get('/supabase/storage/list');
-          if (storageResponse.success && storageResponse.files) {
-            // Filter only image files in library folder (not product/category)
-            const imageFiles = storageResponse.files.filter(f => {
-              const isImage = f.mimeType?.startsWith('image/') ||
-                /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '');
-              const isLibrary = f.folder === 'library' ||
-                (f.path && f.path.startsWith('library/')) ||
-                (!f.path?.startsWith('product/') && !f.path?.startsWith('category/'));
-              return f.url && isImage && isLibrary;
-            }).map(f => ({
-              id: f.id || f.name,
-              file_url: f.url || f.publicUrl,
-              file_name: f.name,
-              mime_type: f.mimeType || f.metadata?.mimetype,
-              folder: f.folder || 'library'
-            }));
-            setLibraryFiles(imageFiles);
-          }
+          const storageResponse = await apiClient.get('/storage/list');
+          // Unified endpoint returns { success, data: { files, ... } }
+          const files = storageResponse.data?.files || storageResponse.files || [];
+          // Filter only image files NOT in product/category folders
+          const imageFiles = files.filter(f => {
+            const url = f.url || f.publicUrl;
+            const path = f.path || '';
+            const isImage = f.mimeType?.startsWith('image/') ||
+              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
+            const isLibrary = !path.startsWith('product/') && !path.startsWith('category/');
+            return url && isImage && isLibrary;
+          }).map(f => ({
+            id: f.id || f.name,
+            file_url: f.url || f.publicUrl,
+            file_name: f.name,
+            mime_type: f.mimeType || f.metadata?.mimetype,
+            folder: f.folder || 'library'
+          }));
+          setLibraryFiles(imageFiles);
         } catch (storageError) {
           console.warn('Failed to load library files:', storageError);
           setLibraryFiles([]);
@@ -239,26 +239,25 @@ const AIImageOptimizer = () => {
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
-      // Load library files from storage (same as FileLibrary)
+      // Load library files from unified storage endpoint (works with any provider)
       try {
-        const storageResponse = await apiClient.get('/supabase/storage/list');
-        if (storageResponse.success && storageResponse.files) {
-          const imageFiles = storageResponse.files.filter(f => {
-            const isImage = f.mimeType?.startsWith('image/') ||
-              /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || f.url || '');
-            const isLibrary = f.folder === 'library' ||
-              (f.path && f.path.startsWith('library/')) ||
-              (!f.path?.startsWith('product/') && !f.path?.startsWith('category/'));
-            return f.url && isImage && isLibrary;
-          }).map(f => ({
-            id: f.id || f.name,
-            file_url: f.url || f.publicUrl,
-            file_name: f.name,
-            mime_type: f.mimeType || f.metadata?.mimetype,
-            folder: f.folder || 'library'
-          }));
-          setLibraryFiles(imageFiles);
-        }
+        const storageResponse = await apiClient.get('/storage/list');
+        const files = storageResponse.data?.files || storageResponse.files || [];
+        const imageFiles = files.filter(f => {
+          const url = f.url || f.publicUrl;
+          const path = f.path || '';
+          const isImage = f.mimeType?.startsWith('image/') ||
+            /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
+          const isLibrary = !path.startsWith('product/') && !path.startsWith('category/');
+          return url && isImage && isLibrary;
+        }).map(f => ({
+          id: f.id || f.name,
+          file_url: f.url || f.publicUrl,
+          file_name: f.name,
+          mime_type: f.mimeType || f.metadata?.mimetype,
+          folder: f.folder || 'library'
+        }));
+        setLibraryFiles(imageFiles);
       } catch (storageError) {
         console.warn('Failed to load library files:', storageError);
         setLibraryFiles([]);
