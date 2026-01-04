@@ -86,21 +86,34 @@ const DynamicPluginAdminPage = () => {
 
       console.log('📝 Cleaned component code (first 200 chars):', componentCode.substring(0, 200));
 
+      // Find the function name in the code
+      // Match patterns like: function FunctionName() or const FunctionName =
+      const functionNameMatch = componentCode.match(/(?:function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*(?:\(|function))/);
+      const componentName = functionNameMatch ? (functionNameMatch[1] || functionNameMatch[2]) : null;
+
+      if (!componentName) {
+        throw new Error('Could not find component function in code');
+      }
+
+      console.log('🔍 Found component name:', componentName);
+
       // Create component using eval
-      // Need to return the component function
+      // Need to return the component function by its dynamic name
       const Component = eval(`
         (function() {
           const React = arguments[0];
           const useState = arguments[1];
           const useEffect = arguments[2];
           const apiClient = arguments[3];
+          const useCallback = arguments[4];
+          const useMemo = arguments[5];
 
           ${componentCode}
 
-          // Return the component (it's the last defined function)
-          return EmailCaptureManager;
+          // Return the component by its detected name
+          return ${componentName};
         })
-      `)(React, useState, useEffect, apiClient);
+      `)(React, useState, useEffect, apiClient, React.useCallback, React.useMemo);
 
       console.log('✅ Component created:', typeof Component, Component?.name);
 

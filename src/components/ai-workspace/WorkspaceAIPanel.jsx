@@ -661,32 +661,45 @@ const WorkspaceAIPanel = () => {
         const actualGeneratedFiles = response.generatedFiles || embeddedFiles;
         const actualHasGeneratedFiles = actualGeneratedFiles && actualGeneratedFiles.length > 0;
 
+        // Check for admin pages (AI-generated admin UI)
+        const actualGeneratedAdminPages = response.generatedAdminPages || embeddedJson?.generatedAdminPages;
+        const actualHasAdminPages = actualGeneratedAdminPages && actualGeneratedAdminPages.length > 0;
+
         console.log('🔍 Response analysis:', {
           hasGeneratedFiles: actualHasGeneratedFiles,
+          hasAdminPages: actualHasAdminPages,
           hasPluginStructure,
           hasCodeBlock,
           hasEmbeddedJson: !!embeddedJson,
           responseType: response.type
         });
 
-        if (actualHasGeneratedFiles || hasPluginStructure) {
+        if (actualHasGeneratedFiles || hasPluginStructure || actualHasAdminPages) {
           // Code was generated in structured format - show success and dispatch event
           const files = actualGeneratedFiles || [];
+          const adminPages = actualGeneratedAdminPages || [];
           const explanation = embeddedJson?.explanation || response.explanation || 'Plugin code generated successfully.';
 
           console.log('✅ Structured code generated - dispatching event with:', {
             pluginId: pluginToEdit.id,
             filesCount: files.length,
+            adminPagesCount: adminPages.length,
             hasPluginStructure: !!response.plugin_structure,
             fromEmbeddedJson: !!embeddedJson
           });
 
+          // Build status message
+          let statusParts = [];
+          if (files.length > 0) statusParts.push(`${files.length} file(s)`);
+          if (adminPages.length > 0) statusParts.push(`${adminPages.length} admin page(s)`);
+
           addChatMessage({
             role: 'assistant',
-            content: `✅ ${explanation}\n\n${files.length > 0 ? `Generated ${files.length} file(s). Saving to plugin...` : 'Saving code to plugin...'}`,
+            content: `✅ ${explanation}\n\n${statusParts.length > 0 ? `Generated ${statusParts.join(' and ')}. Saving to plugin...` : 'Saving code to plugin...'}`,
             data: {
               type: 'plugin_code_generated',
               files: files,
+              adminPages: adminPages,
               pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure
             }
           });
@@ -696,10 +709,26 @@ const WorkspaceAIPanel = () => {
             detail: {
               pluginId: pluginToEdit.id,
               files: files,
+              adminPages: adminPages,
               pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure,
               code: response.plugin_structure?.main_file || embeddedJson?.plugin_structure?.main_file || (files[0]?.code)
             }
           }));
+
+          // If admin pages were generated, save them directly via API
+          if (adminPages.length > 0) {
+            try {
+              console.log('📄 Saving admin pages via API...', adminPages);
+              const adminResponse = await apiClient.post(`plugins/${pluginToEdit.id}/admin-pages`, {
+                adminPages: adminPages
+              });
+              if (adminResponse.success) {
+                console.log('✅ Admin pages saved:', adminResponse.pages);
+              }
+            } catch (adminError) {
+              console.error('❌ Failed to save admin pages:', adminError);
+            }
+          }
         } else if (hasCodeBlock) {
           // Response contains code block in markdown - extract and save
           console.log('📝 Found code block in response, extracting and saving...');

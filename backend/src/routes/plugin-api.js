@@ -3223,4 +3223,141 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/plugins/:id/admin-pages
+ * Create or update admin pages for a plugin (AI-generated)
+ */
+router.post('/:id/admin-pages', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { id } = req.params;
+    const { adminPages } = req.body;
+
+    if (!adminPages || !Array.isArray(adminPages) || adminPages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'adminPages array is required'
+      });
+    }
+
+    // Get plugin to verify it exists and get slug
+    const { data: plugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, slug, name')
+      .eq('id', id)
+      .single();
+
+    if (pluginError || !plugin) {
+      return res.status(404).json({ success: false, error: 'Plugin not found' });
+    }
+
+    const savedPages = [];
+
+    for (const page of adminPages) {
+      // Replace PLUGIN_SLUG placeholder with actual slug
+      const route = (page.route || `/admin/plugins/${plugin.slug}/${page.pageKey}`)
+        .replace(/PLUGIN_SLUG/g, plugin.slug);
+
+      const pageData = {
+        plugin_id: id,
+        page_key: page.pageKey,
+        page_name: page.pageName,
+        route: route,
+        component_code: page.componentCode,
+        icon: page.icon || 'Settings',
+        category: page.category || 'settings',
+        description: page.description || '',
+        order_position: page.orderPosition || 100,
+        is_enabled: true
+      };
+
+      // Check if page already exists (upsert)
+      const { data: existing } = await tenantDb
+        .from('plugin_admin_pages')
+        .select('id')
+        .eq('plugin_id', id)
+        .eq('page_key', page.pageKey)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const { error: updateError } = await tenantDb
+          .from('plugin_admin_pages')
+          .update({
+            page_name: pageData.page_name,
+            route: pageData.route,
+            component_code: pageData.component_code,
+            icon: pageData.icon,
+            category: pageData.category,
+            description: pageData.description,
+            order_position: pageData.order_position
+          })
+          .eq('id', existing.id);
+
+        if (updateError) throw updateError;
+        savedPages.push({ ...pageData, action: 'updated' });
+      } else {
+        // Insert new
+        const { error: insertError } = await tenantDb
+          .from('plugin_admin_pages')
+          .insert(pageData);
+
+        if (insertError) throw insertError;
+        savedPages.push({ ...pageData, action: 'created' });
+      }
+    }
+
+    // Update manifest to include admin navigation for these pages
+    const { data: currentPlugin } = await tenantDb
+      .from('plugin_registry')
+      .select('manifest')
+      .eq('id', id)
+      .single();
+
+    if (currentPlugin?.manifest) {
+      const manifest = currentPlugin.manifest;
+      if (!manifest.adminPages) manifest.adminPages = [];
+
+      // Add/update admin page entries in manifest
+      for (const page of savedPages) {
+        const existingIdx = manifest.adminPages.findIndex(p => p.pageKey === page.page_key);
+        const pageEntry = {
+          pageKey: page.page_key,
+          pageName: page.page_name,
+          route: page.route,
+          icon: page.icon
+        };
+        if (existingIdx >= 0) {
+          manifest.adminPages[existingIdx] = pageEntry;
+        } else {
+          manifest.adminPages.push(pageEntry);
+        }
+      }
+
+      await tenantDb
+        .from('plugin_registry')
+        .update({ manifest })
+        .eq('id', id);
+    }
+
+    res.json({
+      success: true,
+      message: `${savedPages.length} admin page(s) saved`,
+      pages: savedPages.map(p => ({
+        pageKey: p.page_key,
+        pageName: p.page_name,
+        route: p.route,
+        action: p.action
+      }))
+    });
+
+  } catch (error) {
+    console.error('Failed to save admin pages:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

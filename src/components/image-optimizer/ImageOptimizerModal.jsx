@@ -291,11 +291,22 @@ const generateSmartPresets = (productContext) => {
  * - onOptimized: function - Called when optimization is applied { applied, refresh }
  * - setFlashMessage: function - To show success/error messages
  */
-const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, productContext, onOptimized, setFlashMessage }) => {
+const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selectedFiles, productContext, defaultOperation, onOptimized, setFlashMessage }) => {
   const [pricing, setPricing] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState('openai');
-  const [selectedOperation, setSelectedOperation] = useState('remove_bg');
+  const [selectedOperation, setSelectedOperation] = useState(defaultOperation || 'remove_bg');
+
+  // Set default operation when modal opens
+  useEffect(() => {
+    if (isOpen && defaultOperation) {
+      setSelectedOperation(defaultOperation);
+      // Use Flux as default for generation (best quality)
+      if (defaultOperation === 'generate') {
+        setSelectedProvider('flux');
+      }
+    }
+  }, [isOpen, defaultOperation]);
 
   // Generation-specific state
   const [generatePrompt, setGeneratePrompt] = useState('');

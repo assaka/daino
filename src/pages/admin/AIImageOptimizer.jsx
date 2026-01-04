@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wand2, Image, Package, FolderOpen, Search, Filter, Loader2, AlertCircle } from 'lucide-react';
+import { Wand2, Image, Package, FolderOpen, Search, Filter, Loader2, AlertCircle, ImagePlus } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Product, Category, MediaAsset } from '@/api/entities';
 import { ImageOptimizerModal } from '@/components/image-optimizer';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { cn } from '@/lib/utils';
 import { getProductName, getCategoryName } from '@/utils/translationUtils';
@@ -22,6 +23,7 @@ const AIImageOptimizer = () => {
   const [optimizerOpen, setOptimizerOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedContext, setSelectedContext] = useState(null);
+  const [generateMode, setGenerateMode] = useState(false);
 
   // Load products, categories, and library files
   useEffect(() => {
@@ -199,6 +201,14 @@ const AIImageOptimizer = () => {
       name: item.name,
       category: item.categoryName
     });
+    setGenerateMode(false);
+    setOptimizerOpen(true);
+  };
+
+  const handleOpenGenerator = () => {
+    setSelectedImage(null);
+    setSelectedContext(null);
+    setGenerateMode(true);
     setOptimizerOpen(true);
   };
 
@@ -240,16 +250,25 @@ const AIImageOptimizer = () => {
 
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <Wand2 className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <Wand2 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">AI Image Optimizer</h1>
+              <p className="text-gray-600 text-sm">
+                Click any image to enhance with AI - upscale, remove background, or stage in environments
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">AI Image Optimizer</h1>
-            <p className="text-gray-600 text-sm">
-              Click any image to enhance with AI - upscale, remove background, or stage in environments
-            </p>
-          </div>
+          <Button
+            onClick={handleOpenGenerator}
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+          >
+            <ImagePlus className="w-4 h-4 mr-2" />
+            Generate New Image
+          </Button>
         </div>
       </div>
 
@@ -413,6 +432,7 @@ const AIImageOptimizer = () => {
         fileToOptimize={selectedImage}
         selectedFiles={[]}
         productContext={selectedContext}
+        defaultOperation={generateMode ? 'generate' : undefined}
         onOptimized={() => {
           // Just refresh data, don't close
         }}

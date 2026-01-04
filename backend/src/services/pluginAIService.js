@@ -494,15 +494,68 @@ RESPONSE FORMAT - Always return ONLY valid JSON:
   "generatedFiles": [
     { "name": "filename.js", "code": "// working code" }
   ],
+  "generatedAdminPages": [
+    {
+      "pageKey": "settings",
+      "pageName": "Settings",
+      "route": "/admin/plugins/PLUGIN_SLUG/settings",
+      "componentCode": "// React component code",
+      "icon": "Settings",
+      "description": "Manage plugin settings"
+    }
+  ],
   "explanation": "One sentence summary."
 }
+
+ADMIN PAGE GENERATION:
+When user asks to create an admin page, settings page, or management page:
+- Include "generatedAdminPages" array in your response
+- pageKey: URL-friendly key (e.g., "settings", "dashboard", "emails")
+- pageName: Display name for navigation
+- route: Full route path - use "/admin/plugins/PLUGIN_SLUG/PAGE_KEY" format
+- componentCode: FULL React component code (function component with useState, useEffect, apiClient)
+- icon: Lucide icon name (Settings, Users, Mail, BarChart, etc.)
+
+Example admin page component:
+\`\`\`javascript
+function PluginSettingsPage() {
+  const [settings, setSettings] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const response = await apiClient.get('plugins/PLUGIN_SLUG/exec/settings');
+    setSettings(response.data || {});
+    setLoading(false);
+  };
+
+  const saveSettings = async () => {
+    await apiClient.post('plugins/PLUGIN_SLUG/exec/settings', settings);
+    alert('Settings saved!');
+  };
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div style={{padding: '20px'}}>
+      <h1>Plugin Settings</h1>
+      {/* Form fields here */}
+      <button onClick={saveSettings}>Save</button>
+    </div>
+  );
+}
+\`\`\`
 
 RULES:
 - Return ONLY JSON, no markdown wrapping, no extra text before/after
 - Keep explanation to 1-2 sentences maximum
 - Generate only the files needed for the specific request
 - Do NOT include README.md unless specifically asked
-- Use DainoStore plugin hooks and patterns`
+- Use DainoStore plugin hooks and patterns
+- For admin pages, always include generatedAdminPages array`
     };
 
     return modePrompts[mode] || basePrompt;
@@ -544,16 +597,21 @@ Help them configure the plugin step-by-step. Suggest database tables, features, 
           ? `\n**Recent conversation:**\n${context.conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 300)}${m.content.length > 300 ? '...' : ''}`).join('\n')}`
           : '';
 
-        prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (${context.pluginSlug || 'unknown'}).
+        const pluginSlug = context.pluginSlug || 'unknown';
+        prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (slug: ${pluginSlug}).
 ${existingFilesList}
 ${conversationContext}
 
+**Plugin slug for routes:** ${pluginSlug}
 **Current request:** ${userPrompt}
 
 RESPONSE FORMAT - Return ONLY this JSON, nothing else:
 {
   "generatedFiles": [
     { "name": "filename.js", "code": "// your code here" }
+  ],
+  "generatedAdminPages": [
+    { "pageKey": "settings", "pageName": "Settings", "route": "/admin/plugins/${pluginSlug}/settings", "componentCode": "function SettingsPage() { ... }", "icon": "Settings", "description": "Manage settings" }
   ],
   "explanation": "One sentence describing what was added or modified."
 }
@@ -568,6 +626,8 @@ RULES:
 - Return ONLY valid JSON, no markdown, no extra text
 - **MINIMAL OUTPUT** - Only requested file(s), no README or docs
 - **Short explanation** - Max 10 words
+- **If user asks for admin page, settings page, or management page, include generatedAdminPages**
+- **Admin page componentCode must be a FULL React function component**
 - **Look at the conversation history to understand what file was just created/modified**
 - **If user says "change it", "update that", etc., modify the file from the previous message**
 - **IMPORTANT: When modifying, keep ALL existing logic and only change what was requested**
