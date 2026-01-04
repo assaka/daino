@@ -178,6 +178,9 @@ const WorkspaceAIPanel = () => {
   const [streamingText, setStreamingText] = useState('');
   const [toolResults, setToolResults] = useState([]); // Array of tool execution results
 
+  // Store Edit Mode - AI can modify anything in the store via generic tools
+  const [storeEditMode, setStoreEditMode] = useState(false);
+
   // Get current model object
   const currentModel = aiModels.find(m => m.id === selectedModel) || aiModels[0] || null;
 
@@ -1150,11 +1153,206 @@ const WorkspaceAIPanel = () => {
     }
   };
 
+  // Handle sending in Store Edit Mode (AI can modify anything via generic tools)
+  const handleSendStoreEdit = async () => {
+    if ((!inputValue.trim() && attachedImages.length === 0) || isProcessingAi) return;
+
+    const userMessage = inputValue.trim();
+    setInputValue('');
+    setAttachedImages([]);
+    setCommandStatus(null);
+    setHistoryIndex(-1);
+
+    // Reset streaming state
+    setThinkingText('');
+    setActiveTool(null);
+    setStreamingText('');
+    setToolResults([]);
+
+    // Add user message to chat
+    addChatMessage({
+      role: 'user',
+      content: userMessage || '(Image attached)'
+    });
+
+    // Save user message
+    saveChatMessage('user', userMessage || '(Image attached)');
+
+    setIsProcessingAi(true);
+
+    try {
+      // Get auth token
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                    localStorage.getItem('customer_auth_token');
+
+      if (!token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      // Build history from recent messages
+      const history = chatMessages.slice(-10).map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      // Start streaming request to store edit endpoint
+      const response = await fetch('/api/ai/store-edit/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-store-id': storeId
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          history,
+          modelId: selectedModel
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Store edit request failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let fullText = '';
+      let tools = [];
+      let allResults = [];
+
+      // Show initial processing state
+      setThinkingText('Processing store edit...');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') continue;
+
+            try {
+              const event = JSON.parse(dataStr);
+
+              // Handle different event types from store edit stream
+              switch (event.type) {
+                case 'iteration':
+                  setThinkingText(`Processing step ${event.number}...`);
+                  break;
+
+                case 'tool_start':
+                  setActiveTool({ name: event.tool, status: 'calling' });
+                  tools.push({ name: event.tool, status: 'calling' });
+                  setThinkingText(`Calling ${event.tool}...`);
+                  break;
+
+                case 'tool_executing':
+                  setActiveTool({ name: event.tool, status: 'executing', input: event.input });
+                  break;
+
+                case 'tool_result':
+                  setActiveTool({ name: event.tool, status: 'complete' });
+                  setToolResults(prev => [...prev, {
+                    name: event.tool,
+                    success: event.success,
+                    message: event.message
+                  }]);
+                  allResults.push({ tool: event.tool, success: event.success, message: event.message });
+                  // Show success/fail message briefly
+                  setThinkingText(`${event.tool}: ${event.success ? '✓' : '✗'} ${event.message || ''}`);
+                  setTimeout(() => setActiveTool(null), 500);
+                  break;
+
+                case 'text':
+                  fullText += event.text || '';
+                  setStreamingText(fullText);
+                  setThinkingText(''); // Clear thinking when text starts
+                  break;
+
+                case 'complete':
+                  // Stream complete - trigger refresh if changes were made
+                  if (allResults.length > 0) {
+                    console.log('🔧 Store edit complete, refreshing preview');
+                    setTimeout(() => {
+                      refreshPreview?.();
+                      triggerConfigurationRefresh?.();
+                      localStorage.setItem('slot_config_updated', JSON.stringify({
+                        storeId,
+                        pageType: selectedPageType,
+                        timestamp: Date.now()
+                      }));
+                      window.dispatchEvent(new StorageEvent('storage', {
+                        key: 'slot_config_updated',
+                        newValue: JSON.stringify({ storeId, pageType: selectedPageType, timestamp: Date.now() })
+                      }));
+                    }, 300);
+                  }
+                  break;
+
+                case 'error':
+                  throw new Error(event.error);
+              }
+            } catch (parseError) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      // Add final message with tool summary
+      const toolSummary = tools.length > 0
+        ? `\n\n_Tools used: ${tools.map(t => t.name).join(', ')}_`
+        : '';
+
+      addChatMessage({
+        role: 'assistant',
+        content: (fullText || 'Operation complete.') + toolSummary,
+        toolsUsed: tools.length > 0 ? tools.map(t => t.name) : null,
+        data: { type: 'store_edit', results: allResults }
+      });
+
+      // Save to history
+      saveChatMessage('assistant', fullText || 'Operation complete.');
+
+      // Dispatch credits update event
+      window.dispatchEvent(new CustomEvent('creditsUpdated'));
+
+      // Clear streaming state
+      setStreamingText('');
+      setThinkingText('');
+      setActiveTool(null);
+
+    } catch (error) {
+      console.error('Store edit error:', error);
+      addChatMessage({
+        role: 'assistant',
+        content: error.message || 'Sorry, I encountered an error processing your store edit request.',
+        error: true
+      });
+    } finally {
+      setIsProcessingAi(false);
+    }
+  };
+
   // Handle keyboard shortcuts (Enter to send, Arrow Up/Down for history)
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (extendedThinkingEnabled) {
+      if (storeEditMode) {
+        handleSendStoreEdit();
+      } else if (extendedThinkingEnabled) {
         handleSendWithThinking();
       } else {
         handleSend();
@@ -1550,19 +1748,38 @@ const WorkspaceAIPanel = () => {
             ))
           )}
 
-          {/* Extended Thinking & Tool Usage Display */}
-          {isProcessingAi && extendedThinkingEnabled && (
+          {/* Extended Thinking & Store Edit Mode Tool Usage Display */}
+          {isProcessingAi && (extendedThinkingEnabled || storeEditMode) && (
             <div className="flex gap-3">
-              <div className="shrink-0 w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <div className={cn(
+                "shrink-0 w-7 h-7 rounded-full flex items-center justify-center",
+                storeEditMode
+                  ? "bg-emerald-100 dark:bg-emerald-900/30"
+                  : "bg-purple-100 dark:bg-purple-900/30"
+              )}>
+                {storeEditMode ? (
+                  <Database className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                )}
               </div>
               <div className="flex-1 space-y-2">
                 {/* Processing indicator */}
                 {thinkingText && (
-                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                  <div className={cn(
+                    "border rounded-lg px-3 py-2",
+                    storeEditMode
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                      : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
+                  )}>
+                    <div className={cn(
+                      "flex items-center gap-2",
+                      storeEditMode
+                        ? "text-emerald-700 dark:text-emerald-300"
+                        : "text-purple-700 dark:text-purple-300"
+                    )}>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span className="text-xs font-medium">Processing...</span>
+                      <span className="text-xs font-medium">{thinkingText}</span>
                     </div>
                   </div>
                 )}
@@ -1632,8 +1849,8 @@ const WorkspaceAIPanel = () => {
             </div>
           )}
 
-          {/* Standard loading indicator (non-extended mode) */}
-          {isProcessingAi && !extendedThinkingEnabled && (
+          {/* Standard loading indicator (non-extended, non-store-edit mode) */}
+          {isProcessingAi && !extendedThinkingEnabled && !storeEditMode && (
             <div className="flex gap-3">
               <div className="shrink-0 w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                 <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -1779,9 +1996,32 @@ const WorkspaceAIPanel = () => {
                 )}
               </div>
 
+              {/* Store Edit Mode Toggle */}
+              <button
+                onClick={() => {
+                  setStoreEditMode(!storeEditMode);
+                  if (!storeEditMode) setExtendedThinkingEnabled(false); // Disable extended thinking when enabling store edit
+                }}
+                disabled={isProcessingAi}
+                className={cn(
+                  "p-1 rounded transition-all flex items-center gap-0.5",
+                  storeEditMode
+                    ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30"
+                    : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                title={storeEditMode ? "Store Edit Mode ON (AI can modify products, orders, settings, etc.)" : "Enable Store Edit Mode"}
+              >
+                <Database className="w-3.5 h-3.5" />
+                {storeEditMode && <Zap className="w-2.5 h-2.5" />}
+              </button>
+
               {/* Extended Thinking Toggle */}
               <button
-                onClick={() => setExtendedThinkingEnabled(!extendedThinkingEnabled)}
+                onClick={() => {
+                  setExtendedThinkingEnabled(!extendedThinkingEnabled);
+                  if (!extendedThinkingEnabled) setStoreEditMode(false); // Disable store edit when enabling extended thinking
+                }}
                 disabled={isProcessingAi}
                 className={cn(
                   "p-1 rounded transition-all flex items-center gap-0.5",
@@ -1845,19 +2085,23 @@ const WorkspaceAIPanel = () => {
 
             {/* Right side: Submit Button */}
             <button
-              onClick={extendedThinkingEnabled ? handleSendWithThinking : handleSend}
+              onClick={storeEditMode ? handleSendStoreEdit : (extendedThinkingEnabled ? handleSendWithThinking : handleSend)}
               disabled={(!inputValue.trim() && attachedImages.length === 0) || isProcessingAi}
               className={cn(
                 "p-1.5 rounded-md transition-all",
-                extendedThinkingEnabled
-                  ? "bg-amber-600 hover:bg-amber-700 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white",
+                storeEditMode
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : extendedThinkingEnabled
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white",
                 "disabled:bg-gray-300 disabled:cursor-not-allowed"
               )}
-              title={extendedThinkingEnabled ? "Send with extended thinking" : "Send message"}
+              title={storeEditMode ? "Send store edit command" : (extendedThinkingEnabled ? "Send with extended thinking" : "Send message")}
             >
               {isProcessingAi ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : storeEditMode ? (
+                <Database className="h-4 w-4" />
               ) : extendedThinkingEnabled ? (
                 <Brain className="h-4 w-4" />
               ) : (

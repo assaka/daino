@@ -2,25 +2,24 @@
  * AI Store Editing Routes
  *
  * Provides AI-powered store editing through natural language commands.
- * Uses LLM function calling (tools) - no custom model training required.
+ * Uses LLM function calling with GENERIC tools - no custom model training required.
  *
- * FLOW:
- * 1. User sends: "Change the product title to green"
- * 2. AI receives message + tool definitions
- * 3. AI calls: update_element_style(element="product-title", styles={color: "green"})
- * 4. Backend executes tool against database
- * 5. Tool result sent back to AI
- * 6. AI generates human-readable response
- * 7. Response + changes sent to frontend
+ * ARCHITECTURE:
+ * 1. User sends: "Create a 20% off coupon for summer sale"
+ * 2. AI receives message + generic tool definitions
+ * 3. AI decides: create_record(entity="coupons", data={...})
+ * 4. Backend executes tool against existing API
+ * 5. AI generates human-readable response
+ *
+ * The AI uses its intelligence + RAG context to figure out which
+ * endpoint to call. No need to maintain 100+ specific tools.
  */
 
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
-const aiProvider = require('../services/ai-provider-service');
-const storeEditingService = require('../services/storeEditingService');
-const Anthropic = require('@anthropic-ai/sdk');
+const genericApiToolService = require('../services/genericApiToolService');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -29,23 +28,13 @@ router.use(storeResolver);
 /**
  * POST /api/ai/store-edit
  * Main endpoint for AI-powered store editing
- *
- * Request body:
- * - message: User's natural language command
- * - history: Previous conversation messages (optional)
- * - modelId: AI model to use (optional, defaults to claude-3-5-sonnet)
- *
- * Response:
- * - success: boolean
- * - response: AI's text response
- * - changes: Array of changes made
- * - refreshPreview: Whether frontend should refresh preview
  */
 router.post('/store-edit', async (req, res) => {
   try {
     const { message, history = [], modelId } = req.body;
     const storeId = req.storeId;
     const userId = req.user?.id;
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
 
     if (!message) {
       return res.status(400).json({
@@ -54,13 +43,13 @@ router.post('/store-edit', async (req, res) => {
       });
     }
 
-    console.log('🎨 AI Store Editing Request');
+    console.log('🤖 AI Store Editing Request');
     console.log(`   User: ${userId}, Store: ${storeId}`);
     console.log(`   Message: ${message}`);
 
-    // Get tool definitions
-    const tools = storeEditingService.getTools();
-    const systemPrompt = storeEditingService.getSystemPrompt();
+    // Get generic tools and system prompt
+    const tools = genericApiToolService.getTools();
+    const systemPrompt = genericApiToolService.getSystemPrompt();
 
     // Build conversation messages
     const messages = [
@@ -68,24 +57,23 @@ router.post('/store-edit', async (req, res) => {
       { role: 'user', content: message }
     ];
 
-    // Call AI with tools - this is the main loop
+    // Execute AI with tools
     const result = await executeAIWithTools({
       messages,
       systemPrompt,
       tools,
-      storeId,
-      maxIterations: 5 // Prevent infinite loops
+      context: { storeId, userId, authToken },
+      maxIterations: 10
     });
 
     console.log(`   ✅ AI Response generated`);
-    console.log(`   Changes: ${result.changes.length}`);
+    console.log(`   Tools used: ${result.toolsUsed.length}`);
 
     res.json({
       success: true,
       response: result.response,
-      changes: result.changes,
-      refreshPreview: result.refreshPreview,
-      toolsUsed: result.toolsUsed
+      toolsUsed: result.toolsUsed,
+      results: result.results
     });
 
   } catch (error) {
@@ -99,14 +87,14 @@ router.post('/store-edit', async (req, res) => {
 
 /**
  * POST /api/ai/store-edit/stream
- * Streaming version for real-time updates
- * Uses Server-Sent Events (SSE)
+ * Streaming version for real-time updates (SSE)
  */
 router.post('/store-edit/stream', async (req, res) => {
   try {
     const { message, history = [], modelId } = req.body;
     const storeId = req.storeId;
     const userId = req.user?.id;
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
 
     if (!message) {
       return res.status(400).json({
@@ -120,11 +108,11 @@ router.post('/store-edit/stream', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    console.log('🎨 AI Store Editing (Streaming)');
+    console.log('🤖 AI Store Editing (Streaming)');
     console.log(`   Message: ${message}`);
 
-    const tools = storeEditingService.getTools();
-    const systemPrompt = storeEditingService.getSystemPrompt();
+    const tools = genericApiToolService.getTools();
+    const systemPrompt = genericApiToolService.getSystemPrompt();
 
     const messages = [
       ...history.map(h => ({ role: h.role, content: h.content })),
@@ -136,15 +124,13 @@ router.post('/store-edit/stream', async (req, res) => {
       messages,
       systemPrompt,
       tools,
-      storeId,
+      context: { storeId, userId, authToken },
       res,
-      maxIterations: 5
+      maxIterations: 10
     });
 
   } catch (error) {
     console.error('❌ AI Store Editing Stream Error:', error);
-
-    // Send error event
     res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
     res.end();
   }
@@ -152,14 +138,15 @@ router.post('/store-edit/stream', async (req, res) => {
 
 /**
  * GET /api/ai/store-edit/tools
- * Get available editing tools (for documentation/UI)
+ * Get available tools (for documentation/debugging)
  */
 router.get('/store-edit/tools', async (req, res) => {
   try {
-    const tools = storeEditingService.getTools();
+    const tools = genericApiToolService.getTools();
 
     res.json({
       success: true,
+      count: tools.length,
       tools: tools.map(t => ({
         name: t.name,
         description: t.description,
@@ -176,12 +163,14 @@ router.get('/store-edit/tools', async (req, res) => {
 
 /**
  * POST /api/ai/store-edit/execute-tool
- * Directly execute a tool (for debugging/manual control)
+ * Directly execute a tool (for testing/debugging)
  */
 router.post('/store-edit/execute-tool', async (req, res) => {
   try {
-    const { toolName, toolInput } = req.body;
+    const { toolName, input } = req.body;
     const storeId = req.storeId;
+    const userId = req.user?.id;
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
 
     if (!toolName) {
       return res.status(400).json({
@@ -190,7 +179,11 @@ router.post('/store-edit/execute-tool', async (req, res) => {
       });
     }
 
-    const result = await storeEditingService.executeTool(toolName, toolInput || {}, storeId);
+    const result = await genericApiToolService.executeTool(
+      toolName,
+      input || {},
+      { storeId, userId, authToken }
+    );
 
     res.json({
       success: result.success,
@@ -205,24 +198,20 @@ router.post('/store-edit/execute-tool', async (req, res) => {
 });
 
 // ============================================
-// HELPER FUNCTIONS
+// AI EXECUTION HELPERS
 // ============================================
 
 /**
  * Execute AI with tools in a loop
- * Handles tool calls and re-invokes AI until complete
  */
-async function executeAIWithTools({ messages, systemPrompt, tools, storeId, maxIterations = 5 }) {
-  const client = aiProvider.getProvider('anthropic');
-
-  if (!client) {
-    throw new Error('Anthropic client not available. Check API key configuration.');
-  }
+async function executeAIWithTools({ messages, systemPrompt, tools, context, maxIterations = 10 }) {
+  // Dynamic import for Anthropic
+  const Anthropic = require('@anthropic-ai/sdk');
+  const client = new Anthropic();
 
   let currentMessages = [...messages];
-  let allChanges = [];
+  let allResults = [];
   let toolsUsed = [];
-  let refreshPreview = false;
   let iteration = 0;
 
   while (iteration < maxIterations) {
@@ -232,7 +221,7 @@ async function executeAIWithTools({ messages, systemPrompt, tools, storeId, maxI
     // Call Claude with tools
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: systemPrompt,
       tools: tools,
       messages: currentMessages
@@ -242,7 +231,6 @@ async function executeAIWithTools({ messages, systemPrompt, tools, storeId, maxI
 
     // Check if AI wants to use tools
     if (response.stop_reason === 'tool_use') {
-      // Process all tool uses in this response
       const toolUseBlocks = response.content.filter(block => block.type === 'tool_use');
       const toolResults = [];
 
@@ -250,10 +238,10 @@ async function executeAIWithTools({ messages, systemPrompt, tools, storeId, maxI
         console.log(`   🔧 Tool: ${toolUse.name}`);
 
         // Execute the tool
-        const result = await storeEditingService.executeTool(
+        const result = await genericApiToolService.executeTool(
           toolUse.name,
           toolUse.input,
-          storeId
+          context
         );
 
         toolsUsed.push({
@@ -262,16 +250,10 @@ async function executeAIWithTools({ messages, systemPrompt, tools, storeId, maxI
           success: result.success
         });
 
-        if (result.success && result.changes) {
-          allChanges.push({
-            tool: toolUse.name,
-            ...result.changes
-          });
-        }
-
-        if (result.refreshPreview) {
-          refreshPreview = true;
-        }
+        allResults.push({
+          tool: toolUse.name,
+          result
+        });
 
         toolResults.push({
           type: 'tool_result',
@@ -294,39 +276,33 @@ async function executeAIWithTools({ messages, systemPrompt, tools, storeId, maxI
     } else {
       // AI is done - extract text response
       const textBlock = response.content.find(block => block.type === 'text');
-      const responseText = textBlock?.text || 'Changes applied successfully.';
+      const responseText = textBlock?.text || 'Operation completed.';
 
       return {
         response: responseText,
-        changes: allChanges,
         toolsUsed,
-        refreshPreview
+        results: allResults
       };
     }
   }
 
   // Max iterations reached
   return {
-    response: 'I made some changes but reached the maximum number of operations. Let me know if you need more adjustments.',
-    changes: allChanges,
+    response: 'I completed some operations but reached the maximum number of steps. Let me know if you need more help.',
     toolsUsed,
-    refreshPreview
+    results: allResults
   };
 }
 
 /**
  * Stream AI response with tool execution
- * Sends events as they happen for real-time UI updates
  */
-async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, maxIterations = 5 }) {
-  const client = aiProvider.getProvider('anthropic');
-
-  if (!client) {
-    throw new Error('Anthropic client not available.');
-  }
+async function streamAIWithTools({ messages, systemPrompt, tools, context, res, maxIterations = 10 }) {
+  const Anthropic = require('@anthropic-ai/sdk');
+  const client = new Anthropic();
 
   let currentMessages = [...messages];
-  let allChanges = [];
+  let allResults = [];
   let iteration = 0;
 
   const sendEvent = (type, data) => {
@@ -340,7 +316,7 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
     // Stream the response
     const stream = await client.messages.stream({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: systemPrompt,
       tools: tools,
       messages: currentMessages
@@ -356,14 +332,9 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
         const block = event.content_block;
 
         if (block.type === 'tool_use') {
-          currentToolUse = {
-            id: block.id,
-            name: block.name
-          };
+          currentToolUse = { id: block.id, name: block.name };
           toolInput = '';
           sendEvent('tool_start', { tool: block.name });
-        } else if (block.type === 'text') {
-          sendEvent('text_start', {});
         }
       }
 
@@ -380,7 +351,7 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
 
       if (event.type === 'content_block_stop') {
         if (currentToolUse) {
-          // Parse tool input and execute
+          // Parse and execute tool
           let parsedInput = {};
           try {
             parsedInput = JSON.parse(toolInput);
@@ -393,31 +364,20 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
             input: parsedInput
           });
 
-          // Execute the tool
-          const result = await storeEditingService.executeTool(
+          const result = await genericApiToolService.executeTool(
             currentToolUse.name,
             parsedInput,
-            storeId
+            context
           );
 
           sendEvent('tool_result', {
             tool: currentToolUse.name,
             success: result.success,
-            message: result.message
+            message: result.message || (result.success ? 'Success' : 'Failed')
           });
 
-          if (result.success && result.changes) {
-            allChanges.push({
-              tool: currentToolUse.name,
-              ...result.changes
-            });
-          }
+          allResults.push({ tool: currentToolUse.name, result });
 
-          if (result.refreshPreview) {
-            sendEvent('refresh_preview', {});
-          }
-
-          // Store for continuing conversation
           responseContent.push({
             type: 'tool_use',
             id: currentToolUse.id,
@@ -431,17 +391,13 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
 
       if (event.type === 'message_delta') {
         if (event.delta?.stop_reason === 'end_turn') {
-          // AI is done
-          sendEvent('complete', {
-            changes: allChanges,
-            refreshPreview: allChanges.some(c => c.refreshPreview !== false)
-          });
+          sendEvent('complete', { results: allResults });
           res.end();
           return;
         }
 
         if (event.delta?.stop_reason === 'tool_use') {
-          // Need to continue with tool results
+          // Continue with tool results
           if (textContent) {
             responseContent.unshift({ type: 'text', text: textContent });
           }
@@ -451,13 +407,12 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
             content: responseContent
           });
 
-          // Add tool results
           const toolResults = responseContent
             .filter(c => c.type === 'tool_use')
             .map(c => ({
               type: 'tool_result',
               tool_use_id: c.id,
-              content: JSON.stringify({ success: true }) // Simplified for stream
+              content: JSON.stringify(allResults.find(r => r.tool === c.name)?.result || { success: true })
             }));
 
           currentMessages.push({
@@ -472,11 +427,7 @@ async function streamAIWithTools({ messages, systemPrompt, tools, storeId, res, 
     }
   }
 
-  // Max iterations
-  sendEvent('complete', {
-    changes: allChanges,
-    maxIterationsReached: true
-  });
+  sendEvent('complete', { results: allResults, maxIterationsReached: true });
   res.end();
 }
 
