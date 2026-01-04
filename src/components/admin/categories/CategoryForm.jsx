@@ -206,9 +206,10 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       setSavingImage(true);
       try {
         const storeId = getSelectedStoreId();
+        // Exclude image_url - backend uses media_asset_id only
+        const { image_url: _, ...formDataWithoutImageUrl } = formData;
         const updatePayload = {
-          ...formData,
-          image_url: file.url,
+          ...formDataWithoutImageUrl,
           media_asset_id: file.media_asset_id,
           parent_id: formData.parent_id || null,
           sort_order: parseInt(formData.sort_order) || 0,
@@ -218,7 +219,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         console.log('📤 CategoryForm - sending update payload:', {
           categoryId: category.id,
           media_asset_id: updatePayload.media_asset_id,
-          image_url: updatePayload.image_url,
           payloadKeys: Object.keys(updatePayload)
         });
 
@@ -360,8 +360,10 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     setLoading(true);
 
     try {
+      // Exclude image_url from submit - backend uses media_asset_id only
+      const { image_url, ...formDataWithoutImageUrl } = formData;
       const submitData = {
-        ...formData,
+        ...formDataWithoutImageUrl,
         sort_order: parseInt(formData.sort_order) || 0,
         // Convert empty string to null for UUID fields
         parent_id: formData.parent_id || null
@@ -625,17 +627,17 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
       <div>
         <Label htmlFor="image_url">Category Image</Label>
-        
+
         <div className="flex gap-2">
           <Input
             id="image_url"
             name="image_url"
             value={formData.image_url || ''}
-            onChange={handleInputChange}
-            placeholder="Enter URL or select from library"
-            className="flex-1"
+            readOnly
+            placeholder="Select from library"
+            className="flex-1 bg-gray-50"
           />
-          
+
           {/* Select Image button - opens Media Library */}
           <Button
             type="button"
@@ -651,7 +653,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           </Button>
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          Select an image from the media library or enter an external URL
+          Select an image from the media library
         </p>
         
         {/* Image preview if URL exists */}
