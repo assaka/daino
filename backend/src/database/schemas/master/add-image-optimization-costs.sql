@@ -10,17 +10,18 @@
 -- OpenAI Image Optimization Costs
 -- (Highest quality, highest cost)
 -- ============================================
-INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active, is_visible, display_order, metadata)
+INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, cost_price_usd, billing_type, description, is_active, is_visible, display_order, metadata)
 VALUES
-  ('ai_image_openai_compress', 'OpenAI Image Compress', 'ai_services', 0.5, 'per_use', 'AI-powered image compression using OpenAI', true, true, 100, '{"provider": "openai", "operation": "compress", "icon": "🤖"}'),
-  ('ai_image_openai_upscale', 'OpenAI Image Upscale', 'ai_services', 1.5, 'per_use', 'Image upscaling and enhancement using OpenAI', true, true, 101, '{"provider": "openai", "operation": "upscale", "icon": "🤖"}'),
-  ('ai_image_openai_remove_bg', 'OpenAI Background Removal', 'ai_services', 1.5, 'per_use', 'AI background removal using OpenAI', true, true, 102, '{"provider": "openai", "operation": "remove_bg", "icon": "🤖"}'),
-  ('ai_image_openai_stage', 'OpenAI Product Staging', 'ai_services', 2.5, 'per_use', 'Place product in realistic environment using OpenAI', true, true, 103, '{"provider": "openai", "operation": "stage", "icon": "🤖"}'),
-  ('ai_image_openai_convert', 'OpenAI Format Convert', 'ai_services', 0.3, 'per_use', 'Smart format conversion using OpenAI', true, true, 104, '{"provider": "openai", "operation": "convert", "icon": "🤖"}'),
-  ('ai_image_openai_custom', 'OpenAI Custom', 'ai_services', 2.5, 'per_use', 'Custom AI image modification using OpenAI', true, true, 105, '{"provider": "openai", "operation": "custom", "icon": "🤖"}'),
-  ('ai_image_openai_generate', 'OpenAI Image Generation', 'ai_services', 4.0, 'per_use', 'Generate new images from text using DALL-E 3', true, true, 106, '{"provider": "openai", "operation": "generate", "icon": "🤖"}')
+  ('ai_image_openai_compress', 'OpenAI Image Compress', 'ai_services', 0.5, 0.04, 'per_use', 'AI-powered image compression using OpenAI', true, true, 100, '{"provider": "openai", "operation": "compress", "icon": "🤖"}'),
+  ('ai_image_openai_upscale', 'OpenAI Image Upscale', 'ai_services', 1.5, 0.06, 'per_use', 'Image upscaling and enhancement using OpenAI', true, true, 101, '{"provider": "openai", "operation": "upscale", "icon": "🤖"}'),
+  ('ai_image_openai_remove_bg', 'OpenAI Background Removal', 'ai_services', 1.5, 0.06, 'per_use', 'AI background removal using OpenAI', true, true, 102, '{"provider": "openai", "operation": "remove_bg", "icon": "🤖"}'),
+  ('ai_image_openai_stage', 'OpenAI Product Staging', 'ai_services', 2.5, 0.10, 'per_use', 'Place product in realistic environment using OpenAI', true, true, 103, '{"provider": "openai", "operation": "stage", "icon": "🤖"}'),
+  ('ai_image_openai_convert', 'OpenAI Format Convert', 'ai_services', 0.3, 0.02, 'per_use', 'Smart format conversion using OpenAI', true, true, 104, '{"provider": "openai", "operation": "convert", "icon": "🤖"}'),
+  ('ai_image_openai_custom', 'OpenAI Custom', 'ai_services', 2.5, 0.10, 'per_use', 'Custom AI image modification using OpenAI', true, true, 105, '{"provider": "openai", "operation": "custom", "icon": "🤖"}'),
+  ('ai_image_openai_generate', 'OpenAI Image Generation', 'ai_services', 4.0, 0.08, 'per_use', 'Generate new images from text using DALL-E 3', true, true, 106, '{"provider": "openai", "operation": "generate", "icon": "🤖"}')
 ON CONFLICT (service_key) DO UPDATE SET
   cost_per_unit = EXCLUDED.cost_per_unit,
+  cost_price_usd = EXCLUDED.cost_price_usd,
   description = EXCLUDED.description,
   metadata = EXCLUDED.metadata,
   is_active = EXCLUDED.is_active;
@@ -29,17 +30,18 @@ ON CONFLICT (service_key) DO UPDATE SET
 -- Gemini Image Optimization Costs
 -- (Fast, balanced cost)
 -- ============================================
-INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active, is_visible, display_order, metadata)
+INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, cost_price_usd, billing_type, description, is_active, is_visible, display_order, metadata)
 VALUES
-  ('ai_image_gemini_compress', 'Gemini Image Compress', 'ai_services', 0.3, 'per_use', 'AI-powered image compression using Gemini', true, true, 110, '{"provider": "gemini", "operation": "compress", "icon": "✨"}'),
-  ('ai_image_gemini_upscale', 'Gemini Image Upscale', 'ai_services', 0.8, 'per_use', 'Image upscaling and enhancement using Gemini', true, true, 111, '{"provider": "gemini", "operation": "upscale", "icon": "✨"}'),
-  ('ai_image_gemini_remove_bg', 'Gemini Background Removal', 'ai_services', 0.8, 'per_use', 'AI background removal using Gemini', true, true, 112, '{"provider": "gemini", "operation": "remove_bg", "icon": "✨"}'),
-  ('ai_image_gemini_stage', 'Gemini Product Staging', 'ai_services', 1.5, 'per_use', 'Place product in realistic environment using Gemini', true, true, 113, '{"provider": "gemini", "operation": "stage", "icon": "✨"}'),
-  ('ai_image_gemini_convert', 'Gemini Format Convert', 'ai_services', 0.2, 'per_use', 'Smart format conversion using Gemini', true, true, 114, '{"provider": "gemini", "operation": "convert", "icon": "✨"}'),
-  ('ai_image_gemini_custom', 'Gemini Custom', 'ai_services', 1.5, 'per_use', 'Custom AI image modification using Gemini', true, true, 115, '{"provider": "gemini", "operation": "custom", "icon": "✨"}'),
-  ('ai_image_gemini_generate', 'Gemini Image Generation', 'ai_services', 2.5, 'per_use', 'Generate new images from text using Gemini', true, true, 116, '{"provider": "gemini", "operation": "generate", "icon": "✨"}')
+  ('ai_image_gemini_compress', 'Gemini Image Compress', 'ai_services', 0.3, 0.02, 'per_use', 'AI-powered image compression using Gemini', true, true, 110, '{"provider": "gemini", "operation": "compress", "icon": "✨"}'),
+  ('ai_image_gemini_upscale', 'Gemini Image Upscale', 'ai_services', 0.8, 0.04, 'per_use', 'Image upscaling and enhancement using Gemini', true, true, 111, '{"provider": "gemini", "operation": "upscale", "icon": "✨"}'),
+  ('ai_image_gemini_remove_bg', 'Gemini Background Removal', 'ai_services', 0.8, 0.04, 'per_use', 'AI background removal using Gemini', true, true, 112, '{"provider": "gemini", "operation": "remove_bg", "icon": "✨"}'),
+  ('ai_image_gemini_stage', 'Gemini Product Staging', 'ai_services', 1.5, 0.06, 'per_use', 'Place product in realistic environment using Gemini', true, true, 113, '{"provider": "gemini", "operation": "stage", "icon": "✨"}'),
+  ('ai_image_gemini_convert', 'Gemini Format Convert', 'ai_services', 0.2, 0.01, 'per_use', 'Smart format conversion using Gemini', true, true, 114, '{"provider": "gemini", "operation": "convert", "icon": "✨"}'),
+  ('ai_image_gemini_custom', 'Gemini Custom', 'ai_services', 1.5, 0.06, 'per_use', 'Custom AI image modification using Gemini', true, true, 115, '{"provider": "gemini", "operation": "custom", "icon": "✨"}'),
+  ('ai_image_gemini_generate', 'Gemini Image Generation', 'ai_services', 2.5, 0.05, 'per_use', 'Generate new images from text using Gemini', true, true, 116, '{"provider": "gemini", "operation": "generate", "icon": "✨"}')
 ON CONFLICT (service_key) DO UPDATE SET
   cost_per_unit = EXCLUDED.cost_per_unit,
+  cost_price_usd = EXCLUDED.cost_price_usd,
   description = EXCLUDED.description,
   metadata = EXCLUDED.metadata,
   is_active = EXCLUDED.is_active;
@@ -49,22 +51,23 @@ ON CONFLICT (service_key) DO UPDATE SET
 -- (High quality generation, good for staging)
 -- Pricing from BFL direct API (api.bfl.ml)
 -- ============================================
-INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active, is_visible, display_order, metadata)
+INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, cost_price_usd, billing_type, description, is_active, is_visible, display_order, metadata)
 VALUES
-  ('ai_image_flux_compress', 'Flux Image Compress', 'ai_services', 0.4, 'per_use', 'AI-powered image compression using Flux', true, true, 120, '{"provider": "flux", "operation": "compress", "icon": "⚡"}'),
-  ('ai_image_flux_upscale', 'Flux Image Upscale', 'ai_services', 0.6, 'per_use', 'Image upscaling using Flux/Real-ESRGAN', true, true, 121, '{"provider": "flux", "operation": "upscale", "icon": "⚡"}'),
-  ('ai_image_flux_remove_bg', 'Flux Background Removal', 'ai_services', 0.5, 'per_use', 'AI background removal using Flux/BiRefNet', true, true, 122, '{"provider": "flux", "operation": "remove_bg", "icon": "⚡"}'),
-  ('ai_image_flux_stage', 'Flux Product Staging', 'ai_services', 1.8, 'per_use', 'Place product in realistic environment using Flux', true, true, 123, '{"provider": "flux", "operation": "stage", "icon": "⚡"}'),
-  ('ai_image_flux_convert', 'Flux Format Convert', 'ai_services', 0.2, 'per_use', 'Smart format conversion using Flux', true, true, 124, '{"provider": "flux", "operation": "convert", "icon": "⚡"}'),
-  ('ai_image_flux_custom', 'Flux Custom', 'ai_services', 1.8, 'per_use', 'Custom AI image modification using Flux', true, true, 125, '{"provider": "flux", "operation": "custom", "icon": "⚡"}'),
+  ('ai_image_flux_compress', 'Flux Image Compress', 'ai_services', 0.4, 0.02, 'per_use', 'AI-powered image compression using Flux', true, true, 120, '{"provider": "flux", "operation": "compress", "icon": "⚡"}'),
+  ('ai_image_flux_upscale', 'Flux Image Upscale', 'ai_services', 0.6, 0.02, 'per_use', 'Image upscaling using Flux/Real-ESRGAN', true, true, 121, '{"provider": "flux", "operation": "upscale", "icon": "⚡"}'),
+  ('ai_image_flux_remove_bg', 'Flux Background Removal', 'ai_services', 0.5, 0.02, 'per_use', 'AI background removal using Flux/BiRefNet', true, true, 122, '{"provider": "flux", "operation": "remove_bg", "icon": "⚡"}'),
+  ('ai_image_flux_stage', 'Flux Product Staging', 'ai_services', 1.8, 0.05, 'per_use', 'Place product in realistic environment using Flux', true, true, 123, '{"provider": "flux", "operation": "stage", "icon": "⚡"}'),
+  ('ai_image_flux_convert', 'Flux Format Convert', 'ai_services', 0.2, 0.01, 'per_use', 'Smart format conversion using Flux', true, true, 124, '{"provider": "flux", "operation": "convert", "icon": "⚡"}'),
+  ('ai_image_flux_custom', 'Flux Custom', 'ai_services', 1.8, 0.05, 'per_use', 'Custom AI image modification using Flux', true, true, 125, '{"provider": "flux", "operation": "custom", "icon": "⚡"}'),
   -- Flux Generation by model variant (BFL direct pricing)
-  ('ai_image_flux_generate_pro', 'Flux Pro 1.1 Generation', 'ai_services', 0.5, 'per_use', 'Generate images using Flux Pro 1.1 (~$0.05/image) - highest quality', true, true, 126, '{"provider": "flux", "operation": "generate", "model": "flux-pro-1.1", "icon": "⚡"}'),
-  ('ai_image_flux_generate_dev', 'Flux Dev Generation', 'ai_services', 0.25, 'per_use', 'Generate images using Flux Dev (~$0.025/image) - balanced quality/cost', true, true, 127, '{"provider": "flux", "operation": "generate", "model": "flux-dev", "icon": "⚡"}'),
-  ('ai_image_flux_generate_schnell', 'Flux Schnell Generation', 'ai_services', 0.03, 'per_use', 'Generate images using Flux Schnell (~$0.003/image) - fastest, budget option', true, true, 128, '{"provider": "flux", "operation": "generate", "model": "flux-schnell", "icon": "⚡"}'),
+  ('ai_image_flux_generate_pro', 'Flux Pro 1.1 Generation', 'ai_services', 2, 0.05, 'per_use', 'Generate images using Flux Pro 1.1 (~$0.05/image) - highest quality', true, true, 126, '{"provider": "flux", "operation": "generate", "model": "flux-pro-1.1", "icon": "⚡"}'),
+  ('ai_image_flux_generate_dev', 'Flux Dev Generation', 'ai_services', 1.5, 0.025, 'per_use', 'Generate images using Flux Dev (~$0.025/image) - balanced quality/cost', true, true, 127, '{"provider": "flux", "operation": "generate", "model": "flux-dev", "icon": "⚡"}'),
+  ('ai_image_flux_generate_schnell', 'Flux Schnell Generation', 'ai_services', 1, 0.003, 'per_use', 'Generate images using Flux Schnell (~$0.003/image) - fastest, budget option', true, true, 128, '{"provider": "flux", "operation": "generate", "model": "flux-schnell", "icon": "⚡"}'),
   -- Legacy generic entry for backwards compatibility
-  ('ai_image_flux_generate', 'Flux Image Generation', 'ai_services', 0.5, 'per_use', 'Generate new images from text using Flux Pro 1.1', true, true, 129, '{"provider": "flux", "operation": "generate", "icon": "⚡"}')
+  ('ai_image_flux_generate', 'Flux Image Generation', 'ai_services', 0.5, 0.05, 'per_use', 'Generate new images from text using Flux Pro 1.1', true, true, 129, '{"provider": "flux", "operation": "generate", "icon": "⚡"}')
 ON CONFLICT (service_key) DO UPDATE SET
   cost_per_unit = EXCLUDED.cost_per_unit,
+  cost_price_usd = EXCLUDED.cost_price_usd,
   description = EXCLUDED.description,
   metadata = EXCLUDED.metadata,
   is_active = EXCLUDED.is_active;
@@ -73,17 +76,18 @@ ON CONFLICT (service_key) DO UPDATE SET
 -- Qwen Image Optimization Costs
 -- (Budget option, lowest cost)
 -- ============================================
-INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active, is_visible, display_order, metadata)
+INSERT INTO service_credit_costs (service_key, service_name, service_category, cost_per_unit, cost_price_usd, billing_type, description, is_active, is_visible, display_order, metadata)
 VALUES
-  ('ai_image_qwen_compress', 'Qwen Image Compress', 'ai_services', 0.2, 'per_use', 'AI-powered image compression using Qwen', true, true, 130, '{"provider": "qwen", "operation": "compress", "icon": "🎨"}'),
-  ('ai_image_qwen_upscale', 'Qwen Image Upscale', 'ai_services', 0.5, 'per_use', 'Image upscaling and enhancement using Qwen', true, true, 131, '{"provider": "qwen", "operation": "upscale", "icon": "🎨"}'),
-  ('ai_image_qwen_remove_bg', 'Qwen Background Removal', 'ai_services', 0.5, 'per_use', 'AI background removal using Qwen', true, true, 132, '{"provider": "qwen", "operation": "remove_bg", "icon": "🎨"}'),
-  ('ai_image_qwen_stage', 'Qwen Product Staging', 'ai_services', 1.2, 'per_use', 'Place product in realistic environment using Qwen', true, true, 133, '{"provider": "qwen", "operation": "stage", "icon": "🎨"}'),
-  ('ai_image_qwen_convert', 'Qwen Format Convert', 'ai_services', 0.15, 'per_use', 'Smart format conversion using Qwen', true, true, 134, '{"provider": "qwen", "operation": "convert", "icon": "🎨"}'),
-  ('ai_image_qwen_custom', 'Qwen Custom', 'ai_services', 1.2, 'per_use', 'Custom AI image modification using Qwen', true, true, 135, '{"provider": "qwen", "operation": "custom", "icon": "🎨"}'),
-  ('ai_image_qwen_generate', 'Qwen Image Generation', 'ai_services', 2.0, 'per_use', 'Generate new images from text using Qwen', true, true, 136, '{"provider": "qwen", "operation": "generate", "icon": "🎨"}')
+  ('ai_image_qwen_compress', 'Qwen Image Compress', 'ai_services', 0.2, 0.01, 'per_use', 'AI-powered image compression using Qwen', true, true, 130, '{"provider": "qwen", "operation": "compress", "icon": "🎨"}'),
+  ('ai_image_qwen_upscale', 'Qwen Image Upscale', 'ai_services', 0.5, 0.02, 'per_use', 'Image upscaling and enhancement using Qwen', true, true, 131, '{"provider": "qwen", "operation": "upscale", "icon": "🎨"}'),
+  ('ai_image_qwen_remove_bg', 'Qwen Background Removal', 'ai_services', 0.5, 0.02, 'per_use', 'AI background removal using Qwen', true, true, 132, '{"provider": "qwen", "operation": "remove_bg", "icon": "🎨"}'),
+  ('ai_image_qwen_stage', 'Qwen Product Staging', 'ai_services', 1.2, 0.04, 'per_use', 'Place product in realistic environment using Qwen', true, true, 133, '{"provider": "qwen", "operation": "stage", "icon": "🎨"}'),
+  ('ai_image_qwen_convert', 'Qwen Format Convert', 'ai_services', 0.15, 0.005, 'per_use', 'Smart format conversion using Qwen', true, true, 134, '{"provider": "qwen", "operation": "convert", "icon": "🎨"}'),
+  ('ai_image_qwen_custom', 'Qwen Custom', 'ai_services', 1.2, 0.04, 'per_use', 'Custom AI image modification using Qwen', true, true, 135, '{"provider": "qwen", "operation": "custom", "icon": "🎨"}'),
+  ('ai_image_qwen_generate', 'Qwen Image Generation', 'ai_services', 2.0, 0.03, 'per_use', 'Generate new images from text using Qwen', true, true, 136, '{"provider": "qwen", "operation": "generate", "icon": "🎨"}')
 ON CONFLICT (service_key) DO UPDATE SET
   cost_per_unit = EXCLUDED.cost_per_unit,
+  cost_price_usd = EXCLUDED.cost_price_usd,
   description = EXCLUDED.description,
   metadata = EXCLUDED.metadata,
   is_active = EXCLUDED.is_active;
@@ -99,7 +103,12 @@ ON CONFLICT (service_key) DO UPDATE SET
 -- Qwen      | 0.2 cr   | 0.5 cr  | 0.5 cr    | 1.2 cr| 0.15 cr | 1.2 cr | 2.0 cr
 -- ============================================
 -- Flux Generation Models (BFL direct API pricing):
--- - Flux Pro 1.1:  0.5 cr  (~$0.05/image) - highest quality
--- - Flux Dev:      0.25 cr (~$0.025/image) - balanced
--- - Flux Schnell:  0.03 cr (~$0.003/image) - fastest/cheapest
+-- - Flux Pro 1.1:  2 cr   ($0.05 cost) - highest quality
+-- - Flux Dev:      1.5 cr ($0.025 cost) - balanced
+-- - Flux Schnell:  1 cr   ($0.003 cost) - fastest/cheapest
+-- ============================================
+-- Margin Calculation:
+--   Revenue = cost_per_unit * $0.10 (1 credit = $0.10)
+--   Margin  = Revenue - cost_price_usd
+--   Margin% = (Revenue - cost_price_usd) / Revenue * 100
 -- ============================================
