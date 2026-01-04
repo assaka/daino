@@ -297,7 +297,7 @@ const VersionHistoryPanel = ({
             </div>
           </div>
         ) : (
-          <div className="p-4">
+          <div className="p-4 pr-1">
             <div className="relative">
               {/* Timeline line */}
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border" />

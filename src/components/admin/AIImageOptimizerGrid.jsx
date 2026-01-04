@@ -86,13 +86,21 @@ const AIImageOptimizerGrid = ({
               const files = response.data?.files || response.files || [];
               // Filter to only library images (exclude product/category folders)
               return files.filter(f => {
-                const url = f.url || f.publicUrl;
+                const url = f.url || f.publicUrl || '';
                 const folder = (f.folder || '').toLowerCase();
+                const path = (f.fullPath || f.path || '').toLowerCase();
                 const mimeType = f.mimetype || f.mimeType || '';
                 const isImage = mimeType.startsWith('image/') ||
                   /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-                // Use database folder as authoritative source - only show library files
-                const isLibrary = folder === 'library' || folder === '';
+
+                // Determine file type from folder or path/URL
+                const isProductFile = folder === 'product' ||
+                  (!folder && (path.includes('/product/') || url.toLowerCase().includes('/product/')));
+                const isCategoryFile = folder === 'category' ||
+                  (!folder && (path.includes('/category/') || url.toLowerCase().includes('/category/')));
+
+                // Library = explicitly library OR not product/category
+                const isLibrary = folder === 'library' || (!isProductFile && !isCategoryFile);
                 return url && isImage && isLibrary;
               }).map(f => ({
                 id: f.id || f.fullPath,
@@ -289,13 +297,21 @@ const AIImageOptimizerGrid = ({
             ? apiClient.get('/storage/list').then(response => {
                 const files = response.data?.files || response.files || [];
                 return files.filter(f => {
-                  const url = f.url || f.publicUrl;
+                  const url = f.url || f.publicUrl || '';
                   const folder = (f.folder || '').toLowerCase();
+                  const path = (f.fullPath || f.path || '').toLowerCase();
                   const mimeType = f.mimetype || f.mimeType || '';
                   const isImage = mimeType.startsWith('image/') ||
                     /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f.name || url || '');
-                  // Use database folder as authoritative source - only show library files
-                  const isLibrary = folder === 'library' || folder === '';
+
+                  // Determine file type from folder or path/URL
+                  const isProductFile = folder === 'product' ||
+                    (!folder && (path.includes('/product/') || url.toLowerCase().includes('/product/')));
+                  const isCategoryFile = folder === 'category' ||
+                    (!folder && (path.includes('/category/') || url.toLowerCase().includes('/category/')));
+
+                  // Library = explicitly library OR not product/category
+                  const isLibrary = folder === 'library' || (!isProductFile && !isCategoryFile);
                   return url && isImage && isLibrary;
                 }).map(f => ({
                   id: f.id || f.fullPath,
