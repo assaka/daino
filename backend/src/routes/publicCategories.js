@@ -105,7 +105,7 @@ router.get('/', cacheCategories(600), async (req, res) => {
       const enLang = trans?.['en'];
 
       // Get image_url from media_asset if available
-      let imageUrl = cat.image_url; // fallback to legacy field
+      let imageUrl = null;
       if (cat.media_asset_id && mediaAssetsMap[cat.media_asset_id]) {
         imageUrl = mediaAssetsMap[cat.media_asset_id].file_url;
       }
@@ -198,7 +198,7 @@ router.get('/by-slug/:slug/full', cacheCategories(300), async (req, res) => {
     const enLang = transMap['en'];
 
     // Fetch media_asset for category image if exists
-    let categoryImageUrl = category.image_url; // fallback to legacy
+    let categoryImageUrl = null;
     if (category.media_asset_id) {
       const { data: mediaAsset } = await tenantDb
         .from('media_assets')
@@ -390,7 +390,7 @@ router.get('/:id', cacheCategories(600), async (req, res) => {
     const enLang = transMap['en'];
 
     // Fetch media_asset for category image if exists
-    let categoryImageUrl = category.image_url; // fallback to legacy
+    let categoryImageUrl = null;
     if (category.media_asset_id) {
       const { data: mediaAsset } = await tenantDb
         .from('media_assets')
