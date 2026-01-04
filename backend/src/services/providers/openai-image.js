@@ -189,18 +189,21 @@ class OpenAIImageProvider {
   }
 
   /**
-   * Generate new image from text prompt using DALL-E 3
+   * Generate new image from text prompt
+   * If referenceImageUrl is provided, uses image editing to incorporate the product
    */
   async generate(params = {}) {
     const {
       prompt = 'A beautiful product photo',
       style = 'photorealistic',
       aspectRatio = '1:1',
-      quality = 'hd'
+      quality = 'hd',
+      referenceImageUrl = null
     } = params;
 
-    // Map aspect ratios to DALL-E 3 sizes
-    // DALL-E 3 supports: 1024x1024, 1024x1792, 1792x1024
+    // Map aspect ratios to sizes
+    // DALL-E 3: 1024x1024, 1024x1792, 1792x1024
+    // GPT-Image-1: 1024x1024, 1024x1536, 1536x1024
     const sizeMap = {
       '1:1': '1024x1024',
       '16:9': '1792x1024',
@@ -211,7 +214,15 @@ class OpenAIImageProvider {
       '2:3': '1024x1792'
     };
 
-    const size = sizeMap[aspectRatio] || '1024x1024';
+    const editSizeMap = {
+      '1:1': '1024x1024',
+      '16:9': '1536x1024',
+      '9:16': '1024x1536',
+      '4:3': '1536x1024',
+      '3:4': '1024x1536',
+      '3:2': '1536x1024',
+      '2:3': '1024x1536'
+    };
 
     // Build enhanced prompt with style
     const stylePrompts = {
@@ -225,6 +236,33 @@ class OpenAIImageProvider {
     };
 
     const enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+
+    // If reference image is provided, use image editing (GPT-Image-1) to modify it
+    // This preserves the product while transforming the scene around it
+    if (referenceImageUrl) {
+      const size = editSizeMap[aspectRatio] || '1024x1024';
+
+      const response = await this.client.images.edit({
+        model: 'gpt-image-1',
+        image: await this.prepareImage(referenceImageUrl),
+        prompt: enhancedPrompt,
+        size
+      });
+
+      const imageData = await this.extractImageFromResponse(response);
+
+      return {
+        image: imageData,
+        format: 'png',
+        prompt: enhancedPrompt,
+        style,
+        aspectRatio,
+        usedReference: true
+      };
+    }
+
+    // No reference image - use DALL-E 3 for pure text-to-image generation
+    const size = sizeMap[aspectRatio] || '1024x1024';
 
     const response = await this.client.images.generate({
       model: 'dall-e-3',
