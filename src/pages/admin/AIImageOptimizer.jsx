@@ -46,7 +46,7 @@ const AIImageOptimizer = () => {
 
         // Load library files from storage API (same as FileLibrary)
         try {
-          const storageResponse = await apiClient.get('/storage/list');
+          const storageResponse = await apiClient.get('/supabase/storage/list');
           if (storageResponse.success && storageResponse.files) {
             // Filter only image files
             const imageFiles = storageResponse.files.filter(f =>
@@ -252,7 +252,7 @@ const AIImageOptimizer = () => {
 
       // Load library files from storage API (same as initial load)
       try {
-        const storageResponse = await apiClient.get('/storage/list');
+        const storageResponse = await apiClient.get('/supabase/storage/list');
         if (storageResponse.success && storageResponse.files) {
           const imageFiles = storageResponse.files.filter(f =>
             f.url && (f.mimeType?.startsWith('image/') || f.metadata?.mimetype?.startsWith('image/') ||
