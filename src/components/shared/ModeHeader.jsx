@@ -37,7 +37,10 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
     const fetchCredits = async () => {
       try {
         const response = await apiClient.get('credits/balance');
-        if (response.balance !== undefined) {
+        // Handle response format: {data:{balance:X}} or {balance:X}
+        if (response?.data?.balance !== undefined) {
+          setCredits(response.data.balance);
+        } else if (response?.balance !== undefined) {
           setCredits(response.balance);
         }
       } catch (error) {
