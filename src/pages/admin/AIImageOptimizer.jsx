@@ -425,38 +425,88 @@ const AIImageOptimizer = () => {
         )
       ) : (
         <>
-          {/* Products/Categories Cards */}
-          {filteredItems.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filteredItems.map(item => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-lg border p-3 hover:shadow-md transition-shadow"
-                >
-                  {/* Header with icon and name */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={cn(
-                      "w-6 h-6 rounded flex items-center justify-center flex-shrink-0",
-                      item.type === 'product' ? "bg-orange-100" : "bg-blue-100"
-                    )}>
-                      {item.type === 'product' ? (
-                        <Package className="w-3 h-3 text-orange-600" />
-                      ) : (
-                        <FolderOpen className="w-3 h-3 text-blue-600" />
-                      )}
+          {/* Products Section */}
+          {(filterType === 'all' || filterType === 'products') && filteredItems.filter(i => i.type === 'product').length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <Package className="w-4 h-4 text-orange-600" />
+                </div>
+                <h3 className="font-medium text-gray-900">Products ({filteredItems.filter(i => i.type === 'product').length})</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredItems.filter(i => i.type === 'product').map(item => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-lg border p-3 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 truncate text-sm">{item.name}</p>
+                        {item.categoryName && (
+                          <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 truncate text-sm">{item.name}</p>
-                      {item.categoryName && (
-                        <p className="text-xs text-gray-500 truncate">{item.categoryName}</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {item.images.length > 0 ? (
+                        item.images.slice(0, 6).map((image, idx) => (
+                          <div
+                            key={image.id}
+                            onClick={() => handleImageClick(item, image)}
+                            className="group relative aspect-square rounded-md overflow-hidden bg-gray-100 cursor-pointer border border-transparent hover:border-purple-400 transition-all"
+                          >
+                            <img
+                              src={image.url}
+                              alt={`${item.name} - ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Wand2 className="w-4 h-4 text-white" />
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-3 py-4 text-center">
+                          <Image className="w-8 h-8 text-gray-300 mx-auto mb-1" />
+                          <span className="text-xs text-gray-400">No images</span>
+                        </div>
+                      )}
+                      {item.images.length > 6 && (
+                        <div className="aspect-square rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-500">
+                          +{item.images.length - 6}
+                        </div>
                       )}
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-                  {/* Images Grid */}
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {item.images.length > 0 ? (
-                      item.images.slice(0, 6).map((image, idx) => (
+          {/* Categories Section */}
+          {(filterType === 'all' || filterType === 'categories') && filteredItems.filter(i => i.type === 'category').length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FolderOpen className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="font-medium text-gray-900">Categories ({filteredItems.filter(i => i.type === 'category').length})</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredItems.filter(i => i.type === 'category').map(item => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-lg border p-3 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 truncate text-sm">{item.name}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {item.images.slice(0, 6).map((image, idx) => (
                         <div
                           key={image.id}
                           onClick={() => handleImageClick(item, image)}
@@ -468,26 +518,15 @@ const AIImageOptimizer = () => {
                             className="w-full h-full object-cover"
                             loading="lazy"
                           />
-                          {/* Hover overlay */}
                           <div className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Wand2 className="w-4 h-4 text-white" />
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-3 py-4 text-center">
-                        <Image className="w-8 h-8 text-gray-300 mx-auto mb-1" />
-                        <span className="text-xs text-gray-400">No images</span>
-                      </div>
-                    )}
-                    {item.images.length > 6 && (
-                      <div className="aspect-square rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-500">
-                        +{item.images.length - 6}
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
