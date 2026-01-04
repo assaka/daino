@@ -1518,43 +1518,74 @@ const FileLibrary = () => {
           </div>
         )}
 
-      {/* Upload Area */}
-      <div 
-        className={`mb-6 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          !storageConnected || storageError 
-            ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
-            : dragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
-        }`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p className="text-gray-600 mb-2">
-          Drag and drop files here, or click to browse
-        </p>
-        <p className="text-sm text-gray-500 mb-4">
-          Supports images, PDFs, documents, videos, and more
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-          className="hidden"
-          id="file-upload"
-          disabled={uploading || !storageConnected || storageError}
-        />
-        <SaveButton
-          onClick={() => fileInputRef.current?.click()}
-          loading={uploading}
-          disabled={!storageConnected || storageError}
-          defaultText="Select Files"
-          loadingText="Uploading..."
-        />
+      {/* AI Generate & Upload Area */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* AI Image Generator Card */}
+        <div
+          onClick={openGenerator}
+          className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-6 text-white cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group"
+        >
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full">AI Powered</span>
+            </div>
+            <h3 className="text-xl font-bold mb-2">Generate Images with AI</h3>
+            <p className="text-white/80 text-sm mb-4">
+              Create stunning product photos, lifestyle images, and custom visuals instantly using AI
+            </p>
+            <div className="flex items-center gap-2 text-sm font-medium group-hover:gap-3 transition-all">
+              <ImagePlus className="w-5 h-5" />
+              <span>Start Creating</span>
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Upload Area */}
+        <div
+          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+            !storageConnected || storageError
+              ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+              : dragActive
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+          <p className="text-gray-600 mb-1 font-medium">
+            Upload Files
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            Drag & drop or click to browse
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+            className="hidden"
+            id="file-upload"
+            disabled={uploading || !storageConnected || storageError}
+          />
+          <SaveButton
+            onClick={() => fileInputRef.current?.click()}
+            loading={uploading}
+            disabled={!storageConnected || storageError}
+            defaultText="Select Files"
+            loadingText="Uploading..."
+          />
+        </div>
       </div>
 
       {/* Entity Type Tabs */}
@@ -1655,17 +1686,6 @@ const FileLibrary = () => {
           >
             <Wand2 className="w-4 h-4 mr-1" />
             AI Image Optimizer
-          </Button>
-
-          {/* Generate New Image Button */}
-          <Button
-            onClick={openGenerator}
-            variant="outline"
-            size="sm"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50"
-          >
-            <ImagePlus className="w-4 h-4 mr-1" />
-            Generate Image
           </Button>
 
           {/* View toggles */}
