@@ -572,23 +572,34 @@ const WorkspaceAIPanel = () => {
         }
 
         // Check for various response structures the AI might return
-        const hasGeneratedFiles = response.generatedFiles && response.generatedFiles.length > 0;
+        let hasGeneratedFiles = response.generatedFiles && response.generatedFiles.length > 0;
         const hasPluginStructure = response.plugin_structure?.main_file;
-        const messageContent = response.message || response.explanation || response.content || '';
+        let messageContent = response.message || response.explanation || response.content || '';
+
+        // If message is a JSON string, try to parse it first
+        let embeddedJson = null;
+        let embeddedFiles = null;
+        if (messageContent.trim().startsWith('{') && messageContent.includes('generatedFiles')) {
+          try {
+            embeddedJson = JSON.parse(messageContent);
+            embeddedFiles = embeddedJson.generatedFiles;
+            console.log('📦 Parsed message as JSON:', embeddedJson);
+            // Use the explanation from the parsed JSON
+            messageContent = embeddedJson.explanation || 'Plugin updated.';
+          } catch (e) {
+            console.log('⚠️ Message looks like JSON but failed to parse:', e.message);
+          }
+        }
 
         // Check if response contains code blocks (even in "conversational" responses)
         const codeBlockMatch = messageContent.match(/```(?:javascript|js|jsx)?\n([\s\S]*?)```/);
         let hasCodeBlock = !!codeBlockMatch;
 
-        // Check if message contains embedded JSON with generatedFiles
-        let embeddedJson = null;
-        let embeddedFiles = null;
-        const jsonMatch = messageContent.match(/\{\s*"name"[\s\S]*?"generatedFiles"[\s\S]*?\[\s*\{[\s\S]*?\}\s*\]\s*[,\}]/);
-        if (jsonMatch) {
-          try {
-            // Try to extract and parse the JSON object from the message
-            const jsonStr = messageContent.match(/\{[\s\S]*"generatedFiles"[\s\S]*\]/)?.[0];
-            if (jsonStr) {
+        // If we didn't find embedded JSON above, try regex matching
+        if (!embeddedJson) {
+          const jsonMatch = messageContent.match(/\{\s*"generatedFiles"[\s\S]*?\[\s*\{[\s\S]*?\}\s*\]\s*[,\}]/);
+          if (jsonMatch) {
+            try {
               // Find the complete JSON object
               let braceCount = 0;
               let jsonEndIndex = 0;
@@ -609,9 +620,9 @@ const WorkspaceAIPanel = () => {
                 embeddedFiles = embeddedJson.generatedFiles;
                 console.log('📦 Found embedded JSON in message:', embeddedJson);
               }
+            } catch (e) {
+              console.log('⚠️ Failed to parse embedded JSON:', e.message);
             }
-          } catch (e) {
-            console.log('⚠️ Failed to parse embedded JSON:', e.message);
           }
         }
 

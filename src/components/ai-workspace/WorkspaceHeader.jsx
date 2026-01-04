@@ -43,7 +43,8 @@ import {
   AlertCircle,
   Check,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Coins
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import FlashMessage from '@/components/storefront/FlashMessage';

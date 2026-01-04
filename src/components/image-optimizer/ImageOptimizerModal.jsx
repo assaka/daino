@@ -95,8 +95,10 @@ const STAGING_CATEGORIES = {
     ]
   },
   seating: {
-    keywords: ['sofa', 'couch', 'chair', 'armchair', 'seat', 'lounge', 'recliner', 'bench', 'stool'],
+    keywords: ['sofa', 'couch', 'chair', 'armchair', 'seat', 'lounge', 'recliner', 'bench', 'stool', 'gaming chair', 'office chair'],
     scenes: [
+      { id: 'person_relaxing', label: '🧘 Person Relaxing', template: 'Person comfortably relaxing on {product} in a cozy living room, lifestyle photography' },
+      { id: 'person_reading', label: '📖 Reading', template: 'Person reading a book while sitting on {product}, warm natural lighting' },
       { id: 'living_room', label: '🛋️ Living Room', template: '{product} in a bright Scandinavian living room with plants and natural light' },
       { id: 'luxury_lounge', label: '✨ Luxury Lounge', template: '{product} in an elegant luxury lounge with art deco elements' }
     ]
@@ -149,9 +151,11 @@ const STAGING_CATEGORIES = {
     ]
   },
   audio: {
-    keywords: ['speaker', 'audio', 'headphone', 'earphone', 'sound', 'music', 'bluetooth', 'wireless', 'stereo', 'bass'],
+    keywords: ['speaker', 'audio', 'headphone', 'earphone', 'sound', 'music', 'bluetooth', 'wireless', 'stereo', 'bass', 'headset', 'earbuds', 'airpods'],
     scenes: [
-      { id: 'music_studio', label: '🎵 Music Studio', template: '{product} in a professional music studio environment' },
+      { id: 'person_wearing', label: '🎧 Person Wearing', template: 'Young professional wearing {product}, lifestyle portrait with urban background' },
+      { id: 'music_studio', label: '🎵 Music Studio', template: 'DJ wearing {product} in a professional music studio environment' },
+      { id: 'commute', label: '🚶 Commuter', template: 'Person wearing {product} while walking in the city, lifestyle photography' },
       { id: 'living_audio', label: '🔊 Living Room', template: '{product} in a stylish living room with vinyl records' }
     ]
   },
@@ -163,15 +167,19 @@ const STAGING_CATEGORIES = {
     ]
   },
   footwear: {
-    keywords: ['shoe', 'sneaker', 'boot', 'sandal', 'heel', 'loafer', 'trainer', 'footwear', 'running'],
+    keywords: ['shoe', 'sneaker', 'boot', 'sandal', 'heel', 'loafer', 'trainer', 'footwear', 'running', 'hiking boots', 'dress shoes'],
     scenes: [
+      { id: 'model_wearing_shoes', label: '👠 Model Wearing', template: 'Fashion model wearing {product}, full body shot in urban setting' },
+      { id: 'walking_shot', label: '🚶 Walking Shot', template: 'Person walking wearing {product}, street photography style with motion' },
       { id: 'street_style', label: '👟 Street Style', template: '{product} in an urban street style photoshoot' },
       { id: 'shoe_display', label: '🏪 Boutique Display', template: '{product} on a luxury boutique shelf display' }
     ]
   },
   jewelry: {
-    keywords: ['watch', 'jewelry', 'ring', 'necklace', 'bracelet', 'earring', 'pendant', 'gold', 'silver', 'diamond', 'gem'],
+    keywords: ['watch', 'jewelry', 'ring', 'necklace', 'bracelet', 'earring', 'pendant', 'gold', 'silver', 'diamond', 'gem', 'wristwatch', 'smartwatch'],
     scenes: [
+      { id: 'model_wearing', label: '👤 Model Wearing', template: 'Elegant model wearing {product}, close-up fashion portrait with soft lighting' },
+      { id: 'wrist_shot', label: '⌚ On Wrist', template: 'Stylish person wearing {product} on wrist, lifestyle photography with blurred background' },
       { id: 'luxury_display', label: '💎 Luxury Display', template: '{product} on black velvet with dramatic spotlight lighting' },
       { id: 'lifestyle_jewelry', label: '✨ Lifestyle', template: '{product} in an elegant lifestyle setting with soft focus' }
     ]
@@ -179,17 +187,20 @@ const STAGING_CATEGORIES = {
   bags: {
     keywords: ['bag', 'purse', 'handbag', 'backpack', 'luggage', 'suitcase', 'tote', 'clutch', 'messenger', 'duffel', 'carry', 'travel'],
     scenes: [
-      { id: 'fashion_shoot', label: '👜 Fashion Shoot', template: '{product} in a high-fashion photoshoot setting' },
-      { id: 'travel', label: '✈️ Travel', template: '{product} in an airport or travel lifestyle setting' },
-      { id: 'outdoor_bag', label: '🏔️ Outdoor', template: '{product} in an outdoor adventure setting with nature backdrop' },
-      { id: 'urban_commute', label: '🚶 Urban', template: '{product} in a stylish urban city street setting' }
+      { id: 'model_carrying', label: '👜 Model Carrying', template: 'Fashion model carrying {product}, stylish urban photoshoot' },
+      { id: 'travel_person', label: '✈️ Traveler', template: 'Stylish traveler with {product} at airport or train station, lifestyle photography' },
+      { id: 'outdoor_hiker', label: '🏔️ Hiker', template: 'Hiker wearing {product} on a scenic mountain trail, adventure photography' },
+      { id: 'urban_commute', label: '🚶 Commuter', template: 'Professional carrying {product} walking in stylish urban city setting' },
+      { id: 'product_only', label: '📸 Product Shot', template: '{product} in a high-fashion photoshoot setting with clean background' }
     ]
   },
   clothing: {
-    keywords: ['clothing', 'dress', 'shirt', 'pants', 'jacket', 'coat', 'sweater', 'hoodie', 'jeans', 'skirt', 'blouse', 'wear', 'fashion', 'apparel'],
+    keywords: ['clothing', 'dress', 'shirt', 'pants', 'jacket', 'coat', 'sweater', 'hoodie', 'jeans', 'skirt', 'blouse', 'wear', 'fashion', 'apparel', 't-shirt', 'top'],
     scenes: [
-      { id: 'fashion_model', label: '👗 Fashion Model', template: 'Model wearing {product} in professional fashion photography studio' },
-      { id: 'lifestyle_fashion', label: '🌆 Urban Lifestyle', template: '{product} in an urban lifestyle photoshoot setting' }
+      { id: 'fashion_model', label: '👗 Fashion Model', template: 'Model wearing {product} in professional fashion photography studio, full body shot' },
+      { id: 'casual_lifestyle', label: '☕ Casual Lifestyle', template: 'Model wearing {product} in casual lifestyle setting, natural lighting' },
+      { id: 'urban_street', label: '🌆 Urban Street', template: 'Model wearing {product} walking in stylish urban street, fashion photography' },
+      { id: 'flat_lay', label: '👕 Flat Lay', template: '{product} in stylish flat lay arrangement with accessories' }
     ]
   },
   eyewear: {
