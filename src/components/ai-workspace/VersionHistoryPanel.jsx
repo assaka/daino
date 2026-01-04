@@ -300,7 +300,7 @@ const VersionHistoryPanel = ({
           <div className="p-4">
             <div className="relative">
               {/* Timeline line */}
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border" />
 
               {/* Version items */}
               <div className="space-y-4">
@@ -311,10 +311,10 @@ const VersionHistoryPanel = ({
                   return (
                     <div
                       key={version.id}
-                      className={`relative pl-8 ${isSelected ? 'bg-blue-50 -ml-2 -mr-2 px-2 py-2 rounded-lg' : ''}`}
+                      className={`relative pl-12 ${isSelected ? 'bg-blue-50 -ml-4 -mr-4 px-4 py-2 rounded-lg' : ''}`}
                     >
                       {/* Timeline dot */}
-                      <div className={`absolute left-3 w-3 h-3 rounded-full border-2 ${
+                      <div className={`absolute left-5 w-3 h-3 rounded-full border-2 ${
                         version.is_current
                           ? 'bg-green-500 border-green-500'
                           : isSelected
@@ -323,7 +323,7 @@ const VersionHistoryPanel = ({
                       }`} />
 
                       {/* Version card */}
-                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow">
+                      <div className="bg-card border rounded-lg p-3 hover:shadow-md transition-shadow mr-2">
                         {/* Content wrapper - flex with 2 children */}
                         <div className="flex gap-2">
                           {/* Patch data */}
