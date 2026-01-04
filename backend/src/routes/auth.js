@@ -946,9 +946,14 @@ router.get('/google', (req, res, next) => {
 // @route   GET /api/auth/google/callback
 // @desc    Google OAuth callback - creates/updates user and redirects with token
 // @access  Public
-router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: '/admin/auth?error=oauth_failed', session: false }),
-  async (req, res) => {
+router.get('/google/callback', (req, res, next) => {
+  const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+
+  passport.authenticate('google', {
+    failureRedirect: `${corsOrigin}/admin/auth?error=oauth_failed`,
+    session: false
+  })(req, res, next);
+}, async (req, res) => {
     try {
       const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
       const user = req.user;

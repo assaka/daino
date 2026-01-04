@@ -355,13 +355,21 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         }
       }
     } catch (error) {
-      
-      // If token is invalid, clear it automatically
-      if (error.message && (error.message.includes('Invalid token') || error.message.includes('Unauthorized'))) {
+
+      // If token is invalid or expired, clear it automatically
+      const isAuthError = error.message && (
+        error.message.includes('Invalid token') ||
+        error.message.includes('Token expired') ||
+        error.message.includes('Unauthorized') ||
+        error.message.includes('Session has been terminated') ||
+        error.message.includes('Authentication failed')
+      ) || error.status === 401 || error.status === 403;
+
+      if (isAuthError) {
         // Clear tokens for the current role
         const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
         const userDataKey = role === 'customer' ? 'customer_user_data' : 'store_owner_user_data';
-        
+
         localStorage.removeItem(tokenKey);
         localStorage.removeItem(userDataKey);
         apiClient.setToken(null);

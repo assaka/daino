@@ -109,8 +109,16 @@ export const useRoleProtection = (shouldApply = true) => {
         ];
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
 
-        // On auth error or dashboard access error, redirect to auth
+        // On auth error or dashboard access error, clear session and redirect to auth
         if (isAuthError || isDashboardContext) {
+          // Clear session data to prevent redirect loop
+          localStorage.removeItem('store_owner_auth_token');
+          localStorage.removeItem('store_owner_user_data');
+          localStorage.removeItem('store_owner_session_id');
+          localStorage.removeItem('selectedStoreId');
+          localStorage.removeItem('selectedStoreSlug');
+          localStorage.removeItem('selectedStoreName');
+
           navigate(createPageUrl("Auth"));
         }
       }

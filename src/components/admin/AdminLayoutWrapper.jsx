@@ -68,6 +68,16 @@ export function AdminLayoutWrapper({ children }) {
                          error.status === 403;
 
       if (isAuthError) {
+        // CRITICAL: Clear session data to prevent redirect loop
+        // When session expires, localStorage still has the expired token
+        // Clear it before redirecting to auth page
+        localStorage.removeItem('store_owner_auth_token');
+        localStorage.removeItem('store_owner_user_data');
+        localStorage.removeItem('store_owner_session_id');
+        localStorage.removeItem('selectedStoreId');
+        localStorage.removeItem('selectedStoreSlug');
+        localStorage.removeItem('selectedStoreName');
+
         // Redirect to auth if not already there (prevents loops)
         if (!location.pathname.includes('/admin/auth')) {
           navigate('/admin/auth', { replace: true });
