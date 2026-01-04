@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2, Sparkles, ImagePlus } from 'lucide-react';
+import { Wand2, X, ChevronDown, Loader2, Check, AlertCircle, Download, FileImage, Maximize, Eraser, Package, Image, Undo2, Sparkles, ImagePlus, ImageIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
+import FilePickerModal from '@/components/ui/FilePickerModal';
 
 // Provider display info
 const PROVIDERS = {
@@ -324,6 +325,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [isApplying, setIsApplying] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [referenceImage, setReferenceImage] = useState(null); // For product reference in generation
+  const [showFilePicker, setShowFilePicker] = useState(false);
 
   // For single image mode
   const [currentImage, setCurrentImage] = useState(null);
@@ -475,12 +477,19 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
     setError(null);
 
     try {
-      const response = await apiClient.post('/image-optimization/generate', {
+      const requestBody = {
         provider: selectedProvider,
         prompt: generatePrompt,
         style: generateStyle,
         aspectRatio: generateAspectRatio
-      });
+      };
+
+      // Include reference image if selected
+      if (referenceImage?.url) {
+        requestBody.referenceImageUrl = referenceImage.url;
+      }
+
+      const response = await apiClient.post('/image-optimization/generate', requestBody);
 
       if (response.success) {
         const generatedImage = {
@@ -1248,6 +1257,53 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
               {/* Left: Chat-style prompt area */}
               <div className="flex flex-col space-y-4">
+                {/* Reference Product Image */}
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block">Reference Product (Optional)</label>
+                  {referenceImage ? (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border flex-shrink-0">
+                        <img
+                          src={referenceImage.url}
+                          alt={referenceImage.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700 truncate">{referenceImage.name}</p>
+                        <p className="text-xs text-gray-500">Selected as reference</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setShowFilePicker(true)}
+                          className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          title="Change image"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setReferenceImage(null)}
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Remove reference"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowFilePicker(true)}
+                      className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group"
+                    >
+                      <div className="flex flex-col items-center gap-2 text-gray-500 group-hover:text-purple-600">
+                        <ImageIcon className="w-8 h-8" />
+                        <span className="text-sm font-medium">Add product image</span>
+                        <span className="text-xs text-gray-400">AI will incorporate your product into the generated image</span>
+                      </div>
+                    </button>
+                  )}
+                </div>
+
                 <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <ImagePlus className="w-4 h-4" />
                   Describe your image
@@ -1709,6 +1765,17 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           </div>
         </div>
       </div>
+
+      {/* File Picker Modal for selecting reference product image */}
+      <FilePickerModal
+        isOpen={showFilePicker}
+        onClose={() => setShowFilePicker(false)}
+        onSelect={(file) => {
+          setReferenceImage(file);
+          setShowFilePicker(false);
+        }}
+        fileType="image"
+      />
     </div>,
     document.body
   );

@@ -642,6 +642,7 @@ router.post('/generate',
   body('prompt').notEmpty().withMessage('Prompt is required'),
   body('style').optional().isString(),
   body('aspectRatio').optional().isIn(['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3']),
+  body('referenceImageUrl').optional().isURL().withMessage('Invalid reference image URL'),
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -656,7 +657,8 @@ router.post('/generate',
         provider = 'flux',
         prompt,
         style = 'photorealistic',
-        aspectRatio = '1:1'
+        aspectRatio = '1:1',
+        referenceImageUrl = null
       } = req.body;
       const storeId = req.storeId || req.headers['x-store-id'];
       const userId = req.user?.id;
@@ -690,8 +692,8 @@ router.post('/generate',
       const result = await aiImageOptimizer.optimize({
         provider,
         operation: 'generate',
-        image: null, // No source image for generation
-        params: { prompt, style, aspectRatio }
+        image: referenceImageUrl, // Reference product image (optional)
+        params: { prompt, style, aspectRatio, referenceImageUrl }
       });
 
       // Deduct credits only on success

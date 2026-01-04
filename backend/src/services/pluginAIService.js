@@ -549,13 +549,20 @@ function PluginSettingsPage() {
 }
 \`\`\`
 
+CRITICAL DISTINCTION - generatedFiles vs generatedAdminPages:
+- **generatedFiles**: Backend code ONLY (hooks, controllers, events, migrations, entities)
+- **generatedAdminPages**: React UI components for admin panel ONLY
+
+When user asks for "admin page", "settings page", "dashboard", "management page":
+- Use generatedAdminPages array (NOT generatedFiles!)
+- These are React components stored in database and rendered dynamically
+
 RULES:
 - Return ONLY JSON, no markdown wrapping, no extra text before/after
 - Keep explanation to 1-2 sentences maximum
 - Generate only the files needed for the specific request
 - Do NOT include README.md unless specifically asked
-- Use DainoStore plugin hooks and patterns
-- For admin pages, always include generatedAdminPages array`
+- Use DainoStore plugin hooks and patterns`
     };
 
     return modePrompts[mode] || basePrompt;
@@ -626,8 +633,11 @@ RULES:
 - Return ONLY valid JSON, no markdown, no extra text
 - **MINIMAL OUTPUT** - Only requested file(s), no README or docs
 - **Short explanation** - Max 10 words
-- **If user asks for admin page, settings page, or management page, include generatedAdminPages**
-- **Admin page componentCode must be a FULL React function component**
+- **ADMIN PAGES GO IN generatedAdminPages, NOT generatedFiles!**
+- **If user asks for admin page, settings page, dashboard, or management page:**
+  - Put it ONLY in generatedAdminPages array (NOT in generatedFiles)
+  - componentCode must be a FULL React function component
+  - Use the plugin slug "${pluginSlug}" in routes
 - **Look at the conversation history to understand what file was just created/modified**
 - **If user says "change it", "update that", etc., modify the file from the previous message**
 - **IMPORTANT: When modifying, keep ALL existing logic and only change what was requested**

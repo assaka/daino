@@ -270,13 +270,15 @@ class FluxImageProvider {
 
   /**
    * Generate new image from text prompt
+   * Supports optional reference image for product-based generation
    */
   async generate(params = {}) {
     const {
       prompt = 'A beautiful product photo',
       style = 'photorealistic',
       aspectRatio = '1:1',
-      numImages = 1
+      numImages = 1,
+      referenceImageUrl = null
     } = params;
 
     // Map aspect ratios to dimensions
@@ -303,20 +305,60 @@ class FluxImageProvider {
       'cinematic': 'cinematic lighting, dramatic atmosphere, movie still quality, professional cinematography'
     };
 
-    const enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+    // When reference image is provided, enhance prompt to incorporate the product
+    let enhancedPrompt = prompt;
+    if (referenceImageUrl) {
+      enhancedPrompt = `Using the provided product image as reference, ${prompt}. Incorporate the exact product shown in the reference image into the scene. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+    } else {
+      enhancedPrompt = `${prompt}. ${stylePrompts[style] || stylePrompts.photorealistic}`;
+    }
 
     if (this.useReplicate) {
-      // Use Flux Schnell for fast generation or Flux Dev for higher quality
-      const output = await this.replicateRequest(
-        'black-forest-labs/flux-schnell',
-        {
-          prompt: enhancedPrompt,
-          num_outputs: numImages,
-          aspect_ratio: aspectRatio,
-          output_format: 'png',
-          output_quality: 100
+      let output;
+
+      if (referenceImageUrl) {
+        // Use Flux Redux for image-to-image with reference
+        // Falls back to regular generation if redux fails
+        try {
+          output = await this.replicateRequest(
+            'black-forest-labs/flux-redux-dev',
+            {
+              prompt: enhancedPrompt,
+              image: referenceImageUrl,
+              num_outputs: numImages,
+              aspect_ratio: aspectRatio,
+              output_format: 'png',
+              output_quality: 100,
+              prompt_strength: 0.8 // Balance between prompt and reference image
+            }
+          );
+        } catch (e) {
+          console.log('[FluxProvider] Redux failed, using standard generation with reference in prompt:', e.message);
+          // Fallback to standard generation but mention reference in prompt
+          output = await this.replicateRequest(
+            'black-forest-labs/flux-schnell',
+            {
+              prompt: enhancedPrompt,
+              num_outputs: numImages,
+              aspect_ratio: aspectRatio,
+              output_format: 'png',
+              output_quality: 100
+            }
+          );
         }
-      );
+      } else {
+        // Standard text-to-image generation
+        output = await this.replicateRequest(
+          'black-forest-labs/flux-schnell',
+          {
+            prompt: enhancedPrompt,
+            num_outputs: numImages,
+            aspect_ratio: aspectRatio,
+            output_format: 'png',
+            output_quality: 100
+          }
+        );
+      }
 
       // Convert URL to base64
       const imageUrl = Array.isArray(output) ? output[0] : output;
@@ -329,16 +371,28 @@ class FluxImageProvider {
         prompt: enhancedPrompt,
         style,
         aspectRatio,
-        dimensions
+        dimensions,
+        usedReference: !!referenceImageUrl
       };
     } else {
       // Use fal.ai Flux
-      const result = await this.falRequest('fal-ai/flux/schnell', {
+      const requestParams = {
         prompt: enhancedPrompt,
         image_size: dimensions,
         num_images: numImages,
         enable_safety_checker: true
-      });
+      };
+
+      // Add reference image for fal.ai if provided
+      if (referenceImageUrl) {
+        requestParams.image_url = referenceImageUrl;
+        requestParams.strength = 0.8; // Balance between prompt and reference
+      }
+
+      const result = await this.falRequest(
+        referenceImageUrl ? 'fal-ai/flux/dev/image-to-image' : 'fal-ai/flux/schnell',
+        requestParams
+      );
 
       const imageUrl = result.images?.[0]?.url;
       const base64 = await this.urlToBase64(imageUrl);
@@ -350,7 +404,8 @@ class FluxImageProvider {
         prompt: enhancedPrompt,
         style,
         aspectRatio,
-        dimensions
+        dimensions,
+        usedReference: !!referenceImageUrl
       };
     }
   }

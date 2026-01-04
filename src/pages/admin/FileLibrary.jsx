@@ -1196,14 +1196,13 @@ const FileLibrary = () => {
           throw new Error(`Invalid file: ${file?.name || 'Unknown'}`);
         }
 
-        // Use same upload endpoint as FilePickerModal
+        // Use unified storage endpoint - works with Supabase, S3, GCS, or local
         const additionalData = {
           folder: 'library',
-          public: 'true',
-          type: 'general'
+          public: 'true'
         };
 
-        const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
+        const response = await apiClient.uploadFile('/storage/upload', file, additionalData);
 
         if (response.success) {
 
