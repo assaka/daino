@@ -1614,7 +1614,17 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       'allow_guest_checkout': { table: 'stores', column: 'settings', path: ['allow_guest_checkout'] },
       'require_shipping_address': { table: 'stores', column: 'settings', path: ['require_shipping_address'] },
       'checkout_steps_count': { table: 'stores', column: 'settings', path: ['checkout_steps_count'] },
-      'hide_quantity_selector': { table: 'stores', column: 'settings', path: ['hide_quantity_selector'] }
+      'hide_quantity_selector': { table: 'stores', column: 'settings', path: ['hide_quantity_selector'] },
+
+      // Theme color settings - nested in settings.theme
+      'add_to_cart_button_bg_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'add_to_cart_button_text_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_text_color'] },
+      'add_to_cart_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'cart_button_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'primary_button_color': { table: 'stores', column: 'settings', path: ['theme', 'primary_button_color'] },
+      'header_bg_color': { table: 'stores', column: 'settings', path: ['theme', 'header_bg_color'] },
+      'header_icon_color': { table: 'stores', column: 'settings', path: ['theme', 'header_icon_color'] },
+      'font_family': { table: 'stores', column: 'settings', path: ['theme', 'font_family'] }
     };
 
     // Intelligent fallback: if setting starts with "settings.", parse the path
@@ -2653,6 +2663,33 @@ For layout changes (adding components to pages):
 2. If not found → \`create_component\` (saves to plugin_registry)
 3. Add to page: \`configure_layout(pageType="...", operation="add_slot", ...)\`
 4. Slot configurations are in \`slot_configurations.configuration\` JSONB
+
+## COMMON OPERATIONS - USE THESE EXACT PATTERNS
+
+**Changing button colors:**
+User: "Change add to cart button to red"
+→ update_store_setting(setting="add_to_cart_button_bg_color", value="#FF0000")
+
+User: "Make the primary button blue"
+→ update_store_setting(setting="primary_button_color", value="#0000FF")
+
+**Changing theme colors:**
+User: "Change header background to black"
+→ update_store_setting(setting="header_bg_color", value="#000000")
+
+**Adding components to pages:**
+User: "Add a banner to category page"
+→ configure_layout(pageType="category", operation="add_slot", slotType="banner", position="top")
+
+User: "Add reviews section to product page"
+→ configure_layout(pageType="product", operation="add_slot", slotType="reviews", position="after:description")
+
+**Toggling features:**
+User: "Hide the cart icon"
+→ update_store_setting(setting="hide_header_cart", value=true)
+
+User: "Enable guest checkout"
+→ update_store_setting(setting="allow_guest_checkout", value=true)
 
 ## TOOLS
 
