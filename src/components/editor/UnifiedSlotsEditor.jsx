@@ -416,8 +416,10 @@ const UnifiedSlotsEditor = ({
     }
 
     try {
-      // Get current store settings
-      const currentSettings = selectedStore?.settings || {};
+      // CRITICAL: Fetch current settings from API to avoid overwriting other settings
+      // selectedStore from StoreSelectionContext doesn't have settings, only basic info
+      const storeData = await Store.findById(storeId);
+      const currentSettings = storeData?.settings || {};
       const currentTheme = currentSettings.theme || {};
 
       // Update theme settings
@@ -429,14 +431,12 @@ const UnifiedSlotsEditor = ({
         }
       };
 
-      // DEBUG: Log what we're saving
       console.log('🔍 THEME SAVE DEBUG:', {
         storeId,
         key,
         value,
         currentTheme,
-        updatedTheme: updatedSettings.theme,
-        fullPayload: { settings: updatedSettings }
+        updatedTheme: updatedSettings.theme
       });
 
       // Save to API
@@ -446,7 +446,7 @@ const UnifiedSlotsEditor = ({
     } catch (error) {
       console.error('Failed to save theme setting:', error);
     }
-  }, [getSelectedStoreId, selectedStore]);
+  }, [getSelectedStoreId]);
 
   // Header-specific handlers for inline editing
   // UnifiedSlotRenderer calls onElementClick(slotId, element) - not with an event
