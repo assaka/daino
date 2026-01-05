@@ -88,29 +88,31 @@ class CreditService {
     }
 
     // Log credit usage to master DB for centralized reporting
+    const { v4: uuidv4 } = require('uuid');
+    const recordId = uuidv4();
+
+    const insertData = {
+      id: recordId,
+      user_id: userId,
+      store_id: storeId || null,
+      credits_used: creditAmount,
+      usage_type: referenceType || 'general',
+      reference_id: referenceId ? String(referenceId) : null,
+      reference_type: referenceType || null,
+      description: description,
+      metadata: {
+        ...metadata,
+        balance_before: balance,
+        balance_after: newBalance,
+        charged_at: new Date().toISOString()
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Insert into master DB
     try {
-      const { v4: uuidv4 } = require('uuid');
-
-      const insertData = {
-        id: uuidv4(),
-        user_id: userId,
-        store_id: storeId || null,
-        credits_used: creditAmount,
-        usage_type: referenceType || 'general',
-        reference_id: referenceId ? String(referenceId) : null,
-        reference_type: referenceType || null,
-        description: description,
-        metadata: {
-          ...metadata,
-          balance_before: balance,
-          balance_after: newBalance,
-          charged_at: new Date().toISOString()
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      console.log(`[CREDIT_USAGE] Inserting record:`, {
+      console.log(`[CREDIT_USAGE] Inserting record to master DB:`, {
         user_id: userId,
         store_id: storeId,
         credits_used: creditAmount,
@@ -125,21 +127,63 @@ class CreditService {
         .single();
 
       if (insertError) {
-        console.error(`[CREDIT_USAGE] Insert error:`, {
+        console.error(`[CREDIT_USAGE] Master DB insert error:`, {
           message: insertError.message,
           details: insertError.details,
           hint: insertError.hint,
           code: insertError.code
         });
       } else {
-        console.log(`[CREDIT_USAGE] Successfully inserted record:`, insertedData?.id);
+        console.log(`[CREDIT_USAGE] Successfully inserted to master DB:`, insertedData?.id);
       }
     } catch (logError) {
-      // Log but don't fail the deduction if credit_usage insert fails
       console.error('[CREDIT_USAGE] Failed to log to master DB:', {
         message: logError.message,
         stack: logError.stack?.split('\n').slice(0, 3).join('\n')
       });
+    }
+
+    // Also insert into tenant DB if storeId is provided
+    if (storeId) {
+      try {
+        const ConnectionManager = require('./database/ConnectionManager');
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+        const { error: tenantInsertError } = await tenantDb
+          .from('credit_usage')
+          .insert({
+            id: recordId,
+            user_id: userId,
+            store_id: storeId,
+            credits_used: creditAmount,
+            usage_type: referenceType || 'general',
+            reference_id: referenceId ? String(referenceId) : null,
+            reference_type: referenceType || null,
+            description: description,
+            metadata: {
+              ...metadata,
+              balance_before: balance,
+              balance_after: newBalance,
+              charged_at: new Date().toISOString()
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (tenantInsertError) {
+          console.error(`[CREDIT_USAGE] Tenant DB insert error:`, {
+            message: tenantInsertError.message,
+            details: tenantInsertError.details,
+            code: tenantInsertError.code
+          });
+        } else {
+          console.log(`[CREDIT_USAGE] Successfully inserted to tenant DB for store:`, storeId);
+        }
+      } catch (tenantError) {
+        console.error('[CREDIT_USAGE] Failed to log to tenant DB:', {
+          message: tenantError.message
+        });
+      }
     }
 
     return {
