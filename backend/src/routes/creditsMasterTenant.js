@@ -296,20 +296,29 @@ router.get('/usage', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/credits/usage/types
- * Get available usage types for filter dropdown from service_credit_costs
+ * Get available usage types for filter dropdown from tenant credit_usage
  */
 router.get('/usage/types', authMiddleware, async (req, res) => {
   try {
-    // Get all active service types from service_credit_costs
-    const { data: services, error } = await masterDbClient
-      .from('service_credit_costs')
-      .select('service_key, service_name, service_category')
-      .eq('is_active', true)
-      .order('service_category')
-      .order('service_name');
+    const storeId = req.user.store_id;
+
+    if (!storeId) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Get distinct usage types from tenant credit_usage table
+    const { data: types, error } = await tenantDb
+      .from('credit_usage')
+      .select('usage_type');
 
     if (error) {
-      console.error('Error getting service types:', error);
+      console.error('Error getting usage types from tenant:', error);
       return res.status(500).json({
         success: false,
         message: 'Failed to get usage types',
@@ -317,12 +326,31 @@ router.get('/usage/types', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get unique types
+    const uniqueTypes = [...new Set((types || []).map(t => t.usage_type))].filter(Boolean);
+
+    // Map to user-friendly labels
+    const typeLabels = {
+      'store_publishing': 'Store Publishing',
+      'store_daily_publishing': 'Daily Publishing',
+      'custom_domain': 'Custom Domain',
+      'akeneo_schedule': 'Akeneo Scheduled Import',
+      'akeneo_manual': 'Akeneo Manual Import',
+      'ai_translation': 'AI Translation',
+      'ai_image': 'AI Image Processing',
+      'ai_seo': 'AI SEO',
+      'ai_content': 'AI Content Generation',
+      'ai_chat': 'AI Chat',
+      'ai_generation': 'AI Generation',
+      'manual_import': 'Manual Import',
+      'general': 'General'
+    };
+
     res.json({
       success: true,
-      data: (services || []).map(service => ({
-        value: service.service_key,
-        label: service.service_name,
-        category: service.service_category
+      data: uniqueTypes.map(type => ({
+        value: type,
+        label: typeLabels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
       }))
     });
   } catch (error) {
