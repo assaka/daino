@@ -1573,10 +1573,49 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       'email_logo': { table: 'stores', column: 'settings', path: ['emailLogo'] },
       'settings.emailLogo': { table: 'stores', column: 'settings', path: ['emailLogo'] },
       'invoice_logo': { table: 'stores', column: 'settings', path: ['invoiceLogo'] },
-      'settings.invoiceLogo': { table: 'stores', column: 'settings', path: ['invoiceLogo'] }
+      'settings.invoiceLogo': { table: 'stores', column: 'settings', path: ['invoiceLogo'] },
+
+      // Currency display settings - IMPORTANT: Different settings for different pages!
+      'hide_currency_category': { table: 'stores', column: 'settings', path: ['hide_currency_category'] },
+      'hide_currency_product': { table: 'stores', column: 'settings', path: ['hide_currency_product'] },
+      'settings.hide_currency_category': { table: 'stores', column: 'settings', path: ['hide_currency_category'] },
+      'settings.hide_currency_product': { table: 'stores', column: 'settings', path: ['hide_currency_product'] },
+
+      // Header display settings
+      'hide_header_cart': { table: 'stores', column: 'settings', path: ['hide_header_cart'] },
+      'hide_header_checkout': { table: 'stores', column: 'settings', path: ['hide_header_checkout'] },
+      'hide_header_search': { table: 'stores', column: 'settings', path: ['hide_header_search'] },
+      'show_permanent_search': { table: 'stores', column: 'settings', path: ['show_permanent_search'] },
+      'show_language_selector': { table: 'stores', column: 'settings', path: ['show_language_selector'] },
+
+      // Stock settings
+      'enable_inventory': { table: 'stores', column: 'settings', path: ['enable_inventory'] },
+      'display_out_of_stock': { table: 'stores', column: 'settings', path: ['display_out_of_stock'] },
+      'hide_stock_quantity': { table: 'stores', column: 'settings', path: ['hide_stock_quantity'] },
+      'show_stock_label': { table: 'stores', column: 'settings', path: ['show_stock_label'] },
+
+      // Category page settings
+      'enable_product_filters': { table: 'stores', column: 'settings', path: ['enable_product_filters'] },
+      'collapse_filters': { table: 'stores', column: 'settings', path: ['collapse_filters'] },
+      'enable_view_mode_toggle': { table: 'stores', column: 'settings', path: ['enable_view_mode_toggle'] },
+      'default_view_mode': { table: 'stores', column: 'settings', path: ['default_view_mode'] },
+
+      // Checkout settings
+      'allow_guest_checkout': { table: 'stores', column: 'settings', path: ['allow_guest_checkout'] },
+      'require_shipping_address': { table: 'stores', column: 'settings', path: ['require_shipping_address'] },
+      'checkout_steps_count': { table: 'stores', column: 'settings', path: ['checkout_steps_count'] },
+      'hide_quantity_selector': { table: 'stores', column: 'settings', path: ['hide_quantity_selector'] }
     };
 
-    const mapping = settingMap[setting] || { table: table || 'stores', column: setting };
+    // Intelligent fallback: if setting starts with "settings.", parse the path
+    let mapping = settingMap[setting];
+    if (!mapping && setting.startsWith('settings.')) {
+      const pathParts = setting.replace('settings.', '').split('.');
+      mapping = { table: 'stores', column: 'settings', path: pathParts };
+    }
+    if (!mapping) {
+      mapping = { table: table || 'stores', column: setting };
+    }
 
     if (mapping.path) {
       // Handle nested JSON update
@@ -2570,6 +2609,20 @@ Many tables have JSONB columns with nested structures. The \`explore_schema\` to
 - \`plugin_registry.definition\` → contains component schema
 
 When updating JSONB nested fields, use the full path notation.
+
+## CRITICAL: PAGE-SPECIFIC SETTINGS
+
+MANY SETTINGS HAVE SEPARATE VERSIONS FOR DIFFERENT PAGES. Pay close attention to which page the user mentions:
+
+**Currency Display:**
+- "hide currency on CATEGORY page" → \`hide_currency_category\` (NOT hide_currency_product!)
+- "hide currency on PRODUCT page" → \`hide_currency_product\`
+
+**General Rule:** When user mentions a specific page type (category, product, cart, checkout), look in the RAG context for a setting with that page name in it. The settings are named with the page suffix:
+- \`hide_currency_category\` = category/listing pages
+- \`hide_currency_product\` = product detail pages
+
+NEVER guess - check the RAG context for the exact setting name that matches the page the user mentioned.
 
 ## FILE UPLOAD WORKFLOW
 
