@@ -29,6 +29,14 @@ const PROVIDERS = {
   qwen: { name: 'Qwen', icon: '🎨', color: 'text-orange-600', disabled: true }
 };
 
+// Provider capabilities (must match backend)
+const PROVIDER_CAPABILITIES = {
+  openai: ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate'],
+  gemini: ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom'],
+  flux: ['upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate'],
+  qwen: ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom']
+};
+
 // Operation display info
 const OPERATIONS = {
   compress: { name: 'Compress', icon: FileImage, description: 'Optimize quality & size' },
@@ -281,8 +289,10 @@ const ImageOptimizer = ({ storeId, onImageOptimized, className }) => {
                       // Only show providers that support the selected operation and are not disabled
                       const provider = PROVIDERS[providerId];
                       if (provider?.disabled) return false;
-                      const cost = pricing?.matrix?.[providerId]?.[selectedOperation]?.credits;
-                      return cost !== undefined;
+                      // Check if provider supports this operation
+                      const capabilities = PROVIDER_CAPABILITIES[providerId] || [];
+                      if (!capabilities.includes(selectedOperation)) return false;
+                      return true;
                     })
                     .map((providerId) => {
                     const provider = PROVIDERS[providerId];

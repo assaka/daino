@@ -14,6 +14,14 @@ const PROVIDERS = {
   qwen: { name: 'Qwen', icon: '🎨', color: 'text-orange-600', disabled: true }
 };
 
+// Provider capabilities (must match backend)
+const PROVIDER_CAPABILITIES = {
+  openai: ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate'],
+  gemini: ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom'],
+  flux: ['upscale', 'remove_bg', 'stage', 'convert', 'custom', 'generate'],
+  qwen: ['compress', 'upscale', 'remove_bg', 'stage', 'convert', 'custom']
+};
+
 // Operation display info
 const OPERATIONS = {
   generate: { name: 'Generate', icon: ImagePlus, description: 'Create new images from text' },
@@ -883,8 +891,10 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                         // Only show providers that support the selected operation and are not disabled
                         const provider = PROVIDERS[providerId];
                         if (provider?.disabled) return false;
-                        const cost = pricing?.matrix?.[providerId]?.[selectedOperation]?.credits;
-                        return cost !== undefined;
+                        // Check if provider supports this operation
+                        const capabilities = PROVIDER_CAPABILITIES[providerId] || [];
+                        if (!capabilities.includes(selectedOperation)) return false;
+                        return true;
                       })
                       .map((providerId) => {
                       const provider = PROVIDERS[providerId];
@@ -933,7 +943,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
               )}
             </div>
 
-            {/* Operation Dropdown */}
+            {/* Operation Dropdown - hidden in generate mode until image is generated */}
+            {!isGenerateMode && (
             <div className="relative" ref={operationDropdownRef}>
               <label className="block text-xs font-medium text-gray-500 mb-1">Operation</label>
               <button
@@ -1011,6 +1022,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                 </div>
               )}
             </div>
+            )}
 
             {/* Cost Display */}
             <div className="ml-auto text-right">
