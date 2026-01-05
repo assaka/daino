@@ -68,6 +68,7 @@ export default function Credits() {
   const [stores, setStores] = useState([]);
   const [usageData, setUsageData] = useState({ usage: [], pagination: {}, summary: {} });
   const [usageTypes, setUsageTypes] = useState([]);
+  const [usageModels, setUsageModels] = useState([]);
   const [usageStats, setUsageStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -76,6 +77,7 @@ export default function Credits() {
   const [filters, setFilters] = useState({
     store_ids: [],
     usage_types: [],
+    models: [],
     start_date: null,
     end_date: null,
     limit: 20,
@@ -91,6 +93,7 @@ export default function Credits() {
     loadUserData();
     loadStores();
     loadUsageTypes();
+    loadUsageModels();
   }, []);
 
   // Load usage data when filters change
@@ -130,6 +133,15 @@ export default function Credits() {
     }
   };
 
+  const loadUsageModels = async () => {
+    try {
+      const models = await CreditUsage.getModels();
+      setUsageModels(models || []);
+    } catch (error) {
+      console.error('Error loading usage models:', error);
+    }
+  };
+
   const loadUsageData = async () => {
     setLoading(true);
     try {
@@ -143,6 +155,9 @@ export default function Credits() {
       }
       if (filters.usage_types && filters.usage_types.length > 0) {
         params.usage_types = filters.usage_types.join(',');
+      }
+      if (filters.models && filters.models.length > 0) {
+        params.models = filters.models.join(',');
       }
       if (filters.start_date) {
         params.start_date = format(filters.start_date, 'yyyy-MM-dd');
@@ -188,6 +203,7 @@ export default function Credits() {
     setFilters({
       store_ids: [],
       usage_types: [],
+      models: [],
       start_date: null,
       end_date: null,
       limit: 20,
@@ -199,6 +215,7 @@ export default function Credits() {
     return (
       filters.store_ids.length > 0 ||
       filters.usage_types.length > 0 ||
+      filters.models.length > 0 ||
       filters.start_date !== null ||
       filters.end_date !== null
     );
@@ -230,11 +247,12 @@ export default function Credits() {
   const exportToCSV = () => {
     if (!usageData.usage || usageData.usage.length === 0) return;
 
-    const headers = ['Date', 'Type', 'Store', 'Credits Used', 'Description'];
+    const headers = ['Date', 'Type', 'Store', 'Model', 'Credits Used', 'Description'];
     const rows = usageData.usage.map(u => [
       format(new Date(u.created_at), 'yyyy-MM-dd HH:mm'),
       usageTypeLabels[u.usage_type] || u.usage_type,
       u.store_name || 'N/A',
+      u.model_used || '-',
       u.credits_used.toFixed(2),
       u.description || ''
     ]);
@@ -375,6 +393,17 @@ export default function Credits() {
               />
             </div>
 
+            {/* Model Filter */}
+            <div className="min-w-[200px] max-w-[300px]">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">LLM Model</label>
+              <MultiSelect
+                options={usageModels.map(model => ({ value: model.value, label: model.label }))}
+                value={filters.models}
+                onChange={(value) => handleFilterChange('models', value)}
+                placeholder="All Models"
+              />
+            </div>
+
             {/* Start Date */}
             <div className="w-48">
               <label className="text-sm font-medium text-gray-700 mb-1 block">From Date</label>
@@ -474,6 +503,7 @@ export default function Credits() {
                     <TableHead>Date</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Store</TableHead>
+                    <TableHead>Model</TableHead>
                     <TableHead className="text-right">Credits</TableHead>
                     <TableHead>Description</TableHead>
                   </TableRow>
@@ -491,6 +521,9 @@ export default function Credits() {
                       </TableCell>
                       <TableCell className="text-gray-600">
                         {item.store_name || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-gray-500 text-sm">
+                        {item.model_used || '-'}
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         -{item.credits_used.toFixed(2)}

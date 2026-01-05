@@ -1467,6 +1467,17 @@ class CreditUsageService extends BaseEntity {
       return {};
     }
   }
+
+  // Get available LLM models for filters
+  async getModels() {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/models`);
+      return response?.data || [];
+    } catch (error) {
+      console.error('CreditUsageService.getModels() error:', error.message);
+      return [];
+    }
+  }
 }
 
 export const CreditUsage = new CreditUsageService();

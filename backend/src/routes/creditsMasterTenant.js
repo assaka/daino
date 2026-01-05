@@ -174,6 +174,8 @@ router.get('/usage', authMiddleware, async (req, res) => {
       store_ids,
       usage_type,
       usage_types,
+      model_used,
+      models,
       start_date,
       end_date,
       limit = 50,
@@ -185,6 +187,7 @@ router.get('/usage', authMiddleware, async (req, res) => {
     // Parse multi-select filters (comma-separated strings to arrays)
     const storeIdArray = store_ids ? store_ids.split(',').filter(Boolean) : (store_id ? [store_id] : []);
     const usageTypeArray = usage_types ? usage_types.split(',').filter(Boolean) : (usage_type && usage_type !== 'all' ? [usage_type] : []);
+    const modelArray = models ? models.split(',').filter(Boolean) : (model_used ? [model_used] : []);
 
     // Build query
     let query = masterDbClient
@@ -198,6 +201,9 @@ router.get('/usage', authMiddleware, async (req, res) => {
     }
     if (usageTypeArray.length > 0) {
       query = query.in('usage_type', usageTypeArray);
+    }
+    if (modelArray.length > 0) {
+      query = query.in('model_used', modelArray);
     }
     if (start_date) {
       query = query.gte('created_at', new Date(start_date).toISOString());
@@ -217,6 +223,7 @@ router.get('/usage', authMiddleware, async (req, res) => {
 
     if (storeIdArray.length > 0) countQuery.in('store_id', storeIdArray);
     if (usageTypeArray.length > 0) countQuery.in('usage_type', usageTypeArray);
+    if (modelArray.length > 0) countQuery.in('model_used', modelArray);
     if (start_date) countQuery.gte('created_at', new Date(start_date).toISOString());
     if (end_date) {
       const endDateObj = new Date(end_date);
@@ -305,29 +312,20 @@ router.get('/usage', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/credits/usage/types
- * Get available usage types for filter dropdown from tenant credit_usage
+ * Get available usage types for filter dropdown from master credit_usage
  */
 router.get('/usage/types', authMiddleware, async (req, res) => {
   try {
-    const storeId = req.user.store_id;
+    const userId = req.user.id;
 
-    if (!storeId) {
-      return res.json({
-        success: true,
-        data: []
-      });
-    }
-
-    const ConnectionManager = require('../services/database/ConnectionManager');
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    // Get distinct usage types from tenant credit_usage table
-    const { data: types, error } = await tenantDb
+    // Get distinct usage types from master credit_usage table for this user
+    const { data: types, error } = await masterDbClient
       .from('credit_usage')
-      .select('usage_type');
+      .select('usage_type')
+      .eq('user_id', userId);
 
     if (error) {
-      console.error('Error getting usage types from tenant:', error);
+      console.error('Error getting usage types:', error);
       return res.status(500).json({
         success: false,
         message: 'Failed to get usage types',
@@ -367,6 +365,50 @@ router.get('/usage/types', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get usage types',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/credits/usage/models
+ * Get available LLM models for filter dropdown from master credit_usage
+ */
+router.get('/usage/models', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get distinct models from master credit_usage table for this user
+    const { data: models, error } = await masterDbClient
+      .from('credit_usage')
+      .select('model_used')
+      .eq('user_id', userId)
+      .not('model_used', 'is', null);
+
+    if (error) {
+      console.error('Error getting models:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get models',
+        error: error.message
+      });
+    }
+
+    // Get unique models
+    const uniqueModels = [...new Set((models || []).map(m => m.model_used))].filter(Boolean);
+
+    res.json({
+      success: true,
+      data: uniqueModels.map(model => ({
+        value: model,
+        label: model
+      }))
+    });
+  } catch (error) {
+    console.error('Get models error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get models',
       details: error.message
     });
   }
