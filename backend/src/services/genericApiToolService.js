@@ -829,7 +829,39 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       switch (type) {
         case 'entity': {
           // Learn a table schema → save to ai_entity_definitions
-          const { table_name, columns, description } = data;
+          // Now includes FULL JSONB paths for deep nested field discovery
+          const { table_name, columns, allFieldPaths, description } = data;
+
+          // Build comprehensive fields object including JSONB nested paths
+          const fields = {};
+
+          // First add base columns
+          columns.forEach(c => {
+            fields[c.name] = {
+              type: c.type,
+              description: c.description || `${c.name} field`,
+              sample: c.sample
+            };
+
+            // For JSONB columns, add nested path info
+            if (c.type === 'jsonb' && c.jsonbStructure) {
+              fields[c.name].jsonbStructure = c.jsonbStructure;
+              fields[c.name].nestedPaths = c.jsonbPaths?.map(p => p.path) || [];
+            }
+          });
+
+          // Add all field paths (including nested JSONB paths) as searchable entries
+          const fieldPaths = {};
+          if (allFieldPaths) {
+            allFieldPaths.forEach(fp => {
+              fieldPaths[fp.path] = {
+                type: fp.type,
+                sample: fp.sample,
+                itemType: fp.itemType,
+                keys: fp.keys
+              };
+            });
+          }
 
           // Check if already exists
           const { data: existing } = await masterDbClient
@@ -839,23 +871,32 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
             .maybeSingle();
 
           if (existing) {
-            // Update existing
+            // Update existing with full field paths
             const { error } = await masterDbClient
               .from('ai_entity_definitions')
               .update({
-                fields: columns.reduce((acc, c) => {
-                  acc[c.name] = { type: c.type, description: c.description || `${c.name} field` };
-                  return acc;
-                }, {}),
+                fields,
+                metadata: {
+                  allFieldPaths: fieldPaths,
+                  totalPaths: Object.keys(fieldPaths).length,
+                  lastExplored: new Date().toISOString(),
+                  source: source
+                },
                 updated_at: new Date().toISOString()
               })
               .eq('id', existing.id);
 
             if (error) throw error;
-            return { success: true, action: 'updated', table: table_name, message: `Updated ai_entity_definitions for ${table_name}` };
+            return {
+              success: true,
+              action: 'updated',
+              table: table_name,
+              pathsLearned: Object.keys(fieldPaths).length,
+              message: `Updated ai_entity_definitions for ${table_name} with ${Object.keys(fieldPaths).length} paths`
+            };
           }
 
-          // Create new
+          // Create new with full field paths
           const { error } = await masterDbClient
             .from('ai_entity_definitions')
             .insert({
@@ -863,10 +904,13 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
               display_name: table_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
               description: description || `${table_name} table`,
               table_name: table_name,
-              fields: columns.reduce((acc, c) => {
-                acc[c.name] = { type: c.type, description: c.description || `${c.name} field` };
-                return acc;
-              }, {}),
+              fields,
+              metadata: {
+                allFieldPaths: fieldPaths,
+                totalPaths: Object.keys(fieldPaths).length,
+                lastExplored: new Date().toISOString(),
+                source: source
+              },
               supported_operations: ['list', 'get', 'create', 'update', 'delete'],
               is_active: true,
               category: 'auto_learned',
@@ -876,7 +920,13 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
             });
 
           if (error) throw error;
-          return { success: true, action: 'created', table: table_name, message: `Learned ${table_name} schema → saved to ai_entity_definitions` };
+          return {
+            success: true,
+            action: 'created',
+            table: table_name,
+            pathsLearned: Object.keys(fieldPaths).length,
+            message: `Learned ${table_name} schema with ${Object.keys(fieldPaths).length} paths → saved to ai_entity_definitions`
+          };
         }
 
         case 'pattern': {
@@ -994,21 +1044,40 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         };
       }
 
-      // Extract actual columns from DB data
+      // Extract actual columns from DB data with DEEP JSONB exploration
       const actualColumns = samples?.[0] ? Object.keys(samples[0]).map(col => {
         const val = samples[0][col];
-        return {
+        const isJsonb = val !== null && typeof val === 'object' && !Array.isArray(val);
+
+        const colInfo = {
           name: col,
           type: val === null ? 'unknown' : typeof val === 'object' ? (Array.isArray(val) ? 'array' : 'jsonb') : typeof val,
           sample: typeof val === 'object' ? JSON.stringify(val).substring(0, 150) : String(val ?? '').substring(0, 80)
         };
+
+        // DEEP JSONB EXPLORATION: Discover nested structure
+        if (isJsonb && val) {
+          colInfo.jsonbStructure = this._exploreJsonbStructure(val, col, 3);
+          colInfo.jsonbPaths = this._extractJsonbPaths(val, col);
+        }
+
+        return colInfo;
       }) : [];
+
+      // Build comprehensive field paths (including JSONB nested paths)
+      const allFieldPaths = [];
+      actualColumns.forEach(col => {
+        allFieldPaths.push({ path: col.name, type: col.type });
+        if (col.jsonbPaths) {
+          col.jsonbPaths.forEach(jp => allFieldPaths.push(jp));
+        }
+      });
 
       // Check for gaps - columns in DB but not in AI hints
       const aiFields = aiHints?.fields ? Object.keys(aiHints.fields) : [];
       const gaps = actualColumns.filter(c => !aiFields.includes(c.name)).map(c => c.name);
 
-      // AUTO-LEARN: If no AI hints or significant gaps, save to AI tables
+      // AUTO-LEARN: If no AI hints or significant gaps, save to AI tables with FULL JSONB paths
       let learned = null;
       if (!aiHints || gaps.length > actualColumns.length * 0.5) {
         try {
@@ -1017,7 +1086,9 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
             data: {
               table_name: table,
               columns: actualColumns,
-              description: `Auto-learned: ${table} table with ${actualColumns.length} columns`
+              // Include ALL field paths (including nested JSONB paths)
+              allFieldPaths: allFieldPaths,
+              description: `Auto-learned: ${table} table with ${actualColumns.length} columns, ${allFieldPaths.length} total paths`
             },
             source: 'auto_exploration'
           }, context);
@@ -1027,10 +1098,21 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         }
       }
 
+      // Find JSONB columns for highlighting
+      const jsonbColumns = actualColumns.filter(c => c.type === 'jsonb' && c.jsonbPaths);
+
       return {
         success: true,
         table,
         columns: actualColumns,
+        // ALL accessible paths including nested JSONB fields
+        allFieldPaths,
+        // Highlight JSONB structures for quick reference
+        jsonbDetails: jsonbColumns.length > 0 ? jsonbColumns.map(c => ({
+          column: c.name,
+          paths: c.jsonbPaths?.slice(0, 20), // Top 20 paths
+          structure: c.jsonbStructure
+        })) : null,
         sampleData: samples?.slice(0, 2),
         // AI hints (enrichment, not truth)
         hints: aiHints ? {
@@ -1049,7 +1131,8 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
           missingFromAiTables: gaps,
           suggestion: `These columns exist in DB but not in ai_entity_definitions: ${gaps.join(', ')}`
         } : null,
-        message: `Explored ${table}: ${actualColumns.length} columns` +
+        message: `Explored ${table}: ${actualColumns.length} columns, ${allFieldPaths.length} total paths` +
+          (jsonbColumns.length > 0 ? ` (${jsonbColumns.length} JSONB columns with nested fields)` : '') +
           (aiHints ? ' (with AI hints)' : ' (no AI hints)') +
           (learned?.success ? ` - AUTO-LEARNED!` : '')
       };
@@ -2424,79 +2507,96 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       // Continue without learning context
     }
 
-    const basePrompt = `You are an AI assistant for managing an e-commerce store. Work like Claude Code - EXPLORE first, UNDERSTAND the system, then ACT intelligently.
+    const basePrompt = `You are an AI assistant for managing an e-commerce store. You have comprehensive knowledge of the system and can act intelligently.
 
-## SELF-LEARNING AI
+## KNOWLEDGE-FIRST WORKFLOW
 
-You automatically learn and get smarter over time:
-- When you explore a table, discoveries are AUTO-SAVED to AI tables
-- No manual training needed - you train yourself as you work
-- AI tables are hints/cache, actual DB is always truth
-- Use \`learn\` tool to explicitly save patterns, insights, or context
+You have access to pre-learned knowledge about this system. Use this order:
 
-## EXPLORATION-FIRST WORKFLOW
+1. **CHECK RAG CONTEXT FIRST** - The context above contains learned knowledge about tables, fields, workflows
+   - Look for field paths like \`stores.settings.store_logo\` in the context
+   - Check for documented workflows (e.g., file upload → get URL → save)
+   - Use existing patterns before exploring
 
-**Before making any changes**, understand the system:
-1. Use \`explore_schema\` to discover tables (auto-learns if not in AI tables)
-2. Use \`get_system_overview\` for architecture, admin sidebar, features
-3. Use \`discover_components\` to see available UI components
-4. Use \`query_database\` to read current data
+2. **ONLY EXPLORE IF KNOWLEDGE NOT FOUND** - If RAG context doesn't answer your question:
+   - \`explore_schema\` discovers table structure INCLUDING nested JSONB fields
+   - Returns \`allFieldPaths\` with paths like \`settings.store_logo\`, \`configuration.slots\`
+   - Auto-learns discoveries for future use
 
-The LLM's intelligence + exploration = understanding. AI tables are just cache.
+3. **ACT WITH CONFIDENCE** - Once you know where data lives, execute the action
 
-## TOOL USAGE
+## UNDERSTANDING JSONB NESTED FIELDS
+
+Many tables have JSONB columns with nested structures. The \`explore_schema\` tool reveals these:
+- \`stores.settings\` → contains \`store_logo\`, \`favicon\`, \`theme\`, etc.
+- \`slot_configurations.configuration\` → contains \`slots\`, \`rootSlots\`, \`metadata\`
+- \`plugin_registry.definition\` → contains component schema
+
+When updating JSONB nested fields, use the full path notation.
+
+## FILE UPLOAD WORKFLOW
+
+When user provides an image/file:
+1. Upload to storage: \`call_api(method="POST", endpoint="/api/storage/upload", ...)\`
+2. Get URL from response: \`data.publicUrl\` or \`data.url\`
+3. Save URL to appropriate field (e.g., \`stores.settings.store_logo\`)
+
+NEVER save base64 or local paths directly. Always upload first.
+
+## SLOT CONFIGURATION WORKFLOW
+
+For layout changes (adding components to pages):
+1. Check if component exists: \`discover_components(search="...")\`
+2. If not found → \`create_component\` (saves to plugin_registry)
+3. Add to page: \`configure_layout(pageType="...", operation="add_slot", ...)\`
+4. Slot configurations are in \`slot_configurations.configuration\` JSONB
+
+## TOOLS
+
+### Knowledge Tools:
+- \`get_ai_context\`: Get specific documentation/patterns from AI tables
+- \`explore_schema\`: Discover table structure with JSONB nested paths (use only if needed)
+- \`discover_components\`: Find available slot types and plugins
+
+### Data Tools:
+- \`query_database\`: Read any table directly
+- \`create_record\` / \`update_record\` / \`delete_record\`: CRUD operations
+- \`update_store_setting\`: Update store settings (handles JSONB paths)
+
+### Layout Tools:
+- \`configure_layout\`: Add/update/remove slots in page layouts
+- \`create_component\`: Create new slot type (saves to plugin_registry)
+
+### API Tools:
+- \`call_api\`: Call any backend API endpoint (for file uploads, etc.)
 
 ### Learning Tools:
-- \`learn\`: Explicitly save knowledge (entity schemas, patterns, insights)
-  - Called automatically by explore_schema when gaps found
-  - Use manually after successful operations to save patterns
-
-### Exploration Tools:
-- \`explore_schema\`: Discover tables, AUTO-LEARNS missing schemas
-- \`get_system_overview\`: Architecture, admin sidebar, features
-- \`discover_components\`: Find slot types from ai_code_patterns
-- \`get_ai_context\`: Get docs from ai_context_documents
-- \`query_database\`: Read any table directly
-
-### Action Tools:
-- \`update_store_setting\`: Update logo, name, theme
-- \`configure_layout\`: Add/update/remove slots in page layouts
-- \`create_component\`: Create new slot type (saved to plugin_registry)
-- \`create_record\` / \`update_record\`: CRUD on any entity
-
-## INTELLIGENT COMPONENT CREATION
-
-When user requests something that doesn't exist:
-1. Use \`discover_components\` to check if it exists
-2. If NOT found: "I don't see that component. Want me to create it?"
-3. If YES: \`create_component\` → saves to plugin_registry
-4. Then \`configure_layout\` to add it to page
-5. Optionally: \`learn\` to save as pattern for future
+- \`learn\`: Explicitly save discoveries for future use
 
 ## EXAMPLES
 
-**User: "Add this logo"**
-1. explore_schema(search="logo") → Finds stores.logo_url, AUTO-LEARNS if needed
-2. update_store_setting(setting="logo_url", value="<url>")
+**User: "Add this logo as store logo" (with uploaded image)**
+1. Check RAG context → knows logo is at \`stores.settings.store_logo\`
+2. call_api(POST, /api/storage/upload, file) → get URL
+3. update_store_setting(setting="settings.store_logo", value="<url>")
 
-**User: "Add mega menu"**
-1. discover_components(search="mega-menu") → Not found
-2. "Want me to create a mega-menu component?"
-3. create_component(name="mega-menu", definition={...})
-4. configure_layout(pageType="header", operation="add_slot", slotType="mega-menu")
-5. learn(type="pattern", data={name:"mega-menu", ...}) → Saves for future
+**User: "Add reviews section above add to cart on product page"**
+1. Check RAG context → knows slot_configurations structure
+2. discover_components(search="reviews") → check if exists
+3. If not: create_component(name="reviews", ...) OR ask user
+4. configure_layout(pageType="product", operation="add_slot", position="before:add_to_cart", ...)
 
-**User: "What admin features exist?"**
-1. get_system_overview(area="admin_features")
-2. Explain based on discovered info
+**User: "Change the primary color to blue"**
+1. Check RAG context → knows theme at \`stores.settings.theme.primaryColor\`
+2. update_store_setting(setting="settings.theme.primaryColor", value="#0000FF")
 
 ## GUIDELINES
 
-- LLM intelligence + exploration = understanding
-- AI tables are cache/hints, DB is truth
-- Auto-learn fills gaps as you explore
-- Use \`learn\` after successful complex operations
-- Always confirm destructive actions`;
+- **Check RAG context FIRST** - don't explore if you already know
+- **Explore only when needed** - discoveries are auto-learned
+- **Understand JSONB paths** - many fields are nested (settings.store_logo, not logo_url)
+- **Upload files before saving** - never save base64/local paths
+- **Confirm destructive actions** - deletions, overwrites`;
 
     // Inject RAG context if available
     let fullPrompt = basePrompt;
@@ -2518,6 +2618,126 @@ ${learningContext}`;
     }
 
     return fullPrompt;
+  }
+
+  // ============================================
+  // JSONB DEEP EXPLORATION HELPERS
+  // ============================================
+
+  /**
+   * Explore JSONB structure recursively to understand nested fields
+   * This is key for discovering paths like stores.settings.store_logo
+   */
+  _exploreJsonbStructure(obj, prefix = '', maxDepth = 3, currentDepth = 0) {
+    if (currentDepth >= maxDepth || !obj || typeof obj !== 'object') {
+      return null;
+    }
+
+    const structure = {};
+
+    for (const [key, value] of Object.entries(obj)) {
+      const fullPath = prefix ? `${prefix}.${key}` : key;
+
+      if (value === null) {
+        structure[key] = { type: 'null', path: fullPath };
+      } else if (Array.isArray(value)) {
+        structure[key] = {
+          type: 'array',
+          path: fullPath,
+          itemCount: value.length,
+          itemType: value.length > 0 ? typeof value[0] : 'unknown',
+          sample: value.length > 0 ? (typeof value[0] === 'object' ? Object.keys(value[0]).slice(0, 5) : value.slice(0, 3)) : []
+        };
+      } else if (typeof value === 'object') {
+        structure[key] = {
+          type: 'object',
+          path: fullPath,
+          keys: Object.keys(value).slice(0, 10),
+          nested: this._exploreJsonbStructure(value, fullPath, maxDepth, currentDepth + 1)
+        };
+      } else {
+        structure[key] = {
+          type: typeof value,
+          path: fullPath,
+          sample: String(value).substring(0, 50)
+        };
+      }
+    }
+
+    return structure;
+  }
+
+  /**
+   * Extract all accessible paths from a JSONB object
+   * Returns flat list like: settings.store_logo, settings.theme.primaryColor, etc.
+   */
+  _extractJsonbPaths(obj, prefix = '', maxDepth = 4, currentDepth = 0) {
+    const paths = [];
+
+    if (currentDepth >= maxDepth || !obj || typeof obj !== 'object') {
+      return paths;
+    }
+
+    for (const [key, value] of Object.entries(obj)) {
+      const fullPath = prefix ? `${prefix}.${key}` : key;
+
+      if (value === null) {
+        paths.push({ path: fullPath, type: 'null' });
+      } else if (Array.isArray(value)) {
+        paths.push({
+          path: fullPath,
+          type: 'array',
+          itemType: value.length > 0 ? typeof value[0] : 'unknown',
+          itemCount: value.length
+        });
+        // Don't recurse into arrays for now
+      } else if (typeof value === 'object') {
+        paths.push({ path: fullPath, type: 'object', keys: Object.keys(value).length });
+        // Recurse into nested objects
+        paths.push(...this._extractJsonbPaths(value, fullPath, maxDepth, currentDepth + 1));
+      } else {
+        paths.push({
+          path: fullPath,
+          type: typeof value,
+          sample: String(value).substring(0, 30)
+        });
+      }
+    }
+
+    return paths;
+  }
+
+  /**
+   * Find a specific path within a table's JSONB columns
+   * Useful for answering "where is X stored?"
+   */
+  async _findFieldPath(storeId, searchTerm) {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Tables likely to have JSONB settings/config
+    const tablesToCheck = ['stores', 'slot_configurations', 'storefronts', 'theme_defaults', 'plugin_registry'];
+    const matches = [];
+
+    for (const tableName of tablesToCheck) {
+      try {
+        const { data: samples } = await tenantDb.from(tableName).select('*').limit(1);
+        if (!samples?.[0]) continue;
+
+        for (const [col, val] of Object.entries(samples[0])) {
+          if (val && typeof val === 'object' && !Array.isArray(val)) {
+            const paths = this._extractJsonbPaths(val, `${tableName}.${col}`);
+            const matching = paths.filter(p =>
+              p.path.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            matches.push(...matching);
+          }
+        }
+      } catch (e) {
+        // Table not accessible, skip
+      }
+    }
+
+    return matches;
   }
 }
 
