@@ -210,6 +210,39 @@ CREATE INDEX IF NOT EXISTS idx_credit_transactions_type ON credit_transactions(t
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_created ON credit_transactions(created_at DESC);
 
 -- ============================================
+-- 6b. CREDIT_USAGE TABLE
+-- Tracks individual credit usage/deductions across all stores
+-- Centralized in master for cross-store reporting
+-- ============================================
+CREATE TABLE IF NOT EXISTS credit_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  store_id UUID REFERENCES stores(id) ON DELETE SET NULL,  -- Nullable for user-level operations
+
+  -- Usage details
+  credits_used NUMERIC(10, 4) NOT NULL,
+  usage_type VARCHAR(100) NOT NULL,  -- e.g., 'store_publishing', 'custom_domain', 'akeneo_schedule', 'ai_translation'
+
+  -- Reference to what consumed the credits
+  reference_id VARCHAR(255),         -- UUID or other ID of the related entity
+  reference_type VARCHAR(100),       -- Type of entity (e.g., 'store', 'domain', 'schedule', 'product')
+
+  -- Description and metadata
+  description TEXT,
+  metadata JSONB DEFAULT '{}',       -- Additional context (balance_before, balance_after, etc.)
+
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_credit_usage_user_id ON credit_usage(user_id);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_store_id ON credit_usage(store_id);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_user_store ON credit_usage(user_id, store_id);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_usage_type ON credit_usage(usage_type);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_reference ON credit_usage(reference_id, reference_type);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_created_at ON credit_usage(created_at DESC);
+
+-- ============================================
 -- 7. SERVICE_CREDIT_COSTS TABLE
 -- Pricing for all services that consume credits
 -- (Keep existing if already exists, or create new)
@@ -2168,6 +2201,7 @@ COMMENT ON TABLE store_databases IS 'Encrypted tenant database connection creden
 COMMENT ON TABLE store_hostnames IS 'Maps hostnames/domains to stores for fast tenant resolution';
 COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing information';
 COMMENT ON TABLE credit_transactions IS 'Credit purchase history and adjustments';
+COMMENT ON TABLE credit_usage IS 'Tracks all credit deductions/usage across the platform. Centralized in master DB for cross-store analytics';
 COMMENT ON TABLE service_credit_costs IS 'Pricing for all services that consume credits';
 COMMENT ON TABLE job_queue IS 'Centralized job queue for processing tenant jobs';
 COMMENT ON TABLE billing_transactions IS 'Subscription payment history';

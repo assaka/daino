@@ -87,44 +87,40 @@ class CreditService {
       throw new Error('Failed to deduct credits');
     }
 
-    // Log credit usage to tenant DB for reporting
-    if (storeId) {
-      try {
-        console.log(`[CREDIT_USAGE] Attempting to log credit usage for store ${storeId}`);
-        const ConnectionManager = require('./database/ConnectionManager');
-        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-        const { v4: uuidv4 } = require('uuid');
+    // Log credit usage to master DB for centralized reporting
+    try {
+      console.log(`[CREDIT_USAGE] Logging credit usage to master DB for user ${userId}`);
+      const { v4: uuidv4 } = require('uuid');
 
-        const insertData = {
-          id: uuidv4(),
-          user_id: userId,
-          store_id: storeId,
-          credits_used: creditAmount,
-          usage_type: referenceType || 'general',
-          reference_id: referenceId,
-          reference_type: referenceType,
-          description: description,
-          metadata: {
-            ...metadata,
-            balance_before: balance,
-            balance_after: newBalance,
-            charged_at: new Date().toISOString()
-          }
-        };
-
-        const { error: insertError } = await tenantDb
-          .from('credit_usage')
-          .insert(insertData);
-
-        if (insertError) {
-          console.error(`[CREDIT_USAGE] Insert error for store ${storeId}:`, insertError.message);
-        } else {
-          console.log(`[CREDIT_USAGE] Successfully logged ${creditAmount} credits for store ${storeId}`);
+      const insertData = {
+        id: uuidv4(),
+        user_id: userId,
+        store_id: storeId || null,
+        credits_used: creditAmount,
+        usage_type: referenceType || 'general',
+        reference_id: referenceId,
+        reference_type: referenceType,
+        description: description,
+        metadata: {
+          ...metadata,
+          balance_before: balance,
+          balance_after: newBalance,
+          charged_at: new Date().toISOString()
         }
-      } catch (logError) {
-        // Log but don't fail the deduction if credit_usage insert fails
-        console.error('[CREDIT_USAGE] Failed to log to tenant DB:', logError.message);
+      };
+
+      const { error: insertError } = await masterDbClient
+        .from('credit_usage')
+        .insert(insertData);
+
+      if (insertError) {
+        console.error(`[CREDIT_USAGE] Insert error:`, insertError.message);
+      } else {
+        console.log(`[CREDIT_USAGE] Successfully logged ${creditAmount} credits for user ${userId}${storeId ? ` (store: ${storeId})` : ''}`);
       }
+    } catch (logError) {
+      // Log but don't fail the deduction if credit_usage insert fails
+      console.error('[CREDIT_USAGE] Failed to log to master DB:', logError.message);
     }
 
     return {
@@ -292,14 +288,10 @@ class CreditService {
       };
     }
 
-    const ConnectionManager = require('./database/ConnectionManager');
-
-    // Check if already charged today BEFORE deducting credits
+    // Check if already charged today BEFORE deducting credits (query master DB)
     const chargeDate = new Date().toISOString().split('T')[0];
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(domain.store_id);
-
-      const { data: existingCharge, error: checkError } = await tenantDb
+      const { data: existingCharge, error: checkError } = await masterDbClient
         .from('credit_usage')
         .select('id, created_at')
         .eq('reference_id', domainId)
@@ -322,6 +314,8 @@ class CreditService {
       // If check fails, log but continue (fail-open to avoid missed charges)
       console.warn(`[DAILY_DEDUCTION] Could not check existing charge for domain ${domainId}:`, checkError.message);
     }
+
+    const ConnectionManager = require('./database/ConnectionManager');
 
     // Get balance before deduction
     const balanceBefore = await this.getBalance(userId);

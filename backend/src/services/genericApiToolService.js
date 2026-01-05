@@ -53,6 +53,252 @@ class GenericApiToolService {
    */
   getTools() {
     return [
+      // ============================================
+      // EXPLORATION TOOLS (Claude Code-like)
+      // ============================================
+
+      // EXPLORE SCHEMA - Discover database structure
+      {
+        name: 'explore_schema',
+        description: `Discover database tables and their columns. Use this FIRST when you need to understand where data is stored.
+Like exploring a codebase - discover before acting.
+
+Examples:
+- "Where is the store logo stored?" → explore_schema to find logo-related columns
+- "How do slots work?" → explore_schema for slot_configurations table
+- "What fields does a product have?" → explore_schema for products table`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            table: {
+              type: 'string',
+              description: 'Specific table to explore (e.g., "stores", "products", "slot_configurations", "plugin_registry"). Leave empty to list all tables.'
+            },
+            search: {
+              type: 'string',
+              description: 'Search term to find relevant tables/columns (e.g., "logo", "image", "slot", "menu")'
+            }
+          }
+        }
+      },
+
+      // QUERY DATABASE - Read any data directly
+      {
+        name: 'query_database',
+        description: `Query any database table directly. Like reading files in a codebase.
+Use after explore_schema to understand the data.
+
+Examples:
+- Read current store settings
+- See existing slot configurations
+- Check what plugins are registered
+- Find where a specific value is stored`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            table: {
+              type: 'string',
+              description: 'Table to query (e.g., "stores", "slot_configurations", "plugin_registry")'
+            },
+            select: {
+              type: 'string',
+              description: 'Columns to select (comma-separated, or "*" for all)'
+            },
+            filters: {
+              type: 'object',
+              description: 'Filter conditions as key-value pairs (e.g., { "store_id": "uuid", "status": "active" })'
+            },
+            limit: {
+              type: 'number',
+              description: 'Max rows to return (default: 10)'
+            },
+            single: {
+              type: 'boolean',
+              description: 'Return single record instead of array'
+            }
+          },
+          required: ['table']
+        }
+      },
+
+      // DISCOVER COMPONENTS - Find registered slot types and plugins
+      {
+        name: 'discover_components',
+        description: `Discover what UI components, slot types, and plugins are available.
+Use this to understand what can be rendered before trying to add it.
+
+Returns:
+- Registered slot types (from plugin_registry)
+- Built-in slot types (text, button, image, container, etc.)
+- Custom components created by the store`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['all', 'slot_types', 'plugins', 'custom'],
+              description: 'What to discover (default: all)'
+            },
+            search: {
+              type: 'string',
+              description: 'Search for specific component (e.g., "mega", "menu", "banner")'
+            }
+          }
+        }
+      },
+
+      // READ COMPONENT DEFINITION - Understand how a component works
+      {
+        name: 'read_component',
+        description: `Read the definition of a specific component or plugin to understand its structure.
+Like reading source code - understand how it works before using or creating similar.
+
+Returns the component's:
+- Configuration schema
+- Render template
+- Required props
+- Example usage`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            componentId: {
+              type: 'string',
+              description: 'Component ID or name to read (e.g., "mega-menu", "product-grid")'
+            },
+            type: {
+              type: 'string',
+              enum: ['plugin', 'slot_type', 'any'],
+              description: 'Type of component to look for (default: any)'
+            }
+          },
+          required: ['componentId']
+        }
+      },
+
+      // CREATE COMPONENT - Create new slot type as plugin
+      {
+        name: 'create_component',
+        description: `Create a new UI component/slot type as a plugin.
+Use when a requested component doesn't exist (e.g., "mega-menu").
+
+The component is stored in plugin_registry and can be rendered dynamically.
+Guide the user through:
+1. What the component should look like
+2. What data it needs
+3. How it should behave`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Component name (e.g., "mega-menu", "testimonial-carousel")'
+            },
+            type: {
+              type: 'string',
+              enum: ['slot_type', 'widget', 'block'],
+              description: 'Component type (default: slot_type)'
+            },
+            definition: {
+              type: 'object',
+              description: 'Component definition',
+              properties: {
+                label: { type: 'string', description: 'Display name' },
+                description: { type: 'string', description: 'What this component does' },
+                category: { type: 'string', description: 'Category: navigation, content, marketing, layout' },
+                icon: { type: 'string', description: 'Icon name (optional)' },
+                props: {
+                  type: 'object',
+                  description: 'Configurable properties with types and defaults'
+                },
+                template: {
+                  type: 'object',
+                  description: 'Render template using primitives (container, text, image, link, foreach)'
+                },
+                dataSource: {
+                  type: 'object',
+                  description: 'Where to fetch data from (e.g., { entity: "categories", filters: {} })'
+                },
+                defaultStyles: {
+                  type: 'object',
+                  description: 'Default CSS styles'
+                }
+              }
+            }
+          },
+          required: ['name', 'definition']
+        }
+      },
+
+      // GET AI CONTEXT - Retrieve architecture docs and knowledge
+      {
+        name: 'get_ai_context',
+        description: `Get architecture documentation and knowledge from the AI knowledge base.
+Use this to understand how systems work before making changes.
+
+Available types:
+- architecture: System design docs, how components connect
+- api_reference: API endpoints and usage
+- best_practices: Recommended patterns
+- tutorial: Step-by-step guides
+
+Categories: core, products, settings, content, marketing, translations, slots`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['architecture', 'api_reference', 'best_practices', 'tutorial', 'reference'],
+              description: 'Type of context to retrieve'
+            },
+            category: {
+              type: 'string',
+              description: 'Category filter (e.g., "slots", "products", "settings")'
+            },
+            search: {
+              type: 'string',
+              description: 'Search term to find relevant documentation'
+            },
+            limit: {
+              type: 'number',
+              description: 'Max documents to return (default: 5)'
+            }
+          }
+        }
+      },
+
+      // UPDATE STORE SETTING - Direct setting updates
+      {
+        name: 'update_store_setting',
+        description: `Update a store setting directly. Use for:
+- Store logo, favicon
+- Store name, description
+- Theme settings
+- Any store-level configuration
+
+First use explore_schema or query_database to find where the setting is stored.`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            setting: {
+              type: 'string',
+              description: 'Setting key path (e.g., "logo_url", "settings.theme.primaryColor")'
+            },
+            value: {
+              description: 'New value for the setting'
+            },
+            table: {
+              type: 'string',
+              description: 'Table where setting is stored (auto-detected if not provided)'
+            }
+          },
+          required: ['setting', 'value']
+        }
+      },
+
+      // ============================================
+      // CRUD TOOLS (existing)
+      // ============================================
+
       // 1. GENERIC API CALLER - Most flexible tool
       {
         name: 'call_api',
@@ -426,6 +672,33 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
 
     try {
       switch (toolName) {
+        // ============================================
+        // EXPLORATION TOOLS (Claude Code-like)
+        // ============================================
+        case 'explore_schema':
+          return await this._executeExploreSchema(input, context);
+
+        case 'query_database':
+          return await this._executeQueryDatabase(input, context);
+
+        case 'discover_components':
+          return await this._executeDiscoverComponents(input, context);
+
+        case 'read_component':
+          return await this._executeReadComponent(input, context);
+
+        case 'create_component':
+          return await this._executeCreateComponent(input, context);
+
+        case 'update_store_setting':
+          return await this._executeUpdateStoreSetting(input, context);
+
+        case 'get_ai_context':
+          return await this._executeGetAiContext(input, context);
+
+        // ============================================
+        // CRUD TOOLS
+        // ============================================
         case 'call_api':
           return await this._executeCallApi(input, context);
 
@@ -476,7 +749,562 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
   }
 
   // ============================================
-  // TOOL IMPLEMENTATIONS
+  // EXPLORATION TOOL IMPLEMENTATIONS
+  // ============================================
+
+  /**
+   * Explore schema using ai_entity_definitions from master DB
+   * Leverages existing AI infrastructure instead of hardcoded lists
+   */
+  async _executeExploreSchema({ table, search }, context) {
+    const { storeId } = context;
+    const { masterDbClient } = require('../database/masterConnection');
+
+    if (table) {
+      // Get entity definition from ai_entity_definitions
+      const { data: entityDef } = await masterDbClient
+        .from('ai_entity_definitions')
+        .select('*')
+        .or(`table_name.eq.${table},entity_name.eq.${table}`)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (entityDef) {
+        return {
+          success: true,
+          table: entityDef.table_name,
+          entity: entityDef.entity_name,
+          displayName: entityDef.display_name,
+          description: entityDef.description,
+          fields: entityDef.fields,
+          operations: entityDef.supported_operations,
+          apiEndpoint: entityDef.api_endpoint,
+          examplePrompts: entityDef.example_prompts,
+          intentKeywords: entityDef.intent_keywords,
+          message: `Found entity definition for ${entityDef.display_name}`
+        };
+      }
+
+      // Fallback: query tenant DB directly for sample
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const { data: schemaData } = await tenantDb
+        .from(table)
+        .select('*')
+        .limit(1);
+
+      if (schemaData && schemaData[0]) {
+        const columns = Object.keys(schemaData[0]).map(col => ({
+          column_name: col,
+          sample_value: typeof schemaData[0][col] === 'object'
+            ? JSON.stringify(schemaData[0][col]).substring(0, 100)
+            : String(schemaData[0][col]).substring(0, 100)
+        }));
+
+        return {
+          success: true,
+          table,
+          columns,
+          sample: schemaData[0],
+          message: `Found ${columns.length} columns in ${table}`,
+          hint: 'No ai_entity_definition found - showing raw schema'
+        };
+      }
+
+      return { success: false, message: `Table ${table} not found` };
+    }
+
+    // List all entities from ai_entity_definitions
+    let query = masterDbClient
+      .from('ai_entity_definitions')
+      .select('entity_name, display_name, table_name, description, category, intent_keywords')
+      .eq('is_active', true)
+      .order('priority', { ascending: false });
+
+    if (search) {
+      query = query.or(`entity_name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    const { data: entities, error } = await query;
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      entities: entities?.map(e => ({
+        entity: e.entity_name,
+        displayName: e.display_name,
+        table: e.table_name,
+        description: e.description,
+        category: e.category,
+        keywords: e.intent_keywords
+      })) || [],
+      message: `Found ${entities?.length || 0} entities from ai_entity_definitions`,
+      hint: search ? `Filtered by "${search}"` : 'Use explore_schema with table parameter for details'
+    };
+  }
+
+  /**
+   * Query database directly - read any table
+   */
+  async _executeQueryDatabase({ table, select, filters, limit = 10, single }, context) {
+    const { storeId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    let query = tenantDb.from(table);
+
+    // Select specific columns or all
+    if (select && select !== '*') {
+      query = query.select(select);
+    } else {
+      query = query.select('*');
+    }
+
+    // Apply filters
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === null) {
+          query = query.is(key, null);
+        } else if (Array.isArray(value)) {
+          query = query.in(key, value);
+        } else {
+          query = query.eq(key, value);
+        }
+      }
+    }
+
+    // Auto-filter by store_id if table has it
+    const storeIdTables = ['slot_configurations', 'products', 'categories', 'orders', 'customers', 'media_assets', 'plugin_registry'];
+    if (storeIdTables.includes(table) && !filters?.store_id) {
+      query = query.eq('store_id', storeId);
+    }
+
+    query = query.limit(limit);
+
+    if (single) {
+      const { data, error } = await query.maybeSingle();
+      if (error) throw new Error(error.message);
+      return { success: true, table, data, count: data ? 1 : 0 };
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return {
+      success: true,
+      table,
+      data,
+      count: data?.length || 0,
+      message: `Retrieved ${data?.length || 0} rows from ${table}`
+    };
+  }
+
+  /**
+   * Discover available components using AI tables from master DB
+   * Uses: ai_code_patterns (ui_component patterns), ai_plugin_examples, plugin_registry
+   */
+  async _executeDiscoverComponents({ type = 'all', search }, context) {
+    const { storeId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const { masterDbClient } = require('../database/masterConnection');
+
+    const result = {
+      success: true,
+      builtIn: [],
+      custom: [],
+      patterns: [],
+      examples: []
+    };
+
+    // Get built-in slot types from ai_code_patterns (pattern_type = 'ui_component')
+    if (type === 'all' || type === 'slot_types') {
+      let patternsQuery = masterDbClient
+        .from('ai_code_patterns')
+        .select('name, description, code, parameters, example_usage')
+        .eq('pattern_type', 'ui_component')
+        .eq('is_active', true);
+
+      if (search) {
+        patternsQuery = patternsQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      }
+
+      const { data: patterns } = await patternsQuery;
+      result.builtIn = patterns?.map(p => ({
+        type: p.name,
+        description: p.description,
+        props: p.parameters,
+        example: p.example_usage
+      })) || [];
+    }
+
+    // Get component examples from ai_plugin_examples
+    if (type === 'all' || type === 'examples') {
+      let examplesQuery = masterDbClient
+        .from('ai_plugin_examples')
+        .select('name, slug, description, category, complexity, features')
+        .eq('is_active', true)
+        .limit(10);
+
+      if (search) {
+        examplesQuery = examplesQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      }
+
+      const { data: examples } = await examplesQuery;
+      result.examples = examples?.map(e => ({
+        name: e.name,
+        slug: e.slug,
+        description: e.description,
+        category: e.category,
+        complexity: e.complexity,
+        features: e.features
+      })) || [];
+    }
+
+    // Query store's custom components from plugin_registry (tenant DB)
+    if (type === 'all' || type === 'custom' || type === 'plugins') {
+      let query = tenantDb
+        .from('plugin_registry')
+        .select('id, name, type, description, configuration, status')
+        .eq('store_id', storeId);
+
+      if (search) {
+        query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      }
+
+      const { data: plugins } = await query;
+
+      if (plugins) {
+        result.custom = plugins.filter(p => p.type === 'slot_type').map(p => ({
+          type: p.name,
+          description: p.description,
+          props: Object.keys(p.configuration?.props || {}),
+          pluginId: p.id,
+          status: p.status
+        }));
+
+        result.patterns = plugins.filter(p => p.type !== 'slot_type').map(p => ({
+          name: p.name,
+          type: p.type,
+          description: p.description,
+          status: p.status,
+          pluginId: p.id
+        }));
+      }
+    }
+
+    const totalFound = result.builtIn.length + result.custom.length + result.examples.length;
+
+    return {
+      ...result,
+      message: `Found: ${result.builtIn.length} built-in from ai_code_patterns, ${result.custom.length} store custom, ${result.examples.length} examples from ai_plugin_examples`,
+      hint: result.custom.length === 0 && search
+        ? `No custom "${search}" component found. Use create_component to create one, or check ai_plugin_examples for templates.`
+        : null
+    };
+  }
+
+  /**
+   * Read a component/plugin definition
+   */
+  async _executeReadComponent({ componentId, type = 'any' }, context) {
+    const { storeId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Check built-in types first
+    const builtInDefs = {
+      'container': {
+        type: 'container',
+        description: 'Layout container for grouping child slots',
+        props: {
+          layout: { type: 'object', description: '{ display: "flex"|"grid", direction, gap, cols }' },
+          children: { type: 'array', description: 'Child slot IDs' },
+          colSpan: { type: 'number', description: 'Grid width 1-12' },
+          styles: { type: 'object', description: 'CSS styles' }
+        },
+        example: { type: 'container', layout: { display: 'flex', direction: 'row', gap: 4 }, children: ['slot1', 'slot2'] }
+      },
+      'text': {
+        type: 'text',
+        description: 'Text content slot',
+        props: {
+          content: { type: 'string', description: 'Text content' },
+          styles: { type: 'object', description: 'CSS styles (color, fontSize, fontWeight, etc.)' }
+        },
+        example: { type: 'text', content: 'Hello World', styles: { color: 'blue', fontSize: '16px' } }
+      },
+      'image': {
+        type: 'image',
+        description: 'Image display slot',
+        props: {
+          src: { type: 'string', description: 'Image URL' },
+          alt: { type: 'string', description: 'Alt text' },
+          styles: { type: 'object', description: 'CSS styles (width, height, objectFit, etc.)' }
+        },
+        example: { type: 'image', src: '/logo.png', alt: 'Store Logo', styles: { width: '200px' } }
+      },
+      'button': {
+        type: 'button',
+        description: 'Clickable button',
+        props: {
+          label: { type: 'string', description: 'Button text' },
+          action: { type: 'object', description: '{ type: "link"|"submit"|"custom", value }' },
+          variant: { type: 'string', description: 'primary|secondary|outline' },
+          styles: { type: 'object', description: 'CSS styles' }
+        },
+        example: { type: 'button', label: 'Shop Now', action: { type: 'link', value: '/shop' } }
+      },
+      'link': {
+        type: 'link',
+        description: 'Navigation link',
+        props: {
+          href: { type: 'string', description: 'Link URL' },
+          label: { type: 'string', description: 'Link text' },
+          target: { type: 'string', description: '_self|_blank' }
+        },
+        example: { type: 'link', href: '/about', label: 'About Us' }
+      }
+    };
+
+    if (builtInDefs[componentId]) {
+      return {
+        success: true,
+        component: builtInDefs[componentId],
+        source: 'built-in',
+        message: `${componentId} is a built-in slot type`
+      };
+    }
+
+    // Search in plugin_registry
+    const { data: plugin } = await tenantDb
+      .from('plugin_registry')
+      .select('*')
+      .eq('store_id', storeId)
+      .or(`name.eq.${componentId},id.eq.${componentId}`)
+      .maybeSingle();
+
+    if (plugin) {
+      return {
+        success: true,
+        component: {
+          id: plugin.id,
+          name: plugin.name,
+          type: plugin.type,
+          description: plugin.description,
+          props: plugin.configuration?.props || {},
+          template: plugin.configuration?.template,
+          dataSource: plugin.configuration?.dataSource,
+          defaultStyles: plugin.configuration?.defaultStyles,
+          status: plugin.status
+        },
+        source: 'plugin_registry',
+        message: `Found custom component: ${plugin.name}`
+      };
+    }
+
+    return {
+      success: false,
+      message: `Component "${componentId}" not found`,
+      hint: 'Use discover_components to see available components, or create_component to create a new one'
+    };
+  }
+
+  /**
+   * Create a new component as a plugin
+   */
+  async _executeCreateComponent({ name, type = 'slot_type', definition }, context) {
+    const { storeId, userId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Check if component already exists
+    const { data: existing } = await tenantDb
+      .from('plugin_registry')
+      .select('id')
+      .eq('store_id', storeId)
+      .eq('name', name)
+      .maybeSingle();
+
+    if (existing) {
+      return {
+        success: false,
+        message: `Component "${name}" already exists`,
+        existingId: existing.id,
+        hint: 'Use update_record to modify the existing component, or choose a different name'
+      };
+    }
+
+    // Create the plugin
+    const pluginData = {
+      store_id: storeId,
+      name: name,
+      type: type,
+      description: definition.description || `Custom ${name} component`,
+      status: 'active',
+      configuration: {
+        label: definition.label || name,
+        category: definition.category || 'custom',
+        icon: definition.icon,
+        props: definition.props || {},
+        template: definition.template,
+        dataSource: definition.dataSource,
+        defaultStyles: definition.defaultStyles || {}
+      },
+      created_by: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: created, error } = await tenantDb
+      .from('plugin_registry')
+      .insert(pluginData)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+      success: true,
+      component: {
+        id: created.id,
+        name: created.name,
+        type: created.type,
+        ...created.configuration
+      },
+      message: `Created "${name}" component. You can now use it in configure_layout with slotType="${name}"`,
+      usage: {
+        tool: 'configure_layout',
+        example: {
+          pageType: 'header',
+          operation: 'add_slot',
+          slotType: name,
+          config: { ...definition.defaultStyles }
+        }
+      }
+    };
+  }
+
+  /**
+   * Update a store setting directly
+   */
+  async _executeUpdateStoreSetting({ setting, value, table }, context) {
+    const { storeId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Map common setting names to table.column
+    const settingMap = {
+      'logo': { table: 'stores', column: 'logo_url' },
+      'logo_url': { table: 'stores', column: 'logo_url' },
+      'store_logo': { table: 'stores', column: 'logo_url' },
+      'favicon': { table: 'stores', column: 'favicon_url' },
+      'favicon_url': { table: 'stores', column: 'favicon_url' },
+      'store_name': { table: 'stores', column: 'name' },
+      'name': { table: 'stores', column: 'name' },
+      'description': { table: 'stores', column: 'description' },
+      'store_description': { table: 'stores', column: 'description' },
+      'primary_color': { table: 'stores', column: 'settings', path: ['theme', 'primaryColor'] },
+      'theme.primaryColor': { table: 'stores', column: 'settings', path: ['theme', 'primaryColor'] },
+      'theme.secondaryColor': { table: 'stores', column: 'settings', path: ['theme', 'secondaryColor'] }
+    };
+
+    const mapping = settingMap[setting] || { table: table || 'stores', column: setting };
+
+    if (mapping.path) {
+      // Handle nested JSON update
+      const { data: current, error: fetchError } = await tenantDb
+        .from(mapping.table)
+        .select(mapping.column)
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError) throw new Error(fetchError.message);
+
+      let obj = current[mapping.column] || {};
+      let ref = obj;
+      for (let i = 0; i < mapping.path.length - 1; i++) {
+        if (!ref[mapping.path[i]]) ref[mapping.path[i]] = {};
+        ref = ref[mapping.path[i]];
+      }
+      ref[mapping.path[mapping.path.length - 1]] = value;
+
+      const { error: updateError } = await tenantDb
+        .from(mapping.table)
+        .update({ [mapping.column]: obj, updated_at: new Date().toISOString() })
+        .eq('id', storeId);
+
+      if (updateError) throw new Error(updateError.message);
+    } else {
+      // Direct column update
+      const { error } = await tenantDb
+        .from(mapping.table)
+        .update({ [mapping.column]: value, updated_at: new Date().toISOString() })
+        .eq('id', storeId);
+
+      if (error) throw new Error(error.message);
+    }
+
+    return {
+      success: true,
+      setting,
+      value,
+      table: mapping.table,
+      column: mapping.column,
+      message: `Updated ${setting} to "${typeof value === 'string' ? value.substring(0, 50) : value}"`
+    };
+  }
+
+  /**
+   * Get AI context from ai_context_documents (master DB)
+   * Retrieves architecture docs, best practices, tutorials
+   */
+  async _executeGetAiContext({ type, category, search, limit = 5 }, context) {
+    const { masterDbClient } = require('../database/masterConnection');
+
+    let query = masterDbClient
+      .from('ai_context_documents')
+      .select('id, type, title, content, category, tags, priority')
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .limit(limit);
+
+    if (type) {
+      query = query.eq('type', type);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+    }
+
+    const { data: docs, error } = await query;
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      documents: docs?.map(d => ({
+        id: d.id,
+        type: d.type,
+        title: d.title,
+        category: d.category,
+        tags: d.tags,
+        content: d.content,
+        priority: d.priority
+      })) || [],
+      count: docs?.length || 0,
+      message: `Found ${docs?.length || 0} context documents`,
+      hint: docs?.length === 0
+        ? 'Try broader search terms or different type/category'
+        : `Categories: ${[...new Set(docs.map(d => d.category))].join(', ')}`
+    };
+  }
+
+  // ============================================
+  // CRUD TOOL IMPLEMENTATIONS
   // ============================================
 
   /**
@@ -1178,71 +2006,80 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
    * This teaches the AI about available tools and how to use them
    */
   getSystemPrompt() {
-    return `You are an AI assistant for managing an e-commerce store. You can perform ANY operation on the store through the available tools.
+    return `You are an AI assistant for managing an e-commerce store. Work like Claude Code - EXPLORE first, UNDERSTAND the system, then ACT intelligently.
 
-## YOUR CAPABILITIES
+## EXPLORATION-FIRST WORKFLOW
 
-You have access to tools that can:
-- **Read data**: List products, categories, orders, customers, and any other entity
-- **Create records**: Add new products, categories, coupons, CMS pages, etc.
-- **Update records**: Modify any existing data including prices, descriptions, settings
-- **Delete records**: Remove products, categories, or other records
-- **Configure layouts**: Change page layouts, slot ordering, add/remove sections
-- **Update styling**: Change colors, fonts, spacing, and other visual properties
-- **Execute workflows**: Bulk translate, optimize images, generate SEO, etc.
+**Before making any changes**, understand the system:
+1. Use \`explore_schema\` to discover entities from ai_entity_definitions
+2. Use \`get_ai_context\` to read architecture documentation
+3. Use \`discover_components\` to see available UI components
+4. Use \`query_database\` to read current data/configurations
 
-## HOW TO USE TOOLS
+This is NOT hardcoded knowledge - you DISCOVER it dynamically from the database.
 
-1. **For simple queries** (list, get, search):
-   - Use \`list_data\` to query entities with filters
-   - Use \`get_record\` to fetch a specific record by ID
-   - Use \`search\` to find data across multiple entities
+## KNOWLEDGE SOURCES (AI Tables)
 
-2. **For modifications**:
-   - Use \`create_record\` to add new records
-   - Use \`update_record\` to modify existing records
-   - Use \`delete_record\` to remove records (ask for confirmation first!)
-   - Use \`bulk_operation\` for batch updates
+Your knowledge comes from these master database tables:
+- **ai_entity_definitions**: Schema definitions, fields, operations, intent keywords
+- **ai_context_documents**: Architecture docs, tutorials, best practices
+- **ai_code_patterns**: Reusable code patterns (ui_component, api, etc.)
+- **ai_plugin_examples**: Working component/plugin examples
 
-3. **For layout/design changes**:
-   - Use \`configure_layout\` to modify page structure and slots
-   - Use \`update_styling\` to change visual appearance
+Always query these tables to understand the system before acting.
 
-4. **For complex operations**:
-   - Use \`execute_workflow\` for multi-step processes
-   - Use \`call_api\` for any endpoint not covered by other tools
+## TOOL USAGE
 
-## IMPORTANT GUIDELINES
+### Exploration Tools (Use FIRST):
+- \`explore_schema\`: Discover entities and their fields from ai_entity_definitions
+- \`get_ai_context\`: Get architecture docs from ai_context_documents
+- \`discover_components\`: Find available slot types from ai_code_patterns
+- \`read_component\`: Understand how a specific component works
+- \`query_database\`: Read any table directly
 
-1. **Always confirm destructive operations** (delete, bulk delete) before executing
-2. **Be specific** about what you're changing and why
-3. **Show results** after making changes so users can verify
-4. **Handle errors gracefully** and explain what went wrong
-5. **For styling**, use CSS property names (color, fontSize, backgroundColor, etc.)
+### Action Tools (Use AFTER exploring):
+- \`update_store_setting\`: Update logo, name, theme (auto-discovers location)
+- \`configure_layout\`: Add/update/remove slots in page layouts
+- \`create_component\`: Create new slot type when one doesn't exist
+- \`create_record\` / \`update_record\`: CRUD on any entity
+- \`update_styling\`: Change visual appearance
 
-## AVAILABLE ENTITIES
+## INTELLIGENT COMPONENT CREATION
 
-Products, Categories, Orders, Customers, Coupons, CMS Pages, CMS Blocks,
-Attributes, Attribute Sets, Shipping Methods, Payment Methods, Languages,
-Translations, Plugins, Extensions, Email Templates, SEO Templates,
-Campaigns, Segments, Automations, Redirects, Slot Configurations,
-Theme Settings, Storefronts, and more.
+When user requests a component that doesn't exist (e.g., "Add a mega menu"):
+1. Use \`discover_components\` to check if it exists
+2. If NOT found: "I don't see a mega-menu component. Would you like me to create one?"
+3. If YES: Use \`create_component\` to register it in plugin_registry
+4. Then use \`configure_layout\` to add it to the page
 
 ## EXAMPLES
 
-User: "Show me all products under $50"
-→ Use list_data with entity="products" and filters={price_lt: 50}
+**User: "Add this image as my store logo"**
+1. explore_schema(search="logo") → Find logo_url in stores table
+2. update_store_setting(setting="logo_url", value="<image_url>")
 
-User: "Change the product title color to green"
-→ Use update_styling with target="product-title" and styles={color: "green"}
+**User: "Add a mega menu with categories"**
+1. discover_components(search="mega-menu") → Check if exists
+2. If not found: Ask user if they want to create it
+3. create_component(name="mega-menu", definition={...})
+4. configure_layout(pageType="header", operation="add_slot", slotType="mega-menu")
 
-User: "Add a banner to the homepage"
-→ Use configure_layout with pageType="homepage", operation="add_slot", config={type: "banner", ...}
+**User: "How do slots work?"**
+1. get_ai_context(type="architecture", search="slots")
+2. explore_schema(table="slot_configurations")
+3. Return comprehensive explanation from discovered knowledge
 
-User: "Create a 20% off coupon"
-→ Use create_record with entity="coupons" and data={code: "SAVE20", discount_type: "percentage", discount_value: 20}
+**User: "Change product title color to green"**
+1. explore_schema(search="product") → Understand product page structure
+2. update_styling(target="product-title", styles={color: "green"})
 
-Always be helpful and proactive. If you need more information to complete a task, ask the user.`;
+## GUIDELINES
+
+- EXPLORE before acting - don't assume, discover
+- Use ai_entity_definitions for accurate field/operation info
+- Create new components via plugin_registry when needed
+- Always confirm destructive operations
+- Explain what you discovered and what you're doing`;
   }
 }
 
