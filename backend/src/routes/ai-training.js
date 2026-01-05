@@ -481,18 +481,37 @@ router.post('/run-comprehensive', async (req, res) => {
  */
 router.get('/knowledge-status', async (req, res) => {
   try {
-    const [entities, docs, patterns] = await Promise.all([
+    const [entities, docs, patterns, docsWithEmbeddings, storeSettings] = await Promise.all([
       masterDbClient.from('ai_entity_definitions').select('table_name, description, category', { count: 'exact' }),
       masterDbClient.from('ai_context_documents').select('title, type, category', { count: 'exact' }),
-      masterDbClient.from('ai_code_patterns').select('name, type', { count: 'exact' })
+      masterDbClient.from('ai_code_patterns').select('name, type', { count: 'exact' }),
+      // Count documents WITH embeddings
+      masterDbClient.from('ai_context_documents').select('id', { count: 'exact' }).not('embedding', 'is', null),
+      // Get store_setting docs with embedding status
+      masterDbClient.from('ai_context_documents')
+        .select('title, type, embedding')
+        .eq('type', 'store_setting')
+        .order('title')
     ]);
+
+    const storeSettingsWithEmbeddings = storeSettings.data?.filter(s => s.embedding !== null).length || 0;
+    const storeSettingsTotal = storeSettings.data?.length || 0;
 
     res.json({
       success: true,
       stats: {
         entity_definitions: entities.data?.length || 0,
         context_documents: docs.data?.length || 0,
-        code_patterns: patterns.data?.length || 0
+        code_patterns: patterns.data?.length || 0,
+        documents_with_embeddings: docsWithEmbeddings.data?.length || 0,
+        store_settings_total: storeSettingsTotal,
+        store_settings_with_embeddings: storeSettingsWithEmbeddings
+      },
+      embedding_status: {
+        total_docs: docs.data?.length || 0,
+        with_embeddings: docsWithEmbeddings.data?.length || 0,
+        missing_embeddings: (docs.data?.length || 0) - (docsWithEmbeddings.data?.length || 0),
+        store_settings: `${storeSettingsWithEmbeddings}/${storeSettingsTotal} have embeddings`
       },
       entities: entities.data?.map(e => ({ table: e.table_name, desc: e.description?.substring(0, 50) })),
       documents: docs.data?.map(d => ({ title: d.title, type: d.type })),
