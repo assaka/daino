@@ -35,6 +35,16 @@ class SupabaseAdapter extends DatabaseAdapter {
   }
 
   /**
+   * Execute an RPC function in Supabase
+   * @param {string} functionName - Name of the RPC function
+   * @param {Object} params - Parameters to pass to the function
+   * @returns {Promise<Object>} Result with data and error
+   */
+  async rpc(functionName, params = {}) {
+    return await this.client.rpc(functionName, params);
+  }
+
+  /**
    * Test database connection
    * Uses a method that works even if tables don't exist
    */
