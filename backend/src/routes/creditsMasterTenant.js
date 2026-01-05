@@ -254,11 +254,15 @@ router.get('/usage', authMiddleware, async (req, res) => {
     const storeIds = [...new Set(usage.map(u => u.store_id).filter(Boolean))];
     let storeNames = {};
 
+    console.log('[CREDIT_USAGE] Looking up stores for IDs:', storeIds);
+
     if (storeIds.length > 0) {
       const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
         .select('id, name')
         .in('id', storeIds);
+
+      console.log('[CREDIT_USAGE] Stores found:', stores?.map(s => ({ id: s.id, name: s.name })));
 
       if (storesError) {
         console.error('Error fetching stores:', storesError);
@@ -271,6 +275,8 @@ router.get('/usage', authMiddleware, async (req, res) => {
         }, {});
       }
     }
+
+    console.log('[CREDIT_USAGE] Store names map:', storeNames);
 
     // Calculate totals for the filtered period
     const totalCredits = usage.reduce((sum, u) => sum + parseFloat(u.credits_used || 0), 0);
