@@ -429,10 +429,20 @@ const UnifiedSlotsEditor = ({
         }
       };
 
-      // Save to API
-      await Store.updateSettings(storeId, { settings: updatedSettings });
+      // DEBUG: Log what we're saving
+      console.log('🔍 THEME SAVE DEBUG:', {
+        storeId,
+        key,
+        value,
+        currentTheme,
+        updatedTheme: updatedSettings.theme,
+        fullPayload: { settings: updatedSettings }
+      });
 
-      console.log(`Theme setting updated: ${key} = ${value}`);
+      // Save to API
+      const result = await Store.updateSettings(storeId, { settings: updatedSettings });
+
+      console.log(`Theme setting updated: ${key} = ${value}`, { apiResult: result });
     } catch (error) {
       console.error('Failed to save theme setting:', error);
     }
