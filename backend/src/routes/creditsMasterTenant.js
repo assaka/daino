@@ -296,20 +296,20 @@ router.get('/usage', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/credits/usage/types
- * Get available usage types for filter dropdown
+ * Get available usage types for filter dropdown from service_credit_costs
  */
 router.get('/usage/types', authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
-
-    // Get distinct usage types for this user
-    const { data: types, error } = await masterDbClient
-      .from('credit_usage')
-      .select('usage_type')
-      .eq('user_id', userId);
+    // Get all active service types from service_credit_costs
+    const { data: services, error } = await masterDbClient
+      .from('service_credit_costs')
+      .select('service_key, service_name, service_category')
+      .eq('is_active', true)
+      .order('service_category')
+      .order('service_name');
 
     if (error) {
-      console.error('Error getting usage types:', error);
+      console.error('Error getting service types:', error);
       return res.status(500).json({
         success: false,
         message: 'Failed to get usage types',
@@ -317,27 +317,12 @@ router.get('/usage/types', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get unique types
-    const uniqueTypes = [...new Set(types.map(t => t.usage_type))].filter(Boolean);
-
-    // Map to user-friendly labels
-    const typeLabels = {
-      'store_publishing': 'Store Publishing',
-      'custom_domain': 'Custom Domain',
-      'akeneo_schedule': 'Akeneo Scheduled Import',
-      'akeneo_manual': 'Akeneo Manual Import',
-      'ai_translation': 'AI Translation',
-      'manual_import': 'Manual Import',
-      'ai_image': 'AI Image Processing',
-      'ai_seo': 'AI SEO',
-      'ai_content': 'AI Content Generation'
-    };
-
     res.json({
       success: true,
-      data: uniqueTypes.map(type => ({
-        value: type,
-        label: typeLabels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      data: (services || []).map(service => ({
+        value: service.service_key,
+        label: service.service_name,
+        category: service.service_category
       }))
     });
   } catch (error) {
