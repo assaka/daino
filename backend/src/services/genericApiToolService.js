@@ -266,6 +266,30 @@ Categories: core, products, settings, content, marketing, translations, slots`,
         }
       },
 
+      // GET SYSTEM OVERVIEW - Architecture, admin features, sidebar
+      {
+        name: 'get_system_overview',
+        description: `Get high-level system overview: architecture, admin sidebar structure, features.
+Use this to understand the overall system before diving into specifics.
+
+Areas:
+- architecture: Overall system design, tech stack, how pieces connect
+- admin_sidebar: Admin navigation structure, sections, features
+- admin_features: Available admin capabilities and where to find them
+- slot_system: How slots/layouts work
+- plugin_system: How plugins and extensions work`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            area: {
+              type: 'string',
+              enum: ['architecture', 'admin_sidebar', 'admin_features', 'slot_system', 'plugin_system', 'all'],
+              description: 'Which area to get overview of'
+            }
+          }
+        }
+      },
+
       // UPDATE STORE SETTING - Direct setting updates
       {
         name: 'update_store_setting',
@@ -696,6 +720,9 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         case 'get_ai_context':
           return await this._executeGetAiContext(input, context);
 
+        case 'get_system_overview':
+          return await this._executeGetSystemOverview(input, context);
+
         // ============================================
         // CRUD TOOLS
         // ============================================
@@ -753,95 +780,135 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
   // ============================================
 
   /**
-   * Explore schema using ai_entity_definitions from master DB
-   * Leverages existing AI infrastructure instead of hardcoded lists
+   * Explore schema - DB is truth, AI tables are hints
+   * Always explores actual DB, enriches with AI hints if available
    */
   async _executeExploreSchema({ table, search }, context) {
     const { storeId } = context;
-    const { masterDbClient } = require('../database/masterConnection');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Try to get AI hints (but don't rely on them)
+    let aiHints = null;
+    try {
+      const { masterDbClient } = require('../database/masterConnection');
+      if (table) {
+        const { data } = await masterDbClient
+          .from('ai_entity_definitions')
+          .select('description, supported_operations, api_endpoint, example_prompts, fields')
+          .or(`table_name.eq.${table},entity_name.eq.${table}`)
+          .eq('is_active', true)
+          .maybeSingle();
+        aiHints = data;
+      }
+    } catch (e) {
+      // AI tables not available, continue without hints
+    }
 
     if (table) {
-      // Get entity definition from ai_entity_definitions
-      const { data: entityDef } = await masterDbClient
-        .from('ai_entity_definitions')
-        .select('*')
-        .or(`table_name.eq.${table},entity_name.eq.${table}`)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (entityDef) {
-        return {
-          success: true,
-          table: entityDef.table_name,
-          entity: entityDef.entity_name,
-          displayName: entityDef.display_name,
-          description: entityDef.description,
-          fields: entityDef.fields,
-          operations: entityDef.supported_operations,
-          apiEndpoint: entityDef.api_endpoint,
-          examplePrompts: entityDef.example_prompts,
-          intentKeywords: entityDef.intent_keywords,
-          message: `Found entity definition for ${entityDef.display_name}`
-        };
-      }
-
-      // Fallback: query tenant DB directly for sample
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const { data: schemaData } = await tenantDb
+      // ALWAYS query actual DB - this is the source of truth
+      const { data: samples, error } = await tenantDb
         .from(table)
         .select('*')
-        .limit(1);
+        .limit(3);
 
-      if (schemaData && schemaData[0]) {
-        const columns = Object.keys(schemaData[0]).map(col => ({
-          column_name: col,
-          sample_value: typeof schemaData[0][col] === 'object'
-            ? JSON.stringify(schemaData[0][col]).substring(0, 100)
-            : String(schemaData[0][col]).substring(0, 100)
-        }));
-
+      if (error) {
         return {
-          success: true,
-          table,
-          columns,
-          sample: schemaData[0],
-          message: `Found ${columns.length} columns in ${table}`,
-          hint: 'No ai_entity_definition found - showing raw schema'
+          success: false,
+          message: `Table "${table}" not accessible: ${error.message}`,
+          hint: 'Table may not exist or you may not have permission'
         };
       }
 
-      return { success: false, message: `Table ${table} not found` };
+      // Extract actual columns from DB data
+      const actualColumns = samples?.[0] ? Object.keys(samples[0]).map(col => {
+        const val = samples[0][col];
+        return {
+          name: col,
+          type: val === null ? 'unknown' : typeof val === 'object' ? (Array.isArray(val) ? 'array' : 'jsonb') : typeof val,
+          sample: typeof val === 'object' ? JSON.stringify(val).substring(0, 150) : String(val ?? '').substring(0, 80)
+        };
+      }) : [];
+
+      // Check for gaps - columns in DB but not in AI hints
+      const aiFields = aiHints?.fields ? Object.keys(aiHints.fields) : [];
+      const gaps = actualColumns.filter(c => !aiFields.includes(c.name)).map(c => c.name);
+
+      return {
+        success: true,
+        table,
+        columns: actualColumns,
+        sampleData: samples?.slice(0, 2),
+        // AI hints (enrichment, not truth)
+        hints: aiHints ? {
+          description: aiHints.description,
+          operations: aiHints.supported_operations,
+          apiEndpoint: aiHints.api_endpoint,
+          examplePrompts: aiHints.example_prompts?.slice(0, 3)
+        } : null,
+        // Flag gaps for potential training data updates
+        gaps: gaps.length > 0 ? {
+          missingFromAiTables: gaps,
+          suggestion: `These columns exist in DB but not in ai_entity_definitions: ${gaps.join(', ')}`
+        } : null,
+        message: `Explored ${table}: ${actualColumns.length} columns` + (aiHints ? ' (with AI hints)' : ' (no AI hints available)')
+      };
     }
 
-    // List all entities from ai_entity_definitions
-    let query = masterDbClient
-      .from('ai_entity_definitions')
-      .select('entity_name, display_name, table_name, description, category, intent_keywords')
-      .eq('is_active', true)
-      .order('priority', { ascending: false });
+    // List tables by actually exploring DB (truth) + AI hints for descriptions
+    const commonTables = [
+      'stores', 'products', 'categories', 'orders', 'customers',
+      'slot_configurations', 'plugin_registry', 'media_assets',
+      'coupons', 'cms_pages', 'cms_blocks', 'translations',
+      'storefronts', 'theme_defaults', 'attributes', 'attribute_sets',
+      'shipping_methods', 'payment_methods', 'seo_settings', 'redirects'
+    ];
 
-    if (search) {
-      query = query.or(`entity_name.ilike.%${search}%,description.ilike.%${search}%`);
+    // Get AI hints for descriptions
+    let aiEntities = {};
+    try {
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data } = await masterDbClient
+        .from('ai_entity_definitions')
+        .select('table_name, display_name, description, category')
+        .eq('is_active', true);
+      if (data) {
+        data.forEach(e => { aiEntities[e.table_name] = e; });
+      }
+    } catch (e) { /* continue without AI hints */ }
+
+    // Actually check which tables exist and have data
+    const tables = [];
+    for (const tableName of commonTables) {
+      if (search && !tableName.includes(search.toLowerCase())) continue;
+
+      const { data, error } = await tenantDb.from(tableName).select('id').limit(1);
+      if (!error) {
+        const aiHint = aiEntities[tableName];
+        tables.push({
+          name: tableName,
+          hasData: data && data.length > 0,
+          displayName: aiHint?.display_name || tableName.replace(/_/g, ' '),
+          description: aiHint?.description || null,
+          category: aiHint?.category || 'general'
+        });
+      }
     }
 
-    const { data: entities, error } = await query;
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
+    // Group by category
+    const byCategory = tables.reduce((acc, t) => {
+      const cat = t.category || 'other';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(t);
+      return acc;
+    }, {});
 
     return {
       success: true,
-      entities: entities?.map(e => ({
-        entity: e.entity_name,
-        displayName: e.display_name,
-        table: e.table_name,
-        description: e.description,
-        category: e.category,
-        keywords: e.intent_keywords
-      })) || [],
-      message: `Found ${entities?.length || 0} entities from ai_entity_definitions`,
-      hint: search ? `Filtered by "${search}"` : 'Use explore_schema with table parameter for details'
+      tables,
+      byCategory,
+      tablesWithoutAiHints: tables.filter(t => !t.description).map(t => t.name),
+      message: `Found ${tables.length} accessible tables`,
+      hint: 'Use explore_schema with table parameter to see columns and sample data'
     };
   }
 
@@ -1301,6 +1368,114 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         ? 'Try broader search terms or different type/category'
         : `Categories: ${[...new Set(docs.map(d => d.category))].join(', ')}`
     };
+  }
+
+  /**
+   * Get system overview - architecture, admin sidebar, features
+   * Combines AI context with actual system exploration
+   */
+  async _executeGetSystemOverview({ area = 'all' }, context) {
+    const { storeId } = context;
+    const result = { success: true };
+
+    // Try to get AI context for detailed docs
+    let aiDocs = {};
+    try {
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data } = await masterDbClient
+        .from('ai_context_documents')
+        .select('title, content, category')
+        .eq('is_active', true)
+        .in('category', ['core', 'architecture', 'admin', 'slots', 'plugins'])
+        .limit(20);
+      if (data) {
+        data.forEach(d => {
+          if (!aiDocs[d.category]) aiDocs[d.category] = [];
+          aiDocs[d.category].push({ title: d.title, content: d.content?.substring(0, 500) });
+        });
+      }
+    } catch (e) { /* continue without AI docs */ }
+
+    if (area === 'all' || area === 'architecture') {
+      result.architecture = {
+        overview: 'Multi-tenant e-commerce platform',
+        stack: {
+          frontend: 'React + Vite + TailwindCSS',
+          backend: 'Node.js + Express',
+          database: 'PostgreSQL (Supabase) - Master DB + Tenant DBs',
+          hosting: 'Vercel (frontend) + Render (backend)'
+        },
+        databases: {
+          master: 'Shared tables: users, stores, ai_*, theme_defaults',
+          tenant: 'Store-specific: products, orders, customers, slot_configurations'
+        },
+        aiDocs: aiDocs['architecture'] || aiDocs['core'] || null
+      };
+    }
+
+    if (area === 'all' || area === 'admin_sidebar') {
+      result.adminSidebar = {
+        sections: [
+          { name: 'Dashboard', path: '/admin', icon: 'LayoutDashboard' },
+          { name: 'Products', path: '/admin/products', icon: 'Package', features: ['list', 'create', 'edit', 'images', 'variants'] },
+          { name: 'Categories', path: '/admin/categories', icon: 'FolderTree', features: ['hierarchy', 'images', 'attributes'] },
+          { name: 'Orders', path: '/admin/orders', icon: 'ShoppingCart', features: ['list', 'details', 'status', 'fulfillment'] },
+          { name: 'Customers', path: '/admin/customers', icon: 'Users', features: ['list', 'details', 'orders', 'segments'] },
+          { name: 'Content', path: '/admin/content', icon: 'FileText', subsections: ['CMS Pages', 'CMS Blocks', 'Media Library'] },
+          { name: 'Design', path: '/admin/design', icon: 'Palette', subsections: ['Theme Editor', 'Slot Editor', 'Header/Footer'] },
+          { name: 'Marketing', path: '/admin/marketing', icon: 'Megaphone', subsections: ['Coupons', 'Campaigns', 'Email Templates'] },
+          { name: 'Settings', path: '/admin/settings', icon: 'Settings', subsections: ['Store', 'Payments', 'Shipping', 'SEO', 'Integrations'] },
+          { name: 'AI Workspace', path: '/admin/ai-workspace', icon: 'Sparkles', features: ['Chat', 'Plugin Builder', 'Store Editor'] }
+        ],
+        aiDocs: aiDocs['admin'] || null
+      };
+    }
+
+    if (area === 'all' || area === 'admin_features') {
+      result.adminFeatures = {
+        products: ['CRUD', 'Bulk edit', 'Import/Export', 'Variants', 'Attributes', 'SEO', 'Images'],
+        content: ['CMS Pages', 'CMS Blocks', 'Translations', 'Media Manager'],
+        design: ['Slot-based layouts', 'Theme customization', 'Header/Footer editor', 'Custom CSS'],
+        marketing: ['Coupons', 'Campaigns', 'Customer segments', 'Email automation'],
+        ai: ['Chat assistant', 'Plugin generation', 'Store editing via chat', 'Image optimization']
+      };
+    }
+
+    if (area === 'all' || area === 'slot_system') {
+      result.slotSystem = {
+        description: 'Drag-and-drop page builder using slots',
+        tables: ['slot_configurations'],
+        structure: {
+          slots: 'Object of slot definitions { slotId: { type, content, styles, children } }',
+          rootSlots: 'Array of top-level slot IDs',
+          layout: 'Grid system with colSpan (1-12)'
+        },
+        slotTypes: ['container', 'text', 'image', 'button', 'link', 'html', 'grid', 'flex', 'input'],
+        customSlots: 'Created via plugin_registry with type="slot_type"',
+        pageTypes: ['product', 'category', 'cart', 'checkout', 'header', 'footer', 'homepage'],
+        aiDocs: aiDocs['slots'] || null
+      };
+    }
+
+    if (area === 'all' || area === 'plugin_system') {
+      result.pluginSystem = {
+        description: 'Extensibility via database-stored plugins',
+        table: 'plugin_registry',
+        types: ['slot_type', 'widget', 'integration', 'automation'],
+        structure: {
+          name: 'Plugin identifier',
+          type: 'Plugin type',
+          configuration: 'JSON config with props, template, dataSource',
+          status: 'active/inactive'
+        },
+        aiDocs: aiDocs['plugins'] || null
+      };
+    }
+
+    result.message = `System overview for: ${area}`;
+    result.hint = 'Use explore_schema or get_ai_context for more detailed information';
+
+    return result;
   }
 
   // ============================================
