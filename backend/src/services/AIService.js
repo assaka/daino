@@ -1,6 +1,7 @@
 // backend/src/services/AIService.js
 const ConnectionManager = require('./database/ConnectionManager');
 const { masterDbClient } = require('../database/masterConnection');
+const creditService = require('./credit-service'); // Generic credit service
 const aiContextService = require('./aiContextService'); // RAG system
 const aiProvider = require('./ai-provider-service'); // Unified AI provider
 const ServiceCreditCost = require('../models/ServiceCreditCost');
@@ -161,75 +162,37 @@ class AIService {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      storeId = store?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID
+      storeId = store?.id || null;
     }
 
-    // Deduct credits from master DB - first get current credits, then update
-    const { data: userData, error: fetchError } = await masterDbClient
-      .from('users')
-      .select('credits')
-      .eq('id', userId)
-      .single();
+    // Map operation types to usage_type values
+    const usageTypeMap = {
+      'plugin-generation': 'ai_plugin_generation',
+      'plugin-modification': 'ai_plugin_modification',
+      'translation': 'ai_translation',
+      'layout-generation': 'ai_layout',
+      'code-patch': 'ai_code_patch',
+      'general': 'ai_chat'
+    };
+    const usageType = usageTypeMap[operationType] || 'ai_other';
 
-    if (fetchError) {
-      throw new Error(`Failed to fetch user credits: ${fetchError.message}`);
-    }
+    // Use generic credit service - logs to master DB credit_usage
+    const result = await creditService.deduct(
+      userId,
+      storeId,
+      cost,
+      `AI Studio: ${operationType}`,
+      {
+        ...metadata,
+        operationType,
+        serviceKey: metadata.serviceKey,
+        modelId: metadata.modelId
+      },
+      metadata.referenceId || null,
+      usageType
+    );
 
-    const currentCredits = userData?.credits || 0;
-    const newCredits = Math.max(0, currentCredits - cost);
-
-    const { error: updateError } = await masterDbClient
-      .from('users')
-      .update({
-        credits: newCredits,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (updateError) {
-      throw new Error(`Failed to deduct credits: ${updateError.message}`);
-    }
-
-    console.log(`💳 Credits deducted: ${cost} for ${operationType} (user: ${userId}, store: ${storeId})`);
-
-    // Log credit usage to tenant DB
-    if (storeId) {
-      try {
-        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-        // Map operation types to usage_type values
-        const usageTypeMap = {
-          'plugin-generation': 'ai_plugin_generation',
-          'plugin-modification': 'ai_plugin_modification',
-          'translation': 'ai_translation',
-          'layout-generation': 'ai_layout',
-          'code-patch': 'ai_code_patch',
-          'general': 'ai_chat'
-        };
-        const usageType = usageTypeMap[operationType] || 'other';
-
-        const { error: insertError } = await tenantDb
-          .from('credit_usage')
-          .insert({
-            id: require('uuid').v4(),
-            user_id: userId,
-            store_id: storeId,
-            credits_used: cost,
-            usage_type: usageType,
-            description: `AI Studio: ${operationType}`,
-            metadata: metadata,
-            created_at: new Date().toISOString()
-          });
-
-        if (insertError) {
-          console.warn('Failed to log credit usage to tenant DB:', insertError.message);
-          // Don't throw - logging failure shouldn't break the operation
-        }
-      } catch (connectionError) {
-        console.warn('Failed to connect to tenant DB for credit logging:', connectionError.message);
-        // Don't throw - logging failure shouldn't break the operation
-      }
-    }
+    console.log(`💳 Credits deducted: ${cost} for ${operationType} (user: ${userId}, store: ${storeId || 'none'})`);
 
     return cost;
   }
