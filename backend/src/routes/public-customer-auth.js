@@ -346,6 +346,227 @@ router.get('/email-configured', async (req, res) => {
   }
 });
 
-console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/validate-reset-token, customer/reset-password, email-configured');
+// ============================================
+// Google OAuth Routes for Customers
+// ============================================
+
+// @route   GET /api/public/auth/customer/google
+// @desc    Initiate Google OAuth for customer login
+// @access  Public
+router.get('/customer/google', async (req, res) => {
+  try {
+    const { store_id, store_slug } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check if Google OAuth is configured
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return res.status(503).json({
+        success: false,
+        message: 'Google OAuth is not configured'
+      });
+    }
+
+    // Build state parameter with store info (will be returned in callback)
+    const state = Buffer.from(JSON.stringify({
+      store_id,
+      store_slug: store_slug || ''
+    })).toString('base64');
+
+    // Build Google OAuth URL
+    const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    googleAuthUrl.searchParams.set('client_id', process.env.GOOGLE_CLIENT_ID);
+    googleAuthUrl.searchParams.set('redirect_uri', process.env.GOOGLE_CUSTOMER_CALLBACK_URL || `${process.env.BACKEND_URL || 'https://backend.dainostore.com'}/api/public/auth/customer/google/callback`);
+    googleAuthUrl.searchParams.set('response_type', 'code');
+    googleAuthUrl.searchParams.set('scope', 'openid email profile');
+    googleAuthUrl.searchParams.set('state', state);
+    googleAuthUrl.searchParams.set('prompt', 'select_account');
+
+    console.log('🔐 Customer Google OAuth initiated for store:', store_id);
+
+    res.redirect(googleAuthUrl.toString());
+  } catch (error) {
+    console.error('❌ Customer Google OAuth initiation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initiate Google login'
+    });
+  }
+});
+
+// @route   GET /api/public/auth/customer/google/callback
+// @desc    Handle Google OAuth callback for customers
+// @access  Public
+router.get('/customer/google/callback', async (req, res) => {
+  const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+
+  try {
+    const { code, state, error: oauthError } = req.query;
+
+    if (oauthError) {
+      console.error('❌ Google OAuth error:', oauthError);
+      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+    }
+
+    if (!code || !state) {
+      console.error('❌ Missing code or state in callback');
+      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+    }
+
+    // Decode state to get store info
+    let storeInfo;
+    try {
+      storeInfo = JSON.parse(Buffer.from(state, 'base64').toString('utf8'));
+    } catch (e) {
+      console.error('❌ Failed to decode state:', e);
+      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+    }
+
+    const { store_id, store_slug } = storeInfo;
+
+    if (!store_id) {
+      console.error('❌ No store_id in state');
+      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+    }
+
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.GOOGLE_CUSTOMER_CALLBACK_URL || `${process.env.BACKEND_URL || 'https://backend.dainostore.com'}/api/public/auth/customer/google/callback`,
+        grant_type: 'authorization_code'
+      })
+    });
+
+    const tokens = await tokenResponse.json();
+
+    if (tokens.error) {
+      console.error('❌ Token exchange error:', tokens.error);
+      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+    }
+
+    // Get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+    });
+
+    const googleUser = await userInfoResponse.json();
+
+    if (!googleUser.email) {
+      console.error('❌ No email in Google profile');
+      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+    }
+
+    console.log('🔍 Google OAuth customer profile:', {
+      email: googleUser.email,
+      name: googleUser.name,
+      google_id: googleUser.id
+    });
+
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if customer exists
+    const { data: existingCustomer, error: findError } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', googleUser.email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (findError) {
+      console.error('❌ Error finding customer:', findError);
+      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+    }
+
+    let customer;
+
+    if (existingCustomer) {
+      // Update existing customer
+      const { data: updatedCustomer, error: updateError } = await tenantDb
+        .from('customers')
+        .update({
+          last_login: new Date().toISOString(),
+          email_verified: true,
+          google_id: googleUser.id,
+          avatar_url: googleUser.picture || existingCustomer.avatar_url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingCustomer.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Error updating customer:', updateError);
+        return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+      }
+
+      customer = updatedCustomer;
+      console.log('✅ Existing customer logged in via Google OAuth:', customer.email);
+    } else {
+      // Create new customer
+      const { data: newCustomer, error: createError } = await tenantDb
+        .from('customers')
+        .insert({
+          id: uuidv4(),
+          store_id,
+          email: googleUser.email,
+          first_name: googleUser.given_name || googleUser.name?.split(' ')[0] || '',
+          last_name: googleUser.family_name || googleUser.name?.split(' ').slice(1).join(' ') || '',
+          avatar_url: googleUser.picture || null,
+          google_id: googleUser.id,
+          email_verified: true,
+          role: 'customer',
+          account_type: 'individual',
+          customer_type: 'registered',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('❌ Error creating customer:', createError);
+        return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+      }
+
+      customer = newCustomer;
+      console.log('✅ New customer created via Google OAuth:', customer.email);
+    }
+
+    // Generate JWT token for customer
+    const token = generateToken({
+      id: customer.id,
+      email: customer.email,
+      role: 'customer',
+      account_type: customer.account_type || 'individual',
+      first_name: customer.first_name,
+      last_name: customer.last_name
+    }, store_id);
+
+    console.log('✅ Customer Google OAuth successful for:', customer.email);
+
+    // Redirect to frontend with token
+    const redirectUrl = `${corsOrigin}/public/${store_slug || 'default'}/auth?token=${token}&oauth=success`;
+    res.redirect(redirectUrl);
+
+  } catch (error) {
+    console.error('❌ Customer Google OAuth callback error:', error);
+    const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+    res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+  }
+});
+
+console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/validate-reset-token, customer/reset-password, email-configured, customer/google, customer/google/callback');
 
 module.exports = router;

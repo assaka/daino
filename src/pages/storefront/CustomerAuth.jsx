@@ -121,6 +121,50 @@ export default function CustomerAuth() {
     };
   }, [store, shouldLoadDraft]);
 
+  // Handle OAuth callback (Google login)
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const token = searchParams.get('token');
+      const oauth = searchParams.get('oauth');
+      const errorParam = searchParams.get('error');
+
+      if (errorParam) {
+        setError(t('auth.oauth_failed', 'Google login failed. Please try again.'));
+        setLoading(false);
+        return;
+      }
+
+      if (token && oauth === 'success') {
+        try {
+          // Save token using store-specific key
+          storefrontApiClient.setCustomerToken(token, storeCode || store?.slug);
+
+          // Fetch user data to verify token is valid
+          const userData = await CustomerAuthAPI.me();
+
+          if (userData && userData.id) {
+            // Save user data
+            localStorage.setItem('customer_user_data', JSON.stringify(userData));
+
+            // Redirect to account page
+            const accountUrl = await getCustomerAccountUrl();
+            navigate(accountUrl, { replace: true });
+            return;
+          } else {
+            setError(t('auth.oauth_failed', 'Google login failed. Please try again.'));
+          }
+        } catch (err) {
+          console.error('OAuth callback error:', err);
+          setError(t('auth.oauth_failed', 'Google login failed. Please try again.'));
+        }
+      }
+
+      setLoading(false);
+    };
+
+    handleOAuthCallback();
+  }, [searchParams, storeCode, store, navigate]);
+
   useEffect(() => {
     checkAuthStatus();
   }, []);
