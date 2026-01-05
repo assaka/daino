@@ -1542,19 +1542,38 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Map common setting names to table.column
+    // Setting map: maps user-friendly names to actual DB locations
+    // IMPORTANT: Logo is in settings.store_logo (JSONB), not logo_url column!
     const settingMap = {
-      'logo': { table: 'stores', column: 'logo_url' },
-      'logo_url': { table: 'stores', column: 'logo_url' },
-      'store_logo': { table: 'stores', column: 'logo_url' },
-      'favicon': { table: 'stores', column: 'favicon_url' },
-      'favicon_url': { table: 'stores', column: 'favicon_url' },
+      // Logo settings - stored in settings JSONB column
+      'logo': { table: 'stores', column: 'settings', path: ['store_logo'] },
+      'logo_url': { table: 'stores', column: 'settings', path: ['store_logo'] },
+      'store_logo': { table: 'stores', column: 'settings', path: ['store_logo'] },
+      'settings.store_logo': { table: 'stores', column: 'settings', path: ['store_logo'] },
+
+      // Favicon - also in settings
+      'favicon': { table: 'stores', column: 'settings', path: ['favicon'] },
+      'favicon_url': { table: 'stores', column: 'settings', path: ['favicon'] },
+      'settings.favicon': { table: 'stores', column: 'settings', path: ['favicon'] },
+
+      // Store name and description - direct columns
       'store_name': { table: 'stores', column: 'name' },
       'name': { table: 'stores', column: 'name' },
       'description': { table: 'stores', column: 'description' },
       'store_description': { table: 'stores', column: 'description' },
+
+      // Theme settings - nested in settings.theme
       'primary_color': { table: 'stores', column: 'settings', path: ['theme', 'primaryColor'] },
       'theme.primaryColor': { table: 'stores', column: 'settings', path: ['theme', 'primaryColor'] },
-      'theme.secondaryColor': { table: 'stores', column: 'settings', path: ['theme', 'secondaryColor'] }
+      'settings.theme.primaryColor': { table: 'stores', column: 'settings', path: ['theme', 'primaryColor'] },
+      'theme.secondaryColor': { table: 'stores', column: 'settings', path: ['theme', 'secondaryColor'] },
+      'settings.theme.secondaryColor': { table: 'stores', column: 'settings', path: ['theme', 'secondaryColor'] },
+
+      // Email settings
+      'email_logo': { table: 'stores', column: 'settings', path: ['emailLogo'] },
+      'settings.emailLogo': { table: 'stores', column: 'settings', path: ['emailLogo'] },
+      'invoice_logo': { table: 'stores', column: 'settings', path: ['invoiceLogo'] },
+      'settings.invoiceLogo': { table: 'stores', column: 'settings', path: ['invoiceLogo'] }
     };
 
     const mapping = settingMap[setting] || { table: table || 'stores', column: setting };
@@ -2507,7 +2526,25 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       // Continue without learning context
     }
 
-    const basePrompt = `You are an AI assistant for managing an e-commerce store. You have comprehensive knowledge of the system and can act intelligently.
+    const basePrompt = `You are an AI assistant that EXECUTES changes on an e-commerce store using the provided tools.
+
+## CRITICAL: YOU MUST USE TOOLS
+
+YOU ARE NOT A CHATBOT. You are an EXECUTION ENGINE. When a user asks you to do something:
+1. DO NOT just describe what you would do
+2. DO NOT say "I will change X to Y"
+3. ACTUALLY CALL THE TOOLS to make the changes
+4. Then report what you DID (past tense), not what you WOULD do
+
+Example - WRONG:
+User: "Add this logo as store logo"
+Assistant: "I'll change the logo to the uploaded URL." ❌ (just talking, no action)
+
+Example - CORRECT:
+User: "Add this logo as store logo"
+Assistant: [calls explore_schema to find where logo is stored]
+          [calls update_record to actually update the logo]
+          "Done! I updated the store logo." ✅ (actually executed)
 
 ## KNOWLEDGE-FIRST WORKFLOW
 

@@ -1158,6 +1158,7 @@ const WorkspaceAIPanel = () => {
     if ((!inputValue.trim() && attachedImages.length === 0) || isProcessingAi) return;
 
     const userMessage = inputValue.trim();
+    const imagesToUpload = [...attachedImages]; // Capture images BEFORE clearing
     setInputValue('');
     setAttachedImages([]);
     setCommandStatus(null);
@@ -1169,10 +1170,11 @@ const WorkspaceAIPanel = () => {
     setStreamingText('');
     setToolResults([]);
 
-    // Add user message to chat
+    // Add user message to chat (with image previews if any)
     addChatMessage({
       role: 'user',
-      content: userMessage || '(Image attached)'
+      content: userMessage || '(Image attached)',
+      images: imagesToUpload.map(img => img.preview)
     });
 
     // Save user message
@@ -1189,11 +1191,53 @@ const WorkspaceAIPanel = () => {
         throw new Error('Not authenticated. Please log in again.');
       }
 
+      // If images attached, upload them first and get URLs
+      let uploadedImageUrls = [];
+      if (imagesToUpload.length > 0) {
+        setThinkingText('Uploading images...');
+        for (const img of imagesToUpload) {
+          try {
+            // Create form data for upload
+            const formData = new FormData();
+            // Convert base64 to blob
+            const response = await fetch(img.base64);
+            const blob = await response.blob();
+            formData.append('file', blob, img.file?.name || 'image.png');
+            formData.append('folder', 'ai-uploads');
+
+            const uploadResponse = await fetch('/api/storage/upload', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'x-store-id': storeId
+              },
+              body: formData
+            });
+
+            if (uploadResponse.ok) {
+              const result = await uploadResponse.json();
+              uploadedImageUrls.push(result.data?.publicUrl || result.data?.url);
+              console.log('📤 Image uploaded:', result.data?.publicUrl || result.data?.url);
+            }
+          } catch (uploadError) {
+            console.error('Failed to upload image:', uploadError);
+          }
+        }
+      }
+
+      // Build enhanced message with image URLs if any were uploaded
+      let enhancedMessage = userMessage;
+      if (uploadedImageUrls.length > 0) {
+        enhancedMessage = `${userMessage}\n\n[ATTACHED IMAGES - Already uploaded to storage]\n${uploadedImageUrls.map((url, i) => `Image ${i + 1}: ${url}`).join('\n')}\n\nNote: These images are already uploaded. Use the URLs directly.`;
+      }
+
       // Build history from recent messages
       const history = chatMessages.slice(-10).map(m => ({
         role: m.role,
         content: m.content
       }));
+
+      setThinkingText('Processing store edit...');
 
       // Start streaming request to store edit endpoint
       const response = await fetch('/api/ai/store-edit/stream', {
@@ -1204,9 +1248,10 @@ const WorkspaceAIPanel = () => {
           'x-store-id': storeId
         },
         body: JSON.stringify({
-          message: userMessage,
+          message: enhancedMessage,
           history,
-          modelId: selectedModel
+          modelId: selectedModel,
+          uploadedImages: uploadedImageUrls // Also pass separately
         })
       });
 
