@@ -483,7 +483,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
 
-            // Check if backend flagged this user as needing onboarding
+            // Backend flags if user needs onboarding (no stores)
             const requiresOnboarding = actualResponse.data?.requiresOnboarding;
 
             if (requiresOnboarding) {
@@ -491,123 +491,13 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
 
-            setTimeout(async () => {
-              try {
-                // Get user data which includes store_id from JWT token
-                const userData = actualResponse.data?.user || actualResponse.user || actualResponse;
-
-                // Try to get store_id from user data, or decode from JWT token
-                let storeId = userData.store_id;
-
-                if (!storeId && token) {
-                  // Decode JWT to get store_id (check both snake_case and camelCase)
-                  try {
-                    const base64Url = token.split('.')[1];
-                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                    }).join(''));
-                    const tokenData = JSON.parse(jsonPayload);
-                    // Check both store_id (snake_case) and storeId (camelCase) for compatibility
-                    storeId = tokenData.store_id || tokenData.storeId;
-                  } catch (decodeError) {
-                    console.error('❌ Error decoding JWT:', decodeError);
-                  }
-                }
-
-                // ALWAYS fetch stores from dropdown - don't rely solely on JWT store_id
-                // The JWT may not have store_id even if user has stores
-                try {
-                  const dropdownResponse = await apiClient.get('/stores/dropdown');
-
-                  // Handle both wrapped { success, data } and direct array responses
-                  let stores = [];
-                  if (Array.isArray(dropdownResponse)) {
-                    stores = dropdownResponse;
-                  } else if (dropdownResponse?.success && Array.isArray(dropdownResponse.data)) {
-                    stores = dropdownResponse.data;
-                  } else if (Array.isArray(dropdownResponse?.data)) {
-                    stores = dropdownResponse.data;
-                  }
-
-                  // If user has stores, select one
-                  if (stores.length > 0) {
-                    // Try to find the store from JWT first (if storeId exists)
-                    let selectedStore = storeId ? stores.find(s => s.id === storeId) : null;
-
-                    if (selectedStore) {
-                      // Check if this store is actually active and ready
-                      if (!selectedStore.is_active || selectedStore.status === 'pending_database') {
-                        selectedStore = null;
-                      }
-                    }
-
-                    // If JWT store not found or not active, use first active store
-                    if (!selectedStore) {
-                      selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
-                    }
-
-                    if (selectedStore) {
-                      // Set all store context in localStorage
-                      localStorage.setItem('selectedStoreId', selectedStore.id);
-                      localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code || '');
-                      localStorage.setItem('selectedStoreName', selectedStore.name);
-
-                      // CRITICAL: Wait a tick to ensure localStorage is fully written
-                      await new Promise(resolve => setTimeout(resolve, 50));
-
-                      // Check for redirect parameter (e.g., from invitation acceptance flow)
-                      const redirectUrl = searchParams.get('redirect');
-                      if (redirectUrl) {
-                        window.location.href = decodeURIComponent(redirectUrl);
-                      } else {
-                        const dashboardUrl = createAdminUrl("DASHBOARD");
-                        window.location.href = dashboardUrl;
-                      }
-                    } else {
-                      // All stores are inactive/pending - go to onboarding
-                      const redirectUrl = searchParams.get('redirect');
-                      if (redirectUrl) {
-                        window.location.href = decodeURIComponent(redirectUrl);
-                      } else {
-                        navigate(createAdminUrl("ONBOARDING"));
-                      }
-                    }
-                  } else {
-                    // No stores at all - go to onboarding
-                    const redirectUrl = searchParams.get('redirect');
-                    if (redirectUrl) {
-                      window.location.href = decodeURIComponent(redirectUrl);
-                    } else {
-                      navigate(createAdminUrl("ONBOARDING"));
-                    }
-                  }
-                } catch (dropdownError) {
-                  console.error('Error fetching stores:', dropdownError);
-                  // On error, check for redirect parameter first
-                  const redirectUrl = searchParams.get('redirect');
-                  if (redirectUrl) {
-                    window.location.href = decodeURIComponent(redirectUrl);
-                  } else if (storeId) {
-                    // Last resort: if we have storeId from JWT, try to use it
-                    localStorage.setItem('selectedStoreId', storeId);
-                    window.location.href = createAdminUrl("DASHBOARD");
-                  } else {
-                    // No stores and no storeId - go to onboarding
-                    navigate(createAdminUrl("ONBOARDING"));
-                  }
-                }
-              } catch (error) {
-                // On error, check for redirect parameter first
-                const redirectUrl = searchParams.get('redirect');
-                if (redirectUrl) {
-                  window.location.href = decodeURIComponent(redirectUrl);
-                } else {
-                  // On error with no redirect, redirect to onboarding (safer fallback)
-                  navigate(createAdminUrl("ONBOARDING"));
-                }
-              }
-            }, 100); // Small delay to ensure token is set
+            // Redirect to dashboard - let StoreSelectionContext handle store loading
+            const redirectUrl = searchParams.get('redirect');
+            if (redirectUrl) {
+              window.location.href = decodeURIComponent(redirectUrl);
+            } else {
+              window.location.href = createAdminUrl("DASHBOARD");
+            }
           }
         }
       } else {

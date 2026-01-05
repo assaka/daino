@@ -47,9 +47,9 @@ router.post('/store-edit', async (req, res) => {
     console.log(`   User: ${userId}, Store: ${storeId}`);
     console.log(`   Message: ${message}`);
 
-    // Get generic tools and system prompt
+    // Get generic tools and system prompt with RAG context injection
     const tools = genericApiToolService.getTools();
-    const systemPrompt = genericApiToolService.getSystemPrompt();
+    const systemPrompt = await genericApiToolService.getSystemPrompt(message);
 
     // Build conversation messages
     const messages = [
@@ -111,8 +111,9 @@ router.post('/store-edit/stream', async (req, res) => {
     console.log('🤖 AI Store Editing (Streaming)');
     console.log(`   Message: ${message}`);
 
+    // Get generic tools and system prompt with RAG context injection
     const tools = genericApiToolService.getTools();
-    const systemPrompt = genericApiToolService.getSystemPrompt();
+    const systemPrompt = await genericApiToolService.getSystemPrompt(message);
 
     const messages = [
       ...history.map(h => ({ role: h.role, content: h.content })),

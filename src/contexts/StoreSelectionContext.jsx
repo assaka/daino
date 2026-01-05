@@ -154,11 +154,8 @@ export const StoreSelectionProvider = ({ children }) => {
               // Dispatch event to notify Layout to reload navigation
               window.dispatchEvent(new CustomEvent('storeSelectionChanged', { detail: { store: firstActiveStore } }));
             } else {
-              // No active stores at all - clear auth and redirect to login
-              localStorage.removeItem('store_owner_auth_token');
-              localStorage.removeItem('store_owner_user_data');
-              localStorage.setItem('user_logged_out', 'true');
-              window.location.href = '/admin/auth?error=no_active_store';
+              // No stores at all - redirect to onboarding (user is still authenticated)
+              window.location.href = '/admin/onboarding';
             }
           }
         } else {
@@ -183,7 +180,8 @@ export const StoreSelectionProvider = ({ children }) => {
             // Dispatch event to notify Layout to reload navigation
             window.dispatchEvent(new CustomEvent('storeSelectionChanged', { detail: { store: firstActiveStore } }));
           } else {
-            console.error('❌ StoreSelection: No stores available!');
+            // No stores at all - redirect to onboarding (user is still authenticated)
+            window.location.href = '/admin/onboarding';
           }
         }
 

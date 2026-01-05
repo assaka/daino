@@ -95,47 +95,11 @@ export default function MarketingLogin() {
       // Save user data to localStorage
       setRoleBasedAuthData(user, token);
 
-      // Fetch stores and redirect
-      try {
-        const dropdownResponse = await apiClient.get('/stores/dropdown');
-
-        // Handle both wrapped { success, data } and direct array responses
-        let stores = [];
-        if (Array.isArray(dropdownResponse)) {
-          stores = dropdownResponse;
-        } else if (dropdownResponse?.success && Array.isArray(dropdownResponse.data)) {
-          stores = dropdownResponse.data;
-        } else if (Array.isArray(dropdownResponse?.data)) {
-          stores = dropdownResponse.data;
-        }
-
-        if (stores.length > 0) {
-          const selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores[0];
-
-          if (selectedStore) {
-            localStorage.setItem('selectedStoreId', selectedStore.id);
-            localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code || '');
-            localStorage.setItem('selectedStoreName', selectedStore.name);
-          }
-
-          // Redirect to requested URL or dashboard
-          if (redirectUrl) {
-            window.location.href = decodeURIComponent(redirectUrl);
-          } else {
-            window.location.href = createAdminUrl("DASHBOARD");
-          }
-        } else {
-          // No stores - redirect to onboarding
-          if (redirectUrl) {
-            window.location.href = decodeURIComponent(redirectUrl);
-          } else {
-            navigate('/admin/onboarding', { replace: true });
-          }
-        }
-      } catch (storeError) {
-        console.error('Error fetching stores:', storeError);
-        // Still logged in, just go to onboarding
-        navigate('/admin/onboarding', { replace: true });
+      // Redirect to dashboard - let StoreSelectionContext handle store loading
+      if (redirectUrl) {
+        window.location.href = decodeURIComponent(redirectUrl);
+      } else {
+        window.location.href = createAdminUrl("DASHBOARD");
       }
     } catch (err) {
       console.error('OAuth callback error:', err);
@@ -225,71 +189,20 @@ export default function MarketingLogin() {
             return;
           }
 
+          // Backend flags if user needs onboarding (no stores)
           const requiresOnboarding = actualResponse.data?.requiresOnboarding;
           if (requiresOnboarding) {
             window.location.href = '/admin/onboarding';
             return;
           }
 
-          // Navigate to dashboard - always fetch stores, don't rely solely on JWT store_id
-          setTimeout(async () => {
-            try {
-              const storeId = actualResponse.data?.user?.store_id;
-              const dropdownResponse = await apiClient.get('/stores/dropdown');
-
-              // Handle both wrapped { success, data } and direct array responses
-              let stores = [];
-              if (Array.isArray(dropdownResponse)) {
-                stores = dropdownResponse;
-              } else if (dropdownResponse?.success && Array.isArray(dropdownResponse.data)) {
-                stores = dropdownResponse.data;
-              } else if (Array.isArray(dropdownResponse?.data)) {
-                stores = dropdownResponse.data;
-              }
-
-              if (stores.length > 0) {
-                // Try to find the store from JWT first (if storeId exists)
-                let selectedStore = storeId ? stores.find(s => s.id === storeId) : null;
-
-                if (selectedStore && (!selectedStore.is_active || selectedStore.status === 'pending_database')) {
-                  selectedStore = null;
-                }
-
-                if (!selectedStore) {
-                  selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
-                }
-
-                if (selectedStore) {
-                  localStorage.setItem('selectedStoreId', selectedStore.id);
-                  localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code || '');
-                  localStorage.setItem('selectedStoreName', selectedStore.name);
-
-                  await new Promise(resolve => setTimeout(resolve, 50));
-
-                  const redirectUrl = searchParams.get('redirect');
-                  if (redirectUrl) {
-                    window.location.href = decodeURIComponent(redirectUrl);
-                  } else {
-                    window.location.href = createAdminUrl("DASHBOARD");
-                  }
-                } else {
-                  // All stores are inactive/pending
-                  navigate('/admin/onboarding');
-                }
-              } else {
-                // No stores at all - go to onboarding
-                const redirectUrl = searchParams.get('redirect');
-                if (redirectUrl) {
-                  window.location.href = decodeURIComponent(redirectUrl);
-                } else {
-                  navigate('/admin/onboarding');
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching stores:', error);
-              navigate('/admin/onboarding');
-            }
-          }, 100);
+          // Redirect to dashboard - let StoreSelectionContext handle store loading
+          const redirectUrl = searchParams.get('redirect');
+          if (redirectUrl) {
+            window.location.href = decodeURIComponent(redirectUrl);
+          } else {
+            window.location.href = createAdminUrl("DASHBOARD");
+          }
         }
       } else {
         setError('Login failed. Please check your credentials.');

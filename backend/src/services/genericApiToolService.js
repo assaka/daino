@@ -22,6 +22,7 @@
 
 const axios = require('axios');
 const ConnectionManager = require('./database/ConnectionManager');
+const aiContextService = require('./aiContextService');
 
 class GenericApiToolService {
   constructor() {
@@ -2377,11 +2378,53 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
   }
 
   /**
-   * Get the system prompt for the AI
-   * This teaches the AI about available tools and how to use them
+   * Get the system prompt for the AI with RAG context injection
+   * This teaches the AI about available tools and injects relevant knowledge
+   *
+   * @param {string} userMessage - The user's message (for RAG context retrieval)
+   * @param {object} options - Additional options
+   * @param {string} options.mode - Mode for context filtering (default: 'store_editing')
+   * @param {string} options.category - Category filter for context
+   * @returns {Promise<string>} System prompt with injected RAG context
    */
-  getSystemPrompt() {
-    return `You are an AI assistant for managing an e-commerce store. Work like Claude Code - EXPLORE first, UNDERSTAND the system, then ACT intelligently.
+  async getSystemPrompt(userMessage = '', options = {}) {
+    const { mode = 'store_editing', category = null } = options;
+
+    // ⚡ RAG: Fetch relevant context from database
+    // This gives the AI knowledge about:
+    // - How DainoStore systems work (docs)
+    // - Similar successful operations (patterns)
+    // - Entity definitions and schemas (entities)
+    let ragContext = '';
+
+    try {
+      ragContext = await aiContextService.getContextForQuery({
+        mode,
+        category,
+        query: userMessage,
+        limit: 15  // 5 docs + 5 patterns + 5 examples
+      });
+
+      if (ragContext) {
+        console.log('📚 RAG context injected into store editing AI');
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch RAG context:', error.message);
+      // Continue without RAG context - tools will still work
+    }
+
+    // Also get approved training examples for this type of request
+    let learningContext = '';
+    try {
+      const learning = await aiContextService.getLearningContext('store_editing', null);
+      if (learning) {
+        learningContext = learning;
+      }
+    } catch (error) {
+      // Continue without learning context
+    }
+
+    const basePrompt = `You are an AI assistant for managing an e-commerce store. Work like Claude Code - EXPLORE first, UNDERSTAND the system, then ACT intelligently.
 
 ## SELF-LEARNING AI
 
@@ -2454,6 +2497,27 @@ When user requests something that doesn't exist:
 - Auto-learn fills gaps as you explore
 - Use \`learn\` after successful complex operations
 - Always confirm destructive actions`;
+
+    // Inject RAG context if available
+    let fullPrompt = basePrompt;
+
+    if (ragContext) {
+      fullPrompt = `${ragContext}
+
+---
+
+${basePrompt}`;
+    }
+
+    if (learningContext) {
+      fullPrompt += `
+
+---
+
+${learningContext}`;
+    }
+
+    return fullPrompt;
   }
 }
 
