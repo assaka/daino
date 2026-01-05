@@ -89,7 +89,6 @@ class CreditService {
 
     // Log credit usage to master DB for centralized reporting
     try {
-      console.log(`[CREDIT_USAGE] Logging credit usage to master DB for user ${userId}`);
       const { v4: uuidv4 } = require('uuid');
 
       const insertData = {
@@ -115,15 +114,10 @@ class CreditService {
 
       if (insertError) {
         console.error(`[CREDIT_USAGE] Insert error:`, insertError.message);
-        console.error(`[CREDIT_USAGE] Insert error details:`, JSON.stringify(insertError, null, 2));
-        console.error(`[CREDIT_USAGE] Failed insert data:`, JSON.stringify(insertData, null, 2));
-      } else {
-        console.log(`[CREDIT_USAGE] Successfully logged ${creditAmount} credits for user ${userId}${storeId ? ` (store: ${storeId})` : ''}`);
       }
     } catch (logError) {
       // Log but don't fail the deduction if credit_usage insert fails
       console.error('[CREDIT_USAGE] Failed to log to master DB:', logError.message);
-      console.error('[CREDIT_USAGE] Exception stack:', logError.stack);
     }
 
     return {

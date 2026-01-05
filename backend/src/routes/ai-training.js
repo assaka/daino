@@ -438,22 +438,35 @@ function findFilesRecursive(dir, extensions, maxDepth = 5, depth = 0) {
  * POST /api/ai/training/run-comprehensive
  * Run comprehensive AI knowledge training
  * Populates AI tables with system knowledge
+ * If ?scan=true, also scans codebase with Claude
  */
 router.post('/run-comprehensive', async (req, res) => {
   try {
+    const { scan = false } = req.query;
     console.log('🚀 Starting Comprehensive AI Knowledge Training...');
+    if (scan) console.log('   + Full codebase scan enabled');
 
     // Return immediately, run async
     res.json({
       success: true,
-      message: 'Comprehensive AI training started. Check logs for progress.',
-      status: 'running'
+      message: scan
+        ? 'Comprehensive training + codebase scan started. This will take several minutes.'
+        : 'Comprehensive AI training started. Check logs for progress.',
+      status: 'running',
+      scanEnabled: !!scan
     });
 
     // Run training asynchronously
     runComprehensiveTraining().catch(err => {
       console.error('Training error:', err);
     });
+
+    // If scan enabled, also run codebase scan
+    if (scan) {
+      runCodebaseScan().catch(err => {
+        console.error('Scan error:', err);
+      });
+    }
 
   } catch (error) {
     console.error('Training Error:', error);
