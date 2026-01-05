@@ -384,9 +384,11 @@ const ShopifyIntegration = () => {
   const handleJobComplete = useCallback((job) => {
     fetchImportStats();
     loadStats();
+    const stats = job.result?.stats || {};
+    const itemCount = stats.imported || stats.created || 0;
     setFlashMessage({
       type: 'success',
-      text: `Import completed! ${job.result?.stats?.imported || 0} items imported.`
+      text: `Import completed! ${itemCount} items imported.`
     });
   }, []);
 
