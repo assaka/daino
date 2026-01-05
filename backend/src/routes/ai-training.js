@@ -556,6 +556,19 @@ async function runComprehensiveTraining() {
     }
   }
 
+  // 5. Train Store Settings Knowledge - CRITICAL for correct setting identification
+  console.log('\n5️⃣ Training Store Settings Knowledge...');
+  const settingsKnowledge = getStoreSettingsKnowledge();
+  for (const setting of settingsKnowledge) {
+    try {
+      // Use saveStoreSettingDocument for higher priority
+      await saveStoreSettingDocument(setting);
+      console.log(`   ✅ ${setting.name}`);
+    } catch (e) {
+      console.log(`   ❌ ${setting.name}: ${e.message}`);
+    }
+  }
+
   console.log('\n✅ Comprehensive AI Training Complete!');
 }
 
@@ -779,6 +792,388 @@ To update: merge into translations object`
 }
 
 /**
+ * Store Settings Knowledge - COMPREHENSIVE
+ * All settings in stores.settings JSONB with exact paths and descriptions
+ */
+function getStoreSettingsKnowledge() {
+  return [
+    // Currency Display Settings - CRITICAL: Different settings for different pages!
+    {
+      name: 'Hide Currency on Category Page',
+      setting_path: 'settings.hide_currency_category',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'CATEGORY PAGE: Hides the currency symbol (e.g., $, €) from product prices on CATEGORY/LISTING pages. Does NOT affect product detail pages.',
+      usage: 'Use when user says "hide currency on category page" or "remove currency from listings"',
+      related_settings: ['hide_currency_product']
+    },
+    {
+      name: 'Hide Currency on Product Page',
+      setting_path: 'settings.hide_currency_product',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'PRODUCT PAGE: Hides the currency symbol from prices on PRODUCT DETAIL pages only. Does NOT affect category/listing pages.',
+      usage: 'Use when user says "hide currency on product page" or "remove currency from product details"',
+      related_settings: ['hide_currency_category']
+    },
+    // Header Display Settings
+    {
+      name: 'Hide Header Cart',
+      setting_path: 'settings.hide_header_cart',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Hides the shopping cart icon from the header navigation.',
+      usage: 'Use when user says "hide cart icon" or "remove cart from header"'
+    },
+    {
+      name: 'Hide Header Checkout',
+      setting_path: 'settings.hide_header_checkout',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Hides the checkout link from the header navigation.',
+      usage: 'Use when user says "hide checkout link" or "remove checkout from header"'
+    },
+    {
+      name: 'Hide Header Search',
+      setting_path: 'settings.hide_header_search',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Hides the search bar/icon from the header. Use show_permanent_search to control if search is always visible.',
+      usage: 'Use when user says "hide search" or "remove search bar"'
+    },
+    {
+      name: 'Show Permanent Search',
+      setting_path: 'settings.show_permanent_search',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'When true, search bar is always visible in header. When false, search is hidden behind an icon.',
+      usage: 'Use when user says "always show search" or "expand search bar"'
+    },
+    {
+      name: 'Show Language Selector',
+      setting_path: 'settings.show_language_selector',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Shows a language/locale selector dropdown in the header.',
+      usage: 'Use when user says "add language selector" or "show language picker"'
+    },
+    // Stock Display Settings
+    {
+      name: 'Enable Inventory Tracking',
+      setting_path: 'settings.enable_inventory',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Master switch for inventory/stock tracking system.',
+      usage: 'Use when user says "enable inventory" or "track stock"'
+    },
+    {
+      name: 'Display Out of Stock Products',
+      setting_path: 'settings.display_out_of_stock',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'When true, out-of-stock products are still shown (marked as unavailable). When false, they are hidden.',
+      usage: 'Use when user says "hide out of stock" or "show unavailable products"'
+    },
+    {
+      name: 'Hide Stock Quantity',
+      setting_path: 'settings.hide_stock_quantity',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Hides the actual stock number (e.g., "5 in stock"). Only shows in-stock/out-of-stock status.',
+      usage: 'Use when user says "hide stock number" or "dont show quantity"'
+    },
+    {
+      name: 'Show Stock Label',
+      setting_path: 'settings.show_stock_label',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Shows "In Stock", "Out of Stock", "Low Stock" labels on products.',
+      usage: 'Use when user says "show stock labels" or "display availability"'
+    },
+    {
+      name: 'Low Stock Threshold',
+      setting_path: 'settings.display_low_stock_threshold',
+      table: 'stores',
+      type: 'number',
+      default_value: 0,
+      description: 'Quantity threshold below which "Low Stock" warning is shown. 0 = disabled.',
+      usage: 'Use when user says "low stock warning at 5" or "show low stock below 10"'
+    },
+    // Quantity & Cart Settings
+    {
+      name: 'Hide Quantity Selector',
+      setting_path: 'settings.hide_quantity_selector',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Hides the quantity input (1, 2, 3...) on product pages. Users can only add 1 at a time.',
+      usage: 'Use when user says "hide quantity selector" or "remove quantity input"'
+    },
+    // Category Page Settings
+    {
+      name: 'Enable Product Filters',
+      setting_path: 'settings.enable_product_filters',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Shows the filter sidebar on category/listing pages for filtering by attributes, price, etc.',
+      usage: 'Use when user says "enable filters" or "show filter sidebar"'
+    },
+    {
+      name: 'Collapse Filters by Default',
+      setting_path: 'settings.collapse_filters',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'When true, filter groups start collapsed. Users must expand them.',
+      usage: 'Use when user says "collapse filters" or "hide filter options"'
+    },
+    {
+      name: 'Max Visible Attributes',
+      setting_path: 'settings.max_visible_attributes',
+      table: 'stores',
+      type: 'number',
+      default_value: 5,
+      description: 'Maximum number of attribute values shown before "Show more" link appears.',
+      usage: 'Use when user says "show 10 filter options" or "limit visible attributes"'
+    },
+    {
+      name: 'Enable View Mode Toggle',
+      setting_path: 'settings.enable_view_mode_toggle',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Shows grid/list view toggle on category pages.',
+      usage: 'Use when user says "enable grid/list toggle" or "view mode switcher"'
+    },
+    {
+      name: 'Default View Mode',
+      setting_path: 'settings.default_view_mode',
+      table: 'stores',
+      type: 'string',
+      default_value: 'grid',
+      description: 'Default product display mode: "grid" or "list".',
+      usage: 'Use when user says "default to list view" or "show grid by default"'
+    },
+    // Breadcrumb Settings
+    {
+      name: 'Show Category in Breadcrumb',
+      setting_path: 'settings.show_category_in_breadcrumb',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Shows category name in breadcrumb trail (Home > Category > Product).',
+      usage: 'Use when user says "hide category from breadcrumb" or "show category path"'
+    },
+    // Checkout Settings
+    {
+      name: 'Enable Reviews',
+      setting_path: 'settings.enable_reviews',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Enables product reviews and ratings system.',
+      usage: 'Use when user says "enable reviews" or "turn on ratings"'
+    },
+    {
+      name: 'Allow Guest Checkout',
+      setting_path: 'settings.allow_guest_checkout',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Allows customers to checkout without creating an account.',
+      usage: 'Use when user says "enable guest checkout" or "require account to buy"'
+    },
+    {
+      name: 'Require Shipping Address',
+      setting_path: 'settings.require_shipping_address',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Requires shipping address at checkout. Disable for digital-only stores.',
+      usage: 'Use when user says "require shipping" or "no shipping needed"'
+    },
+    {
+      name: 'Collect Phone at Checkout',
+      setting_path: 'settings.collect_phone_number_at_checkout',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Shows phone number field at checkout.',
+      usage: 'Use when user says "ask for phone" or "collect phone number"'
+    },
+    {
+      name: 'Phone Required at Checkout',
+      setting_path: 'settings.phone_number_required_at_checkout',
+      table: 'stores',
+      type: 'boolean',
+      default_value: true,
+      description: 'Makes phone field required (only if collect_phone_number_at_checkout is true).',
+      usage: 'Use when user says "require phone" or "phone optional"'
+    },
+    {
+      name: 'Checkout Steps Count',
+      setting_path: 'settings.checkout_steps_count',
+      table: 'stores',
+      type: 'number',
+      default_value: 2,
+      description: 'Number of checkout steps: 1 (single page), 2 (info + payment), or 3 (info + shipping + payment).',
+      usage: 'Use when user says "one page checkout" or "3 step checkout"'
+    },
+    // Product Gallery Settings
+    {
+      name: 'Product Gallery Layout',
+      setting_path: 'settings.product_gallery_layout',
+      table: 'stores',
+      type: 'string',
+      default_value: 'horizontal',
+      description: 'Product image thumbnails position: "horizontal" (below) or "vertical" (side).',
+      usage: 'Use when user says "vertical thumbnails" or "horizontal gallery"'
+    },
+    {
+      name: 'Vertical Gallery Position',
+      setting_path: 'settings.vertical_gallery_position',
+      table: 'stores',
+      type: 'string',
+      default_value: 'left',
+      description: 'When gallery is vertical, thumbnails on "left" or "right" side.',
+      usage: 'Use when user says "thumbnails on right" or "gallery on left"'
+    },
+    // Navigation Settings
+    {
+      name: 'Exclude Root from Menu',
+      setting_path: 'settings.excludeRootFromMenu',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Hides the root category from navigation menu, showing only children.',
+      usage: 'Use when user says "hide root category" or "dont show parent in menu"'
+    },
+    {
+      name: 'Expand All Menu Items',
+      setting_path: 'settings.expandAllMenuItems',
+      table: 'stores',
+      type: 'boolean',
+      default_value: false,
+      description: 'Expands all category tree items by default in navigation.',
+      usage: 'Use when user says "expand all categories" or "show full menu tree"'
+    },
+    {
+      name: 'Root Category ID',
+      setting_path: 'settings.rootCategoryId',
+      table: 'stores',
+      type: 'string',
+      default_value: null,
+      description: 'UUID of category to use as navigation root (null = show all).',
+      usage: 'Use when user says "set root category" or "start menu from category X"'
+    },
+    // Logo and Branding Settings
+    {
+      name: 'Store Logo',
+      setting_path: 'settings.store_logo',
+      table: 'stores',
+      type: 'string',
+      default_value: null,
+      description: 'URL of the main store logo displayed in header. NOT a "logo_url" column - its in settings JSONB!',
+      usage: 'Use when user says "change logo" or "update store logo"'
+    },
+    {
+      name: 'Favicon',
+      setting_path: 'settings.favicon',
+      table: 'stores',
+      type: 'string',
+      default_value: null,
+      description: 'URL of favicon (browser tab icon). 32x32 or 16x16 recommended.',
+      usage: 'Use when user says "change favicon" or "update tab icon"'
+    },
+    {
+      name: 'Email Logo',
+      setting_path: 'settings.emailLogo',
+      table: 'stores',
+      type: 'string',
+      default_value: null,
+      description: 'Logo URL used in transactional emails (order confirmation, etc.).',
+      usage: 'Use when user says "email logo" or "logo for emails"'
+    },
+    {
+      name: 'Invoice Logo',
+      setting_path: 'settings.invoiceLogo',
+      table: 'stores',
+      type: 'string',
+      default_value: null,
+      description: 'Logo URL used on invoices and receipts.',
+      usage: 'Use when user says "invoice logo" or "receipt logo"'
+    },
+    // Theme Colors (in settings.theme object)
+    {
+      name: 'Primary Button Color',
+      setting_path: 'settings.theme.primary_button_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#007bff',
+      description: 'Main button color throughout the site.',
+      usage: 'Use when user says "change button color" or "primary color"'
+    },
+    {
+      name: 'Add to Cart Button Background',
+      setting_path: 'settings.theme.add_to_cart_button_bg_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#28a745',
+      description: 'Background color of "Add to Cart" button.',
+      usage: 'Use when user says "add to cart button color" or "cart button green"'
+    },
+    {
+      name: 'Add to Cart Button Text Color',
+      setting_path: 'settings.theme.add_to_cart_button_text_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#FFFFFF',
+      description: 'Text color of "Add to Cart" button.',
+      usage: 'Use when user says "add to cart text color"'
+    },
+    {
+      name: 'Header Background Color',
+      setting_path: 'settings.theme.header_bg_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#FFFFFF',
+      description: 'Background color of the header/navigation bar.',
+      usage: 'Use when user says "header background" or "nav bar color"'
+    },
+    {
+      name: 'Header Icon Color',
+      setting_path: 'settings.theme.header_icon_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#374151',
+      description: 'Color of icons (cart, search, etc.) in header.',
+      usage: 'Use when user says "header icon color" or "nav icons"'
+    },
+    {
+      name: 'Font Family',
+      setting_path: 'settings.theme.font_family',
+      table: 'stores',
+      type: 'string',
+      default_value: 'Inter',
+      description: 'Main font family for the entire store.',
+      usage: 'Use when user says "change font" or "use Arial font"'
+    }
+  ];
+}
+
+/**
  * Slot System Knowledge
  */
 function getSlotSystemKnowledge() {
@@ -892,6 +1287,62 @@ async function saveContextDocument(type, item) {
     priority: 90,
     mode: 'store_editing',
     is_active: true,
+    updated_at: new Date().toISOString()
+  };
+
+  if (existing) {
+    await masterDbClient.from('ai_context_documents').update(docData).eq('id', existing.id);
+  } else {
+    docData.created_at = new Date().toISOString();
+    await masterDbClient.from('ai_context_documents').insert(docData);
+  }
+}
+
+/**
+ * Save store setting document with HIGH priority
+ * These are critical for AI to distinguish between similar settings
+ * (e.g., hide_currency_category vs hide_currency_product)
+ */
+async function saveStoreSettingDocument(setting) {
+  const title = setting.name;
+
+  const { data: existing } = await masterDbClient
+    .from('ai_context_documents')
+    .select('id')
+    .eq('title', title)
+    .eq('type', 'store_setting')
+    .maybeSingle();
+
+  // Format content to be maximally helpful for AI
+  const content = `## ${setting.name}
+
+**Setting Path:** \`${setting.setting_path}\`
+**Table:** ${setting.table}
+**Type:** ${setting.type}
+**Default:** ${setting.default_value === null ? 'null' : setting.default_value}
+
+**Description:** ${setting.description}
+
+**When to Use:** ${setting.usage}
+
+${setting.related_settings ? `**Related Settings:** ${setting.related_settings.join(', ')}` : ''}`;
+
+  const docData = {
+    type: 'store_setting',
+    title,
+    content,
+    category: 'core',  // Core category so it's always included
+    priority: 100,     // Highest priority - always appears first
+    mode: 'store_editing',
+    is_active: true,
+    metadata: {
+      setting_path: setting.setting_path,
+      table: setting.table,
+      setting_type: setting.type,
+      default_value: setting.default_value,
+      related_settings: setting.related_settings,
+      trained_at: new Date().toISOString()
+    },
     updated_at: new Date().toISOString()
   };
 

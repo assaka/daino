@@ -47,26 +47,36 @@ class AIContextService {
 
   /**
    * Get relevant knowledge base documents from ai_context_documents
-   * Always includes 'core' category and 'rules' type documents (critical instructions)
+   * Always includes 'core' category, 'rules' type, and 'store_setting' type documents
+   * These are critical for AI to make correct decisions
    */
   async getRelevantDocuments({ mode, category, limit = 5 }) {
     try {
+      // For store_editing mode, increase limit to include more context
+      const effectiveLimit = mode === 'store_editing' ? Math.max(limit, 20) : limit;
+
       let query = masterDbClient
         .from('ai_context_documents')
         .select('id, type, title, content, category, tags, priority')
         .eq('is_active', true)
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(effectiveLimit);
 
       // Filter by mode
       if (mode && mode !== 'all') {
         query = query.or(`mode.eq.${mode},mode.eq.all`);
       }
 
-      // Filter by category - ALWAYS include 'core' and 'rules' type docs
+      // Filter by category - ALWAYS include 'core', 'rules', and 'store_setting' type docs
+      // store_setting docs contain critical field paths (e.g., hide_currency_category vs hide_currency_product)
       if (category) {
-        query = query.or(`category.eq.${category},category.eq.core,type.eq.rules`);
+        query = query.or(`category.eq.${category},category.eq.core,type.eq.rules,type.eq.store_setting`);
+      } else {
+        // Even without category, always include store_setting type for store editing
+        if (mode === 'store_editing') {
+          query = query.or(`category.eq.core,type.eq.rules,type.eq.store_setting,category.eq.trained`);
+        }
       }
 
       const { data, error } = await query;
