@@ -98,11 +98,7 @@ export const StoreSelectionProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      console.log('🔍 StoreSelection: Loading stores...');
-      console.log('🔍 Token exists:', !!localStorage.getItem('store_owner_auth_token'));
-
       const stores = await Store.findAll();
-      console.log('🔍 StoreSelection: Stores loaded:', stores);
 
       // Always keep existing selection if we have one and no stores were loaded
       if (stores.length === 0 && selectedStore) {
