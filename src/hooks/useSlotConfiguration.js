@@ -933,8 +933,9 @@ export function useSlotConfiguration({
     // Check for required properties in each slot
     for (const [slotId, slot] of Object.entries(slots)) {
       if (!slot.id || slot.id !== slotId) {
-        console.error(`❌ Slot ${slotId} has invalid or missing id`, { slotId, actualId: slot.id });
-        return false;
+        // Auto-fix: Set the slot.id to match the key
+        console.warn(`⚠️ Slot ${slotId} has invalid or missing id - auto-fixing`, { slotId, actualId: slot.id });
+        slot.id = slotId;
       }
 
       if (!slot.type) {
