@@ -7,7 +7,7 @@ import { createPaymentIntent } from '@/api/functions';
 import { getStripePublishableKey } from '@/api/functions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw, Info, AlertCircle } from 'lucide-react';
+import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw, Info, AlertCircle, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import pricingService from '@/services/pricingService';
@@ -305,6 +305,13 @@ export default function Billing() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Billing & Credits</h1>
+        <Button
+          variant="outline"
+          onClick={() => navigate(createPageUrl('Credits'))}
+        >
+          <BarChart3 className="w-4 h-4 mr-2" />
+          View Usage History
+        </Button>
       </div>
 
       {paymentSuccess && (
