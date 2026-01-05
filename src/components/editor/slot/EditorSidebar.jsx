@@ -455,6 +455,13 @@ const EditorSidebar = ({
       const findContentElement = (element) => {
         // If element has data-slot-id, it's the GridColumn wrapper, look inside for content
         if (element.hasAttribute('data-slot-id')) {
+          // SPECIAL CASE: For button elements, the button itself has the styles, not its children
+          // This handles add_to_cart_button and similar button slots
+          const tagName = element.tagName?.toLowerCase();
+          if (tagName === 'button') {
+            return element; // Button has styles directly on it
+          }
+
           // Look for the element that has the STORED styling classes, not just any text-* class
           if (storedClassName) {
             const storedClasses = storedClassName.split(' ').filter(Boolean);
@@ -472,8 +479,9 @@ const EditorSidebar = ({
           }
 
           // Fallback: Look for element with inline styles (color, etc.)
+          // Skip SVG elements as they have style attributes but aren't the styled content
           for (const child of element.children) {
-            if (child.style && child.style.length > 0) {
+            if (child.style && child.style.length > 0 && child.tagName?.toLowerCase() !== 'svg') {
               return child;
             }
           }
@@ -1099,6 +1107,12 @@ const EditorSidebar = ({
     // Find the content element that has the styling classes (same logic as initialization)
     const findContentElement = (element) => {
       if (element.hasAttribute('data-slot-id')) {
+        // SPECIAL CASE: For button elements, the button itself has the styles, not its children
+        const tagName = element.tagName?.toLowerCase();
+        if (tagName === 'button') {
+          return element;
+        }
+
         // Look for element with stored classes first
         const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
         const storedClassName = elementSlotConfig?.className || '';
@@ -1118,8 +1132,9 @@ const EditorSidebar = ({
         }
 
         // Fallback: Look for element with inline styles
+        // Skip SVG elements as they have style attributes but aren't the styled content
         for (const child of element.children) {
-          if (child.style && child.style.length > 0) {
+          if (child.style && child.style.length > 0 && child.tagName?.toLowerCase() !== 'svg') {
             return child;
           }
         }
@@ -1523,6 +1538,16 @@ const EditorSidebar = ({
         'color': 'add_to_cart_button_text_color',
         'borderRadius': 'add_to_cart_button_border_radius',
       };
+
+      // DEBUG: Log all values to trace why backgroundColor might not be saving
+      console.log(`🔍 THEME SAVE CHECK:`, {
+        elementSlotId,
+        property,
+        formattedValue,
+        themePropertyMapEntry: themePropertyMap[property],
+        hasOnThemeChange: !!onThemeChange,
+        conditionMet: elementSlotId === 'add_to_cart_button' && themePropertyMap[property] && onThemeChange
+      });
 
       if (elementSlotId === 'add_to_cart_button' && themePropertyMap[property] && onThemeChange) {
         console.log(`🎨 THEME SETTING - Saving add_to_cart_button ${property} to theme:`, {
