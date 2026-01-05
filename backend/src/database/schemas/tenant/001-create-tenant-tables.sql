@@ -1950,6 +1950,7 @@ CREATE TABLE IF NOT EXISTS customers (
   phone VARCHAR(20),
   date_of_birth DATE,
   gender VARCHAR(10),
+  google_id VARCHAR(255),
   notes TEXT,
   total_spent NUMERIC DEFAULT 0,
   total_orders INTEGER DEFAULT 0,
@@ -1973,8 +1974,7 @@ CREATE TABLE IF NOT EXISTS customers (
   is_blacklisted BOOLEAN DEFAULT false,
   blacklist_reason TEXT,
   blacklisted_at TIMESTAMP,
-  demo BOOLEAN DEFAULT false,
-  google_id VARCHAR(255)
+  demo BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS delivery_settings (
