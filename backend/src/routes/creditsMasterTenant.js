@@ -78,25 +78,6 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 50;
 
-    console.log('📋 [Transactions] Request received:', {
-      userId,
-      userEmail: req.user.email,
-      limit
-    });
-
-    // DEBUG: Query ALL transactions to see what's in the table
-    const { data: allTransactions, error: allError } = await masterDbClient
-      .from('credit_transactions')
-      .select('id, user_id, credits_amount, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(10);
-
-    console.log('📋 [Transactions] DEBUG - All transactions in DB:', {
-      count: allTransactions?.length || 0,
-      transactions: allTransactions?.map(t => ({ id: t.id, user_id: t.user_id, credits: t.credits_amount })) || [],
-      error: allError?.message
-    });
-
     if (limit < 1 || limit > 200) {
       return res.status(400).json({
         success: false,
@@ -105,11 +86,6 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     }
 
     const transactions = await CreditTransaction.getUserTransactions(userId, null, limit);
-
-    console.log('📋 [Transactions] Found for user:', {
-      count: transactions.length,
-      transactionIds: transactions.map(t => t.id)
-    });
 
     res.json({
       success: true,
