@@ -274,6 +274,166 @@ router.post('/candidates/:id/outcome', async (req, res) => {
 // COMPREHENSIVE AI KNOWLEDGE TRAINING
 // ============================================
 
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * POST /api/ai/training/scan-codebase
+ * Full codebase scan using Claude to analyze ALL files
+ * Extracts comprehensive knowledge about every feature
+ */
+router.post('/scan-codebase', async (req, res) => {
+  try {
+    console.log('🔍 Starting Full Codebase Scan...');
+
+    res.json({
+      success: true,
+      message: 'Full codebase scan started. This will take several minutes.',
+      status: 'running'
+    });
+
+    // Run scan asynchronously
+    runCodebaseScan().catch(err => {
+      console.error('Scan error:', err);
+    });
+
+  } catch (error) {
+    console.error('Scan Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * Full codebase scan - analyzes actual code files with Claude
+ */
+async function runCodebaseScan() {
+  console.log('📚 Running full codebase scan with Claude analysis...\n');
+
+  const ROOT_DIR = path.join(__dirname, '../../..');
+  const scanPatterns = [
+    {
+      category: 'db_schemas',
+      paths: ['backend/src/database/schemas'],
+      extensions: ['.sql'],
+      prompt: `Analyze these SQL files and extract ALL tables with columns.
+For each table: table_name, description, columns [{name, type, description, is_jsonb}], important_notes.
+Return JSON array.`
+    },
+    {
+      category: 'api_routes',
+      paths: ['backend/src/routes'],
+      extensions: ['.js'],
+      prompt: `Analyze these route files and extract ALL API endpoints.
+For each: endpoint, method, description, parameters, response, features.
+Return JSON array.`
+    },
+    {
+      category: 'services',
+      paths: ['backend/src/services'],
+      extensions: ['.js'],
+      prompt: `Analyze these services and extract business logic.
+For each: name, description, key_functions, related_tables, configuration_options.
+Focus on FEATURES like tax, shipping, stock, labels, tabs, etc.
+Return JSON array.`
+    },
+    {
+      category: 'configs',
+      paths: ['backend/src/configs'],
+      extensions: ['.js', '.json'],
+      prompt: `Analyze these configs and extract feature settings.
+For each: name, purpose, options, defaults, how_to_configure.
+Include theme presets, default settings, feature flags.
+Return JSON array.`
+    }
+  ];
+
+  for (const pattern of scanPatterns) {
+    console.log(`\n📁 Scanning: ${pattern.category}`);
+
+    let allFiles = [];
+    for (const basePath of pattern.paths) {
+      const files = findFilesRecursive(path.join(ROOT_DIR, basePath), pattern.extensions);
+      allFiles.push(...files);
+    }
+
+    console.log(`   Found ${allFiles.length} files`);
+    if (allFiles.length === 0) continue;
+
+    // Process in batches of 3
+    for (let i = 0; i < allFiles.length; i += 3) {
+      const batch = allFiles.slice(i, i + 3);
+      console.log(`   Analyzing batch ${Math.floor(i/3) + 1}: ${batch.map(f => path.basename(f)).join(', ')}`);
+
+      try {
+        const filesContent = batch.map(f => {
+          const content = fs.readFileSync(f, 'utf-8').substring(0, 25000);
+          return `### ${path.relative(ROOT_DIR, f)}\n\`\`\`\n${content}\n\`\`\``;
+        }).join('\n\n');
+
+        const response = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8192,
+          messages: [{
+            role: 'user',
+            content: `${pattern.prompt}\n\nIMPORTANT: Return ONLY valid JSON array.\n\nFiles:\n${filesContent}`
+          }]
+        });
+
+        const text = response.content[0]?.text || '';
+        let items = [];
+
+        // Parse JSON
+        try {
+          let jsonText = text.trim();
+          if (jsonText.startsWith('```')) {
+            jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+          }
+          items = JSON.parse(jsonText);
+          if (!Array.isArray(items)) items = [items];
+        } catch (e) {
+          const match = text.match(/\[[\s\S]*\]/);
+          if (match) items = JSON.parse(match[0]);
+        }
+
+        // Save items
+        for (const item of items) {
+          if (pattern.category === 'db_schemas') {
+            await saveEntityDefinition(item);
+          } else {
+            await saveContextDocument(pattern.category, item);
+          }
+        }
+        console.log(`     ✅ Extracted ${items.length} items`);
+
+        // Rate limit
+        await new Promise(r => setTimeout(r, 1500));
+      } catch (err) {
+        console.log(`     ❌ Error: ${err.message}`);
+      }
+    }
+  }
+
+  console.log('\n✅ Full codebase scan complete!');
+}
+
+function findFilesRecursive(dir, extensions, maxDepth = 5, depth = 0) {
+  const files = [];
+  if (depth > maxDepth || !fs.existsSync(dir)) return files;
+
+  try {
+    for (const item of fs.readdirSync(dir)) {
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
+        files.push(...findFilesRecursive(fullPath, extensions, maxDepth, depth + 1));
+      } else if (stat.isFile() && extensions.some(ext => item.endsWith(ext))) {
+        files.push(fullPath);
+      }
+    }
+  } catch (e) { /* skip */ }
+  return files;
+}
+
 /**
  * POST /api/ai/training/run-comprehensive
  * Run comprehensive AI knowledge training
