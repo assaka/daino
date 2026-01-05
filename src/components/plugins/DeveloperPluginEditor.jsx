@@ -1664,10 +1664,63 @@ const DeveloperPluginEditor = ({
                         <Button
                           size="sm"
                           className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={() => {
-                            // TODO: Implement run all pending migrations
-                            addTerminalOutput('⏳ Running all pending migrations...', 'info');
+                          onClick={async () => {
+                            const pendingMigrations = allMigrations.filter(m => m.status === 'pending');
+                            if (pendingMigrations.length === 0) {
+                              addTerminalOutput('No pending migrations to run', 'info');
+                              return;
+                            }
+
+                            addTerminalOutput(`⏳ Running ${pendingMigrations.length} pending migrations...`, 'info');
                             setShowTerminal(true);
+
+                            let successCount = 0;
+                            let failCount = 0;
+
+                            for (const migration of pendingMigrations) {
+                              try {
+                                addTerminalOutput(`  Running: ${migration.version || migration.name}...`, 'info');
+
+                                const response = await apiClient.post(`plugins/${plugin.id}/run-migration`, {
+                                  migration_version: migration.version,
+                                  migration_name: migration.name || migration.file_name
+                                });
+
+                                const result = response.data || response;
+                                if (result.success) {
+                                  successCount++;
+                                  addTerminalOutput(`  ✓ ${migration.version || migration.name} completed`, 'success');
+                                } else {
+                                  failCount++;
+                                  addTerminalOutput(`  ✗ ${migration.version || migration.name} failed: ${result.error}`, 'error');
+                                }
+                              } catch (error) {
+                                failCount++;
+                                addTerminalOutput(`  ✗ ${migration.version || migration.name} failed: ${error.message}`, 'error');
+                              }
+                            }
+
+                            addTerminalOutput(`\n✅ Migrations complete: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
+
+                            // Refresh migrations list
+                            try {
+                              const response = await apiClient.get(`plugins/registry/${plugin.id}`);
+                              const updatedPlugin = response.data || response;
+                              const sourceCode = updatedPlugin.source_code || [];
+                              const migrationsFromFiles = sourceCode
+                                .filter(f => f.path?.startsWith('/migrations/'))
+                                .map(f => ({
+                                  version: f.migration_version || f.name?.replace('.sql', ''),
+                                  name: f.name,
+                                  file_name: f.name,
+                                  status: f.migration_status || 'pending',
+                                  description: f.migration_description,
+                                  executed_at: f.completed_at
+                                }));
+                              setAllMigrations(migrationsFromFiles);
+                            } catch (refreshError) {
+                              console.error('Failed to refresh migrations:', refreshError);
+                            }
                           }}
                         >
                           <Play className="w-4 h-4 mr-1" />

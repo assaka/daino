@@ -9,7 +9,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const aiImageOptimizer = require('../services/ai-image-optimizer');
-const { OPERATIONS, SERVICE_KEYS } = require('../services/ai-image-optimizer');
+const { OPERATIONS, SERVICE_KEYS, getServiceKey } = require('../services/ai-image-optimizer');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 const { masterDbClient } = require('../database/masterConnection');
 const creditService = require('../services/credit-service');
@@ -638,7 +638,8 @@ router.post('/generate',
   body('provider').optional().isIn(['openai', 'flux']).withMessage('Invalid provider for generation'),
   body('prompt').notEmpty().withMessage('Prompt is required'),
   body('style').optional().isString(),
-  body('model').optional().isIn(['flux-dev', 'flux-pro', 'flux-pro-1.1']).withMessage('Invalid model'),
+  // Support both Flux models (flux-dev, flux-pro, flux-pro-1.1) and OpenAI models (dall-e-2, dall-e-3)
+  body('model').optional().isIn(['flux-dev', 'flux-pro', 'flux-pro-1.1', 'dall-e-2', 'dall-e-3']).withMessage('Invalid model'),
   body('aspectRatio').optional().isIn(['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3']),
   body('referenceImageUrl').optional().isURL().withMessage('Invalid reference image URL'),
   async (req, res) => {
@@ -655,21 +656,32 @@ router.post('/generate',
         provider = 'flux',
         prompt,
         style = 'photorealistic',
-        model = 'flux-dev',
+        model: requestedModel,
         aspectRatio = '1:1',
         referenceImageUrl = null
       } = req.body;
+
+      // Set default model based on provider
+      const model = requestedModel || (provider === 'openai' ? 'dall-e-3' : 'flux-dev');
       const storeId = req.storeId || req.headers['x-store-id'];
       const userId = req.user?.id;
 
-      // Get credit cost for generation
-      const serviceKey = SERVICE_KEYS[provider]?.generate;
+      // Get credit cost for generation - use model-specific pricing
+      const serviceKey = getServiceKey(provider, 'generate', model);
       let creditCost = 3; // Default for generation
 
       try {
         creditCost = await ServiceCreditCost.getCostByKey(serviceKey);
+        console.log(`[ImageOptimization] Using model-specific pricing: ${serviceKey} = ${creditCost} credits`);
       } catch (e) {
-        console.warn(`[ImageOptimization] Using default cost for ${serviceKey}`);
+        // Fall back to generic provider key if model-specific not found
+        const fallbackKey = SERVICE_KEYS[provider]?.generate;
+        try {
+          creditCost = await ServiceCreditCost.getCostByKey(fallbackKey);
+          console.warn(`[ImageOptimization] Model-specific key ${serviceKey} not found, using fallback ${fallbackKey} = ${creditCost} credits`);
+        } catch (e2) {
+          console.warn(`[ImageOptimization] Using default cost for ${serviceKey}`);
+        }
       }
 
       // Check if user has enough credits

@@ -52,6 +52,35 @@ const FLUX_MODELS = [
   { id: 'flux-pro-1.1', label: 'Flux Pro 1.1', description: 'Best quality', icon: '🌟', credits: 5 }
 ];
 
+// OpenAI model options with credit costs
+const OPENAI_MODELS = [
+  { id: 'dall-e-3', label: 'DALL-E 3', description: 'Best quality, creative', icon: '🎨', credits: 4 },
+  { id: 'dall-e-2', label: 'DALL-E 2', description: 'Faster, budget-friendly', icon: '⚡', credits: 2 }
+];
+
+// Model comparison data for tooltip
+const MODEL_COMPARISON = {
+  providers: [
+    {
+      name: 'OpenAI',
+      icon: '🤖',
+      models: [
+        { name: 'DALL-E 3', quality: 5, speed: 3, creativity: 5, cost: '$0.04-0.08', credits: 4, bestFor: 'Creative, artistic images' },
+        { name: 'DALL-E 2', quality: 3, speed: 5, creativity: 3, cost: '$0.02', credits: 2, bestFor: 'Quick drafts, iterations' }
+      ]
+    },
+    {
+      name: 'Flux (BFL)',
+      icon: '⚡',
+      models: [
+        { name: 'Flux Pro 1.1', quality: 5, speed: 2, creativity: 4, cost: '$0.05', credits: 5, bestFor: 'Photorealistic, high detail' },
+        { name: 'Flux Pro', quality: 4, speed: 3, creativity: 4, cost: '$0.04', credits: 4, bestFor: 'Quality/speed balance' },
+        { name: 'Flux Dev', quality: 3, speed: 5, creativity: 3, cost: '$0.02', credits: 2, bestFor: 'Fast prototyping' }
+      ]
+    }
+  ]
+};
+
 // Aspect ratio options
 const ASPECT_RATIOS = [
   { id: '1:1', label: 'Square', width: 1024, height: 1024 },
@@ -359,6 +388,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [generateStyle, setGenerateStyle] = useState('photorealistic');
   const [generateAspectRatio, setGenerateAspectRatio] = useState('1:1');
   const [fluxModel, setFluxModel] = useState('flux-dev');
+  const [openaiModel, setOpenaiModel] = useState('dall-e-3');
+  const [showModelComparison, setShowModelComparison] = useState(false);
   const [generationHistory, setGenerationHistory] = useState([]);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -532,7 +563,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         prompt: generatePrompt,
         style: generateStyle,
         aspectRatio: generateAspectRatio,
-        model: selectedProvider === 'flux' ? fluxModel : undefined
+        model: selectedProvider === 'flux' ? fluxModel : selectedProvider === 'openai' ? openaiModel : undefined
       };
 
       // Include reference image if selected
@@ -957,8 +988,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
               )}
             </div>
 
-            {/* Model Dropdown - only show for Flux in generate mode */}
-            {isGenerateMode && selectedProvider === 'flux' && (
+            {/* Model Dropdown - show for Flux or OpenAI in generate mode */}
+            {isGenerateMode && (selectedProvider === 'flux' || selectedProvider === 'openai') && (
             <div className="relative" ref={modelDropdownRef}>
               <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
               <button
@@ -971,55 +1002,153 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                   "disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
               >
-                <span className="text-lg">{FLUX_MODELS.find(m => m.id === fluxModel)?.icon}</span>
-                <span className="font-medium flex-1 text-left">{FLUX_MODELS.find(m => m.id === fluxModel)?.label}</span>
+                {selectedProvider === 'flux' ? (
+                  <>
+                    <span className="text-lg">{FLUX_MODELS.find(m => m.id === fluxModel)?.icon}</span>
+                    <span className="font-medium flex-1 text-left">{FLUX_MODELS.find(m => m.id === fluxModel)?.label}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">{OPENAI_MODELS.find(m => m.id === openaiModel)?.icon}</span>
+                    <span className="font-medium flex-1 text-left">{OPENAI_MODELS.find(m => m.id === openaiModel)?.label}</span>
+                  </>
+                )}
                 <ChevronDown className={cn("w-4 h-4 transition-transform", showModelDropdown && "rotate-180")} />
               </button>
 
               {showModelDropdown && (
                 <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                  <div className="p-2 border-b border-gray-100 bg-gray-50">
+                  <div className="p-2 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                     <p className="text-xs font-medium text-gray-500">Select Model</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowModelComparison(!showModelComparison);
+                      }}
+                      className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      Compare All
+                    </button>
                   </div>
                   <div className="py-1">
-                    {FLUX_MODELS.map((model) => (
-                      <button
-                        key={model.id}
-                        onClick={() => {
-                          setFluxModel(model.id);
-                          setShowModelDropdown(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors",
-                          fluxModel === model.id
-                            ? "bg-purple-50"
-                            : "hover:bg-gray-50"
-                        )}
-                      >
-                        <span className="text-xl">{model.icon}</span>
-                        <div className="flex-1">
-                          <span className={cn(
-                            "text-sm font-medium",
-                            fluxModel === model.id ? "text-purple-600" : ""
-                          )}>
-                            {model.label}
-                          </span>
-                          <span className="text-xs text-gray-500 block">{model.description}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                            {model.credits} cr
-                          </span>
-                        </div>
-                        {fluxModel === model.id && (
-                          <Check className="w-4 h-4 text-purple-600" />
-                        )}
-                      </button>
-                    ))}
+                    {(selectedProvider === 'flux' ? FLUX_MODELS : OPENAI_MODELS).map((model) => {
+                      const currentModel = selectedProvider === 'flux' ? fluxModel : openaiModel;
+                      const setModel = selectedProvider === 'flux' ? setFluxModel : setOpenaiModel;
+                      return (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            setModel(model.id);
+                            setShowModelDropdown(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors",
+                            currentModel === model.id
+                              ? "bg-purple-50"
+                              : "hover:bg-gray-50"
+                          )}
+                        >
+                          <span className="text-xl">{model.icon}</span>
+                          <div className="flex-1">
+                            <span className={cn(
+                              "text-sm font-medium",
+                              currentModel === model.id ? "text-purple-600" : ""
+                            )}>
+                              {model.label}
+                            </span>
+                            <span className="text-xs text-gray-500 block">{model.description}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                              {model.credits} cr
+                            </span>
+                          </div>
+                          {currentModel === model.id && (
+                            <Check className="w-4 h-4 text-purple-600" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
+            )}
+
+            {/* Model Comparison Tooltip */}
+            {showModelComparison && (
+              <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/30" onClick={() => setShowModelComparison(false)}>
+                <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Model Comparison</h3>
+                    <button onClick={() => setShowModelComparison(false)} className="p-1 hover:bg-gray-100 rounded">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-4">
+                    Compare quality, speed, and cost across different AI image generation models.
+                  </p>
+
+                  <div className="space-y-6">
+                    {MODEL_COMPARISON.providers.map((provider) => (
+                      <div key={provider.name} className="border rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 flex items-center gap-2 border-b">
+                          <span className="text-lg">{provider.icon}</span>
+                          <span className="font-semibold">{provider.name}</span>
+                        </div>
+                        <div className="divide-y">
+                          {provider.models.map((model) => (
+                            <div key={model.name} className="px-4 py-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium">{model.name}</span>
+                                <span className="text-sm font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                                  {model.credits} credits
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 text-xs mb-2">
+                                <div>
+                                  <span className="text-gray-500">Quality</span>
+                                  <div className="flex gap-0.5 mt-1">
+                                    {[1,2,3,4,5].map(i => (
+                                      <div key={i} className={cn("w-4 h-2 rounded-sm", i <= model.quality ? "bg-green-500" : "bg-gray-200")} />
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Speed</span>
+                                  <div className="flex gap-0.5 mt-1">
+                                    {[1,2,3,4,5].map(i => (
+                                      <div key={i} className={cn("w-4 h-2 rounded-sm", i <= model.speed ? "bg-blue-500" : "bg-gray-200")} />
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Creativity</span>
+                                  <div className="flex gap-0.5 mt-1">
+                                    {[1,2,3,4,5].map(i => (
+                                      <div key={i} className={cn("w-4 h-2 rounded-sm", i <= model.creativity ? "bg-purple-500" : "bg-gray-200")} />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">Best for: <span className="text-gray-700">{model.bestFor}</span></span>
+                                <span className="text-gray-400">~{model.cost}/image</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+                    <strong>Tip:</strong> Start with faster/cheaper models for drafts, then use high-quality models for final images.
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Operation Dropdown - hidden in generate mode until image is generated */}

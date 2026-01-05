@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import {
   BookOpen, ArrowRight, Mail, Zap, ShoppingCart,
-  BarChart3, TestTube2, MousePointer2, Package, Clock
+  BarChart3, TestTube2, MousePointer2, Package, Clock, ImagePlus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -83,6 +83,20 @@ const BLOG_ARTICLES = [
         description: 'Create scheduled tasks and background jobs for your custom plugins.',
         slug: 'plugin-developer-job-scheduler-guide',
         readTime: '8 min read'
+      }
+    ]
+  },
+  {
+    category: 'AI & Image Generation',
+    icon: ImagePlus,
+    color: 'bg-pink-100 text-pink-600',
+    articles: [
+      {
+        title: 'Choosing the Right AI Image Generation Model',
+        description: 'Compare DALL-E 3, DALL-E 2, Flux Pro, and Flux Dev to find the best model for your needs.',
+        slug: 'ai-image-generation-models-comparison',
+        readTime: '15 min read',
+        featured: true
       }
     ]
   }

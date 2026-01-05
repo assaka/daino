@@ -191,6 +191,10 @@ class OpenAIImageProvider {
   /**
    * Generate new image from text prompt
    * If referenceImageUrl is provided, uses image editing to incorporate the product
+   *
+   * Models:
+   * - dall-e-3: Best quality, more creative (default)
+   * - dall-e-2: Faster, cheaper, good for quick iterations
    */
   async generate(params = {}) {
     const {
@@ -198,8 +202,11 @@ class OpenAIImageProvider {
       style = 'photorealistic',
       aspectRatio = '1:1',
       quality = 'hd',
-      referenceImageUrl = null
+      referenceImageUrl = null,
+      model = 'dall-e-3' // dall-e-3 or dall-e-2
     } = params;
+
+    console.log(`[OpenAI] Generating image with model: ${model}`);
 
     // Map aspect ratios to sizes
     // DALL-E 3: 1024x1024, 1024x1792, 1792x1024
@@ -261,17 +268,39 @@ class OpenAIImageProvider {
       };
     }
 
-    // No reference image - use DALL-E 3 for pure text-to-image generation
-    const size = sizeMap[aspectRatio] || '1024x1024';
+    // No reference image - use DALL-E for pure text-to-image generation
+    // DALL-E 2 only supports: 256x256, 512x512, 1024x1024
+    // DALL-E 3 supports: 1024x1024, 1024x1792, 1792x1024
+    const dalle2SizeMap = {
+      '1:1': '1024x1024',
+      '16:9': '1024x1024', // Fallback - dall-e-2 doesn't support wide
+      '9:16': '1024x1024', // Fallback
+      '4:3': '1024x1024',
+      '3:4': '1024x1024',
+      '3:2': '1024x1024',
+      '2:3': '1024x1024'
+    };
 
-    const response = await this.client.images.generate({
-      model: 'dall-e-3',
+    const selectedModel = model || 'dall-e-3';
+    const size = selectedModel === 'dall-e-2'
+      ? (dalle2SizeMap[aspectRatio] || '1024x1024')
+      : (sizeMap[aspectRatio] || '1024x1024');
+
+    // Build request options
+    const requestOptions = {
+      model: selectedModel,
       prompt: enhancedPrompt,
       n: 1,
       size,
-      quality,
       response_format: 'b64_json'
-    });
+    };
+
+    // DALL-E 3 supports quality parameter, DALL-E 2 doesn't
+    if (selectedModel === 'dall-e-3') {
+      requestOptions.quality = quality;
+    }
+
+    const response = await this.client.images.generate(requestOptions);
 
     const imageData = response.data[0].b64_json;
 
@@ -281,6 +310,7 @@ class OpenAIImageProvider {
       prompt: enhancedPrompt,
       style,
       aspectRatio,
+      model: selectedModel,
       revisedPrompt: response.data[0].revised_prompt
     };
   }

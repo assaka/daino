@@ -78,6 +78,35 @@ const SERVICE_KEYS = {
   }
 };
 
+// Model-specific service keys for generation (different models have different costs)
+const MODEL_SERVICE_KEYS = {
+  openai: {
+    'dall-e-3': 'ai_image_openai_generate_dalle3',
+    'dall-e-2': 'ai_image_openai_generate_dalle2'
+  },
+  flux: {
+    'flux-pro-1.1': 'ai_image_flux_generate_pro11',
+    'flux-pro': 'ai_image_flux_generate_pro',
+    'flux-dev': 'ai_image_flux_generate_dev'
+  }
+};
+
+/**
+ * Get the service key for credit costs, supporting model-specific keys for generation
+ * @param {string} provider - Provider name (openai, flux, etc.)
+ * @param {string} operation - Operation type (generate, compress, etc.)
+ * @param {string} model - Optional model name for generation operations
+ * @returns {string} Service key for looking up credit cost
+ */
+function getServiceKey(provider, operation, model = null) {
+  // For generation operations with a specific model, try to get model-specific key
+  if (operation === 'generate' && model && MODEL_SERVICE_KEYS[provider]?.[model]) {
+    return MODEL_SERVICE_KEYS[provider][model];
+  }
+  // Fall back to generic provider+operation key
+  return SERVICE_KEYS[provider]?.[operation];
+}
+
 class AIImageOptimizer {
   constructor() {
     this.providers = {};
@@ -455,3 +484,5 @@ class AIImageOptimizer {
 module.exports = new AIImageOptimizer();
 module.exports.OPERATIONS = OPERATIONS;
 module.exports.SERVICE_KEYS = SERVICE_KEYS;
+module.exports.MODEL_SERVICE_KEYS = MODEL_SERVICE_KEYS;
+module.exports.getServiceKey = getServiceKey;
