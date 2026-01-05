@@ -1676,6 +1676,7 @@ CREATE TABLE IF NOT EXISTS credit_usage (
   reference_id UUID,
   reference_type VARCHAR(50),
   description TEXT,
+  model_used VARCHAR(100),
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

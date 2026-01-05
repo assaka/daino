@@ -91,6 +91,9 @@ class CreditService {
     const { v4: uuidv4 } = require('uuid');
     const recordId = uuidv4();
 
+    // Extract model info from metadata
+    const modelUsed = metadata?.modelId || metadata?.model || null;
+
     const insertData = {
       id: recordId,
       user_id: userId,
@@ -100,6 +103,7 @@ class CreditService {
       reference_id: referenceId ? String(referenceId) : null,
       reference_type: referenceType || null,
       description: description,
+      model_used: modelUsed,
       metadata: {
         ...metadata,
         balance_before: balance,
@@ -160,6 +164,7 @@ class CreditService {
             reference_id: referenceId ? String(referenceId) : null,
             reference_type: referenceType || null,
             description: description,
+            model_used: modelUsed,
             metadata: {
               ...metadata,
               balance_before: balance,

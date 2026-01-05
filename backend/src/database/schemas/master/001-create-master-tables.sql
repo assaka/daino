@@ -229,6 +229,7 @@ CREATE TABLE IF NOT EXISTS credit_usage (
 
   -- Description and metadata
   description TEXT,
+  model_used VARCHAR(100),           -- LLM model used (e.g., 'claude-sonnet', 'gpt-4')
   metadata JSONB DEFAULT '{}',       -- Additional context (balance_before, balance_after, etc.)
 
   created_at TIMESTAMP DEFAULT NOW(),

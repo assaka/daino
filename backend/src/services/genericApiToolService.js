@@ -1538,8 +1538,18 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
    * Update a store setting directly
    */
   async _executeUpdateStoreSetting({ setting, value, table }, context) {
-    const { storeId } = context;
+    const { storeId, userMessage } = context;
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // =====================================================
+    // SETTING CORRECTION LAYER
+    // Fixes common AI mistakes where it picks the wrong page-specific setting
+    // =====================================================
+    const correctedSetting = this._correctSettingBasedOnUserMessage(setting, userMessage);
+    if (correctedSetting !== setting) {
+      console.log(`🔧 Setting corrected: "${setting}" → "${correctedSetting}" (based on user message)`);
+      setting = correctedSetting;
+    }
 
     // Map common setting names to table.column
     // Setting map: maps user-friendly names to actual DB locations
@@ -2708,6 +2718,76 @@ ${learningContext}`;
     }
 
     return fullPrompt;
+  }
+
+  // ============================================
+  // SETTING CORRECTION HELPERS
+  // ============================================
+
+  /**
+   * Correct AI's setting choice based on user's actual message
+   * Fixes common mistakes where AI picks wrong page-specific variant
+   *
+   * Example: User says "hide currency on category page" but AI picks "hide_currency_product"
+   * This corrects it to "hide_currency_category"
+   */
+  _correctSettingBasedOnUserMessage(setting, userMessage) {
+    if (!userMessage) return setting;
+
+    const msg = userMessage.toLowerCase();
+
+    // Define page-specific setting corrections
+    const pageSpecificSettings = {
+      // Currency visibility settings
+      'hide_currency': {
+        variants: ['hide_currency_category', 'hide_currency_product'],
+        pageKeywords: {
+          'category': 'hide_currency_category',
+          'categories': 'hide_currency_category',
+          'listing': 'hide_currency_category',
+          'listings': 'hide_currency_category',
+          'collection': 'hide_currency_category',
+          'product page': 'hide_currency_product',
+          'product detail': 'hide_currency_product',
+          'pdp': 'hide_currency_product'
+        },
+        // If just "product" without "page" context, check if it's about products listing vs product detail
+        ambiguousKeywords: {
+          'product': 'hide_currency_product'  // Default "product" to product page
+        }
+      }
+    };
+
+    // Check if this setting belongs to a page-specific group
+    for (const [baseName, config] of Object.entries(pageSpecificSettings)) {
+      // Check if AI chose any variant of this setting
+      const chosenVariant = config.variants.find(v =>
+        setting === v ||
+        setting === `settings.${v}` ||
+        setting.includes(baseName)
+      );
+
+      if (chosenVariant) {
+        // Find which page the user actually mentioned
+        for (const [keyword, correctSetting] of Object.entries(config.pageKeywords)) {
+          if (msg.includes(keyword)) {
+            // User mentioned this page type - use the correct setting
+            return correctSetting;
+          }
+        }
+
+        // Check ambiguous keywords
+        if (config.ambiguousKeywords) {
+          for (const [keyword, correctSetting] of Object.entries(config.ambiguousKeywords)) {
+            if (msg.includes(keyword) && !msg.includes('category') && !msg.includes('listing')) {
+              return correctSetting;
+            }
+          }
+        }
+      }
+    }
+
+    return setting;
   }
 
   // ============================================

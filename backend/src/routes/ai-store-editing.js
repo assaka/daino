@@ -62,7 +62,7 @@ router.post('/store-edit', async (req, res) => {
       messages,
       systemPrompt,
       tools,
-      context: { storeId, userId, authToken },
+      context: { storeId, userId, authToken, userMessage: message },
       maxIterations: 10
     });
 
@@ -125,7 +125,7 @@ router.post('/store-edit/stream', async (req, res) => {
       messages,
       systemPrompt,
       tools,
-      context: { storeId, userId, authToken },
+      context: { storeId, userId, authToken, userMessage: message },
       res,
       maxIterations: 10
     });
