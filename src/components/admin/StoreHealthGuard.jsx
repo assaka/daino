@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { AlertTriangle, Database, Trash2, Loader2, Store as StoreIcon } from 'lucide-react';
+import { AlertTriangle, Database, Trash2, Loader2, Store as StoreIcon, LogOut } from 'lucide-react';
+import { handleLogout } from '@/utils/auth';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -101,7 +102,25 @@ export default function StoreHealthGuard({ children, pageName }) {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-3">
+            <img src="/logo_red.svg" alt="DainoStore" className="h-8" />
+            <span className="text-xl font-bold text-gray-900">DainoStore</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </header>
+
+        <div className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
@@ -184,6 +203,7 @@ export default function StoreHealthGuard({ children, pageName }) {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 
