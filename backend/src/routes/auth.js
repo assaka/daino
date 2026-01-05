@@ -933,7 +933,8 @@ router.get('/google', (req, res, next) => {
   }
 
   // Store the redirect URL in session for after callback
-  const redirectUrl = req.query.redirect || '/admin/onboarding';
+  // Default to dashboard - StoreSelectionContext will redirect to onboarding if needed
+  const redirectUrl = req.query.redirect || '/admin/dashboard';
   req.session = req.session || {};
   req.session.oauthRedirect = redirectUrl;
 
@@ -979,8 +980,8 @@ router.get('/google/callback', (req, res, next) => {
       console.log('✅ Google OAuth successful for:', user.email);
 
       // Redirect to frontend with token
-      // Frontend will store the token and redirect appropriately
-      const redirectPath = req.session?.oauthRedirect || '/admin/onboarding';
+      // Default to dashboard - StoreSelectionContext will redirect to onboarding if needed
+      const redirectPath = req.session?.oauthRedirect || '/admin/dashboard';
       res.redirect(`${corsOrigin}/admin/auth?token=${token}&oauth=success&redirect=${encodeURIComponent(redirectPath)}`);
     } catch (error) {
       console.error('❌ Google OAuth callback error:', error);
