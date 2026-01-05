@@ -1424,6 +1424,52 @@ export const Language = new BaseEntity('languages');
 export const SeoTemplate = new BaseEntity('seo-templates');
 export const SeoSetting = new BaseEntity('seo-settings');
 export const CreditTransaction = new BaseEntity('credits/transactions');
+
+// CreditUsage service for tracking credit usage history
+class CreditUsageService extends BaseEntity {
+  constructor() {
+    super('credits/usage');
+  }
+
+  // Get usage with filters
+  async getUsage(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+      const response = await apiClient.get(url);
+      return response?.data || response;
+    } catch (error) {
+      console.error('CreditUsageService.getUsage() error:', error.message);
+      return { usage: [], pagination: {}, summary: {} };
+    }
+  }
+
+  // Get available usage types for filters
+  async getUsageTypes() {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/types`);
+      return response?.data || [];
+    } catch (error) {
+      console.error('CreditUsageService.getUsageTypes() error:', error.message);
+      return [];
+    }
+  }
+
+  // Get usage stats summary
+  async getStats(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${this.endpoint}/stats?${queryString}` : `${this.endpoint}/stats`;
+      const response = await apiClient.get(url);
+      return response?.data || {};
+    } catch (error) {
+      console.error('CreditUsageService.getStats() error:', error.message);
+      return {};
+    }
+  }
+}
+
+export const CreditUsage = new CreditUsageService();
 export const CookieConsentSettings = new BaseEntity('cookie-consent-settings');
 export const ConsentLog = new BaseEntity('consent-logs');
 export const PriceAlertSubscription = new BaseEntity('price-alert-subscriptions');

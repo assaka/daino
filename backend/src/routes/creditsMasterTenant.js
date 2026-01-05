@@ -11,6 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const CreditTransaction = require('../models/CreditTransaction');
+const CreditUsage = require('../models/CreditUsage');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { masterDbClient } = require('../database/masterConnection');
 const creditService = require('../services/credit-service');
@@ -157,6 +158,262 @@ router.get('/balance', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get credit balance'
+    });
+  }
+});
+
+/**
+ * GET /api/credits/usage
+ * Get credit usage history with filters
+ */
+router.get('/usage', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      store_id,
+      usage_type,
+      start_date,
+      end_date,
+      limit = 50,
+      offset = 0,
+      sort_by = 'created_at',
+      sort_order = 'desc'
+    } = req.query;
+
+    // Build query
+    let query = masterDbClient
+      .from('credit_usage')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Apply filters
+    if (store_id) {
+      query = query.eq('store_id', store_id);
+    }
+    if (usage_type && usage_type !== 'all') {
+      query = query.eq('usage_type', usage_type);
+    }
+    if (start_date) {
+      query = query.gte('created_at', new Date(start_date).toISOString());
+    }
+    if (end_date) {
+      // Add 1 day to include the entire end date
+      const endDateObj = new Date(end_date);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      query = query.lt('created_at', endDateObj.toISOString());
+    }
+
+    // Get total count for pagination
+    const countQuery = masterDbClient
+      .from('credit_usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (store_id) countQuery.eq('store_id', store_id);
+    if (usage_type && usage_type !== 'all') countQuery.eq('usage_type', usage_type);
+    if (start_date) countQuery.gte('created_at', new Date(start_date).toISOString());
+    if (end_date) {
+      const endDateObj = new Date(end_date);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      countQuery.lt('created_at', endDateObj.toISOString());
+    }
+
+    const { count, error: countError } = await countQuery;
+
+    // Apply sorting and pagination
+    const ascending = sort_order.toLowerCase() === 'asc';
+    query = query
+      .order(sort_by, { ascending })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    const { data: usage, error } = await query;
+
+    if (error) {
+      console.error('Error getting credit usage:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get credit usage',
+        error: error.message
+      });
+    }
+
+    // Get store names for the usage records
+    const storeIds = [...new Set(usage.map(u => u.store_id).filter(Boolean))];
+    let storeNames = {};
+
+    if (storeIds.length > 0) {
+      const { data: stores } = await masterDbClient
+        .from('stores')
+        .select('id, name')
+        .in('id', storeIds);
+
+      if (stores) {
+        storeNames = stores.reduce((acc, s) => {
+          acc[s.id] = s.name;
+          return acc;
+        }, {});
+      }
+    }
+
+    // Calculate totals for the filtered period
+    const totalCredits = usage.reduce((sum, u) => sum + parseFloat(u.credits_used || 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        usage: usage.map(u => ({
+          ...u,
+          store_name: storeNames[u.store_id] || 'Unknown Store',
+          credits_used: parseFloat(u.credits_used || 0)
+        })),
+        pagination: {
+          total: count || 0,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          hasMore: parseInt(offset) + usage.length < (count || 0)
+        },
+        summary: {
+          total_credits_used: totalCredits,
+          record_count: usage.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get credit usage error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get credit usage',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/credits/usage/types
+ * Get available usage types for filter dropdown
+ */
+router.get('/usage/types', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get distinct usage types for this user
+    const { data: types, error } = await masterDbClient
+      .from('credit_usage')
+      .select('usage_type')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error getting usage types:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get usage types',
+        error: error.message
+      });
+    }
+
+    // Get unique types
+    const uniqueTypes = [...new Set(types.map(t => t.usage_type))].filter(Boolean);
+
+    // Map to user-friendly labels
+    const typeLabels = {
+      'store_publishing': 'Store Publishing',
+      'custom_domain': 'Custom Domain',
+      'akeneo_schedule': 'Akeneo Scheduled Import',
+      'akeneo_manual': 'Akeneo Manual Import',
+      'ai_translation': 'AI Translation',
+      'manual_import': 'Manual Import',
+      'ai_image': 'AI Image Processing',
+      'ai_seo': 'AI SEO',
+      'ai_content': 'AI Content Generation'
+    };
+
+    res.json({
+      success: true,
+      data: uniqueTypes.map(type => ({
+        value: type,
+        label: typeLabels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      }))
+    });
+  } catch (error) {
+    console.error('Get usage types error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get usage types',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/credits/usage/stats
+ * Get usage statistics summary
+ */
+router.get('/usage/stats', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { store_id, days = 30 } = req.query;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+
+    let query = masterDbClient
+      .from('credit_usage')
+      .select('usage_type, credits_used, created_at')
+      .eq('user_id', userId)
+      .gte('created_at', startDate.toISOString());
+
+    if (store_id) {
+      query = query.eq('store_id', store_id);
+    }
+
+    const { data: usage, error } = await query;
+
+    if (error) {
+      console.error('Error getting usage stats:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get usage stats',
+        error: error.message
+      });
+    }
+
+    // Calculate stats by type
+    const statsByType = {};
+    let totalCredits = 0;
+
+    usage.forEach(u => {
+      const credits = parseFloat(u.credits_used || 0);
+      totalCredits += credits;
+
+      if (!statsByType[u.usage_type]) {
+        statsByType[u.usage_type] = {
+          count: 0,
+          total_credits: 0
+        };
+      }
+      statsByType[u.usage_type].count++;
+      statsByType[u.usage_type].total_credits += credits;
+    });
+
+    // Calculate daily average
+    const dailyAverage = totalCredits / parseInt(days);
+
+    res.json({
+      success: true,
+      data: {
+        total_credits_used: totalCredits,
+        daily_average: dailyAverage,
+        by_type: statsByType,
+        period_days: parseInt(days),
+        record_count: usage.length
+      }
+    });
+  } catch (error) {
+    console.error('Get usage stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get usage stats',
+      details: error.message
     });
   }
 });

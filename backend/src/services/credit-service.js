@@ -97,27 +97,49 @@ class CreditService {
         store_id: storeId || null,
         credits_used: creditAmount,
         usage_type: referenceType || 'general',
-        reference_id: referenceId,
-        reference_type: referenceType,
+        reference_id: referenceId ? String(referenceId) : null,
+        reference_type: referenceType || null,
         description: description,
         metadata: {
           ...metadata,
           balance_before: balance,
           balance_after: newBalance,
           charged_at: new Date().toISOString()
-        }
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
-      const { error: insertError } = await masterDbClient
+      console.log(`[CREDIT_USAGE] Inserting record:`, {
+        user_id: userId,
+        store_id: storeId,
+        credits_used: creditAmount,
+        usage_type: insertData.usage_type,
+        reference_type: referenceType
+      });
+
+      const { data: insertedData, error: insertError } = await masterDbClient
         .from('credit_usage')
-        .insert(insertData);
+        .insert(insertData)
+        .select()
+        .single();
 
       if (insertError) {
-        console.error(`[CREDIT_USAGE] Insert error:`, insertError.message);
+        console.error(`[CREDIT_USAGE] Insert error:`, {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        });
+      } else {
+        console.log(`[CREDIT_USAGE] Successfully inserted record:`, insertedData?.id);
       }
     } catch (logError) {
       // Log but don't fail the deduction if credit_usage insert fails
-      console.error('[CREDIT_USAGE] Failed to log to master DB:', logError.message);
+      console.error('[CREDIT_USAGE] Failed to log to master DB:', {
+        message: logError.message,
+        stack: logError.stack?.split('\n').slice(0, 3).join('\n')
+      });
     }
 
     return {
