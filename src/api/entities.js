@@ -449,11 +449,20 @@ class StoreService extends BaseEntity {
   // Get user's stores for dropdown/selection (authenticated) - only Editor+ permissions
   async getUserStores() {
     try {
+      console.log('🔍 getUserStores: Fetching stores/dropdown...');
       const response = await apiClient.get('stores/dropdown');
+      console.log('🔍 getUserStores: Raw response:', response);
       // Handle both direct array response and {success: true, data: []} format
-      const stores = response?.data || response;
-      const result = Array.isArray(stores) ? stores : [];
-      return result;
+      let stores = [];
+      if (Array.isArray(response)) {
+        stores = response;
+      } else if (response?.success && Array.isArray(response.data)) {
+        stores = response.data;
+      } else if (Array.isArray(response?.data)) {
+        stores = response.data;
+      }
+      console.log('🔍 getUserStores: Parsed stores:', stores);
+      return stores;
     } catch (error) {
       console.error(`❌ StoreService.getUserStores() error:`, error.message);
       return [];
@@ -483,6 +492,7 @@ class StoreService extends BaseEntity {
   async findAll(params = {}) {
     try {
       const hasToken = apiClient.getToken();
+      console.log('🔍 Store.findAll: hasToken =', !!hasToken);
 
       if (hasToken) {
         // Check user role from token
@@ -490,9 +500,11 @@ class StoreService extends BaseEntity {
           const token = apiClient.getToken();
           const payload = JSON.parse(atob(token.split('.')[1]));
           const userRole = payload.role;
+          console.log('🔍 Store.findAll: userRole =', userRole);
 
           // Only admin/store_owner should use dropdown endpoint
           if (userRole === 'admin' || userRole === 'store_owner') {
+            console.log('🔍 Store.findAll: Using getUserStores()');
             return this.getUserStores();
           }
           // Customers fall through to public endpoint
