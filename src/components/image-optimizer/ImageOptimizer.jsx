@@ -26,7 +26,7 @@ const PROVIDERS = {
   openai: { name: 'OpenAI', icon: '🤖', color: 'text-green-600' },
   gemini: { name: 'Gemini', icon: '✨', color: 'text-blue-600' },
   flux: { name: 'Flux', icon: '⚡', color: 'text-purple-600' },
-  qwen: { name: 'Qwen', icon: '🎨', color: 'text-orange-600' }
+  qwen: { name: 'Qwen', icon: '🎨', color: 'text-orange-600', disabled: true }
 };
 
 // Operation display info
@@ -276,7 +276,15 @@ const ImageOptimizer = ({ storeId, onImageOptimized, className }) => {
                   <p className="text-[10px] font-medium text-gray-500">Select AI Provider</p>
                 </div>
                 <div className="py-1 max-h-64 overflow-y-auto">
-                  {(pricing?.providers || Object.keys(PROVIDERS)).map((providerId) => {
+                  {(pricing?.providers || Object.keys(PROVIDERS))
+                    .filter((providerId) => {
+                      // Only show providers that support the selected operation and are not disabled
+                      const provider = PROVIDERS[providerId];
+                      if (provider?.disabled) return false;
+                      const cost = pricing?.matrix?.[providerId]?.[selectedOperation]?.credits;
+                      return cost !== undefined;
+                    })
+                    .map((providerId) => {
                     const provider = PROVIDERS[providerId];
                     if (!provider) return null;
                     const cost = pricing?.matrix?.[providerId]?.[selectedOperation]?.credits;
