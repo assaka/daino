@@ -39,38 +39,31 @@ import cartService from '@/services/cartService';
 import { PageLoader } from '@/components/ui/page-loader';
 
 // --- Utilities ---
-let globalRequestQueue = Promise.resolve();
-
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
-  return new Promise((resolve, reject) => {
-    globalRequestQueue = globalRequestQueue.then(async () => {
-      await delay(500 + Math.random() * 1000); // Add a jitter before each call in the queue
-      for (let i = 0; i < maxRetries; i++) {
-        try {
-          const result = await apiCall();
-          return resolve(result);
-        } catch (error) {
-          const isRateLimit = error.response?.status === 429 ||
-                             error.message?.includes('Rate limit') ||
-                             error.detail?.includes('Rate limit');
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const result = await apiCall();
+      return result;
+    } catch (error) {
+      const isRateLimit = error.response?.status === 429 ||
+                         error.message?.includes('Rate limit') ||
+                         error.detail?.includes('Rate limit');
 
-          if (isRateLimit && i < maxRetries - 1) {
-            const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 1000;
-            await delay(delayTime);
-            continue;
-          }
-
-          if (isRateLimit) {
-            return resolve([]);
-          }
-          
-          return reject(error);
-        }
+      if (isRateLimit && i < maxRetries - 1) {
+        const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 1000;
+        await delay(delayTime);
+        continue;
       }
-    }).catch(reject);
-  });
+
+      if (isRateLimit) {
+        return [];
+      }
+
+      throw error;
+    }
+  }
 };
 
 
