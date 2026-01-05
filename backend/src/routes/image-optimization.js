@@ -638,6 +638,7 @@ router.post('/generate',
   body('provider').optional().isIn(['openai', 'flux']).withMessage('Invalid provider for generation'),
   body('prompt').notEmpty().withMessage('Prompt is required'),
   body('style').optional().isString(),
+  body('model').optional().isIn(['flux-dev', 'flux-pro', 'flux-pro-1.1']).withMessage('Invalid model'),
   body('aspectRatio').optional().isIn(['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3']),
   body('referenceImageUrl').optional().isURL().withMessage('Invalid reference image URL'),
   async (req, res) => {
@@ -654,6 +655,7 @@ router.post('/generate',
         provider = 'flux',
         prompt,
         style = 'photorealistic',
+        model = 'flux-dev',
         aspectRatio = '1:1',
         referenceImageUrl = null
       } = req.body;
@@ -690,7 +692,7 @@ router.post('/generate',
         provider,
         operation: 'generate',
         image: referenceImageUrl, // Reference product image (optional)
-        params: { prompt, style, aspectRatio, referenceImageUrl }
+        params: { prompt, style, model, aspectRatio, referenceImageUrl }
       });
 
       // Deduct credits only on success

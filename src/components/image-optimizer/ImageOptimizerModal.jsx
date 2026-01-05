@@ -45,6 +45,13 @@ const GENERATION_STYLES = [
 ];
 
 
+// Flux model options
+const FLUX_MODELS = [
+  { id: 'flux-dev', label: 'Flux Dev', description: 'Fast & affordable', icon: '⚡' },
+  { id: 'flux-pro', label: 'Flux Pro', description: 'Better quality', icon: '✨' },
+  { id: 'flux-pro-1.1', label: 'Flux Pro 1.1', description: 'Best quality', icon: '🌟' }
+];
+
 // Aspect ratio options
 const ASPECT_RATIOS = [
   { id: '1:1', label: 'Square', width: 1024, height: 1024 },
@@ -351,6 +358,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [generateStyle, setGenerateStyle] = useState('photorealistic');
   const [generateAspectRatio, setGenerateAspectRatio] = useState('1:1');
+  const [fluxModel, setFluxModel] = useState('flux-dev');
   const [generationHistory, setGenerationHistory] = useState([]);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showOperationDropdown, setShowOperationDropdown] = useState(false);
@@ -518,7 +526,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         provider: selectedProvider,
         prompt: generatePrompt,
         style: generateStyle,
-        aspectRatio: generateAspectRatio
+        aspectRatio: generateAspectRatio,
+        model: selectedProvider === 'flux' ? fluxModel : undefined
       };
 
       // Include reference image if selected
@@ -1409,6 +1418,31 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                     ))}
                   </div>
                 </div>
+
+                {/* Flux Model Selection (only when Flux is selected) */}
+                {selectedProvider === 'flux' && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block">Model</label>
+                  <div className="flex flex-wrap gap-2">
+                    {FLUX_MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => setFluxModel(model.id)}
+                        disabled={isProcessing}
+                        className={cn(
+                          "px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-2",
+                          fluxModel === model.id
+                            ? "bg-purple-100 text-purple-700 border border-purple-300"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        )}
+                      >
+                        <span>{model.icon}</span>
+                        <span className="font-medium">{model.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                )}
 
                 {/* Aspect Ratio Selection */}
                 <div>

@@ -343,7 +343,8 @@ class FluxImageProvider {
       style = 'photorealistic',
       aspectRatio = '1:1',
       numImages = 1,
-      referenceImageUrl = null
+      referenceImageUrl = null,
+      model = 'flux-dev' // flux-pro-1.1, flux-pro, flux-dev
     } = params;
 
     // Map aspect ratios to dimensions
@@ -387,8 +388,9 @@ class FluxImageProvider {
         height: dimensions.height
       };
 
-      // Use flux-pro-1.1 for best quality, or flux-dev for cost savings
-      const endpoint = referenceImageUrl ? 'flux-pro-1.1' : 'flux-pro-1.1';
+      // Use specified model (flux-dev is cheaper, flux-pro-1.1 is best quality)
+      const endpoint = model || 'flux-dev';
+      console.log(`[FluxProvider] Using BFL model: ${endpoint}`);
 
       if (referenceImageUrl) {
         bflParams.image_url = referenceImageUrl;
