@@ -589,6 +589,18 @@ async function runComprehensiveTraining() {
     }
   }
 
+  // 6. Train Common Operations - Examples of how to execute common requests
+  console.log('\n6️⃣ Training Common Operations...');
+  const operationsKnowledge = getCommonOperationsKnowledge();
+  for (const op of operationsKnowledge) {
+    try {
+      await saveOperationDocument(op);
+      console.log(`   ✅ ${op.name}`);
+    } catch (e) {
+      console.log(`   ❌ ${op.name}: ${e.message}`);
+    }
+  }
+
   console.log('\n✅ Comprehensive AI Training Complete!');
 }
 
@@ -1194,6 +1206,71 @@ function getStoreSettingsKnowledge() {
 }
 
 /**
+ * Common Operations Training Data
+ * Examples of how to execute common user requests
+ */
+function getCommonOperationsKnowledge() {
+  return [
+    {
+      name: 'Change Button Colors',
+      operation_type: 'theme_setting',
+      examples: [
+        'change add to cart button color',
+        'make add to cart red',
+        'change cart button to blue',
+        'update button color'
+      ],
+      tool: 'update_store_setting',
+      pattern: 'update_store_setting(setting="add_to_cart_button_bg_color", value="#HEX_COLOR")',
+      description: 'To change the Add to Cart button color, use update_store_setting with setting="add_to_cart_button_bg_color" and a hex color value. For text color use add_to_cart_button_text_color.',
+      related_settings: ['add_to_cart_button_bg_color', 'add_to_cart_button_text_color', 'primary_button_color']
+    },
+    {
+      name: 'Change Header Colors',
+      operation_type: 'theme_setting',
+      examples: [
+        'change header background',
+        'make header black',
+        'change navigation color',
+        'header icon color'
+      ],
+      tool: 'update_store_setting',
+      pattern: 'update_store_setting(setting="header_bg_color", value="#HEX_COLOR")',
+      description: 'To change header colors: header_bg_color for background, header_icon_color for icons.',
+      related_settings: ['header_bg_color', 'header_icon_color', 'header_text_color']
+    },
+    {
+      name: 'Add Component to Page',
+      operation_type: 'layout_modification',
+      examples: [
+        'add banner to category page',
+        'add reviews to product page',
+        'add section to homepage',
+        'add widget to cart'
+      ],
+      tool: 'configure_layout',
+      pattern: 'configure_layout(pageType="PAGE", operation="add_slot", slotType="COMPONENT", position="POSITION")',
+      description: 'To add components/sections to pages, use configure_layout with operation="add_slot". pageType can be: home, category, product, cart, checkout. Position can be: top, bottom, before:element, after:element.',
+      page_types: ['home', 'category', 'product', 'cart', 'checkout', 'header', 'footer']
+    },
+    {
+      name: 'Toggle Display Settings',
+      operation_type: 'display_setting',
+      examples: [
+        'hide cart icon',
+        'show language selector',
+        'hide search bar',
+        'enable reviews'
+      ],
+      tool: 'update_store_setting',
+      pattern: 'update_store_setting(setting="SETTING_NAME", value=true|false)',
+      description: 'To show/hide elements, use update_store_setting with boolean values. Common settings: hide_header_cart, hide_header_search, show_language_selector, enable_reviews.',
+      common_toggles: ['hide_header_cart', 'hide_header_checkout', 'hide_header_search', 'show_permanent_search', 'show_language_selector', 'enable_reviews', 'enable_product_filters']
+    }
+  ];
+}
+
+/**
  * Slot System Knowledge
  */
 function getSlotSystemKnowledge() {
@@ -1315,6 +1392,79 @@ async function saveContextDocument(type, item) {
   } else {
     docData.created_at = new Date().toISOString();
     await masterDbClient.from('ai_context_documents').insert(docData);
+  }
+}
+
+/**
+ * Save operation document for common AI operations
+ * These help the AI understand which tool to use for common requests
+ */
+async function saveOperationDocument(op) {
+  const title = op.name;
+
+  const { data: existing } = await masterDbClient
+    .from('ai_context_documents')
+    .select('id')
+    .eq('title', title)
+    .eq('type', 'operation_pattern')
+    .maybeSingle();
+
+  // Format content with examples and pattern
+  const content = `## ${op.name}
+
+**Operation Type:** ${op.operation_type}
+**Tool to Use:** ${op.tool}
+
+**Pattern:**
+\`${op.pattern}\`
+
+**Description:** ${op.description}
+
+**Example User Requests:**
+${op.examples.map(e => `- "${e}"`).join('\n')}
+
+${op.related_settings ? `**Related Settings:** ${op.related_settings.join(', ')}` : ''}
+${op.page_types ? `**Page Types:** ${op.page_types.join(', ')}` : ''}
+${op.common_toggles ? `**Common Toggles:** ${op.common_toggles.join(', ')}` : ''}`;
+
+  const docData = {
+    type: 'operation_pattern',
+    title,
+    content,
+    category: 'core',
+    priority: 95,  // High priority - show before general docs
+    mode: 'store_editing',
+    is_active: true,
+    metadata: {
+      operation_type: op.operation_type,
+      tool: op.tool,
+      examples: op.examples,
+      trained_at: new Date().toISOString()
+    },
+    updated_at: new Date().toISOString()
+  };
+
+  let docId;
+  if (existing) {
+    await masterDbClient.from('ai_context_documents').update(docData).eq('id', existing.id);
+    docId = existing.id;
+  } else {
+    docData.created_at = new Date().toISOString();
+    const { data: inserted } = await masterDbClient
+      .from('ai_context_documents')
+      .insert(docData)
+      .select('id')
+      .single();
+    docId = inserted?.id;
+  }
+
+  // Generate embedding for semantic search
+  if (docId) {
+    try {
+      await embeddingService.embedContextDocument(docId);
+    } catch (e) {
+      console.log(`   ⚠️ Embedding generation failed for ${title}: ${e.message}`);
+    }
   }
 }
 
