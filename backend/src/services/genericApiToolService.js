@@ -57,11 +57,46 @@ class GenericApiToolService {
       // EXPLORATION TOOLS (Claude Code-like)
       // ============================================
 
+      // LEARN/TRAIN - Auto-populate AI tables from discoveries
+      {
+        name: 'learn',
+        description: `Auto-train AI knowledge by saving discoveries to AI tables.
+Call this after exploring to save what you learned for future use.
+
+Use cases:
+- After explore_schema finds a table not in ai_entity_definitions → learn it
+- After discovering a new pattern → save to ai_code_patterns
+- After successful interaction → save to ai_learning_insights
+
+This makes the AI smarter over time without manual data entry.`,
+        input_schema: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['entity', 'pattern', 'context', 'insight'],
+              description: 'What to learn: entity (table schema), pattern (code pattern), context (documentation), insight (successful interaction)'
+            },
+            data: {
+              type: 'object',
+              description: 'The knowledge to save - structure depends on type'
+            },
+            source: {
+              type: 'string',
+              description: 'Where this knowledge came from (e.g., "exploration", "user_request", "successful_operation")'
+            }
+          },
+          required: ['type', 'data']
+        }
+      },
+
       // EXPLORE SCHEMA - Discover database structure
       {
         name: 'explore_schema',
         description: `Discover database tables and their columns. Use this FIRST when you need to understand where data is stored.
 Like exploring a codebase - discover before acting.
+
+AUTO-LEARNING: When gaps are found, automatically saves discoveries to AI tables.
 
 Examples:
 - "Where is the store logo stored?" → explore_schema to find logo-related columns
@@ -699,6 +734,9 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         // ============================================
         // EXPLORATION TOOLS (Claude Code-like)
         // ============================================
+        case 'learn':
+          return await this._executeLearn(input, context);
+
         case 'explore_schema':
           return await this._executeExploreSchema(input, context);
 
@@ -780,8 +818,144 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
   // ============================================
 
   /**
+   * Auto-learn: Save discoveries to AI tables
+   * Makes the AI smarter over time without manual data entry
+   */
+  async _executeLearn({ type, data, source = 'exploration' }, context) {
+    const { masterDbClient } = require('../database/masterConnection');
+
+    try {
+      switch (type) {
+        case 'entity': {
+          // Learn a table schema → save to ai_entity_definitions
+          const { table_name, columns, description } = data;
+
+          // Check if already exists
+          const { data: existing } = await masterDbClient
+            .from('ai_entity_definitions')
+            .select('id')
+            .eq('table_name', table_name)
+            .maybeSingle();
+
+          if (existing) {
+            // Update existing
+            const { error } = await masterDbClient
+              .from('ai_entity_definitions')
+              .update({
+                fields: columns.reduce((acc, c) => {
+                  acc[c.name] = { type: c.type, description: c.description || `${c.name} field` };
+                  return acc;
+                }, {}),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existing.id);
+
+            if (error) throw error;
+            return { success: true, action: 'updated', table: table_name, message: `Updated ai_entity_definitions for ${table_name}` };
+          }
+
+          // Create new
+          const { error } = await masterDbClient
+            .from('ai_entity_definitions')
+            .insert({
+              entity_name: table_name,
+              display_name: table_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              description: description || `${table_name} table`,
+              table_name: table_name,
+              fields: columns.reduce((acc, c) => {
+                acc[c.name] = { type: c.type, description: c.description || `${c.name} field` };
+                return acc;
+              }, {}),
+              supported_operations: ['list', 'get', 'create', 'update', 'delete'],
+              is_active: true,
+              category: 'auto_learned',
+              priority: 30,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) throw error;
+          return { success: true, action: 'created', table: table_name, message: `Learned ${table_name} schema → saved to ai_entity_definitions` };
+        }
+
+        case 'pattern': {
+          // Learn a code pattern → save to ai_code_patterns
+          const { name, pattern_type, code, description } = data;
+
+          const { error } = await masterDbClient
+            .from('ai_code_patterns')
+            .upsert({
+              name,
+              pattern_type: pattern_type || 'ui_component',
+              description: description || `${name} pattern`,
+              code: typeof code === 'object' ? JSON.stringify(code) : code,
+              language: 'javascript',
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'name' });
+
+          if (error) throw error;
+          return { success: true, action: 'saved', name, message: `Learned pattern "${name}" → saved to ai_code_patterns` };
+        }
+
+        case 'context': {
+          // Learn context/documentation → save to ai_context_documents
+          const { title, content, category, doc_type } = data;
+
+          const { error } = await masterDbClient
+            .from('ai_context_documents')
+            .insert({
+              type: doc_type || 'reference',
+              title,
+              content,
+              category: category || 'auto_learned',
+              priority: 30,
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) throw error;
+          return { success: true, action: 'created', title, message: `Learned context "${title}" → saved to ai_context_documents` };
+        }
+
+        case 'insight': {
+          // Learn from successful interaction → save to ai_learning_insights
+          const { pattern_description, entity, example_prompts, was_successful } = data;
+
+          const { error } = await masterDbClient
+            .from('ai_learning_insights')
+            .insert({
+              insight_type: was_successful ? 'successful_pattern' : 'common_failure',
+              entity,
+              pattern_description,
+              example_prompts: example_prompts || [],
+              success_count: was_successful ? 1 : 0,
+              failure_count: was_successful ? 0 : 1,
+              confidence_score: 0.5,
+              is_applied: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) throw error;
+          return { success: true, action: 'recorded', message: `Learned insight → saved to ai_learning_insights` };
+        }
+
+        default:
+          return { success: false, error: `Unknown learning type: ${type}` };
+      }
+    } catch (error) {
+      console.error('Learning failed:', error);
+      return { success: false, error: error.message, hint: 'Check AI table permissions and structure' };
+    }
+  }
+
+  /**
    * Explore schema - DB is truth, AI tables are hints
    * Always explores actual DB, enriches with AI hints if available
+   * AUTO-LEARNS: Saves discoveries to AI tables when gaps are found
    */
   async _executeExploreSchema({ table, search }, context) {
     const { storeId } = context;
@@ -833,6 +1007,25 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       const aiFields = aiHints?.fields ? Object.keys(aiHints.fields) : [];
       const gaps = actualColumns.filter(c => !aiFields.includes(c.name)).map(c => c.name);
 
+      // AUTO-LEARN: If no AI hints or significant gaps, save to AI tables
+      let learned = null;
+      if (!aiHints || gaps.length > actualColumns.length * 0.5) {
+        try {
+          learned = await this._executeLearn({
+            type: 'entity',
+            data: {
+              table_name: table,
+              columns: actualColumns,
+              description: `Auto-learned: ${table} table with ${actualColumns.length} columns`
+            },
+            source: 'auto_exploration'
+          }, context);
+        } catch (e) {
+          // Learning failed, continue without it
+          console.log('Auto-learning failed:', e.message);
+        }
+      }
+
       return {
         success: true,
         table,
@@ -845,12 +1038,19 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
           apiEndpoint: aiHints.api_endpoint,
           examplePrompts: aiHints.example_prompts?.slice(0, 3)
         } : null,
-        // Flag gaps for potential training data updates
-        gaps: gaps.length > 0 ? {
+        // Auto-learning status
+        learned: learned?.success ? {
+          action: learned.action,
+          message: learned.message
+        } : null,
+        // Flag remaining gaps
+        gaps: gaps.length > 0 && !learned?.success ? {
           missingFromAiTables: gaps,
           suggestion: `These columns exist in DB but not in ai_entity_definitions: ${gaps.join(', ')}`
         } : null,
-        message: `Explored ${table}: ${actualColumns.length} columns` + (aiHints ? ' (with AI hints)' : ' (no AI hints available)')
+        message: `Explored ${table}: ${actualColumns.length} columns` +
+          (aiHints ? ' (with AI hints)' : ' (no AI hints)') +
+          (learned?.success ? ` - AUTO-LEARNED!` : '')
       };
     }
 
@@ -2183,78 +2383,77 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
   getSystemPrompt() {
     return `You are an AI assistant for managing an e-commerce store. Work like Claude Code - EXPLORE first, UNDERSTAND the system, then ACT intelligently.
 
+## SELF-LEARNING AI
+
+You automatically learn and get smarter over time:
+- When you explore a table, discoveries are AUTO-SAVED to AI tables
+- No manual training needed - you train yourself as you work
+- AI tables are hints/cache, actual DB is always truth
+- Use \`learn\` tool to explicitly save patterns, insights, or context
+
 ## EXPLORATION-FIRST WORKFLOW
 
 **Before making any changes**, understand the system:
-1. Use \`explore_schema\` to discover entities from ai_entity_definitions
-2. Use \`get_ai_context\` to read architecture documentation
+1. Use \`explore_schema\` to discover tables (auto-learns if not in AI tables)
+2. Use \`get_system_overview\` for architecture, admin sidebar, features
 3. Use \`discover_components\` to see available UI components
-4. Use \`query_database\` to read current data/configurations
+4. Use \`query_database\` to read current data
 
-This is NOT hardcoded knowledge - you DISCOVER it dynamically from the database.
-
-## KNOWLEDGE SOURCES (AI Tables)
-
-Your knowledge comes from these master database tables:
-- **ai_entity_definitions**: Schema definitions, fields, operations, intent keywords
-- **ai_context_documents**: Architecture docs, tutorials, best practices
-- **ai_code_patterns**: Reusable code patterns (ui_component, api, etc.)
-- **ai_plugin_examples**: Working component/plugin examples
-
-Always query these tables to understand the system before acting.
+The LLM's intelligence + exploration = understanding. AI tables are just cache.
 
 ## TOOL USAGE
 
-### Exploration Tools (Use FIRST):
-- \`explore_schema\`: Discover entities and their fields from ai_entity_definitions
-- \`get_ai_context\`: Get architecture docs from ai_context_documents
-- \`discover_components\`: Find available slot types from ai_code_patterns
-- \`read_component\`: Understand how a specific component works
+### Learning Tools:
+- \`learn\`: Explicitly save knowledge (entity schemas, patterns, insights)
+  - Called automatically by explore_schema when gaps found
+  - Use manually after successful operations to save patterns
+
+### Exploration Tools:
+- \`explore_schema\`: Discover tables, AUTO-LEARNS missing schemas
+- \`get_system_overview\`: Architecture, admin sidebar, features
+- \`discover_components\`: Find slot types from ai_code_patterns
+- \`get_ai_context\`: Get docs from ai_context_documents
 - \`query_database\`: Read any table directly
 
-### Action Tools (Use AFTER exploring):
-- \`update_store_setting\`: Update logo, name, theme (auto-discovers location)
+### Action Tools:
+- \`update_store_setting\`: Update logo, name, theme
 - \`configure_layout\`: Add/update/remove slots in page layouts
-- \`create_component\`: Create new slot type when one doesn't exist
+- \`create_component\`: Create new slot type (saved to plugin_registry)
 - \`create_record\` / \`update_record\`: CRUD on any entity
-- \`update_styling\`: Change visual appearance
 
 ## INTELLIGENT COMPONENT CREATION
 
-When user requests a component that doesn't exist (e.g., "Add a mega menu"):
+When user requests something that doesn't exist:
 1. Use \`discover_components\` to check if it exists
-2. If NOT found: "I don't see a mega-menu component. Would you like me to create one?"
-3. If YES: Use \`create_component\` to register it in plugin_registry
-4. Then use \`configure_layout\` to add it to the page
+2. If NOT found: "I don't see that component. Want me to create it?"
+3. If YES: \`create_component\` → saves to plugin_registry
+4. Then \`configure_layout\` to add it to page
+5. Optionally: \`learn\` to save as pattern for future
 
 ## EXAMPLES
 
-**User: "Add this image as my store logo"**
-1. explore_schema(search="logo") → Find logo_url in stores table
-2. update_store_setting(setting="logo_url", value="<image_url>")
+**User: "Add this logo"**
+1. explore_schema(search="logo") → Finds stores.logo_url, AUTO-LEARNS if needed
+2. update_store_setting(setting="logo_url", value="<url>")
 
-**User: "Add a mega menu with categories"**
-1. discover_components(search="mega-menu") → Check if exists
-2. If not found: Ask user if they want to create it
+**User: "Add mega menu"**
+1. discover_components(search="mega-menu") → Not found
+2. "Want me to create a mega-menu component?"
 3. create_component(name="mega-menu", definition={...})
 4. configure_layout(pageType="header", operation="add_slot", slotType="mega-menu")
+5. learn(type="pattern", data={name:"mega-menu", ...}) → Saves for future
 
-**User: "How do slots work?"**
-1. get_ai_context(type="architecture", search="slots")
-2. explore_schema(table="slot_configurations")
-3. Return comprehensive explanation from discovered knowledge
-
-**User: "Change product title color to green"**
-1. explore_schema(search="product") → Understand product page structure
-2. update_styling(target="product-title", styles={color: "green"})
+**User: "What admin features exist?"**
+1. get_system_overview(area="admin_features")
+2. Explain based on discovered info
 
 ## GUIDELINES
 
-- EXPLORE before acting - don't assume, discover
-- Use ai_entity_definitions for accurate field/operation info
-- Create new components via plugin_registry when needed
-- Always confirm destructive operations
-- Explain what you discovered and what you're doing`;
+- LLM intelligence + exploration = understanding
+- AI tables are cache/hints, DB is truth
+- Auto-learn fills gaps as you explore
+- Use \`learn\` after successful complex operations
+- Always confirm destructive actions`;
   }
 }
 
