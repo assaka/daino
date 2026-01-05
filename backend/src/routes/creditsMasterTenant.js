@@ -247,18 +247,23 @@ router.get('/usage', authMiddleware, async (req, res) => {
     const storeIds = [...new Set(usage.map(u => u.store_id).filter(Boolean))];
     let storeNames = {};
 
+    console.log('[CREDIT_USAGE] Store IDs from usage:', storeIds);
+
     if (storeIds.length > 0) {
-      const { data: stores, error: storesError } = await masterDbClient
+      // Get all stores for this user first
+      const { data: userStores, error: userStoresError } = await masterDbClient
         .from('stores')
         .select('id, name')
-        .in('id', storeIds);
+        .eq('user_id', userId);
 
-      if (storesError) {
-        console.error('Error fetching store names:', storesError);
+      console.log('[CREDIT_USAGE] User stores:', userStores?.map(s => ({ id: s.id, name: s.name })));
+
+      if (userStoresError) {
+        console.error('Error fetching user stores:', userStoresError);
       }
 
-      if (stores && stores.length > 0) {
-        storeNames = stores.reduce((acc, s) => {
+      if (userStores && userStores.length > 0) {
+        storeNames = userStores.reduce((acc, s) => {
           acc[s.id] = s.name;
           return acc;
         }, {});
