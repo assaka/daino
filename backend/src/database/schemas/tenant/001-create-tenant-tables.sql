@@ -1973,7 +1973,8 @@ CREATE TABLE IF NOT EXISTS customers (
   is_blacklisted BOOLEAN DEFAULT false,
   blacklist_reason TEXT,
   blacklisted_at TIMESTAMP,
-  demo BOOLEAN DEFAULT false
+  demo BOOLEAN DEFAULT false,
+  google_id VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS delivery_settings (

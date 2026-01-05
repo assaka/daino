@@ -1,23 +1,27 @@
 /**
  * Generic API Tool Service
  *
- * Provides a small set of generic tools that can call ANY existing API endpoint.
- * The LLM uses RAG context (API documentation) to figure out which endpoint to call.
+ * Provides a small set of generic tools that work DIRECTLY with the database.
+ * The LLM uses RAG context to understand the store architecture.
  *
  * ARCHITECTURE:
  * 1. User says "Add a mega menu with categories"
- * 2. LLM reads API docs from RAG context
- * 3. LLM decides: call_api("POST", "/api/navigation/mega-menu", { ... })
- * 4. This service executes the API call internally
+ * 2. LLM reads architecture docs from RAG context
+ * 3. LLM decides: configure_layout(operation="add_slot", slotType="mega-menu", ...)
+ * 4. This service writes directly to slot_configurations table
  * 5. Result returned to LLM for response generation
  *
- * BENEFITS:
- * - No need to maintain 100+ tool definitions
- * - Automatically works with new endpoints
- * - LLM intelligence handles routing
+ * KEY TABLES:
+ * - slot_configurations: Page layouts (header, product, category, cart, etc.)
+ * - products: Product data
+ * - categories: Category data
+ * - orders: Order data
+ * - customers: Customer data
+ * - coupons: Discount coupons
  */
 
 const axios = require('axios');
+const ConnectionManager = require('./database/ConnectionManager');
 
 class GenericApiToolService {
   constructor() {
@@ -247,21 +251,24 @@ For partial updates, only include the fields you want to change.`,
         }
       },
 
-      // 8. SLOT/LAYOUT CONFIGURATION
+      // 8. SLOT/LAYOUT CONFIGURATION - WORKS DIRECTLY WITH slot_configurations TABLE
       {
         name: 'configure_layout',
-        description: `Configure page layouts and slots. Use for:
-- Changing slot order on product/category/cart pages
-- Updating slot content or styling
-- Adding/removing slots from pages
-- Configuring page templates`,
+        description: `Configure page layouts and slots. Writes directly to slot_configurations table.
+Use for:
+- Adding mega menus, banners, navigation elements to header
+- Changing slot order on product/category/cart/checkout pages
+- Adding/removing content slots (text, images, buttons, containers)
+- Updating slot content, styling, or position
+
+IMPORTANT: This modifies the slot_configurations table directly. Changes are saved as draft.`,
         input_schema: {
           type: 'object',
           properties: {
             pageType: {
               type: 'string',
-              enum: ['product', 'category', 'cart', 'checkout', 'homepage', 'header', 'footer'],
-              description: 'Page type to configure'
+              enum: ['product', 'category', 'cart', 'checkout', 'success', 'header', 'footer', 'homepage'],
+              description: 'Page type to configure (header for mega menus/navigation)'
             },
             operation: {
               type: 'string',
@@ -270,11 +277,24 @@ For partial updates, only include the fields you want to change.`,
             },
             slotId: {
               type: 'string',
-              description: 'Slot ID for slot-specific operations'
+              description: 'Slot ID for update/remove operations'
+            },
+            slotType: {
+              type: 'string',
+              enum: ['container', 'text', 'html', 'image', 'button', 'mega-menu', 'navigation', 'banner', 'product-grid', 'category-list'],
+              description: 'Type of slot to add (for add_slot operation)'
             },
             config: {
               type: 'object',
-              description: 'Configuration data for the operation'
+              description: 'Slot configuration: { label, content, styles, children, position, categories (for mega-menu) }',
+              properties: {
+                label: { type: 'string', description: 'Display label for the slot' },
+                content: { type: 'string', description: 'Text/HTML content for text/html slots' },
+                styles: { type: 'object', description: 'CSS styles object' },
+                position: { type: 'string', enum: ['top', 'bottom'], description: 'Where to add the slot' },
+                categories: { type: 'array', description: 'Category IDs for mega-menu slots' },
+                children: { type: 'array', description: 'Child slot IDs for container slots' }
+              }
             }
           },
           required: ['pageType', 'operation']
@@ -569,82 +589,354 @@ For partial updates, only include the fields you want to change.`,
   }
 
   /**
-   * Configure page layouts and slots
+   * Configure page layouts and slots - WORKS DIRECTLY WITH DATABASE
    */
-  async _executeConfigureLayout({ pageType, operation, slotId, config }, context) {
-    let endpoint = `/api/slot-configurations/${pageType}`;
-    let method = 'GET';
-    let data = null;
+  async _executeConfigureLayout({ pageType, operation, slotId, slotType, config }, context) {
+    const { storeId, userId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     switch (operation) {
-      case 'get':
-        method = 'GET';
-        break;
-      case 'update':
-        method = 'PUT';
-        data = config;
-        break;
-      case 'add_slot':
-        method = 'POST';
-        endpoint = `${endpoint}/slots`;
-        data = config;
-        break;
-      case 'remove_slot':
-        method = 'DELETE';
-        endpoint = `${endpoint}/slots/${slotId}`;
-        break;
-      case 'reorder_slots':
-        method = 'PUT';
-        endpoint = `${endpoint}/reorder`;
-        data = config;
-        break;
-      case 'update_slot':
-        method = 'PUT';
-        endpoint = `${endpoint}/slots/${slotId}`;
-        data = config;
-        break;
+      case 'get': {
+        // Get current layout configuration
+        const { data, error } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('page_type', pageType)
+          .in('status', ['draft', 'published'])
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          pageType,
+          operation: 'get',
+          data: data?.configuration || null,
+          message: data ? `Retrieved ${pageType} layout` : `No layout found for ${pageType}`
+        };
+      }
+
+      case 'add_slot': {
+        // Get current draft configuration
+        const { data: current, error: fetchError } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('page_type', pageType)
+          .in('status', ['draft', 'published'])
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        if (!current) {
+          return {
+            success: false,
+            error: `No configuration found for ${pageType}. Initialize the page first.`
+          };
+        }
+
+        // Parse existing configuration
+        const existingConfig = current.configuration || { slots: {}, rootSlots: [] };
+        const newSlotId = slotId || `slot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+        // Create new slot definition
+        const newSlot = {
+          id: newSlotId,
+          type: slotType || config?.type || 'container',
+          label: config?.label || `New ${slotType || 'Slot'}`,
+          content: config?.content || '',
+          styles: config?.styles || {},
+          children: config?.children || [],
+          ...config
+        };
+
+        // Add to slots object
+        existingConfig.slots = existingConfig.slots || {};
+        existingConfig.slots[newSlotId] = newSlot;
+
+        // Add to rootSlots if it's a top-level slot
+        if (config?.isRoot !== false) {
+          existingConfig.rootSlots = existingConfig.rootSlots || [];
+          if (config?.position === 'top') {
+            existingConfig.rootSlots.unshift(newSlotId);
+          } else {
+            existingConfig.rootSlots.push(newSlotId);
+          }
+        }
+
+        // Update the configuration
+        const { error: updateError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            configuration: existingConfig,
+            has_unpublished_changes: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', current.id);
+
+        if (updateError) throw updateError;
+
+        return {
+          success: true,
+          pageType,
+          operation: 'add_slot',
+          slotId: newSlotId,
+          message: `Added ${slotType || 'slot'} "${newSlot.label}" to ${pageType} page`
+        };
+      }
+
+      case 'update_slot': {
+        // Get current configuration
+        const { data: current, error: fetchError } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('page_type', pageType)
+          .in('status', ['draft', 'published'])
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (!current) {
+          return { success: false, error: `No configuration found for ${pageType}` };
+        }
+
+        const existingConfig = current.configuration || { slots: {} };
+
+        if (!existingConfig.slots?.[slotId]) {
+          return { success: false, error: `Slot ${slotId} not found in ${pageType}` };
+        }
+
+        // Merge updates into existing slot
+        existingConfig.slots[slotId] = {
+          ...existingConfig.slots[slotId],
+          ...config,
+          styles: {
+            ...(existingConfig.slots[slotId].styles || {}),
+            ...(config?.styles || {})
+          }
+        };
+
+        // Update
+        const { error: updateError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            configuration: existingConfig,
+            has_unpublished_changes: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', current.id);
+
+        if (updateError) throw updateError;
+
+        return {
+          success: true,
+          pageType,
+          operation: 'update_slot',
+          slotId,
+          message: `Updated slot ${slotId} in ${pageType} page`
+        };
+      }
+
+      case 'remove_slot': {
+        const { data: current, error: fetchError } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('page_type', pageType)
+          .in('status', ['draft', 'published'])
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (!current) {
+          return { success: false, error: `No configuration found for ${pageType}` };
+        }
+
+        const existingConfig = current.configuration || { slots: {}, rootSlots: [] };
+
+        // Remove from slots
+        delete existingConfig.slots[slotId];
+
+        // Remove from rootSlots
+        existingConfig.rootSlots = (existingConfig.rootSlots || []).filter(id => id !== slotId);
+
+        // Update
+        const { error: updateError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            configuration: existingConfig,
+            has_unpublished_changes: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', current.id);
+
+        if (updateError) throw updateError;
+
+        return {
+          success: true,
+          pageType,
+          operation: 'remove_slot',
+          slotId,
+          message: `Removed slot ${slotId} from ${pageType} page`
+        };
+      }
+
+      case 'reorder_slots': {
+        const { data: current, error: fetchError } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('page_type', pageType)
+          .in('status', ['draft', 'published'])
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        if (!current) {
+          return { success: false, error: `No configuration found for ${pageType}` };
+        }
+
+        const existingConfig = current.configuration || {};
+
+        // Update rootSlots order
+        if (config?.rootSlots) {
+          existingConfig.rootSlots = config.rootSlots;
+        }
+
+        const { error: updateError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            configuration: existingConfig,
+            has_unpublished_changes: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', current.id);
+
+        if (updateError) throw updateError;
+
+        return {
+          success: true,
+          pageType,
+          operation: 'reorder_slots',
+          message: `Reordered slots in ${pageType} page`
+        };
+      }
+
+      default:
+        return { success: false, error: `Unknown operation: ${operation}` };
     }
-
-    const response = await this._makeRequest(method, endpoint, data, null, context);
-
-    return {
-      success: true,
-      pageType,
-      operation,
-      result: response.data,
-      message: `Layout ${operation} completed for ${pageType} page`
-    };
   }
 
   /**
-   * Update styling/theme
+   * Update styling/theme - WORKS DIRECTLY WITH DATABASE
    */
   async _executeUpdateStyling({ target, styles, pageType }, context) {
-    // Determine endpoint based on target
-    let endpoint;
-    let data;
+    const { storeId } = context;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    if (target === 'theme') {
-      endpoint = '/api/theme-defaults';
-      data = { styles };
-    } else {
-      // Element-specific styling goes to slot configurations
-      endpoint = `/api/slot-configurations/${pageType || 'global'}/styles`;
-      data = {
-        element: target,
-        styles
+    // Get current configuration for the page type
+    const targetPage = pageType || 'product'; // Default to product page
+
+    const { data: current, error: fetchError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('page_type', targetPage)
+      .in('status', ['draft', 'published'])
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    if (!current) {
+      return {
+        success: false,
+        error: `No configuration found for ${targetPage}. Initialize the page first.`
       };
     }
 
-    const response = await this._makeRequest('PUT', endpoint, data, null, context);
+    const existingConfig = current.configuration || { slots: {}, globalStyles: {} };
+
+    // Convert camelCase styles to CSS format
+    const cssStyles = {};
+    for (const [key, value] of Object.entries(styles)) {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      cssStyles[cssKey] = value;
+    }
+
+    if (target === 'theme' || target === 'global') {
+      // Update global styles
+      existingConfig.globalStyles = {
+        ...(existingConfig.globalStyles || {}),
+        ...cssStyles
+      };
+    } else {
+      // Find slot by type/name and update its styles
+      const slotId = this._findSlotByTarget(existingConfig.slots, target);
+
+      if (slotId && existingConfig.slots[slotId]) {
+        existingConfig.slots[slotId].styles = {
+          ...(existingConfig.slots[slotId].styles || {}),
+          ...cssStyles
+        };
+      } else {
+        // Store as element-specific override
+        existingConfig.elementStyles = existingConfig.elementStyles || {};
+        existingConfig.elementStyles[target] = {
+          ...(existingConfig.elementStyles[target] || {}),
+          ...cssStyles
+        };
+      }
+    }
+
+    // Update the configuration
+    const { error: updateError } = await tenantDb
+      .from('slot_configurations')
+      .update({
+        configuration: existingConfig,
+        has_unpublished_changes: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', current.id);
+
+    if (updateError) throw updateError;
 
     return {
       success: true,
       target,
-      styles,
-      result: response.data,
-      message: `Updated styling for ${target}`
+      styles: cssStyles,
+      pageType: targetPage,
+      message: `Updated ${target} styling on ${targetPage} page`
     };
+  }
+
+  /**
+   * Helper: Find slot ID by target name (e.g., "product-title", "add-to-cart")
+   */
+  _findSlotByTarget(slots, target) {
+    if (!slots) return null;
+
+    // Direct match
+    if (slots[target]) return target;
+
+    // Search by type or label
+    for (const [slotId, slot] of Object.entries(slots)) {
+      if (slot.type === target || slot.label?.toLowerCase().includes(target.toLowerCase())) {
+        return slotId;
+      }
+    }
+
+    return null;
   }
 
   /**

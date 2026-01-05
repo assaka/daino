@@ -280,7 +280,6 @@ const CmsBlockSlot = ({ slot, context, className, styles }) => {
           setCmsContent(blocks[0].content || '');
         }
       } catch (error) {
-        console.error('Error loading CMS block:', error);
       } finally {
         setLoading(false);
       }
@@ -618,11 +617,6 @@ export function UnifiedSlotRenderer({
 
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
-
-  // Debug: Log what slots are being rendered
-  if (parentId === 'products_container' || parentId === null) {
-    console.log('[UnifiedSlotRenderer] Rendering slots for parentId:', parentId, 'childSlots:', childSlots.map(s => s.id));
-  }
 
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
@@ -1223,7 +1217,6 @@ export function UnifiedSlotRenderer({
             const store = categoryData?.store || productData?.store;
 
             if (!product?.id || !store?.id) {
-              console.error('Missing product or store data for add to cart');
               return;
             }
 
@@ -1275,7 +1268,6 @@ export function UnifiedSlotRenderer({
                 setAddToCartLoading(false);
               }
             } catch (error) {
-              console.error('Failed to add to cart:', error);
               setAddToCartLoading(false);
 
               // Get translation from ui_translations
@@ -1605,10 +1597,6 @@ export function UnifiedSlotRenderer({
     // Component Element
     if (type === 'component') {
       const componentName = slot.component || slot.metadata?.component;
-
-      if (id === 'pagination_container') {
-        console.log('[UnifiedSlotRenderer] Found pagination_container! componentName:', componentName, 'hasInRegistry:', ComponentRegistry.has(componentName));
-      }
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);

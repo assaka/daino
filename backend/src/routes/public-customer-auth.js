@@ -2,9 +2,12 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const emailService = require('../services/email-service');
 const { buildStoreUrl, getStoreUrlFromRequest, buildUrlFromRequest } = require('../utils/domainConfig');
+const { masterDbClient } = require('../database/masterConnection');
+const { generateToken } = require('../utils/jwt');
 
 const router = express.Router();
 
