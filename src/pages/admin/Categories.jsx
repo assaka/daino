@@ -1022,15 +1022,18 @@ export default function Categories() {
             )}
           </div>
           <div className="md:flex space-y-2 md:space-y-0 gap-2 pt-2 lg:pt-0 ">
-            <Button
-              onClick={() => setShowDeleteAllConfirm(true)}
-              variant="outline"
-              className="mr-2 border-red-600 text-red-600 hover:bg-red-50"
-              disabled={!selectedStore || totalItems === 0}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete All ({totalItems})
-            </Button>
+            {/* Only show Delete All button if there are non-root categories */}
+            {totalItems - rootCategories.length > 0 && (
+              <Button
+                onClick={() => setShowDeleteAllConfirm(true)}
+                variant="outline"
+                className="mr-2 border-red-600 text-red-600 hover:bg-red-50"
+                disabled={!selectedStore}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete All ({totalItems - rootCategories.length})
+              </Button>
+            )}
             <Button
               onClick={() => setAiOptimizerMode(!aiOptimizerMode)}
               variant={aiOptimizerMode ? "default" : "outline"}
