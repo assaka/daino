@@ -519,10 +519,19 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 // The JWT may not have store_id even if user has stores
                 try {
                   const dropdownResponse = await apiClient.get('/stores/dropdown');
-                  const stores = dropdownResponse.data || dropdownResponse;
+
+                  // Handle both wrapped { success, data } and direct array responses
+                  let stores = [];
+                  if (Array.isArray(dropdownResponse)) {
+                    stores = dropdownResponse;
+                  } else if (dropdownResponse?.success && Array.isArray(dropdownResponse.data)) {
+                    stores = dropdownResponse.data;
+                  } else if (Array.isArray(dropdownResponse?.data)) {
+                    stores = dropdownResponse.data;
+                  }
 
                   // If user has stores, select one
-                  if (stores && stores.length > 0) {
+                  if (stores.length > 0) {
                     // Try to find the store from JWT first (if storeId exists)
                     let selectedStore = storeId ? stores.find(s => s.id === storeId) : null;
 

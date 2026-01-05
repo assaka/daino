@@ -48,8 +48,17 @@ export function AdminLayoutWrapper({ children }) {
       // Check if user has any stores
       const response = await apiClient.get('/stores/dropdown');
 
-      if (response?.data && response.data.length === 0) {
-        console.log('🔍 No stores found, redirecting to onboarding...');
+      // Handle both wrapped { success, data } and direct array responses
+      let stores = [];
+      if (Array.isArray(response)) {
+        stores = response;
+      } else if (response?.success && Array.isArray(response.data)) {
+        stores = response.data;
+      } else if (Array.isArray(response?.data)) {
+        stores = response.data;
+      }
+
+      if (stores.length === 0) {
         navigate('/admin/onboarding', { replace: true });
         return;
       }
