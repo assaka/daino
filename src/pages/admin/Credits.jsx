@@ -66,9 +66,7 @@ export default function Credits() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [stores, setStores] = useState([]);
-  const [usageData, setUsageData] = useState({ usage: [], pagination: {}, summary: {} });
-  const [usageTypes, setUsageTypes] = useState([]);
-  const [usageModels, setUsageModels] = useState([]);
+  const [usageData, setUsageData] = useState({ usage: [], pagination: {}, summary: {}, filters: { types: [], models: [] } });
   const [usageStats, setUsageStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -92,8 +90,6 @@ export default function Credits() {
   useEffect(() => {
     loadUserData();
     loadStores();
-    loadUsageTypes();
-    loadUsageModels();
   }, []);
 
   // Load usage data when filters change
@@ -121,24 +117,6 @@ export default function Credits() {
       setStores(storeData || []);
     } catch (error) {
       console.error('Error loading stores:', error);
-    }
-  };
-
-  const loadUsageTypes = async () => {
-    try {
-      const types = await CreditUsage.getUsageTypes();
-      setUsageTypes(types || []);
-    } catch (error) {
-      console.error('Error loading usage types:', error);
-    }
-  };
-
-  const loadUsageModels = async () => {
-    try {
-      const models = await CreditUsage.getModels();
-      setUsageModels(models || []);
-    } catch (error) {
-      console.error('Error loading usage models:', error);
     }
   };
 
@@ -386,7 +364,10 @@ export default function Credits() {
             <div className="min-w-[200px] max-w-[300px]">
               <label className="text-sm font-medium text-gray-700 mb-1 block">Types</label>
               <MultiSelect
-                options={usageTypes.map(type => ({ value: type.value, label: type.label }))}
+                options={(usageData.filters?.types || []).map(type => ({
+                  value: type,
+                  label: usageTypeLabels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                }))}
                 value={filters.usage_types}
                 onChange={(value) => handleFilterChange('usage_types', value)}
                 placeholder="All Types"
@@ -397,7 +378,10 @@ export default function Credits() {
             <div className="min-w-[200px] max-w-[300px]">
               <label className="text-sm font-medium text-gray-700 mb-1 block">LLM Model</label>
               <MultiSelect
-                options={usageModels.map(model => ({ value: model.value, label: model.label }))}
+                options={(usageData.filters?.models || []).map(model => ({
+                  value: model,
+                  label: model
+                }))}
                 value={filters.models}
                 onChange={(value) => handleFilterChange('models', value)}
                 placeholder="All Models"

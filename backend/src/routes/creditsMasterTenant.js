@@ -250,27 +250,22 @@ router.get('/usage', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get store names for the usage records
+    // Get store names for the usage records - query by store IDs directly
     const storeIds = [...new Set(usage.map(u => u.store_id).filter(Boolean))];
     let storeNames = {};
 
-    console.log('[CREDIT_USAGE] Store IDs from usage:', storeIds);
-
     if (storeIds.length > 0) {
-      // Get all stores for this user first
-      const { data: userStores, error: userStoresError } = await masterDbClient
+      const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
         .select('id, name')
-        .eq('user_id', userId);
+        .in('id', storeIds);
 
-      console.log('[CREDIT_USAGE] User stores:', userStores?.map(s => ({ id: s.id, name: s.name })));
-
-      if (userStoresError) {
-        console.error('Error fetching user stores:', userStoresError);
+      if (storesError) {
+        console.error('Error fetching stores:', storesError);
       }
 
-      if (userStores && userStores.length > 0) {
-        storeNames = userStores.reduce((acc, s) => {
+      if (stores && stores.length > 0) {
+        storeNames = stores.reduce((acc, s) => {
           acc[s.id] = s.name;
           return acc;
         }, {});
@@ -280,12 +275,27 @@ router.get('/usage', authMiddleware, async (req, res) => {
     // Calculate totals for the filtered period
     const totalCredits = usage.reduce((sum, u) => sum + parseFloat(u.credits_used || 0), 0);
 
+    // Get ALL distinct types and models for this user (not just filtered results) for filter dropdowns
+    const { data: allTypesData } = await masterDbClient
+      .from('credit_usage')
+      .select('usage_type')
+      .eq('user_id', userId);
+
+    const { data: allModelsData } = await masterDbClient
+      .from('credit_usage')
+      .select('model_used')
+      .eq('user_id', userId)
+      .not('model_used', 'is', null);
+
+    const distinctTypes = [...new Set((allTypesData || []).map(u => u.usage_type).filter(Boolean))];
+    const distinctModels = [...new Set((allModelsData || []).map(u => u.model_used).filter(Boolean))];
+
     res.json({
       success: true,
       data: {
         usage: usage.map(u => ({
           ...u,
-          store_name: u.store_id ? (storeNames[u.store_id] || 'Store Not Found') : 'N/A',
+          store_name: u.store_id ? (storeNames[u.store_id] || u.store_id) : 'N/A',
           credits_used: parseFloat(u.credits_used || 0)
         })),
         pagination: {
@@ -297,6 +307,10 @@ router.get('/usage', authMiddleware, async (req, res) => {
         summary: {
           total_credits_used: totalCredits,
           record_count: usage.length
+        },
+        filters: {
+          types: distinctTypes,
+          models: distinctModels
         }
       }
     });
