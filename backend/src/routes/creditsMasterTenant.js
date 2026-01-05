@@ -248,12 +248,16 @@ router.get('/usage', authMiddleware, async (req, res) => {
     let storeNames = {};
 
     if (storeIds.length > 0) {
-      const { data: stores } = await masterDbClient
+      const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
         .select('id, name')
         .in('id', storeIds);
 
-      if (stores) {
+      if (storesError) {
+        console.error('Error fetching store names:', storesError);
+      }
+
+      if (stores && stores.length > 0) {
         storeNames = stores.reduce((acc, s) => {
           acc[s.id] = s.name;
           return acc;
@@ -269,7 +273,7 @@ router.get('/usage', authMiddleware, async (req, res) => {
       data: {
         usage: usage.map(u => ({
           ...u,
-          store_name: storeNames[u.store_id] || 'Unknown Store',
+          store_name: u.store_id ? (storeNames[u.store_id] || 'Store Not Found') : 'N/A',
           credits_used: parseFloat(u.credits_used || 0)
         })),
         pagination: {
