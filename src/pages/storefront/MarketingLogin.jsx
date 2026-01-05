@@ -98,9 +98,18 @@ export default function MarketingLogin() {
       // Fetch stores and redirect
       try {
         const dropdownResponse = await apiClient.get('/stores/dropdown');
-        const stores = dropdownResponse.data || dropdownResponse;
 
-        if (stores && stores.length > 0) {
+        // Handle both wrapped { success, data } and direct array responses
+        let stores = [];
+        if (Array.isArray(dropdownResponse)) {
+          stores = dropdownResponse;
+        } else if (dropdownResponse?.success && Array.isArray(dropdownResponse.data)) {
+          stores = dropdownResponse.data;
+        } else if (Array.isArray(dropdownResponse?.data)) {
+          stores = dropdownResponse.data;
+        }
+
+        if (stores.length > 0) {
           const selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores[0];
 
           if (selectedStore) {
@@ -227,9 +236,18 @@ export default function MarketingLogin() {
             try {
               const storeId = actualResponse.data?.user?.store_id;
               const dropdownResponse = await apiClient.get('/stores/dropdown');
-              const stores = dropdownResponse.data || dropdownResponse;
 
-              if (stores && stores.length > 0) {
+              // Handle both wrapped { success, data } and direct array responses
+              let stores = [];
+              if (Array.isArray(dropdownResponse)) {
+                stores = dropdownResponse;
+              } else if (dropdownResponse?.success && Array.isArray(dropdownResponse.data)) {
+                stores = dropdownResponse.data;
+              } else if (Array.isArray(dropdownResponse?.data)) {
+                stores = dropdownResponse.data;
+              }
+
+              if (stores.length > 0) {
                 // Try to find the store from JWT first (if storeId exists)
                 let selectedStore = storeId ? stores.find(s => s.id === storeId) : null;
 
