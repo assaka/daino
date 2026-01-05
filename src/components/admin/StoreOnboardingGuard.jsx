@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { api } from '@/services/api';
+import apiClient from '@/utils/api';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -29,17 +29,16 @@ export default function StoreOnboardingGuard({ children }) {
     }
 
     try {
-      // Check if user has any stores
-      const response = await api.get('/api/stores/mt/dropdown');
+      // Check if user has any stores (same endpoint as AdminLayoutWrapper)
+      const response = await apiClient.get('/stores/dropdown');
+      const stores = response?.data || response || [];
 
-      if (response.success && response.data) {
+      if (Array.isArray(stores) && stores.length > 0) {
         // Filter for active stores only
-        const activeStores = response.data.filter(store => store.status === 'active');
-        const activeStoreCount = activeStores.length;
+        const activeStores = stores.filter(store => store.status === 'active' || store.is_active);
 
-        if (activeStoreCount === 0) {
+        if (activeStores.length === 0) {
           // No active stores - redirect to onboarding
-          console.log('No active stores found, redirecting to onboarding...');
           navigate('/admin/onboarding', { replace: true });
           return;
         } else {
@@ -47,9 +46,9 @@ export default function StoreOnboardingGuard({ children }) {
           setHasStores(true);
         }
       } else {
-        // API error - allow access (fail open)
-        console.warn('Failed to check store status, allowing access');
-        setHasStores(true);
+        // No stores at all - redirect to onboarding
+        navigate('/admin/onboarding', { replace: true });
+        return;
       }
     } catch (err) {
       console.error('Store status check error:', err);
