@@ -250,19 +250,15 @@ router.get('/usage', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get store names for the usage records - query by store IDs directly
+    // Get store slugs for the usage records - master stores table only has slug, not name
     const storeIds = [...new Set(usage.map(u => u.store_id).filter(Boolean))];
     let storeNames = {};
-
-    console.log('[CREDIT_USAGE] Looking up stores for IDs:', storeIds);
 
     if (storeIds.length > 0) {
       const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
-        .select('id, name')
+        .select('id, slug')
         .in('id', storeIds);
-
-      console.log('[CREDIT_USAGE] Stores found:', stores?.map(s => ({ id: s.id, name: s.name })));
 
       if (storesError) {
         console.error('Error fetching stores:', storesError);
@@ -270,13 +266,11 @@ router.get('/usage', authMiddleware, async (req, res) => {
 
       if (stores && stores.length > 0) {
         storeNames = stores.reduce((acc, s) => {
-          acc[s.id] = s.name;
+          acc[s.id] = s.slug;
           return acc;
         }, {});
       }
     }
-
-    console.log('[CREDIT_USAGE] Store names map:', storeNames);
 
     // Calculate totals for the filtered period
     const totalCredits = usage.reduce((sum, u) => sum + parseFloat(u.credits_used || 0), 0);
