@@ -390,7 +390,7 @@ class FluxImageProvider {
 
       // Use specified model (flux-dev is cheaper, flux-pro-1.1 is best quality)
       const endpoint = model || 'flux-dev';
-      console.log(`[FluxProvider] Using BFL model: ${endpoint}`);
+      console.log(`[FluxProvider] Using BFL model: ${endpoint}, API key starts with: ${this.bflApiKey?.substring(0, 8)}...`);
 
       if (referenceImageUrl) {
         bflParams.image_url = referenceImageUrl;
