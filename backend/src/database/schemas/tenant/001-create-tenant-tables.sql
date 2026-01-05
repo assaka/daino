@@ -1422,49 +1422,6 @@ CREATE TABLE IF NOT EXISTS category_translations (
   PRIMARY KEY (category_id, language_code)
 );
 
-CREATE TABLE IF NOT EXISTS chat_agents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  status VARCHAR(50) DEFAULT 'offline'::character varying,
-  avatar_url TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS chat_conversations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id UUID,
-  customer_name VARCHAR(255),
-  customer_email VARCHAR(255),
-  status VARCHAR(50) DEFAULT 'open'::character varying,
-  assigned_agent_id UUID,
-  started_at TIMESTAMP DEFAULT NOW(),
-  last_message_at TIMESTAMP,
-  closed_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS chat_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID,
-  message_text TEXT NOT NULL,
-  sender_type VARCHAR(50) NOT NULL,
-  sender_id UUID,
-  sender_name VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS chat_typing_indicators (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID,
-  user_type VARCHAR(50) NOT NULL,
-  user_id UUID,
-  is_typing BOOLEAN DEFAULT false,
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS cms_block_translations (
   cms_block_id UUID NOT NULL,
   language_code VARCHAR(10) NOT NULL,
@@ -3636,10 +3593,6 @@ CREATE INDEX IF NOT EXISTS idx_cms_pages_slug ON cms_pages USING btree (slug);
 
 CREATE INDEX IF NOT EXISTS idx_cms_pages_store_id ON cms_pages USING btree (store_id);
 
-CREATE INDEX IF NOT EXISTS idx_conversations_agent ON chat_conversations USING btree (assigned_agent_id);
-
-CREATE INDEX IF NOT EXISTS idx_conversations_status ON chat_conversations USING btree (status);
-
 CREATE INDEX IF NOT EXISTS idx_cookie_consent_translations_language ON cookie_consent_settings_translations USING btree (language_code);
 
 CREATE INDEX IF NOT EXISTS idx_cookie_consent_translations_settings_id ON cookie_consent_settings_translations USING btree (cookie_consent_settings_id);
@@ -3769,8 +3722,6 @@ CREATE INDEX IF NOT EXISTS idx_media_assets_created_at ON media_assets USING btr
 CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON media_assets USING btree (folder);
 
 CREATE INDEX IF NOT EXISTS idx_media_assets_store_id ON media_assets USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON chat_messages USING btree (conversation_id);
 
 CREATE INDEX IF NOT EXISTS idx_migrations_executed_at ON _migrations USING btree (executed_at);
 
@@ -4007,8 +3958,6 @@ CREATE INDEX IF NOT EXISTS idx_taxes_is_active ON taxes USING btree (is_active);
 CREATE INDEX IF NOT EXISTS idx_taxes_store_id ON taxes USING btree (store_id);
 
 CREATE INDEX IF NOT EXISTS idx_translations_type ON translations USING btree (type);
-
-CREATE INDEX IF NOT EXISTS idx_typing_conversation ON chat_typing_indicators USING btree (conversation_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_store_status_page ON slot_configurations USING btree (user_id, store_id, status, page_type);
 
@@ -4429,10 +4378,6 @@ ALTER TABLE category_seo ADD CONSTRAINT category_seo_language_code_fkey FOREIGN 
 ALTER TABLE category_translations ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE category_translations ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
-
-ALTER TABLE chat_typing_indicators ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
 
 ALTER TABLE cms_block_translations ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
@@ -5726,31 +5671,6 @@ CREATE POLICY tenant_isolation_plugin_configurations ON plugin_configurations
 -- users: Special handling - users can see their own data or service role
 DROP POLICY IF EXISTS tenant_isolation_users ON users;
 CREATE POLICY tenant_isolation_users ON users
-  FOR ALL
-  USING (is_service_role())
-  WITH CHECK (is_service_role());
-
--- chat tables: Service role only for now
-DROP POLICY IF EXISTS tenant_isolation_chat_agents ON chat_agents;
-CREATE POLICY tenant_isolation_chat_agents ON chat_agents
-  FOR ALL
-  USING (is_service_role())
-  WITH CHECK (is_service_role());
-
-DROP POLICY IF EXISTS tenant_isolation_chat_conversations ON chat_conversations;
-CREATE POLICY tenant_isolation_chat_conversations ON chat_conversations
-  FOR ALL
-  USING (is_service_role())
-  WITH CHECK (is_service_role());
-
-DROP POLICY IF EXISTS tenant_isolation_chat_messages ON chat_messages;
-CREATE POLICY tenant_isolation_chat_messages ON chat_messages
-  FOR ALL
-  USING (is_service_role())
-  WITH CHECK (is_service_role());
-
-DROP POLICY IF EXISTS tenant_isolation_chat_typing_indicators ON chat_typing_indicators;
-CREATE POLICY tenant_isolation_chat_typing_indicators ON chat_typing_indicators
   FOR ALL
   USING (is_service_role())
   WITH CHECK (is_service_role());
