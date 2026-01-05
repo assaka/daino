@@ -410,12 +410,12 @@ router.get('/customer/google/callback', async (req, res) => {
 
     if (oauthError) {
       console.error('❌ Google OAuth error:', oauthError);
-      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/default/login?error=oauth_failed`);
     }
 
     if (!code || !state) {
       console.error('❌ Missing code or state in callback');
-      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/default/login?error=oauth_failed`);
     }
 
     // Decode state to get store info
@@ -424,14 +424,14 @@ router.get('/customer/google/callback', async (req, res) => {
       storeInfo = JSON.parse(Buffer.from(state, 'base64').toString('utf8'));
     } catch (e) {
       console.error('❌ Failed to decode state:', e);
-      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/default/login?error=oauth_failed`);
     }
 
     const { store_id, store_slug } = storeInfo;
 
     if (!store_id) {
       console.error('❌ No store_id in state');
-      return res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/default/login?error=oauth_failed`);
     }
 
     // Exchange code for tokens
@@ -451,7 +451,7 @@ router.get('/customer/google/callback', async (req, res) => {
 
     if (tokens.error) {
       console.error('❌ Token exchange error:', tokens.error);
-      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/login?error=oauth_failed`);
     }
 
     // Get user info from Google
@@ -463,7 +463,7 @@ router.get('/customer/google/callback', async (req, res) => {
 
     if (!googleUser.email) {
       console.error('❌ No email in Google profile');
-      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/login?error=oauth_failed`);
     }
 
     console.log('🔍 Google OAuth customer profile:', {
@@ -485,7 +485,7 @@ router.get('/customer/google/callback', async (req, res) => {
 
     if (findError) {
       console.error('❌ Error finding customer:', findError);
-      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/login?error=oauth_failed`);
     }
 
     let customer;
@@ -507,7 +507,7 @@ router.get('/customer/google/callback', async (req, res) => {
 
       if (updateError) {
         console.error('❌ Error updating customer:', updateError);
-        return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+        return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/login?error=oauth_failed`);
       }
 
       customer = updatedCustomer;
@@ -537,7 +537,7 @@ router.get('/customer/google/callback', async (req, res) => {
 
       if (createError) {
         console.error('❌ Error creating customer:', createError);
-        return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/auth?error=oauth_failed`);
+        return res.redirect(`${corsOrigin}/public/${store_slug || 'default'}/login?error=oauth_failed`);
       }
 
       customer = newCustomer;
@@ -557,13 +557,13 @@ router.get('/customer/google/callback', async (req, res) => {
     console.log('✅ Customer Google OAuth successful for:', customer.email);
 
     // Redirect to frontend with token
-    const redirectUrl = `${corsOrigin}/public/${store_slug || 'default'}/auth?token=${token}&oauth=success`;
+    const redirectUrl = `${corsOrigin}/public/${store_slug || 'default'}/login?token=${token}&oauth=success`;
     res.redirect(redirectUrl);
 
   } catch (error) {
     console.error('❌ Customer Google OAuth callback error:', error);
     const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
-    res.redirect(`${corsOrigin}/public/default/auth?error=oauth_failed`);
+    res.redirect(`${corsOrigin}/public/default/login?error=oauth_failed`);
   }
 });
 
