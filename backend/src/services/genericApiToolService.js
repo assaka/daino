@@ -2549,11 +2549,14 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
     let ragContext = '';
 
     try {
-      ragContext = await aiContextService.getContextForQuery({
+      // Use vector/semantic search for better relevance matching
+      // This finds documents semantically similar to the user's query
+      ragContext = await aiContextService.getContextForQueryWithVectors({
         mode,
         category,
         query: userMessage,
-        limit: 15  // 5 docs + 5 patterns + 5 examples
+        limit: 15,  // 5 docs + 5 patterns + 5 examples
+        useVectors: true  // Enable semantic search
       });
 
       if (ragContext) {

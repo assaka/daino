@@ -9,6 +9,7 @@ const router = express.Router();
 const aiTrainingService = require('../services/aiTrainingService');
 const Anthropic = require('@anthropic-ai/sdk');
 const { masterDbClient } = require('../database/masterConnection');
+const embeddingService = require('../services/embeddingService');
 
 const anthropic = new Anthropic();
 
@@ -1346,11 +1347,27 @@ ${setting.related_settings ? `**Related Settings:** ${setting.related_settings.j
     updated_at: new Date().toISOString()
   };
 
+  let docId;
   if (existing) {
     await masterDbClient.from('ai_context_documents').update(docData).eq('id', existing.id);
+    docId = existing.id;
   } else {
     docData.created_at = new Date().toISOString();
-    await masterDbClient.from('ai_context_documents').insert(docData);
+    const { data: inserted } = await masterDbClient
+      .from('ai_context_documents')
+      .insert(docData)
+      .select('id')
+      .single();
+    docId = inserted?.id;
+  }
+
+  // Generate embedding for semantic search (AI-driven retrieval)
+  if (docId) {
+    try {
+      await embeddingService.embedContextDocument(docId);
+    } catch (e) {
+      console.log(`   ⚠️ Embedding generation failed for ${title}: ${e.message}`);
+    }
   }
 }
 
