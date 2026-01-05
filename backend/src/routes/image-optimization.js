@@ -275,25 +275,7 @@ router.post('/optimize',
     } catch (error) {
       console.error('[ImageOptimization] Error optimizing image:', error);
 
-      // Handle insufficient credits error specifically (race condition between check and deduction)
-      const errorStr = error?.message || String(error);
-      if (errorStr.includes('Insufficient credits')) {
-        const match = errorStr.match(/Available:\s*([\d.]+)/);
-        const balance = match ? parseFloat(match[1]) : 0;
-        return res.status(402).json({
-          success: false,
-          code: 'INSUFFICIENT_CREDITS',
-          message: errorStr,
-          required: creditCost,
-          available: balance,
-          creditsDeducted: 0
-        });
-      }
-
-      // Parse error for user-friendly message
       const parsedError = parseErrorMessage(error);
-
-      // No credits were deducted since error occurred before deduction
       res.status(500).json({
         success: false,
         code: parsedError.code,
@@ -371,21 +353,6 @@ router.post('/remove-bg',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error removing background:', error);
-
-      // Handle insufficient credits error specifically
-      const errorStr = error?.message || String(error);
-      if (errorStr.includes('Insufficient credits')) {
-        const match = errorStr.match(/Available:\s*([\d.]+)/);
-        const balance = match ? parseFloat(match[1]) : 0;
-        return res.status(402).json({
-          success: false,
-          code: 'INSUFFICIENT_CREDITS',
-          message: errorStr,
-          required: creditCost,
-          available: balance,
-          creditsDeducted: 0
-        });
-      }
 
       const parsedError = parseErrorMessage(error);
       res.status(500).json({
@@ -473,21 +440,6 @@ router.post('/stage',
     } catch (error) {
       console.error('[ImageOptimization] Error staging product:', error);
 
-      // Handle insufficient credits error specifically
-      const errorStr = error?.message || String(error);
-      if (errorStr.includes('Insufficient credits')) {
-        const match = errorStr.match(/Available:\s*([\d.]+)/);
-        const balance = match ? parseFloat(match[1]) : 0;
-        return res.status(402).json({
-          success: false,
-          code: 'INSUFFICIENT_CREDITS',
-          message: errorStr,
-          required: creditCost,
-          available: balance,
-          creditsDeducted: 0
-        });
-      }
-
       const parsedError = parseErrorMessage(error);
       res.status(500).json({
         success: false,
@@ -567,21 +519,6 @@ router.post('/upscale',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error upscaling image:', error);
-
-      // Handle insufficient credits error specifically
-      const errorStr = error?.message || String(error);
-      if (errorStr.includes('Insufficient credits')) {
-        const match = errorStr.match(/Available:\s*([\d.]+)/);
-        const balance = match ? parseFloat(match[1]) : 0;
-        return res.status(402).json({
-          success: false,
-          code: 'INSUFFICIENT_CREDITS',
-          message: errorStr,
-          required: creditCost,
-          available: balance,
-          creditsDeducted: 0
-        });
-      }
 
       const parsedError = parseErrorMessage(error);
       res.status(500).json({
@@ -678,21 +615,6 @@ router.post('/batch',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error in batch operation:', error);
-
-      // Handle insufficient credits error specifically
-      const errorStr = error?.message || String(error);
-      if (errorStr.includes('Insufficient credits')) {
-        const match = errorStr.match(/Available:\s*([\d.]+)/);
-        const balance = match ? parseFloat(match[1]) : 0;
-        return res.status(402).json({
-          success: false,
-          code: 'INSUFFICIENT_CREDITS',
-          message: errorStr,
-          required: totalCost,
-          available: balance,
-          creditsDeducted: 0
-        });
-      }
 
       const parsedError = parseErrorMessage(error);
       res.status(500).json({
@@ -791,22 +713,6 @@ router.post('/generate',
       });
     } catch (error) {
       console.error('[ImageOptimization] Error generating image:', error);
-
-      // Handle insufficient credits error specifically (race condition between check and deduction)
-      const errorStr = error?.message || String(error);
-      if (errorStr.includes('Insufficient credits')) {
-        // Extract balance info from error message if available
-        const match = errorStr.match(/Available:\s*([\d.]+)/);
-        const balance = match ? parseFloat(match[1]) : 0;
-        return res.status(402).json({
-          success: false,
-          code: 'INSUFFICIENT_CREDITS',
-          message: errorStr,
-          required: creditCost,
-          available: balance,
-          creditsDeducted: 0
-        });
-      }
 
       const parsedError = parseErrorMessage(error);
       res.status(500).json({
