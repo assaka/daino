@@ -45,11 +45,11 @@ const GENERATION_STYLES = [
 ];
 
 
-// Flux model options
+// Flux model options with credit costs
 const FLUX_MODELS = [
-  { id: 'flux-dev', label: 'Flux Dev', description: 'Fast & affordable', icon: '⚡' },
-  { id: 'flux-pro', label: 'Flux Pro', description: 'Better quality', icon: '✨' },
-  { id: 'flux-pro-1.1', label: 'Flux Pro 1.1', description: 'Best quality', icon: '🌟' }
+  { id: 'flux-dev', label: 'Flux Dev', description: 'Fast & affordable', icon: '⚡', credits: 2 },
+  { id: 'flux-pro', label: 'Flux Pro', description: 'Better quality', icon: '✨', credits: 4 },
+  { id: 'flux-pro-1.1', label: 'Flux Pro 1.1', description: 'Best quality', icon: '🌟', credits: 5 }
 ];
 
 // Aspect ratio options
@@ -361,6 +361,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [fluxModel, setFluxModel] = useState('flux-dev');
   const [generationHistory, setGenerationHistory] = useState([]);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showOperationDropdown, setShowOperationDropdown] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
@@ -389,6 +390,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
   const [convertFormat, setConvertFormat] = useState('webp');
 
   const providerDropdownRef = useRef(null);
+  const modelDropdownRef = useRef(null);
   const operationDropdownRef = useRef(null);
 
   // Determine single vs bulk mode
@@ -453,6 +455,9 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
     const handleClickOutside = (e) => {
       if (providerDropdownRef.current && !providerDropdownRef.current.contains(e.target)) {
         setShowProviderDropdown(false);
+      }
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target)) {
+        setShowModelDropdown(false);
       }
       if (operationDropdownRef.current && !operationDropdownRef.current.contains(e.target)) {
         setShowOperationDropdown(false);
@@ -952,6 +957,71 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
               )}
             </div>
 
+            {/* Model Dropdown - only show for Flux in generate mode */}
+            {isGenerateMode && selectedProvider === 'flux' && (
+            <div className="relative" ref={modelDropdownRef}>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+              <button
+                onClick={() => setShowModelDropdown(!showModelDropdown)}
+                disabled={isProcessing}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1 lg:py-2 text-sm rounded-lg transition-all min-w-[160px]",
+                  "border border-gray-200 bg-white",
+                  "hover:bg-gray-50",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                <span className="text-lg">{FLUX_MODELS.find(m => m.id === fluxModel)?.icon}</span>
+                <span className="font-medium flex-1 text-left">{FLUX_MODELS.find(m => m.id === fluxModel)?.label}</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", showModelDropdown && "rotate-180")} />
+              </button>
+
+              {showModelDropdown && (
+                <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 border-b border-gray-100 bg-gray-50">
+                    <p className="text-xs font-medium text-gray-500">Select Model</p>
+                  </div>
+                  <div className="py-1">
+                    {FLUX_MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          setFluxModel(model.id);
+                          setShowModelDropdown(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors",
+                          fluxModel === model.id
+                            ? "bg-purple-50"
+                            : "hover:bg-gray-50"
+                        )}
+                      >
+                        <span className="text-xl">{model.icon}</span>
+                        <div className="flex-1">
+                          <span className={cn(
+                            "text-sm font-medium",
+                            fluxModel === model.id ? "text-purple-600" : ""
+                          )}>
+                            {model.label}
+                          </span>
+                          <span className="text-xs text-gray-500 block">{model.description}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                            {model.credits} cr
+                          </span>
+                        </div>
+                        {fluxModel === model.id && (
+                          <Check className="w-4 h-4 text-purple-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            )}
+
             {/* Operation Dropdown - hidden in generate mode until image is generated */}
             {!isGenerateMode && (
             <div className="relative" ref={operationDropdownRef}>
@@ -1418,31 +1488,6 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
                     ))}
                   </div>
                 </div>
-
-                {/* Flux Model Selection (only when Flux is selected) */}
-                {selectedProvider === 'flux' && (
-                <div>
-                  <label className="text-xs font-medium text-gray-500 mb-2 block">Model</label>
-                  <div className="flex flex-wrap gap-2">
-                    {FLUX_MODELS.map((model) => (
-                      <button
-                        key={model.id}
-                        onClick={() => setFluxModel(model.id)}
-                        disabled={isProcessing}
-                        className={cn(
-                          "px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-2",
-                          fluxModel === model.id
-                            ? "bg-purple-100 text-purple-700 border border-purple-300"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        )}
-                      >
-                        <span>{model.icon}</span>
-                        <span className="font-medium">{model.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                )}
 
                 {/* Aspect Ratio Selection */}
                 <div>
