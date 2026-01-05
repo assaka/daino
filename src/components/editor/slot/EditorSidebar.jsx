@@ -1481,8 +1481,11 @@ const EditorSidebar = ({
       }
 
       // Restore ALL preserved inline styles to targetElement
+      // Convert camelCase property to kebab-case for comparison (DOM uses kebab-case)
+      const propertyKebab = property.replace(/([A-Z])/g, '-$1').toLowerCase();
       Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
-        if (styleProp !== property) { // Don't overwrite the property we just changed
+        // Compare both kebab-case and camelCase to avoid overwriting the property we just changed
+        if (styleProp !== property && styleProp !== propertyKebab) {
           targetElement.style.setProperty(styleProp, styleValue);
         }
       });
