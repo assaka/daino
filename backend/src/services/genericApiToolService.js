@@ -286,14 +286,25 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
             },
             config: {
               type: 'object',
-              description: 'Slot configuration: { label, content, styles, children, position, categories (for mega-menu) }',
+              description: 'Slot configuration with positioning and content options',
               properties: {
                 label: { type: 'string', description: 'Display label for the slot' },
                 content: { type: 'string', description: 'Text/HTML content for text/html slots' },
-                styles: { type: 'object', description: 'CSS styles object' },
-                position: { type: 'string', enum: ['top', 'bottom'], description: 'Where to add the slot' },
+                colSpan: {
+                  description: 'Grid width (1-12). Can be: number (6), or responsive object { default: 12, md: 6, lg: 4 }',
+                  oneOf: [{ type: 'number' }, { type: 'object' }]
+                },
+                layout: {
+                  type: 'object',
+                  description: 'Container layout: { display: "flex"|"grid", direction: "row"|"column", gap: number, cols: number }'
+                },
+                styles: { type: 'object', description: 'CSS styles: { color, backgroundColor, padding, margin, etc. }' },
+                position: { type: 'string', enum: ['top', 'bottom'], description: 'Where to add in rootSlots array' },
                 categories: { type: 'array', description: 'Category IDs for mega-menu slots' },
-                children: { type: 'array', description: 'Child slot IDs for container slots' }
+                columns: { type: 'number', description: 'Number of columns for mega-menu (default: 4)' },
+                showImages: { type: 'boolean', description: 'Show category images in mega-menu' },
+                children: { type: 'array', description: 'Child slot IDs for container slots' },
+                order: { type: 'array', description: 'Order of child elements within slot' }
               }
             }
           },
@@ -644,14 +655,37 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         const existingConfig = current.configuration || { slots: {}, rootSlots: [] };
         const newSlotId = slotId || `slot_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-        // Create new slot definition
+        // Create new slot definition with proper structure
         const newSlot = {
           id: newSlotId,
           type: slotType || config?.type || 'container',
           label: config?.label || `New ${slotType || 'Slot'}`,
           content: config?.content || '',
-          styles: config?.styles || {},
+          // Grid positioning - colSpan determines width (1-12 grid system)
+          // Can be: number (6), string ('col-span-6'), or responsive object ({ default: 12, md: 6 })
+          colSpan: config?.colSpan || 12,
+          // Container layout options
+          layout: config?.layout || (slotType === 'container' ? { display: 'flex', direction: 'row', gap: 4 } : undefined),
+          // Child slot ordering (for containers)
           children: config?.children || [],
+          order: config?.order || [],
+          // Visual styles
+          styles: config?.styles || {},
+          // Additional properties based on slot type
+          ...(slotType === 'mega-menu' && {
+            categories: config?.categories || [],
+            showImages: config?.showImages !== false,
+            columns: config?.columns || 4
+          }),
+          ...(slotType === 'navigation' && {
+            items: config?.items || [],
+            orientation: config?.orientation || 'horizontal'
+          }),
+          ...(slotType === 'banner' && {
+            imageUrl: config?.imageUrl || '',
+            linkUrl: config?.linkUrl || '',
+            altText: config?.altText || ''
+          }),
           ...config
         };
 
