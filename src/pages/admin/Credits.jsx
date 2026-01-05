@@ -2,13 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { User, CreditUsage, Store } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Table,
   TableBody,
@@ -80,8 +74,8 @@ export default function Credits() {
 
   // Filter state
   const [filters, setFilters] = useState({
-    store_id: 'all',
-    usage_type: 'all',
+    store_ids: [],
+    usage_types: [],
     start_date: null,
     end_date: null,
     limit: 20,
@@ -107,7 +101,7 @@ export default function Credits() {
   // Load usage stats
   useEffect(() => {
     loadUsageStats();
-  }, [filters.store_id]);
+  }, [filters.store_ids]);
 
   const loadUserData = async () => {
     try {
@@ -144,11 +138,11 @@ export default function Credits() {
         offset: filters.offset
       };
 
-      if (filters.store_id && filters.store_id !== 'all') {
-        params.store_id = filters.store_id;
+      if (filters.store_ids && filters.store_ids.length > 0) {
+        params.store_ids = filters.store_ids.join(',');
       }
-      if (filters.usage_type && filters.usage_type !== 'all') {
-        params.usage_type = filters.usage_type;
+      if (filters.usage_types && filters.usage_types.length > 0) {
+        params.usage_types = filters.usage_types.join(',');
       }
       if (filters.start_date) {
         params.start_date = format(filters.start_date, 'yyyy-MM-dd');
@@ -170,8 +164,8 @@ export default function Credits() {
     setStatsLoading(true);
     try {
       const params = { days: 30 };
-      if (filters.store_id && filters.store_id !== 'all') {
-        params.store_id = filters.store_id;
+      if (filters.store_ids && filters.store_ids.length > 0) {
+        params.store_ids = filters.store_ids.join(',');
       }
       const stats = await CreditUsage.getStats(params);
       setUsageStats(stats || {});
@@ -192,8 +186,8 @@ export default function Credits() {
 
   const clearFilters = () => {
     setFilters({
-      store_id: 'all',
-      usage_type: 'all',
+      store_ids: [],
+      usage_types: [],
       start_date: null,
       end_date: null,
       limit: 20,
@@ -203,8 +197,8 @@ export default function Credits() {
 
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.store_id !== 'all' ||
-      filters.usage_type !== 'all' ||
+      filters.store_ids.length > 0 ||
+      filters.usage_types.length > 0 ||
       filters.start_date !== null ||
       filters.end_date !== null
     );
@@ -360,39 +354,25 @@ export default function Credits() {
         <CardContent>
           <div className="flex flex-wrap gap-4">
             {/* Store Filter */}
-            <div className="w-48">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Store</label>
-              <Select value={filters.store_id} onValueChange={(value) => handleFilterChange('store_id', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Stores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stores</SelectItem>
-                  {stores.map((store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {store.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="min-w-[200px] max-w-[300px]">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Stores</label>
+              <MultiSelect
+                options={stores.map(store => ({ value: store.id, label: store.name }))}
+                value={filters.store_ids}
+                onChange={(value) => handleFilterChange('store_ids', value)}
+                placeholder="All Stores"
+              />
             </div>
 
             {/* Type Filter */}
-            <div className="w-48">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Type</label>
-              <Select value={filters.usage_type} onValueChange={(value) => handleFilterChange('usage_type', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {usageTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="min-w-[200px] max-w-[300px]">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Types</label>
+              <MultiSelect
+                options={usageTypes.map(type => ({ value: type.value, label: type.label }))}
+                value={filters.usage_types}
+                onChange={(value) => handleFilterChange('usage_types', value)}
+                placeholder="All Types"
+              />
             </div>
 
             {/* Start Date */}

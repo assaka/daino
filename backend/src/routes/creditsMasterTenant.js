@@ -171,7 +171,9 @@ router.get('/usage', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const {
       store_id,
+      store_ids,
       usage_type,
+      usage_types,
       start_date,
       end_date,
       limit = 50,
@@ -180,6 +182,10 @@ router.get('/usage', authMiddleware, async (req, res) => {
       sort_order = 'desc'
     } = req.query;
 
+    // Parse multi-select filters (comma-separated strings to arrays)
+    const storeIdArray = store_ids ? store_ids.split(',').filter(Boolean) : (store_id ? [store_id] : []);
+    const usageTypeArray = usage_types ? usage_types.split(',').filter(Boolean) : (usage_type && usage_type !== 'all' ? [usage_type] : []);
+
     // Build query
     let query = masterDbClient
       .from('credit_usage')
@@ -187,11 +193,11 @@ router.get('/usage', authMiddleware, async (req, res) => {
       .eq('user_id', userId);
 
     // Apply filters
-    if (store_id) {
-      query = query.eq('store_id', store_id);
+    if (storeIdArray.length > 0) {
+      query = query.in('store_id', storeIdArray);
     }
-    if (usage_type && usage_type !== 'all') {
-      query = query.eq('usage_type', usage_type);
+    if (usageTypeArray.length > 0) {
+      query = query.in('usage_type', usageTypeArray);
     }
     if (start_date) {
       query = query.gte('created_at', new Date(start_date).toISOString());
@@ -209,8 +215,8 @@ router.get('/usage', authMiddleware, async (req, res) => {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId);
 
-    if (store_id) countQuery.eq('store_id', store_id);
-    if (usage_type && usage_type !== 'all') countQuery.eq('usage_type', usage_type);
+    if (storeIdArray.length > 0) countQuery.in('store_id', storeIdArray);
+    if (usageTypeArray.length > 0) countQuery.in('usage_type', usageTypeArray);
     if (start_date) countQuery.gte('created_at', new Date(start_date).toISOString());
     if (end_date) {
       const endDateObj = new Date(end_date);
@@ -351,7 +357,10 @@ router.get('/usage/types', authMiddleware, async (req, res) => {
 router.get('/usage/stats', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { store_id, days = 30 } = req.query;
+    const { store_id, store_ids, days = 30 } = req.query;
+
+    // Parse multi-select filters
+    const storeIdArray = store_ids ? store_ids.split(',').filter(Boolean) : (store_id ? [store_id] : []);
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
@@ -362,8 +371,8 @@ router.get('/usage/stats', authMiddleware, async (req, res) => {
       .eq('user_id', userId)
       .gte('created_at', startDate.toISOString());
 
-    if (store_id) {
-      query = query.eq('store_id', store_id);
+    if (storeIdArray.length > 0) {
+      query = query.in('store_id', storeIdArray);
     }
 
     const { data: usage, error } = await query;
