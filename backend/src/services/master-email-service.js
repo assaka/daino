@@ -405,9 +405,7 @@ class MasterEmailService {
       unsubscribeUrl
     });
 
-    const subject = hasStore
-      ? `How's ${storeName || 'your store'} going? - ${PLATFORM_NAME}`
-      : `Ready to create your store? - ${PLATFORM_NAME}`;
+    const subject = `Quick check-in - need any help?`;
 
     return await this.sendEmail(recipientEmail, subject, htmlContent);
   }
@@ -470,18 +468,10 @@ class MasterEmailService {
             .from('platform_email_logs')
             .select('id')
             .eq('recipient_email', user.email)
-            .like('subject', '%Ready to create your store%')
+            .like('subject', '%Quick check-in%')
             .limit(1);
 
-          // Also check for the "How's your store going" variant
-          const { data: existingLog2 } = await masterDbClient
-            .from('platform_email_logs')
-            .select('id')
-            .eq('recipient_email', user.email)
-            .like('subject', '%How\'s%going%')
-            .limit(1);
-
-          if ((existingLog && existingLog.length > 0) || (existingLog2 && existingLog2.length > 0)) {
+          if (existingLog && existingLog.length > 0) {
             results.skipped++;
             console.log(`[ONBOARDING EMAIL] Skipping ${user.email} - already sent`);
             continue;
