@@ -459,11 +459,26 @@ const UnifiedSlotsEditor = ({
       // Save to API
       const result = await Store.updateSettings(storeId, { settings: updatedSettings });
 
+      // Update local pageContext so editor preview shows new theme value immediately
+      setPageContext(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          settings: {
+            ...prev.settings,
+            theme: {
+              ...prev.settings?.theme,
+              [key]: value
+            }
+          }
+        };
+      });
+
       console.log(`Theme setting updated: ${key} = ${value}`, { apiResult: result });
     } catch (error) {
       console.error('Failed to save theme setting:', error);
     }
-  }, [getSelectedStoreId]);
+  }, [getSelectedStoreId, setPageContext]);
 
   // Header-specific handlers for inline editing
   // UnifiedSlotRenderer calls onElementClick(slotId, element) - not with an event
