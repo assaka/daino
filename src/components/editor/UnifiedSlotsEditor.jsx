@@ -426,12 +426,14 @@ const UnifiedSlotsEditor = ({
         // Use the settings-specific endpoint which fetches from tenant DB
         // Store.findById only returns master DB fields (no settings)
         const response = await apiClient.get(`stores/${storeId}/settings`);
-        const storeData = response?.data || response;
 
+        console.log('🔍 RAW /settings response:', response);
+        console.log('🔍 response.data:', response?.data);
+        console.log('🔍 response.data.settings:', response?.data?.settings);
+
+        const storeData = response?.data || response;
         currentSettings = storeData?.settings || {};
         currentTheme = currentSettings.theme || {};
-
-        console.log('🔍 Theme save - fetched currentTheme:', currentTheme);
       } catch (fetchError) {
         console.error('❌ Failed to fetch store settings:', fetchError);
         // Continue with empty settings - will only save theme change
