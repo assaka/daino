@@ -179,13 +179,16 @@ export default function MarketingSignup() {
 
       const response = await Auth.register(registerData);
 
-      if (response.success) {
-        // Store the token
-        if (response.data?.token) {
-          localStorage.setItem('store_owner_auth_token', response.data.token);
+      // Auth.register returns response.data, so check for token/user or success
+      const isSuccess = response.token || response.user || response.id || response.success;
+
+      if (isSuccess) {
+        // Store the token if present
+        if (response.token) {
+          localStorage.setItem('store_owner_auth_token', response.token);
         }
-        // Navigate to onboarding to create their store
-        navigate('/admin/onboarding');
+        // Navigate to email verification page
+        navigate(`/admin/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {
         setError(response.message || 'Registration failed. Please try again.');
       }
