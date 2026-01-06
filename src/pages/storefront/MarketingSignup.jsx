@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   ArrowRight, Sparkles, CheckCircle2, Eye, EyeOff,
-  Zap, Shield, Globe, Loader2
+  Zap, Shield, Globe, Loader2, RefreshCw
 } from 'lucide-react';
 import apiClient from '@/utils/api';
-import { User } from '@/api/entities';
+import { Auth } from '@/api/entities';
 import { WHATS_NEW } from '@/constants/MarketingContent';
 
 // Google logo SVG component
@@ -75,6 +75,54 @@ export default function MarketingSignup() {
     return null;
   };
 
+  const getPasswordStrength = (password) => {
+    if (!password) return { level: 0, label: '', color: '' };
+
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
+
+    if (score <= 2) return { level: 1, label: 'Weak', color: 'bg-red-500' };
+    if (score <= 4) return { level: 2, label: 'Fair', color: 'bg-yellow-500' };
+    if (score <= 5) return { level: 3, label: 'Good', color: 'bg-blue-500' };
+    return { level: 4, label: 'Strong', color: 'bg-green-500' };
+  };
+
+  const generateStrongPassword = () => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '!@#$%^&*(),.?":{}|<>';
+
+    // Ensure at least one of each required character type
+    let password = '';
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += special[Math.floor(Math.random() * special.length)];
+
+    // Fill the rest with random characters from all sets
+    const allChars = uppercase + lowercase + numbers + special;
+    for (let i = 0; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+
+    setFormData(prev => ({
+      ...prev,
+      password,
+      confirmPassword: password
+    }));
+    setShowPassword(true);
+    setError('');
+  };
+
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
     setError('');
@@ -129,7 +177,7 @@ export default function MarketingSignup() {
         role: 'store_owner'
       };
 
-      const response = await User.register(registerData);
+      const response = await Auth.register(registerData);
 
       if (response.success) {
         // Store the token
@@ -337,9 +385,20 @@ export default function MarketingSignup() {
 
               {/* Password field */}
               <div>
-                <Label htmlFor="password" className="text-slate-700 font-medium">
-                  Password
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-slate-700 font-medium">
+                    Password
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={generateStrongPassword}
+                    disabled={loading}
+                    className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Generate strong password
+                  </button>
+                </div>
                 <div className="relative mt-1.5">
                   <Input
                     id="password"
@@ -361,6 +420,31 @@ export default function MarketingSignup() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {formData.password && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden flex gap-0.5">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-full transition-colors ${
+                              i <= getPasswordStrength(formData.password).level
+                                ? getPasswordStrength(formData.password).color
+                                : 'bg-slate-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className={`text-xs font-medium ${
+                        getPasswordStrength(formData.password).level <= 1 ? 'text-red-600' :
+                        getPasswordStrength(formData.password).level <= 2 ? 'text-yellow-600' :
+                        getPasswordStrength(formData.password).level <= 3 ? 'text-blue-600' : 'text-green-600'
+                      }`}>
+                        {getPasswordStrength(formData.password).label}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <p className="mt-1.5 text-xs text-slate-500">
                   Min 8 chars with uppercase, lowercase, number & special character
                 </p>
