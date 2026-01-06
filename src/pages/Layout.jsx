@@ -847,7 +847,7 @@ function LayoutInner({ children, currentPageName }) {
             )}
 
             {/* TEMPORARY: Reprovision Slot Configs Button for Testing */}
-            {!isPendingDatabase && selectedStore?.id && (
+            {!isPendingDatabase && selectedStore?.id && user?.email === 'hamid@sprtags.io' && (
               <button
                 onClick={async () => {
                   if (!confirm('This will delete and re-create all slot configurations. Continue?')) return;
