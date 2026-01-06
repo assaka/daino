@@ -27,12 +27,6 @@ export function AdminLayoutWrapper({ children }) {
   }, [location.pathname]);
 
   const checkStoreStatus = async () => {
-    // Use centralized config to skip store check for certain pages
-    if (shouldSkipStoreContext(location.pathname)) {
-      setChecking(false);
-      return;
-    }
-
     // Skip check for non-admin routes (storefront, public pages, etc.)
     // Admin routes start with /admin/ or /plugins or /editor/
     const isAdminRoute = location.pathname.startsWith('/admin') ||
@@ -40,6 +34,35 @@ export function AdminLayoutWrapper({ children }) {
                          location.pathname.startsWith('/editor');
 
     if (!isAdminRoute) {
+      setChecking(false);
+      return;
+    }
+
+    // Skip email verification check for auth and verify-email pages only
+    const skipEmailVerificationPages = ['/admin/auth', '/admin/verify-email'];
+    const shouldSkipEmailCheck = skipEmailVerificationPages.some(page =>
+      location.pathname.startsWith(page)
+    );
+
+    // Check email verification status first (before any other checks)
+    // This runs for ALL admin routes except auth and verify-email
+    if (!shouldSkipEmailCheck) {
+      const userDataStr = localStorage.getItem('store_owner_user_data');
+      if (userDataStr) {
+        try {
+          const userData = JSON.parse(userDataStr);
+          if (userData.email_verified === false) {
+            navigate(`/admin/verify-email?email=${encodeURIComponent(userData.email)}`, { replace: true });
+            return;
+          }
+        } catch (e) {
+          // Invalid JSON, continue with other checks
+        }
+      }
+    }
+
+    // Use centralized config to skip store check for certain pages
+    if (shouldSkipStoreContext(location.pathname)) {
       setChecking(false);
       return;
     }
