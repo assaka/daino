@@ -422,16 +422,14 @@ const UnifiedSlotsEditor = ({
       let currentTheme = {};
 
       try {
-        console.log('🔍 Fetching store settings for storeId:', storeId);
         const response = await Store.findById(storeId);
-        console.log('🔍 Store.findById RAW response:', JSON.stringify(response, null, 2));
-
-        // Handle both { success: true, data: {...} } and direct object responses
-        const storeData = response?.data || response;
-        console.log('🔍 storeData.settings:', JSON.stringify(storeData?.settings, null, 2));
-
+        // API returns { success: true, data: { store: {...}, hostname, slug, ... } }
+        // The actual store with settings is in response.data.store
+        const storeData = response?.data?.store || response?.data || response;
         currentSettings = storeData?.settings || {};
         currentTheme = currentSettings.theme || {};
+
+        console.log('🔍 Theme save - currentTheme:', currentTheme);
       } catch (fetchError) {
         console.error('❌ Failed to fetch store settings:', fetchError);
         // Continue with empty settings - will only save theme change
