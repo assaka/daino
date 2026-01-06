@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Hero() {
+    const navigate = useNavigate();
     const [prompt, setPrompt] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
@@ -45,12 +47,12 @@ export default function Hero() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (prompt.trim()) {
-            setIsTyping(true);
-            setTimeout(() => {
-                setIsTyping(false);
-                setPrompt('');
-            }, 2000);
+        // Check if user is logged in
+        const token = localStorage.getItem('store_owner_auth_token');
+        if (token) {
+            navigate('/admin/dashboard');
+        } else {
+            navigate('/get-started');
         }
     };
 

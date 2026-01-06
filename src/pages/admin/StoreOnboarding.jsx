@@ -790,6 +790,30 @@ export default function StoreOnboarding() {
           )}
         </CardContent>
       </Card>
+
+        {/* Support Links */}
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p className="mb-2">Need help? We're here for you!</p>
+          <div className="flex items-center justify-center gap-4">
+            <a
+              href="https://discord.gg/J3BCegpX"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline"
+            >
+              Join our Discord
+            </a>
+            <span className="text-gray-400">|</span>
+            <a
+              href="https://www.calendly.com/dainostore"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline"
+            >
+              Schedule a Call
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );

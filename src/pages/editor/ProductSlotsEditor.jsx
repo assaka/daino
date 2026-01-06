@@ -17,6 +17,7 @@ import { EditorStoreProvider } from '@/components/editor/EditorStoreProvider';
 import { buildEditorHeaderContext } from '@/components/editor/editorHeaderUtils';
 import { useAIWorkspace, PAGE_TYPES } from '@/contexts/AIWorkspaceContext';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import apiClient from '@/api/client';
 
 // Create default slots function - fetches from backend API as fallback when no draft exists
 const createDefaultSlots = async () => {
@@ -69,6 +70,26 @@ export default function ProductSlotsEditor({
   const [customOptions, setCustomOptions] = useState([]);
   const [productLabels, setProductLabels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [storeSettings, setStoreSettings] = useState({});
+
+  // Fetch store settings from tenant DB for editor preview
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      if (!storeId) return;
+
+      try {
+        const response = await apiClient.get(`stores/${storeId}/settings`);
+        const data = response?.data || response;
+        const settings = data?.settings || {};
+        console.log('[ProductSlotsEditor] Fetched store settings:', settings);
+        setStoreSettings(settings);
+      } catch (error) {
+        console.error('[ProductSlotsEditor] Failed to fetch store settings:', error);
+      }
+    };
+
+    fetchStoreSettings();
+  }, [storeId]);
 
   // Fetch all products for the selector
   useEffect(() => {
@@ -138,7 +159,11 @@ export default function ProductSlotsEditor({
 
   // Generate context - MUST match storefront ProductDetail.jsx productData structure exactly
   const generateProductContext = useCallback((viewMode, store) => {
-    const storeSettings = store?.settings || selectedStore?.settings || {};
+    // Use fetched storeSettings from tenant DB (has theme data), fall back to store/selectedStore settings
+    const effectiveSettings = storeSettings && Object.keys(storeSettings).length > 0
+      ? storeSettings
+      : (store?.settings || selectedStore?.settings || {});
+    console.log('[ProductSlotsEditor] generateProductContext - effectiveSettings:', effectiveSettings);
 
     // If we have a real product, use it in the SAME format as storefront
     if (realProduct) {
@@ -158,7 +183,7 @@ export default function ProductSlotsEditor({
         customOptions,
         relatedProducts: [],
         store: store || selectedStore,
-        settings: storeSettings,
+        settings: effectiveSettings,
         categories: [],
         breadcrumbs: [
           { name: 'Home', url: '/' },
@@ -192,7 +217,7 @@ export default function ProductSlotsEditor({
     }
 
     // Fall back to mock data - also in storefront productData format
-    const mockContext = generateMockProductContext(storeSettings);
+    const mockContext = generateMockProductContext(effectiveSettings);
     return {
       product: {
         ...mockContext.product,
@@ -203,7 +228,7 @@ export default function ProductSlotsEditor({
       customOptions: mockContext.customOptions || [],
       relatedProducts: mockContext.relatedProducts || [],
       store: store || selectedStore,
-      settings: storeSettings,
+      settings: effectiveSettings,
       categories: mockContext.categories || [],
       breadcrumbs: mockContext.breadcrumbs || [],
       productLabels: mockContext.productLabels || [],
@@ -227,7 +252,7 @@ export default function ProductSlotsEditor({
       handleVariantChange: () => {},
       translations: {}
     };
-  }, [realProduct, productTabs, customOptions, productLabels, selectedStore]);
+  }, [realProduct, productTabs, customOptions, productLabels, selectedStore, storeSettings]);
 
   // Header save callback - saves header config changes to database
   const handleHeaderSave = useCallback(async (headerConfigToSave) => {
