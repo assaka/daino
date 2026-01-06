@@ -62,6 +62,7 @@ import '@/components/editor/slot/CheckoutSlotComponents'; // Register checkout c
 import '@/components/editor/slot/SuccessSlotComponents'; // Register success/order confirmation components
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { Store } from '@/api/entities';
+import apiClient from '@/api/client';
 
 /**
  * UnifiedSlotsEditor - Core editor component
@@ -422,16 +423,15 @@ const UnifiedSlotsEditor = ({
       let currentTheme = {};
 
       try {
-        const response = await Store.findById(storeId);
-        // API returns { success: true, data: { store: {...}, hostname, slug, ... } }
-        // The actual store with settings is in response.data.store
-        const storeData = response?.data?.store || response?.data || response;
-
-        console.log('🔍 storeData keys:', Object.keys(storeData || {}));
-        console.log('🔍 storeData:', storeData);
+        // Use the settings-specific endpoint which fetches from tenant DB
+        // Store.findById only returns master DB fields (no settings)
+        const response = await apiClient.get(`stores/${storeId}/settings`);
+        const storeData = response?.data || response;
 
         currentSettings = storeData?.settings || {};
         currentTheme = currentSettings.theme || {};
+
+        console.log('🔍 Theme save - fetched currentTheme:', currentTheme);
       } catch (fetchError) {
         console.error('❌ Failed to fetch store settings:', fetchError);
         // Continue with empty settings - will only save theme change

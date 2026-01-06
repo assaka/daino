@@ -1029,6 +1029,186 @@ const pauseAccessApprovedEmail = (data) => {
 };
 
 /**
+ * Onboarding Email Template
+ * Sent 1 day after registration to help store owners get started
+ */
+const onboardingEmail = (data) => {
+  const {
+    customerName,
+    customerFirstName,
+    hasStore,
+    storeName,
+    calendlyUrl = 'https://calendly.com/dainostore',
+    unsubscribeUrl
+  } = data;
+
+  const header = masterEmailHeader({
+    title: hasStore ? 'How\'s Your Store Going?' : 'Ready to Create Your Store?',
+    subtitle: 'We\'re here to help you succeed'
+  });
+
+  const footer = masterEmailFooter({ showUnsubscribe: true });
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi <strong>${customerFirstName || customerName}</strong>,
+          </p>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            ${hasStore
+              ? `It's been a day since you created <strong>${storeName}</strong> on ${PLATFORM_NAME}! We wanted to check in and see how things are going.`
+              : `It's been a day since you signed up for ${PLATFORM_NAME}! We noticed you haven't created your store yet, and we're here to help you get started.`
+            }
+          </p>
+
+          ${hasStore ? `
+          <!-- Tips for Existing Store Owners -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0fdf4; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <h3 style="margin: 0 0 16px 0; color: #166534; font-size: 15px; font-weight: 600;">
+                  Take Your Store to the Next Level
+                </h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #22c55e; font-size: 16px;">&#10003;</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Add more products</strong> - Import from various sources or create manually</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #22c55e; font-size: 16px;">&#10003;</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Customize your theme</strong> - Make your store unique with our theme editor</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #22c55e; font-size: 16px;">&#10003;</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Set up payments</strong> - Connect Stripe or PayPal to start accepting orders</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #22c55e; font-size: 16px;">&#10003;</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Use AI features</strong> - Generate product descriptions and translations</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          ` : `
+          <!-- Getting Started Card for New Users -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #eff6ff; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <h3 style="margin: 0 0 16px 0; color: #1e40af; font-size: 15px; font-weight: 600;">
+                  Creating Your Store is Easy
+                </h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 32px;">
+                      <div style="width: 24px; height: 24px; background-color: #3b82f6; border-radius: 50%; text-align: center; line-height: 24px; color: white; font-weight: 600; font-size: 12px;">1</div>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Choose a store name</strong> - Pick something memorable</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 32px;">
+                      <div style="width: 24px; height: 24px; background-color: #3b82f6; border-radius: 50%; text-align: center; line-height: 24px; color: white; font-weight: 600; font-size: 12px;">2</div>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Add your products</strong> - Import or create them manually</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 32px;">
+                      <div style="width: 24px; height: 24px; background-color: #3b82f6; border-radius: 50%; text-align: center; line-height: 24px; color: white; font-weight: 600; font-size: 12px;">3</div>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;"><strong>Customize & publish</strong> - Your store is live in minutes!</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          `}
+
+          <!-- Book a Call Section -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #92400e; font-size: 18px; font-weight: 600;">
+                  Need Help Getting Started?
+                </p>
+                <p style="margin: 0 0 16px 0; color: #78350f; font-size: 14px; line-height: 1.5;">
+                  Book a free 15-minute call with our team. We'll help you set up your store, answer questions, and show you how to make the most of ${PLATFORM_NAME}.
+                </p>
+                <a href="${calendlyUrl}" style="display: inline-block; padding: 12px 28px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 6px;">
+                  Schedule a Call
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <a href="${PLATFORM_URL}/admin${hasStore ? '/dashboard' : '/onboarding'}" style="display: inline-block; padding: 14px 32px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+                  ${hasStore ? 'Go to Dashboard' : 'Create Your Store'}
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+            Have questions? Reply to this email or reach us at <a href="mailto:${SUPPORT_EMAIL}" style="color: #6366f1;">${SUPPORT_EMAIL}</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Unsubscribe Footer -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb;">
+      <tr>
+        <td style="padding: 16px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+            You're receiving this email because you signed up for ${PLATFORM_NAME}.<br>
+            <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe from marketing emails</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: hasStore
+      ? `How's ${storeName} going? We're here to help!`
+      : `Ready to create your store? We're here to help you get started.`
+  });
+};
+
+/**
  * Pause Access Rejected Email Template
  * Sent to requester when their access request is rejected
  */
@@ -1099,6 +1279,7 @@ module.exports = {
   pauseAccessRequestEmail,
   pauseAccessApprovedEmail,
   pauseAccessRejectedEmail,
+  onboardingEmail,
 
   // Constants
   PLATFORM_NAME,

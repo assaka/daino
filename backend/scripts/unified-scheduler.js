@@ -368,7 +368,8 @@ function calculateNextRun(cronExpression, timezone = 'UTC') {
 async function runSystemJobs() {
   const systemResults = {
     token_refresh: null,
-    daily_credit: null
+    daily_credit: null,
+    onboarding_email: null
   };
 
   // 1. Token Refresh - ALWAYS runs (hourly)
@@ -414,6 +415,26 @@ async function runSystemJobs() {
     }
   } else {
     console.log(`\n[SYSTEM] Skipping daily credit deduction (current hour: ${currentHour}, runs at midnight UTC)`);
+  }
+
+  // 3. Onboarding Email - ALWAYS runs (hourly) - sends to users who registered 24 hours ago
+  console.log('\n[SYSTEM] Running onboarding email job...');
+  try {
+    const OnboardingEmailJob = require('../src/core/jobs/OnboardingEmailJob');
+    const job = new OnboardingEmailJob({
+      id: `system-onboarding-${Date.now()}`,
+      type: 'system:onboarding_email',
+      payload: {}
+    });
+    const result = await job.execute();
+    systemResults.onboarding_email = { success: true, ...result };
+    console.log(`  Onboarding emails: ${result.sent || 0} sent, ${result.skipped || 0} skipped, ${result.failed || 0} failed`);
+    stats.jobs_executed++;
+  } catch (error) {
+    systemResults.onboarding_email = { success: false, error: error.message };
+    console.error(`  Onboarding email FAILED: ${error.message}`);
+    stats.jobs_failed++;
+    stats.errors.push({ job: 'System: Onboarding Email', store: 'system', error: error.message });
   }
 
   return systemResults;

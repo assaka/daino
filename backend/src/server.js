@@ -133,6 +133,7 @@ const customDomainsRoutes = require('./routes/custom-domains');
 const creditRoutes = require('./routes/credits');
 const serviceCreditCostsRoutes = require('./routes/service-credit-costs');
 const emailTemplatesRoutes = require('./routes/email-templates');
+const platformEmailsRoutes = require('./routes/platform-emails');
 const pdfTemplatesRoutes = require('./routes/pdf-templates');
 const brevoOAuthRoutes = require('./routes/brevo-oauth');
 const sendgridRoutes = require('./routes/sendgrid');
@@ -1509,6 +1510,7 @@ app.use('/api/test-master-connection', require('./routes/test-master-connection'
 
 app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
 app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
+app.use('/api/emails', platformEmailsRoutes); // Platform email operations: unsubscribe, preferences
 app.use('/api/pdf-templates', pdfTemplatesRoutes); // PDF template management for invoices, shipments
 app.use('/api/brevo', brevoOAuthRoutes); // Brevo email service OAuth and configuration
 app.use('/api/sendgrid', sendgridRoutes); // SendGrid email service configuration

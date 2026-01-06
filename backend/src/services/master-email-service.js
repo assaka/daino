@@ -16,7 +16,9 @@ const {
   pauseAccessRequestEmail,
   pauseAccessApprovedEmail,
   pauseAccessRejectedEmail,
-  PLATFORM_NAME
+  onboardingEmail,
+  PLATFORM_NAME,
+  PLATFORM_URL
 } = require('./master-email-templates');
 
 class MasterEmailService {
@@ -369,6 +371,165 @@ class MasterEmailService {
       currentBalance: 150,
       paymentMethod: 'Test Payment'
     });
+  }
+
+  /**
+   * Send onboarding email to store owner (1 day after registration)
+   * @param {Object} data - Onboarding data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendOnboardingEmail(data) {
+    const {
+      recipientEmail,
+      customerName,
+      customerFirstName,
+      hasStore = false,
+      storeName = '',
+      userId
+    } = data;
+
+    // Generate unsubscribe token (uses general newsletter unsubscribe)
+    const crypto = require('crypto');
+    const unsubscribeToken = crypto.createHash('sha256')
+      .update(`${userId}-${recipientEmail}-newsletter-unsubscribe`)
+      .digest('hex');
+
+    const unsubscribeUrl = `${PLATFORM_URL}/api/emails/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(recipientEmail)}&type=newsletter`;
+
+    const htmlContent = onboardingEmail({
+      customerName,
+      customerFirstName: customerFirstName || customerName?.split(' ')[0] || 'there',
+      hasStore,
+      storeName,
+      calendlyUrl: 'https://calendly.com/dainostore',
+      unsubscribeUrl
+    });
+
+    const subject = hasStore
+      ? `How's ${storeName || 'your store'} going? - ${PLATFORM_NAME}`
+      : `Ready to create your store? - ${PLATFORM_NAME}`;
+
+    return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send onboarding emails to users who registered 24 hours ago
+   * Called by the scheduled job
+   * @returns {Promise<Object>} Results summary
+   */
+  async sendPendingOnboardingEmails() {
+    const results = {
+      total: 0,
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      // Calculate time window: users who registered between 24-25 hours ago
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const twentyFiveHoursAgo = new Date(now.getTime() - 25 * 60 * 60 * 1000);
+
+      // Find users who:
+      // 1. Registered 24-25 hours ago
+      // 2. Have verified email
+      // 3. Haven't unsubscribed from newsletter/marketing emails
+      const { data: eligibleUsers, error } = await masterDbClient
+        .from('users')
+        .select('id, email, first_name, last_name, created_at, newsletter_unsubscribed')
+        .eq('email_verified', true)
+        .eq('role', 'store_owner')
+        .gte('created_at', twentyFiveHoursAgo.toISOString())
+        .lte('created_at', twentyFourHoursAgo.toISOString());
+
+      if (error) {
+        console.error('[ONBOARDING EMAIL] Error fetching eligible users:', error.message);
+        return { ...results, errors: [error.message] };
+      }
+
+      results.total = eligibleUsers?.length || 0;
+      console.log(`[ONBOARDING EMAIL] Found ${results.total} users in time window`);
+
+      if (!eligibleUsers || eligibleUsers.length === 0) {
+        return results;
+      }
+
+      for (const user of eligibleUsers) {
+        try {
+          // Skip if unsubscribed from newsletter
+          if (user.newsletter_unsubscribed) {
+            results.skipped++;
+            console.log(`[ONBOARDING EMAIL] Skipping ${user.email} - unsubscribed from newsletter`);
+            continue;
+          }
+
+          // Check if onboarding email was already sent (via platform_email_logs)
+          const { data: existingLog } = await masterDbClient
+            .from('platform_email_logs')
+            .select('id')
+            .eq('recipient_email', user.email)
+            .like('subject', '%Ready to create your store%')
+            .limit(1);
+
+          // Also check for the "How's your store going" variant
+          const { data: existingLog2 } = await masterDbClient
+            .from('platform_email_logs')
+            .select('id')
+            .eq('recipient_email', user.email)
+            .like('subject', '%How\'s%going%')
+            .limit(1);
+
+          if ((existingLog && existingLog.length > 0) || (existingLog2 && existingLog2.length > 0)) {
+            results.skipped++;
+            console.log(`[ONBOARDING EMAIL] Skipping ${user.email} - already sent`);
+            continue;
+          }
+
+          // Check if user has a store
+          const { data: stores } = await masterDbClient
+            .from('stores')
+            .select('id, name')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .limit(1);
+
+          const hasStore = stores && stores.length > 0;
+          const storeName = hasStore ? stores[0].name : '';
+
+          // Send the email (logEmail is called automatically in sendEmail)
+          const sendResult = await this.sendOnboardingEmail({
+            recipientEmail: user.email,
+            customerName: `${user.first_name} ${user.last_name}`,
+            customerFirstName: user.first_name,
+            hasStore,
+            storeName,
+            userId: user.id
+          });
+
+          if (sendResult.success) {
+            results.sent++;
+            console.log(`[ONBOARDING EMAIL] Sent to ${user.email} (hasStore: ${hasStore})`);
+          } else {
+            results.failed++;
+            results.errors.push(`${user.email}: ${sendResult.message}`);
+            console.error(`[ONBOARDING EMAIL] Failed to send to ${user.email}:`, sendResult.message);
+          }
+        } catch (userError) {
+          results.failed++;
+          results.errors.push(`${user.email}: ${userError.message}`);
+          console.error(`[ONBOARDING EMAIL] Error processing ${user.email}:`, userError.message);
+        }
+      }
+
+      console.log(`[ONBOARDING EMAIL] Summary: ${results.sent} sent, ${results.skipped} skipped, ${results.failed} failed`);
+      return results;
+
+    } catch (error) {
+      console.error('[ONBOARDING EMAIL] Fatal error:', error.message);
+      return { ...results, errors: [error.message] };
+    }
   }
 }
 
