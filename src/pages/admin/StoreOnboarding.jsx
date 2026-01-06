@@ -420,7 +420,8 @@ export default function StoreOnboarding() {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4">
-      <Card className="w-full max-w-3xl shadow-2xl relative">
+      <div className="w-full max-w-3xl flex flex-col items-center">
+      <Card className="w-full shadow-2xl relative">
         {/* Cancel Button - always show for users who can go back to stores */}
         <Button
           variant="ghost"
@@ -814,6 +815,7 @@ export default function StoreOnboarding() {
             </a>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
