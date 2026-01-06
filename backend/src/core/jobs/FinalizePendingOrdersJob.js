@@ -29,7 +29,7 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
     // Get all published stores from master DB
     const { data: stores, error: storesError } = await masterDbClient
       .from('stores')
-      .select('id, slug, name')
+      .select('id, slug')
       .eq('published', true);
 
     if (storesError) {
@@ -256,7 +256,7 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
       finalized: totalFinalized,
       failed: totalFailed,
       message: `Checked ${totalChecked} pending orders across ${stores.length} stores, finalized ${totalFinalized}`
-    };
+    }
 
     console.log(`✅ FinalizePendingOrdersJob completed:`, result);
     return result;
