@@ -250,7 +250,7 @@ export default function Resources() {
               More guides coming soon. Join our Discord for updates!
             </span>
             <a
-              href="https://discord.gg/J3BCegpX"
+              href="https://discord.gg/vvAhfdaX"
               target="_blank"
               rel="noopener noreferrer"
               className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"

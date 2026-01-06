@@ -797,7 +797,7 @@ export default function StoreOnboarding() {
           <p className="mb-2">Need help? We're here for you!</p>
           <div className="flex items-center justify-center gap-4">
             <a
-              href="https://discord.gg/J3BCegpX"
+              href="https://discord.gg/vvAhfdaX"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline"

@@ -58,7 +58,7 @@ export default function Header() {
 
                     {/* Navigation - Centered (Desktop) */}
                     <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2 font-semibold text-lg">
-                        <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                        <a href="https://discord.gg/vvAhfdaX" className="text-slate-600 hover:text-indigo-600 transition-colors">
                             Discord
                         </a>
                         <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
@@ -124,7 +124,7 @@ export default function Header() {
 
                 {/* Mobile Navigation - Below logo row */}
                 <nav className="flex md:hidden items-center justify-center gap-6 font-semibold text-base mt-2">
-                    <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                    <a href="https://discord.gg/vvAhfdaX" className="text-slate-600 hover:text-indigo-600 transition-colors">
                         Discord
                     </a>
                     <a href="#pricing" className="text-slate-600 hover:text-indigo-600 transition-colors">
