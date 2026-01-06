@@ -80,9 +80,9 @@ export default function ProductSlotsEditor({
       try {
         const response = await apiClient.get(`stores/${storeId}/settings`);
         console.log('[ProductSlotsEditor] RAW API response:', response);
-        // API returns { success: true, data: {...store row...} }
-        // Store row has { id, name, ..., settings: {...} }
-        const storeRow = response?.data || response;
+        // apiClient transforms responses for endpoints ending in "s" to arrays
+        // So response is [{...store row...}] instead of { success: true, data: {...} }
+        const storeRow = Array.isArray(response) ? response[0] : (response?.data || response);
         console.log('[ProductSlotsEditor] Store row:', storeRow);
         const settings = storeRow?.settings || {};
         console.log('[ProductSlotsEditor] Extracted settings:', settings);
