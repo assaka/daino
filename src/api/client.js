@@ -336,7 +336,8 @@ class ApiClient {
                             !endpoint.includes('/status') &&
                             !endpoint.includes('/config') &&
                             !endpoint.includes('/test') &&
-                            !endpoint.includes('/save')
+                            !endpoint.includes('/save') &&
+                            !endpoint.includes('/settings')
                             );
       
       // Special handling for storage endpoints - don't transform, return full response
