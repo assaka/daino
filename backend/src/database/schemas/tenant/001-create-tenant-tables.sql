@@ -5809,3 +5809,23 @@ CREATE POLICY tenant_isolation_plugin_widgets ON plugin_widgets
   FOR ALL
   USING (is_service_role())
   WITH CHECK (is_service_role());
+
+-- ============================================
+-- SECTION: UTILITY FUNCTIONS
+-- ============================================
+
+-- Execute SQL function for running dynamic SQL (required for plugin migrations)
+CREATE OR REPLACE FUNCTION execute_sql(sql TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  EXECUTE sql;
+END;
+$$;
+
+-- Grant execute permission to all roles
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO anon;
