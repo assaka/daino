@@ -79,14 +79,8 @@ export default function ProductSlotsEditor({
 
       try {
         const response = await apiClient.get(`stores/${storeId}/settings`);
-        console.log('[ProductSlotsEditor] RAW API response:', response);
-        // apiClient transforms responses for endpoints ending in "s" to arrays
-        // So response is [{...store row...}] instead of { success: true, data: {...} }
-        const storeRow = Array.isArray(response) ? response[0] : (response?.data || response);
-        console.log('[ProductSlotsEditor] Store row:', storeRow);
-        const settings = storeRow?.settings || {};
-        console.log('[ProductSlotsEditor] Extracted settings:', settings);
-        console.log('[ProductSlotsEditor] Theme in settings:', settings?.theme);
+        // API returns { success: true, data: {...store row with settings...} }
+        const settings = response?.data?.settings || {};
         setStoreSettings(settings);
       } catch (error) {
         console.error('[ProductSlotsEditor] Failed to fetch store settings:', error);
@@ -165,17 +159,9 @@ export default function ProductSlotsEditor({
   // Generate context - MUST match storefront ProductDetail.jsx productData structure exactly
   const generateProductContext = useCallback((viewMode, store) => {
     // Use fetched storeSettings from tenant DB (has theme data), fall back to store/selectedStore settings
-    const hasStoreSettings = storeSettings && Object.keys(storeSettings).length > 0;
-    const effectiveSettings = hasStoreSettings
+    const effectiveSettings = storeSettings && Object.keys(storeSettings).length > 0
       ? storeSettings
       : (store?.settings || selectedStore?.settings || {});
-    console.log('[ProductSlotsEditor] generateProductContext called:', {
-      hasStoreSettings,
-      storeSettingsKeys: Object.keys(storeSettings || {}),
-      effectiveSettingsKeys: Object.keys(effectiveSettings || {}),
-      theme: effectiveSettings?.theme,
-      add_to_cart_button_bg_color: effectiveSettings?.theme?.add_to_cart_button_bg_color
-    });
 
     // If we have a real product, use it in the SAME format as storefront
     if (realProduct) {
