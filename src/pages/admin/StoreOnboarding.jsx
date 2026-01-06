@@ -625,38 +625,6 @@ export default function StoreOnboarding() {
           {/* Step 2: Connect Database */}
           {currentStep === 2 && !oauthCompleted && (
             <form onSubmit={handleConnectDatabase} className="space-y-6">
-              {/* Info box for users without Supabase account */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <Info className="w-4 h-4 mr-2 text-blue-500" />
-                  Don't have a Supabase account yet?
-                </h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  No worries! Creating one is quick and free:
-                </p>
-                <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside ml-2 mb-3">
-                  <li>
-                    Go to{' '}
-                    <a
-                      href="https://supabase.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-700 underline font-medium"
-                    >
-                      supabase.com
-                    </a>
-                    {' '}and click "Start your project"
-                  </li>
-                  <li>Sign up with GitHub, Google, or email</li>
-                  <li>Click "New Project" and choose a name and password</li>
-                  <li>Select a region close to your customers</li>
-                  <li>Wait ~2 minutes for your project to be created</li>
-                </ol>
-                <p className="text-xs text-gray-500">
-                  Supabase's free tier includes 500MB database storage - more than enough to get started!
-                </p>
-              </div>
-
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Database className="w-10 h-10 text-green-600" />
@@ -706,6 +674,30 @@ export default function StoreOnboarding() {
                     </>
                   )}
                 </Button>
+              </div>
+
+              {/* Help link with tooltip */}
+              <div className="text-center">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2">
+                        Don't have a Supabase account yet?
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-sm bg-gray-900 text-white p-4">
+                      <p className="font-semibold mb-2">Create a free Supabase account:</p>
+                      <ol className="text-xs space-y-1 list-decimal list-inside">
+                        <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 underline">supabase.com</a> and click "Start your project"</li>
+                        <li>Sign up with GitHub, Google, or email</li>
+                        <li>Click "New Project" and choose a name and password</li>
+                        <li>Select a region close to your customers</li>
+                        <li>Wait ~2 minutes for your project to be created</li>
+                      </ol>
+                      <p className="text-xs text-gray-400 mt-2">Free tier includes 500MB storage!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </form>
           )}
