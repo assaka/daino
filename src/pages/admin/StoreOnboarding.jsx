@@ -490,7 +490,32 @@ export default function StoreOnboarding() {
                 ? `Reconnect Supabase for "${storeData.name}"`
                 : currentStepData.description}
           </CardDescription>
-          {!currentStepData.required && (
+          {currentStep === 2 && !oauthCompleted (
+              <div className="text-center">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2">
+                        Don't have a Supabase account yet?
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-sm bg-gray-900 text-white p-4">
+                      <p className="font-semibold mb-2">Create a free Supabase account:</p>
+                      <ol className="text-xs space-y-1 list-decimal list-inside">
+                        <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 underline">supabase.com</a> and click "Start your project"</li>
+                        <li>Sign up with GitHub, Google, or email</li>
+                        <li>Click "New Project" and choose a name and password</li>
+                        <li>Select a region close to your customers</li>
+                        <li>Wait ~2 minutes for your project to be created</li>
+                      </ol>
+                      <p className="text-xs text-gray-400 mt-2">Free tier includes 500MB storage!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+            )}
+              {!currentStepData.required && (
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full mt-2">
               Optional - Can be skipped
             </span>
@@ -674,30 +699,6 @@ export default function StoreOnboarding() {
                     </>
                   )}
                 </Button>
-              </div>
-
-              {/* Help link with tooltip */}
-              <div className="text-center">
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2">
-                        Don't have a Supabase account yet?
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-sm bg-gray-900 text-white p-4">
-                      <p className="font-semibold mb-2">Create a free Supabase account:</p>
-                      <ol className="text-xs space-y-1 list-decimal list-inside">
-                        <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 underline">supabase.com</a> and click "Start your project"</li>
-                        <li>Sign up with GitHub, Google, or email</li>
-                        <li>Click "New Project" and choose a name and password</li>
-                        <li>Select a region close to your customers</li>
-                        <li>Wait ~2 minutes for your project to be created</li>
-                      </ol>
-                      <p className="text-xs text-gray-400 mt-2">Free tier includes 500MB storage!</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
             </form>
           )}
