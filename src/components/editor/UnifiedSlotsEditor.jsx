@@ -419,8 +419,16 @@ const UnifiedSlotsEditor = ({
       // CRITICAL: Fetch current settings from API to avoid overwriting other settings
       // selectedStore from StoreSelectionContext doesn't have settings, only basic info
       const response = await Store.findById(storeId);
+
+      // DEBUG: Log raw API response to understand structure
+      console.log('🔍 Store.findById RAW response:', response);
+
       // Handle both { success: true, data: {...} } and direct object responses
       const storeData = response?.data || response;
+
+      console.log('🔍 Extracted storeData:', storeData);
+      console.log('🔍 storeData.settings:', storeData?.settings);
+
       const currentSettings = storeData?.settings || {};
       const currentTheme = currentSettings.theme || {};
 
