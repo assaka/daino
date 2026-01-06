@@ -625,6 +625,38 @@ export default function StoreOnboarding() {
           {/* Step 2: Connect Database */}
           {currentStep === 2 && !oauthCompleted && (
             <form onSubmit={handleConnectDatabase} className="space-y-6">
+              {/* Info box for users without Supabase account */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                  <Info className="w-4 h-4 mr-2 text-blue-500" />
+                  Don't have a Supabase account yet?
+                </h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  No worries! Creating one is quick and free:
+                </p>
+                <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside ml-2 mb-3">
+                  <li>
+                    Go to{' '}
+                    <a
+                      href="https://supabase.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-700 underline font-medium"
+                    >
+                      supabase.com
+                    </a>
+                    {' '}and click "Start your project"
+                  </li>
+                  <li>Sign up with GitHub, Google, or email</li>
+                  <li>Click "New Project" and choose a name and password</li>
+                  <li>Select a region close to your customers</li>
+                  <li>Wait ~2 minutes for your project to be created</li>
+                </ol>
+                <p className="text-xs text-gray-500">
+                  Supabase's free tier includes 500MB database storage - more than enough to get started!
+                </p>
+              </div>
+
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Database className="w-10 h-10 text-green-600" />
