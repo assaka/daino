@@ -460,9 +460,12 @@ const UnifiedSlotsEditor = ({
       const result = await Store.updateSettings(storeId, { settings: updatedSettings });
 
       // Update local pageContext so editor preview shows new theme value immediately
+      console.log('🔍 Before pageContext update - current pageContext:', pageContext);
+      console.log('🔍 pageContext.settings:', pageContext?.settings);
+
       setPageContext(prev => {
         if (!prev) return prev;
-        return {
+        const updated = {
           ...prev,
           settings: {
             ...prev.settings,
@@ -472,6 +475,8 @@ const UnifiedSlotsEditor = ({
             }
           }
         };
+        console.log('🔍 Updated pageContext.settings.theme:', updated.settings.theme);
+        return updated;
       });
 
       console.log(`Theme setting updated: ${key} = ${value}`, { apiResult: result });
