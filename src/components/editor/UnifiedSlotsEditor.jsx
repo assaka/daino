@@ -426,10 +426,12 @@ const UnifiedSlotsEditor = ({
         // API returns { success: true, data: { store: {...}, hostname, slug, ... } }
         // The actual store with settings is in response.data.store
         const storeData = response?.data?.store || response?.data || response;
+
+        console.log('🔍 storeData keys:', Object.keys(storeData || {}));
+        console.log('🔍 storeData:', storeData);
+
         currentSettings = storeData?.settings || {};
         currentTheme = currentSettings.theme || {};
-
-        console.log('🔍 Theme save - currentTheme:', currentTheme);
       } catch (fetchError) {
         console.error('❌ Failed to fetch store settings:', fetchError);
         // Continue with empty settings - will only save theme change
