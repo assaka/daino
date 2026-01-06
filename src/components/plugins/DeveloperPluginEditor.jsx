@@ -1964,8 +1964,9 @@ const DeveloperPluginEditor = ({
                         variant="outline"
                         onClick={runTests}
                         title="Run tests"
+                        className="hidden"
                       >
-                        <Bug className="hidden w-4 h-4 mr-1" />
+                        <Bug className="w-4 h-4 mr-1" />
                       </Button>
                       <Button
                         size="sm"
