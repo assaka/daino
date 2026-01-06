@@ -418,19 +418,24 @@ const UnifiedSlotsEditor = ({
     try {
       // CRITICAL: Fetch current settings from API to avoid overwriting other settings
       // selectedStore from StoreSelectionContext doesn't have settings, only basic info
-      const response = await Store.findById(storeId);
+      let currentSettings = {};
+      let currentTheme = {};
 
-      // DEBUG: Log raw API response to understand structure
-      console.log('🔍 Store.findById RAW response:', response);
+      try {
+        console.log('🔍 Fetching store settings for storeId:', storeId);
+        const response = await Store.findById(storeId);
+        console.log('🔍 Store.findById RAW response:', JSON.stringify(response, null, 2));
 
-      // Handle both { success: true, data: {...} } and direct object responses
-      const storeData = response?.data || response;
+        // Handle both { success: true, data: {...} } and direct object responses
+        const storeData = response?.data || response;
+        console.log('🔍 storeData.settings:', JSON.stringify(storeData?.settings, null, 2));
 
-      console.log('🔍 Extracted storeData:', storeData);
-      console.log('🔍 storeData.settings:', storeData?.settings);
-
-      const currentSettings = storeData?.settings || {};
-      const currentTheme = currentSettings.theme || {};
+        currentSettings = storeData?.settings || {};
+        currentTheme = currentSettings.theme || {};
+      } catch (fetchError) {
+        console.error('❌ Failed to fetch store settings:', fetchError);
+        // Continue with empty settings - will only save theme change
+      }
 
       // Update theme settings
       const updatedSettings = {
