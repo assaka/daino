@@ -1023,6 +1023,11 @@ const DeveloperPluginEditor = ({
         const executionTime = result.executionTime;
         addTerminalOutput(`✓ Migration completed successfully${executionTime ? ` in ${executionTime}ms` : ''}`, 'success');
 
+        // Show summary
+        if (result.summary && result.summary.length > 0) {
+          result.summary.forEach(s => addTerminalOutput(`  → ${s}`, 'info'));
+        }
+
         if (result.warnings && result.warnings.length > 0) {
           result.warnings.forEach(w => addTerminalOutput(`  ${w}`, 'warning'));
         }
@@ -1689,7 +1694,16 @@ const DeveloperPluginEditor = ({
                                 const result = response.data || response;
                                 if (result.success) {
                                   successCount++;
-                                  addTerminalOutput(`  ✓ ${migration.version || migration.name} completed`, 'success');
+                                  const timeStr = result.executionTime ? ` (${result.executionTime}ms)` : '';
+                                  addTerminalOutput(`  ✓ ${migration.version || migration.name} completed${timeStr}`, 'success');
+                                  // Show summary
+                                  if (result.summary && result.summary.length > 0) {
+                                    result.summary.forEach(s => addTerminalOutput(`    → ${s}`, 'info'));
+                                  }
+                                  // Show warnings
+                                  if (result.warnings && result.warnings.length > 0) {
+                                    result.warnings.forEach(w => addTerminalOutput(`    ${w}`, 'warning'));
+                                  }
                                 } else {
                                   failCount++;
                                   addTerminalOutput(`  ✗ ${migration.version || migration.name} failed: ${result.error}`, 'error');

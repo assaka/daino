@@ -2955,19 +2955,50 @@ router.post('/:id/run-migration', async (req, res) => {
       });
     }
 
-    // Detect risky operations in migration SQL
+    // Detect risky operations and build summary from migration SQL
     const warnings = [];
+    const summary = [];
     const upSQL = migration.up_sql.toLowerCase();
-    if (upSQL.includes('drop column')) {
-      const dropCount = (upSQL.match(/drop column/g) || []).length;
-      warnings.push(`⚠️ DROPS ${dropCount} COLUMN(S) - Data will be permanently deleted!`);
+    const originalSQL = migration.up_sql;
+
+    // Count operations for summary
+    const createTableMatches = originalSQL.match(/CREATE TABLE\s+(IF NOT EXISTS\s+)?(\w+)/gi) || [];
+    const alterTableMatches = originalSQL.match(/ALTER TABLE\s+(\w+)/gi) || [];
+    const createIndexMatches = originalSQL.match(/CREATE\s+(UNIQUE\s+)?INDEX/gi) || [];
+    const addColumnMatches = originalSQL.match(/ADD COLUMN/gi) || [];
+    const dropColumnMatches = originalSQL.match(/DROP COLUMN/gi) || [];
+    const commentMatches = originalSQL.match(/COMMENT ON/gi) || [];
+
+    if (createTableMatches.length > 0) {
+      const tableNames = createTableMatches.map(m => m.replace(/CREATE TABLE\s+(IF NOT EXISTS\s+)?/i, '').trim());
+      summary.push(`${createTableMatches.length} table(s) created: ${tableNames.join(', ')}`);
+    }
+    if (addColumnMatches.length > 0) {
+      summary.push(`${addColumnMatches.length} column(s) added`);
+    }
+    if (createIndexMatches.length > 0) {
+      summary.push(`${createIndexMatches.length} index(es) created`);
+    }
+    if (alterTableMatches.length > 0 && addColumnMatches.length === 0) {
+      summary.push(`${alterTableMatches.length} table(s) altered`);
+    }
+    if (commentMatches.length > 0) {
+      summary.push(`${commentMatches.length} comment(s) added`);
+    }
+
+    // Detect risky operations
+    if (dropColumnMatches.length > 0) {
+      warnings.push(`⚠️ DROPS ${dropColumnMatches.length} COLUMN(S) - Data will be permanently deleted!`);
+      summary.push(`${dropColumnMatches.length} column(s) dropped`);
     }
     if (upSQL.includes('alter column') && upSQL.includes('type')) {
       const typeChangeCount = (upSQL.match(/alter column.*type/g) || []).length;
       warnings.push(`⚠️ CHANGES ${typeChangeCount} COLUMN TYPE(S) - May cause data loss or conversion errors!`);
     }
     if (upSQL.includes('drop table')) {
-      warnings.push(`⚠️ DROPS TABLE - All data will be permanently deleted!`);
+      const dropTableCount = (upSQL.match(/drop table/g) || []).length;
+      warnings.push(`⚠️ DROPS ${dropTableCount} TABLE(S) - All data will be permanently deleted!`);
+      summary.push(`${dropTableCount} table(s) dropped`);
     }
 
     // Execute migration via RPC (requires execute_sql function in Supabase)
@@ -2993,6 +3024,7 @@ router.post('/:id/run-migration', async (req, res) => {
       migrationVersion: migration_version,
       description: migration.migration_description,
       executionTime,
+      summary: summary.length > 0 ? summary : ['Migration executed successfully'],
       warnings: warnings.length > 0 ? warnings : undefined
     });
 
