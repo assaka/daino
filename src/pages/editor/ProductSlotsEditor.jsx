@@ -79,9 +79,14 @@ export default function ProductSlotsEditor({
 
       try {
         const response = await apiClient.get(`stores/${storeId}/settings`);
-        const data = response?.data || response;
-        const settings = data?.settings || {};
-        console.log('[ProductSlotsEditor] Fetched store settings:', settings);
+        console.log('[ProductSlotsEditor] RAW API response:', response);
+        // API returns { success: true, data: {...store row...} }
+        // Store row has { id, name, ..., settings: {...} }
+        const storeRow = response?.data || response;
+        console.log('[ProductSlotsEditor] Store row:', storeRow);
+        const settings = storeRow?.settings || {};
+        console.log('[ProductSlotsEditor] Extracted settings:', settings);
+        console.log('[ProductSlotsEditor] Theme in settings:', settings?.theme);
         setStoreSettings(settings);
       } catch (error) {
         console.error('[ProductSlotsEditor] Failed to fetch store settings:', error);
@@ -160,10 +165,17 @@ export default function ProductSlotsEditor({
   // Generate context - MUST match storefront ProductDetail.jsx productData structure exactly
   const generateProductContext = useCallback((viewMode, store) => {
     // Use fetched storeSettings from tenant DB (has theme data), fall back to store/selectedStore settings
-    const effectiveSettings = storeSettings && Object.keys(storeSettings).length > 0
+    const hasStoreSettings = storeSettings && Object.keys(storeSettings).length > 0;
+    const effectiveSettings = hasStoreSettings
       ? storeSettings
       : (store?.settings || selectedStore?.settings || {});
-    console.log('[ProductSlotsEditor] generateProductContext - effectiveSettings:', effectiveSettings);
+    console.log('[ProductSlotsEditor] generateProductContext called:', {
+      hasStoreSettings,
+      storeSettingsKeys: Object.keys(storeSettings || {}),
+      effectiveSettingsKeys: Object.keys(effectiveSettings || {}),
+      theme: effectiveSettings?.theme,
+      add_to_cart_button_bg_color: effectiveSettings?.theme?.add_to_cart_button_bg_color
+    });
 
     // If we have a real product, use it in the SAME format as storefront
     if (realProduct) {
