@@ -32,6 +32,35 @@ const PAGE_CONFIGS = [
 
 class TenantProvisioningService {
   /**
+   * Retry a function with exponential backoff
+   * @private
+   */
+  async retryWithBackoff(fn, options = {}) {
+    const { maxRetries = 3, initialDelay = 2000, maxDelay = 30000, context = 'operation' } = options;
+    let lastError;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        const isTimeout = error.message?.includes('timeout') ||
+                          error.response?.data?.message?.includes('timeout') ||
+                          error.code === 'ECONNABORTED';
+
+        if (attempt < maxRetries && isTimeout) {
+          const delay = Math.min(initialDelay * Math.pow(2, attempt - 1), maxDelay);
+          console.log(`⏳ ${context} attempt ${attempt}/${maxRetries} failed (timeout), retrying in ${delay/1000}s...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw error;
+        }
+      }
+    }
+    throw lastError;
+  }
+
+  /**
    * Provision a new tenant database
    *
    * @param {Object} tenantDb - Supabase client or Sequelize instance
@@ -434,17 +463,20 @@ END $$;`;
 
           // Execute migrations first (creates 137 tables WITHOUT foreign keys)
           console.log('📤 Pass 1: Running migrations via Management API (tables only)...');
-          const migrationResponse = await axios.post(
-            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: tablesOnlySQL },
-            {
-              headers: {
-                'Authorization': `Bearer ${options.oauthAccessToken}`,
-                'Content-Type': 'application/json'
-              },
-              maxBodyLength: Infinity,
-              timeout: 120000
-            }
+          const migrationResponse = await this.retryWithBackoff(
+            () => axios.post(
+              `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+              { query: tablesOnlySQL },
+              {
+                headers: {
+                  'Authorization': `Bearer ${options.oauthAccessToken}`,
+                  'Content-Type': 'application/json'
+                },
+                maxBodyLength: Infinity,
+                timeout: 180000 // 3 minutes for large migration
+              }
+            ),
+            { maxRetries: 3, initialDelay: 3000, context: 'Migration (table creation)' }
           );
 
           console.log('✅ Migration API response:', migrationResponse.data);
@@ -684,17 +716,20 @@ VALUES (
           console.log('📊 Seed SQL size:', (processedSeedSQL.length / 1024).toFixed(2), 'KB');
           console.log('📤 Running seed data via Management API...');
 
-          const seedResponse = await axios.post(
-            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: processedSeedSQL },
-            {
-              headers: {
-                'Authorization': `Bearer ${options.oauthAccessToken}`,
-                'Content-Type': 'application/json'
-              },
-              maxBodyLength: Infinity,
-              timeout: 180000 // 3 minutes for seed data
-            }
+          const seedResponse = await this.retryWithBackoff(
+            () => axios.post(
+              `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+              { query: processedSeedSQL },
+              {
+                headers: {
+                  'Authorization': `Bearer ${options.oauthAccessToken}`,
+                  'Content-Type': 'application/json'
+                },
+                maxBodyLength: Infinity,
+                timeout: 180000 // 3 minutes for seed data
+              }
+            ),
+            { maxRetries: 3, initialDelay: 3000, context: 'Seed data insertion' }
           );
 
           console.log('✅ Seed API response:', seedResponse.data);

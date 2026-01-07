@@ -57,8 +57,6 @@ class SupabaseAdapter extends DatabaseAdapter {
         .select('id')
         .limit(1);
 
-      console.log('Supabase testConnection result:', { data, error: error ? { code: error.code, message: error.message, details: error.details, hint: error.hint } : null });
-
       // No error = connection works
       if (!error) {
         return true;

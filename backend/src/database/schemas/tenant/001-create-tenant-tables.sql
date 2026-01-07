@@ -3547,6 +3547,8 @@ CREATE INDEX IF NOT EXISTS idx_import_statistics_unique ON import_statistics USI
 
 CREATE INDEX IF NOT EXISTS idx_attribute_sets_store_id ON attribute_sets USING btree (store_id);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_attribute_sets_store_name ON attribute_sets USING btree (store_id, name);
+
 CREATE INDEX IF NOT EXISTS idx_attributes_code ON attributes USING btree (code);
 
 CREATE INDEX IF NOT EXISTS idx_attributes_is_configurable ON attributes USING btree (is_configurable) WHERE (is_configurable = true);
@@ -3574,6 +3576,8 @@ CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories USING btree (p
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories USING btree (slug);
 
 CREATE INDEX IF NOT EXISTS idx_categories_store_id ON categories USING btree (store_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_store_slug ON categories USING btree (store_id, slug);
 
 CREATE INDEX IF NOT EXISTS idx_categories_media_asset_id ON categories USING btree (media_asset_id);
 

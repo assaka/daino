@@ -58,16 +58,19 @@ ON CONFLICT DO NOTHING;
 
 -- attribute_sets: Create 'Default' attribute set (store_id updated by provisioning service)
 INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
-VALUES (gen_random_uuid(), 'Default', 'Default attribute set', true, 0, '{{STORE_ID}}', '[]'::jsonb, NOW(), NOW());
+VALUES (gen_random_uuid(), 'Default', 'Default attribute set', true, 0, '{{STORE_ID}}', '[]'::jsonb, NOW(), NOW())
+ON CONFLICT (store_id, name) DO NOTHING;
 
 -- categories: Create 'root-catalog' category (store_id updated by provisioning service)
 INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
-VALUES (gen_random_uuid(), '{{STORE_ID}}', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW());
+VALUES (gen_random_uuid(), '{{STORE_ID}}', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW())
+ON CONFLICT (store_id, slug) DO NOTHING;
 
 -- category_translations: Add translations for root-catalog
 INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
 SELECT id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()
-FROM categories WHERE slug = 'root-catalog';
+FROM categories WHERE slug = 'root-catalog'
+ON CONFLICT (category_id, language_code) DO NOTHING;
 
 -- cms_pages (4 rows)
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)

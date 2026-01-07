@@ -898,9 +898,6 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         .update({ status: 'pending_database', updated_at: new Date().toISOString() })
         .eq('id', storeId);
 
-      console.log('masterDbClient storeId', storeId);
-      console.log('masterDbClient', res);
-
       return res.status(500).json({
         success: false,
         error: 'Failed to provision tenant database',
