@@ -57,22 +57,6 @@ CREATE TABLE IF NOT EXISTS stores (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Add theme_preset column if not exists (for existing databases)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'stores' AND column_name = 'theme_preset') THEN
-    ALTER TABLE stores ADD COLUMN theme_preset VARCHAR(50) DEFAULT 'default';
-  END IF;
-END $$;
-
--- Add provisioning_completed_at column if not exists (for existing databases)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'stores' AND column_name = 'provisioning_completed_at') THEN
-    ALTER TABLE stores ADD COLUMN provisioning_completed_at TIMESTAMP DEFAULT NULL;
-  END IF;
-END $$;
-
 CREATE INDEX IF NOT EXISTS idx_stores_user_id ON stores(user_id);
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores(slug);
 CREATE INDEX IF NOT EXISTS idx_stores_status ON stores(status);
