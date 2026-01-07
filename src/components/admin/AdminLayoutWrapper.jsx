@@ -82,6 +82,12 @@ export function AdminLayoutWrapper({ children }) {
       }
 
       if (stores.length === 0) {
+        // Clear stale localStorage data for non-existent stores
+        localStorage.removeItem('selectedStoreId');
+        localStorage.removeItem('selectedStoreName');
+        localStorage.removeItem('selectedStoreSlug');
+        localStorage.removeItem('selectedStoreStatus');
+        localStorage.removeItem('selectedStoreThemePreset');
         navigate('/admin/onboarding', { replace: true });
         return;
       }
@@ -109,6 +115,8 @@ export function AdminLayoutWrapper({ children }) {
         localStorage.removeItem('selectedStoreId');
         localStorage.removeItem('selectedStoreSlug');
         localStorage.removeItem('selectedStoreName');
+        localStorage.removeItem('selectedStoreStatus');
+        localStorage.removeItem('selectedStoreThemePreset');
 
         // Redirect to auth if not already there (prevents loops)
         if (!location.pathname.includes('/admin/auth')) {
@@ -116,8 +124,16 @@ export function AdminLayoutWrapper({ children }) {
         }
         return;
       }
-      // On other errors, allow access (fail open)
-      setChecking(false);
+
+      // On API errors (e.g. 500), clear stale store data and redirect to onboarding
+      // This handles cases where the database is empty or corrupted
+      console.warn('Store check failed, clearing localStorage and redirecting to onboarding');
+      localStorage.removeItem('selectedStoreId');
+      localStorage.removeItem('selectedStoreName');
+      localStorage.removeItem('selectedStoreSlug');
+      localStorage.removeItem('selectedStoreStatus');
+      localStorage.removeItem('selectedStoreThemePreset');
+      navigate('/admin/onboarding', { replace: true });
     }
   };
 

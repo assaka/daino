@@ -1155,9 +1155,10 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     const { masterDbClient } = require('../database/masterConnection');
 
     // 1. Get stores owned by user
+    // Note: provisioning_completed_at is fetched separately in case column doesn't exist yet
     const { data: ownedStores, error: ownedError } = await masterDbClient
       .from('stores')
-      .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset, provisioning_completed_at')
+      .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1183,7 +1184,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     if (teamStoreIds.length > 0) {
       const { data: teamStoreData, error: teamStoreError } = await masterDbClient
         .from('stores')
-        .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset, provisioning_completed_at')
+        .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
         .in('id', teamStoreIds);
 
       if (!teamStoreError && teamStoreData) {
