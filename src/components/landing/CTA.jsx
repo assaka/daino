@@ -37,7 +37,7 @@ export default function CTA() {
                                     size="lg"
                                     className="bg-white hover:bg-indigo-50 text-indigo-900 px-12 py-8 text-xl rounded-full font-bold transition-all group w-full sm:w-auto shadow-xl"
                                 >
-                                    START FREE TRIAL
+                                    START FREE
                                     <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform"/>
                                 </Button>
                             </Link>
