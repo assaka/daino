@@ -243,6 +243,7 @@ router.post('/', authMiddleware, async (req, res) => {
           slug: slug,
           status: 'pending_database',
           is_active: false,
+          theme_preset: 'default',  // Explicitly set default theme preset
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -317,6 +318,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     } = req.body;
 
     console.log('🔍 Request body keys:', Object.keys(req.body));
+    console.log('🎨 Theme preset received:', themePreset, 'type:', typeof themePreset);
     console.log('🔍 serviceRoleKey provided:', !!manualServiceKey);
 
     let projectUrl, serviceRoleKey, anonKey, connectionString, oauthAccessToken, projectId;
@@ -915,13 +917,32 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     // 6. Activate store and save slug (use Supabase client)
     console.log('🎉 Activating store and saving slug...');
     const slug = storeSlug || `store-${Date.now()}`;
+    // Validate theme preset before saving
+    let validThemePreset = 'default';
+    if (themePreset && typeof themePreset === 'string') {
+      // Check if it's a valid preset name
+      const { data: presetExists } = await masterDbClient
+        .from('theme_defaults')
+        .select('preset_name')
+        .eq('preset_name', themePreset)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (presetExists) {
+        validThemePreset = themePreset;
+      } else {
+        console.warn(`⚠️ Invalid theme preset "${themePreset}" - using default`);
+      }
+    }
+    console.log('🎨 Saving theme preset:', validThemePreset);
+
     const { error: activateError } = await masterDbClient
       .from('stores')
       .update({
         status: 'active',
         is_active: true,
         slug: slug,
-        theme_preset: themePreset || 'default',  // Save selected theme preset
+        theme_preset: validThemePreset,
         updated_at: new Date().toISOString()
       })
       .eq('id', storeId);
@@ -2180,10 +2201,27 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
 
     // Update theme_preset in master DB if provided
     if (updates.theme_preset !== undefined) {
+      // Validate theme preset before saving
+      let validThemePreset = updates.theme_preset;
+      if (validThemePreset && typeof validThemePreset === 'string' && validThemePreset !== 'default') {
+        const { data: presetExists } = await masterDbClient
+          .from('theme_defaults')
+          .select('preset_name')
+          .eq('preset_name', validThemePreset)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!presetExists) {
+          console.warn(`⚠️ Invalid theme preset "${validThemePreset}" in settings update - using default`);
+          validThemePreset = 'default';
+        }
+      }
+      console.log('🎨 Updating theme preset in master DB:', validThemePreset);
+
       await masterDbClient
         .from('stores')
         .update({
-          theme_preset: updates.theme_preset,
+          theme_preset: validThemePreset,
           updated_at: new Date().toISOString()
         })
         .eq('id', storeId);
