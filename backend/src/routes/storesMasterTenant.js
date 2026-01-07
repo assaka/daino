@@ -940,6 +940,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         is_active: true,
         slug: slug,
         theme_preset: validThemePreset,
+        provisioning_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', storeId);
@@ -952,7 +953,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       });
     }
 
-    console.log('✅ Store activated successfully!');
+    console.log('✅ Store activated and provisioning marked complete!');
 
     // Provision demo data if requested
     let demoDataResult = null;
@@ -1005,6 +1006,145 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /api/stores/:id/provisioning-status
+ * Check if store provisioning is complete
+ * Returns status and whether retry is needed
+ */
+router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const { masterDbClient } = require('../database/masterConnection');
+
+    // Get store from master DB
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('id, status, is_active, provisioning_completed_at')
+      .eq('id', storeId)
+      .single();
+
+    if (error || !store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Check if provisioning is incomplete
+    const isIncomplete = store.status === 'active' && !store.provisioning_completed_at;
+
+    res.json({
+      success: true,
+      data: {
+        storeId: store.id,
+        status: store.status,
+        isActive: store.is_active,
+        provisioningCompletedAt: store.provisioning_completed_at,
+        isIncomplete,
+        message: isIncomplete
+          ? 'Store provisioning was interrupted. Some data may be missing.'
+          : 'Store provisioning is complete.'
+      }
+    });
+  } catch (error) {
+    console.error('Provisioning status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check provisioning status'
+    });
+  }
+});
+
+/**
+ * POST /api/stores/:id/complete-provisioning
+ * Retry/complete provisioning for a store with incomplete setup
+ */
+router.post('/:id/complete-provisioning', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const { masterDbClient } = require('../database/masterConnection');
+    const TenantProvisioningService = require('../services/database/TenantProvisioningService');
+
+    // Verify store ownership
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, user_id, status, provisioning_completed_at, theme_preset')
+      .eq('id', storeId)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    if (store.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // Get OAuth credentials from integration_configs
+    const { data: integrationConfig } = await masterDbClient
+      .from('integration_configs')
+      .select('config')
+      .eq('store_id', storeId)
+      .eq('integration_type', 'supabase')
+      .single();
+
+    if (!integrationConfig?.config?.access_token || !integrationConfig?.config?.project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'OAuth credentials not found. Please reconnect your Supabase database.'
+      });
+    }
+
+    console.log(`🔄 Completing provisioning for store ${storeId}...`);
+
+    // Run provisioning (idempotent - will skip already completed steps)
+    const provisioningResult = await TenantProvisioningService.provisionTenantDatabase(
+      null, // tenantDb not needed for OAuth mode
+      storeId,
+      {
+        userId: req.user.id,
+        userEmail: req.user.email,
+        storeName: store.name || 'My Store',
+        oauthAccessToken: integrationConfig.config.access_token,
+        projectId: integrationConfig.config.project_id,
+        themePreset: store.theme_preset || 'default'
+      }
+    );
+
+    if (!provisioningResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Provisioning failed',
+        details: provisioningResult.errors
+      });
+    }
+
+    // Mark provisioning as complete
+    await masterDbClient
+      .from('stores')
+      .update({
+        provisioning_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
+
+    console.log(`✅ Provisioning completed for store ${storeId}`);
+
+    res.json({
+      success: true,
+      message: 'Provisioning completed successfully',
+      data: provisioningResult
+    });
+  } catch (error) {
+    console.error('Complete provisioning error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to complete provisioning',
+      details: error.message
+    });
+  }
+});
+
+/**
  * GET /api/stores/dropdown
  * Get stores for dropdown (simple format)
  * Includes both owned stores AND stores user is a team member of
@@ -1017,7 +1157,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     // 1. Get stores owned by user
     const { data: ownedStores, error: ownedError } = await masterDbClient
       .from('stores')
-      .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
+      .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset, provisioning_completed_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1043,7 +1183,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     if (teamStoreIds.length > 0) {
       const { data: teamStoreData, error: teamStoreError } = await masterDbClient
         .from('stores')
-        .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
+        .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset, provisioning_completed_at')
         .in('id', teamStoreIds);
 
       if (!teamStoreError && teamStoreData) {

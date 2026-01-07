@@ -36,6 +36,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { PageLoader } from "@/components/ui/page-loader";
 import { Badge } from "@/components/ui/badge";
 import { SetupGuide } from '@/components/admin/dashboard/SetupGuide'; // Moved SetupGuide to its own file
+import { ProvisioningIncompleteModal } from '@/components/admin/dashboard/ProvisioningIncompleteModal';
 import { checkStripeConnectStatus } from '@/api/functions';
 import { createStripeConnectLink } from '@/api/functions';
 
@@ -94,14 +95,34 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [stripeSuccessMessage, setStripeSuccessMessage] = useState('');
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+  const [showProvisioningModal, setShowProvisioningModal] = useState(false);
+  const [provisioningChecked, setProvisioningChecked] = useState(false);
   const navigate = useNavigate();
 
 
   useEffect(() => {
     if (selectedStore) {
       loadDashboardData();
+      checkProvisioningStatus();
     }
   }, [selectedStore]);
+
+  // Check if provisioning was completed successfully
+  const checkProvisioningStatus = async () => {
+    if (!selectedStore?.id || provisioningChecked) return;
+
+    try {
+      const response = await apiClient.get(`/api/stores/${selectedStore.id}/provisioning-status`);
+      if (response.data?.data?.isIncomplete) {
+        setShowProvisioningModal(true);
+      }
+      setProvisioningChecked(true);
+    } catch (err) {
+      // Silently fail - don't block dashboard for this check
+      console.warn('Failed to check provisioning status:', err.message);
+      setProvisioningChecked(true);
+    }
+  };
 
   useEffect(() => {
 
@@ -670,6 +691,17 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Provisioning Incomplete Modal */}
+      <ProvisioningIncompleteModal
+        isOpen={showProvisioningModal}
+        onClose={() => setShowProvisioningModal(false)}
+        storeId={selectedStore?.id}
+        onComplete={() => {
+          // Reload dashboard data after provisioning completes
+          loadDashboardData();
+        }}
+      />
     </div>
   );
 }

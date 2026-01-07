@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS stores (
   )),
   is_active BOOLEAN DEFAULT false,
   theme_preset VARCHAR(50) DEFAULT 'default',  -- Reference to selected theme preset (full settings in tenant DB)
+  provisioning_completed_at TIMESTAMP DEFAULT NULL,  -- Set when all provisioning steps complete successfully
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -61,6 +62,14 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'stores' AND column_name = 'theme_preset') THEN
     ALTER TABLE stores ADD COLUMN theme_preset VARCHAR(50) DEFAULT 'default';
+  END IF;
+END $$;
+
+-- Add provisioning_completed_at column if not exists (for existing databases)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'stores' AND column_name = 'provisioning_completed_at') THEN
+    ALTER TABLE stores ADD COLUMN provisioning_completed_at TIMESTAMP DEFAULT NULL;
   END IF;
 END $$;
 
