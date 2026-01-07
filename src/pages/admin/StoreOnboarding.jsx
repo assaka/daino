@@ -66,6 +66,19 @@ export default function StoreOnboarding() {
   useEffect(() => {
     const step = searchParams.get('step');
     const reprovision = searchParams.get('reprovision');
+    const resumeStoreId = searchParams.get('storeId');
+    const resume = searchParams.get('resume');
+
+    // Resume mode: store exists but provisioning was interrupted
+    if (resumeStoreId && resume === 'true') {
+      setIsReprovision(true);
+      setStoreId(resumeStoreId);
+      // Store exists but needs to complete database connection
+      setCompletedSteps([1]); // Mark step 1 as completed (store was created)
+      setCurrentStep(2); // Go to database connection step
+      setError('Your store setup was interrupted. Please reconnect your database to continue.');
+      return;
+    }
 
     if (step === '2' && reprovision === 'true') {
       const existingStoreId = localStorage.getItem('selectedStoreId');

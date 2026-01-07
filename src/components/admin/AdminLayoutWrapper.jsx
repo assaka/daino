@@ -92,6 +92,18 @@ export function AdminLayoutWrapper({ children }) {
         return;
       }
 
+      // Check if any store is stuck in 'provisioning' or 'pending_database' status
+      const activeStores = stores.filter(s => s.status === 'active');
+      const stuckStores = stores.filter(s => s.status === 'provisioning' || s.status === 'pending_database');
+
+      if (activeStores.length === 0 && stuckStores.length > 0) {
+        // All stores are stuck - redirect to onboarding to complete setup
+        const stuckStore = stuckStores[0];
+        console.warn(`Store ${stuckStore.id} is stuck in '${stuckStore.status}' status, redirecting to onboarding`);
+        navigate(`/admin/onboarding?storeId=${stuckStore.id}&resume=true`, { replace: true });
+        return;
+      }
+
       setChecking(false);
     } catch (error) {
       console.error('Store check error:', error);
