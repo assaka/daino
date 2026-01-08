@@ -503,12 +503,24 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       is_active: store.is_active
     });
 
-    if (store.status !== 'pending_database') {
+    // Allow reconnection if:
+    // 1. Store is pending_database (never connected)
+    // 2. Store is provisioning (connection interrupted)
+    // 3. Store is active but provisioning_completed_at is null (incomplete provisioning)
+    const allowReconnect = store.status === 'pending_database' ||
+                           store.status === 'provisioning' ||
+                           (store.status === 'active' && !store.provisioning_completed_at);
+
+    if (!allowReconnect) {
       return res.status(400).json({
         success: false,
-        error: 'Store already has a database connected',
+        error: 'Store already has a database connected and fully provisioned',
         code: 'ALREADY_CONNECTED'
       });
+    }
+
+    if (store.status === 'provisioning' || (store.status === 'active' && !store.provisioning_completed_at)) {
+      console.log('⚠️ Store has incomplete provisioning, allowing reconnection to retry');
     }
 
     // Check if this database URL is already being used by another store
