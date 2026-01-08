@@ -195,18 +195,24 @@ export default function StoreOnboarding() {
           }
         };
         verifyStoreAndStatus();
+      } else {
+        // No store in localStorage - redirect to step 1 to check for incomplete stores
+        console.log('🔍 reprovision=true but no selectedStoreId in localStorage - going to step 1');
+        setCurrentStep(1);
       }
     }
   }, [searchParams]);
 
   // Check if user has existing stores and auto-resume incomplete ones
   useEffect(() => {
-    // Skip if already in resume/reprovision mode (URL params handled it)
+    // Skip only if resume mode with storeId (that useEffect handles it)
     const resume = searchParams.get('resume');
-    const reprovision = searchParams.get('reprovision');
-    console.log('🔍 checkExistingStores useEffect - resume:', resume, 'reprovision:', reprovision);
-    if (resume === 'true' || reprovision === 'true') {
-      console.log('🔍 Skipping check - URL params present');
+    const resumeStoreId = searchParams.get('storeId');
+    console.log('🔍 checkExistingStores useEffect - resume:', resume, 'resumeStoreId:', resumeStoreId);
+
+    // Only skip if we have a specific storeId to resume
+    if (resume === 'true' && resumeStoreId) {
+      console.log('🔍 Skipping check - resume mode with specific storeId');
       setCheckingExistingStores(false);
       return;
     }
