@@ -219,17 +219,7 @@ export default function StoreOnboarding() {
           if (incompleteStore && currentStep === 1) {
             console.log('Found incomplete store:', incompleteStore.id, incompleteStore.status);
 
-            // Auto-resume this store instead of creating a new one
-            setStoreId(incompleteStore.id);
-            setStoreData({
-              name: incompleteStore.name || 'My Store',
-              slug: incompleteStore.slug || incompleteStore.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
-            });
-            setCompletedSteps([1]);
-            setCurrentStep(2);
-            setIsReprovision(true);
-
-            // Check provisioning status to determine OAuth state
+            // Check provisioning status to determine what step to resume
             try {
               const response = await apiClient.get(`/stores/${incompleteStore.id}/provisioning-status`);
               const data = Array.isArray(response) ? response[0] :
@@ -237,16 +227,42 @@ export default function StoreOnboarding() {
                            response.data || response;
 
               const status = data?.provisioningStatus;
+
+              // If provisioning has started (beyond pending), go to step 2
               if (status && status !== 'pending' && status !== 'failed') {
+                setStoreId(incompleteStore.id);
+                setStoreData({
+                  name: incompleteStore.name || 'My Store',
+                  slug: incompleteStore.slug || 'my-store'
+                });
+                setCompletedSteps([1]);
+                setCurrentStep(2);
+                setIsReprovision(true);
                 setOauthCompleted(true);
                 setNeedsServiceKey(true);
                 setProvisioningStatus(status);
                 setError('You have an incomplete store setup. Please enter your Service Role Key to continue.');
               } else {
-                setError('You have an incomplete store setup. Please connect your Supabase account to continue.');
+                // Still pending or failed - stay on step 1 but use existing store ID for upsert
+                setStoreId(incompleteStore.id);
+                setStoreData({
+                  name: incompleteStore.name || '',
+                  slug: incompleteStore.slug || ''
+                });
+                if (incompleteStore.theme_preset) {
+                  setSelectedThemePreset(incompleteStore.theme_preset);
+                }
+                // Stay on step 1 - user can edit name/slug/theme and continue
+                console.log('Resuming incomplete store on step 1 for upsert');
               }
             } catch (err) {
-              setError('You have an incomplete store setup. Please connect your Supabase account to continue.');
+              // Can't check status - stay on step 1 with existing store ID
+              setStoreId(incompleteStore.id);
+              setStoreData({
+                name: incompleteStore.name || '',
+                slug: incompleteStore.slug || ''
+              });
+              console.log('Resuming incomplete store on step 1 (status check failed)');
             }
           }
         }
@@ -326,24 +342,42 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      // Theme preset is passed to connect-database later, not stored in master DB
-      const response = await apiClient.post('/stores', {
-        name: storeData.name
-      });
+      let response;
 
-      // Handle response from POST /api/stores
-      if (response && response.success && response.data) {
-        // Response format: { success: true, data: { store: {...} } }
-        const storeData = response.data.store || response.data;
-        setStoreId(storeData.id);
-        setCompletedSteps([1]);
-        setCurrentStep(2);
-        setSuccess(response.message || 'Store created successfully');
+      if (storeId) {
+        // Update existing store (resuming incomplete store)
+        console.log('Updating existing store:', storeId);
+        response = await apiClient.put(`/stores/${storeId}`, {
+          name: storeData.name,
+          slug: storeData.slug,
+          theme_preset: selectedThemePreset
+        });
+
+        if (response && response.success) {
+          setCompletedSteps([1]);
+          setCurrentStep(2);
+          setSuccess('Store updated successfully');
+        } else {
+          setError(response?.error || response?.message || 'Failed to update store');
+        }
       } else {
-        setError(response?.error || response?.message || 'Failed to create store');
+        // Create new store
+        response = await apiClient.post('/stores', {
+          name: storeData.name
+        });
+
+        if (response && response.success && response.data) {
+          const newStoreData = response.data.store || response.data;
+          setStoreId(newStoreData.id);
+          setCompletedSteps([1]);
+          setCurrentStep(2);
+          setSuccess(response.message || 'Store created successfully');
+        } else {
+          setError(response?.error || response?.message || 'Failed to create store');
+        }
       }
     } catch (err) {
-      setError(err.message || 'Failed to create store');
+      setError(err.message || 'Failed to create/update store');
     } finally {
       setLoading(false);
     }
