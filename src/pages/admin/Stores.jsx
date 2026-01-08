@@ -54,6 +54,8 @@ export default function Stores() {
   // Insufficient credits error state
   const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
   const [insufficientCreditsData, setInsufficientCreditsData] = useState({ currentBalance: 0, requiredCredits: 10 });
+  // Provisioning status tracking
+  const [provisioningStatuses, setProvisioningStatuses] = useState({}); // { storeId: { status, message, isFailed, canRetry } }
 
   useEffect(() => {
     loadData();
@@ -115,6 +117,9 @@ export default function Stores() {
 
       // Store.findAll() already returns complete store data with all fields
       setStores(userStores || []);
+
+      // Check provisioning status for stores that might have issues
+      checkProvisioningStatuses(userStores || []);
     } catch (error) {
       console.error('Error loading stores:', error);
       // Set empty array on error to prevent "no stores" message from showing incorrectly
@@ -122,6 +127,37 @@ export default function Stores() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check provisioning status for stores that might be incomplete
+  const checkProvisioningStatuses = async (storesList) => {
+    const statusMap = {};
+
+    await Promise.all(
+      storesList.map(async (store) => {
+        // Only check stores that might have provisioning issues
+        if (store.status === 'provisioning' || store.status === 'pending_database' || store.status === 'active') {
+          try {
+            const response = await apiClient.get(`/api/stores/${store.id}/provisioning-status`);
+            const data = response.data?.data || response.data;
+
+            if (data && !data.isComplete) {
+              statusMap[store.id] = {
+                status: data.provisioningStatus,
+                message: data.message,
+                isFailed: data.isFailed,
+                canRetry: data.canRetry
+              };
+            }
+          } catch (err) {
+            // Silently fail for individual stores
+            console.warn(`Failed to check provisioning status for store ${store.id}:`, err.message);
+          }
+        }
+      })
+    );
+
+    setProvisioningStatuses(statusMap);
   };
 
 
@@ -430,6 +466,27 @@ export default function Stores() {
         )}
       </div>
 
+      {/* Provisioning Warning Banner */}
+      {Object.keys(provisioningStatuses).length > 0 && (
+        <div className="mb-6 p-4 rounded-lg border bg-amber-50 border-amber-300">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 mt-0.5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-amber-800 mb-1">
+                {Object.values(provisioningStatuses).some(s => s.isFailed)
+                  ? 'Some stores have setup issues'
+                  : 'Some stores have incomplete setup'}
+              </h4>
+              <p className="text-sm text-amber-700 mb-2">
+                {Object.keys(provisioningStatuses).length === 1
+                  ? '1 store needs attention. Look for the warning icon on the store card below.'
+                  : `${Object.keys(provisioningStatuses).length} stores need attention. Look for warning icons on store cards below.`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {stores.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
@@ -606,6 +663,62 @@ export default function Stores() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Provisioning Warning */}
+                {provisioningStatuses[store.id] && (
+                  <div className={`mt-4 pt-4 border-t ${
+                    provisioningStatuses[store.id].isFailed
+                      ? 'border-red-200'
+                      : 'border-amber-200'
+                  }`}>
+                    <div className={`p-3 rounded-lg ${
+                      provisioningStatuses[store.id].isFailed
+                        ? 'bg-red-50 border border-red-200'
+                        : 'bg-amber-50 border border-amber-200'
+                    }`}>
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                          provisioningStatuses[store.id].isFailed
+                            ? 'text-red-600'
+                            : 'text-amber-600'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${
+                            provisioningStatuses[store.id].isFailed
+                              ? 'text-red-800'
+                              : 'text-amber-800'
+                          }`}>
+                            {provisioningStatuses[store.id].isFailed
+                              ? 'Setup Failed'
+                              : 'Setup Incomplete'}
+                          </p>
+                          <p className={`text-xs mt-0.5 ${
+                            provisioningStatuses[store.id].isFailed
+                              ? 'text-red-700'
+                              : 'text-amber-700'
+                          }`}>
+                            {provisioningStatuses[store.id].message || 'Database setup needs attention'}
+                          </p>
+                        </div>
+                        {provisioningStatuses[store.id].canRetry && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`h-7 px-2 ${
+                              provisioningStatuses[store.id].isFailed
+                                ? 'text-red-700 hover:text-red-800 hover:bg-red-100'
+                                : 'text-amber-700 hover:text-amber-800 hover:bg-amber-100'
+                            }`}
+                            onClick={() => navigate(`/admin/onboarding?storeId=${store.id}&resume=true`)}
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Retry
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Uptime Information */}
                 {storeUptimes[store.id] && (
