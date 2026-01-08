@@ -904,10 +904,14 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
 
     if (!provisioningResult.success) {
-      // Revert store status using Supabase client
+      // Revert store status to allow retry
       await masterDbClient
         .from('stores')
-        .update({ status: 'pending_database', updated_at: new Date().toISOString() })
+        .update({
+          status: 'pending_database',
+          provisioning_completed_at: null,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', storeId);
 
       return res.status(500).json({
@@ -998,13 +1002,17 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Database connection error:', error);
 
-    // Revert store status (use Supabase client)
+    // Revert store status to allow retry (use Supabase client)
     try {
       await masterDbClient
         .from('stores')
-        .update({ status: 'pending_database', updated_at: new Date().toISOString() })
+        .update({
+          status: 'pending_database',
+          provisioning_completed_at: null,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', req.params.id);
-      console.log('Store status reverted to pending_database');
+      console.log('Store status reverted to pending_database (allows retry)');
     } catch (revertError) {
       console.error('Failed to revert store status:', revertError);
     }
