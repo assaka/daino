@@ -324,8 +324,14 @@ export default function StoreOnboarding() {
     try {
       const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
 
-      if (statusResponse.success && statusResponse.data) {
-        const { provisioningStatus: status, message, isComplete, isFailed } = statusResponse.data;
+      // Handle both response formats: { success, data: {...} } or direct { success, ...data }
+      const responseData = statusResponse.data?.data || statusResponse.data || statusResponse;
+      const success = statusResponse.success || statusResponse.data?.success;
+
+      if (success && responseData) {
+        const { provisioningStatus: status, message, isComplete, isFailed } = responseData;
+
+        console.log('Polling status:', { status, isComplete, isFailed, message });
 
         setProvisioningStatus(status);
         setProvisioningMessage(message);
@@ -397,9 +403,30 @@ export default function StoreOnboarding() {
         themePreset: selectedThemePreset,
         provisionDemoData: provisionDemoData
       }).then(provisionResponse => {
-        // Response received - polling will handle final status
-        // But if there's an immediate error, handle it
-        if (!provisionResponse.success && provisionResponse.error) {
+        console.log('Provisioning API response:', provisionResponse);
+
+        // Check for success - API call completed
+        if (provisionResponse.success) {
+          // Success! Stop polling and complete
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setProvisioningStatus('completed');
+          setProvisioningMessage('Provisioning completed successfully');
+          setCompletedSteps([...completedSteps, 2]);
+
+          if (isReprovision) {
+            setSuccess('Database reprovisioned successfully! Redirecting...');
+            setTimeout(() => window.location.href = '/admin/dashboard', 1500);
+          } else {
+            setSuccess('Database connected and provisioned successfully!');
+            setTimeout(() => setCurrentStep(3), 1500);
+          }
+          return;
+        }
+
+        // If there's an error in the response, handle it
+        if (provisionResponse.error) {
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
