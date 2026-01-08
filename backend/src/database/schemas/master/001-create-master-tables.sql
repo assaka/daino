@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS stores (
   status VARCHAR(50) DEFAULT 'pending_database' CHECK (status IN (
     'pending_database',  -- Waiting for DB connection
     'provisioning',      -- Creating tenant DB
+    'provisioned',       -- DB ready, awaiting profile completion (step 3)
     'active',           -- Fully operational
     'suspended',        -- Temporarily disabled
     'inactive'          -- Permanently disabled

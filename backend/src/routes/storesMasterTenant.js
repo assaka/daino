@@ -1053,18 +1053,18 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    // Now activate store and set final provisioning status
+    // Set store to provisioned (not active yet - waiting for step 3 profile completion)
     const { error: activateError } = await masterDbClient
       .from('stores')
       .update({
-        status: 'active',
-        is_active: true,
+        status: 'provisioned',  // Not active until step 3 (profile/country) is completed
+        is_active: false,       // Will be set to true when onboarding completes
         slug: slug,
         theme_preset: validThemePreset,
         provisioning_status: 'completed',
         provisioning_progress: {
           step: 'completed',
-          message: 'Provisioning completed successfully',
+          message: 'Database provisioning completed. Complete profile to finish store setup.',
           demo_requested: !!provisionDemoData,
           demo_success: demoDataResult?.success ?? null
         },
@@ -1089,8 +1089,9 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       data: {
         store: {
           id: storeId,
-          status: 'active',
-          is_active: true
+          status: 'provisioned',
+          is_active: false,
+          message: 'Database ready. Complete profile to finish store setup.'
         },
         provisioning: provisioningResult,
         demoData: demoDataResult
@@ -1209,6 +1210,106 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to check provisioning status'
+    });
+  }
+});
+
+/**
+ * POST /api/stores/:id/complete-onboarding
+ * Complete store onboarding (step 3) - sets store to active
+ * Requires country to be set
+ */
+router.post('/:id/complete-onboarding', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const { country } = req.body;
+    const { masterDbClient } = require('../database/masterConnection');
+
+    if (!country) {
+      return res.status(400).json({
+        success: false,
+        error: 'Country is required to complete onboarding'
+      });
+    }
+
+    // Verify store exists and is provisioned
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, user_id, status, provisioning_status')
+      .eq('id', storeId)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    if (store.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // Store must be provisioned (database ready)
+    if (store.status !== 'provisioned' && store.provisioning_status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: 'Store must be fully provisioned before completing onboarding'
+      });
+    }
+
+    // Update store in tenant DB with country
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    if (tenantDb) {
+      const { error: tenantUpdateError } = await tenantDb
+        .from('stores')
+        .update({
+          country: country,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+
+      if (tenantUpdateError) {
+        console.warn('Failed to update tenant store with country:', tenantUpdateError.message);
+      }
+    }
+
+    // Activate store in master DB
+    const { error: activateError } = await masterDbClient
+      .from('stores')
+      .update({
+        status: 'active',
+        is_active: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
+
+    if (activateError) {
+      console.error('Failed to activate store:', activateError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to activate store'
+      });
+    }
+
+    console.log(`✅ Store ${storeId} onboarding completed - now active`);
+
+    res.json({
+      success: true,
+      message: 'Store onboarding completed successfully!',
+      data: {
+        store: {
+          id: storeId,
+          status: 'active',
+          is_active: true
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Complete onboarding error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to complete onboarding',
+      details: error.message
     });
   }
 });

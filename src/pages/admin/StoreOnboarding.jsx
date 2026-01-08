@@ -227,9 +227,9 @@ export default function StoreOnboarding() {
         if (Array.isArray(stores) && stores.length > 0) {
           setHasExistingStores(true);
 
-          // Check for incomplete stores (pending_database or provisioning)
+          // Check for incomplete stores (pending_database, provisioning, or provisioned awaiting profile)
           const incompleteStore = stores.find(s =>
-            s.status === 'pending_database' || s.status === 'provisioning'
+            s.status === 'pending_database' || s.status === 'provisioning' || s.status === 'provisioned'
           );
 
           console.log('🔍 Looking for incomplete store with status pending_database or provisioning');
@@ -238,6 +238,20 @@ export default function StoreOnboarding() {
 
           if (incompleteStore) {
             console.log('Found incomplete store:', incompleteStore.id, incompleteStore.status);
+
+            // If store is provisioned (DB ready), go directly to step 3
+            if (incompleteStore.status === 'provisioned') {
+              console.log('🔍 Store is provisioned - going to step 3 (profile)');
+              setStoreId(incompleteStore.id);
+              setStoreData({
+                name: incompleteStore.name || 'My Store',
+                slug: incompleteStore.slug || 'my-store'
+              });
+              setCompletedSteps([1, 2]);
+              setCurrentStep(3);
+              setSuccess('Database is ready! Complete your store profile to finish setup.');
+              return;
+            }
 
             // Check provisioning status to determine what step to resume
             try {
@@ -249,7 +263,7 @@ export default function StoreOnboarding() {
               console.log('Provisioning status response:', data);
               const status = data?.provisioningStatus;
 
-              // If fully completed, go to step 3
+              // If provisioning_status is completed but store status isn't active, go to step 3
               if (status === 'completed') {
                 console.log('🔍 Provisioning completed - going to step 3');
                 setStoreId(incompleteStore.id);
@@ -259,7 +273,7 @@ export default function StoreOnboarding() {
                 });
                 setCompletedSteps([1, 2]);
                 setCurrentStep(3);
-                setSuccess('Store setup is complete! Just finish your profile to continue.');
+                setSuccess('Database is ready! Complete your store profile to finish setup.');
               }
               // If provisioning has started but not complete, go to step 2
               else if (status && status !== 'pending' && status !== 'failed') {
@@ -712,7 +726,24 @@ export default function StoreOnboarding() {
     setLoading(true);
     setError('');
 
+    if (!profileData.country) {
+      setError('Country is required to complete setup');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Complete onboarding - this activates the store
+      if (storeId) {
+        const response = await apiClient.post(`/stores/${storeId}/complete-onboarding`, {
+          country: profileData.country
+        });
+
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to complete onboarding');
+        }
+      }
+
       // Try to update user profile (optional - user might not exist in tenant DB yet)
       try {
         await User.updateProfile({
@@ -723,11 +754,10 @@ export default function StoreOnboarding() {
         // Continue anyway - user can update profile later from settings
       }
 
-      // Update store settings if provided
+      // Update store settings if provided (additional settings beyond country)
       if (storeId) {
         try {
           const settingsUpdate = {};
-          if (profileData.country) settingsUpdate.store_country = profileData.country;
           if (profileData.phone) settingsUpdate.store_phone = profileData.phone;
           if (profileData.storeEmail) settingsUpdate.store_email = profileData.storeEmail;
 
@@ -744,16 +774,10 @@ export default function StoreOnboarding() {
       localStorage.removeItem('selectedStoreName');
       localStorage.removeItem('selectedStoreSlug');
 
-      setSuccess('🎉 Store created successfully! Redirecting to dashboard...');
+      setSuccess('🎉 Store activated successfully! Redirecting to dashboard...');
       setTimeout(() => window.location.href = '/admin/dashboard', 2000);
     } catch (err) {
-      // Fallback - always redirect to dashboard
-      localStorage.removeItem('selectedStoreId');
-      localStorage.removeItem('selectedStoreName');
-      localStorage.removeItem('selectedStoreSlug');
-
-      setSuccess('Store setup complete! Redirecting...');
-      setTimeout(() => window.location.href = '/admin/dashboard', 2000);
+      setError(err.message || 'Failed to complete setup');
     } finally {
       setLoading(false);
     }
