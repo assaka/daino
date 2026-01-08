@@ -97,6 +97,7 @@ export default function Dashboard() {
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const [showProvisioningModal, setShowProvisioningModal] = useState(false);
   const [provisioningChecked, setProvisioningChecked] = useState(false);
+  const [provisioningWarning, setProvisioningWarning] = useState(null); // { status, message, canRetry }
   const navigate = useNavigate();
 
 
@@ -113,8 +114,27 @@ export default function Dashboard() {
 
     try {
       const response = await apiClient.get(`/api/stores/${selectedStore.id}/provisioning-status`);
-      if (response.data?.data?.isIncomplete) {
-        setShowProvisioningModal(true);
+      const data = response.data?.data || response.data;
+
+      if (data) {
+        const { provisioningStatus, isComplete, isFailed, canRetry, message } = data;
+
+        // Show warning if not complete
+        if (!isComplete) {
+          setProvisioningWarning({
+            status: provisioningStatus,
+            message: message,
+            canRetry: canRetry,
+            isFailed: isFailed
+          });
+
+          // Also show modal for failed provisioning
+          if (isFailed) {
+            setShowProvisioningModal(true);
+          }
+        } else {
+          setProvisioningWarning(null);
+        }
       }
       setProvisioningChecked(true);
     } catch (err) {
@@ -470,6 +490,48 @@ export default function Dashboard() {
             </div>
         )}
 
+        {/* Provisioning Warning Banner */}
+        {provisioningWarning && (
+          <div className={`mb-6 p-4 rounded-lg border flex items-start gap-3 ${
+            provisioningWarning.isFailed
+              ? 'bg-red-50 border-red-300 text-red-800'
+              : 'bg-amber-50 border-amber-300 text-amber-800'
+          }`}>
+            <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+              provisioningWarning.isFailed ? 'text-red-600' : 'text-amber-600'
+            }`} />
+            <div className="flex-1">
+              <h4 className="font-semibold mb-1">
+                {provisioningWarning.isFailed
+                  ? 'Database Setup Failed'
+                  : 'Database Setup Incomplete'}
+              </h4>
+              <p className="text-sm mb-2">
+                {provisioningWarning.message || 'Your store database setup was not completed. Some features may not work correctly.'}
+              </p>
+              <div className="flex items-center gap-2 text-xs">
+                <span className={`px-2 py-0.5 rounded-full ${
+                  provisioningWarning.isFailed
+                    ? 'bg-red-200 text-red-700'
+                    : 'bg-amber-200 text-amber-700'
+                }`}>
+                  Status: {provisioningWarning.status || 'unknown'}
+                </span>
+              </div>
+            </div>
+            {provisioningWarning.canRetry && (
+              <Button
+                size="sm"
+                variant={provisioningWarning.isFailed ? "destructive" : "default"}
+                onClick={() => navigate(`/admin/onboarding?storeId=${selectedStore?.id}&resume=true`)}
+                className="flex-shrink-0"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Retry Setup
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Setup Guide Component */}
         <SetupGuide store={store} />
