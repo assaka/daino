@@ -324,32 +324,34 @@ export default function StoreOnboarding() {
     try {
       const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
 
-      console.log('Raw API response:', JSON.stringify(statusResponse, null, 2));
+      console.log('Raw API response:', statusResponse);
 
       // Handle various response formats from apiClient
-      // apiClient may return: { success, data } or axios response { data: { success, data } }
+      // Response could be: { success, data }, { data: {...} }, or just an array [{...}]
       let responseData;
-      let success;
 
-      if (statusResponse.data?.success !== undefined) {
-        // Axios wrapped response: { data: { success, data } }
-        success = statusResponse.data.success;
-        responseData = statusResponse.data.data || statusResponse.data;
+      // Check if response is an array (direct data)
+      if (Array.isArray(statusResponse)) {
+        responseData = statusResponse[0];
+      } else if (Array.isArray(statusResponse.data)) {
+        responseData = statusResponse.data[0];
+      } else if (statusResponse.data?.data) {
+        responseData = statusResponse.data.data;
+      } else if (statusResponse.data) {
+        responseData = statusResponse.data;
       } else {
-        // Direct response: { success, data }
-        success = statusResponse.success;
-        responseData = statusResponse.data || statusResponse;
+        responseData = statusResponse;
       }
 
-      console.log('Parsed response:', { success, responseData });
+      console.log('Parsed responseData:', responseData);
 
-      if (success && responseData) {
+      if (responseData && responseData.provisioningStatus) {
         const status = responseData.provisioningStatus;
         const message = responseData.message;
         const isComplete = responseData.isComplete;
         const isFailed = responseData.isFailed;
 
-        console.log('Setting provisioningStatus to:', status);
+        console.log('Setting provisioningStatus to:', status, '| isComplete:', isComplete);
 
         setProvisioningStatus(status);
         setProvisioningMessage(message);
