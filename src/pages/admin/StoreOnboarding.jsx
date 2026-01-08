@@ -89,13 +89,10 @@ export default function StoreOnboarding() {
                        Array.isArray(response.data) ? response.data[0] :
                        response.data || response;
 
-          console.log('Resume - provisioning status:', data);
-
           const status = data.provisioningStatus;
 
           if (data.isComplete || status === 'completed') {
             // Provisioning already complete - redirect to dashboard
-            console.log('Provisioning already complete - redirecting');
             window.location.href = '/admin/dashboard';
             return;
           }
@@ -103,7 +100,6 @@ export default function StoreOnboarding() {
           // If status is beyond 'pending', OAuth was already done
           if (status && status !== 'pending' && status !== 'failed') {
             // OAuth done, tables/seed in progress - go to service key step
-            console.log('OAuth already completed (status:', status, ') - skipping to service key step');
             setOauthCompleted(true);
             setNeedsServiceKey(true);
             setProvisioningStatus(status);
@@ -140,11 +136,8 @@ export default function StoreOnboarding() {
                          Array.isArray(response.data) ? response.data[0] :
                          response.data || response;
 
-            console.log('Reprovision - store status:', data);
-
             if (!data || !data.storeId) {
               // Store doesn't exist
-              console.log('Store not found - clearing localStorage and starting fresh');
               localStorage.removeItem('selectedStoreId');
               localStorage.removeItem('selectedStoreName');
               setError('The store no longer exists. Please create a new store.');
@@ -197,7 +190,6 @@ export default function StoreOnboarding() {
         verifyStoreAndStatus();
       } else {
         // No store in localStorage - redirect to step 1 to check for incomplete stores
-        console.log('🔍 reprovision=true but no selectedStoreId in localStorage - going to step 1');
         setCurrentStep(1);
       }
     }
@@ -208,21 +200,16 @@ export default function StoreOnboarding() {
     // Skip only if resume mode with storeId (that useEffect handles it)
     const resume = searchParams.get('resume');
     const resumeStoreId = searchParams.get('storeId');
-    console.log('🔍 checkExistingStores useEffect - resume:', resume, 'resumeStoreId:', resumeStoreId);
 
     // Only skip if we have a specific storeId to resume
     if (resume === 'true' && resumeStoreId) {
-      console.log('🔍 Skipping check - resume mode with specific storeId');
       setCheckingExistingStores(false);
       return;
     }
 
     const checkExistingStores = async () => {
       try {
-        console.log('🔍 Checking for existing stores...');
         const stores = await StoreEntity.findAll();
-        console.log('🔍 Found stores:', stores);
-        console.log('🔍 Stores with status:', stores?.map(s => ({ id: s.id, name: s.name, status: s.status })));
 
         if (Array.isArray(stores) && stores.length > 0) {
           setHasExistingStores(true);
@@ -232,16 +219,9 @@ export default function StoreOnboarding() {
             s.status === 'pending_database' || s.status === 'provisioning' || s.status === 'provisioned'
           );
 
-          console.log('🔍 Looking for incomplete store with status pending_database or provisioning');
-          console.log('🔍 Incomplete store found:', incompleteStore);
-          console.log('🔍 All store statuses:', stores.map(s => s.status));
-
           if (incompleteStore) {
-            console.log('Found incomplete store:', incompleteStore.id, incompleteStore.status);
-
             // If store is provisioned (DB ready), go directly to step 3
             if (incompleteStore.status === 'provisioned') {
-              console.log('🔍 Store is provisioned - going to step 3 (profile)');
               setStoreId(incompleteStore.id);
               setStoreData({
                 name: incompleteStore.name || 'My Store',
@@ -260,12 +240,10 @@ export default function StoreOnboarding() {
                            Array.isArray(response.data) ? response.data[0] :
                            response.data || response;
 
-              console.log('Provisioning status response:', data);
               const status = data?.provisioningStatus;
 
               // If provisioning_status is completed but store status isn't active, go to step 3
               if (status === 'completed') {
-                console.log('🔍 Provisioning completed - going to step 3');
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || 'My Store',
@@ -277,7 +255,6 @@ export default function StoreOnboarding() {
               }
               // If provisioning has started but not complete, go to step 2
               else if (status && status !== 'pending' && status !== 'failed') {
-                console.log('Provisioning in progress - going to step 2');
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || 'My Store',
@@ -292,9 +269,6 @@ export default function StoreOnboarding() {
                 setError('You have an incomplete store setup. Please enter your Service Role Key to continue.');
               } else {
                 // Still pending or failed - stay on step 1 but use existing store ID for upsert
-                console.log('🔍 Provisioning pending - staying on step 1 for upsert');
-                console.log('🔍 Setting storeId to:', incompleteStore.id);
-                console.log('🔍 Setting storeData to:', { name: incompleteStore.name, slug: incompleteStore.slug });
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || '',
@@ -308,7 +282,6 @@ export default function StoreOnboarding() {
               }
             } catch (err) {
               // Can't check status - stay on step 1 with existing store ID
-              console.log('Status check failed - staying on step 1 for upsert, storeId:', incompleteStore.id);
               setStoreId(incompleteStore.id);
               setStoreData({
                 name: incompleteStore.name || '',
@@ -400,16 +373,11 @@ export default function StoreOnboarding() {
     setLoading(true);
     setError('');
 
-    console.log('🔍 handleCreateStore called');
-    console.log('🔍 Current storeId:', storeId);
-    console.log('🔍 Current storeData:', storeData);
-
     try {
       let response;
 
       if (storeId) {
         // Update existing store (resuming incomplete store)
-        console.log('🔍 Using PUT to update existing store:', storeId);
         response = await apiClient.put(`/stores/${storeId}`, {
           name: storeData.name,
           slug: storeData.slug,
@@ -425,7 +393,6 @@ export default function StoreOnboarding() {
         }
       } else {
         // Create new store
-        console.log('🔍 Using POST to create new store');
         response = await apiClient.post('/stores', {
           name: storeData.name
         });
@@ -564,8 +531,6 @@ export default function StoreOnboarding() {
     try {
       const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
 
-      console.log('Raw API response:', statusResponse);
-
       // Handle various response formats from apiClient
       // Response could be: { success, data }, { data: {...} }, or just an array [{...}]
       let responseData;
@@ -583,29 +548,23 @@ export default function StoreOnboarding() {
         responseData = statusResponse;
       }
 
-      console.log('Parsed responseData:', responseData);
-
       if (responseData && responseData.provisioningStatus) {
         const status = responseData.provisioningStatus;
         const message = responseData.message;
         const isComplete = responseData.isComplete;
         const isFailed = responseData.isFailed;
 
-        console.log('Setting provisioningStatus to:', status, '| isComplete:', isComplete);
-
         setProvisioningStatus(status);
         setProvisioningMessage(message);
 
         if (isComplete) {
           // Provisioning completed successfully
-          console.log('Provisioning COMPLETE - transitioning to next step');
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
           setCompletedSteps(prev => [...prev, 2]);
           setSuccess('Database connected and provisioned successfully!');
           setTimeout(() => {
-            console.log('Moving to step 3');
             setCurrentStep(3);
           }, 1500);
           return;
@@ -661,12 +620,9 @@ export default function StoreOnboarding() {
         themePreset: selectedThemePreset,
         provisionDemoData: provisionDemoData
       }).then(provisionResponse => {
-        console.log('Provisioning API response:', provisionResponse);
-
         // Check for success - API call completed
         if (provisionResponse.success) {
           // Success! Stop polling and complete
-          console.log('API returned success - completing provisioning');
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
@@ -675,7 +631,6 @@ export default function StoreOnboarding() {
           setCompletedSteps(prev => [...prev, 2]);
           setSuccess('Database connected and provisioned successfully!');
           setTimeout(() => {
-            console.log('API success - moving to step 3');
             setCurrentStep(3);
           }, 1500);
           return;
@@ -1114,9 +1069,7 @@ export default function StoreOnboarding() {
                   </div>
 
                   {/* Progress Steps */}
-                  {/* Debug: current status = {provisioningStatus} */}
                   <div className="space-y-3">
-                    {console.log('Rendering progress with status:', provisioningStatus)}
                     {[
                       { status: 'tables_creating', label: 'Creating database tables', description: '129 tables for your store' },
                       { status: 'tables_completed', label: 'Tables created', description: 'Database structure ready' },
