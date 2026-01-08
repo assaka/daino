@@ -198,20 +198,64 @@ export default function StoreOnboarding() {
     }
   }, [searchParams]);
 
-  // Check if user has existing stores (to show cancel button)
+  // Check if user has existing stores and auto-resume incomplete ones
   useEffect(() => {
+    // Skip if already in resume/reprovision mode (URL params handled it)
+    const resume = searchParams.get('resume');
+    const reprovision = searchParams.get('reprovision');
+    if (resume === 'true' || reprovision === 'true') return;
+
     const checkExistingStores = async () => {
       try {
         const stores = await StoreEntity.findAll();
         if (Array.isArray(stores) && stores.length > 0) {
           setHasExistingStores(true);
+
+          // Check for incomplete stores (pending_database or provisioning)
+          const incompleteStore = stores.find(s =>
+            s.status === 'pending_database' || s.status === 'provisioning'
+          );
+
+          if (incompleteStore && currentStep === 1) {
+            console.log('Found incomplete store:', incompleteStore.id, incompleteStore.status);
+
+            // Auto-resume this store instead of creating a new one
+            setStoreId(incompleteStore.id);
+            setStoreData({
+              name: incompleteStore.name || 'My Store',
+              slug: incompleteStore.slug || incompleteStore.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
+            });
+            setCompletedSteps([1]);
+            setCurrentStep(2);
+            setIsReprovision(true);
+
+            // Check provisioning status to determine OAuth state
+            try {
+              const response = await apiClient.get(`/stores/${incompleteStore.id}/provisioning-status`);
+              const data = Array.isArray(response) ? response[0] :
+                           Array.isArray(response.data) ? response.data[0] :
+                           response.data || response;
+
+              const status = data?.provisioningStatus;
+              if (status && status !== 'pending' && status !== 'failed') {
+                setOauthCompleted(true);
+                setNeedsServiceKey(true);
+                setProvisioningStatus(status);
+                setError('You have an incomplete store setup. Please enter your Service Role Key to continue.');
+              } else {
+                setError('You have an incomplete store setup. Please connect your Supabase account to continue.');
+              }
+            } catch (err) {
+              setError('You have an incomplete store setup. Please connect your Supabase account to continue.');
+            }
+          }
         }
       } catch (err) {
         // Ignore errors - just means we can't check for existing stores
       }
     };
     checkExistingStores();
-  }, []);
+  }, [searchParams, currentStep]);
 
   // Cleanup polling on unmount
   useEffect(() => {
