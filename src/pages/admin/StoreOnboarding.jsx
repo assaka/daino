@@ -50,7 +50,10 @@ export default function StoreOnboarding() {
   const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
   const [hasExistingStores, setHasExistingStores] = useState(false);
   const [provisionDemoData, setProvisionDemoData] = useState(true);
+  const [provisioningStatus, setProvisioningStatus] = useState(null); // Current provisioning step
+  const [provisioningMessage, setProvisioningMessage] = useState(''); // User-friendly message
   const slugCheckTimeoutRef = React.useRef(null);
+  const provisioningPollRef = React.useRef(null);
 
   // Auth check - redirect to login if not authenticated
   useEffect(() => {
@@ -110,6 +113,15 @@ export default function StoreOnboarding() {
       }
     };
     checkExistingStores();
+  }, []);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (provisioningPollRef.current) {
+        clearInterval(provisioningPollRef.current);
+      }
+    };
   }, []);
 
   // Show loading while checking auth
@@ -307,47 +319,122 @@ export default function StoreOnboarding() {
     }
   };
 
+  // Poll for provisioning status updates
+  const pollProvisioningStatus = async (targetStoreId) => {
+    try {
+      const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
+
+      if (statusResponse.success && statusResponse.data) {
+        const { provisioningStatus: status, message, isComplete, isFailed } = statusResponse.data;
+
+        setProvisioningStatus(status);
+        setProvisioningMessage(message);
+
+        if (isComplete) {
+          // Provisioning completed successfully
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setCompletedSteps([...completedSteps, 2]);
+
+          if (isReprovision) {
+            setSuccess('Database reprovisioned successfully! Redirecting...');
+            setTimeout(() => window.location.href = '/admin/dashboard', 1500);
+          } else {
+            setSuccess('Database connected and provisioned successfully!');
+            setTimeout(() => setCurrentStep(3), 1500);
+          }
+          return;
+        }
+
+        if (isFailed) {
+          // Provisioning failed
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setError(message || 'Provisioning failed. Click "Provision Database" to retry.');
+          setProvisioningStatus(null);
+          setProvisioningMessage('');
+          return;
+        }
+
+        // Still in progress - continue polling
+      }
+    } catch (err) {
+      // Don't stop polling on transient errors - just log and continue
+      console.warn('Error polling provisioning status:', err.message);
+    }
+  };
+
   const handleProvisionDatabase = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
+    setProvisioningStatus('pending');
+    setProvisioningMessage('Starting provisioning...');
 
     if (!dbData.serviceRoleKey) {
       setError('Please provide your Supabase Service Role Key');
       setLoading(false);
+      setProvisioningStatus(null);
       return;
     }
 
     try {
-      const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
+      // Start polling immediately to catch status updates
+      provisioningPollRef.current = setInterval(() => {
+        pollProvisioningStatus(storeId);
+      }, 2000); // Poll every 2 seconds
+
+      // Fire off the provisioning request (don't await - let polling handle status)
+      apiClient.post(`/stores/${storeId}/connect-database`, {
         storeName: storeData.name,
         storeSlug: storeData.slug,
         useOAuth: true,
         autoProvision: true,
         serviceRoleKey: dbData.serviceRoleKey,
-        themePreset: selectedThemePreset,  // Pass selected theme to tenant provisioning
-        provisionDemoData: provisionDemoData  // Pass demo data flag
+        themePreset: selectedThemePreset,
+        provisionDemoData: provisionDemoData
+      }).then(provisionResponse => {
+        // Response received - polling will handle final status
+        // But if there's an immediate error, handle it
+        if (!provisionResponse.success && provisionResponse.error) {
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setError(provisionResponse.error);
+          setProvisioningStatus(null);
+          setProvisioningMessage('');
+        }
+      }).catch(err => {
+        clearInterval(provisioningPollRef.current);
+        provisioningPollRef.current = null;
+        setLoading(false);
+        setError(err.message || 'Failed to provision database');
+        setProvisioningStatus(null);
+        setProvisioningMessage('');
       });
 
-      if (provisionResponse.success) {
-        setCompletedSteps([...completedSteps, 2]);
-
-        // If reprovision mode, redirect to dashboard instead of step 3
-        if (isReprovision) {
-          setSuccess('Database reprovisioned successfully! Redirecting...');
-          setTimeout(() => window.location.href = '/admin/dashboard', 1500);
-        } else {
-          setSuccess('Database connected and provisioned successfully!');
-          setTimeout(() => setCurrentStep(3), 1500);
+      // Set a maximum timeout of 10 minutes
+      setTimeout(() => {
+        if (provisioningPollRef.current) {
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setError('Provisioning timeout. The process may still be running. Please check your store status or try again.');
+          setProvisioningStatus(null);
+          setProvisioningMessage('');
         }
-      } else {
-        setError(provisionResponse.error || 'Failed to provision database');
-      }
+      }, 600000); // 10 minutes
+
     } catch (err) {
+      clearInterval(provisioningPollRef.current);
+      provisioningPollRef.current = null;
       setError(err.message || 'Failed to provision database');
-    } finally {
       setLoading(false);
+      setProvisioningStatus(null);
+      setProvisioningMessage('');
     }
   };
 
@@ -497,11 +584,13 @@ export default function StoreOnboarding() {
                 : currentStepData.title}
           </CardTitle>
           <CardDescription className="text-base">
-            {currentStep === 2 && oauthCompleted && needsServiceKey && loading
-              ? 'Please wait. Will not take long.'
-              : isReprovision && currentStep === 2
-                ? `Reconnect Supabase for "${storeData.name}"`
-                : currentStepData.description}
+            {currentStep === 2 && oauthCompleted && needsServiceKey && loading && provisioningMessage
+              ? provisioningMessage
+              : currentStep === 2 && oauthCompleted && needsServiceKey && loading
+                ? 'Starting provisioning...'
+                : isReprovision && currentStep === 2
+                  ? `Reconnect Supabase for "${storeData.name}"`
+                  : currentStepData.description}
           </CardDescription>
           {currentStep === 2 && !oauthCompleted && (
             <TooltipProvider>
@@ -716,54 +805,127 @@ export default function StoreOnboarding() {
           {/* Step 2b: Enter Connection String (after OAuth) */}
           {currentStep === 2 && oauthCompleted && needsServiceKey && (
             <form onSubmit={handleProvisionDatabase} className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  One more step!
-                </h4>
-                <p className="text-sm text-blue-800 mb-2">
-                  To complete the setup, we need your Supabase Service Role Key.
-                </p>
-                <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
-                  <li>Go to your Supabase Dashboard → Project Settings → API Keys</li>
-                  <li>Find the "service_role" key under "Legacy anon, service_role API keys"</li>
-                  <li>Copy the service_role key (starts with "eyJh...")</li>
-                  <li>Paste it in the field below</li>
-                </ol>
-              </div>
+              {/* Show progress when provisioning is active */}
+              {loading && provisioningStatus ? (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <Database className="w-8 h-8 text-blue-600 animate-pulse" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Setting Up Your Database
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      This may take a few minutes. Please don't close this window.
+                    </p>
+                  </div>
 
-              <div>
-                <Label htmlFor="serviceRoleKey">Supabase Service Role Key *</Label>
-                <Input
-                  id="serviceRoleKey"
-                  type="password"
-                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  value={dbData.serviceRoleKey}
-                  onChange={(e) => setDbData({ ...dbData, serviceRoleKey: e.target.value })}
-                  required
-                  autoFocus
-                  className="mt-2 font-mono text-xs"
-                />
-              </div>
+                  {/* Progress Steps */}
+                  <div className="space-y-3">
+                    {[
+                      { status: 'tables_creating', label: 'Creating database tables', description: '137 tables for your store' },
+                      { status: 'tables_completed', label: 'Tables created', description: 'Database structure ready' },
+                      { status: 'seed_running', label: 'Adding initial data', description: 'Core configuration and settings' },
+                      { status: 'seed_completed', label: 'Initial data added', description: 'Store configuration complete' },
+                      { status: 'demo_running', label: 'Adding demo content', description: 'Sample products and categories' },
+                      { status: 'completed', label: 'Setup complete', description: 'Your store is ready!' },
+                    ].map((step, index) => {
+                      const stepOrder = ['pending', 'tables_creating', 'tables_completed', 'seed_running', 'seed_completed', 'demo_running', 'completed'];
+                      const currentIndex = stepOrder.indexOf(provisioningStatus);
+                      const stepIndex = stepOrder.indexOf(step.status);
+                      const isComplete = stepIndex < currentIndex || provisioningStatus === 'completed';
+                      const isActive = step.status === provisioningStatus || (step.status === 'tables_creating' && provisioningStatus === 'pending');
+                      const isPending = stepIndex > currentIndex;
 
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setNeedsServiceKey(false); setError(''); }} disabled={loading}>
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
-                </Button>
-                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.serviceRoleKey}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Provisioning Database...
-                    </>
-                  ) : (
-                    <>
+                      // Skip demo step if not provisioning demo data
+                      if (step.status === 'demo_running' && !provisionDemoData) return null;
+
+                      return (
+                        <div
+                          key={step.status}
+                          className={`flex items-center p-3 rounded-lg transition-all ${
+                            isActive ? 'bg-blue-100 border border-blue-300' :
+                            isComplete ? 'bg-green-50 border border-green-200' :
+                            'bg-gray-50 border border-gray-200'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${
+                            isComplete ? 'bg-green-500 text-white' :
+                            isActive ? 'bg-blue-500 text-white' :
+                            'bg-gray-300 text-gray-500'
+                          }`}>
+                            {isComplete ? (
+                              <CheckCircle2 className="w-5 h-5" />
+                            ) : isActive ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Circle className="w-5 h-5" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium text-sm ${
+                              isComplete ? 'text-green-800' :
+                              isActive ? 'text-blue-800' :
+                              'text-gray-500'
+                            }`}>
+                              {step.label}
+                            </p>
+                            <p className={`text-xs ${
+                              isComplete ? 'text-green-600' :
+                              isActive ? 'text-blue-600' :
+                              'text-gray-400'
+                            }`}>
+                              {step.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      One more step!
+                    </h4>
+                    <p className="text-sm text-blue-800 mb-2">
+                      To complete the setup, we need your Supabase Service Role Key.
+                    </p>
+                    <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
+                      <li>Go to your Supabase Dashboard → Project Settings → API Keys</li>
+                      <li>Find the "service_role" key under "Legacy anon, service_role API keys"</li>
+                      <li>Copy the service_role key (starts with "eyJh...")</li>
+                      <li>Paste it in the field below</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="serviceRoleKey">Supabase Service Role Key *</Label>
+                    <Input
+                      id="serviceRoleKey"
+                      type="password"
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      value={dbData.serviceRoleKey}
+                      onChange={(e) => setDbData({ ...dbData, serviceRoleKey: e.target.value })}
+                      required
+                      autoFocus
+                      className="mt-2 font-mono text-xs"
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setNeedsServiceKey(false); setError(''); }} disabled={loading}>
+                      <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                    </Button>
+                    <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.serviceRoleKey}>
                       <Database className="w-4 h-4 mr-2" />
                       Provision Database
-                    </>
-                  )}
-                </Button>
-              </div>
+                    </Button>
+                  </div>
+                </>
+              )}
             </form>
           )}
 
