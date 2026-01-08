@@ -480,7 +480,7 @@ class MasterEmailService {
           // Check if user has a store
           const { data: stores } = await masterDbClient
             .from('stores')
-            .select('id, name')
+            .select('id')
             .eq('user_id', user.id)
             .eq('is_active', true)
             .limit(1);

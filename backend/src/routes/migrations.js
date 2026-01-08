@@ -285,7 +285,7 @@ router.post('/normalize-product-files-all', async (req, res) => {
     // Get all stores
     const { data: stores, error: storesError } = await masterDbClient
       .from('stores')
-      .select('id, name');
+      .select('id');
 
     if (storesError) {
       throw new Error(`Failed to fetch stores: ${storesError.message}`);

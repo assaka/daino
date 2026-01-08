@@ -92,7 +92,7 @@ async function backfillExamples() {
 
   const { data: examples, error } = await masterDbClient
     .from('ai_plugin_examples')
-    .select('id, name')
+    .select('id')
     .is('embedding', null)
     .eq('is_active', true);
 

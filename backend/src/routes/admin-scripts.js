@@ -120,7 +120,7 @@ router.post('/backfill-embeddings', verifyCronSecret, async (req, res) => {
       console.log('\n=== Backfilling ai_plugin_examples ===');
       const { data: exampleList, error } = await masterDbClient
         .from('ai_plugin_examples')
-        .select('id, name')
+        .select('id')
         .is('embedding', null)
         .eq('is_active', true);
 
@@ -413,7 +413,7 @@ router.post('/run-backfill-embeddings', authMiddleware, requireRole('admin', 'st
       console.log('\n=== Backfilling ai_plugin_examples ===');
       const { data: exampleList, error } = await masterDbClient
         .from('ai_plugin_examples')
-        .select('id, name')
+        .select('id')
         .is('embedding', null)
         .eq('is_active', true);
 
@@ -791,7 +791,7 @@ async function runBackfillJob(jobId, options) {
       console.log(`[${jobId}] Backfilling ai_plugin_examples...`);
       const { data: exampleList, error } = await masterDbClient
         .from('ai_plugin_examples')
-        .select('id, name')
+        .select('id')
         .is('embedding', null)
         .eq('is_active', true);
 

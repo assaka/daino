@@ -89,7 +89,7 @@ class RfmCalculateJob extends BaseJobHandler {
 
     const { data: stores, error } = await masterDbClient
       .from('stores')
-      .select('id, name')
+      .select('id')
       .eq('is_active', true);
 
     if (error) {

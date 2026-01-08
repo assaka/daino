@@ -67,7 +67,7 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
 
     const { data: stores } = await masterDbClient
       .from('stores')
-      .select('id, name')
+      .select('id')
       .eq('id', store_id)
       .single();
 
@@ -964,7 +964,7 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       { data: storeData }
     ] = await Promise.all([
       masterDbClient.from('users').select('id, email, first_name, last_name').eq('id', req.user.id).single(),
-      masterDbClient.from('stores').select('id, name').eq('id', invitation.store_id).single()
+      masterDbClient.from('stores').select('id').eq('id', invitation.store_id).single()
     ]);
 
     teamMember.User = userData;

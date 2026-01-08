@@ -914,9 +914,18 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         })
         .eq('id', storeId);
 
+      // Build user-friendly error message
+      const firstError = provisioningResult.errors?.[0];
+      const errorMessage = firstError?.error || 'Database setup was interrupted';
+      const isTimeout = errorMessage.toLowerCase().includes('timeout');
+
       return res.status(500).json({
         success: false,
-        error: 'Failed to provision tenant database',
+        error: isTimeout
+          ? 'Database setup timed out. Please try again - your progress has been saved.'
+          : `Database setup failed: ${errorMessage}. Please try again.`,
+        code: 'PROVISIONING_FAILED',
+        canRetry: true,
         details: provisioningResult.errors
       });
     }
