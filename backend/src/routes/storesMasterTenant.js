@@ -205,6 +205,7 @@ router.post('/', authMiddleware, async (req, res) => {
       const { data: updatedStore, error: updateError } = await masterDbClient
         .from('stores')
         .update({
+          name: name,  // Update name in case user changed it
           updated_at: new Date().toISOString()
         })
         .eq('id', storeId)
@@ -240,6 +241,7 @@ router.post('/', authMiddleware, async (req, res) => {
         .insert({
           id: storeId,
           user_id: userId,
+          name: name,  // Store name for display before tenant DB exists
           slug: slug,
           status: 'pending_database',
           is_active: false,
@@ -1253,7 +1255,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     // Note: provisioning_completed_at is fetched separately in case column doesn't exist yet
     const { data: ownedStores, error: ownedError } = await masterDbClient
       .from('stores')
-      .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
+      .select('id, user_id, name, slug, status, is_active, created_at, updated_at, theme_preset')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1279,7 +1281,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     if (teamStoreIds.length > 0) {
       const { data: teamStoreData, error: teamStoreError } = await masterDbClient
         .from('stores')
-        .select('id, user_id, slug, status, is_active, created_at, updated_at, theme_preset')
+        .select('id, user_id, name, slug, status, is_active, created_at, updated_at, theme_preset')
         .in('id', teamStoreIds);
 
       if (!teamStoreError && teamStoreData) {
@@ -2166,7 +2168,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 
     // Separate master DB updates from tenant DB updates
-    const masterDbFields = ['published', 'published_at', 'status', 'is_active', 'slug'];
+    // name and theme_preset are stored in master DB for use before tenant DB is provisioned
+    const masterDbFields = ['published', 'published_at', 'status', 'is_active', 'slug', 'name', 'theme_preset'];
     const masterUpdates = {};
     const tenantUpdates = {};
 

@@ -42,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_users_account_type ON users(account_type);
 CREATE TABLE IF NOT EXISTS stores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL DEFAULT 'My Store',  -- Store name (needed before tenant DB exists)
   slug VARCHAR(255) UNIQUE NOT NULL,
   status VARCHAR(50) DEFAULT 'pending_database' CHECK (status IN (
     'pending_database',  -- Waiting for DB connection

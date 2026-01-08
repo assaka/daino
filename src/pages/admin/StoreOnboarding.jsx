@@ -49,6 +49,7 @@ export default function StoreOnboarding() {
   const [profileData, setProfileData] = useState({ phone: '', country: '', storeEmail: '' });
   const [slugStatus, setSlugStatus] = useState({ checking: false, available: null, message: '' });
   const [hasExistingStores, setHasExistingStores] = useState(false);
+  const [checkingExistingStores, setCheckingExistingStores] = useState(true); // Block UI until check completes
   const [provisionDemoData, setProvisionDemoData] = useState(true);
   const [provisioningStatus, setProvisioningStatus] = useState(null); // Current provisioning step
   const [provisioningMessage, setProvisioningMessage] = useState(''); // User-friendly message
@@ -203,11 +204,17 @@ export default function StoreOnboarding() {
     // Skip if already in resume/reprovision mode (URL params handled it)
     const resume = searchParams.get('resume');
     const reprovision = searchParams.get('reprovision');
-    if (resume === 'true' || reprovision === 'true') return;
+    if (resume === 'true' || reprovision === 'true') {
+      setCheckingExistingStores(false);
+      return;
+    }
 
     const checkExistingStores = async () => {
       try {
+        console.log('Checking for existing stores...');
         const stores = await StoreEntity.findAll();
+        console.log('Found stores:', stores);
+
         if (Array.isArray(stores) && stores.length > 0) {
           setHasExistingStores(true);
 
@@ -216,7 +223,9 @@ export default function StoreOnboarding() {
             s.status === 'pending_database' || s.status === 'provisioning'
           );
 
-          if (incompleteStore && currentStep === 1) {
+          console.log('Incomplete store found:', incompleteStore);
+
+          if (incompleteStore) {
             console.log('Found incomplete store:', incompleteStore.id, incompleteStore.status);
 
             // Check provisioning status to determine what step to resume
@@ -226,10 +235,12 @@ export default function StoreOnboarding() {
                            Array.isArray(response.data) ? response.data[0] :
                            response.data || response;
 
+              console.log('Provisioning status response:', data);
               const status = data?.provisioningStatus;
 
               // If provisioning has started (beyond pending), go to step 2
               if (status && status !== 'pending' && status !== 'failed') {
+                console.log('Provisioning started - going to step 2');
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || 'My Store',
@@ -244,6 +255,7 @@ export default function StoreOnboarding() {
                 setError('You have an incomplete store setup. Please enter your Service Role Key to continue.');
               } else {
                 // Still pending or failed - stay on step 1 but use existing store ID for upsert
+                console.log('Provisioning pending - staying on step 1 for upsert, storeId:', incompleteStore.id);
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || '',
@@ -252,26 +264,29 @@ export default function StoreOnboarding() {
                 if (incompleteStore.theme_preset) {
                   setSelectedThemePreset(incompleteStore.theme_preset);
                 }
-                // Stay on step 1 - user can edit name/slug/theme and continue
-                console.log('Resuming incomplete store on step 1 for upsert');
+                // Show info message about resuming
+                setSuccess(`Resuming setup for "${incompleteStore.name || incompleteStore.slug}". You can update the details below.`);
               }
             } catch (err) {
               // Can't check status - stay on step 1 with existing store ID
+              console.log('Status check failed - staying on step 1 for upsert, storeId:', incompleteStore.id);
               setStoreId(incompleteStore.id);
               setStoreData({
                 name: incompleteStore.name || '',
                 slug: incompleteStore.slug || ''
               });
-              console.log('Resuming incomplete store on step 1 (status check failed)');
+              setSuccess(`Resuming setup for "${incompleteStore.name || incompleteStore.slug}". You can update the details below.`);
             }
           }
         }
       } catch (err) {
-        // Ignore errors - just means we can't check for existing stores
+        console.error('Error checking existing stores:', err);
+      } finally {
+        setCheckingExistingStores(false);
       }
     };
     checkExistingStores();
-  }, [searchParams, currentStep]);
+  }, [searchParams]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -285,6 +300,11 @@ export default function StoreOnboarding() {
   // Show loading while checking auth
   if (!authChecked) {
     return <PageLoader size="lg" text="Checking authentication..." />;
+  }
+
+  // Show loading while checking for existing incomplete stores
+  if (checkingExistingStores) {
+    return <PageLoader size="lg" text="Checking for existing stores..." />;
   }
 
   // Check slug availability with debounce
