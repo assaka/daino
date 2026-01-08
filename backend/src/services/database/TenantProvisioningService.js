@@ -473,10 +473,10 @@ END $$;`;
                   'Content-Type': 'application/json'
                 },
                 maxBodyLength: Infinity,
-                timeout: 180000 // 3 minutes for large migration
+                timeout: 300000 // 5 minutes for large migration
               }
             ),
-            { maxRetries: 3, initialDelay: 3000, context: 'Migration (table creation)' }
+            { maxRetries: 5, initialDelay: 5000, context: 'Migration (table creation)' }
           );
 
           console.log('✅ Migration API response:', migrationResponse.data);
@@ -726,10 +726,10 @@ VALUES (
                   'Content-Type': 'application/json'
                 },
                 maxBodyLength: Infinity,
-                timeout: 180000 // 3 minutes for seed data
+                timeout: 300000 // 5 minutes for seed data
               }
             ),
-            { maxRetries: 3, initialDelay: 3000, context: 'Seed data insertion' }
+            { maxRetries: 5, initialDelay: 5000, context: 'Seed data insertion' }
           );
 
           console.log('✅ Seed API response:', seedResponse.data);
