@@ -356,18 +356,16 @@ export default function StoreOnboarding() {
 
         if (isComplete) {
           // Provisioning completed successfully
+          console.log('Provisioning COMPLETE - transitioning to next step');
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
-          setCompletedSteps([...completedSteps, 2]);
-
-          if (isReprovision) {
-            setSuccess('Database reprovisioned successfully! Redirecting...');
-            setTimeout(() => window.location.href = '/admin/dashboard', 1500);
-          } else {
-            setSuccess('Database connected and provisioned successfully!');
-            setTimeout(() => setCurrentStep(3), 1500);
-          }
+          setCompletedSteps(prev => [...prev, 2]);
+          setSuccess('Database connected and provisioned successfully!');
+          setTimeout(() => {
+            console.log('Moving to step 3');
+            setCurrentStep(3);
+          }, 1500);
           return;
         }
 
@@ -426,20 +424,18 @@ export default function StoreOnboarding() {
         // Check for success - API call completed
         if (provisionResponse.success) {
           // Success! Stop polling and complete
+          console.log('API returned success - completing provisioning');
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
           setProvisioningStatus('completed');
           setProvisioningMessage('Provisioning completed successfully');
-          setCompletedSteps([...completedSteps, 2]);
-
-          if (isReprovision) {
-            setSuccess('Database reprovisioned successfully! Redirecting...');
-            setTimeout(() => window.location.href = '/admin/dashboard', 1500);
-          } else {
-            setSuccess('Database connected and provisioned successfully!');
-            setTimeout(() => setCurrentStep(3), 1500);
-          }
+          setCompletedSteps(prev => [...prev, 2]);
+          setSuccess('Database connected and provisioned successfully!');
+          setTimeout(() => {
+            console.log('API success - moving to step 3');
+            setCurrentStep(3);
+          }, 1500);
           return;
         }
 
