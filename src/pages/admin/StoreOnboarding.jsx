@@ -79,27 +79,50 @@ export default function StoreOnboarding() {
       setCompletedSteps([1]); // Mark step 1 as completed (store was created)
       setCurrentStep(2); // Go to database connection step
 
-      // Check if OAuth was already completed for this store
-      const checkOAuthStatus = async () => {
+      // Check provisioning status to determine correct step
+      const checkProvisioningProgress = async () => {
         try {
-          // Check if store has a Supabase integration
-          const response = await apiClient.get(`/integrations/supabase/status/${resumeStoreId}`);
-          if (response.connected || response.data?.connected) {
-            // OAuth already done - go straight to service key step
-            console.log('OAuth already completed for this store - skipping to service key step');
+          const response = await apiClient.get(`/stores/${resumeStoreId}/provisioning-status`);
+          // Handle array response
+          const data = Array.isArray(response) ? response[0] :
+                       Array.isArray(response.data) ? response.data[0] :
+                       response.data || response;
+
+          console.log('Resume - provisioning status:', data);
+
+          const status = data.provisioningStatus;
+
+          if (data.isComplete || status === 'completed') {
+            // Provisioning already complete - redirect to dashboard
+            console.log('Provisioning already complete - redirecting');
+            window.location.href = '/admin/dashboard';
+            return;
+          }
+
+          // If status is beyond 'pending', OAuth was already done
+          if (status && status !== 'pending' && status !== 'failed') {
+            // OAuth done, tables/seed in progress - go to service key step
+            console.log('OAuth already completed (status:', status, ') - skipping to service key step');
             setOauthCompleted(true);
             setNeedsServiceKey(true);
+            setProvisioningStatus(status);
+            setProvisioningMessage(data.message || 'Resuming provisioning...');
             setError('Your store setup was interrupted. Please enter your Service Role Key to continue.');
+          } else if (status === 'failed') {
+            // Failed - let user retry from service key step
+            setOauthCompleted(true);
+            setNeedsServiceKey(true);
+            setError(data.message || 'Previous setup failed. Please try again.');
           } else {
-            setError('Your store setup was interrupted. Please reconnect your Supabase account to continue.');
+            // OAuth not done yet
+            setError('Your store setup was interrupted. Please connect your Supabase account to continue.');
           }
         } catch (err) {
-          // If we can't check, assume OAuth needs to be done
-          console.warn('Could not check OAuth status:', err.message);
+          console.warn('Could not check provisioning status:', err.message);
           setError('Your store setup was interrupted. Please reconnect your Supabase account to continue.');
         }
       };
-      checkOAuthStatus();
+      checkProvisioningProgress();
       return;
     }
 
