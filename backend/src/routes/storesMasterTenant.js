@@ -922,10 +922,11 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       return res.status(500).json({
         success: false,
         error: isTimeout
-          ? 'Database setup timed out. Please try again - your progress has been saved.'
-          : `Database setup failed: ${errorMessage}. Please try again.`,
+          ? 'Database setup timed out. Click "Provision Database" to continue where you left off.'
+          : `Database setup failed: ${errorMessage}`,
         code: 'PROVISIONING_FAILED',
         canRetry: true,
+        retryAction: 'Click "Provision Database" to retry. Your existing progress will be preserved.',
         details: provisioningResult.errors
       });
     }
