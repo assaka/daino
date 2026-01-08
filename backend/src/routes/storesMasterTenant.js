@@ -375,8 +375,35 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         console.log('✅ OAuth tokens retrieved from memory (fallback)');
       }
 
+      // If no OAuth token found, check if there's an existing database connection we can use
       if (!oauthToken) {
-        console.error('❌ No OAuth token found in Redis OR memory for storeId:', storeId);
+        console.log('🔍 No OAuth token in Redis/memory, checking store_databases...');
+
+        const { data: existingDb, error: dbError } = await masterDbClient
+          .from('store_databases')
+          .select('host, database_name, connection_string_encrypted')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (existingDb && existingDb.host) {
+          console.log('✅ Found existing database connection for store:', existingDb.host);
+
+          // Reconstruct project URL from host
+          const projectId = existingDb.host.replace('.supabase.co', '').replace('db.', '');
+          oauthToken = {
+            project_url: `https://${projectId}.supabase.co`,
+            // Service role key will come from manualServiceKey
+            service_role_key: null,
+            anon_key: null,
+            access_token: null
+          };
+          console.log('✅ Reconstructed OAuth token from existing DB:', oauthToken.project_url);
+        }
+      }
+
+      if (!oauthToken) {
+        console.error('❌ No OAuth token found in Redis, memory, OR store_databases for storeId:', storeId);
         return res.status(400).json({
           success: false,
           error: 'No OAuth connection found. Please connect your Supabase account first. Try OAuth again.'
