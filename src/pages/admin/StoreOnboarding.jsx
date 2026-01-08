@@ -249,9 +249,21 @@ export default function StoreOnboarding() {
               console.log('Provisioning status response:', data);
               const status = data?.provisioningStatus;
 
-              // If provisioning has started (beyond pending), go to step 2
-              if (status && status !== 'pending' && status !== 'failed') {
-                console.log('Provisioning started - going to step 2');
+              // If fully completed, go to step 3
+              if (status === 'completed') {
+                console.log('🔍 Provisioning completed - going to step 3');
+                setStoreId(incompleteStore.id);
+                setStoreData({
+                  name: incompleteStore.name || 'My Store',
+                  slug: incompleteStore.slug || 'my-store'
+                });
+                setCompletedSteps([1, 2]);
+                setCurrentStep(3);
+                setSuccess('Store setup is complete! Just finish your profile to continue.');
+              }
+              // If provisioning has started but not complete, go to step 2
+              else if (status && status !== 'pending' && status !== 'failed') {
+                console.log('Provisioning in progress - going to step 2');
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || 'My Store',

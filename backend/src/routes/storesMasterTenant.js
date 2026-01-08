@@ -552,6 +552,15 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       console.log('⚠️ Store has incomplete provisioning, allowing reconnection to retry');
     }
 
+    // Check current provisioning_status to decide what to skip
+    const currentProvisioningStatus = store.provisioning_status;
+    const skipMainProvisioning = ['seed_completed', 'demo_running'].includes(currentProvisioningStatus);
+    const onlyDemoNeeded = currentProvisioningStatus === 'seed_completed' || currentProvisioningStatus === 'demo_running';
+
+    console.log('📊 Current provisioning status:', currentProvisioningStatus);
+    console.log('   Skip main provisioning:', skipMainProvisioning);
+    console.log('   Only demo needed:', onlyDemoNeeded);
+
     // Check if this database URL is already being used by another store
     console.log('========================================');
     console.log('🔍 DUPLICATE DATABASE CHECK STARTING');
@@ -908,26 +917,39 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     });
 
     // 5. Provision tenant database (create tables, seed data)
-    const provisioningResult = await TenantProvisioningService.provisionTenantDatabase(
-      tenantDb,
-      storeId,
-      {
-        userId: req.user.id,
-        userEmail: req.user.email,
-        userPasswordHash: masterUser?.password || null,
-        userFirstName: masterUser?.first_name || req.user.first_name,
-        userLastName: masterUser?.last_name || req.user.last_name,
-        storeName: storeName || 'My Store',
-        storeSlug: storeSlug || `store-${Date.now()}`,
-        force: false,
-        // OAuth credentials for API-based provisioning
-        oauthAccessToken: oauthAccessToken || null,
-        projectId: projectId || null,
-        autoProvision: autoProvision || false,
-        // Theme preset to apply to store settings
-        themePreset: themePreset || 'default'
-      }
-    );
+    // Skip main provisioning if already done (seed_completed or demo_running)
+    let provisioningResult;
+
+    if (skipMainProvisioning) {
+      console.log('⏭️ Skipping main provisioning - tables and seed data already exist');
+      console.log('   Only demo data seeding needed (if requested)');
+      provisioningResult = {
+        success: true,
+        alreadyProvisioned: true,
+        message: 'Database already provisioned, skipping to demo data'
+      };
+    } else {
+      provisioningResult = await TenantProvisioningService.provisionTenantDatabase(
+        tenantDb,
+        storeId,
+        {
+          userId: req.user.id,
+          userEmail: req.user.email,
+          userPasswordHash: masterUser?.password || null,
+          userFirstName: masterUser?.first_name || req.user.first_name,
+          userLastName: masterUser?.last_name || req.user.last_name,
+          storeName: storeName || 'My Store',
+          storeSlug: storeSlug || `store-${Date.now()}`,
+          force: false,
+          // OAuth credentials for API-based provisioning
+          oauthAccessToken: oauthAccessToken || null,
+          projectId: projectId || null,
+          autoProvision: autoProvision || false,
+          // Theme preset to apply to store settings
+          themePreset: themePreset || 'default'
+        }
+      );
+    }
 
     console.log('provisioningResult', provisioningResult);
 
@@ -988,10 +1010,15 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     }
     console.log('🎨 Saving theme preset:', validThemePreset);
 
-    // Provision demo data if requested (before marking complete)
+    // Provision demo data if requested OR if resuming interrupted demo seeding
+    // Check provisioning_progress to see if demo was originally requested
+    const demoWasRequested = store.provisioning_progress?.demo_requested === true;
+    const shouldRunDemo = provisionDemoData || (onlyDemoNeeded && demoWasRequested);
+
     let demoDataResult = null;
-    if (provisionDemoData) {
+    if (shouldRunDemo) {
       console.log('📦 Provisioning demo data...');
+      console.log('   Reason:', provisionDemoData ? 'explicitly requested' : 'resuming interrupted demo seeding');
 
       // Update status to demo_running
       await masterDbClient
