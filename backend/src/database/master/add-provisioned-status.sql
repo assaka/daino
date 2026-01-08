@@ -2,6 +2,16 @@
 -- Run this on existing master databases
 -- The 'provisioned' status indicates DB is ready but profile/country not yet completed
 
+-- First, check what status values exist (run this SELECT first to see current values):
+-- SELECT DISTINCT status FROM stores;
+
+-- Fix any invalid status values before adding constraint
+-- Map old/invalid statuses to valid ones
+UPDATE stores SET status = 'pending_database' WHERE status = 'pending';
+UPDATE stores SET status = 'active' WHERE status NOT IN (
+  'pending_database', 'provisioning', 'provisioned', 'active', 'suspended', 'inactive'
+) AND status IS NOT NULL;
+
 -- Drop the old constraint and create a new one with 'provisioned' status
 ALTER TABLE stores
 DROP CONSTRAINT IF EXISTS stores_status_check;
