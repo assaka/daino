@@ -76,10 +76,30 @@ export default function StoreOnboarding() {
     if (resumeStoreId && resume === 'true') {
       setIsReprovision(true);
       setStoreId(resumeStoreId);
-      // Store exists but needs to complete database connection
       setCompletedSteps([1]); // Mark step 1 as completed (store was created)
       setCurrentStep(2); // Go to database connection step
-      setError('Your store setup was interrupted. Please reconnect your database to continue.');
+
+      // Check if OAuth was already completed for this store
+      const checkOAuthStatus = async () => {
+        try {
+          // Check if store has a Supabase integration
+          const response = await apiClient.get(`/integrations/supabase/status/${resumeStoreId}`);
+          if (response.connected || response.data?.connected) {
+            // OAuth already done - go straight to service key step
+            console.log('OAuth already completed for this store - skipping to service key step');
+            setOauthCompleted(true);
+            setNeedsServiceKey(true);
+            setError('Your store setup was interrupted. Please enter your Service Role Key to continue.');
+          } else {
+            setError('Your store setup was interrupted. Please reconnect your Supabase account to continue.');
+          }
+        } catch (err) {
+          // If we can't check, assume OAuth needs to be done
+          console.warn('Could not check OAuth status:', err.message);
+          setError('Your store setup was interrupted. Please reconnect your Supabase account to continue.');
+        }
+      };
+      checkOAuthStatus();
       return;
     }
 
@@ -293,7 +313,7 @@ export default function StoreOnboarding() {
               setLoading(false);
             } else {
               // Instead of generic message, suggest checking for duplicates
-              setError('OAuth connection failed. Please try to connect with Suapabse again');
+              setError('OAuth connection failed. Please try to connect with SupaBase again');
             }
           } catch (apiError) {
             setError(apiError.message || 'Failed to verify OAuth connection. Please try again.');
