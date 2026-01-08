@@ -131,14 +131,69 @@ export default function StoreOnboarding() {
       const existingStoreName = localStorage.getItem('selectedStoreName');
 
       if (existingStoreId) {
-        setIsReprovision(true);
-        setStoreId(existingStoreId);
-        setStoreData({
-          name: existingStoreName || 'My Store',
-          slug: existingStoreName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
-        });
-        setCompletedSteps([1]); // Mark step 1 as completed
-        setCurrentStep(2);
+        // Verify store exists and check provisioning status
+        const verifyStoreAndStatus = async () => {
+          try {
+            const response = await apiClient.get(`/stores/${existingStoreId}/provisioning-status`);
+            const data = Array.isArray(response) ? response[0] :
+                         Array.isArray(response.data) ? response.data[0] :
+                         response.data || response;
+
+            console.log('Reprovision - store status:', data);
+
+            if (!data || !data.storeId) {
+              // Store doesn't exist
+              console.log('Store not found - clearing localStorage and starting fresh');
+              localStorage.removeItem('selectedStoreId');
+              localStorage.removeItem('selectedStoreName');
+              setError('The store no longer exists. Please create a new store.');
+              setCurrentStep(1);
+              return;
+            }
+
+            const status = data.provisioningStatus;
+
+            if (data.isComplete || status === 'completed') {
+              // Already complete - redirect to dashboard
+              window.location.href = '/admin/dashboard';
+              return;
+            }
+
+            // Store exists - set up reprovision mode
+            setIsReprovision(true);
+            setStoreId(existingStoreId);
+            setStoreData({
+              name: existingStoreName || 'My Store',
+              slug: existingStoreName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
+            });
+            setCompletedSteps([1]);
+            setCurrentStep(2);
+
+            // Check if OAuth was already done
+            if (status && status !== 'pending' && status !== 'failed') {
+              setOauthCompleted(true);
+              setNeedsServiceKey(true);
+              setProvisioningStatus(status);
+              setError('Please enter your Service Role Key to continue provisioning.');
+            } else if (status === 'failed') {
+              setOauthCompleted(true);
+              setNeedsServiceKey(true);
+              setError(data.message || 'Previous setup failed. Please try again.');
+            }
+          } catch (err) {
+            console.warn('Could not verify store:', err.message);
+            // Store might not exist - clear localStorage
+            if (err.message?.includes('404') || err.message?.includes('not found')) {
+              localStorage.removeItem('selectedStoreId');
+              localStorage.removeItem('selectedStoreName');
+              setError('The store no longer exists. Please create a new store.');
+              setCurrentStep(1);
+            } else {
+              setError('Could not verify store status. Please try again.');
+            }
+          }
+        };
+        verifyStoreAndStatus();
       }
     }
   }, [searchParams]);
