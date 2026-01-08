@@ -471,23 +471,18 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         });
       }
     } else {
-      // Auto-provision OAuth mode - only require projectUrl and oauthAccessToken
+      // Auto-provision OAuth mode - require projectUrl, oauthAccessToken optional if resuming
       if (!projectUrl) {
         return res.status(400).json({
           success: false,
           error: 'Supabase projectUrl is required'
         });
       }
-      if (!oauthAccessToken) {
-        return res.status(400).json({
-          success: false,
-          error: 'OAuth access token is required for auto-provisioning'
-        });
-      }
-      console.log('✅ Auto-provision mode validated - using OAuth API');
+      // Note: oauthAccessToken check moved below after we check if resuming
+      console.log('✅ Auto-provision mode - projectUrl present');
     }
 
-    // Get store from master DB (use Supabase client to avoid Sequelize connection issues)
+    // Get store from master DB FIRST to check provisioning status
     console.log('🔍 Fetching store from master DB via Supabase client...');
     console.log('   StoreId:', storeId);
     console.log('   masterDbClient available:', !!masterDbClient);
@@ -560,6 +555,19 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     console.log('📊 Current provisioning status:', currentProvisioningStatus);
     console.log('   Skip main provisioning:', skipMainProvisioning);
     console.log('   Only demo needed:', onlyDemoNeeded);
+
+    // Now validate oauthAccessToken - only required if NOT resuming (need to run migrations via API)
+    if (autoProvision && !oauthAccessToken && !skipMainProvisioning) {
+      return res.status(400).json({
+        success: false,
+        error: 'OAuth access token is required for auto-provisioning. Please reconnect your Supabase account.'
+      });
+    }
+
+    // If resuming (skipMainProvisioning) but no oauthAccessToken, we can still proceed with serviceRoleKey
+    if (skipMainProvisioning && !oauthAccessToken) {
+      console.log('⏭️ Resuming without oauthAccessToken - will use serviceRoleKey for demo data');
+    }
 
     // Check if this database URL is already being used by another store
     console.log('========================================');
