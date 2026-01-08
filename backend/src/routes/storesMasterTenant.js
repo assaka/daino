@@ -959,6 +959,37 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     }
     console.log('🎨 Saving theme preset:', validThemePreset);
 
+    // Provision demo data if requested (before marking complete)
+    let demoDataResult = null;
+    if (provisionDemoData) {
+      console.log('📦 Provisioning demo data...');
+
+      // Update status to demo_running
+      await masterDbClient
+        .from('stores')
+        .update({
+          provisioning_status: 'demo_running',
+          provisioning_progress: {
+            step: 'demo_data',
+            message: 'Provisioning demo data...',
+            demo_requested: true
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+
+      try {
+        const demoService = new DemoDataProvisioningService(storeId);
+        demoDataResult = await demoService.provisionDemoData();
+        console.log('✅ Demo data provisioned successfully!');
+      } catch (demoError) {
+        console.error('⚠️ Demo data provisioning failed (non-critical):', demoError.message);
+        // Don't fail the whole request - demo data is optional
+        demoDataResult = { success: false, error: demoError.message };
+      }
+    }
+
+    // Now activate store and set final provisioning status
     const { error: activateError } = await masterDbClient
       .from('stores')
       .update({
@@ -966,6 +997,13 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         is_active: true,
         slug: slug,
         theme_preset: validThemePreset,
+        provisioning_status: 'completed',
+        provisioning_progress: {
+          step: 'completed',
+          message: 'Provisioning completed successfully',
+          demo_requested: !!provisionDemoData,
+          demo_success: demoDataResult?.success ?? null
+        },
         provisioning_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -980,21 +1018,6 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     }
 
     console.log('✅ Store activated and provisioning marked complete!');
-
-    // Provision demo data if requested
-    let demoDataResult = null;
-    if (provisionDemoData) {
-      console.log('📦 Provisioning demo data...');
-      try {
-        const demoService = new DemoDataProvisioningService(storeId);
-        demoDataResult = await demoService.provisionDemoData();
-        console.log('✅ Demo data provisioned successfully!');
-      } catch (demoError) {
-        console.error('⚠️ Demo data provisioning failed (non-critical):', demoError.message);
-        // Don't fail the whole request - demo data is optional
-        demoDataResult = { success: false, error: demoError.message };
-      }
-    }
 
     res.json({
       success: true,
@@ -1012,12 +1035,18 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Database connection error:', error);
 
-    // Revert store status to allow retry (use Supabase client)
+    // Revert store status to allow retry and mark as failed
     try {
       await masterDbClient
         .from('stores')
         .update({
           status: 'pending_database',
+          provisioning_status: 'failed',
+          provisioning_progress: {
+            step: 'error',
+            message: 'Database connection failed',
+            error: error.message
+          },
           provisioning_completed_at: null,
           updated_at: new Date().toISOString()
         })
@@ -1037,8 +1066,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/stores/:id/provisioning-status
- * Check if store provisioning is complete
- * Returns status and whether retry is needed
+ * Check store provisioning progress and status
+ * Returns detailed status for polling during provisioning
  */
 router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
   try {
@@ -1048,7 +1077,7 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
     // Get store from master DB
     const { data: store, error } = await masterDbClient
       .from('stores')
-      .select('id, status, is_active, provisioning_completed_at')
+      .select('id, status, is_active, provisioning_status, provisioning_progress, provisioning_completed_at')
       .eq('id', storeId)
       .single();
 
@@ -1059,8 +1088,41 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check if provisioning is incomplete
-    const isIncomplete = store.status === 'active' && !store.provisioning_completed_at;
+    // Determine if provisioning is incomplete or failed
+    const isComplete = store.provisioning_status === 'completed';
+    const isFailed = store.provisioning_status === 'failed';
+    const isInProgress = ['pending', 'tables_creating', 'tables_completed', 'seed_running', 'seed_completed', 'demo_running'].includes(store.provisioning_status);
+
+    // Generate user-friendly message based on status
+    let message;
+    switch (store.provisioning_status) {
+      case 'pending':
+        message = 'Provisioning not started';
+        break;
+      case 'tables_creating':
+        message = 'Creating database tables...';
+        break;
+      case 'tables_completed':
+        message = 'Tables created, preparing seed data...';
+        break;
+      case 'seed_running':
+        message = 'Inserting seed data...';
+        break;
+      case 'seed_completed':
+        message = 'Seed data complete, finalizing...';
+        break;
+      case 'demo_running':
+        message = 'Provisioning demo data...';
+        break;
+      case 'completed':
+        message = 'Provisioning completed successfully';
+        break;
+      case 'failed':
+        message = store.provisioning_progress?.error || 'Provisioning failed. Click "Provision Database" to retry.';
+        break;
+      default:
+        message = 'Unknown status';
+    }
 
     res.json({
       success: true,
@@ -1068,11 +1130,14 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
         storeId: store.id,
         status: store.status,
         isActive: store.is_active,
+        provisioningStatus: store.provisioning_status,
+        provisioningProgress: store.provisioning_progress,
         provisioningCompletedAt: store.provisioning_completed_at,
-        isIncomplete,
-        message: isIncomplete
-          ? 'Store provisioning was interrupted. Some data may be missing.'
-          : 'Store provisioning is complete.'
+        isComplete,
+        isFailed,
+        isInProgress,
+        canRetry: isFailed || (!isComplete && !isInProgress),
+        message
       }
     });
   } catch (error) {

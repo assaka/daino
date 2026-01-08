@@ -32,6 +32,27 @@ const PAGE_CONFIGS = [
 
 class TenantProvisioningService {
   /**
+   * Update provisioning status in master DB
+   * @private
+   */
+  async updateProvisioningStatus(storeId, status, progress = {}) {
+    try {
+      const { masterDbClient } = require('../../database/masterConnection');
+      await masterDbClient
+        .from('stores')
+        .update({
+          provisioning_status: status,
+          provisioning_progress: progress,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+      console.log(`📊 Provisioning status: ${status}`, progress.message || '');
+    } catch (err) {
+      console.warn('⚠️ Failed to update provisioning status:', err.message);
+    }
+  }
+
+  /**
    * Retry a function with exponential backoff
    * @private
    */
@@ -461,6 +482,13 @@ END $$;`;
 
           console.log('✅ Foreign key constraints extracted and removed from table creation SQL');
 
+          // Update status: creating tables
+          await this.updateProvisioningStatus(storeId, 'tables_creating', {
+            step: 'tables',
+            message: 'Creating database tables (137 tables)...',
+            demo_requested: options.provisionDemoData || false
+          });
+
           // Execute migrations first (creates 137 tables WITHOUT foreign keys)
           console.log('📤 Pass 1: Running migrations via Management API (tables only)...');
           const migrationResponse = await this.retryWithBackoff(
@@ -488,6 +516,13 @@ END $$;`;
 
           console.log('✅ Pass 1 complete - 137 tables created without FKs');
           result.tablesCreated.push('Created 137 tables via OAuth API');
+
+          // Update status: tables completed
+          await this.updateProvisioningStatus(storeId, 'tables_completed', {
+            step: 'tables',
+            message: 'Tables created successfully',
+            demo_requested: options.provisionDemoData || false
+          });
 
           // Execute Pass 2: Add foreign key constraints (one at a time to handle failures gracefully)
           if (alterTableFKs.length > 0) {
@@ -712,6 +747,13 @@ VALUES (
             throw new Error(`Store creation failed: ${storeError.response?.data?.message || storeError.message}`);
           }
 
+          // Update status: running seed data
+          await this.updateProvisioningStatus(storeId, 'seed_running', {
+            step: 'seed',
+            message: 'Inserting default data...',
+            demo_requested: options.provisionDemoData || false
+          });
+
           // Execute seed data separately (6,598 rows - large file)
           console.log('📊 Seed SQL size:', (processedSeedSQL.length / 1024).toFixed(2), 'KB');
           console.log('📤 Running seed data via Management API...');
@@ -742,6 +784,13 @@ VALUES (
           console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
 
+          // Update status: seed completed
+          await this.updateProvisioningStatus(storeId, 'seed_completed', {
+            step: 'seed',
+            message: 'Default data inserted successfully',
+            demo_requested: options.provisionDemoData || false
+          });
+
           return true;
 
         } catch (apiError) {
@@ -750,6 +799,14 @@ VALUES (
           console.error('   Response data:', JSON.stringify(apiError.response?.data, null, 2));
 
           const errorMessage = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message;
+
+          // Update status: failed
+          await this.updateProvisioningStatus(storeId, 'failed', {
+            step: 'migrations',
+            message: 'Provisioning failed',
+            error: errorMessage,
+            demo_requested: options.provisionDemoData || false
+          });
 
           result.errors.push({
             step: 'migrations',

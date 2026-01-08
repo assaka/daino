@@ -52,7 +52,18 @@ CREATE TABLE IF NOT EXISTS stores (
   )),
   is_active BOOLEAN DEFAULT false,
   theme_preset VARCHAR(50) DEFAULT 'default',  -- Reference to selected theme preset (full settings in tenant DB)
-  provisioning_completed_at TIMESTAMP DEFAULT NULL,  -- Set when all provisioning steps complete successfully
+  provisioning_status VARCHAR(50) DEFAULT 'pending' CHECK (provisioning_status IN (
+    'pending',           -- Not started
+    'tables_creating',   -- Creating 137 tables
+    'tables_completed',  -- Tables done
+    'seed_running',      -- Inserting seed data
+    'seed_completed',    -- Core seed done
+    'demo_running',      -- Inserting demo data (if requested)
+    'completed',         -- All done (with or without demo)
+    'failed'             -- Something failed
+  )),
+  provisioning_progress JSONB DEFAULT '{}'::jsonb,  -- { step, current, total, message, error, demo_requested }
+  provisioning_completed_at TIMESTAMP DEFAULT NULL,  -- Set when all provisioning completes
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
