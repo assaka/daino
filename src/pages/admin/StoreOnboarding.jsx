@@ -204,16 +204,19 @@ export default function StoreOnboarding() {
     // Skip if already in resume/reprovision mode (URL params handled it)
     const resume = searchParams.get('resume');
     const reprovision = searchParams.get('reprovision');
+    console.log('🔍 checkExistingStores useEffect - resume:', resume, 'reprovision:', reprovision);
     if (resume === 'true' || reprovision === 'true') {
+      console.log('🔍 Skipping check - URL params present');
       setCheckingExistingStores(false);
       return;
     }
 
     const checkExistingStores = async () => {
       try {
-        console.log('Checking for existing stores...');
+        console.log('🔍 Checking for existing stores...');
         const stores = await StoreEntity.findAll();
-        console.log('Found stores:', stores);
+        console.log('🔍 Found stores:', stores);
+        console.log('🔍 Stores with status:', stores?.map(s => ({ id: s.id, name: s.name, status: s.status })));
 
         if (Array.isArray(stores) && stores.length > 0) {
           setHasExistingStores(true);
@@ -223,7 +226,9 @@ export default function StoreOnboarding() {
             s.status === 'pending_database' || s.status === 'provisioning'
           );
 
-          console.log('Incomplete store found:', incompleteStore);
+          console.log('🔍 Looking for incomplete store with status pending_database or provisioning');
+          console.log('🔍 Incomplete store found:', incompleteStore);
+          console.log('🔍 All store statuses:', stores.map(s => s.status));
 
           if (incompleteStore) {
             console.log('Found incomplete store:', incompleteStore.id, incompleteStore.status);
@@ -255,7 +260,9 @@ export default function StoreOnboarding() {
                 setError('You have an incomplete store setup. Please enter your Service Role Key to continue.');
               } else {
                 // Still pending or failed - stay on step 1 but use existing store ID for upsert
-                console.log('Provisioning pending - staying on step 1 for upsert, storeId:', incompleteStore.id);
+                console.log('🔍 Provisioning pending - staying on step 1 for upsert');
+                console.log('🔍 Setting storeId to:', incompleteStore.id);
+                console.log('🔍 Setting storeData to:', { name: incompleteStore.name, slug: incompleteStore.slug });
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || '',
@@ -361,12 +368,16 @@ export default function StoreOnboarding() {
     setLoading(true);
     setError('');
 
+    console.log('🔍 handleCreateStore called');
+    console.log('🔍 Current storeId:', storeId);
+    console.log('🔍 Current storeData:', storeData);
+
     try {
       let response;
 
       if (storeId) {
         // Update existing store (resuming incomplete store)
-        console.log('Updating existing store:', storeId);
+        console.log('🔍 Using PUT to update existing store:', storeId);
         response = await apiClient.put(`/stores/${storeId}`, {
           name: storeData.name,
           slug: storeData.slug,
@@ -382,6 +393,7 @@ export default function StoreOnboarding() {
         }
       } else {
         // Create new store
+        console.log('🔍 Using POST to create new store');
         response = await apiClient.post('/stores', {
           name: storeData.name
         });
