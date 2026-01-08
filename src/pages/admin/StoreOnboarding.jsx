@@ -324,14 +324,32 @@ export default function StoreOnboarding() {
     try {
       const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
 
-      // Handle both response formats: { success, data: {...} } or direct { success, ...data }
-      const responseData = statusResponse.data?.data || statusResponse.data || statusResponse;
-      const success = statusResponse.success || statusResponse.data?.success;
+      console.log('Raw API response:', JSON.stringify(statusResponse, null, 2));
+
+      // Handle various response formats from apiClient
+      // apiClient may return: { success, data } or axios response { data: { success, data } }
+      let responseData;
+      let success;
+
+      if (statusResponse.data?.success !== undefined) {
+        // Axios wrapped response: { data: { success, data } }
+        success = statusResponse.data.success;
+        responseData = statusResponse.data.data || statusResponse.data;
+      } else {
+        // Direct response: { success, data }
+        success = statusResponse.success;
+        responseData = statusResponse.data || statusResponse;
+      }
+
+      console.log('Parsed response:', { success, responseData });
 
       if (success && responseData) {
-        const { provisioningStatus: status, message, isComplete, isFailed } = responseData;
+        const status = responseData.provisioningStatus;
+        const message = responseData.message;
+        const isComplete = responseData.isComplete;
+        const isFailed = responseData.isFailed;
 
-        console.log('Polling status:', { status, isComplete, isFailed, message });
+        console.log('Setting provisioningStatus to:', status);
 
         setProvisioningStatus(status);
         setProvisioningMessage(message);
@@ -848,9 +866,11 @@ export default function StoreOnboarding() {
                   </div>
 
                   {/* Progress Steps */}
+                  {/* Debug: current status = {provisioningStatus} */}
                   <div className="space-y-3">
+                    {console.log('Rendering progress with status:', provisioningStatus)}
                     {[
-                      { status: 'tables_creating', label: 'Creating database tables', description: '130+ tables for your store' },
+                      { status: 'tables_creating', label: 'Creating database tables', description: '129 tables for your store' },
                       { status: 'tables_completed', label: 'Tables created', description: 'Database structure ready' },
                       { status: 'seed_running', label: 'Adding initial data', description: 'Core configuration and settings' },
                       { status: 'seed_completed', label: 'Initial data added', description: 'Store configuration complete' },
