@@ -293,7 +293,7 @@ export default function StoreOnboarding() {
               setLoading(false);
             } else {
               // Instead of generic message, suggest checking for duplicates
-              setError('OAuth connection failed. This database may already be in use by another store.');
+              setError('OAuth connection failed. Please try to connect with Suapabse again');
             }
           } catch (apiError) {
             setError(apiError.message || 'Failed to verify OAuth connection. Please try again.');
@@ -850,7 +850,7 @@ export default function StoreOnboarding() {
                   {/* Progress Steps */}
                   <div className="space-y-3">
                     {[
-                      { status: 'tables_creating', label: 'Creating database tables', description: '137 tables for your store' },
+                      { status: 'tables_creating', label: 'Creating database tables', description: '130+ tables for your store' },
                       { status: 'tables_completed', label: 'Tables created', description: 'Database structure ready' },
                       { status: 'seed_running', label: 'Adding initial data', description: 'Core configuration and settings' },
                       { status: 'seed_completed', label: 'Initial data added', description: 'Store configuration complete' },
