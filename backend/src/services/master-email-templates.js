@@ -1205,6 +1205,184 @@ const pauseAccessRejectedEmail = (data) => {
   });
 };
 
+/**
+ * Store Ready Email Template
+ * Sent when store provisioning completes successfully
+ */
+const storeReadyEmail = (data) => {
+  const {
+    storeName,
+    dashboardUrl,
+    discordUrl = 'https://discord.gg/vvAhfdaX',
+    calendlyUrl = 'https://calendly.com/dainostore'
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Your Store is Ready!',
+    subtitle: `${storeName} is all set up`
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Success Icon -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 20px 40px 0; text-align: center;">
+          <div style="display: inline-block; width: 64px; height: 64px; background-color: #10b981; border-radius: 50%; line-height: 64px; font-size: 32px;">
+            🎉
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 30px 40px 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+            Great news! Your store <strong>"${storeName}"</strong> has been successfully set up and is ready to use.
+          </p>
+
+          <p style="margin: 0 0 30px 0; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+            Your database has been provisioned with all the tables, configurations, and settings you need to start selling.
+          </p>
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <tr>
+              <td align="center">
+                <a href="${dashboardUrl}" style="display: inline-block; padding: 16px 40px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                  Go to Dashboard →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Help Section -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px;">
+            <tr>
+              <td style="padding: 20px; text-align: center;">
+                <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
+                  Need help getting started?
+                </p>
+                <table role="presentation" style="margin: 0 auto;">
+                  <tr>
+                    <td style="padding: 0 8px;">
+                      <a href="${discordUrl}" style="color: #6366f1; text-decoration: none; font-size: 14px; font-weight: 500;">Join Discord</a>
+                    </td>
+                    <td style="color: #d1d5db;">|</td>
+                    <td style="padding: 0 8px;">
+                      <a href="${calendlyUrl}" style="color: #6366f1; text-decoration: none; font-size: 14px; font-weight: 500;">Schedule a Call</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Your store "${storeName}" is ready! Access your dashboard now.`
+  });
+};
+
+/**
+ * Store Setup Failed Email Template
+ * Sent when store provisioning fails
+ */
+const storeSetupFailedEmail = (data) => {
+  const {
+    storeName,
+    retryUrl,
+    discordUrl = 'https://discord.gg/vvAhfdaX',
+    calendlyUrl = 'https://calendly.com/dainostore'
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Setup Issue',
+    subtitle: `We encountered a problem with ${storeName}`
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Warning Icon -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td style="padding: 20px 40px 0; text-align: center;">
+          <div style="display: inline-block; width: 64px; height: 64px; background-color: #ef4444; border-radius: 50%; line-height: 64px; font-size: 32px;">
+            ⚠️
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 30px 40px 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+            We encountered an issue while setting up your store <strong>"${storeName}"</strong>.
+          </p>
+
+          <p style="margin: 0 0 30px 0; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+            Don't worry - you can try again by clicking the button below. If the issue persists, our team is here to help.
+          </p>
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <tr>
+              <td align="center">
+                <a href="${retryUrl}" style="display: inline-block; padding: 16px 40px; background-color: #ef4444; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                  Try Again →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Help Section -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
+            <tr>
+              <td style="padding: 20px; text-align: center;">
+                <p style="margin: 0 0 12px 0; color: #991b1b; font-size: 14px; font-weight: 500;">
+                  Still having trouble?
+                </p>
+                <table role="presentation" style="margin: 0 auto;">
+                  <tr>
+                    <td style="padding: 0 8px;">
+                      <a href="${discordUrl}" style="color: #dc2626; text-decoration: none; font-size: 14px; font-weight: 500;">Join Discord</a>
+                    </td>
+                    <td style="color: #fecaca;">|</td>
+                    <td style="padding: 0 8px;">
+                      <a href="${calendlyUrl}" style="color: #dc2626; text-decoration: none; font-size: 14px; font-weight: 500;">Schedule a Call</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Issue with "${storeName}" setup - click to retry`
+  });
+};
+
 module.exports = {
   // Components
   masterEmailHeader,
@@ -1222,6 +1400,8 @@ module.exports = {
   pauseAccessApprovedEmail,
   pauseAccessRejectedEmail,
   onboardingEmail,
+  storeReadyEmail,
+  storeSetupFailedEmail,
 
   // Constants
   PLATFORM_NAME,
