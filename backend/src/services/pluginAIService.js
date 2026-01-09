@@ -399,10 +399,12 @@ CONVERSATION GUIDELINES:
 - Focus on business features and outcomes
 - If asked something unrelated to e-commerce plugins, politely redirect: "I'm here to help you build e-commerce plugins! Ask me to create features like customer reviews, loyalty points, wishlists, or custom checkout options."
 
-WHEN TO GENERATE A PLUGIN:
-Only return JSON plugin code when the user clearly wants to:
+WHEN TO GENERATE CODE/FILES:
+Return JSON with generatedFiles when the user wants to:
 - CREATE a new plugin (e.g., "create a wishlist", "build a reviews system")
 - ADD features to their store (e.g., "I need loyalty points", "add product recommendations")
+- ADD/CREATE a table (e.g., "add a table called chat_hamid", "create a new table")
+- ADD database storage (e.g., "store data", "I need a database")
 
 If they're just asking questions or chatting, respond conversationally in plain text.
 
@@ -558,46 +560,43 @@ When user asks for "admin page", "settings page", "dashboard", "management page"
 - These are React components stored in database and rendered dynamically
 
 DATABASE ENTITIES & MIGRATIONS:
-When user asks to "create a table", "add a new table", "store data", or needs database storage:
-1. Generate an ENTITY file (JSON) with the table schema
-2. Generate a MIGRATION file (SQL) to create the table
+When user asks to "create a table", "add a new table", "add a table called X", "store data", or needs database storage:
+You MUST generate BOTH files in the generatedFiles array:
+1. An ENTITY file (JSON) with the table schema - name must include "entity" and end with ".json"
+2. A MIGRATION file (SQL) to create the table - name must include timestamp and end with ".sql"
 
-Entity file format (name must end with .json and include "entity"):
-\`\`\`json
+EXAMPLE RESPONSE for "add a table called chat_hamid":
 {
-  "entity_name": "ChatHamid",
-  "table_name": "chat_hamid",
-  "description": "Stores chat session data",
-  "schema_definition": {
-    "columns": [
-      { "name": "id", "type": "UUID", "primary": true, "default": "gen_random_uuid()" },
-      { "name": "session_id", "type": "VARCHAR(100)", "notNull": true },
-      { "name": "user_id", "type": "UUID", "nullable": true },
-      { "name": "data", "type": "JSONB", "nullable": true },
-      { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
-    ],
-    "indexes": [
-      { "name": "idx_chat_hamid_session", "columns": ["session_id"] }
-    ]
-  }
+  "generatedFiles": [
+    {
+      "name": "chat_hamid_entity.json",
+      "code": {
+        "entity_name": "ChatHamid",
+        "table_name": "chat_hamid",
+        "description": "Stores chat session data",
+        "schema_definition": {
+          "columns": [
+            { "name": "id", "type": "UUID", "primary": true, "default": "gen_random_uuid()" },
+            { "name": "session_id", "type": "VARCHAR(100)", "notNull": true },
+            { "name": "user_id", "type": "UUID", "nullable": true },
+            { "name": "data", "type": "JSONB", "nullable": true },
+            { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+          ],
+          "indexes": [
+            { "name": "idx_chat_hamid_session", "columns": ["session_id"] }
+          ]
+        }
+      }
+    },
+    {
+      "name": "1704200000_create_chat_hamid_migration.sql",
+      "code": "-- Migration: Create chat_hamid table\\n-- Version: 1704200000\\n\\nCREATE TABLE IF NOT EXISTS chat_hamid (\\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\\n  session_id VARCHAR(100) NOT NULL,\\n  user_id UUID,\\n  data JSONB,\\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\\n);\\n\\nCREATE INDEX IF NOT EXISTS idx_chat_hamid_session ON chat_hamid(session_id);"
+    }
+  ],
+  "explanation": "Created chat_hamid table with session tracking and JSONB data storage."
 }
-\`\`\`
 
-Migration file format (name must include "migration" and timestamp):
-\`\`\`sql
--- Migration: Create chat_hamid table
--- Version: 1704200000
-
-CREATE TABLE IF NOT EXISTS chat_hamid (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id VARCHAR(100) NOT NULL,
-  user_id UUID,
-  data JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_chat_hamid_session ON chat_hamid(session_id);
-\`\`\`
+CRITICAL: For ANY table request, you MUST return BOTH the entity JSON file AND the migration SQL file in generatedFiles array. Never return just one.
 
 API CONTROLLERS:
 When user asks for "API endpoint", "REST API", "backend route", or needs custom endpoints:
