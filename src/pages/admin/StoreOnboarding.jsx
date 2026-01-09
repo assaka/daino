@@ -1148,8 +1148,8 @@ export default function StoreOnboarding() {
           {/* Step 4: Provision Store */}
           {currentStep === 4 && (
             <form onSubmit={handleProvisionDatabase} className="space-y-6">
-              {/* Show progress when provisioning is active */}
-              {loading && provisioningStatus ? (
+              {/* Show progress when provisioning is active (either started now or resumed) */}
+              {(loading && provisioningStatus) || (provisioningStatus && !needsServiceKey) ? (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
                   <div className="text-center mb-6">
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
