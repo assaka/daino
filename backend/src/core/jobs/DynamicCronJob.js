@@ -291,7 +291,7 @@ class DynamicCronJob extends BaseJobHandler {
    */
   async executeInlineHandlerCode(cronJob) {
     const { handler_code, handler_method, store_id, configuration } = cronJob;
-    const { params = {} } = configuration || {};
+    const { params = {}, plugin_id } = configuration || {};
 
     console.log(`📝 Executing inline handler code for: ${handler_method || 'anonymous'}`);
 
@@ -299,21 +299,54 @@ class DynamicCronJob extends BaseJobHandler {
     const { getTenantConnection } = require('../../database/tenant-connection');
     const db = await getTenantConnection(store_id);
 
+    // Load plugin secrets/config if plugin_id is available
+    let secrets = {};
+    if (plugin_id) {
+      try {
+        const { data: pluginConfig } = await db
+          .from('plugin_registry')
+          .select('settings, secrets')
+          .eq('id', plugin_id)
+          .single();
+
+        if (pluginConfig) {
+          // Decrypt secrets if encrypted (format: iv:authTag:ciphertext)
+          if (pluginConfig.secrets && typeof pluginConfig.secrets === 'string' && pluginConfig.secrets.includes(':')) {
+            try {
+              const { decrypt } = require('../../utils/encryption');
+              secrets = JSON.parse(decrypt(pluginConfig.secrets));
+            } catch (e) {
+              secrets = pluginConfig.secrets; // Not encrypted, use as-is
+            }
+          } else if (pluginConfig.secrets) {
+            secrets = pluginConfig.secrets;
+          }
+          // Merge settings into secrets for easy access
+          if (pluginConfig.settings) {
+            secrets = { ...pluginConfig.settings, ...secrets };
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not load plugin secrets:', e.message);
+      }
+    }
+
     // Build execution context
     const context = {
       db,
       storeId: store_id,
       cronJobId: cronJob.id,
       params,
+      secrets,
       apiBaseUrl: process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3001'
     };
 
     try {
       // Create async function from handler_code
-      // Available variables: db, storeId, params, fetch, apiBaseUrl
+      // Available variables: db, storeId, params, secrets, fetch, apiBaseUrl
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
       const handlerFn = new AsyncFunction(
-        'db', 'storeId', 'params', 'fetch', 'apiBaseUrl', 'console',
+        'db', 'storeId', 'params', 'secrets', 'fetch', 'apiBaseUrl', 'console',
         handler_code
       );
 
@@ -322,6 +355,7 @@ class DynamicCronJob extends BaseJobHandler {
         db,
         store_id,
         params,
+        secrets,
         fetch,
         context.apiBaseUrl,
         console

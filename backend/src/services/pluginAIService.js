@@ -657,9 +657,19 @@ Handler code has access to:
 - db: Supabase tenant database client
 - storeId: Current store ID
 - params: Custom parameters from handler_params
+- secrets: Plugin API keys and settings (e.g., secrets.ebay_api_key, secrets.webhook_url)
 - fetch: For HTTP requests
 - apiBaseUrl: Backend API URL
 - console: For logging
+
+Example using secrets for eBay API:
+\`\`\`javascript
+const { ebay_api_key, ebay_client_secret } = secrets;
+
+const response = await fetch('https://api.ebay.com/sell/inventory/v1/inventory_item', {
+  headers: { 'Authorization': \`Bearer \${ebay_api_key}\` }
+});
+\`\`\`
 
 RESPONSE FORMAT:
 Return JSON with a conversational "message" field that feels like chatting with a helpful assistant:
