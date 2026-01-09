@@ -677,16 +677,22 @@ const WorkspaceAIPanel = () => {
           // Code was generated in structured format - show success and dispatch event
           const files = actualGeneratedFiles || [];
           const adminPages = actualGeneratedAdminPages || [];
-          const explanation = embeddedJson?.explanation || response.explanation || 'Plugin code generated successfully.';
 
-          // Build status message
-          let statusParts = [];
-          if (files.length > 0) statusParts.push(`${files.length} file(s)`);
-          if (adminPages.length > 0) statusParts.push(`${adminPages.length} admin page(s)`);
+          // Use conversational message from AI, fallback to explanation
+          const conversationalMessage = embeddedJson?.message || response.message || embeddedJson?.explanation || response.explanation || 'Done! Your changes have been saved.';
+
+          // Build file count for subtle info
+          let fileInfo = '';
+          if (files.length > 0 || adminPages.length > 0) {
+            const parts = [];
+            if (files.length > 0) parts.push(`${files.length} file${files.length > 1 ? 's' : ''}`);
+            if (adminPages.length > 0) parts.push(`${adminPages.length} page${adminPages.length > 1 ? 's' : ''}`);
+            fileInfo = `\n\n📁 ${parts.join(', ')} saved`;
+          }
 
           addChatMessage({
             role: 'assistant',
-            content: `✅ ${explanation}\n\n${statusParts.length > 0 ? `Generated ${statusParts.join(' and ')}. Saving to plugin...` : 'Saving code to plugin...'}`,
+            content: conversationalMessage + fileInfo,
             data: {
               type: 'plugin_code_generated',
               files: files,
