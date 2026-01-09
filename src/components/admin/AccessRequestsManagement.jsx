@@ -177,7 +177,7 @@ export default function AccessRequestsManagement({ storeId, storeName }) {
 
   return (
     <div className="space-y-6">
-      <FlashMessage message={flashMessage?.message} type={flashMessage?.type} />
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
       <Card>
         <CardHeader>
