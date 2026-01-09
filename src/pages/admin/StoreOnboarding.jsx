@@ -89,7 +89,8 @@ export default function StoreOnboarding() {
                        response.data || response;
 
           if (!data || !data.storeId) {
-            // Store doesn't exist
+            // Store doesn't exist - clear storeId and start fresh
+            setStoreId(null);
             setError('The store no longer exists. Please create a new store.');
             setCurrentStep(1);
             setCheckingExistingStores(false);
@@ -142,6 +143,7 @@ export default function StoreOnboarding() {
           console.warn('Could not check provisioning status:', err.message);
           // Store might not exist
           if (err.message?.includes('404') || err.message?.includes('not found')) {
+            setStoreId(null);
             setError('The store no longer exists. Please create a new store.');
             setCurrentStep(1);
           } else {
@@ -224,10 +226,11 @@ export default function StoreOnboarding() {
             }
           } catch (err) {
             console.warn('Could not verify store:', err.message);
-            // Store might not exist - clear localStorage
+            // Store might not exist - clear localStorage and storeId
             if (err.message?.includes('404') || err.message?.includes('not found')) {
               localStorage.removeItem('selectedStoreId');
               localStorage.removeItem('selectedStoreName');
+              setStoreId(null);
               setError('The store no longer exists. Please create a new store.');
               setCurrentStep(1);
             } else {
