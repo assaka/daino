@@ -159,8 +159,26 @@ const DeveloperPluginEditor = ({
             let filePath = fileName;
             let isEntityFile = false;
 
-            // Check if content looks like a cron job (has cron_name or schedule)
-            const isCronContent = typeof fileCode === 'object' && (fileCode.cron_name || fileCode.schedule || fileCode.cron_schedule);
+            // Detect file PURPOSE by analyzing content
+            let parsedContent = null;
+            if (typeof fileCode === 'object') {
+              parsedContent = fileCode;
+            } else if (typeof fileCode === 'string' && fileCode.trim().startsWith('{')) {
+              try {
+                parsedContent = JSON.parse(fileCode);
+              } catch (e) {
+                // Not valid JSON, that's fine
+              }
+            }
+
+            // Cron detection: JSON with cron properties OR contains cron schedule pattern
+            const cronSchedulePattern = /["'][\d\*\/\-\,]+\s+[\d\*\/\-\,]+\s+[\d\*\/\-\,]+\s+[\d\*\/\-\,]+\s+[\d\*\/\-\,]+["']/;
+            const isCronContent = parsedContent && (parsedContent.cron_name || parsedContent.schedule || parsedContent.cron_schedule || parsedContent.handler_code);
+            const hasCronScheduleInCode = typeof fileCode === 'string' && cronSchedulePattern.test(fileCode);
+
+            // Entity detection: JSON with entity/table properties
+            const isEntityContent = parsedContent && (parsedContent.entity_name || parsedContent.table_name || parsedContent.schema_definition);
+
             let isCronFile = false;
 
             // If filename already has a path (contains /), use it as-is with leading slash
@@ -176,12 +194,12 @@ const DeveloperPluginEditor = ({
                 filePath = `/migrations/${fileName}`;
               } else if (fileName.includes('component') || fileName.endsWith('.jsx')) {
                 filePath = `/components/${fileName}`;
-              } else if (isCronContent || (fileName.includes('cron') && fileName.endsWith('.json'))) {
-                // Cron jobs: detect by content (cron_name/schedule) or filename
+              } else if (isCronContent || hasCronScheduleInCode) {
+                // Cron jobs: detect by PURPOSE (cron_name/schedule/handler_code in content)
                 const cronFileName = fileName.endsWith('.json') ? fileName : fileName.replace(/\.(js|ts)$/, '.json');
                 filePath = `/cron/${cronFileName}`;
                 isCronFile = true;
-              } else if (fileName.includes('entity') || (fileName.endsWith('.json') && !fileName.includes('package'))) {
+              } else if (isEntityContent || fileName.includes('entity') || (fileName.endsWith('.json') && !fileName.includes('package') && !fileName.includes('cron'))) {
                 filePath = `/entities/${fileName}`;
                 isEntityFile = true;
               } else if (fileName === 'index.js' || fileName === 'main.js') {
