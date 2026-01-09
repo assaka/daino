@@ -1227,10 +1227,10 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
     const { masterDbClient } = require('../database/masterConnection');
 
-    // Get store from master DB
+    // Get store from master DB (include profile fields for resume functionality)
     const { data: store, error } = await masterDbClient
       .from('stores')
-      .select('id, status, is_active, provisioning_status, provisioning_progress, provisioning_completed_at')
+      .select('id, name, slug, status, is_active, provisioning_status, provisioning_progress, provisioning_completed_at, country, phone, store_email, theme_preset')
       .eq('id', storeId)
       .single();
 
@@ -1281,6 +1281,8 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
       success: true,
       data: {
         storeId: store.id,
+        name: store.name,
+        slug: store.slug,
         status: store.status,
         isActive: store.is_active,
         provisioningStatus: store.provisioning_status,
@@ -1290,7 +1292,12 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
         isFailed,
         isInProgress,
         canRetry: isFailed || (!isComplete && !isInProgress),
-        message
+        message,
+        // Profile fields for resume functionality
+        country: store.country,
+        phone: store.phone,
+        storeEmail: store.store_email,
+        themePreset: store.theme_preset
       }
     });
   } catch (error) {

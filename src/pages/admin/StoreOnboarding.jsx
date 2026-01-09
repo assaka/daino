@@ -23,7 +23,8 @@ import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 const STEPS = [
   { id: 1, title: 'Create Store', description: 'Store details & location', icon: Store, required: true },
   { id: 2, title: 'Customize', description: 'Theme & demo data', icon: Palette, required: true },
-  { id: 3, title: 'Connect Database', description: 'Provision your store', icon: Database, required: true },
+  { id: 3, title: 'Connect Database', description: 'Link your Supabase', icon: Database, required: true },
+  { id: 4, title: 'Provision Store', description: 'Set up your store', icon: Sparkles, required: true },
 ];
 
 export default function StoreOnboarding() {
@@ -50,7 +51,6 @@ export default function StoreOnboarding() {
   const [provisionDemoData, setProvisionDemoData] = useState(false); // Default unchecked - adds setup time
   const [provisioningStatus, setProvisioningStatus] = useState(null); // Current provisioning step
   const [provisioningMessage, setProvisioningMessage] = useState(''); // User-friendly message
-  const [notifyByEmail, setNotifyByEmail] = useState(false); // Email notification when provisioning completes
   const [backgroundJobStarted, setBackgroundJobStarted] = useState(false); // Track if background job was started
   const slugCheckTimeoutRef = React.useRef(null);
   const provisioningPollRef = React.useRef(null);
@@ -76,8 +76,8 @@ export default function StoreOnboarding() {
     if (resumeStoreId && resume === 'true') {
       setIsReprovision(true);
       setStoreId(resumeStoreId);
-      setCompletedSteps([1, 2]); // Mark steps 1 and 2 as completed
-      setCurrentStep(3); // Go to database connection step
+      setCompletedSteps([1, 2, 3]); // Mark steps 1, 2, 3 as completed
+      setCurrentStep(4); // Go to provisioning step
 
       // Check provisioning status to determine correct step
       const checkProvisioningProgress = async () => {
@@ -152,15 +152,23 @@ export default function StoreOnboarding() {
               return;
             }
 
-            // Store exists - set up reprovision mode
+            // Store exists - set up reprovision mode with data from API
             setIsReprovision(true);
             setStoreId(existingStoreId);
             setStoreData({
-              name: existingStoreName || 'My Store',
-              slug: existingStoreName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
+              name: data.name || existingStoreName || 'My Store',
+              slug: data.slug || existingStoreName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
             });
-            setCompletedSteps([1, 2]);
-            setCurrentStep(3);
+            setProfileData({
+              country: data.country || '',
+              phone: data.phone || '',
+              storeEmail: data.storeEmail || ''
+            });
+            if (data.themePreset) {
+              setSelectedThemePreset(data.themePreset);
+            }
+            setCompletedSteps([1, 2, 3]);
+            setCurrentStep(4);
 
             // Check if OAuth was already done
             if (status && status !== 'pending' && status !== 'failed') {
@@ -172,6 +180,10 @@ export default function StoreOnboarding() {
               setOauthCompleted(true);
               setNeedsServiceKey(true);
               setError(data.message || 'Previous setup failed. Please try again.');
+            } else {
+              // OAuth not done yet - go back to step 3
+              setCompletedSteps([1, 2]);
+              setCurrentStep(3);
             }
           } catch (err) {
             console.warn('Could not verify store:', err.message);
@@ -231,15 +243,20 @@ export default function StoreOnboarding() {
                 window.location.href = '/admin/dashboard';
                 return;
               }
-              // If provisioning has started but not complete, go to step 3 (database connection)
+              // If provisioning has started but not complete, go to step 4 (provisioning)
               else if (status && status !== 'pending' && status !== 'failed') {
                 setStoreId(incompleteStore.id);
                 setStoreData({
                   name: incompleteStore.name || 'My Store',
                   slug: incompleteStore.slug || 'my-store'
                 });
-                setCompletedSteps([1, 2]);
-                setCurrentStep(3);
+                setProfileData({
+                  country: incompleteStore.country || '',
+                  phone: incompleteStore.phone || '',
+                  storeEmail: incompleteStore.store_email || ''
+                });
+                setCompletedSteps([1, 2, 3]);
+                setCurrentStep(4);
                 setIsReprovision(true);
                 setOauthCompleted(true);
                 setNeedsServiceKey(true);
@@ -251,6 +268,11 @@ export default function StoreOnboarding() {
                 setStoreData({
                   name: incompleteStore.name || '',
                   slug: incompleteStore.slug || ''
+                });
+                setProfileData({
+                  country: incompleteStore.country || '',
+                  phone: incompleteStore.phone || '',
+                  storeEmail: incompleteStore.store_email || ''
                 });
                 if (incompleteStore.theme_preset) {
                   setSelectedThemePreset(incompleteStore.theme_preset);
@@ -264,6 +286,11 @@ export default function StoreOnboarding() {
               setStoreData({
                 name: incompleteStore.name || '',
                 slug: incompleteStore.slug || ''
+              });
+              setProfileData({
+                country: incompleteStore.country || '',
+                phone: incompleteStore.phone || '',
+                storeEmail: incompleteStore.store_email || ''
               });
               setSuccess(`Resuming setup for "${incompleteStore.name || incompleteStore.slug}". You can update the details below.`);
             }
@@ -494,6 +521,8 @@ export default function StoreOnboarding() {
             if (statusResponse.success && statusResponse.connected) {
               setOauthCompleted(true);
               setNeedsServiceKey(true);
+              setCompletedSteps([1, 2, 3]);
+              setCurrentStep(4);
               setSuccess('Supabase connected! Please provide your Service Role Key to complete setup.');
               setLoading(false);
             } else {
@@ -562,7 +591,7 @@ export default function StoreOnboarding() {
           setLoading(false);
           setProvisioningStatus('completed');
           setProvisioningMessage('Provisioning completed successfully');
-          setCompletedSteps([1, 2, 3]);
+          setCompletedSteps([1, 2, 3, 4]);
           setSuccess('🎉 Your store is ready! Redirecting to dashboard...');
 
           // Clear old store selection data
@@ -617,8 +646,7 @@ export default function StoreOnboarding() {
         pollProvisioningStatus(storeId);
       }, 2000); // Poll every 2 seconds
 
-      // Fire off the provisioning request
-      // Use backgroundMode when user wants email notification
+      // Fire off the provisioning request - always use background mode for email notification
       apiClient.post(`/stores/${storeId}/connect-database`, {
         storeName: storeData.name,
         storeSlug: storeData.slug,
@@ -627,25 +655,24 @@ export default function StoreOnboarding() {
         serviceRoleKey: dbData.serviceRoleKey,
         themePreset: selectedThemePreset,
         provisionDemoData: provisionDemoData,
-        backgroundMode: notifyByEmail
+        backgroundMode: true // Always run in background with email notification
       }).then(provisionResponse => {
         // Check for success - API call completed
         if (provisionResponse.success) {
-          // If background mode, the job was queued - show message and keep polling
+          // Background mode - the job was queued, user can close page
           if (provisionResponse.backgroundMode) {
             setBackgroundJobStarted(true);
-            setSuccess('Provisioning started! You can close this page - we\'ll email you when ready.');
             // Keep polling to update UI if user stays on page
             return;
           }
 
-          // Synchronous mode - provisioning completed
+          // Fallback: synchronous mode completed (shouldn't happen with backgroundMode: true)
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
           setProvisioningStatus('completed');
           setProvisioningMessage('Provisioning completed successfully');
-          setCompletedSteps([1, 2, 3]);
+          setCompletedSteps([1, 2, 3, 4]);
           setSuccess('🎉 Your store is ready! Redirecting to dashboard...');
 
           // Clear old store selection data
@@ -782,25 +809,25 @@ export default function StoreOnboarding() {
 
         <CardHeader className="text-center pb-4">
           <div className="flex justify-center mb-4">
-            <StepIcon className={`w-16 h-16 text-blue-600 ${currentStep === 3 && oauthCompleted && needsServiceKey && loading ? 'animate-spin' : ''}`} />
+            <StepIcon className={`w-16 h-16 text-blue-600 ${currentStep === 4 && loading ? 'animate-spin' : ''}`} />
           </div>
           <CardTitle className="text-2xl font-bold">
-            {currentStep === 3 && oauthCompleted && needsServiceKey && loading
-              ? 'Provisioning Database'
-              : isReprovision && currentStep === 3
-                ? 'Reprovision Database'
+            {currentStep === 4 && loading
+              ? 'Provisioning Store'
+              : isReprovision && currentStep === 4
+                ? 'Reprovision Store'
                 : currentStepData.title}
           </CardTitle>
           <CardDescription className="text-base">
-            {currentStep === 3 && oauthCompleted && needsServiceKey && loading && provisioningMessage
+            {currentStep === 4 && loading && provisioningMessage
               ? provisioningMessage
-              : currentStep === 3 && oauthCompleted && needsServiceKey && loading
+              : currentStep === 4 && loading
                 ? 'Starting provisioning...'
-                : isReprovision && currentStep === 3
-                  ? `Reconnect Supabase for "${storeData.name}"`
+                : isReprovision && currentStep === 4
+                  ? `Provision database for "${storeData.name}"`
                   : currentStepData.description}
           </CardDescription>
-          {currentStep === 3 && !oauthCompleted && (
+          {currentStep === 3 && (
             <TooltipProvider>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -1068,39 +1095,33 @@ export default function StoreOnboarding() {
             </form>
           )}
 
-          {/* Step 3b: Enter Service Key (after OAuth) */}
-          {currentStep === 3 && oauthCompleted && needsServiceKey && (
+          {/* Step 4: Provision Store */}
+          {currentStep === 4 && (
             <form onSubmit={handleProvisionDatabase} className="space-y-6">
               {/* Show progress when provisioning is active */}
               {loading && provisioningStatus ? (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
                   <div className="text-center mb-6">
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <Database className="w-8 h-8 text-blue-600 animate-pulse" />
+                      <Sparkles className="w-8 h-8 text-blue-600 animate-pulse" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Setting Up Your Database
+                      Setting Up Your Store
                     </h3>
-                    {backgroundJobStarted ? (
-                      <div className="space-y-2">
-                        <p className="text-gray-600 text-sm">
-                          Your store is being set up in the background.
-                        </p>
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-green-800 text-sm font-medium flex items-center justify-center">
-                            <Mail className="w-4 h-4 mr-2" />
-                            You can safely close this page
-                          </p>
-                          <p className="text-green-700 text-xs mt-1">
-                            We'll email you when your store is ready!
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
+                    <div className="space-y-2">
                       <p className="text-gray-600 text-sm">
-                        This may take a few minutes. Please wait...
+                        Your store is being set up. This takes a few minutes.
                       </p>
-                    )}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <p className="text-green-800 text-sm font-medium flex items-center justify-center">
+                          <Mail className="w-4 h-4 mr-2" />
+                          You can safely close this page
+                        </p>
+                        <p className="text-green-700 text-xs mt-1">
+                          We'll email you when your store is ready!
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Progress Steps */}
@@ -1198,32 +1219,26 @@ export default function StoreOnboarding() {
                     />
                   </div>
 
-                  {/* Email notification checkbox */}
-                  <div className="flex items-start space-x-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <Checkbox
-                      id="notifyByEmail"
-                      checked={notifyByEmail}
-                      onCheckedChange={setNotifyByEmail}
-                      className="mt-0.5"
-                    />
+                  {/* Info about email notification */}
+                  <div className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <Mail className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <Label htmlFor="notifyByEmail" className="font-medium cursor-pointer flex items-center">
-                        <Mail className="w-4 h-4 mr-2 text-gray-600" />
-                        Email me when setup is complete
-                      </Label>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Setup takes a few minutes. You can close this page and we'll email you when your store is ready.
+                      <p className="text-sm text-green-800 font-medium">
+                        Setup takes a few minutes. You can close this page after starting.
+                      </p>
+                      <p className="text-sm text-green-700 mt-1">
+                        We'll email you when your store is ready!
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-3">
-                    <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setNeedsServiceKey(false); setError(''); }} disabled={loading}>
+                    <Button type="button" variant="outline" onClick={() => { setCurrentStep(3); setOauthCompleted(false); setNeedsServiceKey(false); setError(''); }} disabled={loading}>
                       <ArrowLeft className="w-4 h-4 mr-2" /> Back
                     </Button>
                     <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.serviceRoleKey}>
-                      <Database className="w-4 h-4 mr-2" />
-                      Provision Database
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Provision Store
                     </Button>
                   </div>
                 </>
