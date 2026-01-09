@@ -629,6 +629,38 @@ module.exports = async (req, res, context) => {
 };
 \`\`\`
 
+CRON JOBS (Scheduled Tasks):
+When user asks for "scheduled task", "cron job", "run every hour/day/week", "background job":
+Generate a cron file (name must include "cron" and end with ".json"):
+
+Cron file format:
+\`\`\`json
+{
+  "cron_name": "cleanup_old_sessions",
+  "description": "Clean up expired chat sessions daily",
+  "schedule": "0 3 * * *",
+  "is_enabled": true,
+  "handler_code": "// Available: db (Supabase client), storeId, params, fetch, apiBaseUrl, console\\n\\nconst { data, error } = await db\\n  .from('chat_sessions')\\n  .delete()\\n  .lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());\\n\\nif (error) throw error;\\n\\nreturn { deleted: data?.length || 0, message: 'Cleanup completed' };",
+  "handler_params": {}
+}
+\`\`\`
+
+Common cron schedules:
+- "*/5 * * * *" = every 5 minutes
+- "0 * * * *" = every hour
+- "0 0 * * *" = daily at midnight
+- "0 3 * * *" = daily at 3 AM
+- "0 0 * * 0" = weekly on Sunday
+- "0 0 1 * *" = monthly on the 1st
+
+Handler code has access to:
+- db: Supabase tenant database client
+- storeId: Current store ID
+- params: Custom parameters from handler_params
+- fetch: For HTTP requests
+- apiBaseUrl: Backend API URL
+- console: For logging
+
 RULES:
 - Return ONLY JSON, no markdown wrapping, no extra text before/after
 - Keep explanation to 1-2 sentences maximum
@@ -636,7 +668,8 @@ RULES:
 - Do NOT include README.md unless specifically asked
 - Use DainoStore plugin hooks and patterns
 - For tables: ALWAYS generate BOTH entity JSON AND migration SQL files
-- For APIs: Generate controller files that export async handler functions`
+- For APIs: Generate controller files that export async handler functions
+- For cron: Generate cron JSON files with handler_code as JavaScript string`
     };
 
     return modePrompts[mode] || basePrompt;

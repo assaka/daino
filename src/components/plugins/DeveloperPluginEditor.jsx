@@ -171,6 +171,9 @@ const DeveloperPluginEditor = ({
                 filePath = `/migrations/${fileName}`;
               } else if (fileName.includes('component') || fileName.endsWith('.jsx')) {
                 filePath = `/components/${fileName}`;
+              } else if (fileName.includes('cron') && fileName.endsWith('.json')) {
+                filePath = `/cron/${fileName}`;
+                isEntityFile = true; // Reuse flag for JSON stringification
               } else if (fileName.includes('entity') || (fileName.endsWith('.json') && !fileName.includes('package'))) {
                 filePath = `/entities/${fileName}`;
                 isEntityFile = true;
@@ -184,7 +187,7 @@ const DeveloperPluginEditor = ({
               }
             }
 
-            // For entity/JSON files, ensure content is a proper JSON string
+            // For entity/JSON files (including cron), ensure content is a proper JSON string
             if (isEntityFile && typeof fileCode === 'object') {
               fileCode = JSON.stringify(fileCode, null, 2);
             }

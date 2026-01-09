@@ -1631,6 +1631,44 @@ router.put('/registry/:id/files', async (req, res) => {
       }
     }
 
+    // Handle cron job files - save to plugin_cron table
+    if (normalizedRequestPath.startsWith('cron/')) {
+      const cronFileName = normalizedRequestPath.replace('cron/', '').replace('.json', '');
+      try {
+        // Parse cron job definition (handle both string and object content)
+        const cronData = typeof content === 'object' ? content : JSON.parse(content);
+        const cronName = cronData.cron_name || cronFileName;
+
+        const { data: existing } = await tenantDb.from('plugin_cron').select('id').eq('plugin_id', id).eq('cron_name', cronName);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_cron').update({
+            cron_schedule: cronData.schedule || cronData.cron_schedule,
+            handler_method: cronData.handler_method || cronName,
+            description: cronData.description,
+            handler_code: cronData.handler_code,
+            handler_params: cronData.handler_params || {},
+            is_enabled: cronData.is_enabled !== false,
+            updated_at: new Date().toISOString()
+          }).eq('plugin_id', id).eq('cron_name', cronName);
+        } else {
+          await tenantDb.from('plugin_cron').insert({
+            plugin_id: id,
+            cron_name: cronName,
+            cron_schedule: cronData.schedule || cronData.cron_schedule || '0 * * * *',
+            handler_method: cronData.handler_method || cronName,
+            description: cronData.description || `Scheduled task: ${cronName}`,
+            handler_code: cronData.handler_code,
+            handler_params: cronData.handler_params || {},
+            is_enabled: cronData.is_enabled !== false
+          });
+        }
+        return res.json({ success: true, message: 'Cron job saved successfully' });
+      } catch (cronError) {
+        console.error('Cron save error:', cronError);
+        return res.status(500).json({ success: false, error: `Failed to save cron job: ${cronError.message}` });
+      }
+    }
+
     // Block other specialized files
     if (normalizedRequestPath.startsWith('admin/')) return res.status(400).json({ success: false, error: 'Admin pages have special handling' });
     if (normalizedRequestPath.startsWith('models/')) return res.status(400).json({ success: false, error: 'Models belong in plugin_entities table' });
