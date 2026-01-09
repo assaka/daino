@@ -1558,7 +1558,8 @@ router.put('/registry/:id/files', async (req, res) => {
     if (normalizedRequestPath.startsWith('entities/')) {
       const entityFileName = normalizedRequestPath.replace('entities/', '').replace('.json', '');
       try {
-        const entityData = JSON.parse(content);
+        // Handle both string and object content (AI may return either)
+        const entityData = typeof content === 'object' ? content : JSON.parse(content);
         const entityName = entityData.entity_name || entityFileName;
         const tableName = entityData.table_name;
         if (!tableName) return res.status(400).json({ success: false, error: 'Entity JSON must include table_name field' });

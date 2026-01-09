@@ -153,14 +153,16 @@ const DeveloperPluginEditor = ({
         if (files && files.length > 0) {
           for (const file of files) {
             const fileName = file.name || 'index.js';
-            const fileCode = file.code || '';
+            let fileCode = file.code || '';
 
             // Determine file path based on file name/type
             let filePath = fileName;
+            let isEntityFile = false;
 
             // If filename already has a path (contains /), use it as-is with leading slash
             if (fileName.includes('/') && !fileName.startsWith('/')) {
               filePath = `/${fileName}`;
+              isEntityFile = filePath.startsWith('/entities/') || fileName.endsWith('.json');
             } else if (!fileName.startsWith('/')) {
               // No path in filename - determine folder based on file type
               if (fileName.includes('controller') || fileName.includes('Controller')) {
@@ -171,6 +173,7 @@ const DeveloperPluginEditor = ({
                 filePath = `/components/${fileName}`;
               } else if (fileName.includes('entity') || fileName.endsWith('.json')) {
                 filePath = `/entities/${fileName}`;
+                isEntityFile = true;
               } else if (fileName === 'index.js' || fileName === 'main.js') {
                 filePath = `/${fileName}`;
               } else if (fileName.endsWith('.js')) {
@@ -179,6 +182,11 @@ const DeveloperPluginEditor = ({
               } else {
                 filePath = `/${fileName}`;
               }
+            }
+
+            // For entity/JSON files, ensure content is a proper JSON string
+            if (isEntityFile && typeof fileCode === 'object') {
+              fileCode = JSON.stringify(fileCode, null, 2);
             }
 
             // Save file to plugin
