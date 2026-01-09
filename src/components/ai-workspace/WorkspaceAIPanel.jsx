@@ -477,18 +477,22 @@ const WorkspaceAIPanel = () => {
           }, 500);
         }
       } else {
+        const isInsufficientCredits = response.message?.toLowerCase().includes('insufficient credits');
         addChatMessage({
           role: 'assistant',
           content: `Error: ${response.message || 'Failed to generate plugin'}`,
-          error: true
+          error: true,
+          creditError: isInsufficientCredits
         });
       }
     } catch (error) {
       console.error('Plugin generation error:', error);
+      const isInsufficientCredits = error.message?.toLowerCase().includes('insufficient credits');
       addChatMessage({
         role: 'assistant',
         content: `Error: ${error.message || 'Failed to generate plugin'}`,
-        error: true
+        error: true,
+        creditError: isInsufficientCredits
       });
     } finally {
       setIsProcessingAi(false);
@@ -1127,10 +1131,12 @@ const WorkspaceAIPanel = () => {
 
     } catch (error) {
       console.error('Extended thinking error:', error);
+      const isInsufficientCredits = error.message?.toLowerCase().includes('insufficient credits');
       addChatMessage({
         role: 'assistant',
         content: error.message || 'Sorry, I encountered an error processing your request.',
-        error: true
+        error: true,
+        creditError: isInsufficientCredits
       });
     } finally {
       setIsProcessingAi(false);
@@ -1365,10 +1371,12 @@ const WorkspaceAIPanel = () => {
 
     } catch (error) {
       console.error('Store edit error:', error);
+      const isInsufficientCredits = error.message?.toLowerCase().includes('insufficient credits');
       addChatMessage({
         role: 'assistant',
         content: error.message || 'Sorry, I encountered an error processing your store edit request.',
-        error: true
+        error: true,
+        creditError: isInsufficientCredits
       });
     } finally {
       setIsProcessingAi(false);
