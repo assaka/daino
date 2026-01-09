@@ -287,17 +287,21 @@ export default function StoreOnboarding() {
               else if (status && status !== 'pending' && status !== 'failed') {
                 setStoreId(incompleteStore.id);
                 setStoreData({
-                  name: incompleteStore.name || 'My Store',
-                  slug: incompleteStore.slug || 'my-store'
+                  name: data.name || incompleteStore.name || 'My Store',
+                  slug: data.slug || incompleteStore.slug || 'my-store'
                 });
+                // Use profile data from provisioning-status API response
                 setProfileData({
-                  country: incompleteStore.country || '',
-                  phone: incompleteStore.phone || '',
-                  storeEmail: incompleteStore.storeEmail || ''
+                  country: data.country || '',
+                  phone: data.phone || '',
+                  storeEmail: data.storeEmail || ''
                 });
                 // Restore demo data preference from provisioning progress
                 if (data.provisioningProgress?.demo_requested) {
                   setProvisionDemoData(true);
+                }
+                if (data.themePreset) {
+                  setSelectedThemePreset(data.themePreset);
                 }
                 setCompletedSteps([1, 2, 3]);
                 setCurrentStep(4);
@@ -311,19 +315,20 @@ export default function StoreOnboarding() {
                 // Still pending or failed - stay on step 1 but use existing store ID for upsert
                 setStoreId(incompleteStore.id);
                 setStoreData({
-                  name: incompleteStore.name || '',
-                  slug: incompleteStore.slug || ''
+                  name: data.name || incompleteStore.name || '',
+                  slug: data.slug || incompleteStore.slug || ''
                 });
+                // Use profile data from provisioning-status API response
                 setProfileData({
-                  country: incompleteStore.country || '',
-                  phone: incompleteStore.phone || '',
-                  storeEmail: incompleteStore.storeEmail || ''
+                  country: data.country || '',
+                  phone: data.phone || '',
+                  storeEmail: data.storeEmail || ''
                 });
-                if (incompleteStore.theme_preset) {
-                  setSelectedThemePreset(incompleteStore.theme_preset);
+                if (data.themePreset) {
+                  setSelectedThemePreset(data.themePreset);
                 }
                 // Show info message about resuming
-                setSuccess(`Resuming setup for "${incompleteStore.name || incompleteStore.slug}". You can update the details below.`);
+                setSuccess(`Resuming setup for "${data.name || incompleteStore.name || incompleteStore.slug}". You can update the details below.`);
               }
             } catch (err) {
               // Can't check status - stay on step 1 with existing store ID
