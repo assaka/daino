@@ -275,8 +275,13 @@ const DeveloperPluginEditor = ({
           }
         }
 
-        // Create version after AI-generated files are saved
+        // Refresh file tree after AI-generated files are saved
         if (modifiedPaths.length > 0) {
+          addTerminalOutput('🔄 Refreshing file tree...', 'info');
+          await loadPluginFiles();
+          addTerminalOutput('✓ File tree updated', 'success');
+
+          // Create version after files are saved
           try {
             // Use task name for commit message, truncate if too long
             const commitMessage = taskName

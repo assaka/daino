@@ -1615,6 +1615,7 @@ router.put('/registry/:id/files', async (req, res) => {
         } else {
           await tenantDb.from('plugin_migrations').insert({
             plugin_id: id,
+            plugin_name: plugin.name || plugin.slug,
             migration_name: migrationName,
             migration_version: migrationVersion,
             migration_description: description,
@@ -1624,6 +1625,7 @@ router.put('/registry/:id/files', async (req, res) => {
         }
         return res.json({ success: true, message: 'Migration saved successfully' });
       } catch (migrationError) {
+        console.error('Migration save error:', migrationError);
         return res.status(500).json({ success: false, error: `Failed to save migration: ${migrationError.message}` });
       }
     }
