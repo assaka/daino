@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { X, Languages, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
@@ -456,7 +457,7 @@ export default function MultiEntityTranslateDialog({
                             </span>
                             {localCredits < totalEstimatedCost && (
                               <span className="text-red-600 font-medium text-xs">
-                                ⚠️ Insufficient credits
+                                ⚠️ Insufficient credits - <Link to="/admin/billing" className="text-blue-600 hover:underline">Add credits</Link>
                               </span>
                             )}
                           </div>

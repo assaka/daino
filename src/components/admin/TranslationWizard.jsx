@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Wand2, Languages, Globe, ArrowRight, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import api from '../../utils/api';
@@ -710,7 +711,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
                       </span>
                       {localCredits < calculateEstimatedCost() && (
                         <span className="text-red-600 font-medium text-xs">
-                          ⚠️ Insufficient credits
+                          ⚠️ Insufficient credits - <Link to="/admin/billing" className="text-blue-600 hover:underline">Add credits</Link>
                         </span>
                       )}
                     </div>

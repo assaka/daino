@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -418,7 +419,7 @@ export default function BulkTranslateDialog({
                     </span>
                     {localCredits < (itemCount * translateToLangs.length * translationCost) && (
                       <span className="text-red-600 font-medium text-xs">
-                        ⚠️ Insufficient credits
+                        ⚠️ Insufficient credits - <Link to="/admin/billing" className="text-blue-600 hover:underline">Add credits</Link>
                       </span>
                     )}
                   </div>

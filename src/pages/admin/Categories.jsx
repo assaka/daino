@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Category } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
@@ -1689,7 +1690,7 @@ export default function Categories() {
                     </span>
                     {userCredits < (totalItems * translateToLangs.length * 0.10) && (
                       <span className="text-red-600 font-medium text-xs">
-                        ⚠️ Insufficient credits
+                        ⚠️ Insufficient credits - <Link to="/admin/billing" className="text-blue-600 hover:underline">Add credits</Link>
                       </span>
                     )}
                   </div>

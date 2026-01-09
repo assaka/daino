@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Button } from '@/components/ui/button';
@@ -897,7 +898,8 @@ const WorkspaceAIPanel = () => {
         addChatMessage({
           role: 'assistant',
           content: `⚠️ Insufficient credits. ${errorResponse?.message || 'Please add more credits to continue using AI features.'}`,
-          error: true
+          error: true,
+          creditError: true
         });
         setIsProcessingAi(false);
         return;
@@ -1592,6 +1594,16 @@ const WorkspaceAIPanel = () => {
                       </div>
                     )}
                     <p className="whitespace-pre-wrap">{message.content}</p>
+
+                    {/* Credit Error - Add billing link */}
+                    {message.creditError && (
+                      <Link
+                        to="/admin/billing"
+                        className="inline-block mt-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                      >
+                        → Go to Billing to add credits
+                      </Link>
+                    )}
 
                     {/* Tools Used Badge */}
                     {message.toolsUsed && message.toolsUsed.length > 0 && (
