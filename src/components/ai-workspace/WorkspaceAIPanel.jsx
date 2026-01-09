@@ -897,11 +897,13 @@ const WorkspaceAIPanel = () => {
       setCommandStatus('error');
 
       // Check for insufficient credits error
-      const errorResponse = error.response?.data;
-      if (errorResponse?.code === 'INSUFFICIENT_CREDITS' || error.response?.status === 402) {
+      // apiClient puts error data on error.data and error.status (not error.response)
+      const errorData = error.data || error.response?.data;
+      const errorStatus = error.status || error.response?.status;
+      if (errorData?.code === 'INSUFFICIENT_CREDITS' || errorStatus === 402 || error.message?.toLowerCase().includes('insufficient credits')) {
         addChatMessage({
           role: 'assistant',
-          content: `⚠️ Insufficient credits. ${errorResponse?.message || 'Please add more credits to continue using AI features.'}`,
+          content: `⚠️ Insufficient credits. ${errorData?.message || error.message || 'Please add more credits to continue using AI features.'}`,
           error: true,
           creditError: true
         });
