@@ -669,7 +669,11 @@ RULES:
 - Use DainoStore plugin hooks and patterns
 - For tables: ALWAYS generate BOTH entity JSON AND migration SQL files
 - For APIs: Generate controller files that export async handler functions
-- For cron: Generate cron JSON files with handler_code as JavaScript string`
+- For cron: Generate cron JSON files with handler_code as JavaScript string
+- IMPORTANT: Each NEW feature/task should create a NEW file with a UNIQUE name. Do NOT reuse or update previous file names unless user explicitly asks to "update" or "modify" an existing file. For example:
+  - "add email cron" -> create "send_email_cron.json" (NEW file)
+  - "add cleanup cron" -> create "cleanup_sessions_cron.json" (NEW file)
+  - "update the email cron" -> modify existing "send_email_cron.json"`
     };
 
     return modePrompts[mode] || basePrompt;
