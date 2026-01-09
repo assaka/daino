@@ -411,6 +411,125 @@ class MasterEmailService {
   }
 
   /**
+   * Send store provisioning complete email
+   * Called when background provisioning job completes (success or failure)
+   * @param {string} recipientEmail - User email
+   * @param {string} storeName - Name of the store
+   * @param {string} dashboardUrl - URL to redirect user to
+   * @param {boolean} success - Whether provisioning succeeded
+   * @returns {Promise<Object>} Send result
+   */
+  async sendProvisioningCompleteEmail(recipientEmail, storeName, dashboardUrl, success = true) {
+    const subject = success
+      ? `Your store "${storeName}" is ready!`
+      : `Issue with your store "${storeName}" setup`;
+
+    const htmlContent = success
+      ? `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 40px 30px; text-align: center;">
+                      <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Your Store is Ready!</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 40px;">
+                      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                        Great news! Your store <strong>"${storeName}"</strong> has been successfully set up and is ready to use.
+                      </p>
+                      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px;">
+                        Your database has been provisioned with all the tables, configurations, and settings you need to start selling.
+                      </p>
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                          Go to Dashboard →
+                        </a>
+                      </div>
+                      <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0; text-align: center;">
+                        Need help? <a href="https://discord.gg/vvAhfdaX" style="color: #4f46e5; text-decoration: none;">Join our Discord</a> or <a href="https://calendly.com/dainostore" style="color: #4f46e5; text-decoration: none;">schedule a call</a>.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="background-color: #f9fafb; padding: 20px 40px; text-align: center;">
+                      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        ${PLATFORM_NAME} • Building the future of e-commerce
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `
+      : `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 40px 30px; text-align: center;">
+                      <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Setup Issue</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 40px;">
+                      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                        We encountered an issue while setting up your store <strong>"${storeName}"</strong>.
+                      </p>
+                      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px;">
+                        Don't worry - you can try again by clicking the button below. If the issue persists, our team is here to help.
+                      </p>
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                          Retry Setup →
+                        </a>
+                      </div>
+                      <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0; text-align: center;">
+                        Need help? <a href="https://discord.gg/vvAhfdaX" style="color: #4f46e5; text-decoration: none;">Join our Discord</a> or <a href="https://calendly.com/dainostore" style="color: #4f46e5; text-decoration: none;">schedule a call</a>.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="background-color: #f9fafb; padding: 20px 40px; text-align: center;">
+                      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        ${PLATFORM_NAME} • Building the future of e-commerce
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+    return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
    * Send onboarding emails to users who registered 24 hours ago
    * Called by the scheduled job
    * @returns {Promise<Object>} Results summary

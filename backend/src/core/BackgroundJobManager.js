@@ -153,6 +153,9 @@ class BackgroundJobManager extends EventEmitter {
       ['system:finalize_pending_orders', './jobs/FinalizePendingOrdersJob'],
       ['system:token_refresh', './jobs/TokenRefreshJob'],
 
+      // Store provisioning jobs
+      ['store:provision', './jobs/StoreProvisioningJob'],
+
       // Translation jobs
       ['translation:ui-labels:bulk', './jobs/UILabelsBulkTranslationJob'],
 

@@ -27,6 +27,7 @@ const StoreDatabase = require('../models/master/StoreDatabase');
 const StoreHostname = require('../models/master/StoreHostname');
 const SupabaseIntegration = require('../services/supabase-integration');
 const creditService = require('../services/credit-service');
+const backgroundJobManager = require('../core/BackgroundJobManager');
 
 // Minimum credits required to set a store to running (published)
 const MINIMUM_CREDITS_TO_RUN = 10;
@@ -162,7 +163,7 @@ router.get('/check-slug', authMiddleware, async (req, res) => {
  */
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, country, phone, store_email } = req.body;
     const userId = req.user.id;
 
     console.log('Creating store for user:', userId, 'name:', name);
@@ -172,6 +173,13 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Store name is required'
+      });
+    }
+
+    if (!country) {
+      return res.status(400).json({
+        success: false,
+        error: 'Country is required'
       });
     }
 
@@ -206,6 +214,9 @@ router.post('/', authMiddleware, async (req, res) => {
         .from('stores')
         .update({
           name: name,  // Update name in case user changed it
+          country: country,
+          phone: phone || null,
+          store_email: store_email || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', storeId)
@@ -246,6 +257,9 @@ router.post('/', authMiddleware, async (req, res) => {
           status: 'pending_database',
           is_active: false,
           theme_preset: 'default',  // Explicitly set default theme preset
+          country: country,
+          phone: phone || null,
+          store_email: store_email || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -316,7 +330,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       useOAuth,
       autoProvision,
       themePreset,  // Theme preset name to apply during provisioning
-      provisionDemoData  // Whether to provision demo data after setup
+      provisionDemoData,  // Whether to provision demo data after setup
+      backgroundMode  // Whether to run provisioning in background (allows user to close browser)
     } = req.body;
 
     console.log('🔍 Request body keys:', Object.keys(req.body));
@@ -924,7 +939,78 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       lastName: masterUser?.last_name
     });
 
-    // 5. Provision tenant database (create tables, seed data)
+    // 5. Check if background mode is requested
+    // If so, queue a background job and return immediately
+    if (backgroundMode) {
+      console.log('🔄 Background mode requested - queuing provisioning job');
+
+      // Get store country from master DB
+      const { data: storeData } = await masterDbClient
+        .from('stores')
+        .select('country')
+        .eq('id', storeId)
+        .single();
+
+      const jobData = {
+        type: 'store:provision',
+        payload: {
+          storeId,
+          userId: req.user.id,
+          userEmail: req.user.email,
+          storeName: storeName || 'My Store',
+          storeSlug: storeSlug || `store-${Date.now()}`,
+          serviceRoleKey: serviceRoleKey || null,
+          projectUrl: projectUrl || null,
+          projectId: projectId || null,
+          oauthAccessToken: oauthAccessToken || null,
+          themePreset: themePreset || 'default',
+          provisionDemoData: !!provisionDemoData,
+          country: storeData?.country || null
+        },
+        store_id: storeId,
+        user_id: req.user.id,
+        priority: 'high'
+      };
+
+      try {
+        const job = await backgroundJobManager.scheduleJob(jobData);
+
+        // Update store status to provisioning
+        await masterDbClient
+          .from('stores')
+          .update({
+            status: 'provisioning',
+            provisioning_status: 'pending',
+            provisioning_progress: {
+              step: 'queued',
+              message: 'Provisioning job queued',
+              demo_requested: !!provisionDemoData,
+              background_job_id: job.id
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', storeId);
+
+        return res.json({
+          success: true,
+          message: 'Provisioning started in background. You will receive an email when complete.',
+          backgroundMode: true,
+          jobId: job.id,
+          data: {
+            store: {
+              id: storeId,
+              status: 'provisioning'
+            }
+          }
+        });
+      } catch (jobError) {
+        console.error('❌ Failed to queue provisioning job:', jobError.message);
+        // Fall through to synchronous provisioning
+        console.log('⚠️ Falling back to synchronous provisioning');
+      }
+    }
+
+    // 6. Provision tenant database (create tables, seed data)
     // Skip main provisioning if already done (seed_completed or demo_running)
     let provisioningResult;
 
@@ -1053,18 +1139,20 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    // Set store to provisioned (not active yet - waiting for step 3 profile completion)
+    // Set store to active (or demo if demo data was provisioned)
+    // Profile data is now collected in step 1, so we can activate immediately
+    const finalStatus = provisionDemoData ? 'demo' : 'active';
     const { error: activateError } = await masterDbClient
       .from('stores')
       .update({
-        status: 'provisioned',  // Not active until step 3 (profile/country) is completed
-        is_active: false,       // Will be set to true when onboarding completes
+        status: finalStatus,
+        is_active: true,
         slug: slug,
         theme_preset: validThemePreset,
         provisioning_status: 'completed',
         provisioning_progress: {
           step: 'completed',
-          message: 'Database provisioning completed. Complete profile to finish store setup.',
+          message: 'Store setup completed successfully!',
           demo_requested: !!provisionDemoData,
           demo_success: demoDataResult?.success ?? null
         },
@@ -1085,13 +1173,13 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Database connected and store activated successfully!',
+      message: 'Store setup completed successfully!',
       data: {
         store: {
           id: storeId,
-          status: 'provisioned',
-          is_active: false,
-          message: 'Database ready. Complete profile to finish store setup.'
+          status: finalStatus,
+          is_active: true,
+          message: 'Your store is ready!'
         },
         provisioning: provisioningResult,
         demoData: demoDataResult
@@ -2193,7 +2281,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 
     // Remove deprecated fields that are now stored in settings JSONB
     const deprecatedFields = ['logo_url', 'contact_phone', 'address_line1', 'address_line2',
-      'city', 'state', 'postal_code', 'country', 'website_url', 'banner_url', 'theme_color', 'stripe_account_id'];
+      'city', 'state', 'postal_code', 'website_url', 'banner_url', 'theme_color', 'stripe_account_id'];
     for (const field of deprecatedFields) {
       delete tenantUpdates[field];
     }
@@ -2331,8 +2419,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 
     // Separate master DB updates from tenant DB updates
-    // name and theme_preset are stored in master DB for use before tenant DB is provisioned
-    const masterDbFields = ['published', 'published_at', 'status', 'is_active', 'slug', 'name', 'theme_preset'];
+    // name, theme_preset, country, phone, store_email are stored in master DB for use before tenant DB is provisioned
+    const masterDbFields = ['published', 'published_at', 'status', 'is_active', 'slug', 'name', 'theme_preset', 'country', 'phone', 'store_email'];
     const masterUpdates = {};
     const tenantUpdates = {};
 
@@ -2346,7 +2434,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     // Remove deprecated fields that are now stored in settings JSONB
     const deprecatedFields = ['logo_url', 'contact_phone', 'address_line1', 'address_line2',
-      'city', 'state', 'postal_code', 'country', 'website_url', 'banner_url', 'theme_color', 'stripe_account_id'];
+      'city', 'state', 'postal_code', 'website_url', 'banner_url', 'theme_color', 'stripe_account_id'];
     for (const field of deprecatedFields) {
       delete tenantUpdates[field];
     }

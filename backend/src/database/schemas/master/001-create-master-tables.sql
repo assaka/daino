@@ -48,12 +48,16 @@ CREATE TABLE IF NOT EXISTS stores (
     'pending_database',  -- Waiting for DB connection
     'provisioning',      -- Creating tenant DB
     'provisioned',       -- DB ready, awaiting profile completion (step 3)
-    'active',           -- Fully operational
+    'active',           -- Fully operational (no demo data)
+    'demo',             -- Fully operational with demo data
     'suspended',        -- Temporarily disabled
     'inactive'          -- Permanently disabled
   )),
   is_active BOOLEAN DEFAULT false,
   theme_preset VARCHAR(50) DEFAULT 'default',  -- Reference to selected theme preset (full settings in tenant DB)
+  country VARCHAR(2),                          -- ISO 2-letter country code (collected in onboarding step 1)
+  phone VARCHAR(50),                           -- Store contact phone (optional)
+  store_email VARCHAR(255),                    -- Store contact email (optional)
   provisioning_status VARCHAR(50) DEFAULT 'pending' CHECK (provisioning_status IN (
     'pending',           -- Not started
     'tables_creating',   -- Creating 137 tables
@@ -74,6 +78,7 @@ CREATE INDEX IF NOT EXISTS idx_stores_user_id ON stores(user_id);
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores(slug);
 CREATE INDEX IF NOT EXISTS idx_stores_status ON stores(status);
 CREATE INDEX IF NOT EXISTS idx_stores_active ON stores(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_stores_country ON stores(country);
 
 -- ============================================
 -- 3. STORE_DATABASES TABLE
