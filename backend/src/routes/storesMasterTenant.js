@@ -1717,7 +1717,7 @@ router.get('/', authMiddleware, async (req, res) => {
     if (teamStoreIds.length > 0) {
       const { data: teamStoreData } = await masterDbClient
         .from('stores')
-        .select('id, status, is_active, created_at, slug, theme_preset')
+        .select('id, name, status, is_active, created_at, slug, theme_preset, country, phone, store_email')
         .in('id', teamStoreIds)
         .eq('is_active', true);
 
@@ -1742,6 +1742,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
         return {
           id: store.id,
+          name: store.name || null,
           status: store.status,
           is_active: store.is_active,
           created_at: store.created_at,
@@ -1749,7 +1750,11 @@ router.get('/', authMiddleware, async (req, res) => {
           slug: primaryHostname?.slug || store.slug || null,
           membership_type: store.membership_type,
           team_role: store.team_role || null,
-          theme_preset: store.theme_preset || 'default'
+          theme_preset: store.theme_preset || 'default',
+          // Profile fields
+          country: store.country || null,
+          phone: store.phone || null,
+          store_email: store.store_email || null
         };
       })
     );
