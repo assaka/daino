@@ -55,6 +55,72 @@ export default function StoreOnboarding() {
   const slugCheckTimeoutRef = React.useRef(null);
   const provisioningPollRef = React.useRef(null);
 
+  // Poll for provisioning status updates - defined early so it can be used in useEffects
+  const pollProvisioningStatus = async (targetStoreId) => {
+    try {
+      const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
+
+      // Handle various response formats from apiClient
+      let responseData;
+      if (Array.isArray(statusResponse)) {
+        responseData = statusResponse[0];
+      } else if (Array.isArray(statusResponse.data)) {
+        responseData = statusResponse.data[0];
+      } else if (statusResponse.data?.data) {
+        responseData = statusResponse.data.data;
+      } else if (statusResponse.data) {
+        responseData = statusResponse.data;
+      } else {
+        responseData = statusResponse;
+      }
+
+      if (responseData && responseData.provisioningStatus) {
+        const status = responseData.provisioningStatus;
+        const message = responseData.message;
+        const isComplete = responseData.isComplete;
+        const isFailed = responseData.isFailed;
+
+        setProvisioningStatus(status);
+        setProvisioningMessage(message);
+
+        if (isComplete) {
+          // Provisioning completed successfully
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setProvisioningStatus('completed');
+          setProvisioningMessage('Provisioning completed successfully');
+          setCompletedSteps([1, 2, 3, 4]);
+          setSuccess('🎉 Your store is ready! Redirecting to dashboard...');
+
+          // Clear old store selection data
+          localStorage.removeItem('selectedStoreId');
+          localStorage.removeItem('selectedStoreName');
+          localStorage.removeItem('selectedStoreSlug');
+
+          // Redirect to dashboard after a short delay
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard';
+          }, 2000);
+          return;
+        }
+
+        if (isFailed) {
+          // Provisioning failed
+          clearInterval(provisioningPollRef.current);
+          provisioningPollRef.current = null;
+          setLoading(false);
+          setError(message || 'Provisioning failed. Click "Provision Database" to retry.');
+          setProvisioningStatus(null);
+          setProvisioningMessage('');
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Error polling provisioning status:', err.message);
+    }
+  };
+
   // Auth check - redirect to login if not authenticated
   useEffect(() => {
     const token = localStorage.getItem('store_owner_auth_token');
@@ -618,78 +684,6 @@ export default function StoreOnboarding() {
     } catch (err) {
       setError(err.message || 'Failed to connect database');
       setLoading(false);
-    }
-  };
-
-  // Poll for provisioning status updates
-  const pollProvisioningStatus = async (targetStoreId) => {
-    try {
-      const statusResponse = await apiClient.get(`/stores/${targetStoreId}/provisioning-status`);
-
-      // Handle various response formats from apiClient
-      // Response could be: { success, data }, { data: {...} }, or just an array [{...}]
-      let responseData;
-
-      // Check if response is an array (direct data)
-      if (Array.isArray(statusResponse)) {
-        responseData = statusResponse[0];
-      } else if (Array.isArray(statusResponse.data)) {
-        responseData = statusResponse.data[0];
-      } else if (statusResponse.data?.data) {
-        responseData = statusResponse.data.data;
-      } else if (statusResponse.data) {
-        responseData = statusResponse.data;
-      } else {
-        responseData = statusResponse;
-      }
-
-      if (responseData && responseData.provisioningStatus) {
-        const status = responseData.provisioningStatus;
-        const message = responseData.message;
-        const isComplete = responseData.isComplete;
-        const isFailed = responseData.isFailed;
-
-        setProvisioningStatus(status);
-        setProvisioningMessage(message);
-
-        if (isComplete) {
-          // Provisioning completed successfully
-          clearInterval(provisioningPollRef.current);
-          provisioningPollRef.current = null;
-          setLoading(false);
-          setProvisioningStatus('completed');
-          setProvisioningMessage('Provisioning completed successfully');
-          setCompletedSteps([1, 2, 3, 4]);
-          setSuccess('🎉 Your store is ready! Redirecting to dashboard...');
-
-          // Clear old store selection data
-          localStorage.removeItem('selectedStoreId');
-          localStorage.removeItem('selectedStoreName');
-          localStorage.removeItem('selectedStoreSlug');
-
-          // Redirect to dashboard after a short delay
-          setTimeout(() => {
-            window.location.href = '/admin/dashboard';
-          }, 2000);
-          return;
-        }
-
-        if (isFailed) {
-          // Provisioning failed
-          clearInterval(provisioningPollRef.current);
-          provisioningPollRef.current = null;
-          setLoading(false);
-          setError(message || 'Provisioning failed. Click "Provision Database" to retry.');
-          setProvisioningStatus(null);
-          setProvisioningMessage('');
-          return;
-        }
-
-        // Still in progress - continue polling
-      }
-    } catch (err) {
-      // Don't stop polling on transient errors - just log and continue
-      console.warn('Error polling provisioning status:', err.message);
     }
   };
 
