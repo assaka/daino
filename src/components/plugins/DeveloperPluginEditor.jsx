@@ -167,11 +167,11 @@ const DeveloperPluginEditor = ({
               // No path in filename - determine folder based on file type
               if (fileName.includes('controller') || fileName.includes('Controller')) {
                 filePath = `/controllers/${fileName}`;
-              } else if (fileName.includes('migration')) {
+              } else if (fileName.includes('migration') || fileName.endsWith('.sql')) {
                 filePath = `/migrations/${fileName}`;
               } else if (fileName.includes('component') || fileName.endsWith('.jsx')) {
                 filePath = `/components/${fileName}`;
-              } else if (fileName.includes('entity') || fileName.endsWith('.json')) {
+              } else if (fileName.includes('entity') || (fileName.endsWith('.json') && !fileName.includes('package'))) {
                 filePath = `/entities/${fileName}`;
                 isEntityFile = true;
               } else if (fileName === 'index.js' || fileName === 'main.js') {

@@ -668,28 +668,11 @@ const WorkspaceAIPanel = () => {
         const actualGeneratedAdminPages = response.generatedAdminPages || embeddedJson?.generatedAdminPages;
         const actualHasAdminPages = actualGeneratedAdminPages && actualGeneratedAdminPages.length > 0;
 
-        console.log('🔍 Response analysis:', {
-          hasGeneratedFiles: actualHasGeneratedFiles,
-          hasAdminPages: actualHasAdminPages,
-          hasPluginStructure,
-          hasCodeBlock,
-          hasEmbeddedJson: !!embeddedJson,
-          responseType: response.type
-        });
-
         if (actualHasGeneratedFiles || hasPluginStructure || actualHasAdminPages) {
           // Code was generated in structured format - show success and dispatch event
           const files = actualGeneratedFiles || [];
           const adminPages = actualGeneratedAdminPages || [];
           const explanation = embeddedJson?.explanation || response.explanation || 'Plugin code generated successfully.';
-
-          console.log('✅ Structured code generated - dispatching event with:', {
-            pluginId: pluginToEdit.id,
-            filesCount: files.length,
-            adminPagesCount: adminPages.length,
-            hasPluginStructure: !!response.plugin_structure,
-            fromEmbeddedJson: !!embeddedJson
-          });
 
           // Build status message
           let statusParts = [];
@@ -784,7 +767,6 @@ const WorkspaceAIPanel = () => {
         saveChatMessage('assistant', response.message || response.explanation || 'Plugin response');
 
         // Always dispatch credits update event to refresh balance in header after plugin AI call
-        console.log(`💰 Credits info: deducted=${response.creditsDeducted}, remaining=${response.creditsRemaining}`);
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
 
         setIsProcessingAi(false);

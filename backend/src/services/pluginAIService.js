@@ -557,12 +557,87 @@ When user asks for "admin page", "settings page", "dashboard", "management page"
 - Use generatedAdminPages array (NOT generatedFiles!)
 - These are React components stored in database and rendered dynamically
 
+DATABASE ENTITIES & MIGRATIONS:
+When user asks to "create a table", "add a new table", "store data", or needs database storage:
+1. Generate an ENTITY file (JSON) with the table schema
+2. Generate a MIGRATION file (SQL) to create the table
+
+Entity file format (name must end with .json and include "entity"):
+\`\`\`json
+{
+  "entity_name": "ChatHamid",
+  "table_name": "chat_hamid",
+  "description": "Stores chat session data",
+  "schema_definition": {
+    "columns": [
+      { "name": "id", "type": "UUID", "primary": true, "default": "gen_random_uuid()" },
+      { "name": "session_id", "type": "VARCHAR(100)", "notNull": true },
+      { "name": "user_id", "type": "UUID", "nullable": true },
+      { "name": "data", "type": "JSONB", "nullable": true },
+      { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+    ],
+    "indexes": [
+      { "name": "idx_chat_hamid_session", "columns": ["session_id"] }
+    ]
+  }
+}
+\`\`\`
+
+Migration file format (name must include "migration" and timestamp):
+\`\`\`sql
+-- Migration: Create chat_hamid table
+-- Version: 1704200000
+
+CREATE TABLE IF NOT EXISTS chat_hamid (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id VARCHAR(100) NOT NULL,
+  user_id UUID,
+  data JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_hamid_session ON chat_hamid(session_id);
+\`\`\`
+
+API CONTROLLERS:
+When user asks for "API endpoint", "REST API", "backend route", or needs custom endpoints:
+Generate a controller file (name must include "controller" or "Controller"):
+
+Controller file format:
+\`\`\`javascript
+// Controller: chat_hamid_controller.js
+// Method: POST
+// Path: /chat-hamid
+
+module.exports = async (req, res, context) => {
+  const { session_id, data } = req.body;
+  const { tenantDb, storeId } = context;
+
+  try {
+    // Insert into chat_hamid table
+    const { data: result, error } = await tenantDb
+      .from('chat_hamid')
+      .insert({ session_id, data, store_id: storeId })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+\`\`\`
+
 RULES:
 - Return ONLY JSON, no markdown wrapping, no extra text before/after
 - Keep explanation to 1-2 sentences maximum
 - Generate only the files needed for the specific request
 - Do NOT include README.md unless specifically asked
-- Use DainoStore plugin hooks and patterns`
+- Use DainoStore plugin hooks and patterns
+- For tables: ALWAYS generate BOTH entity JSON AND migration SQL files
+- For APIs: Generate controller files that export async handler functions`
     };
 
     return modePrompts[mode] || basePrompt;

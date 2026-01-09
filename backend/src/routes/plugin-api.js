@@ -1592,8 +1592,43 @@ router.put('/registry/:id/files', async (req, res) => {
       }
     }
 
-    // Block specialized files
-    if (normalizedRequestPath.startsWith('migrations/')) return res.status(400).json({ success: false, error: 'Migrations belong in plugin_migrations table' });
+    // Handle migration files - save to plugin_migrations table
+    if (normalizedRequestPath.startsWith('migrations/')) {
+      const migrationFileName = normalizedRequestPath.replace('migrations/', '');
+      try {
+        // Extract version from filename (e.g., "1704200000_create_table.sql" -> "1704200000")
+        const versionMatch = migrationFileName.match(/^(\d+)/);
+        const migrationVersion = versionMatch ? versionMatch[1] : Date.now().toString();
+        const migrationName = migrationFileName.replace('.sql', '');
+
+        // Parse description from SQL comment if present
+        const descMatch = content.match(/--\s*Migration:\s*(.+)/i);
+        const description = descMatch ? descMatch[1].trim() : `Migration ${migrationName}`;
+
+        const { data: existing } = await tenantDb.from('plugin_migrations').select('id').eq('plugin_id', id).eq('migration_version', migrationVersion);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_migrations').update({
+            migration_name: migrationName,
+            migration_description: description,
+            up_sql: content
+          }).eq('plugin_id', id).eq('migration_version', migrationVersion);
+        } else {
+          await tenantDb.from('plugin_migrations').insert({
+            plugin_id: id,
+            migration_name: migrationName,
+            migration_version: migrationVersion,
+            migration_description: description,
+            up_sql: content,
+            status: 'pending'
+          });
+        }
+        return res.json({ success: true, message: 'Migration saved successfully' });
+      } catch (migrationError) {
+        return res.status(500).json({ success: false, error: `Failed to save migration: ${migrationError.message}` });
+      }
+    }
+
+    // Block other specialized files
     if (normalizedRequestPath.startsWith('admin/')) return res.status(400).json({ success: false, error: 'Admin pages have special handling' });
     if (normalizedRequestPath.startsWith('models/')) return res.status(400).json({ success: false, error: 'Models belong in plugin_entities table' });
 
