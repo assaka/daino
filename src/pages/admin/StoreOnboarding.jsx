@@ -124,11 +124,17 @@ export default function StoreOnboarding() {
 
           // If status is beyond 'pending', provisioning is in progress
           if (status && status !== 'pending' && status !== 'failed') {
-            // Provisioning is actively running - show progress UI
+            // Provisioning is actively running - show progress UI and start polling
             setOauthCompleted(true);
             setNeedsServiceKey(false);
             setProvisioningStatus(status);
             setSuccess('Your store is being set up. You can close this page and we\'ll email you when it\'s ready.');
+            // Start polling for status updates
+            if (!provisioningPollRef.current) {
+              provisioningPollRef.current = setInterval(() => {
+                pollProvisioningStatus(resumeStoreId);
+              }, 2000);
+            }
           } else if (status === 'failed') {
             // Failed - let user retry from service key step
             setOauthCompleted(true);
@@ -210,11 +216,17 @@ export default function StoreOnboarding() {
 
             // Check provisioning status
             if (status && status !== 'pending' && status !== 'failed') {
-              // Provisioning is actively running - show progress UI
+              // Provisioning is actively running - show progress UI and start polling
               setOauthCompleted(true);
               setProvisioningStatus(status);
               setNeedsServiceKey(false);
               setSuccess('Your store is being set up. You can close this page and we\'ll email you when it\'s ready.');
+              // Start polling for status updates
+              if (!provisioningPollRef.current) {
+                provisioningPollRef.current = setInterval(() => {
+                  pollProvisioningStatus(existingStoreId);
+                }, 2000);
+              }
             } else if (status === 'failed') {
               setOauthCompleted(true);
               setNeedsServiceKey(true);
@@ -308,9 +320,15 @@ export default function StoreOnboarding() {
                 setIsReprovision(true);
                 setOauthCompleted(true);
                 setProvisioningStatus(status);
-                // Provisioning is actively running - show progress UI
+                // Provisioning is actively running - show progress UI and start polling
                 setNeedsServiceKey(false);
                 setSuccess('Your store is being set up. You can close this page and we\'ll email you when it\'s ready.');
+                // Start polling for status updates
+                if (!provisioningPollRef.current) {
+                  provisioningPollRef.current = setInterval(() => {
+                    pollProvisioningStatus(incompleteStore.id);
+                  }, 2000);
+                }
               } else {
                 // Still pending or failed - stay on step 1 but use existing store ID for upsert
                 setStoreId(incompleteStore.id);
