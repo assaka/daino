@@ -1751,10 +1751,10 @@ router.get('/', authMiddleware, async (req, res) => {
           membership_type: store.membership_type,
           team_role: store.team_role || null,
           theme_preset: store.theme_preset || 'default',
-          // Profile fields
+          // Profile fields (camelCase to match provisioning-status endpoint)
           country: store.country || null,
           phone: store.phone || null,
-          store_email: store.store_email || null
+          storeEmail: store.store_email || null
         };
       })
     );

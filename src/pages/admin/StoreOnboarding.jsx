@@ -253,7 +253,7 @@ export default function StoreOnboarding() {
                 setProfileData({
                   country: incompleteStore.country || '',
                   phone: incompleteStore.phone || '',
-                  storeEmail: incompleteStore.store_email || ''
+                  storeEmail: incompleteStore.storeEmail || ''
                 });
                 setCompletedSteps([1, 2, 3]);
                 setCurrentStep(4);
@@ -272,7 +272,7 @@ export default function StoreOnboarding() {
                 setProfileData({
                   country: incompleteStore.country || '',
                   phone: incompleteStore.phone || '',
-                  storeEmail: incompleteStore.store_email || ''
+                  storeEmail: incompleteStore.storeEmail || ''
                 });
                 if (incompleteStore.theme_preset) {
                   setSelectedThemePreset(incompleteStore.theme_preset);
@@ -290,7 +290,7 @@ export default function StoreOnboarding() {
               setProfileData({
                 country: incompleteStore.country || '',
                 phone: incompleteStore.phone || '',
-                storeEmail: incompleteStore.store_email || ''
+                storeEmail: incompleteStore.storeEmail || ''
               });
               setSuccess(`Resuming setup for "${incompleteStore.name || incompleteStore.slug}". You can update the details below.`);
             }
