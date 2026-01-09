@@ -145,15 +145,17 @@ class StoreProvisioningJob extends BaseJobHandler {
 
       // Send completion email
       try {
-        await masterEmailService.sendProvisioningCompleteEmail(
+        this.log(`Sending completion email to ${userEmail} for store "${storeName}"`);
+        const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
           userEmail,
           storeName,
           `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
           true
         );
-        this.log('Provisioning complete email sent');
+        this.log(`Provisioning complete email result: ${JSON.stringify(emailResult)}`);
       } catch (emailError) {
         this.log(`Failed to send completion email: ${emailError.message}`, 'warn');
+        console.error('Email error stack:', emailError.stack);
         // Don't fail the job if email fails
       }
 
