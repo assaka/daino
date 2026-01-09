@@ -119,11 +119,14 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         }
     }, [flashMessage]);
 
-    const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
-    const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
+    // Only store owners or users with approved access can bypass the paused overlay
+    // Random visitors cannot bypass with URL params like ?version=published
+    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
+    const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
+    const isStorePaused = store?.published === false && !canBypassPause && !isInPreviewMode;
 
-    // Don't show overlay if user has approved access
-    if (hasApprovedAccess || !isStorePaused) return null;
+    // Don't show overlay if user can bypass or store is not paused
+    if (!isStorePaused) return null;
 
     // Show loading while checking access
     if (checkingAccess) {

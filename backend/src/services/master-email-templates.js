@@ -1227,17 +1227,6 @@ const storeReadyEmail = (data) => {
   const content = `
     ${header}
 
-    <!-- Success Icon -->
-    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
-      <tr>
-        <td style="padding: 20px 40px 0; text-align: center;">
-          <div style="display: inline-block; width: 64px; height: 64px; background-color: #10b981; border-radius: 50%; line-height: 64px; font-size: 32px;">
-            🎉
-          </div>
-        </td>
-      </tr>
-    </table>
-
     <!-- Email Body -->
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
       <tr>
