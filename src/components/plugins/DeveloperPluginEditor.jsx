@@ -333,6 +333,16 @@ const DeveloperPluginEditor = ({
       } catch (error) {
         console.error('Error saving AI-generated code:', error);
         addTerminalOutput(`❌ Error saving files: ${error.message}`, 'error');
+
+        // Dispatch error event so AI can receive feedback and fix the issue
+        window.dispatchEvent(new CustomEvent('plugin-ai-save-error', {
+          detail: {
+            pluginId: plugin?.id,
+            error: error.message,
+            failedFiles: modifiedPaths,
+            userRequest: taskName
+          }
+        }));
       }
     };
 

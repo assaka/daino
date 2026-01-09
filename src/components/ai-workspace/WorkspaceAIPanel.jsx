@@ -177,6 +177,9 @@ const WorkspaceAIPanel = () => {
   const [thinkingText, setThinkingText] = useState('');
   const [activeTool, setActiveTool] = useState(null); // { name, status: 'calling' | 'complete' }
   const [streamingText, setStreamingText] = useState('');
+
+  // Error feedback for iterative workflow - stores recent errors from file saves
+  const [recentErrors, setRecentErrors] = useState([]);
   const [toolResults, setToolResults] = useState([]); // Array of tool execution results
 
   // Store Edit Mode - AI can modify anything in the store via generic tools
@@ -276,6 +279,33 @@ const WorkspaceAIPanel = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Listen for file save errors from DeveloperPluginEditor for iterative AI feedback
+  useEffect(() => {
+    const handleSaveError = (event) => {
+      const { pluginId, error, failedFiles, userRequest } = event.detail;
+      console.log('📥 WorkspaceAIPanel: Received save error for AI feedback:', event.detail);
+
+      // Store error for next AI request context
+      setRecentErrors(prev => [...prev.slice(-4), {
+        timestamp: Date.now(),
+        pluginId,
+        error,
+        failedFiles,
+        userRequest
+      }]);
+
+      // Add error message to chat so user sees it
+      addChatMessage({
+        role: 'assistant',
+        content: `⚠️ I encountered an error saving the files: ${error}\n\nI'll try to fix this in my next response. You can tell me more details about what went wrong.`,
+        error: true
+      });
+    };
+
+    window.addEventListener('plugin-ai-save-error', handleSaveError);
+    return () => window.removeEventListener('plugin-ai-save-error', handleSaveError);
+  }, [addChatMessage]);
 
   const loadPluginGenerationCost = async () => {
     try {
@@ -556,9 +586,16 @@ const WorkspaceAIPanel = () => {
               content: f.content || ''
             })) || [],
             // Include conversation history so AI knows what was just created/modified
-            conversationHistory: recentHistory
+            conversationHistory: recentHistory,
+            // Include recent errors for iterative feedback - AI can fix issues
+            recentErrors: recentErrors.length > 0 ? recentErrors : undefined
           }
         });
+
+        // Clear errors after sending to AI (they've been addressed)
+        if (recentErrors.length > 0) {
+          setRecentErrors([]);
+        }
 
         // Debug: Log full response to understand structure
         console.log('🤖 Plugin AI Response:', JSON.stringify(response, null, 2));

@@ -738,10 +738,16 @@ Help them configure the plugin step-by-step. Suggest database tables, features, 
           ? `\n**Recent conversation:**\n${context.conversationHistory.map(m => `${m.role}: ${m.content.substring(0, 300)}${m.content.length > 300 ? '...' : ''}`).join('\n')}`
           : '';
 
+        // Build error feedback context for iterative workflow
+        const errorContext = context.recentErrors && context.recentErrors.length > 0
+          ? `\n**⚠️ RECENT ERRORS (FIX THESE!):**\n${context.recentErrors.map(e => `- Error: ${e.error}\n  Failed files: ${e.failedFiles?.join(', ') || 'unknown'}\n  Original request: ${e.userRequest || 'unknown'}`).join('\n')}\n\n**IMPORTANT:** The previous code failed. Analyze the error and fix the issue in your response.`
+          : '';
+
         const pluginSlug = context.pluginSlug || 'unknown';
         prompt = `Modify plugin "${context.pluginName || 'Unknown'}" (slug: ${pluginSlug}).
 ${existingFilesList}
 ${conversationContext}
+${errorContext}
 
 **Plugin slug for routes:** ${pluginSlug}
 **Current request:** ${userPrompt}
@@ -778,7 +784,9 @@ RULES:
 - **Use the EXACT same filename/path from "Existing plugin files" when modifying**
 - **If unclear which file to modify, return a question asking for clarification**
 - Generate the COMPLETE file content, not just the changes
-- Use DainoStore plugin hooks (cart.add_item, product.view, etc.)`;
+- Use DainoStore plugin hooks (cart.add_item, product.view, etc.)
+- **ITERATIVE WORKFLOW:** If RECENT ERRORS are shown, analyze the error message and fix the code
+- **When fixing errors:** Explain what went wrong and how you fixed it in your message`;
       } else {
         // Standard developer mode with current file context
         prompt = `Developer request: ${userPrompt}
