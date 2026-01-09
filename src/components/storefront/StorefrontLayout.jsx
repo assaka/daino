@@ -121,9 +121,14 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
 
     // Only store owners or users with approved access can bypass the paused overlay
     // Random visitors cannot bypass with URL params like ?version=published
+    // However, AI Workspace mode (mode=workspace) should always bypass the pause modal
     const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
     const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
-    const isStorePaused = store?.published === false && !canBypassPause && !isInPreviewMode;
+
+    // AI Workspace mode bypasses pause modal - check both context and URL directly
+    const inWorkspaceMode = isWorkspaceMode || urlParams?.get('mode') === 'workspace';
+
+    const isStorePaused = store?.published === false && !canBypassPause && !isInPreviewMode && !inWorkspaceMode;
 
     // Don't show overlay if user can bypass or store is not paused
     if (!isStorePaused) return null;
