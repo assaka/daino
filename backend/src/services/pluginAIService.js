@@ -670,10 +670,12 @@ RULES:
 - For tables: ALWAYS generate BOTH entity JSON AND migration SQL files
 - For APIs: Generate controller files that export async handler functions
 - For cron: Generate cron JSON files with handler_code as JavaScript string
-- IMPORTANT: Each NEW feature/task should create a NEW file with a UNIQUE name. Do NOT reuse or update previous file names unless user explicitly asks to "update" or "modify" an existing file. For example:
-  - "add email cron" -> create "send_email_cron.json" (NEW file)
-  - "add cleanup cron" -> create "cleanup_sessions_cron.json" (NEW file)
-  - "update the email cron" -> modify existing "send_email_cron.json"`
+- IMPORTANT: When user asks to add something similar to an existing file, ASK for clarification:
+  - If a similar file exists (e.g., user says "add a cron" and there's already a cron file), ask: "Do you want me to update the existing [filename] or create a new one?"
+  - Return a question response: { "question": "Do you want me to update the existing cleanup_cron.json or create a new cron job?", "options": ["Update existing", "Create new"] }
+  - "update the email cron" or "modify it" -> update existing file
+  - "add another cron" or "create new" -> create NEW file with unique name
+  - If clearly different purpose (e.g., existing is "cleanup", new request is "send email") -> create NEW file`
     };
 
     return modePrompts[mode] || basePrompt;
