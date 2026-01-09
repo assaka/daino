@@ -177,9 +177,19 @@ export default function StoreOnboarding() {
             // Check if OAuth was already done
             if (status && status !== 'pending' && status !== 'failed') {
               setOauthCompleted(true);
-              setNeedsServiceKey(true);
               setProvisioningStatus(status);
-              setError('Please enter your Service Role Key to continue provisioning.');
+
+              // Check if provisioning is actively running (job in progress)
+              const activeStatuses = ['tables_creating', 'tables_completed', 'seed_running', 'seed_completed', 'demo_running'];
+              if (activeStatuses.includes(status)) {
+                // Provisioning is running - show progress UI
+                setNeedsServiceKey(false);
+                setSuccess('Your store is being set up. You can close this page and we\'ll email you when it\'s ready.');
+              } else {
+                // Provisioning was interrupted - need service key
+                setNeedsServiceKey(true);
+                setError('Your store setup was interrupted. Please enter your Service Role Key to continue.');
+              }
             } else if (status === 'failed') {
               setOauthCompleted(true);
               setNeedsServiceKey(true);
@@ -267,9 +277,19 @@ export default function StoreOnboarding() {
                 setCurrentStep(4);
                 setIsReprovision(true);
                 setOauthCompleted(true);
-                setNeedsServiceKey(true);
                 setProvisioningStatus(status);
-                setError('You have an incomplete store setup. Please enter your Service Role Key to continue.');
+
+                // Check if provisioning is actively running (job in progress)
+                const activeStatuses = ['tables_creating', 'tables_completed', 'seed_running', 'seed_completed', 'demo_running'];
+                if (activeStatuses.includes(status)) {
+                  // Provisioning is running - show progress UI
+                  setNeedsServiceKey(false);
+                  setSuccess('Your store is being set up. You can close this page and we\'ll email you when it\'s ready.');
+                } else {
+                  // Provisioning was interrupted - need service key
+                  setNeedsServiceKey(true);
+                  setError('Your store setup was interrupted. Please enter your Service Role Key to continue.');
+                }
               } else {
                 // Still pending or failed - stay on step 1 but use existing store ID for upsert
                 setStoreId(incompleteStore.id);
