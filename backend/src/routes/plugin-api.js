@@ -1599,7 +1599,8 @@ router.put('/registry/:id/files', async (req, res) => {
         // Extract version from filename (e.g., "1704200000_create_table.sql" -> "1704200000")
         const versionMatch = migrationFileName.match(/^(\d+)/);
         const migrationVersion = versionMatch ? versionMatch[1] : Date.now().toString();
-        const migrationName = migrationFileName.replace('.sql', '');
+        // Remove version prefix and .sql to get just the migration name
+        const migrationName = migrationFileName.replace('.sql', '').replace(/^\d+_/, '');
 
         // Parse description from SQL comment if present
         const descMatch = content.match(/--\s*Migration:\s*(.+)/i);
