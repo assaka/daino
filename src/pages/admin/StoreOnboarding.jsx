@@ -167,6 +167,10 @@ export default function StoreOnboarding() {
             if (data.themePreset) {
               setSelectedThemePreset(data.themePreset);
             }
+            // Restore demo data preference from provisioning progress
+            if (data.provisioningProgress?.demo_requested) {
+              setProvisionDemoData(true);
+            }
             setCompletedSteps([1, 2, 3]);
             setCurrentStep(4);
 
@@ -255,6 +259,10 @@ export default function StoreOnboarding() {
                   phone: incompleteStore.phone || '',
                   storeEmail: incompleteStore.storeEmail || ''
                 });
+                // Restore demo data preference from provisioning progress
+                if (data.provisioningProgress?.demo_requested) {
+                  setProvisionDemoData(true);
+                }
                 setCompletedSteps([1, 2, 3]);
                 setCurrentStep(4);
                 setIsReprovision(true);
