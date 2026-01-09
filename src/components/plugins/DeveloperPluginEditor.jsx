@@ -159,10 +159,15 @@ const DeveloperPluginEditor = ({
             let filePath = fileName;
             let isEntityFile = false;
 
+            // Check if content looks like a cron job (has cron_name or schedule)
+            const isCronContent = typeof fileCode === 'object' && (fileCode.cron_name || fileCode.schedule || fileCode.cron_schedule);
+            let isCronFile = false;
+
             // If filename already has a path (contains /), use it as-is with leading slash
             if (fileName.includes('/') && !fileName.startsWith('/')) {
               filePath = `/${fileName}`;
               isEntityFile = filePath.startsWith('/entities/') || fileName.endsWith('.json');
+              isCronFile = filePath.startsWith('/cron/');
             } else if (!fileName.startsWith('/')) {
               // No path in filename - determine folder based on file type
               if (fileName.includes('controller') || fileName.includes('Controller')) {
@@ -171,9 +176,11 @@ const DeveloperPluginEditor = ({
                 filePath = `/migrations/${fileName}`;
               } else if (fileName.includes('component') || fileName.endsWith('.jsx')) {
                 filePath = `/components/${fileName}`;
-              } else if (fileName.includes('cron') && fileName.endsWith('.json')) {
-                filePath = `/cron/${fileName}`;
-                isEntityFile = true; // Reuse flag for JSON stringification
+              } else if (isCronContent || (fileName.includes('cron') && fileName.endsWith('.json'))) {
+                // Cron jobs: detect by content (cron_name/schedule) or filename
+                const cronFileName = fileName.endsWith('.json') ? fileName : fileName.replace(/\.(js|ts)$/, '.json');
+                filePath = `/cron/${cronFileName}`;
+                isCronFile = true;
               } else if (fileName.includes('entity') || (fileName.endsWith('.json') && !fileName.includes('package'))) {
                 filePath = `/entities/${fileName}`;
                 isEntityFile = true;
@@ -187,8 +194,8 @@ const DeveloperPluginEditor = ({
               }
             }
 
-            // For entity/JSON files (including cron), ensure content is a proper JSON string
-            if (isEntityFile && typeof fileCode === 'object') {
+            // For entity/JSON/cron files, ensure content is a proper JSON string
+            if ((isEntityFile || isCronFile) && typeof fileCode === 'object') {
               fileCode = JSON.stringify(fileCode, null, 2);
             }
 
