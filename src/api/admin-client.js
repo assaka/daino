@@ -90,26 +90,38 @@ class AdminApiClient {
         throw error;
       }
 
-      // Handle wrapped API responses
-      if (result && typeof result === 'object' && result.success && result.data) {
+      // Helper: Detect if response is a list based on its shape (not endpoint name)
+      const isListResponse = (res) => {
+        if (!res?.success || !res?.data) return false;
+
+        // Direct array response
+        if (Array.isArray(res.data)) return true;
+
+        // Object with pagination metadata AND a nested array = paginated list
+        if (typeof res.data === 'object' && res.data.pagination) {
+          const keys = Object.keys(res.data).filter(k => k !== 'pagination' && k !== 'gdpr_countries');
+          return keys.some(k => Array.isArray(res.data[k]));
+        }
+
+        return false;
+      };
+
+      // Only transform GET requests that return list-shaped responses
+      if (method === 'GET' && isListResponse(result)) {
+        // Direct array response
         if (Array.isArray(result.data)) {
           return result.data;
         }
-        
-        if (result.data && typeof result.data === 'object' && result.data.id) {
-          return [result.data];
-        }
-        
+
+        // Paginated response - extract the array
         const dataEntries = Object.entries(result.data);
         for (const [key, value] of dataEntries) {
-          if (Array.isArray(value) && key !== 'gdpr_countries') {
+          if (Array.isArray(value) && key !== 'gdpr_countries' && key !== 'pagination') {
             return value;
           }
         }
-        
-        return [result.data];
       }
-      
+
       return result;
     } catch (error) {
       throw error;

@@ -327,18 +327,25 @@ class ApiClient {
       if (skipTransform) {
         return result;
       }
-      
-      // ONLY transform responses for known list endpoints
-      // Exclude POST/PUT/PATCH requests as they typically create/update single resources
-      const isListEndpoint = method === 'GET' && (
-                            endpoint.includes('/list') ||
-                            endpoint.endsWith('s') && !endpoint.includes('/stats') &&
-                            !endpoint.includes('/status') &&
-                            !endpoint.includes('/config') &&
-                            !endpoint.includes('/test') &&
-                            !endpoint.includes('/save') &&
-                            !endpoint.includes('/settings')
-                            );
+
+      // Helper: Detect if response is a list based on its shape (not endpoint name)
+      const isListResponse = (res) => {
+        if (!res?.success || !res?.data) return false;
+
+        // Direct array response
+        if (Array.isArray(res.data)) return true;
+
+        // Object with pagination metadata AND a nested array = paginated list
+        if (typeof res.data === 'object' && res.data.pagination) {
+          const keys = Object.keys(res.data).filter(k => k !== 'pagination' && k !== 'gdpr_countries');
+          return keys.some(k => Array.isArray(res.data[k]));
+        }
+
+        return false;
+      };
+
+      // Only transform GET requests that return list-shaped responses
+      const isListEndpoint = method === 'GET' && isListResponse(result);
       
       // Special handling for storage endpoints - don't transform, return full response
       if (endpoint.includes('/storage/')) {
