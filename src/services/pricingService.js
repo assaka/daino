@@ -59,7 +59,11 @@ class PricingService {
         this.taxInfo = response.tax;
       }
 
-      return response?.data || [];
+      // apiClient already transforms the response and extracts the data array
+      // So response is the pricing array directly, not wrapped in { data: [...] }
+      const pricing = Array.isArray(response) ? response : (response?.data || []);
+
+      return pricing;
     } catch (error) {
       console.error('Error fetching pricing:', error);
 
@@ -75,7 +79,9 @@ class PricingService {
   async getCurrencies() {
     try {
       const response = await apiClient.get('credits/currencies');
-      return response?.data || ['usd', 'eur'];
+      // apiClient already transforms the response and extracts the data array
+      const currencies = Array.isArray(response) ? response : (response?.data || ['usd', 'eur']);
+      return currencies;
     } catch (error) {
       console.error('Error fetching currencies:', error);
       return ['usd', 'eur'];
