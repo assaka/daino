@@ -88,7 +88,32 @@ export default function StoreOnboarding() {
                        Array.isArray(response.data) ? response.data[0] :
                        response.data || response;
 
+          if (!data || !data.storeId) {
+            // Store doesn't exist
+            setError('The store no longer exists. Please create a new store.');
+            setCurrentStep(1);
+            setCheckingExistingStores(false);
+            return;
+          }
+
           const status = data.provisioningStatus;
+
+          // Set store data from API response
+          setStoreData({
+            name: data.name || 'My Store',
+            slug: data.slug || 'my-store'
+          });
+          setProfileData({
+            country: data.country || '',
+            phone: data.phone || '',
+            storeEmail: data.storeEmail || ''
+          });
+          if (data.themePreset) {
+            setSelectedThemePreset(data.themePreset);
+          }
+          if (data.provisioningProgress?.demo_requested) {
+            setProvisionDemoData(true);
+          }
 
           if (data.isComplete || status === 'completed') {
             // Provisioning already complete - redirect to dashboard
@@ -96,27 +121,34 @@ export default function StoreOnboarding() {
             return;
           }
 
-          // If status is beyond 'pending', OAuth was already done
+          // If status is beyond 'pending', provisioning is in progress
           if (status && status !== 'pending' && status !== 'failed') {
-            // OAuth done, tables/seed in progress - go to service key step
+            // Provisioning is actively running - show progress UI
             setOauthCompleted(true);
-            setNeedsServiceKey(true);
+            setNeedsServiceKey(false);
             setProvisioningStatus(status);
-            setProvisioningMessage(data.message || 'Resuming provisioning...');
-            setError('Your store setup was interrupted. Please enter your Service Role Key to continue.');
+            setSuccess('Your store is being set up. You can close this page and we\'ll email you when it\'s ready.');
           } else if (status === 'failed') {
             // Failed - let user retry from service key step
             setOauthCompleted(true);
             setNeedsServiceKey(true);
             setError(data.message || 'Previous setup failed. Please try again.');
           } else {
-            // OAuth not done yet
-            setError('Your store setup was interrupted. Please connect your Supabase account to continue.');
+            // OAuth not done yet - go back to step 3
+            setCompletedSteps([1, 2]);
+            setCurrentStep(3);
           }
         } catch (err) {
           console.warn('Could not check provisioning status:', err.message);
-          setError('Your store setup was interrupted. Please reconnect your Supabase account to continue.');
+          // Store might not exist
+          if (err.message?.includes('404') || err.message?.includes('not found')) {
+            setError('The store no longer exists. Please create a new store.');
+            setCurrentStep(1);
+          } else {
+            setError('Could not verify store status. Please try again.');
+          }
         }
+        setCheckingExistingStores(false);
       };
       checkProvisioningProgress();
       return;
