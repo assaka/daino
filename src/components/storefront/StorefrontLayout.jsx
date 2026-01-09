@@ -197,8 +197,11 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                     <>
                         {!showRequestForm && !showAlreadyAccessForm ? (
                             <div className="mt-6 pt-6 border-t border-gray-200">
-                                <p className="text-sm text-gray-500 mb-4">
+                                <p className="text-sm text-gray-500 mb-2">
                                     Need access? Request permission from the store owner.
+                                </p>
+                                <p className="text-xs text-gray-400 mb-4">
+                                    You'll receive an email when your request is reviewed.
                                 </p>
                                 <Button
                                     onClick={() => setShowRequestForm(true)}
@@ -325,7 +328,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                             </svg>
                             <p className="text-green-800 font-medium">Request Submitted!</p>
                             <p className="text-green-700 text-sm mt-1">
-                                You'll receive an email when the store owner reviews your request.
+                                The store owner will review your request. You'll receive an email with access instructions once approved.
                             </p>
                         </div>
                     </div>

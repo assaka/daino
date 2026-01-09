@@ -160,14 +160,23 @@ async function getPrimaryCustomDomain(tenantDb, storeId) {
 async function buildStoreUrl({ tenantDb, storeId, storeSlug, path = '', queryParams = {} }) {
   let baseUrl;
 
-  // Try to get custom domain
-  const customDomain = await getPrimaryCustomDomain(tenantDb, storeId);
+  // Admin paths should always use platform URL directly (not /public/:storeSlug)
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const isAdminPath = normalizedPath.startsWith('/admin');
 
-  if (customDomain) {
-    baseUrl = `https://${customDomain}`;
+  if (isAdminPath) {
+    // Admin routes always go to platform URL directly
+    baseUrl = DEFAULT_PLATFORM_URL;
   } else {
-    // Fallback to platform URL with store slug
-    baseUrl = `${DEFAULT_PLATFORM_URL}/public/${storeSlug}`;
+    // Try to get custom domain for storefront paths
+    const customDomain = await getPrimaryCustomDomain(tenantDb, storeId);
+
+    if (customDomain) {
+      baseUrl = `https://${customDomain}`;
+    } else {
+      // Fallback to platform URL with store slug
+      baseUrl = `${DEFAULT_PLATFORM_URL}/public/${storeSlug}`;
+    }
   }
 
   // Build full URL with path and query params
