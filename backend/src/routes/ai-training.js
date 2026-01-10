@@ -500,6 +500,37 @@ router.get('/debug-schema-count', async (req, res) => {
 });
 
 /**
+ * POST /api/ai/training/test-entity-insert
+ * Test inserting entities to debug failures
+ */
+router.post('/test-entity-insert', async (req, res) => {
+  try {
+    const schemaKnowledge = getDbSchemaKnowledge();
+    const results = [];
+
+    for (const schema of schemaKnowledge) {
+      try {
+        await saveEntityDefinition(schema);
+        results.push({ table: schema.table_name, status: 'success' });
+      } catch (e) {
+        results.push({ table: schema.table_name, status: 'error', error: e.message });
+      }
+    }
+
+    const successCount = results.filter(r => r.status === 'success').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+
+    res.json({
+      success: true,
+      summary: { total: results.length, success: successCount, errors: errorCount },
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message, stack: error.stack });
+  }
+});
+
+/**
  * GET /api/ai/training/knowledge-status
  * Get current knowledge status in AI tables
  */
