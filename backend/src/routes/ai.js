@@ -727,6 +727,9 @@ Return ONLY valid JSON.`;
 
       console.log('📤 Multiple tools executed:', allResults.length, allResults.map(r => r.tool));
 
+      // Check if any result requires store settings refresh
+      const hasStoreSettingsRefresh = allResults.some(r => r.result?.data?.refreshType === 'store_settings');
+
       return res.json({
         success: true,
         message: combinedMessages,
@@ -734,7 +737,10 @@ Return ONLY valid JSON.`;
           type: hasStyling ? 'styling_applied' : 'multi_tool',
           tools: allResults.map(r => r.tool),
           results: allResults.map(r => r.result?.data),
-          refreshPreview: hasStyling
+          refreshPreview: hasStyling,
+          // Store settings refresh flags
+          requiresRefresh: hasStoreSettingsRefresh,
+          refreshType: hasStoreSettingsRefresh ? 'store_settings' : undefined
         },
         creditsDeducted: response.creditsDeducted
       });
@@ -767,7 +773,10 @@ Return ONLY valid JSON.`;
         pageType: executionResult?.data?.pageType,
         slotId: executionResult?.data?.slotId,
         configId: executionResult?.data?.configId,
-        refreshPreview: executionResult?.data?.refreshPreview
+        refreshPreview: executionResult?.data?.refreshPreview,
+        // Store settings refresh flags (for theme color changes etc.)
+        requiresRefresh: executionResult?.data?.requiresRefresh,
+        refreshType: executionResult?.data?.refreshType
       },
       pendingAction: executionResult?.pendingAction, // For "yes" confirmation flow
       creditsDeducted: response.creditsDeducted
