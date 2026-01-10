@@ -1063,6 +1063,53 @@ function getStoreSettingsKnowledge() {
       description: 'Number of checkout steps: 1 (single page), 2 (info + payment), or 3 (info + shipping + payment).',
       usage: 'Use when user says "one page checkout" or "3 step checkout"'
     },
+    // Checkout Step Names (2-step checkout)
+    {
+      name: 'Checkout Step 1 Name (2-step)',
+      setting_path: 'settings.checkout_2step_step1_name',
+      table: 'stores',
+      type: 'string',
+      default_value: 'Information',
+      description: 'Label for the first step in 2-step checkout.',
+      usage: 'Use when user says "rename first checkout step" or "call step 1 Contact Info"'
+    },
+    {
+      name: 'Checkout Step 2 Name (2-step)',
+      setting_path: 'settings.checkout_2step_step2_name',
+      table: 'stores',
+      type: 'string',
+      default_value: 'Payment',
+      description: 'Label for the second step in 2-step checkout.',
+      usage: 'Use when user says "rename payment step" or "call step 2 Complete Order"'
+    },
+    // Checkout Step Names (3-step checkout)
+    {
+      name: 'Checkout Step 1 Name (3-step)',
+      setting_path: 'settings.checkout_3step_step1_name',
+      table: 'stores',
+      type: 'string',
+      default_value: 'Information',
+      description: 'Label for the first step in 3-step checkout.',
+      usage: 'Use when user says "rename first step in 3-step checkout"'
+    },
+    {
+      name: 'Checkout Step 2 Name (3-step)',
+      setting_path: 'settings.checkout_3step_step2_name',
+      table: 'stores',
+      type: 'string',
+      default_value: 'Shipping',
+      description: 'Label for the second step in 3-step checkout.',
+      usage: 'Use when user says "rename shipping step"'
+    },
+    {
+      name: 'Checkout Step 3 Name (3-step)',
+      setting_path: 'settings.checkout_3step_step3_name',
+      table: 'stores',
+      type: 'string',
+      default_value: 'Payment',
+      description: 'Label for the third step in 3-step checkout.',
+      usage: 'Use when user says "rename final checkout step"'
+    },
     // Product Gallery Settings
     // IMPORTANT: For "thumbnails on left/right", you must set BOTH product_gallery_layout AND vertical_gallery_position
     {
@@ -1082,6 +1129,34 @@ function getStoreSettingsKnowledge() {
       default_value: 'left',
       description: 'When product_gallery_layout is "vertical", determines which side: "left" or "right". MUST be used together with product_gallery_layout="vertical".',
       usage: 'Use when user says "thumbnails on left" (set to "left") or "thumbnails on right" (set to "right"). Always set product_gallery_layout to "vertical" first.'
+    },
+    {
+      name: 'Mobile Gallery Layout',
+      setting_path: 'settings.mobile_gallery_layout',
+      table: 'stores',
+      type: 'string',
+      default_value: 'below',
+      description: 'How product thumbnails appear on mobile: "above" (thumbnails above main image) or "below" (thumbnails below main image).',
+      usage: 'Use when user says "mobile thumbnails above", "thumbnails on top on mobile", "mobile gallery below"'
+    },
+    // Mobile & Pagination Settings
+    {
+      name: 'Mobile Filter Mode',
+      setting_path: 'settings.mobile_filter_mode',
+      table: 'stores',
+      type: 'string',
+      default_value: 'drawer',
+      description: 'How filters appear on mobile: "drawer" (slide-out panel) or "inline" (shown inline on page).',
+      usage: 'Use when user says "mobile filters as drawer", "inline filters on mobile", "filter panel on mobile"'
+    },
+    {
+      name: 'Pagination Style',
+      setting_path: 'settings.pagination',
+      table: 'stores',
+      type: 'string',
+      default_value: 'numbered',
+      description: 'Category page pagination style: "numbered" (page numbers), "load_more" (load more button), or "infinite" (infinite scroll).',
+      usage: 'Use when user says "infinite scroll", "load more button", "page numbers", "numbered pagination"'
     },
     // Navigation Settings
     {
