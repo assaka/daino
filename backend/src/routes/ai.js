@@ -859,53 +859,56 @@ function resolveSlotId(userInput, pageType = 'product') {
  * @returns {Object|null} Result object if theme setting was updated, null otherwise
  */
 async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db) {
-  console.log('🔍 detectAndUpdateThemeSetting called:', { slotId, property, value, storeId });
-
-  // Map of slot IDs to their theme settings (discovered from slot configs)
-  // This is populated by reading the template variables from slot config files
-  const slotThemeMap = {
-    'add_to_cart_button': {
-      'backgroundColor': 'add_to_cart_button_bg_color',
-      'background': 'add_to_cart_button_bg_color',
-      'background-color': 'add_to_cart_button_bg_color',
-      'backgroundcolor': 'add_to_cart_button_bg_color',
-      'color': 'add_to_cart_button_text_color',
-      'borderRadius': 'add_to_cart_button_border_radius',
-      'border-radius': 'add_to_cart_button_border_radius'
-    },
-    'wishlist_button': {
-      // Add if wishlist uses theme settings
-    }
-  };
-
-  const slotSettings = slotThemeMap[slotId];
-  console.log('🔍 Slot settings found:', slotSettings ? 'yes' : 'no', 'for slotId:', slotId);
-  if (!slotSettings) return null;
-
-  const normalizedProp = property?.toLowerCase().replace(/\s+/g, '');
-  console.log('🔍 Looking for property:', property, 'normalized:', normalizedProp);
-  const themeSetting = slotSettings[normalizedProp] || slotSettings[property];
-  console.log('🔍 Theme setting found:', themeSetting);
-  if (!themeSetting) return null;
-
-  // Map color names to hex (same as update_styling)
-  const colorNameToHex = {
-    'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e',
-    'orange': '#f97316', 'yellow': '#eab308', 'purple': '#a855f7',
-    'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
-    'black': '#000000', 'white': '#ffffff',
-    'indigo': '#6366f1', 'teal': '#14b8a6', 'cyan': '#06b6d4'
-  };
-
-  let finalValue = value;
-  const valueLower = value?.toLowerCase();
-  if (colorNameToHex[valueLower]) {
-    finalValue = colorNameToHex[valueLower];
-  }
-
-  console.log(`🎨 Theme setting detected: ${slotId}.${property} → settings.theme.${themeSetting} = ${finalValue}`);
-
   try {
+    console.log('🔍 detectAndUpdateThemeSetting called:', { slotId, property, value, storeId, hasDb: !!db });
+
+    // Map of slot IDs to their theme settings (discovered from slot configs)
+    const slotThemeMap = {
+      'add_to_cart_button': {
+        'backgroundColor': 'add_to_cart_button_bg_color',
+        'background': 'add_to_cart_button_bg_color',
+        'background-color': 'add_to_cart_button_bg_color',
+        'backgroundcolor': 'add_to_cart_button_bg_color',
+        'color': 'add_to_cart_button_text_color',
+        'borderRadius': 'add_to_cart_button_border_radius',
+        'border-radius': 'add_to_cart_button_border_radius'
+      },
+      'wishlist_button': {}
+    };
+
+    const slotSettings = slotThemeMap[slotId];
+    console.log('🔍 Slot settings for', slotId, ':', slotSettings ? Object.keys(slotSettings) : 'none');
+    if (!slotSettings || Object.keys(slotSettings).length === 0) {
+      console.log('🔍 No theme settings for this slot, falling back to slot config');
+      return null;
+    }
+
+    const normalizedProp = property?.toLowerCase().replace(/\s+/g, '');
+    console.log('🔍 Looking for property:', property, '→ normalized:', normalizedProp);
+    const themeSetting = slotSettings[normalizedProp] || slotSettings[property];
+    console.log('🔍 Theme setting resolved:', themeSetting || 'NOT FOUND');
+    if (!themeSetting) {
+      console.log('🔍 Property not in theme map, falling back to slot config');
+      return null;
+    }
+
+    // Map color names to hex (same as update_styling)
+    const colorNameToHex = {
+      'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e',
+      'orange': '#f97316', 'yellow': '#eab308', 'purple': '#a855f7',
+      'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
+      'black': '#000000', 'white': '#ffffff',
+      'indigo': '#6366f1', 'teal': '#14b8a6', 'cyan': '#06b6d4'
+    };
+
+    let finalValue = value;
+    const valueLower = value?.toLowerCase();
+    if (colorNameToHex[valueLower]) {
+      finalValue = colorNameToHex[valueLower];
+    }
+
+    console.log(`🎨 Theme setting detected: ${slotId}.${property} → settings.theme.${themeSetting} = ${finalValue}`);
+
     // Get current store settings
     const { data: store, error: fetchError } = await db
       .from('stores')
@@ -913,19 +916,31 @@ async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db)
       .eq('id', storeId)
       .single();
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('🎨 Failed to fetch store settings:', fetchError);
+      throw fetchError;
+    }
+
+    console.log('🎨 Current store settings theme:', store?.settings?.theme);
 
     // Update the theme setting
     const settings = store.settings || {};
     if (!settings.theme) settings.theme = {};
     settings.theme[themeSetting] = finalValue;
 
+    console.log('🎨 New theme settings:', settings.theme);
+
     const { error: updateError } = await db
       .from('stores')
       .update({ settings, updated_at: new Date().toISOString() })
       .eq('id', storeId);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('🎨 Failed to update store settings:', updateError);
+      throw updateError;
+    }
+
+    console.log('🎨 ✅ Theme setting updated successfully!');
 
     const friendlyElement = slotId.replace(/_/g, ' ');
     const friendlyProperty = property.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
@@ -944,7 +959,7 @@ async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db)
       }
     };
   } catch (error) {
-    console.error('🎨 Failed to update theme setting:', error);
+    console.error('🎨 detectAndUpdateThemeSetting error:', error);
     return null; // Fall back to slot configuration update
   }
 }
