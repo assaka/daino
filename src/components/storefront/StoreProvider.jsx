@@ -15,6 +15,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
 import { shouldSkipStoreProvider } from '@/utils/domainConfig';
@@ -239,10 +240,15 @@ export const StoreProvider = ({ children }) => {
       };
 
       // Listen for storeSettingsUpdated event from AI workspace
-      const handleStoreSettingsUpdated = () => {
-        console.log('🔄 Store settings updated via AI, refreshing...');
+      const handleStoreSettingsUpdated = (event) => {
+        console.log('🔄 Store settings updated via AI, refreshing...', event?.detail);
+        // Clear all caches
         clearCache();
+        localStorage.removeItem('storeProviderCache');
+        // Force refetch of bootstrap data
         refetchBootstrap();
+        // Also trigger a storage event to notify other components
+        localStorage.setItem('forceRefreshStore', Date.now().toString());
       };
       window.addEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
 

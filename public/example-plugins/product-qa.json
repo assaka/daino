@@ -1,0 +1,238 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Product Q&A",
+    "slug": "product-qa",
+    "version": "1.0.0",
+    "description": "Allow customers to ask questions about products and get answers",
+    "author": "DainoStore",
+    "category": "engagement",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Product Q&A",
+      "tags": [
+        "questions",
+        "answers",
+        "qa",
+        "product",
+        "community"
+      ],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "engagement",
+      "description": "Customer questions and answers on product pages",
+      "permissions": [
+        "products:read"
+      ],
+      "adminNavigation": {
+        "enabled": true,
+        "label": "Product Q&A",
+        "icon": "MessageCircleQuestion",
+        "route": "/admin/plugins/product-qa/management",
+        "order": 100
+      }
+    },
+    "permissions": [
+      "products:read"
+    ],
+    "dependencies": [],
+    "tags": [
+      "questions",
+      "answers",
+      "qa"
+    ]
+  },
+  "files": [],
+  "events": [],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "product-qa-widget",
+      "widgetName": "Product Q&A",
+      "description": "Questions and answers section for products",
+      "componentCode": "function ProductQAWidget({ config = {}, productId }) {\n  const [questions, setQuestions] = React.useState([]);\n  const [loading, setLoading] = React.useState(true);\n  const [showForm, setShowForm] = React.useState(false);\n  const [newQuestion, setNewQuestion] = React.useState('');\n  const [askerName, setAskerName] = React.useState('');\n  const [askerEmail, setAskerEmail] = React.useState('');\n  const [submitting, setSubmitting] = React.useState(false);\n  const [submitted, setSubmitted] = React.useState(false);\n  const [expandedQuestions, setExpandedQuestions] = React.useState({});\n\n  const {\n    title = 'Customer Questions & Answers',\n    allowAnonymous = false,\n    requireEmail = true,\n    showCount = 5\n  } = config;\n\n  // Get productId from URL if not provided\n  const getProductId = () => {\n    if (productId) return productId;\n    const path = window.location.pathname;\n    const match = path.match(/\\/products\\/([^/]+)/);\n    return match ? match[1] : null;\n  };\n\n  React.useEffect(() => {\n    const pid = getProductId();\n    if (!pid) {\n      setLoading(false);\n      return;\n    }\n\n    fetch(`/api/plugins/product-qa/exec/questions?productId=${pid}`)\n      .then(res => res.json())\n      .then(data => {\n        if (data.success) {\n          setQuestions(data.questions || []);\n        }\n      })\n      .catch(err => console.error('Failed to load Q&A:', err))\n      .finally(() => setLoading(false));\n  }, [productId]);\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    if (!newQuestion.trim()) return;\n\n    setSubmitting(true);\n    try {\n      const pid = getProductId();\n      const response = await fetch('/api/plugins/product-qa/exec/questions', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          productId: pid,\n          question: newQuestion,\n          askerName: askerName || 'Anonymous',\n          askerEmail: askerEmail\n        })\n      });\n\n      const data = await response.json();\n      if (data.success) {\n        setSubmitted(true);\n        setNewQuestion('');\n        setShowForm(false);\n        setTimeout(() => setSubmitted(false), 5000);\n      }\n    } catch (error) {\n      console.error('Failed to submit question:', error);\n    } finally {\n      setSubmitting(false);\n    }\n  };\n\n  const toggleExpand = (id) => {\n    setExpandedQuestions(prev => ({\n      ...prev,\n      [id]: !prev[id]\n    }));\n  };\n\n  const formatDate = (dateStr) => {\n    return new Date(dateStr).toLocaleDateString('en-US', {\n      year: 'numeric',\n      month: 'short',\n      day: 'numeric'\n    });\n  };\n\n  if (loading) {\n    return React.createElement('div', {\n      style: { padding: '20px', textAlign: 'center', color: '#6b7280' }\n    }, 'Loading questions...');\n  }\n\n  return React.createElement('div', {\n    style: {\n      padding: '24px',\n      background: '#f9fafb',\n      borderRadius: '12px',\n      marginTop: '24px'\n    }\n  },\n    // Header\n    React.createElement('div', {\n      style: {\n        display: 'flex',\n        justifyContent: 'space-between',\n        alignItems: 'center',\n        marginBottom: '20px'\n      }\n    },\n      React.createElement('h3', {\n        style: {\n          fontSize: '20px',\n          fontWeight: '600',\n          color: '#111827',\n          margin: 0\n        }\n      }, title),\n      React.createElement('button', {\n        onClick: () => setShowForm(!showForm),\n        style: {\n          padding: '10px 20px',\n          background: '#3b82f6',\n          color: 'white',\n          border: 'none',\n          borderRadius: '8px',\n          fontWeight: '500',\n          cursor: 'pointer'\n        }\n      }, showForm ? 'Cancel' : 'Ask a Question')\n    ),\n\n    // Success message\n    submitted && React.createElement('div', {\n      style: {\n        background: '#d1fae5',\n        color: '#065f46',\n        padding: '12px 16px',\n        borderRadius: '8px',\n        marginBottom: '16px'\n      }\n    }, 'Your question has been submitted and will appear once approved.'),\n\n    // Question form\n    showForm && React.createElement('form', {\n      onSubmit: handleSubmit,\n      style: {\n        background: 'white',\n        padding: '20px',\n        borderRadius: '8px',\n        marginBottom: '20px',\n        border: '1px solid #e5e7eb'\n      }\n    },\n      React.createElement('textarea', {\n        value: newQuestion,\n        onChange: (e) => setNewQuestion(e.target.value),\n        placeholder: 'What would you like to know about this product?',\n        required: true,\n        style: {\n          width: '100%',\n          minHeight: '100px',\n          padding: '12px',\n          border: '1px solid #d1d5db',\n          borderRadius: '8px',\n          fontSize: '14px',\n          marginBottom: '12px',\n          resize: 'vertical'\n        }\n      }),\n\n      React.createElement('div', {\n        style: {\n          display: 'grid',\n          gridTemplateColumns: '1fr 1fr',\n          gap: '12px',\n          marginBottom: '12px'\n        }\n      },\n        !allowAnonymous && React.createElement('input', {\n          type: 'text',\n          value: askerName,\n          onChange: (e) => setAskerName(e.target.value),\n          placeholder: 'Your name',\n          required: !allowAnonymous,\n          style: {\n            padding: '10px 12px',\n            border: '1px solid #d1d5db',\n            borderRadius: '8px',\n            fontSize: '14px'\n          }\n        }),\n        requireEmail && React.createElement('input', {\n          type: 'email',\n          value: askerEmail,\n          onChange: (e) => setAskerEmail(e.target.value),\n          placeholder: 'Your email (for notification)',\n          required: requireEmail,\n          style: {\n            padding: '10px 12px',\n            border: '1px solid #d1d5db',\n            borderRadius: '8px',\n            fontSize: '14px'\n          }\n        })\n      ),\n\n      React.createElement('button', {\n        type: 'submit',\n        disabled: submitting,\n        style: {\n          padding: '12px 24px',\n          background: submitting ? '#9ca3af' : '#10b981',\n          color: 'white',\n          border: 'none',\n          borderRadius: '8px',\n          fontWeight: '500',\n          cursor: submitting ? 'not-allowed' : 'pointer'\n        }\n      }, submitting ? 'Submitting...' : 'Submit Question')\n    ),\n\n    // Questions list\n    questions.length === 0\n      ? React.createElement('p', {\n          style: {\n            textAlign: 'center',\n            color: '#6b7280',\n            padding: '40px 20px'\n          }\n        }, 'No questions yet. Be the first to ask!')\n      : React.createElement('div', {\n          style: { display: 'flex', flexDirection: 'column', gap: '16px' }\n        },\n          questions.slice(0, showCount).map(q =>\n            React.createElement('div', {\n              key: q.id,\n              style: {\n                background: 'white',\n                borderRadius: '8px',\n                padding: '16px',\n                border: '1px solid #e5e7eb'\n              }\n            },\n              // Question\n              React.createElement('div', {\n                style: {\n                  display: 'flex',\n                  gap: '12px',\n                  marginBottom: q.answer ? '12px' : 0\n                }\n              },\n                React.createElement('span', {\n                  style: {\n                    fontWeight: '700',\n                    color: '#3b82f6',\n                    fontSize: '16px'\n                  }\n                }, 'Q:'),\n                React.createElement('div', { style: { flex: 1 } },\n                  React.createElement('p', {\n                    style: {\n                      fontWeight: '500',\n                      color: '#111827',\n                      marginBottom: '4px'\n                    }\n                  }, q.question),\n                  React.createElement('p', {\n                    style: {\n                      fontSize: '12px',\n                      color: '#9ca3af'\n                    }\n                  }, `Asked by ${q.asker_name} on ${formatDate(q.created_at)}`)\n                )\n              ),\n\n              // Answer\n              q.answer && React.createElement('div', {\n                style: {\n                  display: 'flex',\n                  gap: '12px',\n                  paddingTop: '12px',\n                  borderTop: '1px solid #e5e7eb'\n                }\n              },\n                React.createElement('span', {\n                  style: {\n                    fontWeight: '700',\n                    color: '#10b981',\n                    fontSize: '16px'\n                  }\n                }, 'A:'),\n                React.createElement('div', { style: { flex: 1 } },\n                  React.createElement('p', {\n                    style: { color: '#374151' }\n                  }, q.answer),\n                  React.createElement('p', {\n                    style: {\n                      fontSize: '12px',\n                      color: '#9ca3af',\n                      marginTop: '4px'\n                    }\n                  }, `Answered on ${formatDate(q.answered_at)}`)\n                )\n              )\n            )\n          )\n        ),\n\n    // Show more\n    questions.length > showCount && React.createElement('button', {\n      onClick: () => setExpandedQuestions({})},\n      style: {\n        marginTop: '16px',\n        width: '100%',\n        padding: '12px',\n        background: 'transparent',\n        border: '1px solid #d1d5db',\n        borderRadius: '8px',\n        color: '#6b7280',\n        cursor: 'pointer'\n      }\n    }, `Show all ${questions.length} questions`)\n  );\n}",
+      "defaultConfig": {
+        "title": "Customer Questions & Answers",
+        "allowAnonymous": false,
+        "requireEmail": true,
+        "showCount": 5
+      },
+      "category": "engagement",
+      "icon": "MessageCircleQuestion"
+    }
+  ],
+  "entities": [
+    {
+      "name": "ProductQuestion",
+      "tableName": "product_questions",
+      "schemaDefinition": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "UUID",
+            "default": "gen_random_uuid()",
+            "primaryKey": true
+          },
+          {
+            "name": "product_id",
+            "type": "VARCHAR(255)",
+            "notNull": true
+          },
+          {
+            "name": "question",
+            "type": "TEXT",
+            "notNull": true
+          },
+          {
+            "name": "answer",
+            "type": "TEXT",
+            "nullable": true
+          },
+          {
+            "name": "asker_name",
+            "type": "VARCHAR(255)",
+            "default": "'Anonymous'"
+          },
+          {
+            "name": "asker_email",
+            "type": "VARCHAR(255)",
+            "nullable": true
+          },
+          {
+            "name": "status",
+            "type": "VARCHAR(50)",
+            "default": "'pending'"
+          },
+          {
+            "name": "answered_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "nullable": true
+          },
+          {
+            "name": "answered_by",
+            "type": "VARCHAR(255)",
+            "nullable": true
+          },
+          {
+            "name": "helpful_count",
+            "type": "INTEGER",
+            "default": "0"
+          },
+          {
+            "name": "created_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_product_questions_product",
+            "columns": [
+              "product_id"
+            ]
+          },
+          {
+            "name": "idx_product_questions_status",
+            "columns": [
+              "status"
+            ]
+          },
+          {
+            "name": "idx_product_questions_created",
+            "columns": [
+              "created_at"
+            ],
+            "order": "DESC"
+          }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Customer questions about products"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_product_questions_table",
+      "pluginName": "Product Q&A",
+      "migrationVersion": "1704067200000_create_product_questions",
+      "code": "CREATE TABLE IF NOT EXISTS product_questions (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  product_id VARCHAR(255) NOT NULL,\n  question TEXT NOT NULL,\n  answer TEXT,\n  asker_name VARCHAR(255) DEFAULT 'Anonymous',\n  asker_email VARCHAR(255),\n  status VARCHAR(50) DEFAULT 'pending',\n  answered_at TIMESTAMP WITH TIME ZONE,\n  answered_by VARCHAR(255),\n  helpful_count INTEGER DEFAULT 0,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_product_questions_product ON product_questions(product_id);\nCREATE INDEX IF NOT EXISTS idx_product_questions_status ON product_questions(status);\nCREATE INDEX IF NOT EXISTS idx_product_questions_created ON product_questions(created_at DESC);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "getQuestions",
+      "method": "GET",
+      "path": "/questions",
+      "code": "async function getQuestions(req, res, { sequelize }) {\n  const { productId, status = 'approved', limit = 20 } = req.query;\n\n  if (!productId) {\n    return res.status(400).json({ success: false, error: 'Product ID required' });\n  }\n\n  try {\n    const questions = await sequelize.query(`\n      SELECT * FROM product_questions\n      WHERE product_id = $1 AND status = $2\n      ORDER BY created_at DESC\n      LIMIT $3\n    `, {\n      bind: [productId, status, parseInt(limit)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, questions });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get approved questions for a product"
+    },
+    {
+      "name": "submitQuestion",
+      "method": "POST",
+      "path": "/questions",
+      "code": "async function submitQuestion(req, res, { sequelize }) {\n  const { productId, question, askerName, askerEmail } = req.body;\n\n  if (!productId || !question) {\n    return res.status(400).json({ success: false, error: 'Product ID and question required' });\n  }\n\n  try {\n    const result = await sequelize.query(`\n      INSERT INTO product_questions (product_id, question, asker_name, asker_email, status)\n      VALUES ($1, $2, $3, $4, 'pending')\n      RETURNING *\n    `, {\n      bind: [productId, question, askerName || 'Anonymous', askerEmail],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({ success: true, question: result[0] });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Submit a new question"
+    },
+    {
+      "name": "getPendingQuestions",
+      "method": "GET",
+      "path": "/pending",
+      "code": "async function getPendingQuestions(req, res, { sequelize }) {\n  const { limit = 50 } = req.query;\n\n  try {\n    const questions = await sequelize.query(`\n      SELECT pq.*, p.name as product_name\n      FROM product_questions pq\n      LEFT JOIN products p ON pq.product_id::uuid = p.id\n      WHERE pq.status = 'pending'\n      ORDER BY pq.created_at ASC\n      LIMIT $1\n    `, {\n      bind: [parseInt(limit)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({ success: true, questions });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Get pending questions for admin review"
+    },
+    {
+      "name": "answerQuestion",
+      "method": "POST",
+      "path": "/answer",
+      "code": "async function answerQuestion(req, res, { sequelize }) {\n  const { questionId, answer, answeredBy } = req.body;\n\n  if (!questionId || !answer) {\n    return res.status(400).json({ success: false, error: 'Question ID and answer required' });\n  }\n\n  try {\n    await sequelize.query(`\n      UPDATE product_questions\n      SET answer = $1, answered_at = NOW(), answered_by = $2, status = 'approved'\n      WHERE id = $3\n    `, {\n      bind: [answer, answeredBy || 'Store', questionId],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    return res.json({ success: true, message: 'Question answered' });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Answer a question and approve it"
+    },
+    {
+      "name": "updateQuestionStatus",
+      "method": "PUT",
+      "path": "/status",
+      "code": "async function updateQuestionStatus(req, res, { sequelize }) {\n  const { questionId, status } = req.body;\n\n  if (!questionId || !status) {\n    return res.status(400).json({ success: false, error: 'Question ID and status required' });\n  }\n\n  const validStatuses = ['pending', 'approved', 'rejected'];\n  if (!validStatuses.includes(status)) {\n    return res.status(400).json({ success: false, error: 'Invalid status' });\n  }\n\n  try {\n    await sequelize.query(`\n      UPDATE product_questions\n      SET status = $1\n      WHERE id = $2\n    `, {\n      bind: [status, questionId],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    return res.json({ success: true, message: 'Status updated' });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Update question status (approve/reject)"
+    },
+    {
+      "name": "markHelpful",
+      "method": "POST",
+      "path": "/helpful",
+      "code": "async function markHelpful(req, res, { sequelize }) {\n  const { questionId } = req.body;\n\n  if (!questionId) {\n    return res.status(400).json({ success: false, error: 'Question ID required' });\n  }\n\n  try {\n    await sequelize.query(`\n      UPDATE product_questions\n      SET helpful_count = helpful_count + 1\n      WHERE id = $1\n    `, {\n      bind: [questionId],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    return res.json({ success: true, message: 'Marked as helpful' });\n  } catch (error) {\n    return res.status(500).json({ success: false, error: error.message });\n  }\n}",
+      "description": "Mark a Q&A as helpful"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "config",
+      "value": {
+        "requireModeration": true,
+        "notifyOnNewQuestion": true,
+        "allowAnonymous": false
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Product Q&A Plugin\n\nEnable customer questions and answers on product pages.\n\n## Features\n\n- Ask questions about products\n- Admin moderation queue\n- Answer notification (via email hook)\n- Helpful votes\n- Pending/Approved/Rejected status\n\n## Widget Configuration\n\n| Setting | Description |\n|---------|-------------|\n| title | Section heading |\n| allowAnonymous | Allow anonymous questions |\n| requireEmail | Require email for notifications |\n| showCount | Questions to display initially |\n\n## API Endpoints\n\n- `GET /questions` - Get approved questions for product\n- `POST /questions` - Submit new question\n- `GET /pending` - Get pending questions (admin)\n- `POST /answer` - Answer a question\n- `PUT /status` - Update question status\n- `POST /helpful` - Mark as helpful\n\n## Workflow\n\n1. Customer asks question on product page\n2. Question goes to pending queue\n3. Admin reviews and answers\n4. Answered question appears on product page\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": [
+    {
+      "pageName": "Q&A Management",
+      "slug": "qa-management",
+      "icon": "MessageCircleQuestion",
+      "componentCode": "function QAManagementPage({ plugin }) {\n  const [questions, setQuestions] = React.useState([]);\n  const [loading, setLoading] = React.useState(true);\n  const [filter, setFilter] = React.useState('pending');\n  const [answerText, setAnswerText] = React.useState({});\n\n  const loadQuestions = async () => {\n    setLoading(true);\n    try {\n      const endpoint = filter === 'pending' ? '/pending' : `/questions?status=${filter}`;\n      const response = await fetch(`/api/plugins/product-qa/exec${endpoint}&limit=100`);\n      const data = await response.json();\n      if (data.success) {\n        setQuestions(data.questions || []);\n      }\n    } catch (error) {\n      console.error('Failed to load questions:', error);\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  React.useEffect(() => {\n    loadQuestions();\n  }, [filter]);\n\n  const handleAnswer = async (questionId) => {\n    const answer = answerText[questionId];\n    if (!answer) return;\n\n    try {\n      const response = await fetch('/api/plugins/product-qa/exec/answer', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ questionId, answer })\n      });\n      const data = await response.json();\n      if (data.success) {\n        loadQuestions();\n        setAnswerText(prev => ({ ...prev, [questionId]: '' }));\n      }\n    } catch (error) {\n      console.error('Failed to answer:', error);\n    }\n  };\n\n  const handleStatus = async (questionId, status) => {\n    try {\n      await fetch('/api/plugins/product-qa/exec/status', {\n        method: 'PUT',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ questionId, status })\n      });\n      loadQuestions();\n    } catch (error) {\n      console.error('Failed to update status:', error);\n    }\n  };\n\n  return React.createElement('div', { style: { padding: '24px' } },\n    React.createElement('h1', { style: { fontSize: '24px', marginBottom: '20px' } }, 'Q&A Management'),\n\n    // Filter tabs\n    React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '20px' } },\n      ['pending', 'approved', 'rejected'].map(status =>\n        React.createElement('button', {\n          key: status,\n          onClick: () => setFilter(status),\n          style: {\n            padding: '8px 16px',\n            background: filter === status ? '#3b82f6' : '#e5e7eb',\n            color: filter === status ? 'white' : '#374151',\n            border: 'none',\n            borderRadius: '6px',\n            cursor: 'pointer',\n            textTransform: 'capitalize'\n          }\n        }, status)\n      )\n    ),\n\n    loading\n      ? React.createElement('p', null, 'Loading...')\n      : questions.length === 0\n        ? React.createElement('p', { style: { color: '#6b7280' } }, `No ${filter} questions`)\n        : React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '16px' } },\n            questions.map(q =>\n              React.createElement('div', {\n                key: q.id,\n                style: { background: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }\n              },\n                React.createElement('p', { style: { fontWeight: '600', marginBottom: '8px' } }, q.question),\n                React.createElement('p', { style: { fontSize: '12px', color: '#6b7280', marginBottom: '12px' } },\n                  `${q.asker_name} - ${q.product_name || q.product_id}`\n                ),\n\n                filter === 'pending' && React.createElement('div', null,\n                  React.createElement('textarea', {\n                    value: answerText[q.id] || '',\n                    onChange: (e) => setAnswerText(prev => ({ ...prev, [q.id]: e.target.value })),\n                    placeholder: 'Type your answer...',\n                    style: { width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #d1d5db' }\n                  }),\n                  React.createElement('div', { style: { display: 'flex', gap: '8px' } },\n                    React.createElement('button', {\n                      onClick: () => handleAnswer(q.id),\n                      style: { padding: '6px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }\n                    }, 'Answer & Approve'),\n                    React.createElement('button', {\n                      onClick: () => handleStatus(q.id, 'rejected'),\n                      style: { padding: '6px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }\n                    }, 'Reject')\n                  )\n                ),\n\n                q.answer && React.createElement('div', {\n                  style: { background: '#f0fdf4', padding: '12px', borderRadius: '6px', marginTop: '8px' }\n                },\n                  React.createElement('p', { style: { fontSize: '12px', color: '#166534', marginBottom: '4px' } }, 'Answer:'),\n                  React.createElement('p', null, q.answer)\n                )\n              )\n            )\n          )\n  );\n}",
+      "description": "Manage product questions and answers",
+      "pageKey": "management",
+      "route": "/admin/plugins/product-qa/management"
+    }
+  ]
+}

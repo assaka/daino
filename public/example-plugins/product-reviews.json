@@ -1,0 +1,485 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-01T12:00:00.000Z",
+  "plugin": {
+    "name": "Product Reviews",
+    "slug": "product-reviews",
+    "version": "1.0.0",
+    "description": "Customer reviews and ratings system with moderation, helpful votes, and verified purchase badges",
+    "author": "DainoStore",
+    "category": "commerce",
+    "type": "utility",
+    "framework": "react",
+    "manifest": {
+      "name": "Product Reviews",
+      "tags": [
+        "reviews",
+        "ratings",
+        "social-proof",
+        "ugc",
+        "commerce"
+      ],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "commerce",
+      "homepage": null,
+      "repository": null,
+      "description": "Full-featured product review system with star ratings, moderation queue, verified purchases, and helpful votes",
+      "permissions": [
+        "products:read",
+        "orders:read",
+        "customers:read"
+      ],
+      "adminNavigation": {
+        "enabled": true,
+        "label": "Product Reviews",
+        "icon": "Star",
+        "route": "/admin/plugins/product-reviews/moderation",
+        "order": 100
+      }
+    },
+    "permissions": [
+      "products:read",
+      "orders:read",
+      "customers:read"
+    ],
+    "dependencies": [],
+    "tags": [
+      "reviews",
+      "ratings",
+      "social-proof"
+    ]
+  },
+  "files": [
+    {
+      "name": "utils/review-helpers.js",
+      "content": "// Product Reviews Plugin - Utility Functions\n\nfunction formatRating(rating) {\n  return Math.min(5, Math.max(0, parseFloat(rating) || 0)).toFixed(1);\n}\n\nfunction getStarDisplay(rating) {\n  const fullStars = Math.floor(rating);\n  const hasHalf = rating % 1 >= 0.5;\n  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);\n  return '★'.repeat(fullStars) + (hasHalf ? '½' : '') + '☆'.repeat(emptyStars);\n}\n\nfunction timeAgo(date) {\n  const seconds = Math.floor((new Date() - new Date(date)) / 1000);\n  const intervals = {\n    year: 31536000,\n    month: 2592000,\n    week: 604800,\n    day: 86400,\n    hour: 3600,\n    minute: 60\n  };\n  \n  for (const [unit, secondsInUnit] of Object.entries(intervals)) {\n    const interval = Math.floor(seconds / secondsInUnit);\n    if (interval >= 1) {\n      return interval + ' ' + unit + (interval > 1 ? 's' : '') + ' ago';\n    }\n  }\n  return 'Just now';\n}\n\nfunction calculateAverageRating(reviews) {\n  if (!reviews || reviews.length === 0) return 0;\n  const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);\n  return (sum / reviews.length).toFixed(1);\n}\n\nfunction getRatingDistribution(reviews) {\n  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };\n  reviews.forEach(r => {\n    const rating = Math.round(r.rating);\n    if (distribution[rating] !== undefined) {\n      distribution[rating]++;\n    }\n  });\n  return distribution;\n}\n\n// Export to window\nwindow.ProductReviewsUtils = {\n  formatRating,\n  getStarDisplay,\n  timeAgo,\n  calculateAverageRating,\n  getRatingDistribution\n};\n\nconsole.log('✅ Product Reviews utilities loaded');\n",
+      "type": "js",
+      "scope": "frontend",
+      "priority": 0
+    }
+  ],
+  "events": [
+    {
+      "eventName": "product.viewed",
+      "fileName": "product-viewed-load-reviews.js",
+      "listenerCode": "async function onProductViewedLoadReviews(data) {\n  console.log('📝 Product Reviews: Loading reviews for product', data.productId);\n\n  const productId = data?.productId || data?.id;\n  if (!productId) {\n    console.warn('⚠️ No product ID found in event data');\n    return;\n  }\n\n  try {\n    const response = await fetch(`/api/plugins/product-reviews/exec/reviews?product_id=${productId}&status=approved`);\n    const result = await response.json();\n\n    if (result.success) {\n      console.log(`✅ Loaded ${result.reviews.length} reviews`);\n      \n      // Dispatch custom event for UI components to consume\n      window.dispatchEvent(new CustomEvent('reviews-loaded', {\n        detail: {\n          productId,\n          reviews: result.reviews,\n          stats: result.stats\n        }\n      }));\n    }\n  } catch (error) {\n    console.error('❌ Failed to load reviews:', error);\n  }\n}",
+      "priority": 10
+    },
+    {
+      "eventName": "order.completed",
+      "fileName": "order-completed-request-review.js",
+      "listenerCode": "async function onOrderCompletedRequestReview(data) {\n  console.log('📦 Order completed - scheduling review request');\n\n  const { orderId, items = [], customer } = data;\n\n  if (!customer?.email || items.length === 0) {\n    console.log('⚠️ No customer email or items - skipping review request');\n    return;\n  }\n\n  // Store review request for later (delayed email)\n  try {\n    const response = await fetch('/api/plugins/product-reviews/exec/review-requests', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        order_id: orderId,\n        customer_email: customer.email,\n        customer_name: customer.name || 'Customer',\n        product_ids: items.map(item => item.productId),\n        scheduled_for: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days later\n      })\n    });\n\n    if (response.ok) {\n      console.log('✅ Review request scheduled for 7 days after delivery');\n    }\n  } catch (error) {\n    console.error('❌ Failed to schedule review request:', error);\n  }\n}",
+      "priority": 20
+    },
+    {
+      "eventName": "review.submitted",
+      "fileName": "review-submitted-notify.js",
+      "listenerCode": "async function onReviewSubmitted(data) {\n  console.log('📝 New review submitted:', data);\n\n  const { reviewId, productId, rating, customerEmail } = data;\n\n  // Notify admin of new review pending moderation\n  try {\n    await fetch('/api/plugins/product-reviews/exec/notifications', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        type: 'new_review',\n        review_id: reviewId,\n        product_id: productId,\n        rating,\n        message: `New ${rating}-star review pending moderation`\n      })\n    });\n    console.log('✅ Admin notification sent');\n  } catch (error) {\n    console.error('❌ Failed to send notification:', error);\n  }\n\n  // Update product rating cache\n  try {\n    await fetch(`/api/plugins/product-reviews/exec/products/${productId}/recalculate`, {\n      method: 'POST'\n    });\n    console.log('✅ Product rating cache updated');\n  } catch (error) {\n    console.error('❌ Failed to update rating cache:', error);\n  }\n}",
+      "priority": 10
+    }
+  ],
+  "hooks": [],
+  "widgets": [
+    {
+      "widgetId": "star-rating-display",
+      "widgetName": "Star Rating Display",
+      "description": "Displays product star rating with review count",
+      "componentCode": "function StarRatingDisplay({ productId, size = 'medium' }) {\n  const [stats, setStats] = React.useState({ average: 0, count: 0 });\n\n  React.useEffect(() => {\n    if (!productId) return;\n\n    fetch(`/api/plugins/product-reviews/exec/products/${productId}/stats`)\n      .then(res => res.json())\n      .then(data => {\n        if (data.success) {\n          setStats({\n            average: parseFloat(data.average_rating) || 0,\n            count: parseInt(data.review_count) || 0\n          });\n        }\n      })\n      .catch(err => console.error('Failed to load rating:', err));\n  }, [productId]);\n\n  const sizes = {\n    small: { stars: '14px', text: '12px' },\n    medium: { stars: '18px', text: '14px' },\n    large: { stars: '24px', text: '16px' }\n  };\n\n  const sizeConfig = sizes[size] || sizes.medium;\n\n  const fullStars = Math.floor(stats.average);\n  const hasHalf = stats.average % 1 >= 0.5;\n  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);\n\n  return React.createElement('div', {\n    style: {\n      display: 'flex',\n      alignItems: 'center',\n      gap: '8px'\n    }\n  },\n    React.createElement('span', {\n      style: {\n        color: '#f59e0b',\n        fontSize: sizeConfig.stars,\n        letterSpacing: '2px'\n      }\n    },\n      '★'.repeat(fullStars),\n      hasHalf ? '½' : '',\n      React.createElement('span', { style: { color: '#d1d5db' } }, '☆'.repeat(emptyStars))\n    ),\n    React.createElement('span', {\n      style: {\n        color: '#6b7280',\n        fontSize: sizeConfig.text\n      }\n    }, `${stats.average.toFixed(1)} (${stats.count} reviews)`)\n  );\n}",
+      "defaultConfig": {
+        "size": "medium"
+      },
+      "category": "functional",
+      "icon": "Star"
+    },
+    {
+      "widgetId": "review-form",
+      "widgetName": "Review Submission Form",
+      "description": "Form for customers to submit product reviews",
+      "componentCode": "function ReviewForm({ productId, orderId, onSubmit }) {\n  const [rating, setRating] = React.useState(0);\n  const [hoverRating, setHoverRating] = React.useState(0);\n  const [title, setTitle] = React.useState('');\n  const [content, setContent] = React.useState('');\n  const [name, setName] = React.useState('');\n  const [email, setEmail] = React.useState('');\n  const [submitting, setSubmitting] = React.useState(false);\n  const [submitted, setSubmitted] = React.useState(false);\n  const [error, setError] = React.useState('');\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    if (rating === 0) {\n      setError('Please select a rating');\n      return;\n    }\n\n    setSubmitting(true);\n    setError('');\n\n    try {\n      const response = await fetch('/api/plugins/product-reviews/exec/reviews', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          product_id: productId,\n          order_id: orderId || null,\n          rating,\n          title,\n          content,\n          reviewer_name: name,\n          reviewer_email: email\n        })\n      });\n\n      const result = await response.json();\n\n      if (result.success) {\n        setSubmitted(true);\n        if (onSubmit) onSubmit(result.review);\n      } else {\n        setError(result.error || 'Failed to submit review');\n      }\n    } catch (err) {\n      setError('Network error. Please try again.');\n    } finally {\n      setSubmitting(false);\n    }\n  };\n\n  if (submitted) {\n    return React.createElement('div', {\n      style: {\n        padding: '24px',\n        background: '#ecfdf5',\n        borderRadius: '8px',\n        textAlign: 'center'\n      }\n    },\n      React.createElement('div', { style: { fontSize: '48px', marginBottom: '12px' } }, '✓'),\n      React.createElement('h3', { style: { margin: '0 0 8px 0', color: '#065f46' } }, 'Thank you for your review!'),\n      React.createElement('p', { style: { margin: 0, color: '#047857' } }, 'Your review will be visible after moderation.')\n    );\n  }\n\n  return React.createElement('form', {\n    onSubmit: handleSubmit,\n    style: {\n      padding: '24px',\n      border: '1px solid #e5e7eb',\n      borderRadius: '8px',\n      background: '#fff'\n    }\n  },\n    React.createElement('h3', { style: { margin: '0 0 16px 0' } }, 'Write a Review'),\n    \n    // Star Rating\n    React.createElement('div', { style: { marginBottom: '16px' } },\n      React.createElement('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Rating *'),\n      React.createElement('div', { style: { display: 'flex', gap: '4px' } },\n        [1, 2, 3, 4, 5].map(star =>\n          React.createElement('button', {\n            key: star,\n            type: 'button',\n            onClick: () => setRating(star),\n            onMouseEnter: () => setHoverRating(star),\n            onMouseLeave: () => setHoverRating(0),\n            style: {\n              background: 'none',\n              border: 'none',\n              fontSize: '32px',\n              cursor: 'pointer',\n              color: star <= (hoverRating || rating) ? '#f59e0b' : '#d1d5db',\n              padding: '0'\n            }\n          }, '★')\n        )\n      )\n    ),\n\n    // Title\n    React.createElement('div', { style: { marginBottom: '16px' } },\n      React.createElement('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Title'),\n      React.createElement('input', {\n        type: 'text',\n        value: title,\n        onChange: (e) => setTitle(e.target.value),\n        placeholder: 'Summarize your experience',\n        style: {\n          width: '100%',\n          padding: '10px 12px',\n          border: '1px solid #d1d5db',\n          borderRadius: '6px',\n          fontSize: '14px'\n        }\n      })\n    ),\n\n    // Content\n    React.createElement('div', { style: { marginBottom: '16px' } },\n      React.createElement('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Review'),\n      React.createElement('textarea', {\n        value: content,\n        onChange: (e) => setContent(e.target.value),\n        placeholder: 'Share your experience with this product...',\n        rows: 4,\n        style: {\n          width: '100%',\n          padding: '10px 12px',\n          border: '1px solid #d1d5db',\n          borderRadius: '6px',\n          fontSize: '14px',\n          resize: 'vertical'\n        }\n      })\n    ),\n\n    // Name & Email\n    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' } },\n      React.createElement('div', null,\n        React.createElement('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Name'),\n        React.createElement('input', {\n          type: 'text',\n          value: name,\n          onChange: (e) => setName(e.target.value),\n          placeholder: 'Your name',\n          style: {\n            width: '100%',\n            padding: '10px 12px',\n            border: '1px solid #d1d5db',\n            borderRadius: '6px',\n            fontSize: '14px'\n          }\n        })\n      ),\n      React.createElement('div', null,\n        React.createElement('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Email'),\n        React.createElement('input', {\n          type: 'email',\n          value: email,\n          onChange: (e) => setEmail(e.target.value),\n          placeholder: 'your@email.com',\n          style: {\n            width: '100%',\n            padding: '10px 12px',\n            border: '1px solid #d1d5db',\n            borderRadius: '6px',\n            fontSize: '14px'\n          }\n        })\n      )\n    ),\n\n    // Error\n    error && React.createElement('div', {\n      style: {\n        padding: '12px',\n        background: '#fef2f2',\n        color: '#dc2626',\n        borderRadius: '6px',\n        marginBottom: '16px',\n        fontSize: '14px'\n      }\n    }, error),\n\n    // Submit\n    React.createElement('button', {\n      type: 'submit',\n      disabled: submitting,\n      style: {\n        width: '100%',\n        padding: '12px 24px',\n        background: submitting ? '#9ca3af' : '#2563eb',\n        color: 'white',\n        border: 'none',\n        borderRadius: '6px',\n        fontSize: '16px',\n        fontWeight: '500',\n        cursor: submitting ? 'not-allowed' : 'pointer'\n      }\n    }, submitting ? 'Submitting...' : 'Submit Review')\n  );\n}",
+      "defaultConfig": {},
+      "category": "functional",
+      "icon": "MessageSquare"
+    },
+    {
+      "widgetId": "reviews-list",
+      "widgetName": "Reviews List",
+      "description": "Displays list of product reviews with sorting and filtering",
+      "componentCode": "function ReviewsList({ productId }) {\n  const [reviews, setReviews] = React.useState([]);\n  const [loading, setLoading] = React.useState(true);\n  const [sortBy, setSortBy] = React.useState('newest');\n  const [filterRating, setFilterRating] = React.useState(0);\n\n  React.useEffect(() => {\n    if (!productId) return;\n    loadReviews();\n  }, [productId, sortBy, filterRating]);\n\n  const loadReviews = async () => {\n    setLoading(true);\n    try {\n      let url = `/api/plugins/product-reviews/exec/reviews?product_id=${productId}&status=approved&sort=${sortBy}`;\n      if (filterRating > 0) url += `&rating=${filterRating}`;\n\n      const response = await fetch(url);\n      const data = await response.json();\n\n      if (data.success) {\n        setReviews(data.reviews);\n      }\n    } catch (err) {\n      console.error('Failed to load reviews:', err);\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  const handleHelpful = async (reviewId) => {\n    try {\n      await fetch(`/api/plugins/product-reviews/exec/reviews/${reviewId}/helpful`, {\n        method: 'POST'\n      });\n      loadReviews();\n    } catch (err) {\n      console.error('Failed to mark helpful:', err);\n    }\n  };\n\n  const timeAgo = (date) => {\n    const seconds = Math.floor((new Date() - new Date(date)) / 1000);\n    if (seconds < 60) return 'Just now';\n    if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';\n    if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';\n    if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';\n    return new Date(date).toLocaleDateString();\n  };\n\n  if (loading) {\n    return React.createElement('div', {\n      style: { padding: '24px', textAlign: 'center', color: '#6b7280' }\n    }, 'Loading reviews...');\n  }\n\n  return React.createElement('div', { style: { padding: '16px 0' } },\n    // Controls\n    React.createElement('div', {\n      style: {\n        display: 'flex',\n        justifyContent: 'space-between',\n        alignItems: 'center',\n        marginBottom: '16px',\n        paddingBottom: '16px',\n        borderBottom: '1px solid #e5e7eb'\n      }\n    },\n      React.createElement('span', { style: { fontWeight: '500' } }, `${reviews.length} Reviews`),\n      React.createElement('div', { style: { display: 'flex', gap: '12px' } },\n        React.createElement('select', {\n          value: sortBy,\n          onChange: (e) => setSortBy(e.target.value),\n          style: {\n            padding: '6px 12px',\n            border: '1px solid #d1d5db',\n            borderRadius: '6px',\n            fontSize: '14px'\n          }\n        },\n          React.createElement('option', { value: 'newest' }, 'Newest'),\n          React.createElement('option', { value: 'highest' }, 'Highest Rated'),\n          React.createElement('option', { value: 'lowest' }, 'Lowest Rated'),\n          React.createElement('option', { value: 'helpful' }, 'Most Helpful')\n        ),\n        React.createElement('select', {\n          value: filterRating,\n          onChange: (e) => setFilterRating(parseInt(e.target.value)),\n          style: {\n            padding: '6px 12px',\n            border: '1px solid #d1d5db',\n            borderRadius: '6px',\n            fontSize: '14px'\n          }\n        },\n          React.createElement('option', { value: 0 }, 'All Ratings'),\n          [5, 4, 3, 2, 1].map(r =>\n            React.createElement('option', { key: r, value: r }, `${r} Stars`)\n          )\n        )\n      )\n    ),\n\n    // Reviews\n    reviews.length === 0\n      ? React.createElement('div', {\n          style: { padding: '48px', textAlign: 'center', color: '#6b7280' }\n        }, 'No reviews yet. Be the first to review this product!')\n      : reviews.map(review =>\n          React.createElement('div', {\n            key: review.id,\n            style: {\n              padding: '16px 0',\n              borderBottom: '1px solid #f3f4f6'\n            }\n          },\n            // Header\n            React.createElement('div', {\n              style: { display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }\n            },\n              React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },\n                React.createElement('span', {\n                  style: { color: '#f59e0b', fontSize: '16px' }\n                }, '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)),\n                review.verified_purchase && React.createElement('span', {\n                  style: {\n                    background: '#dcfce7',\n                    color: '#166534',\n                    padding: '2px 8px',\n                    borderRadius: '4px',\n                    fontSize: '12px'\n                  }\n                }, '✓ Verified Purchase')\n              ),\n              React.createElement('span', {\n                style: { color: '#9ca3af', fontSize: '14px' }\n              }, timeAgo(review.created_at))\n            ),\n            \n            // Title\n            review.title && React.createElement('h4', {\n              style: { margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }\n            }, review.title),\n            \n            // Content\n            React.createElement('p', {\n              style: { margin: '0 0 12px 0', color: '#374151', lineHeight: '1.6' }\n            }, review.content),\n            \n            // Footer\n            React.createElement('div', {\n              style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }\n            },\n              React.createElement('span', {\n                style: { color: '#6b7280', fontSize: '14px' }\n              }, `By ${review.reviewer_name || 'Anonymous'}`),\n              React.createElement('button', {\n                onClick: () => handleHelpful(review.id),\n                style: {\n                  background: 'none',\n                  border: '1px solid #d1d5db',\n                  padding: '4px 12px',\n                  borderRadius: '4px',\n                  fontSize: '13px',\n                  color: '#6b7280',\n                  cursor: 'pointer'\n                }\n              }, `Helpful (${review.helpful_count || 0})`)\n            )\n          )\n        )\n  );\n}",
+      "defaultConfig": {},
+      "category": "functional",
+      "icon": "List"
+    }
+  ],
+  "entities": [
+    {
+      "name": "ProductReview",
+      "tableName": "product_reviews",
+      "schemaDefinition": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "UUID",
+            "default": "gen_random_uuid()",
+            "primaryKey": true,
+            "comment": "Primary key"
+          },
+          {
+            "name": "product_id",
+            "type": "UUID",
+            "notNull": true,
+            "comment": "Reference to the product being reviewed"
+          },
+          {
+            "name": "order_id",
+            "type": "UUID",
+            "nullable": true,
+            "comment": "Reference to order (for verified purchase)"
+          },
+          {
+            "name": "customer_id",
+            "type": "UUID",
+            "nullable": true,
+            "comment": "Reference to customer account"
+          },
+          {
+            "name": "rating",
+            "type": "INTEGER",
+            "notNull": true,
+            "comment": "Star rating 1-5"
+          },
+          {
+            "name": "title",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "comment": "Review headline"
+          },
+          {
+            "name": "content",
+            "type": "TEXT",
+            "nullable": true,
+            "comment": "Review body text"
+          },
+          {
+            "name": "reviewer_name",
+            "type": "VARCHAR(100)",
+            "nullable": true,
+            "comment": "Display name for reviewer"
+          },
+          {
+            "name": "reviewer_email",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "comment": "Reviewer email (not displayed)"
+          },
+          {
+            "name": "verified_purchase",
+            "type": "BOOLEAN",
+            "default": "false",
+            "comment": "Whether reviewer purchased the product"
+          },
+          {
+            "name": "status",
+            "type": "VARCHAR(20)",
+            "default": "'pending'",
+            "comment": "Review status: pending, approved, rejected"
+          },
+          {
+            "name": "helpful_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Number of helpful votes"
+          },
+          {
+            "name": "admin_notes",
+            "type": "TEXT",
+            "nullable": true,
+            "comment": "Internal notes for moderation"
+          },
+          {
+            "name": "created_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()",
+            "comment": "When review was submitted"
+          },
+          {
+            "name": "updated_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()",
+            "comment": "Last modification timestamp"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_reviews_product",
+            "columns": [
+              "product_id"
+            ]
+          },
+          {
+            "name": "idx_reviews_status",
+            "columns": [
+              "status"
+            ]
+          },
+          {
+            "name": "idx_reviews_rating",
+            "columns": [
+              "rating"
+            ]
+          },
+          {
+            "name": "idx_reviews_created",
+            "columns": [
+              "created_at"
+            ],
+            "order": "DESC"
+          },
+          {
+            "name": "idx_reviews_product_status",
+            "columns": [
+              "product_id",
+              "status"
+            ]
+          }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Customer product reviews and ratings"
+    },
+    {
+      "name": "ReviewVote",
+      "tableName": "review_votes",
+      "schemaDefinition": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "UUID",
+            "default": "gen_random_uuid()",
+            "primaryKey": true,
+            "comment": "Primary key"
+          },
+          {
+            "name": "review_id",
+            "type": "UUID",
+            "notNull": true,
+            "comment": "Reference to the review"
+          },
+          {
+            "name": "session_id",
+            "type": "VARCHAR(255)",
+            "notNull": true,
+            "comment": "Session or user identifier to prevent duplicates"
+          },
+          {
+            "name": "vote_type",
+            "type": "VARCHAR(20)",
+            "default": "'helpful'",
+            "comment": "Type of vote: helpful, not_helpful"
+          },
+          {
+            "name": "created_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()",
+            "comment": "When vote was cast"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_votes_review",
+            "columns": [
+              "review_id"
+            ]
+          },
+          {
+            "name": "idx_votes_unique",
+            "columns": [
+              "review_id",
+              "session_id"
+            ],
+            "unique": true
+          }
+        ],
+        "foreignKeys": []
+      },
+      "description": "Tracks helpful votes on reviews"
+    },
+    {
+      "name": "ProductRatingCache",
+      "tableName": "product_rating_cache",
+      "schemaDefinition": {
+        "columns": [
+          {
+            "name": "product_id",
+            "type": "UUID",
+            "primaryKey": true,
+            "comment": "Product identifier"
+          },
+          {
+            "name": "average_rating",
+            "type": "DECIMAL(3,2)",
+            "default": "0",
+            "comment": "Cached average rating"
+          },
+          {
+            "name": "review_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Total approved reviews"
+          },
+          {
+            "name": "rating_1_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Count of 1-star reviews"
+          },
+          {
+            "name": "rating_2_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Count of 2-star reviews"
+          },
+          {
+            "name": "rating_3_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Count of 3-star reviews"
+          },
+          {
+            "name": "rating_4_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Count of 4-star reviews"
+          },
+          {
+            "name": "rating_5_count",
+            "type": "INTEGER",
+            "default": "0",
+            "comment": "Count of 5-star reviews"
+          },
+          {
+            "name": "updated_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()",
+            "comment": "Last cache update"
+          }
+        ],
+        "indexes": [],
+        "foreignKeys": []
+      },
+      "description": "Cached rating statistics per product for fast lookups"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_product_reviews_tables",
+      "pluginName": "Product Reviews",
+      "migrationVersion": "1704067200000_create_product_reviews_tables",
+      "code": "-- Migration: 1704067200000_create_product_reviews_tables\n-- Plugin: Product Reviews\n-- Created: 2026-01-01T12:00:00.000Z\n\n-- Create main reviews table\nCREATE TABLE IF NOT EXISTS product_reviews (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  product_id UUID NOT NULL,\n  order_id UUID,\n  customer_id UUID,\n  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),\n  title VARCHAR(255),\n  content TEXT,\n  reviewer_name VARCHAR(100),\n  reviewer_email VARCHAR(255),\n  verified_purchase BOOLEAN DEFAULT false,\n  status VARCHAR(20) DEFAULT 'pending',\n  helpful_count INTEGER DEFAULT 0,\n  admin_notes TEXT,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews(product_id);\nCREATE INDEX IF NOT EXISTS idx_reviews_status ON product_reviews(status);\nCREATE INDEX IF NOT EXISTS idx_reviews_rating ON product_reviews(rating);\nCREATE INDEX IF NOT EXISTS idx_reviews_created ON product_reviews(created_at DESC);\nCREATE INDEX IF NOT EXISTS idx_reviews_product_status ON product_reviews(product_id, status);\n\nCOMMENT ON TABLE product_reviews IS 'Customer product reviews and ratings (Product Reviews Plugin)';\n\n-- Create votes table\nCREATE TABLE IF NOT EXISTS review_votes (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  review_id UUID NOT NULL,\n  session_id VARCHAR(255) NOT NULL,\n  vote_type VARCHAR(20) DEFAULT 'helpful',\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n  CONSTRAINT unique_vote UNIQUE (review_id, session_id)\n);\n\nCREATE INDEX IF NOT EXISTS idx_votes_review ON review_votes(review_id);\n\nCOMMENT ON TABLE review_votes IS 'Helpful votes on reviews (Product Reviews Plugin)';\n\n-- Create rating cache table\nCREATE TABLE IF NOT EXISTS product_rating_cache (\n  product_id UUID PRIMARY KEY,\n  average_rating DECIMAL(3,2) DEFAULT 0,\n  review_count INTEGER DEFAULT 0,\n  rating_1_count INTEGER DEFAULT 0,\n  rating_2_count INTEGER DEFAULT 0,\n  rating_3_count INTEGER DEFAULT 0,\n  rating_4_count INTEGER DEFAULT 0,\n  rating_5_count INTEGER DEFAULT 0,\n  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCOMMENT ON TABLE product_rating_cache IS 'Cached rating stats for fast lookups (Product Reviews Plugin)';\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "getReviews",
+      "method": "GET",
+      "path": "/reviews",
+      "code": "async function getReviews(req, res, { sequelize }) {\n  const {\n    product_id,\n    status = 'approved',\n    rating,\n    sort = 'newest',\n    limit = 50,\n    offset = 0\n  } = req.query;\n\n  try {\n    let where = [];\n    let params = [];\n    let paramIndex = 1;\n\n    if (product_id) {\n      where.push(`product_id = $${paramIndex++}`);\n      params.push(product_id);\n    }\n\n    if (status) {\n      where.push(`status = $${paramIndex++}`);\n      params.push(status);\n    }\n\n    if (rating) {\n      where.push(`rating = $${paramIndex++}`);\n      params.push(parseInt(rating));\n    }\n\n    let orderBy = 'created_at DESC';\n    if (sort === 'highest') orderBy = 'rating DESC, created_at DESC';\n    if (sort === 'lowest') orderBy = 'rating ASC, created_at DESC';\n    if (sort === 'helpful') orderBy = 'helpful_count DESC, created_at DESC';\n\n    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';\n\n    const reviews = await sequelize.query(`\n      SELECT * FROM product_reviews\n      ${whereClause}\n      ORDER BY ${orderBy}\n      LIMIT $${paramIndex++} OFFSET $${paramIndex++}\n    `, {\n      bind: [...params, parseInt(limit), parseInt(offset)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const countResult = await sequelize.query(`\n      SELECT COUNT(*) as total FROM product_reviews ${whereClause}\n    `, {\n      bind: params,\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({\n      success: true,\n      reviews,\n      total: parseInt(countResult[0].total),\n      limit: parseInt(limit),\n      offset: parseInt(offset)\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Get product reviews with filtering and pagination"
+    },
+    {
+      "name": "createReview",
+      "method": "POST",
+      "path": "/reviews",
+      "code": "async function createReview(req, res, { sequelize }) {\n  const {\n    product_id,\n    order_id,\n    customer_id,\n    rating,\n    title,\n    content,\n    reviewer_name,\n    reviewer_email\n  } = req.body;\n\n  if (!product_id || !rating) {\n    return res.status(400).json({\n      success: false,\n      error: 'product_id and rating are required'\n    });\n  }\n\n  if (rating < 1 || rating > 5) {\n    return res.status(400).json({\n      success: false,\n      error: 'Rating must be between 1 and 5'\n    });\n  }\n\n  try {\n    // Check if this is a verified purchase\n    let verifiedPurchase = false;\n    if (order_id) {\n      verifiedPurchase = true;\n    }\n\n    const result = await sequelize.query(`\n      INSERT INTO product_reviews (\n        product_id, order_id, customer_id, rating, title, content,\n        reviewer_name, reviewer_email, verified_purchase, status\n      )\n      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')\n      RETURNING *\n    `, {\n      bind: [\n        product_id,\n        order_id || null,\n        customer_id || null,\n        rating,\n        title || null,\n        content || null,\n        reviewer_name || 'Anonymous',\n        reviewer_email || null,\n        verifiedPurchase\n      ],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    const review = result[0][0];\n\n    // Dispatch event for other listeners\n    if (typeof window !== 'undefined') {\n      window.dispatchEvent(new CustomEvent('review.submitted', {\n        detail: {\n          reviewId: review.id,\n          productId: product_id,\n          rating,\n          customerEmail: reviewer_email\n        }\n      }));\n    }\n\n    return res.status(201).json({\n      success: true,\n      review,\n      message: 'Review submitted for moderation'\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Submit a new product review"
+    },
+    {
+      "name": "getReviewById",
+      "method": "GET",
+      "path": "/reviews/:id",
+      "code": "async function getReviewById(req, res, { sequelize }) {\n  const { id } = req.params;\n\n  try {\n    const result = await sequelize.query(`\n      SELECT * FROM product_reviews WHERE id = $1\n    `, {\n      bind: [id],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    if (result.length === 0) {\n      return res.status(404).json({\n        success: false,\n        error: 'Review not found'\n      });\n    }\n\n    return res.json({\n      success: true,\n      review: result[0]\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Get a specific review by ID"
+    },
+    {
+      "name": "updateReviewStatus",
+      "method": "PATCH",
+      "path": "/reviews/:id/status",
+      "code": "async function updateReviewStatus(req, res, { sequelize }) {\n  const { id } = req.params;\n  const { status, admin_notes } = req.body;\n\n  if (!['pending', 'approved', 'rejected'].includes(status)) {\n    return res.status(400).json({\n      success: false,\n      error: 'Invalid status. Must be: pending, approved, or rejected'\n    });\n  }\n\n  try {\n    const result = await sequelize.query(`\n      UPDATE product_reviews\n      SET status = $1, admin_notes = COALESCE($2, admin_notes), updated_at = NOW()\n      WHERE id = $3\n      RETURNING *\n    `, {\n      bind: [status, admin_notes || null, id],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    if (result[1] === 0) {\n      return res.status(404).json({\n        success: false,\n        error: 'Review not found'\n      });\n    }\n\n    // Recalculate product rating cache\n    const review = result[0][0];\n    await recalculateProductRating(sequelize, review.product_id);\n\n    return res.json({\n      success: true,\n      review: result[0][0],\n      message: `Review ${status}`\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}\n\nasync function recalculateProductRating(sequelize, productId) {\n  await sequelize.query(`\n    INSERT INTO product_rating_cache (product_id, average_rating, review_count,\n      rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count, updated_at)\n    SELECT\n      $1,\n      COALESCE(AVG(rating), 0),\n      COUNT(*),\n      COUNT(*) FILTER (WHERE rating = 1),\n      COUNT(*) FILTER (WHERE rating = 2),\n      COUNT(*) FILTER (WHERE rating = 3),\n      COUNT(*) FILTER (WHERE rating = 4),\n      COUNT(*) FILTER (WHERE rating = 5),\n      NOW()\n    FROM product_reviews\n    WHERE product_id = $1 AND status = 'approved'\n    ON CONFLICT (product_id) DO UPDATE\n    SET\n      average_rating = EXCLUDED.average_rating,\n      review_count = EXCLUDED.review_count,\n      rating_1_count = EXCLUDED.rating_1_count,\n      rating_2_count = EXCLUDED.rating_2_count,\n      rating_3_count = EXCLUDED.rating_3_count,\n      rating_4_count = EXCLUDED.rating_4_count,\n      rating_5_count = EXCLUDED.rating_5_count,\n      updated_at = NOW()\n  `, {\n    bind: [productId],\n    type: sequelize.QueryTypes.INSERT\n  });\n}",
+      "description": "Approve or reject a review"
+    },
+    {
+      "name": "deleteReview",
+      "method": "DELETE",
+      "path": "/reviews/:id",
+      "code": "async function deleteReview(req, res, { sequelize }) {\n  const { id } = req.params;\n\n  try {\n    // Get product_id before deletion for cache update\n    const review = await sequelize.query(`\n      SELECT product_id FROM product_reviews WHERE id = $1\n    `, {\n      bind: [id],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    if (review.length === 0) {\n      return res.status(404).json({\n        success: false,\n        error: 'Review not found'\n      });\n    }\n\n    const productId = review[0].product_id;\n\n    // Delete votes first\n    await sequelize.query(`\n      DELETE FROM review_votes WHERE review_id = $1\n    `, {\n      bind: [id],\n      type: sequelize.QueryTypes.DELETE\n    });\n\n    // Delete review\n    await sequelize.query(`\n      DELETE FROM product_reviews WHERE id = $1\n    `, {\n      bind: [id],\n      type: sequelize.QueryTypes.DELETE\n    });\n\n    return res.json({\n      success: true,\n      message: 'Review deleted'\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Delete a review"
+    },
+    {
+      "name": "markHelpful",
+      "method": "POST",
+      "path": "/reviews/:id/helpful",
+      "code": "async function markHelpful(req, res, { sequelize }) {\n  const { id } = req.params;\n  const sessionId = req.body.session_id || req.headers['x-session-id'] || 'anonymous';\n\n  try {\n    // Try to insert vote (will fail if duplicate)\n    await sequelize.query(`\n      INSERT INTO review_votes (review_id, session_id, vote_type)\n      VALUES ($1, $2, 'helpful')\n      ON CONFLICT (review_id, session_id) DO NOTHING\n    `, {\n      bind: [id, sessionId],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    // Update helpful count\n    const result = await sequelize.query(`\n      UPDATE product_reviews\n      SET helpful_count = (\n        SELECT COUNT(*) FROM review_votes\n        WHERE review_id = $1 AND vote_type = 'helpful'\n      )\n      WHERE id = $1\n      RETURNING helpful_count\n    `, {\n      bind: [id],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    return res.json({\n      success: true,\n      helpful_count: result[0][0]?.helpful_count || 0\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Mark a review as helpful"
+    },
+    {
+      "name": "getProductStats",
+      "method": "GET",
+      "path": "/products/:productId/stats",
+      "code": "async function getProductStats(req, res, { sequelize }) {\n  const { productId } = req.params;\n\n  try {\n    // Try cache first\n    const cached = await sequelize.query(`\n      SELECT * FROM product_rating_cache WHERE product_id = $1\n    `, {\n      bind: [productId],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    if (cached.length > 0) {\n      return res.json({\n        success: true,\n        ...cached[0],\n        from_cache: true\n      });\n    }\n\n    // Calculate fresh\n    const stats = await sequelize.query(`\n      SELECT\n        COALESCE(AVG(rating), 0) as average_rating,\n        COUNT(*) as review_count,\n        COUNT(*) FILTER (WHERE rating = 1) as rating_1_count,\n        COUNT(*) FILTER (WHERE rating = 2) as rating_2_count,\n        COUNT(*) FILTER (WHERE rating = 3) as rating_3_count,\n        COUNT(*) FILTER (WHERE rating = 4) as rating_4_count,\n        COUNT(*) FILTER (WHERE rating = 5) as rating_5_count\n      FROM product_reviews\n      WHERE product_id = $1 AND status = 'approved'\n    `, {\n      bind: [productId],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({\n      success: true,\n      product_id: productId,\n      ...stats[0],\n      from_cache: false\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Get rating statistics for a product"
+    },
+    {
+      "name": "recalculateProductRating",
+      "method": "POST",
+      "path": "/products/:productId/recalculate",
+      "code": "async function recalculateProductRating(req, res, { sequelize }) {\n  const { productId } = req.params;\n\n  try {\n    await sequelize.query(`\n      INSERT INTO product_rating_cache (product_id, average_rating, review_count,\n        rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count, updated_at)\n      SELECT\n        $1,\n        COALESCE(AVG(rating), 0),\n        COUNT(*),\n        COUNT(*) FILTER (WHERE rating = 1),\n        COUNT(*) FILTER (WHERE rating = 2),\n        COUNT(*) FILTER (WHERE rating = 3),\n        COUNT(*) FILTER (WHERE rating = 4),\n        COUNT(*) FILTER (WHERE rating = 5),\n        NOW()\n      FROM product_reviews\n      WHERE product_id = $1 AND status = 'approved'\n      ON CONFLICT (product_id) DO UPDATE\n      SET\n        average_rating = EXCLUDED.average_rating,\n        review_count = EXCLUDED.review_count,\n        rating_1_count = EXCLUDED.rating_1_count,\n        rating_2_count = EXCLUDED.rating_2_count,\n        rating_3_count = EXCLUDED.rating_3_count,\n        rating_4_count = EXCLUDED.rating_4_count,\n        rating_5_count = EXCLUDED.rating_5_count,\n        updated_at = NOW()\n    `, {\n      bind: [productId],\n      type: sequelize.QueryTypes.INSERT\n    });\n\n    return res.json({\n      success: true,\n      message: 'Rating cache updated'\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Recalculate and cache product rating"
+    },
+    {
+      "name": "getModerationQueue",
+      "method": "GET",
+      "path": "/moderation/queue",
+      "code": "async function getModerationQueue(req, res, { sequelize }) {\n  const { limit = 50, offset = 0 } = req.query;\n\n  try {\n    const reviews = await sequelize.query(`\n      SELECT r.*, p.name as product_name\n      FROM product_reviews r\n      LEFT JOIN products p ON r.product_id = p.id\n      WHERE r.status = 'pending'\n      ORDER BY r.created_at ASC\n      LIMIT $1 OFFSET $2\n    `, {\n      bind: [parseInt(limit), parseInt(offset)],\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    const countResult = await sequelize.query(`\n      SELECT COUNT(*) as total FROM product_reviews WHERE status = 'pending'\n    `, {\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    return res.json({\n      success: true,\n      reviews,\n      total: parseInt(countResult[0].total),\n      limit: parseInt(limit),\n      offset: parseInt(offset)\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Get pending reviews for moderation"
+    },
+    {
+      "name": "bulkModerate",
+      "method": "POST",
+      "path": "/moderation/bulk",
+      "code": "async function bulkModerate(req, res, { sequelize }) {\n  const { review_ids, status } = req.body;\n\n  if (!review_ids || !Array.isArray(review_ids) || review_ids.length === 0) {\n    return res.status(400).json({\n      success: false,\n      error: 'review_ids array is required'\n    });\n  }\n\n  if (!['approved', 'rejected'].includes(status)) {\n    return res.status(400).json({\n      success: false,\n      error: 'status must be approved or rejected'\n    });\n  }\n\n  try {\n    const placeholders = review_ids.map((_, i) => `$${i + 2}`).join(',');\n\n    await sequelize.query(`\n      UPDATE product_reviews\n      SET status = $1, updated_at = NOW()\n      WHERE id IN (${placeholders})\n    `, {\n      bind: [status, ...review_ids],\n      type: sequelize.QueryTypes.UPDATE\n    });\n\n    // Get unique product IDs to update caches\n    const products = await sequelize.query(`\n      SELECT DISTINCT product_id FROM product_reviews WHERE id IN (${placeholders})\n    `, {\n      bind: review_ids,\n      type: sequelize.QueryTypes.SELECT\n    });\n\n    // Update each product's rating cache\n    for (const p of products) {\n      await sequelize.query(`\n        INSERT INTO product_rating_cache (product_id, average_rating, review_count, updated_at)\n        SELECT $1, COALESCE(AVG(rating), 0), COUNT(*), NOW()\n        FROM product_reviews\n        WHERE product_id = $1 AND status = 'approved'\n        ON CONFLICT (product_id) DO UPDATE\n        SET average_rating = EXCLUDED.average_rating,\n            review_count = EXCLUDED.review_count,\n            updated_at = NOW()\n      `, {\n        bind: [p.product_id],\n        type: sequelize.QueryTypes.INSERT\n      });\n    }\n\n    return res.json({\n      success: true,\n      message: `${review_ids.length} reviews ${status}`,\n      updated_count: review_ids.length\n    });\n  } catch (error) {\n    return res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}",
+      "description": "Approve or reject multiple reviews at once"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "settings",
+      "value": {
+        "auto_approve": false,
+        "require_purchase": false,
+        "min_content_length": 10,
+        "allow_anonymous": true,
+        "moderation_notification_email": null,
+        "review_reminder_days": 7
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Product Reviews Plugin\n\nA comprehensive customer review and rating system for your store.\n\n## Features\n\n### Customer-Facing\n- **Star Ratings**: 1-5 star rating system\n- **Written Reviews**: Title and detailed content\n- **Verified Purchases**: Badge for customers who bought the product\n- **Helpful Votes**: Community feedback on reviews\n- **Sorting & Filtering**: By rating, date, or helpfulness\n\n### Admin Features\n- **Moderation Queue**: Approve or reject pending reviews\n- **Bulk Actions**: Moderate multiple reviews at once\n- **Analytics**: Rating distribution and trends\n- **Spam Protection**: Prevent duplicate votes\n\n## Installation\n\n1. Import the plugin JSON\n2. Run migrations to create database tables\n3. Add widgets to your product pages\n\n## Widgets\n\n### Star Rating Display\nShows the average rating and review count.\n```jsx\n<StarRatingDisplay productId=\"uuid\" size=\"medium\" />\n```\n\n### Review Form\nForm for customers to submit reviews.\n```jsx\n<ReviewForm productId=\"uuid\" orderId=\"optional-uuid\" />\n```\n\n### Reviews List\nDisplays all approved reviews with sorting.\n```jsx\n<ReviewsList productId=\"uuid\" />\n```\n\n## API Endpoints\n\n| Method | Path | Description |\n|--------|------|-------------|\n| GET | /reviews | List reviews with filters |\n| POST | /reviews | Submit new review |\n| GET | /reviews/:id | Get single review |\n| PATCH | /reviews/:id/status | Approve/reject review |\n| DELETE | /reviews/:id | Delete review |\n| POST | /reviews/:id/helpful | Vote review helpful |\n| GET | /products/:id/stats | Get rating statistics |\n| GET | /moderation/queue | Get pending reviews |\n| POST | /moderation/bulk | Bulk approve/reject |\n\n## Events\n\n- `product.viewed`: Loads reviews for the product\n- `order.completed`: Schedules review request email\n- `review.submitted`: Notifies admin, updates cache\n\n## Database Schema\n\n### product_reviews\nStores all customer reviews.\n\n### review_votes\nTracks helpful votes (one per session).\n\n### product_rating_cache\nCached rating statistics for fast lookups.\n\n## Configuration\n\nSettings stored in plugin_data:\n- `auto_approve`: Skip moderation queue\n- `require_purchase`: Only verified buyers can review\n- `min_content_length`: Minimum review length\n- `allow_anonymous`: Allow reviews without email\n- `review_reminder_days`: Days after order to request review\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": [
+    {
+      "pageKey": "moderation",
+      "pageName": "Review Moderation",
+      "route": "/admin/plugins/product-reviews/moderation",
+      "componentCode": "import React, { useState, useEffect } from 'react';\nimport { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';\nimport { Button } from '@/components/ui/button';\nimport { Badge } from '@/components/ui/badge';\nimport { Checkbox } from '@/components/ui/checkbox';\nimport { Star, Check, X, MessageSquare, AlertCircle } from 'lucide-react';\n\nexport default function ReviewModeration() {\n  const [reviews, setReviews] = useState([]);\n  const [loading, setLoading] = useState(true);\n  const [selected, setSelected] = useState([]);\n  const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });\n\n  useEffect(() => {\n    loadQueue();\n    loadStats();\n  }, []);\n\n  const loadQueue = async () => {\n    try {\n      const response = await fetch('/api/plugins/product-reviews/exec/moderation/queue');\n      const data = await response.json();\n      if (data.success) {\n        setReviews(data.reviews);\n      }\n      setLoading(false);\n    } catch (error) {\n      console.error('Failed to load queue:', error);\n      setLoading(false);\n    }\n  };\n\n  const loadStats = async () => {\n    try {\n      const response = await fetch('/api/plugins/product-reviews/exec/reviews?limit=0');\n      // Stats would come from a dedicated endpoint in production\n    } catch (error) {\n      console.error('Failed to load stats:', error);\n    }\n  };\n\n  const handleModerate = async (reviewId, status) => {\n    try {\n      await fetch(`/api/plugins/product-reviews/exec/reviews/${reviewId}/status`, {\n        method: 'PATCH',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ status })\n      });\n      loadQueue();\n    } catch (error) {\n      console.error('Failed to moderate:', error);\n    }\n  };\n\n  const handleBulkModerate = async (status) => {\n    if (selected.length === 0) return;\n\n    try {\n      await fetch('/api/plugins/product-reviews/exec/moderation/bulk', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ review_ids: selected, status })\n      });\n      setSelected([]);\n      loadQueue();\n    } catch (error) {\n      console.error('Failed to bulk moderate:', error);\n    }\n  };\n\n  const toggleSelect = (id) => {\n    setSelected(prev =>\n      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]\n    );\n  };\n\n  const toggleSelectAll = () => {\n    setSelected(prev =>\n      prev.length === reviews.length ? [] : reviews.map(r => r.id)\n    );\n  };\n\n  const renderStars = (rating) => {\n    return Array(5).fill(0).map((_, i) => (\n      <Star\n        key={i}\n        className={`w-4 h-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}\n      />\n    ));\n  };\n\n  return (\n    <div className=\"p-6\">\n      <Card>\n        <CardHeader>\n          <CardTitle className=\"flex items-center justify-between\">\n            <div className=\"flex items-center gap-2\">\n              <MessageSquare className=\"w-6 h-6\" />\n              Review Moderation\n              {reviews.length > 0 && (\n                <Badge variant=\"secondary\">{reviews.length} pending</Badge>\n              )}\n            </div>\n            {selected.length > 0 && (\n              <div className=\"flex gap-2\">\n                <Button\n                  size=\"sm\"\n                  variant=\"outline\"\n                  onClick={() => handleBulkModerate('approved')}\n                  className=\"text-green-600\"\n                >\n                  <Check className=\"w-4 h-4 mr-1\" />\n                  Approve ({selected.length})\n                </Button>\n                <Button\n                  size=\"sm\"\n                  variant=\"outline\"\n                  onClick={() => handleBulkModerate('rejected')}\n                  className=\"text-red-600\"\n                >\n                  <X className=\"w-4 h-4 mr-1\" />\n                  Reject ({selected.length})\n                </Button>\n              </div>\n            )}\n          </CardTitle>\n        </CardHeader>\n        <CardContent>\n          {loading ? (\n            <p className=\"text-center py-8 text-gray-500\">Loading...</p>\n          ) : reviews.length === 0 ? (\n            <div className=\"text-center py-12\">\n              <Check className=\"w-12 h-12 mx-auto text-green-500 mb-4\" />\n              <p className=\"text-gray-500\">No reviews pending moderation</p>\n            </div>\n          ) : (\n            <div className=\"space-y-4\">\n              {/* Select All */}\n              <div className=\"flex items-center gap-2 pb-4 border-b\">\n                <Checkbox\n                  checked={selected.length === reviews.length}\n                  onCheckedChange={toggleSelectAll}\n                />\n                <span className=\"text-sm text-gray-600\">Select all</span>\n              </div>\n\n              {/* Reviews */}\n              {reviews.map(review => (\n                <div\n                  key={review.id}\n                  className={`p-4 border rounded-lg ${\n                    selected.includes(review.id) ? 'border-blue-300 bg-blue-50' : ''\n                  }`}\n                >\n                  <div className=\"flex items-start gap-4\">\n                    <Checkbox\n                      checked={selected.includes(review.id)}\n                      onCheckedChange={() => toggleSelect(review.id)}\n                    />\n                    <div className=\"flex-1\">\n                      <div className=\"flex items-center justify-between mb-2\">\n                        <div className=\"flex items-center gap-2\">\n                          <div className=\"flex\">{renderStars(review.rating)}</div>\n                          {review.verified_purchase && (\n                            <Badge className=\"bg-green-100 text-green-700\">\n                              Verified Purchase\n                            </Badge>\n                          )}\n                        </div>\n                        <span className=\"text-sm text-gray-500\">\n                          {new Date(review.created_at).toLocaleDateString()}\n                        </span>\n                      </div>\n\n                      {review.title && (\n                        <h4 className=\"font-medium mb-1\">{review.title}</h4>\n                      )}\n\n                      <p className=\"text-gray-700 mb-2\">{review.content || 'No content'}</p>\n\n                      <div className=\"flex items-center justify-between\">\n                        <div className=\"text-sm text-gray-500\">\n                          By {review.reviewer_name || 'Anonymous'}\n                          {review.reviewer_email && ` (${review.reviewer_email})`}\n                          {review.product_name && ` • ${review.product_name}`}\n                        </div>\n                        <div className=\"flex gap-2\">\n                          <Button\n                            size=\"sm\"\n                            variant=\"ghost\"\n                            onClick={() => handleModerate(review.id, 'approved')}\n                            className=\"text-green-600 hover:bg-green-50\"\n                          >\n                            <Check className=\"w-4 h-4 mr-1\" /> Approve\n                          </Button>\n                          <Button\n                            size=\"sm\"\n                            variant=\"ghost\"\n                            onClick={() => handleModerate(review.id, 'rejected')}\n                            className=\"text-red-600 hover:bg-red-50\"\n                          >\n                            <X className=\"w-4 h-4 mr-1\" /> Reject\n                          </Button>\n                        </div>\n                      </div>\n                    </div>\n                  </div>\n                </div>\n              ))}\n            </div>\n          )}\n        </CardContent>\n      </Card>\n    </div>\n  );\n}",
+      "icon": "Star"
+    }
+  ]
+}
