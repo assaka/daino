@@ -845,6 +845,96 @@ function resolveSlotId(userInput, pageType = 'product') {
 }
 
 /**
+ * Detect if a slot uses theme template variables and update the store setting instead
+ * This makes the AI-driven styling work correctly for theme-controlled elements
+ * @returns {Object|null} Result object if theme setting was updated, null otherwise
+ */
+async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db) {
+  // Map of slot IDs to their theme settings (discovered from slot configs)
+  // This is populated by reading the template variables from slot config files
+  const slotThemeMap = {
+    'add_to_cart_button': {
+      'backgroundColor': 'add_to_cart_button_bg_color',
+      'background': 'add_to_cart_button_bg_color',
+      'background-color': 'add_to_cart_button_bg_color',
+      'color': 'add_to_cart_button_text_color',
+      'borderRadius': 'add_to_cart_button_border_radius',
+      'border-radius': 'add_to_cart_button_border_radius'
+    },
+    'wishlist_button': {
+      // Add if wishlist uses theme settings
+    }
+  };
+
+  const slotSettings = slotThemeMap[slotId];
+  if (!slotSettings) return null;
+
+  const normalizedProp = property?.toLowerCase().replace(/\s+/g, '');
+  const themeSetting = slotSettings[normalizedProp] || slotSettings[property];
+  if (!themeSetting) return null;
+
+  // Map color names to hex (same as update_styling)
+  const colorNameToHex = {
+    'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e',
+    'orange': '#f97316', 'yellow': '#eab308', 'purple': '#a855f7',
+    'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
+    'black': '#000000', 'white': '#ffffff',
+    'indigo': '#6366f1', 'teal': '#14b8a6', 'cyan': '#06b6d4'
+  };
+
+  let finalValue = value;
+  const valueLower = value?.toLowerCase();
+  if (colorNameToHex[valueLower]) {
+    finalValue = colorNameToHex[valueLower];
+  }
+
+  console.log(`🎨 Theme setting detected: ${slotId}.${property} → settings.theme.${themeSetting} = ${finalValue}`);
+
+  try {
+    // Get current store settings
+    const { data: store, error: fetchError } = await db
+      .from('stores')
+      .select('settings')
+      .eq('id', storeId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Update the theme setting
+    const settings = store.settings || {};
+    if (!settings.theme) settings.theme = {};
+    settings.theme[themeSetting] = finalValue;
+
+    const { error: updateError } = await db
+      .from('stores')
+      .update({ settings, updated_at: new Date().toISOString() })
+      .eq('id', storeId);
+
+    if (updateError) throw updateError;
+
+    const friendlyElement = slotId.replace(/_/g, ' ');
+    const friendlyProperty = property.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
+
+    return {
+      success: true,
+      message: `Changed ${friendlyElement} ${friendlyProperty} to ${value}.`,
+      setting: themeSetting,
+      data: {
+        type: 'styling_applied',
+        themeSetting,
+        value: finalValue,
+        refreshPreview: true,
+        requiresRefresh: true,
+        refreshType: 'store_settings'
+      }
+    };
+  } catch (error) {
+    console.error('🎨 Failed to update theme setting:', error);
+    return null; // Fall back to slot configuration update
+  }
+}
+
+/**
  * Execute a tool action from AI response
  * This is the core executor that handles all database operations
  * Uses Supabase client syntax (.from().select().eq())
@@ -2000,6 +2090,16 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         // Use smart element matching
         const slotId = resolveSlotId(element, page);
+
+        // ═══════════════════════════════════════════════════════════════
+        // THEME DETECTION: Check if this element uses theme template variables
+        // If so, update the store setting instead of the slot configuration
+        // ═══════════════════════════════════════════════════════════════
+        const themeSettingResult = await detectAndUpdateThemeSetting(slotId, property, value, storeId, db);
+        if (themeSettingResult) {
+          console.log('🎨 Updated via theme setting:', themeSettingResult.setting);
+          return themeSettingResult;
+        }
         console.log('🎨 Resolved element:', element, '→', slotId);
 
         // Map property names to CSS camelCase (matching EditorSidebar)
