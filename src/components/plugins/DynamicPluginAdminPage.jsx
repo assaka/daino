@@ -2,12 +2,50 @@
  * Dynamic Plugin Admin Page Loader
  * Loads and renders admin pages from plugin_admin_pages table
  * 100% database-driven - no hardcoded components!
+ * Supports both JSX and React.createElement syntax via Babel transformation
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { PageLoader } from '@/components/ui/page-loader';
+
+// Import UI components that plugins can use
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import * as LucideIcons from 'lucide-react';
+
+// Load Babel standalone for JSX transformation
+let babelLoaded = false;
+let babelLoadPromise = null;
+
+const loadBabel = () => {
+  if (babelLoaded) return Promise.resolve();
+  if (babelLoadPromise) return babelLoadPromise;
+
+  babelLoadPromise = new Promise((resolve, reject) => {
+    if (window.Babel) {
+      babelLoaded = true;
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@babel/standalone/babel.min.js';
+    script.async = true;
+    script.onload = () => {
+      babelLoaded = true;
+      resolve();
+    };
+    script.onerror = () => reject(new Error('Failed to load Babel'));
+    document.head.appendChild(script);
+  });
+
+  return babelLoadPromise;
+};
 
 const DynamicPluginAdminPage = () => {
   const { pluginSlug, pageKey } = useParams();
@@ -86,14 +124,33 @@ const DynamicPluginAdminPage = () => {
       componentCode = componentCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
 
       // Extract the default export
-      // Pattern: export default function ComponentName() { ... }
-      // Result: function ComponentName() { ... }
       componentCode = componentCode.replace(/export\s+default\s+/, '');
 
       console.log('📝 Cleaned component code (first 200 chars):', componentCode.substring(0, 200));
 
+      // Check if code contains JSX (has < followed by letter or / )
+      const hasJSX = /<[A-Za-z\/]/.test(componentCode);
+      console.log('📝 Has JSX:', hasJSX);
+
+      // If JSX, load Babel and transform
+      if (hasJSX) {
+        console.log('📝 Loading Babel for JSX transformation...');
+        await loadBabel();
+
+        try {
+          const transformed = window.Babel.transform(componentCode, {
+            presets: ['react'],
+            filename: 'component.jsx'
+          });
+          componentCode = transformed.code;
+          console.log('📝 Transformed code (first 300 chars):', componentCode.substring(0, 300));
+        } catch (babelError) {
+          console.error('❌ Babel transformation failed:', babelError);
+          throw new Error(`JSX transformation failed: ${babelError.message}`);
+        }
+      }
+
       // Find the function name in the code
-      // Match patterns like: function FunctionName() or const FunctionName =
       const functionNameMatch = componentCode.match(/(?:function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*(?:\(|function))/);
       const componentName = functionNameMatch ? (functionNameMatch[1] || functionNameMatch[2]) : null;
 
@@ -103,8 +160,7 @@ const DynamicPluginAdminPage = () => {
 
       console.log('🔍 Found component name:', componentName);
 
-      // Create component using eval
-      // Need to return the component function by its dynamic name
+      // Create component using eval with all dependencies
       const Component = eval(`
         (function() {
           const React = arguments[0];
@@ -113,13 +169,29 @@ const DynamicPluginAdminPage = () => {
           const apiClient = arguments[3];
           const useCallback = arguments[4];
           const useMemo = arguments[5];
+          const Card = arguments[6];
+          const CardContent = arguments[7];
+          const CardHeader = arguments[8];
+          const CardTitle = arguments[9];
+          const Button = arguments[10];
+          const Input = arguments[11];
+          const Badge = arguments[12];
+          const Checkbox = arguments[13];
+          const LucideIcons = arguments[14];
+
+          // Destructure common Lucide icons
+          const { MessageCircle, Send, Star, Check, X, MessageSquare, AlertCircle } = LucideIcons;
 
           ${componentCode}
 
           // Return the component by its detected name
           return ${componentName};
         })
-      `)(React, useState, useEffect, apiClient, React.useCallback, React.useMemo);
+      `)(
+        React, useState, useEffect, apiClient, useCallback, useMemo,
+        Card, CardContent, CardHeader, CardTitle,
+        Button, Input, Badge, Checkbox, LucideIcons
+      );
 
       console.log('✅ Component created:', typeof Component, Component?.name);
 
