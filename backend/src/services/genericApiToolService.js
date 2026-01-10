@@ -1617,10 +1617,18 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       'hide_quantity_selector': { table: 'stores', column: 'settings', path: ['hide_quantity_selector'] },
 
       // Theme color settings - nested in settings.theme
+      // Add to cart button - multiple aliases for AI flexibility
       'add_to_cart_button_bg_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'add_to_cart_button_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'add_to_cart_button_background': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
       'add_to_cart_button_text_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_text_color'] },
       'add_to_cart_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'add_to_cart_bg_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
       'cart_button_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      'settings.theme.add_to_cart_button_bg_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_bg_color'] },
+      // Add to cart button hover color
+      'add_to_cart_button_hover_color': { table: 'stores', column: 'settings', path: ['theme', 'add_to_cart_button_hover_color'] },
+      // Other theme settings
       'primary_button_color': { table: 'stores', column: 'settings', path: ['theme', 'primary_button_color'] },
       'header_bg_color': { table: 'stores', column: 'settings', path: ['theme', 'header_bg_color'] },
       'header_icon_color': { table: 'stores', column: 'settings', path: ['theme', 'header_icon_color'] },
@@ -1653,7 +1661,14 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         if (!ref[mapping.path[i]]) ref[mapping.path[i]] = {};
         ref = ref[mapping.path[i]];
       }
+
+      const oldValue = ref[mapping.path[mapping.path.length - 1]];
       ref[mapping.path[mapping.path.length - 1]] = value;
+
+      console.log(`🎨 Updating store setting: ${setting}`);
+      console.log(`   Path: ${mapping.path.join('.')}`);
+      console.log(`   Old value: ${oldValue}`);
+      console.log(`   New value: ${value}`);
 
       const { error: updateError } = await tenantDb
         .from(mapping.table)
@@ -1661,6 +1676,8 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
         .eq('id', storeId);
 
       if (updateError) throw new Error(updateError.message);
+
+      console.log(`✅ Setting updated successfully: ${mapping.path.join('.')} = ${value}`);
     } else {
       // Direct column update
       const { error } = await tenantDb
@@ -1677,7 +1694,11 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
       value,
       table: mapping.table,
       column: mapping.column,
-      message: `Updated ${setting} to "${typeof value === 'string' ? value.substring(0, 50) : value}"`
+      path: mapping.path,
+      message: `Updated ${setting} to "${typeof value === 'string' ? value.substring(0, 50) : value}"`,
+      // Flag to tell frontend to refresh store settings
+      requiresRefresh: true,
+      refreshType: 'store_settings'
     };
   }
 

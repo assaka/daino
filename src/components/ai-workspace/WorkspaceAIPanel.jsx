@@ -1353,6 +1353,21 @@ const WorkspaceAIPanel = () => {
                   // Show success/fail message briefly
                   setThinkingText(`${event.tool}: ${event.success ? '✓' : '✗'} ${event.message || ''}`);
                   setTimeout(() => setActiveTool(null), 500);
+
+                  // Handle store settings refresh if required
+                  if (event.requiresRefresh && event.refreshType === 'store_settings') {
+                    console.log('🔄 Store setting updated, triggering refresh');
+                    // Use BroadcastChannel to notify all tabs/windows to refresh store settings
+                    try {
+                      const storeChannel = new BroadcastChannel('store_settings_update');
+                      storeChannel.postMessage({ type: 'clear_cache', storeId });
+                      storeChannel.close();
+                    } catch (e) {
+                      console.warn('BroadcastChannel not supported');
+                    }
+                    // Also dispatch a custom event for the current tab
+                    window.dispatchEvent(new CustomEvent('storeSettingsUpdated', { detail: { storeId } }));
+                  }
                   break;
 
                 case 'text':

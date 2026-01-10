@@ -374,7 +374,10 @@ async function streamAIWithTools({ messages, systemPrompt, tools, context, res, 
           sendEvent('tool_result', {
             tool: currentToolUse.name,
             success: result.success,
-            message: result.message || (result.success ? 'Success' : 'Failed')
+            message: result.message || (result.success ? 'Success' : 'Failed'),
+            // Pass through refresh flags for frontend to handle
+            requiresRefresh: result.requiresRefresh,
+            refreshType: result.refreshType
           });
 
           allResults.push({ tool: currentToolUse.name, result });

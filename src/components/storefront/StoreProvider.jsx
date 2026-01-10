@@ -231,9 +231,20 @@ export const StoreProvider = ({ children }) => {
             setTimeout(() => {
               window.location.reload();
             }, 1000);
+          } else {
+            // For admin pages, refetch the data without full reload
+            refetchBootstrap();
           }
         }
       };
+
+      // Listen for storeSettingsUpdated event from AI workspace
+      const handleStoreSettingsUpdated = () => {
+        console.log('🔄 Store settings updated via AI, refreshing...');
+        clearCache();
+        refetchBootstrap();
+      };
+      window.addEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
 
       // Translation updates
       const translationsChannel = new BroadcastChannel('translations_update');
@@ -253,11 +264,12 @@ export const StoreProvider = ({ children }) => {
       return () => {
         storeChannel.close();
         translationsChannel.close();
+        window.removeEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
       };
     } catch (e) {
       console.warn('BroadcastChannel not supported:', e);
     }
-  }, [shouldSkip]);
+  }, [shouldSkip, refetchBootstrap]);
 
   // Country selection handler
   const handleSetSelectedCountry = useCallback((country) => {
