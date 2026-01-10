@@ -287,123 +287,104 @@ router.get('/starters', async (req, res) => {
 
 /**
  * POST /api/plugins/starters/seed
- * Seed default starter templates (bol.com, reviews, wishlist, etc.)
+ * Seed plugin_starters table from public/example-plugins folder
+ * Syncs all example plugin JSON files to the master database
  */
 router.post('/starters/seed', async (req, res) => {
   try {
-    const tenantDb = await getTenantConnection(req);
+    const fs = require('fs').promises;
+    const path = require('path');
+    const { masterDbClient } = require('../database/masterConnection');
 
-    const starterTemplates = [
-      {
-        name: 'Bol.com Marketplace',
-        slug: 'bolcom-marketplace',
-        version: '1.0.0',
-        description: 'Sell your products on Bol.com - the largest marketplace in the Netherlands and Belgium',
-        author: 'DainoStore',
-        category: 'marketplace',
-        status: 'active',
-        type: 'integration',
-        is_starter_template: true,
-        starter_icon: '🛒',
-        starter_description: 'Sync products to Bol.com, import orders, manage inventory and shipments',
-        starter_prompt: 'Create a bol.com marketplace integration that syncs my products as offers, imports orders, updates stock levels, and sends shipment notifications',
-        starter_order: 1
-      },
-      {
-        name: 'Product Reviews',
-        slug: 'product-reviews',
-        version: '1.0.0',
-        description: 'Let customers leave star ratings and written reviews on products',
-        author: 'DainoStore',
-        category: 'commerce',
-        status: 'active',
-        type: 'feature',
-        is_starter_template: true,
-        starter_icon: '⭐',
-        starter_description: '5-star rating system with customer reviews and photo uploads',
-        starter_prompt: 'Create a product reviews plugin with star ratings, written reviews, and the ability to upload photos',
-        starter_order: 2
-      },
-      {
-        name: 'Customer Wishlist',
-        slug: 'customer-wishlist',
-        version: '1.0.0',
-        description: 'Let customers save their favorite products for later',
-        author: 'DainoStore',
-        category: 'commerce',
-        status: 'active',
-        type: 'feature',
-        is_starter_template: true,
-        starter_icon: '❤️',
-        starter_description: 'Save favorite products, share wishlists, get notifications on price drops',
-        starter_prompt: 'Create a wishlist plugin where customers can save products, share their wishlist, and get notified when items go on sale',
-        starter_order: 3
-      },
-      {
-        name: 'Loyalty Points',
-        slug: 'loyalty-points',
-        version: '1.0.0',
-        description: 'Reward customers with points for purchases',
-        author: 'DainoStore',
-        category: 'marketing',
-        status: 'active',
-        type: 'feature',
-        is_starter_template: true,
-        starter_icon: '🎁',
-        starter_description: 'Points for purchases, referrals, and reviews. Redeem for discounts',
-        starter_prompt: 'Create a loyalty points plugin that rewards customers with points for purchases and allows them to redeem points for discounts',
-        starter_order: 4
-      },
-      {
-        name: 'Amazon Marketplace',
-        slug: 'amazon-marketplace',
-        version: '1.0.0',
-        description: 'Sell your products on Amazon marketplace',
-        author: 'DainoStore',
-        category: 'marketplace',
-        status: 'active',
-        type: 'integration',
-        is_starter_template: true,
-        starter_icon: '📦',
-        starter_description: 'Sync products to Amazon, import orders, manage FBA inventory',
-        starter_prompt: 'Create an Amazon marketplace integration that syncs products, imports orders, and manages inventory',
-        starter_order: 5
-      }
-    ];
+    if (!masterDbClient) {
+      return res.status(500).json({
+        success: false,
+        error: 'Master database connection not available'
+      });
+    }
+
+    // Icon mapping for categories
+    const categoryIcons = {
+      'commerce': '🛒',
+      'marketing': '📣',
+      'analytics': '📊',
+      'compliance': '🔒',
+      'utility': '🔧',
+      'communication': '💬',
+      'display': '🎨',
+      'marketplace': '🏪'
+    };
+
+    // Read all example plugins from folder
+    const examplePluginsDir = path.join(__dirname, '../../../public/example-plugins');
+    const files = await fs.readdir(examplePluginsDir);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
 
     let created = 0;
-    let skipped = 0;
+    let updated = 0;
+    let failed = 0;
 
-    for (const template of starterTemplates) {
-      // Check if already exists
-      const { data: existing } = await tenantDb
-        .from('plugin_registry')
-        .select('id')
-        .eq('slug', template.slug)
-        .single();
+    for (let i = 0; i < jsonFiles.length; i++) {
+      try {
+        const filePath = path.join(examplePluginsDir, jsonFiles[i]);
+        const content = await fs.readFile(filePath, 'utf-8');
+        const pluginData = JSON.parse(content);
+        const plugin = pluginData.plugin || pluginData;
 
-      if (existing) {
-        skipped++;
-        continue;
-      }
+        const starterData = {
+          name: plugin.name,
+          slug: plugin.slug,
+          version: plugin.version || '1.0.0',
+          description: plugin.description,
+          category: plugin.category || 'utility',
+          type: plugin.type || 'feature',
+          icon: categoryIcons[plugin.category] || '🔌',
+          starter_description: plugin.manifest?.description || plugin.description,
+          starter_prompt: `Install the ${plugin.name} plugin`,
+          display_order: i + 1,
+          is_active: true,
+          author: plugin.author || 'DainoStore',
+          tags: plugin.tags || plugin.manifest?.tags || [],
+          difficulty: plugin.type === 'integration' ? 'advanced' : 'beginner',
+          plugin_structure: pluginData, // Store full plugin data
+          updated_at: new Date().toISOString()
+        };
 
-      // Insert new starter template
-      const { error } = await tenantDb
-        .from('plugin_registry')
-        .insert(template);
+        // Upsert into plugin_starters
+        const { error } = await masterDbClient
+          .from('plugin_starters')
+          .upsert(starterData, { onConflict: 'slug' });
 
-      if (error) {
-        console.warn(`Failed to seed ${template.slug}:`, error.message);
-      } else {
-        created++;
+        if (error) {
+          console.warn(`Failed to seed ${plugin.slug}:`, error.message);
+          failed++;
+        } else {
+          // Check if it was created or updated
+          const { data: existing } = await masterDbClient
+            .from('plugin_starters')
+            .select('created_at, updated_at')
+            .eq('slug', plugin.slug)
+            .single();
+
+          if (existing && existing.created_at === existing.updated_at) {
+            created++;
+          } else {
+            updated++;
+          }
+        }
+      } catch (parseErr) {
+        console.warn(`Failed to parse ${jsonFiles[i]}:`, parseErr.message);
+        failed++;
       }
     }
 
     res.json({
       success: true,
-      message: `Seeded ${created} starter templates, ${skipped} already existed`,
+      message: `Seeded ${created} new, updated ${updated}, ${failed} failed`,
+      total: jsonFiles.length,
       created,
-      skipped
+      updated,
+      failed
     });
   } catch (error) {
     console.error('Failed to seed starter templates:', error);
