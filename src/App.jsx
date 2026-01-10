@@ -537,6 +537,10 @@ function App() {
           <Route path="/signup" element={<Pages.MarketingSignup />} />
           <Route path="/get-started" element={<Pages.MarketingSignup />} />
 
+          {/* Legal pages */}
+          <Route path="/terms" element={<Pages.Terms />} />
+          <Route path="/privacy" element={<Pages.Privacy />} />
+
           {/* Blog routes */}
           <Route path="/blog" element={<Pages.Blog />} />
           <Route path="/blog/:slug" element={<Pages.Blog />} />
