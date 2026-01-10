@@ -12,16 +12,37 @@
     "framework": "react",
     "manifest": {
       "name": "Live Chat",
-      "tags": ["chat", "support", "customer-service", "widget", "messaging"],
+      "tags": [
+        "chat",
+        "support",
+        "customer-service",
+        "widget",
+        "messaging"
+      ],
       "author": "DainoStore",
       "version": "1.0.0",
       "category": "support",
       "description": "Provide real-time customer support through a chat widget",
-      "permissions": ["customers:read"]
+      "permissions": [
+        "customers:read"
+      ],
+      "adminNavigation": {
+        "enabled": true,
+        "label": "Live Chat",
+        "icon": "MessageCircle",
+        "route": "/admin/plugins/live-chat",
+        "order": 100
+      }
     },
-    "permissions": ["customers:read"],
+    "permissions": [
+      "customers:read"
+    ],
     "dependencies": [],
-    "tags": ["chat", "support", "messaging"]
+    "tags": [
+      "chat",
+      "support",
+      "messaging"
+    ]
   },
   "files": [],
   "events": [],
@@ -48,17 +69,57 @@
       "tableName": "chat_sessions",
       "schemaDefinition": {
         "columns": [
-          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
-          { "name": "session_id", "type": "VARCHAR(100)", "notNull": true },
-          { "name": "customer_id", "type": "UUID", "nullable": true },
-          { "name": "customer_email", "type": "VARCHAR(255)", "nullable": true },
-          { "name": "status", "type": "VARCHAR(20)", "default": "'active'" },
-          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" },
-          { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+          {
+            "name": "id",
+            "type": "UUID",
+            "default": "gen_random_uuid()",
+            "primaryKey": true
+          },
+          {
+            "name": "session_id",
+            "type": "VARCHAR(100)",
+            "notNull": true
+          },
+          {
+            "name": "customer_id",
+            "type": "UUID",
+            "nullable": true
+          },
+          {
+            "name": "customer_email",
+            "type": "VARCHAR(255)",
+            "nullable": true
+          },
+          {
+            "name": "status",
+            "type": "VARCHAR(20)",
+            "default": "'active'"
+          },
+          {
+            "name": "created_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()"
+          },
+          {
+            "name": "updated_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()"
+          }
         ],
         "indexes": [
-          { "name": "idx_chat_sessions_session_id", "columns": ["session_id"], "unique": true },
-          { "name": "idx_chat_sessions_status", "columns": ["status"] }
+          {
+            "name": "idx_chat_sessions_session_id",
+            "columns": [
+              "session_id"
+            ],
+            "unique": true
+          },
+          {
+            "name": "idx_chat_sessions_status",
+            "columns": [
+              "status"
+            ]
+          }
         ],
         "foreignKeys": []
       },
@@ -69,16 +130,52 @@
       "tableName": "chat_messages",
       "schemaDefinition": {
         "columns": [
-          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
-          { "name": "session_id", "type": "VARCHAR(100)", "notNull": true },
-          { "name": "from_type", "type": "VARCHAR(20)", "notNull": true },
-          { "name": "message", "type": "TEXT", "notNull": true },
-          { "name": "read_at", "type": "TIMESTAMP WITH TIME ZONE", "nullable": true },
-          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+          {
+            "name": "id",
+            "type": "UUID",
+            "default": "gen_random_uuid()",
+            "primaryKey": true
+          },
+          {
+            "name": "session_id",
+            "type": "VARCHAR(100)",
+            "notNull": true
+          },
+          {
+            "name": "from_type",
+            "type": "VARCHAR(20)",
+            "notNull": true
+          },
+          {
+            "name": "message",
+            "type": "TEXT",
+            "notNull": true
+          },
+          {
+            "name": "read_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "nullable": true
+          },
+          {
+            "name": "created_at",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "default": "NOW()"
+          }
         ],
         "indexes": [
-          { "name": "idx_chat_messages_session", "columns": ["session_id"] },
-          { "name": "idx_chat_messages_created", "columns": ["created_at"], "order": "DESC" }
+          {
+            "name": "idx_chat_messages_session",
+            "columns": [
+              "session_id"
+            ]
+          },
+          {
+            "name": "idx_chat_messages_created",
+            "columns": [
+              "created_at"
+            ],
+            "order": "DESC"
+          }
         ],
         "foreignKeys": []
       },
