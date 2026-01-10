@@ -678,6 +678,100 @@ function getDbSchemaKnowledge() {
         { name: 'domain', type: 'varchar', description: 'Custom domain' },
         { name: 'settings', type: 'jsonb', description: 'Theme and display settings', is_jsonb: true }
       ]
+    },
+    // Product Labels
+    {
+      table_name: 'product_labels',
+      description: 'Labels/badges displayed on products (Sale, New, Bestseller, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Label ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'name', type: 'varchar', description: 'Label name' },
+        { name: 'label_type', type: 'varchar', description: 'Type: text, image, or both' },
+        { name: 'text_content', type: 'varchar', description: 'Label text' },
+        { name: 'background_color', type: 'varchar', description: 'Background hex color' },
+        { name: 'text_color', type: 'varchar', description: 'Text hex color' },
+        { name: 'position', type: 'varchar', description: 'Position: top-left, top-right, bottom-left, bottom-right' },
+        { name: 'is_active', type: 'boolean', description: 'Enable/disable label' },
+        { name: 'priority', type: 'integer', description: 'Display priority (lower = higher)' }
+      ],
+      important_notes: 'Labels can be automatic (rule-based) or manual (assigned to products). Position controls where badge appears on product image.'
+    },
+    // Attributes
+    {
+      table_name: 'attributes',
+      description: 'Product attributes (Color, Size, Material, etc.) used for filtering and variants.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Attribute ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Attribute code (e.g., color, size)' },
+        { name: 'name', type: 'varchar', description: 'Display name' },
+        { name: 'type', type: 'varchar', description: 'Type: select, multiselect, text, boolean, number' },
+        { name: 'is_filterable', type: 'boolean', description: 'Show in category filters' },
+        { name: 'is_visible', type: 'boolean', description: 'Show on product page' },
+        { name: 'options', type: 'jsonb', description: 'For select/multiselect: array of {value, label}', is_jsonb: true }
+      ],
+      important_notes: 'Attributes define product characteristics. Options array contains possible values for select types.'
+    },
+    // SEO Templates
+    {
+      table_name: 'seo_templates',
+      description: 'SEO meta templates for products, categories, and pages.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Template ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'entity_type', type: 'varchar', description: 'Type: product, category, page' },
+        { name: 'meta_title_template', type: 'text', description: 'Title template with variables like {{product.name}}' },
+        { name: 'meta_description_template', type: 'text', description: 'Description template' },
+        { name: 'is_active', type: 'boolean', description: 'Enable template' }
+      ],
+      important_notes: 'Templates support variables: {{product.name}}, {{product.price}}, {{category.name}}, {{store.name}}'
+    },
+    // Custom Options
+    {
+      table_name: 'custom_options',
+      description: 'Product customization options (engraving, gift wrap, custom text).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Option ID' },
+        { name: 'product_id', type: 'uuid', description: 'Product ID' },
+        { name: 'name', type: 'varchar', description: 'Option name' },
+        { name: 'type', type: 'varchar', description: 'Type: text, textarea, select, checkbox, file' },
+        { name: 'is_required', type: 'boolean', description: 'Required option' },
+        { name: 'price_adjustment', type: 'numeric', description: 'Additional price' },
+        { name: 'options', type: 'jsonb', description: 'For select: array of choices', is_jsonb: true }
+      ],
+      important_notes: 'Custom options add product personalization. Price adjustment adds to product price.'
+    },
+    // Product Tabs
+    {
+      table_name: 'product_tabs',
+      description: 'Custom tabs on product page (Details, Specifications, Reviews, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Tab ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'name', type: 'varchar', description: 'Tab name' },
+        { name: 'content_type', type: 'varchar', description: 'Type: attribute, html, cms_block' },
+        { name: 'content', type: 'text', description: 'Tab content or CMS block ID' },
+        { name: 'attribute_code', type: 'varchar', description: 'For attribute type: which attribute to display' },
+        { name: 'position', type: 'integer', description: 'Tab order' },
+        { name: 'is_active', type: 'boolean', description: 'Show tab' }
+      ],
+      important_notes: 'Tabs can show HTML content, CMS blocks, or product attributes.'
+    },
+    // Cookie Consent Settings
+    {
+      table_name: 'cookie_consent_settings',
+      description: 'GDPR cookie consent banner configuration.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Settings ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'enabled', type: 'boolean', description: 'Enable cookie consent' },
+        { name: 'gdpr_mode', type: 'boolean', description: 'Strict GDPR mode (opt-in)' },
+        { name: 'banner_position', type: 'varchar', description: 'Position: bottom, top, bottom-left, bottom-right' },
+        { name: 'accept_button_bg_color', type: 'varchar', description: 'Accept button background color' },
+        { name: 'consent_expiry_days', type: 'integer', description: 'Days until consent expires' }
+      ],
+      important_notes: 'GDPR mode requires explicit opt-in. Banner text is in translations table.'
     }
   ];
 }
@@ -732,6 +826,153 @@ function getApiRouteKnowledge() {
       endpoint: 'POST /api/products',
       description: 'Create new product',
       parameters: '{ sku, price, translations: { en: { name, description } } }'
+    },
+    // Product Labels API
+    {
+      name: 'List Product Labels',
+      endpoint: 'GET /api/product-labels',
+      description: 'Get all product labels for the store',
+      response: 'Array of label objects with id, name, position, is_active, colors'
+    },
+    {
+      name: 'Create Product Label',
+      endpoint: 'POST /api/product-labels',
+      description: 'Create a new product label/badge',
+      parameters: '{ name, text_content, background_color, text_color, position, is_active }',
+      usage: 'Use when user says "create a sale label" or "add new badge"'
+    },
+    {
+      name: 'Update Product Label',
+      endpoint: 'PUT /api/product-labels/:id',
+      description: 'Update label properties',
+      parameters: '{ name, text_content, background_color, text_color, position, is_active }',
+      usage: 'Use when user says "change label position" or "disable label"'
+    },
+    {
+      name: 'Delete Product Label',
+      endpoint: 'DELETE /api/product-labels/:id',
+      description: 'Delete a product label',
+      usage: 'Use when user says "delete the sale label" or "remove badge"'
+    },
+    // Attributes API
+    {
+      name: 'List Attributes',
+      endpoint: 'GET /api/attributes',
+      description: 'Get all product attributes',
+      response: 'Array of attribute objects with code, name, type, options'
+    },
+    {
+      name: 'Create Attribute',
+      endpoint: 'POST /api/attributes',
+      description: 'Create a new product attribute',
+      parameters: '{ code, name, type, is_filterable, is_visible, options: [{value, label}] }',
+      usage: 'Use when user says "create color attribute" or "add size attribute"'
+    },
+    {
+      name: 'Update Attribute',
+      endpoint: 'PUT /api/attributes/:id',
+      description: 'Update attribute properties',
+      parameters: '{ name, is_filterable, is_visible, options }',
+      usage: 'Use when user says "make attribute filterable" or "add option to attribute"'
+    },
+    // SEO Templates API
+    {
+      name: 'List SEO Templates',
+      endpoint: 'GET /api/seo-templates',
+      description: 'Get SEO templates',
+      response: 'Array of templates with entity_type, meta_title_template, meta_description_template'
+    },
+    {
+      name: 'Create SEO Template',
+      endpoint: 'POST /api/seo-templates',
+      description: 'Create a new SEO template',
+      parameters: '{ entity_type: "product"|"category"|"page", meta_title_template, meta_description_template }',
+      usage: 'Use when user says "create SEO template for products" or "add meta template"'
+    },
+    {
+      name: 'Update SEO Template',
+      endpoint: 'PUT /api/seo-templates/:id',
+      description: 'Update SEO template',
+      parameters: '{ meta_title_template, meta_description_template, is_active }',
+      usage: 'Use when user says "update product SEO template"'
+    },
+    // Custom Options API
+    {
+      name: 'List Custom Options',
+      endpoint: 'GET /api/custom-options?product_id=:id',
+      description: 'Get custom options for a product',
+      response: 'Array of options with name, type, is_required, price_adjustment'
+    },
+    {
+      name: 'Create Custom Option',
+      endpoint: 'POST /api/custom-options',
+      description: 'Add custom option to a product',
+      parameters: '{ product_id, name, type: "text"|"select"|"checkbox", is_required, price_adjustment, options }',
+      usage: 'Use when user says "add engraving option" or "add gift wrap option"'
+    },
+    // Product Tabs API
+    {
+      name: 'List Product Tabs',
+      endpoint: 'GET /api/product-tabs',
+      description: 'Get product tabs',
+      response: 'Array of tabs with name, content_type, position, is_active'
+    },
+    {
+      name: 'Create Product Tab',
+      endpoint: 'POST /api/product-tabs',
+      description: 'Create a new product tab',
+      parameters: '{ name, content_type: "html"|"attribute"|"cms_block", content, position, is_active }',
+      usage: 'Use when user says "add specifications tab" or "create details tab"'
+    },
+    {
+      name: 'Update Product Tab',
+      endpoint: 'PUT /api/product-tabs/:id',
+      description: 'Update product tab',
+      parameters: '{ name, content, position, is_active }',
+      usage: 'Use when user says "reorder tabs" or "disable tab"'
+    },
+    // Cookie Consent API
+    {
+      name: 'Get Cookie Consent Settings',
+      endpoint: 'GET /api/cookie-consent-settings',
+      description: 'Get cookie consent configuration',
+      response: 'Settings object with enabled, gdpr_mode, banner_position, colors'
+    },
+    {
+      name: 'Update Cookie Consent',
+      endpoint: 'PUT /api/cookie-consent-settings/:id',
+      description: 'Update cookie consent settings',
+      parameters: '{ enabled, gdpr_mode, banner_position, accept_button_bg_color, consent_expiry_days }',
+      usage: 'Use when user says "enable GDPR mode" or "change cookie banner position"'
+    },
+    // Categories API
+    {
+      name: 'Create Category',
+      endpoint: 'POST /api/categories',
+      description: 'Create a new category',
+      parameters: '{ parent_id, code, translations: { en: { name, description } }, position }',
+      usage: 'Use when user says "create category" or "add subcategory"'
+    },
+    {
+      name: 'Update Category',
+      endpoint: 'PUT /api/categories/:id',
+      description: 'Update category',
+      parameters: '{ translations, parent_id, position, is_active }',
+      usage: 'Use when user says "rename category" or "move category"'
+    },
+    // Orders API
+    {
+      name: 'List Orders',
+      endpoint: 'GET /api/orders',
+      description: 'Get orders with filtering',
+      parameters: 'status, date_from, date_to, page, limit'
+    },
+    {
+      name: 'Update Order Status',
+      endpoint: 'PUT /api/orders/:id/status',
+      description: 'Update order status',
+      parameters: '{ status: "pending"|"processing"|"shipped"|"delivered"|"cancelled" }',
+      usage: 'Use when user says "mark order as shipped" or "cancel order"'
     }
   ];
 }
@@ -1277,6 +1518,71 @@ function getStoreSettingsKnowledge() {
       default_value: 'Inter',
       description: 'Main font family for the entire store.',
       usage: 'Use when user says "change font" or "use Arial font"'
+    },
+    // Additional Button Colors
+    {
+      name: 'Checkout Button Color',
+      setting_path: 'settings.theme.checkout_button_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#000000',
+      description: 'Color of the Checkout button in cart.',
+      usage: 'Use when user says "checkout button color" or "change checkout button"'
+    },
+    {
+      name: 'View Cart Button Color',
+      setting_path: 'settings.theme.view_cart_button_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#000000',
+      description: 'Color of the View Cart button.',
+      usage: 'Use when user says "view cart button color"'
+    },
+    {
+      name: 'Place Order Button Color',
+      setting_path: 'settings.theme.place_order_button_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#000000',
+      description: 'Color of the Place Order button on checkout.',
+      usage: 'Use when user says "place order button color" or "order button"'
+    },
+    {
+      name: 'Secondary Button Color',
+      setting_path: 'settings.theme.secondary_button_color',
+      table: 'stores',
+      type: 'string',
+      default_value: '#6b7280',
+      description: 'Color of secondary/outline buttons.',
+      usage: 'Use when user says "secondary button color"'
+    },
+    // Product Tabs Styling
+    {
+      name: 'Product Tabs Active Background',
+      setting_path: 'settings.theme.product_tabs_active_bg',
+      table: 'stores',
+      type: 'string',
+      default_value: '#000000',
+      description: 'Background color of active product tab.',
+      usage: 'Use when user says "active tab color" or "selected tab background"'
+    },
+    {
+      name: 'Product Tabs Inactive Background',
+      setting_path: 'settings.theme.product_tabs_inactive_bg',
+      table: 'stores',
+      type: 'string',
+      default_value: '#f3f4f6',
+      description: 'Background color of inactive product tabs.',
+      usage: 'Use when user says "inactive tab color" or "unselected tab background"'
+    },
+    {
+      name: 'Product Tabs Border Radius',
+      setting_path: 'settings.theme.product_tabs_border_radius',
+      table: 'stores',
+      type: 'string',
+      default_value: '8px',
+      description: 'Border radius of product tabs.',
+      usage: 'Use when user says "tab corners" or "rounded tabs"'
     }
   ];
 }
