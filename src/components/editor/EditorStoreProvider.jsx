@@ -76,7 +76,6 @@ export function EditorStoreProvider({ children }) {
       const channel = new BroadcastChannel('store_settings_update');
       channel.onmessage = async (event) => {
         if (event.data.type === 'clear_cache' || event.data.type === 'settings_updated') {
-          console.log('[EditorStoreProvider] Settings updated, invalidating cache and refetching bootstrap');
           // Invalidate the bootstrap query cache to force fresh fetch (bypasses 15-min staleTime)
           await queryClient.invalidateQueries({ queryKey: ['bootstrap'] });
           refetchBootstrap();

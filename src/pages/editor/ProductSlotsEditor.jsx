@@ -80,7 +80,6 @@ export default function ProductSlotsEditor({
       if (!storeId) return;
 
       try {
-        console.log('[ProductSlotsEditor] Fetching store settings, trigger:', configurationRefreshTrigger);
         const response = await apiClient.get(`stores/${storeId}/settings`);
         // API returns { success: true, data: {...store row with settings...} }
         const settings = response?.data?.settings || {};

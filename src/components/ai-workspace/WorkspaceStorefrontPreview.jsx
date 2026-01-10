@@ -24,7 +24,6 @@ const WorkspaceStorefrontPreview = () => {
   // Refresh preview when trigger changes (e.g., after AI styling changes)
   useEffect(() => {
     if (previewRefreshTrigger > 0) {
-      console.log('🔄 Refreshing storefront preview after AI update, trigger:', previewRefreshTrigger);
       const newKey = Date.now();
       setRefreshKey(newKey);
       setIsLoading(true);
@@ -43,12 +42,11 @@ const WorkspaceStorefrontPreview = () => {
           if (currentSrc) {
             const newSrc = currentSrc.replace(/_t=\d+/, `_t=${newKey}`);
             if (newSrc !== currentSrc) {
-              console.log('🔄 Forcing iframe src reload:', newSrc.substring(0, 50) + '...');
               iframeRef.current.src = newSrc;
             }
           }
         } catch (e) {
-          console.warn('Could not refresh iframe:', e);
+          // Ignore cross-origin errors
         }
       }
     }
