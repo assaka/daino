@@ -53,7 +53,8 @@ export default function ProductSlotsEditor({
   const storeId = getSelectedStoreId();
 
   // Get selectPage from AIWorkspace to enable "Edit Header" functionality
-  const { selectPage } = useAIWorkspace();
+  // configurationRefreshTrigger is used to re-fetch store settings when AI updates them
+  const { selectPage, configurationRefreshTrigger } = useAIWorkspace();
 
   // Fetch categories for editor
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId });
@@ -73,11 +74,13 @@ export default function ProductSlotsEditor({
   const [storeSettings, setStoreSettings] = useState({});
 
   // Fetch store settings from tenant DB for editor preview
+  // Re-fetch when configurationRefreshTrigger changes (AI updated settings)
   useEffect(() => {
     const fetchStoreSettings = async () => {
       if (!storeId) return;
 
       try {
+        console.log('[ProductSlotsEditor] Fetching store settings, trigger:', configurationRefreshTrigger);
         const response = await apiClient.get(`stores/${storeId}/settings`);
         // API returns { success: true, data: {...store row with settings...} }
         const settings = response?.data?.settings || {};
@@ -88,7 +91,7 @@ export default function ProductSlotsEditor({
     };
 
     fetchStoreSettings();
-  }, [storeId]);
+  }, [storeId, configurationRefreshTrigger]);
 
   // Fetch all products for the selector
   useEffect(() => {
