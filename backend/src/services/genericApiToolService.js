@@ -2258,13 +2258,39 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
 
   /**
    * Update styling/theme - WORKS DIRECTLY WITH DATABASE
+   * Smart detection: If a slot uses {{settings.theme.*}} template variables,
+   * this will update the store setting instead of hardcoding styles in slot config.
    */
   async _executeUpdateStyling({ target, styles, pageType }, context) {
     const { storeId } = context;
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Try to find the slot and check if it uses theme template variables
+    const targetPage = pageType || 'product';
+    const themeSettingUpdates = await this._detectThemeSettings(target, styles, targetPage, storeId, tenantDb);
+
+    if (themeSettingUpdates.length > 0) {
+      // This slot uses theme settings - update them instead of hardcoding
+      const results = [];
+      for (const update of themeSettingUpdates) {
+        const result = await this._executeUpdateStoreSetting({ setting: update.setting, value: update.value }, context);
+        results.push(result);
+      }
+
+      const allSuccess = results.every(r => r.success);
+      return {
+        success: allSuccess,
+        target,
+        styles,
+        message: `Updated ${target} theme settings: ${themeSettingUpdates.map(u => u.setting).join(', ')}`,
+        requiresRefresh: true,
+        refreshType: 'store_settings',
+        details: results
+      };
+    }
+
+    // No theme settings found - fall back to direct slot styling
     // Get current configuration for the page type
-    const targetPage = pageType || 'product'; // Default to product page
 
     const { data: current, error: fetchError } = await tenantDb
       .from('slot_configurations')
@@ -2357,6 +2383,93 @@ IMPORTANT: This modifies the slot_configurations table directly. Changes are sav
     }
 
     return null;
+  }
+
+  /**
+   * Helper: Detect if a slot uses theme template variables and extract setting names
+   * This makes the system AI-driven by reading the actual slot configuration
+   * to discover which store settings control its appearance.
+   */
+  async _detectThemeSettings(target, styles, pageType, storeId, tenantDb) {
+    const updates = [];
+    const normalizedTarget = target?.toLowerCase().replace(/[\s_]+/g, '-').replace(/button$/, '-button');
+
+    // Map CSS properties to template variable property names
+    const cssToTemplateMap = {
+      'backgroundColor': 'backgroundColor',
+      'background-color': 'backgroundColor',
+      'background': 'backgroundColor',
+      'color': 'color',
+      'borderRadius': 'borderRadius',
+      'border-radius': 'borderRadius'
+    };
+
+    try {
+      // First check the default slot configs (these define the template variables)
+      const slotConfigs = {
+        'product': require('../configs/slot/product-config'),
+        'category': require('../configs/slot/category-config')
+      };
+
+      // Search for the slot in default configs
+      for (const [configPage, config] of Object.entries(slotConfigs)) {
+        const slots = config.slots || {};
+
+        // Find matching slot by ID or partial match
+        for (const [slotId, slotDef] of Object.entries(slots)) {
+          const slotIdNormalized = slotId.toLowerCase().replace(/[\s_]+/g, '-');
+
+          // Check if this slot matches the target
+          if (slotIdNormalized.includes(normalizedTarget) ||
+              normalizedTarget.includes(slotIdNormalized) ||
+              slotDef.metadata?.displayName?.toLowerCase().includes(target.toLowerCase())) {
+
+            // Check each style property for template variables
+            if (slotDef.styles) {
+              for (const [cssKey, cssValue] of Object.entries(styles)) {
+                const templateProp = cssToTemplateMap[cssKey];
+                if (templateProp && slotDef.styles[templateProp]) {
+                  // Extract setting name from template variable like {{settings.theme.add_to_cart_button_bg_color}}
+                  const templateValue = slotDef.styles[templateProp];
+                  const match = templateValue.match(/\{\{settings\.theme\.([^}]+)\}\}/);
+                  if (match) {
+                    updates.push({
+                      setting: match[1], // e.g., 'add_to_cart_button_bg_color'
+                      value: cssValue,
+                      source: `${configPage}:${slotId}`
+                    });
+                  }
+                }
+              }
+            }
+
+            // Also check metadata for hover colors etc.
+            if (slotDef.metadata) {
+              for (const [metaKey, metaValue] of Object.entries(slotDef.metadata)) {
+                if (typeof metaValue === 'string' && metaValue.includes('{{settings.theme.')) {
+                  const match = metaValue.match(/\{\{settings\.theme\.([^}]+)\}\}/);
+                  if (match && styles[metaKey]) {
+                    updates.push({
+                      setting: match[1],
+                      value: styles[metaKey],
+                      source: `${configPage}:${slotId}:metadata`
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (updates.length > 0) {
+        console.log(`🔍 Detected theme settings for "${target}":`, updates.map(u => u.setting).join(', '));
+      }
+    } catch (error) {
+      console.error('Error detecting theme settings:', error.message);
+    }
+
+    return updates;
   }
 
   /**
