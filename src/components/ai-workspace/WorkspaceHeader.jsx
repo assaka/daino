@@ -647,76 +647,411 @@ const WorkspaceHeader = () => {
 
       {/* Plugin How-To Dialog */}
       <Dialog open={showPluginHowTo} onOpenChange={setShowPluginHowTo}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-blue-600" />
-              How to Create Plugins
+              Plugin Development Guide
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 text-sm">
-            {/* Using AI */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Using AI Chat</h3>
-              <p className="text-blue-800 text-xs mb-2">
-                Tell the AI what you want to build:
-              </p>
-              <div className="bg-white rounded p-2 text-xs font-mono text-gray-700">
-                "Create a chat widget with an admin dashboard to manage conversations"
-              </div>
-              <p className="text-blue-700 text-xs mt-2">
-                The AI will generate widgets, admin pages, controllers, and migrations.
-              </p>
-            </div>
+          <div className="space-y-6 text-sm">
 
-            {/* Components */}
+            {/* Getting Started */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Plugin Components</h3>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="border rounded p-2">
-                  <span className="font-medium text-blue-700">Widgets</span>
-                  <span className="text-gray-600 block">Storefront components (use React.createElement)</span>
-                </div>
-                <div className="border rounded p-2">
-                  <span className="font-medium text-purple-700">Admin Pages</span>
-                  <span className="text-gray-600 block">Dashboard UI (can use JSX)</span>
-                </div>
-                <div className="border rounded p-2">
-                  <span className="font-medium text-green-700">Controllers</span>
-                  <span className="text-gray-600 block">API endpoints at /exec/{'{path}'}</span>
-                </div>
-                <div className="border rounded p-2">
-                  <span className="font-medium text-orange-700">Migrations</span>
-                  <span className="text-gray-600 block">Database tables (run on install)</span>
-                </div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Getting Started</h3>
+              <p className="text-gray-600 mb-3">
+                Use the AI chat on the left to create plugin components. Tell it what you want to build:
+              </p>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100">
+                "Create a live chat plugin with a floating button on the storefront and an admin dashboard to manage conversations"
+              </div>
+              <p className="text-gray-500 text-xs mt-2">
+                The AI will generate the necessary widgets, admin pages, controllers, and migrations.
+              </p>
+            </div>
+
+            {/* File Types Overview */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Plugin File Types</h3>
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border p-2 text-left">File Type</th>
+                    <th className="border p-2 text-left">Purpose</th>
+                    <th className="border p-2 text-left">Runs On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border p-2 font-medium text-blue-700">Widgets</td>
+                    <td className="border p-2">UI components on storefront (buttons, modals, banners)</td>
+                    <td className="border p-2">Browser (customer-facing)</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2 font-medium text-purple-700">Admin Pages</td>
+                    <td className="border p-2">Dashboard pages for store owners</td>
+                    <td className="border p-2">Browser (admin panel)</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2 font-medium text-green-700">Controllers</td>
+                    <td className="border p-2">API endpoints that handle requests</td>
+                    <td className="border p-2">Server (backend)</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2 font-medium text-orange-700">Migrations</td>
+                    <td className="border p-2">Database table creation</td>
+                    <td className="border p-2">Server (on install)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* How They Work Together */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">How Components Interact</h3>
+              <div className="bg-gray-50 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                <pre className="text-gray-700">{`STOREFRONT                    SERVER                      ADMIN PANEL
+┌──────────────┐              ┌──────────────┐             ┌──────────────┐
+│   Widget     │──fetch()───▶│  Controller  │◀──fetch()───│  Admin Page  │
+│              │              │              │             │              │
+│ Chat button  │              │ getMessages  │             │  Dashboard   │
+│ Send message │              │ sendMessage  │             │  View chats  │
+└──────────────┘              └──────┬───────┘             └──────────────┘
+                                     │
+                                     ▼
+                              ┌──────────────┐
+                              │   Database   │
+                              │  (Supabase)  │
+                              │              │
+                              │ Tables from  │
+                              │  Migrations  │
+                              └──────────────┘`}</pre>
               </div>
             </div>
 
-            {/* Key Points */}
-            <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Key Points</h3>
-              <ul className="text-gray-700 text-xs space-y-1">
-                <li>• <strong>Widget categories</strong>: Use <code className="bg-gray-100 px-1 rounded">support</code>, <code className="bg-gray-100 px-1 rounded">floating</code>, or <code className="bg-gray-100 px-1 rounded">chat</code> for global widgets</li>
-                <li>• <strong>Store ID header</strong>: Always include <code className="bg-gray-100 px-1 rounded">x-store-id</code> in API calls</li>
-                <li>• <strong>Database access</strong>: Controllers receive <code className="bg-gray-100 px-1 rounded">{'{ supabase }'}</code> for queries</li>
-                <li>• <strong>API endpoint</strong>: <code className="bg-gray-100 px-1 rounded">/api/plugins/{'{slug}'}/exec/{'{path}'}</code></li>
+            {/* Widgets Section */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Widgets</h3>
+              <p className="text-gray-600 mb-2">
+                Widgets are React components that display on the storefront. They use <code className="bg-gray-100 px-1 rounded text-xs">React.createElement()</code> syntax (not JSX).
+              </p>
+
+              <h4 className="font-medium text-gray-800 mt-4 mb-2">Widget Categories</h4>
+              <table className="w-full text-xs border-collapse mb-4">
+                <tbody>
+                  <tr>
+                    <td className="border p-2"><code className="bg-blue-100 text-blue-700 px-1 rounded">support</code> <code className="bg-blue-100 text-blue-700 px-1 rounded">floating</code> <code className="bg-blue-100 text-blue-700 px-1 rounded">chat</code> <code className="bg-blue-100 text-blue-700 px-1 rounded">global</code></td>
+                    <td className="border p-2">Shows on <strong>ALL</strong> storefront pages</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2"><code className="bg-gray-100 text-gray-700 px-1 rounded">product</code></td>
+                    <td className="border p-2">Shows on product pages only</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2"><code className="bg-gray-100 text-gray-700 px-1 rounded">cart</code></td>
+                    <td className="border p-2">Shows on cart page only</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h4 className="font-medium text-gray-800 mb-2">Widget Code Example</h4>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                <pre>{`function MyWidget({ config = {} }) {
+  const [open, setOpen] = React.useState(false);
+
+  // REQUIRED: Include store ID for tenant isolation
+  const getHeaders = () => {
+    const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+    return storeId ? { 'x-store-id': storeId } : {};
+  };
+
+  // Call your plugin's controller
+  const sendMessage = async (text) => {
+    await fetch('/api/plugins/my-plugin/exec/messages', {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+  };
+
+  // Use React.createElement, NOT JSX
+  return React.createElement('button', {
+    onClick: () => setOpen(!open),
+    style: { position: 'fixed', bottom: 20, right: 20 }
+  }, '💬 Chat');
+}`}</pre>
+              </div>
+            </div>
+
+            {/* Admin Pages Section */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Admin Pages</h3>
+              <p className="text-gray-600 mb-2">
+                Admin pages are dashboard UI for store owners. They <strong>can use JSX</strong> syntax and import UI components.
+              </p>
+
+              <h4 className="font-medium text-gray-800 mt-4 mb-2">Available Imports</h4>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto mb-4">
+                <pre>{`// UI Components
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+
+// Icons
+import { MessageCircle, Send, Settings, Check, X } from 'lucide-react';`}</pre>
+              </div>
+
+              <h4 className="font-medium text-gray-800 mb-2">Admin Page Code Example</h4>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                <pre>{`import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export default function Dashboard() {
+  const [data, setData] = useState([]);
+
+  const getHeaders = () => {
+    const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+    return storeId ? { 'x-store-id': storeId } : {};
+  };
+
+  useEffect(() => {
+    fetch('/api/plugins/my-plugin/exec/items', { headers: getHeaders() })
+      .then(r => r.json())
+      .then(result => setData(result.items));
+  }, []);
+
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader><CardTitle>Dashboard</CardTitle></CardHeader>
+        <CardContent>
+          {data.map(item => <div key={item.id}>{item.name}</div>)}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}`}</pre>
+              </div>
+            </div>
+
+            {/* Controllers Section */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Controllers</h3>
+              <p className="text-gray-600 mb-2">
+                Controllers are API endpoints that run on the server. They receive <code className="bg-gray-100 px-1 rounded text-xs">{'{ supabase }'}</code> for database access.
+              </p>
+
+              <h4 className="font-medium text-gray-800 mt-4 mb-2">Endpoint URL Pattern</h4>
+              <div className="bg-gray-100 rounded p-2 font-mono text-xs mb-4">
+                /api/plugins/<span className="text-blue-600">{'{plugin-slug}'}</span>/exec/<span className="text-green-600">{'{controller-path}'}</span>
+              </div>
+
+              <h4 className="font-medium text-gray-800 mb-2">Controller Code Example</h4>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                <pre>{`async function getMessages(req, res, { supabase }) {
+  // req.query  - URL query params (?status=active)
+  // req.body   - POST request body
+  // req.params - URL path params (:id)
+
+  try {
+    const { data: messages, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return res.json({ success: true, messages });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+async function sendMessage(req, res, { supabase }) {
+  const { message, session_id } = req.body;
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert({ message, session_id })
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  return res.json({ success: true, message: data });
+}`}</pre>
+              </div>
+
+              <h4 className="font-medium text-gray-800 mt-4 mb-2">Supabase Query Reference</h4>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                <pre>{`// SELECT all
+const { data } = await supabase.from('table').select('*');
+
+// SELECT with filter
+const { data } = await supabase.from('table').select('*').eq('status', 'active');
+
+// INSERT
+const { data } = await supabase.from('table').insert({ name: 'Test' }).select().single();
+
+// UPDATE
+await supabase.from('table').update({ name: 'New' }).eq('id', 123);
+
+// DELETE
+await supabase.from('table').delete().eq('id', 123);
+
+// COUNT
+const { count } = await supabase.from('table').select('*', { count: 'exact', head: true });`}</pre>
+              </div>
+            </div>
+
+            {/* Migrations Section */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Migrations</h3>
+              <p className="text-gray-600 mb-2">
+                Migrations create database tables for your plugin. They run automatically on plugin install, or manually via the "Run Migration" button.
+              </p>
+
+              <h4 className="font-medium text-gray-800 mt-4 mb-2">When Migrations Run</h4>
+              <ul className="text-gray-700 text-xs space-y-1 mb-4">
+                <li>• <strong>On Install</strong>: When a user installs your plugin</li>
+                <li>• <strong>Manually</strong>: Click the database icon in the file tree, then "Run Migration"</li>
               </ul>
+
+              <h4 className="font-medium text-gray-800 mb-2">Migration Status</h4>
+              <div className="flex gap-4 text-xs mb-4">
+                <span><span className="text-green-600">✅</span> Applied - Migration ran successfully</span>
+                <span><span className="text-orange-500">⏳</span> Pending - Needs to be run</span>
+                <span><span className="text-red-500">❌</span> Failed - Error occurred</span>
+              </div>
+
+              <h4 className="font-medium text-gray-800 mb-2">Migration Code Example</h4>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                <pre>{`-- Always use IF NOT EXISTS to prevent errors on re-run
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id VARCHAR(100) NOT NULL UNIQUE,
+  customer_email VARCHAR(255),
+  status VARCHAR(20) DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  from_type VARCHAR(20) NOT NULL,  -- 'customer' or 'agent'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);`}</pre>
+              </div>
+
+              <h4 className="font-medium text-gray-800 mt-4 mb-2">Common Column Types</h4>
+              <table className="w-full text-xs border-collapse">
+                <tbody>
+                  <tr><td className="border p-1"><code>UUID</code></td><td className="border p-1">Primary keys, IDs</td></tr>
+                  <tr><td className="border p-1"><code>VARCHAR(n)</code></td><td className="border p-1">Short text (names, emails)</td></tr>
+                  <tr><td className="border p-1"><code>TEXT</code></td><td className="border p-1">Long text (messages)</td></tr>
+                  <tr><td className="border p-1"><code>JSONB</code></td><td className="border p-1">JSON data (configs)</td></tr>
+                  <tr><td className="border p-1"><code>BOOLEAN</code></td><td className="border p-1">True/false flags</td></tr>
+                  <tr><td className="border p-1"><code>TIMESTAMP WITH TIME ZONE</code></td><td className="border p-1">Dates/times</td></tr>
+                </tbody>
+              </table>
             </div>
 
-            {/* Common AI Requests */}
-            <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Example AI Requests</h3>
-              <div className="space-y-2 text-xs">
-                <div className="bg-gray-50 rounded p-2 font-mono">"Add a widget that shows on product pages"</div>
-                <div className="bg-gray-50 rounded p-2 font-mono">"Create an admin page to manage settings"</div>
-                <div className="bg-gray-50 rounded p-2 font-mono">"Add a controller to save user data"</div>
-                <div className="bg-gray-50 rounded p-2 font-mono">"Fix the 401 error on my API calls"</div>
+            {/* Store ID Header */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Store ID Header (Required)</h3>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                <p className="text-yellow-800 text-xs">
+                  <strong>Every API call must include the store ID</strong> for multi-tenant isolation. Without it, you'll get 401 errors.
+                </p>
+              </div>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                <pre>{`const getHeaders = () => {
+  const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+  return storeId ? { 'x-store-id': storeId } : {};
+};
+
+// GET request
+fetch('/api/plugins/my-plugin/exec/data', { headers: getHeaders() });
+
+// POST request
+fetch('/api/plugins/my-plugin/exec/data', {
+  method: 'POST',
+  headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'Test' })
+});`}</pre>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            {/* Example AI Requests */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Example AI Requests</h3>
+              <div className="space-y-2">
+                <div className="bg-gray-50 rounded p-2 text-xs">
+                  <span className="text-gray-500">Create a complete plugin:</span>
+                  <div className="font-mono mt-1">"Create a product reviews plugin with star ratings, an admin page to moderate, and database tables"</div>
+                </div>
+                <div className="bg-gray-50 rounded p-2 text-xs">
+                  <span className="text-gray-500">Add a widget:</span>
+                  <div className="font-mono mt-1">"Add a floating notification widget that shows on all pages"</div>
+                </div>
+                <div className="bg-gray-50 rounded p-2 text-xs">
+                  <span className="text-gray-500">Add a controller:</span>
+                  <div className="font-mono mt-1">"Add a controller to save and retrieve user preferences"</div>
+                </div>
+                <div className="bg-gray-50 rounded p-2 text-xs">
+                  <span className="text-gray-500">Fix an error:</span>
+                  <div className="font-mono mt-1">"I'm getting a 401 error when calling the API from my widget"</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Troubleshooting */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 text-base border-b pb-2">Troubleshooting</h3>
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border p-2 text-left">Problem</th>
+                    <th className="border p-2 text-left">Cause</th>
+                    <th className="border p-2 text-left">Solution</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border p-2">Widget not showing</td>
+                    <td className="border p-2">Wrong category</td>
+                    <td className="border p-2">Set to <code className="bg-gray-100 px-1 rounded">support</code>, <code className="bg-gray-100 px-1 rounded">floating</code>, or <code className="bg-gray-100 px-1 rounded">chat</code></td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2">401 error on API</td>
+                    <td className="border p-2">Missing store ID</td>
+                    <td className="border p-2">Add <code className="bg-gray-100 px-1 rounded">x-store-id</code> header</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2">Controller error</td>
+                    <td className="border p-2">Using Sequelize</td>
+                    <td className="border p-2">Use <code className="bg-gray-100 px-1 rounded">{'{ supabase }'}</code> not sequelize</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2">Admin page 404</td>
+                    <td className="border p-2">Route mismatch</td>
+                    <td className="border p-2">Match adminNavigation.route to adminPages[].route</td>
+                  </tr>
+                  <tr>
+                    <td className="border p-2">Widget JSX error</td>
+                    <td className="border p-2">Using JSX syntax</td>
+                    <td className="border p-2">Use <code className="bg-gray-100 px-1 rounded">React.createElement()</code> in widgets</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t">
               <Button onClick={() => setShowPluginHowTo(false)}>
-                Got it!
+                Close
               </Button>
             </div>
           </div>
