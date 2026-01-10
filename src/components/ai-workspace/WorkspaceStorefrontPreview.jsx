@@ -24,60 +24,36 @@ const WorkspaceStorefrontPreview = () => {
   // Refresh preview when trigger changes (e.g., after AI styling changes)
   useEffect(() => {
     if (previewRefreshTrigger > 0) {
-      console.log('🔄 Refreshing storefront preview after AI update');
-      setRefreshKey(Date.now());
+      console.log('🔄 Refreshing storefront preview after AI update, trigger:', previewRefreshTrigger);
+      const newKey = Date.now();
+      setRefreshKey(newKey);
       setIsLoading(true);
 
-      // Force iframe to reload if it exists (more reliable than just changing URL)
+      // Force iframe reload with new cache-busting URL
       if (iframeRef.current) {
         try {
-          // Post message to iframe to trigger config reload
+          // First try to post message to iframe
           iframeRef.current.contentWindow?.postMessage({
             type: 'SLOT_CONFIG_UPDATED',
-            timestamp: Date.now()
+            timestamp: newKey
           }, '*');
+
+          // Also force iframe src reload for more reliable refresh
+          const currentSrc = iframeRef.current.src;
+          if (currentSrc) {
+            const newSrc = currentSrc.replace(/_t=\d+/, `_t=${newKey}`);
+            if (newSrc !== currentSrc) {
+              console.log('🔄 Forcing iframe src reload:', newSrc.substring(0, 50) + '...');
+              iframeRef.current.src = newSrc;
+            }
+          }
         } catch (e) {
-          console.warn('Could not post message to iframe:', e);
+          console.warn('Could not refresh iframe:', e);
         }
       }
     }
   }, [previewRefreshTrigger]);
 
-  // Listen for store settings updates (theme colors, etc.) and force full reload
-  useEffect(() => {
-    console.log('🖼️ WorkspaceStorefrontPreview: Setting up storeSettingsUpdated listener');
-
-    const handleStoreSettingsUpdated = (event) => {
-      console.log('🔄 Store settings updated event received, forcing iframe reload', event?.detail);
-      setRefreshKey(Date.now());
-      setIsLoading(true);
-
-      // Force full iframe reload by reloading the iframe src
-      if (iframeRef.current) {
-        console.log('🔄 Iframe ref exists, attempting reload');
-        try {
-          iframeRef.current.contentWindow?.location.reload();
-          console.log('🔄 Iframe reload via contentWindow.location.reload()');
-        } catch (e) {
-          console.log('🔄 Cross-origin, using src reload instead');
-          // Cross-origin, use src reload instead
-          const currentSrc = iframeRef.current.src;
-          iframeRef.current.src = '';
-          setTimeout(() => {
-            iframeRef.current.src = currentSrc.split('?')[0] + '?_t=' + Date.now();
-          }, 100);
-        }
-      } else {
-        console.log('🔄 No iframe ref available');
-      }
-    };
-
-    window.addEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
-    return () => {
-      console.log('🖼️ WorkspaceStorefrontPreview: Removing storeSettingsUpdated listener');
-      window.removeEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
-    };
-  }, []);
   const [firstProductSlug, setFirstProductSlug] = useState(null);
   const [firstCategorySlug, setFirstCategorySlug] = useState(null);
 
