@@ -476,6 +476,30 @@ router.post('/run-comprehensive', async (req, res) => {
 });
 
 /**
+ * GET /api/ai/training/debug-schema-count
+ * Debug endpoint to check how many tables are defined in getDbSchemaKnowledge
+ */
+router.get('/debug-schema-count', async (req, res) => {
+  try {
+    const schemaKnowledge = getDbSchemaKnowledge();
+    const apiKnowledge = getApiRouteKnowledge();
+    const settingsKnowledge = getStoreSettingsKnowledge();
+
+    res.json({
+      success: true,
+      counts: {
+        db_schema_tables: schemaKnowledge.length,
+        api_routes: apiKnowledge.length,
+        store_settings: settingsKnowledge.length
+      },
+      db_tables: schemaKnowledge.map(t => t.table_name)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * GET /api/ai/training/knowledge-status
  * Get current knowledge status in AI tables
  */
