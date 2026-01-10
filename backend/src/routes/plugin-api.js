@@ -146,34 +146,77 @@ router.get('/widgets/:widgetId', async (req, res) => {
 /**
  * GET /api/plugins/starters
  * Get starter templates for AI Studio
+ * Fetches from master database (system plugins) + public user plugins
  */
 router.get('/starters', async (req, res) => {
   try {
-    const tenantDb = await getTenantConnection(req);
+    const { masterDbClient } = require('../database/masterConnection');
 
-    const { data: starters, error } = await tenantDb
-      .from('plugin_registry')
-      .select('id, name, slug, version, description, starter_icon, starter_description, starter_prompt, starter_order')
-      .eq('is_starter_template', true)
-      .eq('status', 'active')
-      .order('starter_order', { ascending: true })
-      .order('name', { ascending: true });
+    let systemStarters = [];
+    let tenantStarters = [];
 
-    if (error) {
-      throw new Error(error.message);
+    // 1. Fetch system starters from master database
+    if (masterDbClient) {
+      const { data: masterStarters, error: masterError } = await masterDbClient
+        .from('plugin_starters')
+        .select('id, name, slug, version, description, icon, starter_description, starter_prompt, display_order, category, type, difficulty, tags')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (!masterError && masterStarters) {
+        systemStarters = masterStarters.map(s => ({
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          description: s.starter_description || s.description,
+          icon: s.icon || '🔌',
+          prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
+          order: s.display_order || 0,
+          category: s.category,
+          type: s.type,
+          difficulty: s.difficulty,
+          tags: s.tags,
+          source: 'system'
+        }));
+      } else if (masterError) {
+        console.warn('Could not fetch system starters from master:', masterError.message);
+      }
     }
+
+    // 2. Fetch tenant-specific starters (user-created templates marked as starters)
+    try {
+      const tenantDb = await getTenantConnection(req);
+      const { data: localStarters, error: tenantError } = await tenantDb
+        .from('plugin_registry')
+        .select('id, name, slug, version, description, starter_icon, starter_description, starter_prompt, starter_order, category')
+        .eq('is_starter_template', true)
+        .eq('status', 'active')
+        .order('starter_order', { ascending: true });
+
+      if (!tenantError && localStarters) {
+        tenantStarters = localStarters.map(s => ({
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          description: s.starter_description || s.description,
+          icon: s.starter_icon || '🔌',
+          prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
+          order: (s.starter_order || 0) + 100, // Tenant starters after system starters
+          category: s.category,
+          source: 'tenant'
+        }));
+      }
+    } catch (tenantErr) {
+      console.warn('Could not fetch tenant starters:', tenantErr.message);
+    }
+
+    // 3. Combine and sort by order
+    const allStarters = [...systemStarters, ...tenantStarters]
+      .sort((a, b) => a.order - b.order);
 
     res.json({
       success: true,
-      starters: (starters || []).map(s => ({
-        id: s.id,
-        name: s.name,
-        slug: s.slug,
-        description: s.starter_description || s.description,
-        icon: s.starter_icon || '🔌',
-        prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
-        order: s.starter_order || 0
-      }))
+      starters: allStarters
     });
   } catch (error) {
     console.error('Failed to get starter templates:', error);
