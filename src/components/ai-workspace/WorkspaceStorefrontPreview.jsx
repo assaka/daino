@@ -45,16 +45,21 @@ const WorkspaceStorefrontPreview = () => {
 
   // Listen for store settings updates (theme colors, etc.) and force full reload
   useEffect(() => {
-    const handleStoreSettingsUpdated = () => {
-      console.log('🔄 Store settings updated, forcing iframe reload');
+    console.log('🖼️ WorkspaceStorefrontPreview: Setting up storeSettingsUpdated listener');
+
+    const handleStoreSettingsUpdated = (event) => {
+      console.log('🔄 Store settings updated event received, forcing iframe reload', event?.detail);
       setRefreshKey(Date.now());
       setIsLoading(true);
 
       // Force full iframe reload by reloading the iframe src
       if (iframeRef.current) {
+        console.log('🔄 Iframe ref exists, attempting reload');
         try {
           iframeRef.current.contentWindow?.location.reload();
+          console.log('🔄 Iframe reload via contentWindow.location.reload()');
         } catch (e) {
+          console.log('🔄 Cross-origin, using src reload instead');
           // Cross-origin, use src reload instead
           const currentSrc = iframeRef.current.src;
           iframeRef.current.src = '';
@@ -62,11 +67,16 @@ const WorkspaceStorefrontPreview = () => {
             iframeRef.current.src = currentSrc.split('?')[0] + '?_t=' + Date.now();
           }, 100);
         }
+      } else {
+        console.log('🔄 No iframe ref available');
       }
     };
 
     window.addEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
-    return () => window.removeEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
+    return () => {
+      console.log('🖼️ WorkspaceStorefrontPreview: Removing storeSettingsUpdated listener');
+      window.removeEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
+    };
   }, []);
   const [firstProductSlug, setFirstProductSlug] = useState(null);
   const [firstCategorySlug, setFirstCategorySlug] = useState(null);
