@@ -168,7 +168,7 @@ export default function Terms() {
               </p>
               <div className="mt-4 p-4 bg-slate-50 rounded-lg">
                 <p className="text-slate-700">
-                  <strong>Email:</strong> legal@dainostore.com<br />
+                  <strong>Email:</strong> hello@dainostore.com<br />
                   <strong>Website:</strong> www.dainostore.com
                 </p>
               </div>
