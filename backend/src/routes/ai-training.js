@@ -772,6 +772,404 @@ function getDbSchemaKnowledge() {
         { name: 'consent_expiry_days', type: 'integer', description: 'Days until consent expires' }
       ],
       important_notes: 'GDPR mode requires explicit opt-in. Banner text is in translations table.'
+    },
+    // Custom Domains
+    {
+      table_name: 'store_domains',
+      description: 'Custom domains for stores. Maps external domains to stores.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Domain ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'domain', type: 'varchar', description: 'Full domain name (e.g., shop.example.com)' },
+        { name: 'is_primary', type: 'boolean', description: 'Primary domain for the store' },
+        { name: 'ssl_status', type: 'varchar', description: 'SSL certificate status: pending, active, failed' },
+        { name: 'is_verified', type: 'boolean', description: 'DNS verification status' }
+      ],
+      important_notes: 'Domains need DNS verification. SSL is auto-provisioned after verification.'
+    },
+    // Payment Methods
+    {
+      table_name: 'payment_methods',
+      description: 'Available payment methods for checkout (Stripe, PayPal, Bank Transfer, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Payment method ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Method code: stripe, paypal, bank_transfer, cod, mollie' },
+        { name: 'name', type: 'varchar', description: 'Display name' },
+        { name: 'is_active', type: 'boolean', description: 'Enable/disable method' },
+        { name: 'settings', type: 'jsonb', description: 'Provider-specific settings (API keys, etc.)', is_jsonb: true },
+        { name: 'countries', type: 'jsonb', description: 'Allowed countries array', is_jsonb: true },
+        { name: 'min_order_amount', type: 'numeric', description: 'Minimum order amount' },
+        { name: 'max_order_amount', type: 'numeric', description: 'Maximum order amount' },
+        { name: 'sort_order', type: 'integer', description: 'Display order at checkout' }
+      ],
+      important_notes: 'API keys stored in settings JSONB. Each provider has different required settings.'
+    },
+    // Shipping Methods
+    {
+      table_name: 'shipping_methods',
+      description: 'Shipping/delivery methods with rates and conditions.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Shipping method ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Method code: flat_rate, free_shipping, table_rate, pickup' },
+        { name: 'name', type: 'varchar', description: 'Display name' },
+        { name: 'is_active', type: 'boolean', description: 'Enable/disable method' },
+        { name: 'price', type: 'numeric', description: 'Shipping price (for flat rate)' },
+        { name: 'free_shipping_threshold', type: 'numeric', description: 'Order amount for free shipping' },
+        { name: 'countries', type: 'jsonb', description: 'Allowed countries', is_jsonb: true },
+        { name: 'conditions', type: 'jsonb', description: 'Weight/price conditions', is_jsonb: true },
+        { name: 'estimated_days', type: 'varchar', description: 'Estimated delivery time text' },
+        { name: 'sort_order', type: 'integer', description: 'Display order' }
+      ],
+      important_notes: 'Table rates use conditions JSONB for weight/price-based pricing.'
+    },
+    // CMS Pages
+    {
+      table_name: 'cms_pages',
+      description: 'Static content pages (About, Contact, Terms, Privacy, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Page ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'slug', type: 'varchar', description: 'URL slug (e.g., about-us)' },
+        { name: 'title', type: 'varchar', description: 'Page title' },
+        { name: 'content', type: 'text', description: 'HTML content' },
+        { name: 'meta_title', type: 'varchar', description: 'SEO title' },
+        { name: 'meta_description', type: 'text', description: 'SEO description' },
+        { name: 'is_active', type: 'boolean', description: 'Published status' },
+        { name: 'translations', type: 'jsonb', description: 'Translations: { en: { title, content } }', is_jsonb: true }
+      ],
+      important_notes: 'Content can be HTML or use slot-based layout. Translations for multilingual.'
+    },
+    // CMS Blocks
+    {
+      table_name: 'cms_blocks',
+      description: 'Reusable content blocks for embedding in pages/layouts.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Block ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'identifier', type: 'varchar', description: 'Unique identifier for embedding' },
+        { name: 'title', type: 'varchar', description: 'Block title' },
+        { name: 'content', type: 'text', description: 'HTML content' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' },
+        { name: 'translations', type: 'jsonb', description: 'Translations', is_jsonb: true }
+      ],
+      important_notes: 'Embed blocks using identifier. Can be placed in slot configurations.'
+    },
+    // Tax Rates
+    {
+      table_name: 'tax_rates',
+      description: 'Tax rates by country/region.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Tax rate ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'name', type: 'varchar', description: 'Rate name (e.g., VAT 21%)' },
+        { name: 'rate', type: 'numeric', description: 'Tax percentage (e.g., 21.00)' },
+        { name: 'country', type: 'varchar', description: 'Country code (e.g., NL, DE, US)' },
+        { name: 'region', type: 'varchar', description: 'State/region (optional)' },
+        { name: 'postcode', type: 'varchar', description: 'Postcode range (optional)' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' },
+        { name: 'priority', type: 'integer', description: 'Priority when multiple rates match' }
+      ],
+      important_notes: 'Rates are matched by country > region > postcode. Priority resolves conflicts.'
+    },
+    // Tax Classes
+    {
+      table_name: 'tax_classes',
+      description: 'Tax classes for products (Standard, Reduced, Zero, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Tax class ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'name', type: 'varchar', description: 'Class name' },
+        { name: 'code', type: 'varchar', description: 'Class code' },
+        { name: 'is_default', type: 'boolean', description: 'Default class for new products' }
+      ],
+      important_notes: 'Products are assigned a tax class. Tax rates are linked to tax classes.'
+    },
+    // Coupons
+    {
+      table_name: 'coupons',
+      description: 'Discount coupons and promo codes.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Coupon ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Coupon code (e.g., SAVE20)' },
+        { name: 'name', type: 'varchar', description: 'Internal name' },
+        { name: 'discount_type', type: 'varchar', description: 'Type: percentage, fixed_amount, free_shipping' },
+        { name: 'discount_value', type: 'numeric', description: 'Discount value (% or amount)' },
+        { name: 'min_order_amount', type: 'numeric', description: 'Minimum order to apply' },
+        { name: 'max_uses', type: 'integer', description: 'Total usage limit' },
+        { name: 'max_uses_per_customer', type: 'integer', description: 'Per-customer limit' },
+        { name: 'times_used', type: 'integer', description: 'Current usage count' },
+        { name: 'starts_at', type: 'timestamp', description: 'Valid from date' },
+        { name: 'expires_at', type: 'timestamp', description: 'Expiration date' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' },
+        { name: 'conditions', type: 'jsonb', description: 'Advanced conditions (products, categories)', is_jsonb: true }
+      ],
+      important_notes: 'Conditions JSONB can limit to specific products/categories. Check times_used < max_uses.'
+    },
+    // Customer Blacklist
+    {
+      table_name: 'customer_blacklist',
+      description: 'Blacklisted customers/emails/IPs for fraud prevention.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Entry ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'type', type: 'varchar', description: 'Type: email, ip, phone, customer_id' },
+        { name: 'value', type: 'varchar', description: 'Blocked value' },
+        { name: 'reason', type: 'text', description: 'Reason for blocking' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' },
+        { name: 'expires_at', type: 'timestamp', description: 'Optional expiration' }
+      ],
+      important_notes: 'Checked during checkout. Can block by email, IP, phone, or customer ID.'
+    },
+    // Analytics Settings (Google Tag Manager, etc.)
+    {
+      table_name: 'analytics_settings',
+      description: 'Analytics and tracking settings (GTM, GA4, Facebook Pixel, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Settings ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'gtm_container_id', type: 'varchar', description: 'Google Tag Manager ID (GTM-XXXXX)' },
+        { name: 'ga4_measurement_id', type: 'varchar', description: 'Google Analytics 4 ID (G-XXXXX)' },
+        { name: 'facebook_pixel_id', type: 'varchar', description: 'Facebook/Meta Pixel ID' },
+        { name: 'enable_ecommerce_tracking', type: 'boolean', description: 'Enable e-commerce events' },
+        { name: 'custom_scripts', type: 'jsonb', description: 'Custom tracking scripts', is_jsonb: true }
+      ],
+      important_notes: 'GTM is preferred - load all tags through GTM. E-commerce tracking sends purchase events.'
+    },
+    // Credits/Usage
+    {
+      table_name: 'credits_usage',
+      description: 'AI/API credits usage tracking.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Usage ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'user_id', type: 'uuid', description: 'User ID' },
+        { name: 'service', type: 'varchar', description: 'Service: ai_chat, image_generation, api_calls' },
+        { name: 'credits_used', type: 'numeric', description: 'Credits consumed' },
+        { name: 'operation', type: 'varchar', description: 'Operation performed' },
+        { name: 'metadata', type: 'jsonb', description: 'Additional details', is_jsonb: true },
+        { name: 'created_at', type: 'timestamp', description: 'Usage timestamp' }
+      ],
+      important_notes: 'Track credits for billing. Aggregate by store_id for usage reports.'
+    },
+    // Background Jobs
+    {
+      table_name: 'background_jobs',
+      description: 'Async background job queue (imports, exports, emails, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Job ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'type', type: 'varchar', description: 'Job type: import, export, email, sync, cleanup' },
+        { name: 'status', type: 'varchar', description: 'Status: pending, running, completed, failed' },
+        { name: 'payload', type: 'jsonb', description: 'Job data/parameters', is_jsonb: true },
+        { name: 'result', type: 'jsonb', description: 'Job result/output', is_jsonb: true },
+        { name: 'error', type: 'text', description: 'Error message if failed' },
+        { name: 'progress', type: 'integer', description: 'Progress percentage 0-100' },
+        { name: 'started_at', type: 'timestamp', description: 'Start time' },
+        { name: 'completed_at', type: 'timestamp', description: 'Completion time' },
+        { name: 'created_at', type: 'timestamp', description: 'Created time' }
+      ],
+      important_notes: 'Used for long-running operations. Poll status for progress updates.'
+    },
+    // Email Templates
+    {
+      table_name: 'email_templates',
+      description: 'Transactional email templates (order confirmation, shipping, etc.).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Template ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Template code: order_confirmation, shipping_notification, password_reset' },
+        { name: 'subject', type: 'varchar', description: 'Email subject' },
+        { name: 'body_html', type: 'text', description: 'HTML body with variables' },
+        { name: 'body_text', type: 'text', description: 'Plain text body' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' },
+        { name: 'translations', type: 'jsonb', description: 'Translations by locale', is_jsonb: true }
+      ],
+      important_notes: 'Templates use variables like {{order.number}}, {{customer.name}}. HTML and text versions.'
+    },
+    // Customers
+    {
+      table_name: 'customers',
+      description: 'Customer accounts and profiles.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Customer ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'email', type: 'varchar', description: 'Email address' },
+        { name: 'first_name', type: 'varchar', description: 'First name' },
+        { name: 'last_name', type: 'varchar', description: 'Last name' },
+        { name: 'phone', type: 'varchar', description: 'Phone number' },
+        { name: 'is_active', type: 'boolean', description: 'Account active' },
+        { name: 'is_verified', type: 'boolean', description: 'Email verified' },
+        { name: 'metadata', type: 'jsonb', description: 'Custom fields', is_jsonb: true },
+        { name: 'created_at', type: 'timestamp', description: 'Registration date' }
+      ],
+      important_notes: 'Customers can have multiple addresses. Orders linked by customer_id.'
+    },
+    // Customer Addresses
+    {
+      table_name: 'customer_addresses',
+      description: 'Customer shipping/billing addresses.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Address ID' },
+        { name: 'customer_id', type: 'uuid', description: 'Customer ID' },
+        { name: 'type', type: 'varchar', description: 'Type: shipping, billing' },
+        { name: 'is_default', type: 'boolean', description: 'Default address' },
+        { name: 'first_name', type: 'varchar', description: 'First name' },
+        { name: 'last_name', type: 'varchar', description: 'Last name' },
+        { name: 'company', type: 'varchar', description: 'Company name' },
+        { name: 'address_line_1', type: 'varchar', description: 'Street address' },
+        { name: 'address_line_2', type: 'varchar', description: 'Apt/Suite' },
+        { name: 'city', type: 'varchar', description: 'City' },
+        { name: 'state', type: 'varchar', description: 'State/Province' },
+        { name: 'postcode', type: 'varchar', description: 'Postal code' },
+        { name: 'country', type: 'varchar', description: 'Country code' },
+        { name: 'phone', type: 'varchar', description: 'Phone number' }
+      ],
+      important_notes: 'Each customer can have multiple addresses with one default per type.'
+    },
+    // Wishlists
+    {
+      table_name: 'wishlists',
+      description: 'Customer wishlists/favorites.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Wishlist ID' },
+        { name: 'customer_id', type: 'uuid', description: 'Customer ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'product_id', type: 'uuid', description: 'Product ID' },
+        { name: 'created_at', type: 'timestamp', description: 'Added date' }
+      ],
+      important_notes: 'Simple product-customer association. One entry per product per customer.'
+    },
+    // Product Reviews
+    {
+      table_name: 'product_reviews',
+      description: 'Customer product reviews and ratings.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Review ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'product_id', type: 'uuid', description: 'Product ID' },
+        { name: 'customer_id', type: 'uuid', description: 'Customer ID (optional for guest)' },
+        { name: 'customer_name', type: 'varchar', description: 'Reviewer name' },
+        { name: 'rating', type: 'integer', description: 'Rating 1-5' },
+        { name: 'title', type: 'varchar', description: 'Review title' },
+        { name: 'content', type: 'text', description: 'Review content' },
+        { name: 'status', type: 'varchar', description: 'Status: pending, approved, rejected' },
+        { name: 'is_verified_purchase', type: 'boolean', description: 'Verified buyer' },
+        { name: 'created_at', type: 'timestamp', description: 'Review date' }
+      ],
+      important_notes: 'Reviews can require approval (status=pending). is_verified_purchase checked against orders.'
+    },
+    // Inventory/Stock
+    {
+      table_name: 'inventory',
+      description: 'Product stock/inventory tracking.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Inventory ID' },
+        { name: 'product_id', type: 'uuid', description: 'Product ID' },
+        { name: 'variant_id', type: 'uuid', description: 'Variant ID (optional)' },
+        { name: 'warehouse_id', type: 'uuid', description: 'Warehouse location' },
+        { name: 'quantity', type: 'integer', description: 'Current stock quantity' },
+        { name: 'reserved', type: 'integer', description: 'Reserved for pending orders' },
+        { name: 'low_stock_threshold', type: 'integer', description: 'Alert threshold' }
+      ],
+      important_notes: 'Available = quantity - reserved. Can have multiple warehouses per product.'
+    },
+    // Product Variants
+    {
+      table_name: 'product_variants',
+      description: 'Product variants (size/color combinations).',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Variant ID' },
+        { name: 'product_id', type: 'uuid', description: 'Parent product ID' },
+        { name: 'sku', type: 'varchar', description: 'Variant SKU' },
+        { name: 'price', type: 'numeric', description: 'Variant price (null = use parent)' },
+        { name: 'attributes', type: 'jsonb', description: 'Variant attributes: { color: "red", size: "M" }', is_jsonb: true },
+        { name: 'stock_quantity', type: 'integer', description: 'Stock quantity' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' }
+      ],
+      important_notes: 'Variants inherit from parent product. Attributes define the variant combination.'
+    },
+    // Import/Export Jobs
+    {
+      table_name: 'import_jobs',
+      description: 'Product/order import jobs from CSV/Excel.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Job ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'type', type: 'varchar', description: 'Import type: products, orders, customers, inventory' },
+        { name: 'file_url', type: 'varchar', description: 'Uploaded file URL' },
+        { name: 'status', type: 'varchar', description: 'Status: pending, processing, completed, failed' },
+        { name: 'total_rows', type: 'integer', description: 'Total rows in file' },
+        { name: 'processed_rows', type: 'integer', description: 'Rows processed' },
+        { name: 'success_count', type: 'integer', description: 'Successful imports' },
+        { name: 'error_count', type: 'integer', description: 'Failed imports' },
+        { name: 'errors', type: 'jsonb', description: 'Error details per row', is_jsonb: true }
+      ],
+      important_notes: 'Import is async. Poll status for progress. Errors array contains row-level failures.'
+    },
+    // Redirects
+    {
+      table_name: 'url_redirects',
+      description: 'URL redirects (301/302) for SEO.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Redirect ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'source_path', type: 'varchar', description: 'Source URL path' },
+        { name: 'target_path', type: 'varchar', description: 'Target URL path' },
+        { name: 'redirect_type', type: 'integer', description: 'HTTP code: 301 (permanent) or 302 (temporary)' },
+        { name: 'is_active', type: 'boolean', description: 'Active status' }
+      ],
+      important_notes: 'Use 301 for permanent moves (SEO). 302 for temporary. Auto-created when slugs change.'
+    },
+    // Notifications
+    {
+      table_name: 'notifications',
+      description: 'Admin notifications and alerts.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Notification ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'user_id', type: 'uuid', description: 'Target user ID' },
+        { name: 'type', type: 'varchar', description: 'Type: order, low_stock, review, system' },
+        { name: 'title', type: 'varchar', description: 'Notification title' },
+        { name: 'message', type: 'text', description: 'Notification message' },
+        { name: 'is_read', type: 'boolean', description: 'Read status' },
+        { name: 'link', type: 'varchar', description: 'Link to related item' },
+        { name: 'created_at', type: 'timestamp', description: 'Created date' }
+      ],
+      important_notes: 'Notifications appear in admin panel. Can be filtered by type.'
+    },
+    // Store Currencies
+    {
+      table_name: 'store_currencies',
+      description: 'Store currency settings and exchange rates.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Currency ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Currency code (USD, EUR, GBP)' },
+        { name: 'symbol', type: 'varchar', description: 'Currency symbol ($, €, £)' },
+        { name: 'exchange_rate', type: 'numeric', description: 'Exchange rate to base currency' },
+        { name: 'is_default', type: 'boolean', description: 'Default/base currency' },
+        { name: 'is_active', type: 'boolean', description: 'Available for customers' },
+        { name: 'decimal_places', type: 'integer', description: 'Decimal places to display' }
+      ],
+      important_notes: 'One currency must be default (is_default=true). Exchange rates relative to default.'
+    },
+    // Store Languages
+    {
+      table_name: 'store_languages',
+      description: 'Store language settings.',
+      columns: [
+        { name: 'id', type: 'uuid', description: 'Language ID' },
+        { name: 'store_id', type: 'uuid', description: 'Store ID' },
+        { name: 'code', type: 'varchar', description: 'Language code (en, de, nl, fr)' },
+        { name: 'name', type: 'varchar', description: 'Language name' },
+        { name: 'is_default', type: 'boolean', description: 'Default language' },
+        { name: 'is_active', type: 'boolean', description: 'Available for customers' },
+        { name: 'is_rtl', type: 'boolean', description: 'Right-to-left language' }
+      ],
+      important_notes: 'Default language used when translation missing. RTL affects layout direction.'
     }
   ];
 }
@@ -973,6 +1371,441 @@ function getApiRouteKnowledge() {
       description: 'Update order status',
       parameters: '{ status: "pending"|"processing"|"shipped"|"delivered"|"cancelled" }',
       usage: 'Use when user says "mark order as shipped" or "cancel order"'
+    },
+    // Custom Domains API
+    {
+      name: 'List Domains',
+      endpoint: 'GET /api/domains',
+      description: 'Get all custom domains for the store',
+      response: 'Array of domain objects with domain, is_primary, ssl_status, is_verified'
+    },
+    {
+      name: 'Add Domain',
+      endpoint: 'POST /api/domains',
+      description: 'Add a custom domain',
+      parameters: '{ domain, is_primary }',
+      usage: 'Use when user says "add custom domain" or "connect domain shop.example.com"'
+    },
+    {
+      name: 'Verify Domain',
+      endpoint: 'POST /api/domains/:id/verify',
+      description: 'Trigger DNS verification for domain',
+      usage: 'Use when user says "verify domain" or "check DNS"'
+    },
+    {
+      name: 'Delete Domain',
+      endpoint: 'DELETE /api/domains/:id',
+      description: 'Remove a custom domain',
+      usage: 'Use when user says "remove domain" or "delete custom domain"'
+    },
+    // Payment Methods API
+    {
+      name: 'List Payment Methods',
+      endpoint: 'GET /api/payment-methods',
+      description: 'Get all payment methods',
+      response: 'Array with code, name, is_active, settings'
+    },
+    {
+      name: 'Create Payment Method',
+      endpoint: 'POST /api/payment-methods',
+      description: 'Add a new payment method',
+      parameters: '{ code: "stripe"|"paypal"|"bank_transfer"|"cod", name, is_active, settings: { api_key, secret_key } }',
+      usage: 'Use when user says "add payment method" or "enable Stripe"'
+    },
+    {
+      name: 'Update Payment Method',
+      endpoint: 'PUT /api/payment-methods/:id',
+      description: 'Update payment method settings',
+      parameters: '{ is_active, settings, min_order_amount, max_order_amount, countries }',
+      usage: 'Use when user says "disable PayPal" or "set minimum order for COD"'
+    },
+    {
+      name: 'Delete Payment Method',
+      endpoint: 'DELETE /api/payment-methods/:id',
+      description: 'Remove a payment method',
+      usage: 'Use when user says "remove payment method"'
+    },
+    // Shipping Methods API
+    {
+      name: 'List Shipping Methods',
+      endpoint: 'GET /api/shipping-methods',
+      description: 'Get all shipping methods',
+      response: 'Array with code, name, price, is_active, conditions'
+    },
+    {
+      name: 'Create Shipping Method',
+      endpoint: 'POST /api/shipping-methods',
+      description: 'Add a new shipping method',
+      parameters: '{ code: "flat_rate"|"free_shipping"|"table_rate"|"pickup", name, price, free_shipping_threshold, estimated_days, countries }',
+      usage: 'Use when user says "add shipping method" or "create free shipping"'
+    },
+    {
+      name: 'Update Shipping Method',
+      endpoint: 'PUT /api/shipping-methods/:id',
+      description: 'Update shipping method',
+      parameters: '{ name, price, is_active, free_shipping_threshold, conditions, countries }',
+      usage: 'Use when user says "change shipping price" or "set free shipping threshold"'
+    },
+    {
+      name: 'Delete Shipping Method',
+      endpoint: 'DELETE /api/shipping-methods/:id',
+      description: 'Remove a shipping method',
+      usage: 'Use when user says "remove shipping option"'
+    },
+    // CMS Pages API
+    {
+      name: 'List CMS Pages',
+      endpoint: 'GET /api/cms-pages',
+      description: 'Get all CMS pages',
+      response: 'Array of pages with slug, title, is_active'
+    },
+    {
+      name: 'Create CMS Page',
+      endpoint: 'POST /api/cms-pages',
+      description: 'Create a new static page',
+      parameters: '{ slug, title, content, meta_title, meta_description, is_active }',
+      usage: 'Use when user says "create about page" or "add terms page"'
+    },
+    {
+      name: 'Update CMS Page',
+      endpoint: 'PUT /api/cms-pages/:id',
+      description: 'Update a CMS page',
+      parameters: '{ title, content, meta_title, meta_description, is_active }',
+      usage: 'Use when user says "update about page" or "change terms content"'
+    },
+    {
+      name: 'Delete CMS Page',
+      endpoint: 'DELETE /api/cms-pages/:id',
+      description: 'Delete a CMS page',
+      usage: 'Use when user says "delete page"'
+    },
+    // CMS Blocks API
+    {
+      name: 'List CMS Blocks',
+      endpoint: 'GET /api/cms-blocks',
+      description: 'Get all reusable content blocks',
+      response: 'Array of blocks with identifier, title, is_active'
+    },
+    {
+      name: 'Create CMS Block',
+      endpoint: 'POST /api/cms-blocks',
+      description: 'Create a reusable content block',
+      parameters: '{ identifier, title, content, is_active }',
+      usage: 'Use when user says "create content block" or "add banner block"'
+    },
+    {
+      name: 'Update CMS Block',
+      endpoint: 'PUT /api/cms-blocks/:id',
+      description: 'Update a CMS block',
+      parameters: '{ title, content, is_active }',
+      usage: 'Use when user says "update banner block" or "change block content"'
+    },
+    // Tax API
+    {
+      name: 'List Tax Rates',
+      endpoint: 'GET /api/tax-rates',
+      description: 'Get all tax rates',
+      response: 'Array of rates with name, rate, country, region'
+    },
+    {
+      name: 'Create Tax Rate',
+      endpoint: 'POST /api/tax-rates',
+      description: 'Create a new tax rate',
+      parameters: '{ name, rate, country, region, postcode, is_active, priority }',
+      usage: 'Use when user says "add tax rate" or "create VAT 21% for Netherlands"'
+    },
+    {
+      name: 'Update Tax Rate',
+      endpoint: 'PUT /api/tax-rates/:id',
+      description: 'Update a tax rate',
+      parameters: '{ name, rate, is_active }',
+      usage: 'Use when user says "change tax rate" or "update VAT percentage"'
+    },
+    {
+      name: 'Delete Tax Rate',
+      endpoint: 'DELETE /api/tax-rates/:id',
+      description: 'Delete a tax rate',
+      usage: 'Use when user says "remove tax rate"'
+    },
+    {
+      name: 'List Tax Classes',
+      endpoint: 'GET /api/tax-classes',
+      description: 'Get all tax classes',
+      response: 'Array of classes with name, code, is_default'
+    },
+    {
+      name: 'Create Tax Class',
+      endpoint: 'POST /api/tax-classes',
+      description: 'Create a new tax class',
+      parameters: '{ name, code, is_default }',
+      usage: 'Use when user says "add tax class" or "create reduced tax class"'
+    },
+    // Coupons API
+    {
+      name: 'List Coupons',
+      endpoint: 'GET /api/coupons',
+      description: 'Get all discount coupons',
+      response: 'Array of coupons with code, discount_type, discount_value, is_active'
+    },
+    {
+      name: 'Create Coupon',
+      endpoint: 'POST /api/coupons',
+      description: 'Create a new discount coupon',
+      parameters: '{ code, name, discount_type: "percentage"|"fixed_amount"|"free_shipping", discount_value, min_order_amount, max_uses, starts_at, expires_at, is_active }',
+      usage: 'Use when user says "create coupon SAVE20" or "add 20% discount code"'
+    },
+    {
+      name: 'Update Coupon',
+      endpoint: 'PUT /api/coupons/:id',
+      description: 'Update a coupon',
+      parameters: '{ discount_value, max_uses, expires_at, is_active }',
+      usage: 'Use when user says "disable coupon" or "extend coupon expiry"'
+    },
+    {
+      name: 'Delete Coupon',
+      endpoint: 'DELETE /api/coupons/:id',
+      description: 'Delete a coupon',
+      usage: 'Use when user says "delete coupon" or "remove promo code"'
+    },
+    // Blacklist API
+    {
+      name: 'List Blacklist',
+      endpoint: 'GET /api/blacklist',
+      description: 'Get all blacklisted entries',
+      response: 'Array with type, value, reason, is_active'
+    },
+    {
+      name: 'Add to Blacklist',
+      endpoint: 'POST /api/blacklist',
+      description: 'Add entry to blacklist',
+      parameters: '{ type: "email"|"ip"|"phone"|"customer_id", value, reason, expires_at }',
+      usage: 'Use when user says "blacklist email" or "block IP address"'
+    },
+    {
+      name: 'Remove from Blacklist',
+      endpoint: 'DELETE /api/blacklist/:id',
+      description: 'Remove entry from blacklist',
+      usage: 'Use when user says "remove from blacklist" or "unblock email"'
+    },
+    // Analytics Settings API
+    {
+      name: 'Get Analytics Settings',
+      endpoint: 'GET /api/analytics-settings',
+      description: 'Get analytics/tracking configuration',
+      response: 'Settings with gtm_container_id, ga4_measurement_id, facebook_pixel_id'
+    },
+    {
+      name: 'Update Analytics Settings',
+      endpoint: 'PUT /api/analytics-settings',
+      description: 'Update analytics settings',
+      parameters: '{ gtm_container_id, ga4_measurement_id, facebook_pixel_id, enable_ecommerce_tracking }',
+      usage: 'Use when user says "set Google Tag Manager ID" or "add Facebook Pixel"'
+    },
+    // Email Templates API
+    {
+      name: 'List Email Templates',
+      endpoint: 'GET /api/email-templates',
+      description: 'Get all email templates',
+      response: 'Array with code, subject, is_active'
+    },
+    {
+      name: 'Update Email Template',
+      endpoint: 'PUT /api/email-templates/:id',
+      description: 'Update an email template',
+      parameters: '{ subject, body_html, body_text, is_active }',
+      usage: 'Use when user says "update order confirmation email" or "change email template"'
+    },
+    // Customers API
+    {
+      name: 'List Customers',
+      endpoint: 'GET /api/customers',
+      description: 'Get all customers',
+      parameters: 'search, is_active, page, limit',
+      response: 'Array of customers with email, name, is_active'
+    },
+    {
+      name: 'Get Customer',
+      endpoint: 'GET /api/customers/:id',
+      description: 'Get customer details with orders and addresses',
+      response: 'Customer object with orders, addresses, metadata'
+    },
+    {
+      name: 'Update Customer',
+      endpoint: 'PUT /api/customers/:id',
+      description: 'Update customer details',
+      parameters: '{ first_name, last_name, phone, is_active, metadata }',
+      usage: 'Use when user says "update customer" or "deactivate customer account"'
+    },
+    // Product Reviews API
+    {
+      name: 'List Reviews',
+      endpoint: 'GET /api/reviews',
+      description: 'Get all product reviews',
+      parameters: 'status, product_id, rating, page, limit'
+    },
+    {
+      name: 'Approve Review',
+      endpoint: 'PUT /api/reviews/:id/approve',
+      description: 'Approve a pending review',
+      usage: 'Use when user says "approve review" or "publish review"'
+    },
+    {
+      name: 'Reject Review',
+      endpoint: 'PUT /api/reviews/:id/reject',
+      description: 'Reject a review',
+      usage: 'Use when user says "reject review" or "remove review"'
+    },
+    // Inventory API
+    {
+      name: 'Get Inventory',
+      endpoint: 'GET /api/inventory',
+      description: 'Get inventory/stock levels',
+      parameters: 'product_id, low_stock, page, limit'
+    },
+    {
+      name: 'Update Inventory',
+      endpoint: 'PUT /api/inventory/:productId',
+      description: 'Update stock quantity',
+      parameters: '{ quantity, low_stock_threshold }',
+      usage: 'Use when user says "update stock" or "set inventory to 50"'
+    },
+    // Product Variants API
+    {
+      name: 'List Variants',
+      endpoint: 'GET /api/products/:productId/variants',
+      description: 'Get variants for a product',
+      response: 'Array of variants with sku, price, attributes, stock_quantity'
+    },
+    {
+      name: 'Create Variant',
+      endpoint: 'POST /api/products/:productId/variants',
+      description: 'Add a product variant',
+      parameters: '{ sku, price, attributes: { color: "red", size: "M" }, stock_quantity }',
+      usage: 'Use when user says "add variant" or "create size M variant"'
+    },
+    {
+      name: 'Update Variant',
+      endpoint: 'PUT /api/variants/:id',
+      description: 'Update a variant',
+      parameters: '{ price, stock_quantity, is_active }',
+      usage: 'Use when user says "update variant price" or "disable variant"'
+    },
+    // Import/Export API
+    {
+      name: 'Start Import',
+      endpoint: 'POST /api/imports',
+      description: 'Start a product/order import job',
+      parameters: '{ type: "products"|"orders"|"customers"|"inventory", file_url }',
+      usage: 'Use when user says "import products from CSV" or "bulk import"'
+    },
+    {
+      name: 'Get Import Status',
+      endpoint: 'GET /api/imports/:id',
+      description: 'Get import job progress',
+      response: '{ status, progress, success_count, error_count, errors }'
+    },
+    {
+      name: 'Export Data',
+      endpoint: 'POST /api/exports',
+      description: 'Export data to CSV/Excel',
+      parameters: '{ type: "products"|"orders"|"customers", format: "csv"|"xlsx", filters }',
+      usage: 'Use when user says "export orders" or "download products as CSV"'
+    },
+    // URL Redirects API
+    {
+      name: 'List Redirects',
+      endpoint: 'GET /api/redirects',
+      description: 'Get all URL redirects',
+      response: 'Array with source_path, target_path, redirect_type'
+    },
+    {
+      name: 'Create Redirect',
+      endpoint: 'POST /api/redirects',
+      description: 'Create a URL redirect',
+      parameters: '{ source_path, target_path, redirect_type: 301|302 }',
+      usage: 'Use when user says "add redirect" or "redirect old URL to new"'
+    },
+    {
+      name: 'Delete Redirect',
+      endpoint: 'DELETE /api/redirects/:id',
+      description: 'Remove a redirect',
+      usage: 'Use when user says "remove redirect"'
+    },
+    // Currencies API
+    {
+      name: 'List Currencies',
+      endpoint: 'GET /api/currencies',
+      description: 'Get store currencies',
+      response: 'Array with code, symbol, exchange_rate, is_default'
+    },
+    {
+      name: 'Add Currency',
+      endpoint: 'POST /api/currencies',
+      description: 'Add a new currency',
+      parameters: '{ code, symbol, exchange_rate, is_active, decimal_places }',
+      usage: 'Use when user says "add EUR currency" or "enable Euro"'
+    },
+    {
+      name: 'Update Currency',
+      endpoint: 'PUT /api/currencies/:id',
+      description: 'Update currency settings',
+      parameters: '{ exchange_rate, is_active, is_default }',
+      usage: 'Use when user says "update exchange rate" or "set default currency"'
+    },
+    // Languages API
+    {
+      name: 'List Languages',
+      endpoint: 'GET /api/languages',
+      description: 'Get store languages',
+      response: 'Array with code, name, is_default, is_active'
+    },
+    {
+      name: 'Add Language',
+      endpoint: 'POST /api/languages',
+      description: 'Add a new language',
+      parameters: '{ code, name, is_active, is_rtl }',
+      usage: 'Use when user says "add German language" or "enable Dutch"'
+    },
+    {
+      name: 'Update Language',
+      endpoint: 'PUT /api/languages/:id',
+      description: 'Update language settings',
+      parameters: '{ is_active, is_default }',
+      usage: 'Use when user says "set default language" or "disable language"'
+    },
+    // Background Jobs API
+    {
+      name: 'List Background Jobs',
+      endpoint: 'GET /api/jobs',
+      description: 'Get background jobs',
+      parameters: 'type, status, page, limit',
+      response: 'Array with type, status, progress, created_at'
+    },
+    {
+      name: 'Get Job Status',
+      endpoint: 'GET /api/jobs/:id',
+      description: 'Get specific job details and progress',
+      response: '{ type, status, progress, result, error }'
+    },
+    {
+      name: 'Cancel Job',
+      endpoint: 'DELETE /api/jobs/:id',
+      description: 'Cancel a running job',
+      usage: 'Use when user says "cancel import" or "stop job"'
+    },
+    // Credits/Usage API
+    {
+      name: 'Get Credits Usage',
+      endpoint: 'GET /api/credits/usage',
+      description: 'Get credits usage summary',
+      parameters: 'date_from, date_to',
+      response: '{ total_used, by_service: { ai_chat, image_generation } }'
+    },
+    {
+      name: 'Get Credits Balance',
+      endpoint: 'GET /api/credits/balance',
+      description: 'Get current credits balance',
+      response: '{ balance, plan_limit, reset_date }'
     }
   ];
 }
