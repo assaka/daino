@@ -263,6 +263,8 @@ class ApiClient {
 
     // Prevent authenticated requests if user has been logged out, except for auth routes and public endpoints
     if (!isAuthRoute && !isPublicEndpoint && (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true')) {
+      // Redirect to login page when session has been terminated
+      this.redirectToAuth();
       throw new Error('Session has been terminated. Please log in again.');
     }
 
