@@ -64,17 +64,17 @@ const DynamicPluginAdminPage = () => {
 
       console.log('📋 Admin pages for plugin:', adminPages.length);
 
-      const adminPage = adminPages.find(p => p.page_key === pageKey);
+      const adminPage = adminPages.find(p => p.pageKey === pageKey || p.page_key === pageKey);
 
       if (!adminPage) {
         throw new Error(`Admin page not found: ${pageKey}`);
       }
 
-      console.log('✅ Found admin page:', adminPage.page_name);
-      console.log('📝 Component code length:', adminPage.component_code?.length);
+      console.log('✅ Found admin page:', adminPage.pageName || adminPage.page_name);
+      console.log('📝 Component code length:', (adminPage.componentCode || adminPage.component_code)?.length);
 
       // Create React component from database code
-      let componentCode = adminPage.component_code;
+      let componentCode = adminPage.componentCode || adminPage.component_code;
 
       // Remove import statements (we'll provide dependencies as parameters)
       componentCode = componentCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
