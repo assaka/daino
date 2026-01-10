@@ -2597,11 +2597,15 @@ To add "inside" something:
  * Save entity definition to ai_entity_definitions
  */
 async function saveEntityDefinition(item) {
-  const { data: existing } = await masterDbClient
+  const { data: existing, error: selectError } = await masterDbClient
     .from('ai_entity_definitions')
     .select('id')
     .eq('table_name', item.table_name)
     .maybeSingle();
+
+  if (selectError) {
+    throw new Error(`Select failed for ${item.table_name}: ${selectError.message}`);
+  }
 
   const fields = {};
   item.columns?.forEach(col => {
@@ -2627,10 +2631,16 @@ async function saveEntityDefinition(item) {
   };
 
   if (existing) {
-    await masterDbClient.from('ai_entity_definitions').update(entityData).eq('id', existing.id);
+    const { error: updateError } = await masterDbClient.from('ai_entity_definitions').update(entityData).eq('id', existing.id);
+    if (updateError) {
+      throw new Error(`Update failed for ${item.table_name}: ${updateError.message}`);
+    }
   } else {
     entityData.created_at = new Date().toISOString();
-    await masterDbClient.from('ai_entity_definitions').insert(entityData);
+    const { error: insertError } = await masterDbClient.from('ai_entity_definitions').insert(entityData);
+    if (insertError) {
+      throw new Error(`Insert failed for ${item.table_name}: ${insertError.message}`);
+    }
   }
 }
 
