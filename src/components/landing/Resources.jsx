@@ -73,6 +73,13 @@ const BLOG_ARTICLES = [
     color: 'bg-orange-100 text-orange-600',
     articles: [
       {
+        title: 'Plugin Development Guide',
+        description: 'Complete guide to building plugins: widgets, admin pages, controllers, hooks, migrations, and cron jobs.',
+        slug: 'plugin-development-guide',
+        readTime: '15 min read',
+        featured: true
+      },
+      {
         title: 'Understanding Background Jobs & Queue System',
         description: 'How background jobs work and how to monitor task processing in your store.',
         slug: 'understanding-background-jobs-queue',

@@ -1891,49 +1891,158 @@ class MyPlugin {
                 </div>
               </div>
 
+              {/* WIDGETS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                  Widgets (Storefront Components)
+                </h3>
+                <p className="text-gray-600 mb-2">Widgets are React components that render on the storefront. Use categories like <code className="bg-gray-100 px-1 rounded">support</code>, <code className="bg-gray-100 px-1 rounded">floating</code>, or <code className="bg-gray-100 px-1 rounded">chat</code> for global widgets:</p>
+                <CodeBlock title="Widget definition in plugin JSON" code={`{
+  "widgets": [{
+    "widgetId": "chat-widget",
+    "widgetName": "Chat Widget",
+    "description": "Floating chat button",
+    "category": "support",
+    "icon": "MessageCircle",
+    "defaultConfig": {
+      "primaryColor": "#3b82f6",
+      "position": "right"
+    },
+    "componentCode": "function ChatWidget({ config }) {
+      const [open, setOpen] = React.useState(false);
+
+      // Helper to add store ID header
+      const getHeaders = () => {
+        const headers = {};
+        const storeId = localStorage.getItem('storeId');
+        if (storeId) headers['x-store-id'] = storeId;
+        return headers;
+      };
+
+      return React.createElement('button', {
+        onClick: () => setOpen(!open),
+        style: { position: 'fixed', bottom: '20px', right: '20px' }
+      }, '💬 Chat');
+    }"
+  }]
+}`} />
+                <div className="mt-2 bg-blue-50 rounded p-3">
+                  <p className="text-xs font-medium text-blue-800 mb-2">Widget Categories:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <code className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">support</code>
+                    <code className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">floating</code>
+                    <code className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">chat</code>
+                    <code className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">global</code>
+                    <code className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">product</code>
+                    <code className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">cart</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* ADMIN PAGES */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4 text-purple-600" />
+                  Admin Pages
+                </h3>
+                <p className="text-gray-600 mb-2">Create custom admin dashboard pages with React/JSX. These appear in the admin sidebar:</p>
+                <CodeBlock title="Admin page definition" code={`{
+  "adminPages": [{
+    "pageKey": "dashboard",
+    "pageName": "My Dashboard",
+    "route": "/admin/plugins/my-plugin/dashboard",
+    "componentCode": "import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+export default function Dashboard() {
+  const [data, setData] = React.useState([]);
+
+  const getHeaders = () => {
+    const headers = {};
+    const storeId = localStorage.getItem('storeId');
+    if (storeId) headers['x-store-id'] = storeId;
+    return headers;
+  };
+
+  React.useEffect(() => {
+    fetch('/api/plugins/my-plugin/exec/data', { headers: getHeaders() })
+      .then(r => r.json())
+      .then(d => setData(d.items));
+  }, []);
+
+  return (
+    <div className='p-6'>
+      <Card>
+        <CardHeader>
+          <CardTitle>My Plugin Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Your admin UI here */}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}"
+  }]
+}`} />
+              </div>
+
               {/* API ROUTES / CONTROLLERS */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-green-600" />
                   API Routes & Controllers
                 </h3>
-                <p className="text-gray-600 mb-2">Create REST API endpoints. Controllers handle HTTP requests and return JSON responses:</p>
-                <CodeBlock title="controllers/ItemController.js" code={`class ItemController {
-  constructor(db) {
-    this.db = db;
-  }
+                <p className="text-gray-600 mb-2">Create REST API endpoints. Controllers receive <code className="bg-gray-100 px-1 rounded">{'{ supabase }'}</code> for database operations:</p>
+                <CodeBlock title="Controller with Supabase" code={`// Controllers receive { supabase } for database access
+async function getItems(req, res, { supabase }) {
+  const { data: items, error } = await supabase
+    .from('my_plugin_items')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  async getItems(req, res) {
-    const { store_id } = req.params;
-    const items = await this.db.query(
-      'SELECT * FROM plugin_items WHERE store_id = $1',
-      [store_id]
-    );
-    return { success: true, items: items.rows };
+  if (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
+  return res.json({ success: true, items });
+}
 
-  async createItem(req, res) {
-    const { name, description } = req.body;
-    const result = await this.db.query(
-      'INSERT INTO plugin_items (name, description) VALUES ($1, $2) RETURNING *',
-      [name, description]
-    );
-    return { success: true, item: result.rows[0] };
-  }
+async function createItem(req, res, { supabase }) {
+  const { name, description } = req.body;
 
-  async deleteItem(req, res) {
-    const { id } = req.params;
-    await this.db.query('DELETE FROM plugin_items WHERE id = $1', [id]);
-    return { success: true, deleted: id };
+  const { data: item, error } = await supabase
+    .from('my_plugin_items')
+    .insert({ name, description })
+    .select()
+    .single();
+
+  if (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
+  return res.json({ success: true, item });
+}
+
+async function deleteItem(req, res, { supabase }) {
+  const { id } = req.params;
+
+  await supabase
+    .from('my_plugin_items')
+    .delete()
+    .eq('id', id);
+
+  return res.json({ success: true, deleted: id });
 }`} />
-                <CodeBlock title="manifest.json routes" code={`{
-  "routes": [
-    { "path": "/api/plugins/my-plugin/items", "method": "GET", "handler": "getItems" },
-    { "path": "/api/plugins/my-plugin/items", "method": "POST", "handler": "createItem" },
-    { "path": "/api/plugins/my-plugin/items/:id", "method": "DELETE", "handler": "deleteItem" }
+                <CodeBlock title="Controller definition in plugin JSON" code={`{
+  "controllers": [
+    { "name": "getItems", "method": "GET", "path": "/items", "code": "..." },
+    { "name": "createItem", "method": "POST", "path": "/items", "code": "..." },
+    { "name": "deleteItem", "method": "DELETE", "path": "/items/:id", "code": "..." }
   ]
-}`} />
+}
+
+// Access at: /api/plugins/{plugin-slug}/exec/{path}`} />
               </div>
 
               {/* MIGRATIONS */}
