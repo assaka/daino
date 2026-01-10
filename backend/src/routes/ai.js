@@ -458,10 +458,16 @@ Examples:
 
 TOOL: update_setting - Update store/catalog settings
 Settings: show_stock_label, hide_currency_product, hide_quantity_selector, theme.primary_color, theme.breadcrumb_item_text_color
+COMPOUND ALIASES (use these exact setting names for compound actions):
+  - thumbnails_left → sets product_gallery_layout=vertical + vertical_gallery_position=left
+  - thumbnails_right → sets product_gallery_layout=vertical + vertical_gallery_position=right
+  - thumbnails_below → sets product_gallery_layout=horizontal
 Examples:
   {"tool": "update_setting", "setting": "show_stock_label", "value": false}
   {"tool": "update_setting", "setting": "theme.primary_color", "value": "#FF5733"}
   {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
+  {"tool": "update_setting", "setting": "thumbnails_left", "value": true}
+  {"tool": "update_setting", "setting": "thumbnails_right", "value": true}
 
 TOOL: move_element - Move/reposition elements on storefront pages
 Position is relative to TARGET: "above target" puts element BEFORE target, "below target" puts element AFTER target.
@@ -608,6 +614,10 @@ Basic examples:
 "make add to cart button green" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "#22c55e"}
 "center the title" → {"tool": "update_styling", "element": "product_title", "property": "textAlign", "value": "center"}
 "hide stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": false}
+"hide quantity selector" → {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
+"thumbnails on left" → {"tool": "update_setting", "setting": "thumbnails_left", "value": true}
+"place thumbnails to the right" → {"tool": "update_setting", "setting": "thumbnails_right", "value": true}
+"thumbnails below image" → {"tool": "update_setting", "setting": "thumbnails_below", "value": true}
 "move sku above price" → {"tool": "move_element", "element": "product_sku", "position": "above", "target": "product_price"}
 
 ${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
@@ -2375,7 +2385,73 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       // UPDATE SETTING - Store/catalog settings
       // ═══════════════════════════════════════════════════════════════
       case 'update_setting': {
-        const { setting, value } = toolCall;
+        let { setting, value } = toolCall;
+
+        // ═══════════════════════════════════════════════════════════════
+        // COMPOUND SETTING ALIASES - Expand single intent into multiple settings
+        // ═══════════════════════════════════════════════════════════════
+        const compoundSettings = {
+          // "thumbnails_left" → set both gallery layout and position
+          'thumbnails_left': [
+            { setting: 'product_gallery_layout', value: 'vertical' },
+            { setting: 'vertical_gallery_position', value: 'left' }
+          ],
+          'thumbnails_right': [
+            { setting: 'product_gallery_layout', value: 'vertical' },
+            { setting: 'vertical_gallery_position', value: 'right' }
+          ],
+          'thumbnails_below': [
+            { setting: 'product_gallery_layout', value: 'horizontal' }
+          ],
+          'thumbnails_above': [
+            { setting: 'product_gallery_layout', value: 'horizontal' },
+            { setting: 'mobile_gallery_layout', value: 'above' }
+          ]
+        };
+
+        // Check if this is a compound setting alias
+        const compoundKey = setting.toLowerCase().replace(/[- ]/g, '_');
+        if (compoundSettings[compoundKey]) {
+          console.log('🔧 Compound setting detected:', compoundKey, '→', compoundSettings[compoundKey]);
+
+          // Get current store settings
+          const { data: store } = await db
+            .from('stores')
+            .select('id, settings')
+            .eq('id', storeId)
+            .single();
+
+          if (!store) {
+            return { success: false, message: 'Store not found.' };
+          }
+
+          let settings = store.settings || {};
+
+          // Apply all compound settings
+          for (const s of compoundSettings[compoundKey]) {
+            settings[s.setting] = s.value;
+            console.log(`  → Set ${s.setting} = ${s.value}`);
+          }
+
+          await db
+            .from('stores')
+            .update({ settings, updated_at: new Date().toISOString() })
+            .eq('id', storeId);
+
+          const settingNames = compoundSettings[compoundKey].map(s => s.setting).join(', ');
+          return {
+            success: true,
+            message: `Updated ${settingNames}. Refresh your storefront to see the changes.`,
+            data: {
+              type: 'setting',
+              setting: compoundKey,
+              compound: true,
+              settings: compoundSettings[compoundKey],
+              refreshType: 'store_settings',
+              requiresRefresh: true
+            }
+          };
+        }
 
         // Get current store settings
         const { data: store } = await db

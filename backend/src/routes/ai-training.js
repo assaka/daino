@@ -950,7 +950,7 @@ function getStoreSettingsKnowledge() {
       type: 'boolean',
       default_value: false,
       description: 'Hides the quantity input (1, 2, 3...) on product pages. Users can only add 1 at a time.',
-      usage: 'Use when user says "hide quantity selector" or "remove quantity input"'
+      usage: 'Use when user says "hide quantity selector", "remove quantity input", "hide quantity", "no quantity picker", "disable quantity selection"'
     },
     // Category Page Settings
     {
@@ -1064,14 +1064,15 @@ function getStoreSettingsKnowledge() {
       usage: 'Use when user says "one page checkout" or "3 step checkout"'
     },
     // Product Gallery Settings
+    // IMPORTANT: For "thumbnails on left/right", you must set BOTH product_gallery_layout AND vertical_gallery_position
     {
       name: 'Product Gallery Layout',
       setting_path: 'settings.product_gallery_layout',
       table: 'stores',
       type: 'string',
       default_value: 'horizontal',
-      description: 'Product image thumbnails position: "horizontal" (below) or "vertical" (side).',
-      usage: 'Use when user says "vertical thumbnails" or "horizontal gallery"'
+      description: 'Product image thumbnails layout: "horizontal" (thumbnails below main image) or "vertical" (thumbnails on side). IMPORTANT: When user says "thumbnails on left" or "thumbnails on right", set this to "vertical" AND set vertical_gallery_position accordingly.',
+      usage: 'Use when user says "thumbnails below", "horizontal gallery", "thumbnails on left", "thumbnails on right", "thumbnails on side"'
     },
     {
       name: 'Vertical Gallery Position',
@@ -1079,8 +1080,8 @@ function getStoreSettingsKnowledge() {
       table: 'stores',
       type: 'string',
       default_value: 'left',
-      description: 'When gallery is vertical, thumbnails on "left" or "right" side.',
-      usage: 'Use when user says "thumbnails on right" or "gallery on left"'
+      description: 'When product_gallery_layout is "vertical", determines which side: "left" or "right". MUST be used together with product_gallery_layout="vertical".',
+      usage: 'Use when user says "thumbnails on left" (set to "left") or "thumbnails on right" (set to "right"). Always set product_gallery_layout to "vertical" first.'
     },
     // Navigation Settings
     {
