@@ -50,6 +50,79 @@ class SupabaseAdapter extends DatabaseAdapter {
    */
   async testConnection() {
     try {
+      // DEBUG: Log connection attempt details
+      const supabaseUrl = this.client?.supabaseUrl || this.config?.projectUrl || 'UNKNOWN';
+      console.log('═'.repeat(60));
+      console.log('🔌 DEBUG: SupabaseAdapter.testConnection()');
+      console.log('═'.repeat(60));
+      console.log('   Supabase URL:', supabaseUrl);
+      console.log('   Has client:', !!this.client);
+      console.log('   Client keys:', this.client ? Object.keys(this.client) : 'N/A');
+      console.log('   Config keys:', this.config ? Object.keys(this.config) : 'N/A');
+      console.log('═'.repeat(60));
+
+      // DEBUG: First test basic network connectivity to Supabase (no credentials needed)
+      console.log('🌐 DEBUG: Testing basic network connectivity...');
+      try {
+        const dns = require('dns').promises;
+        const https = require('https');
+
+        // Test 1: DNS resolution
+        console.log('   [1/3] Testing DNS resolution for supabase.co...');
+        const dnsResult = await dns.lookup('supabase.co');
+        console.log('   ✅ DNS resolved: supabase.co ->', dnsResult.address);
+
+        // Test 2: DNS for specific project URL
+        if (supabaseUrl && supabaseUrl !== 'UNKNOWN') {
+          try {
+            const url = new URL(supabaseUrl);
+            console.log(`   [2/3] Testing DNS resolution for ${url.hostname}...`);
+            const projectDns = await dns.lookup(url.hostname);
+            console.log(`   ✅ DNS resolved: ${url.hostname} ->`, projectDns.address);
+          } catch (urlError) {
+            console.log(`   ❌ Failed to resolve project URL: ${urlError.message}`);
+          }
+        }
+
+        // Test 3: HTTPS connectivity to Supabase API
+        console.log('   [3/3] Testing HTTPS connectivity to api.supabase.com...');
+        const httpsTest = await new Promise((resolve, reject) => {
+          const req = https.get('https://api.supabase.com/v1/projects', {
+            timeout: 10000,
+            headers: { 'User-Agent': 'DainoStore-NetworkTest/1.0' }
+          }, (res) => {
+            // We expect 401 (unauthorized) since we have no token - that's fine, it means network works
+            console.log(`   ✅ HTTPS connection successful (status: ${res.statusCode})`);
+            resolve(true);
+          });
+          req.on('error', (err) => {
+            console.log(`   ❌ HTTPS connection failed: ${err.message}`);
+            reject(err);
+          });
+          req.on('timeout', () => {
+            req.destroy();
+            console.log('   ❌ HTTPS connection timed out');
+            reject(new Error('Connection timed out'));
+          });
+        });
+      } catch (networkError) {
+        console.log('═'.repeat(60));
+        console.log('❌ NETWORK CONNECTIVITY ISSUE DETECTED');
+        console.log('═'.repeat(60));
+        console.log('   Error:', networkError.message);
+        console.log('   This is NOT a Supabase credential issue.');
+        console.log('   The container cannot reach Supabase servers.');
+        console.log('   Possible causes:');
+        console.log('   - DNS resolution failure');
+        console.log('   - Firewall blocking outbound HTTPS');
+        console.log('   - Docker network misconfiguration');
+        console.log('   - SSL/TLS certificate issues');
+        console.log('═'.repeat(60));
+        // Continue anyway to get the actual Supabase error
+      }
+
+      console.log('   Attempting test query to "stores" table...');
+
       // Try to query any table - if it fails with "relation does not exist",
       // that's fine - the connection works, just no tables yet
       const { data, error } = await this.client

@@ -342,6 +342,31 @@ class ConnectionManager {
     // Decrypt credentials from master DB
     const credentials = decryptDatabaseCredentials(storeDb.connection_string_encrypted);
 
+    // DEBUG: Log decrypted credentials (mask sensitive values)
+    console.log('═'.repeat(60));
+    console.log('🔍 DEBUG: Decrypted database credentials for store', storeId);
+    console.log('═'.repeat(60));
+    console.log('   Database type:', storeDb.database_type);
+    console.log('   Host from DB:', storeDb.host);
+    console.log('   Credentials object keys:', Object.keys(credentials || {}));
+    if (credentials) {
+      console.log('   projectUrl:', credentials.projectUrl || 'NOT SET');
+      console.log('   serviceRoleKey:', credentials.serviceRoleKey ? `${credentials.serviceRoleKey.substring(0, 20)}...` : 'NOT SET');
+      console.log('   host:', credentials.host || 'NOT SET');
+      console.log('   database:', credentials.database || 'NOT SET');
+      console.log('   username:', credentials.username || 'NOT SET');
+      console.log('   password:', credentials.password ? '***SET***' : 'NOT SET');
+      console.log('   Full credentials (for debugging):');
+      console.log('   ', JSON.stringify({
+        ...credentials,
+        serviceRoleKey: credentials.serviceRoleKey ? `${credentials.serviceRoleKey.substring(0, 20)}...MASKED` : null,
+        password: credentials.password ? '***MASKED***' : null,
+        accessToken: credentials.accessToken ? `${credentials.accessToken.substring(0, 20)}...MASKED` : null,
+        refreshToken: credentials.refreshToken ? '***MASKED***' : null
+      }, null, 2).split('\n').join('\n    '));
+    }
+    console.log('═'.repeat(60));
+
     // Create connection based on database type
     const connection = await this._createConnection(
       storeDb.database_type,
@@ -394,6 +419,15 @@ class ConnectionManager {
    * @private
    */
   static _createSupabaseConnection(config) {
+    // DEBUG: Log Supabase connection creation
+    console.log('═'.repeat(60));
+    console.log('🔧 DEBUG: _createSupabaseConnection()');
+    console.log('═'.repeat(60));
+    console.log('   projectUrl:', config?.projectUrl || 'NOT PROVIDED');
+    console.log('   serviceRoleKey:', config?.serviceRoleKey ? `${config.serviceRoleKey.substring(0, 20)}...` : 'NOT PROVIDED');
+    console.log('   schema:', config?.schema || 'public (default)');
+    console.log('═'.repeat(60));
+
     if (!config.projectUrl) {
       throw new Error('Supabase projectUrl is required');
     }
