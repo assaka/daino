@@ -491,6 +491,19 @@ const WorkspaceAIPanel = () => {
         const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
         if (refreshTypes.includes(response.data?.type)) {
           setTimeout(() => {
+            // Check if this is a store settings change (theme colors, etc.)
+            if (response.data?.refreshType === 'store_settings' || response.data?.requiresRefresh) {
+              console.log('🔄 Store setting updated via chat, triggering store refresh');
+              try {
+                const storeChannel = new BroadcastChannel('store_settings_update');
+                storeChannel.postMessage({ type: 'clear_cache', storeId });
+                storeChannel.close();
+              } catch (e) {
+                console.warn('BroadcastChannel not supported');
+              }
+              window.dispatchEvent(new CustomEvent('storeSettingsUpdated', { detail: { storeId } }));
+            }
+
             refreshPreview?.();
             triggerConfigurationRefresh?.();
 
@@ -917,6 +930,19 @@ const WorkspaceAIPanel = () => {
       if (refreshTypes.includes(response.data?.type)) {
         console.log('🎨 Triggering preview refresh for type:', response.data?.type);
         setTimeout(() => {
+          // Check if this is a store settings change (theme colors, etc.)
+          if (response.data?.refreshType === 'store_settings' || response.data?.requiresRefresh) {
+            console.log('🔄 Store setting updated via smart chat, triggering store refresh');
+            try {
+              const storeChannel = new BroadcastChannel('store_settings_update');
+              storeChannel.postMessage({ type: 'clear_cache', storeId });
+              storeChannel.close();
+            } catch (e) {
+              console.warn('BroadcastChannel not supported');
+            }
+            window.dispatchEvent(new CustomEvent('storeSettingsUpdated', { detail: { storeId } }));
+          }
+
           console.log('🎨 Calling refreshPreview and triggerConfigurationRefresh NOW');
           refreshPreview?.();
           triggerConfigurationRefresh?.();
