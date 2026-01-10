@@ -43,6 +43,7 @@ export { cachedApiCall, clearCache, clearCacheKeys } from '@/utils/cacheUtils';
 
 export const StoreProvider = ({ children }) => {
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   // Check if we should skip StoreProvider BEFORE any conditional logic
   // but AFTER useLocation (which is always called)
@@ -245,6 +246,8 @@ export const StoreProvider = ({ children }) => {
         // Clear all caches
         clearCache();
         localStorage.removeItem('storeProviderCache');
+        // Invalidate React Query cache for store bootstrap
+        queryClient.invalidateQueries({ queryKey: ['store-bootstrap'] });
         // Force refetch of bootstrap data
         refetchBootstrap();
         // Also trigger a storage event to notify other components
@@ -275,7 +278,7 @@ export const StoreProvider = ({ children }) => {
     } catch (e) {
       console.warn('BroadcastChannel not supported:', e);
     }
-  }, [shouldSkip, refetchBootstrap]);
+  }, [shouldSkip, refetchBootstrap, queryClient]);
 
   // Country selection handler
   const handleSetSelectedCountry = useCallback((country) => {
