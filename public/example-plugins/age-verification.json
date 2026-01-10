@@ -6,7 +6,7 @@
     "slug": "age-verification",
     "version": "1.0.0",
     "description": "Gate age-restricted products with verification modal before viewing or purchasing",
-    "author": "DainoStore",
+    "author": "DainoStore",/src
     "category": "compliance",
     "type": "utility",
     "framework": "react",

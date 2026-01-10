@@ -146,44 +146,99 @@ router.get('/widgets/:widgetId', async (req, res) => {
 /**
  * GET /api/plugins/starters
  * Get starter templates for AI Studio
- * Fetches from master database (system plugins) + public user plugins
+ * Fetches from: 1) public/example-plugins files, 2) master DB, 3) tenant templates
  */
 router.get('/starters', async (req, res) => {
   try {
+    const fs = require('fs').promises;
+    const path = require('path');
     const { masterDbClient } = require('../database/masterConnection');
 
-    let systemStarters = [];
+    let fileStarters = [];
+    let dbStarters = [];
     let tenantStarters = [];
 
-    // 1. Fetch system starters from master database
-    if (masterDbClient) {
-      const { data: masterStarters, error: masterError } = await masterDbClient
-        .from('plugin_starters')
-        .select('id, name, slug, version, description, icon, starter_description, starter_prompt, display_order, category, type, difficulty, tags')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+    // 1. Load example plugins from public/example-plugins folder (primary source)
+    try {
+      const examplePluginsDir = path.join(__dirname, '../../../public/example-plugins');
+      const files = await fs.readdir(examplePluginsDir);
+      const jsonFiles = files.filter(f => f.endsWith('.json'));
 
-      if (!masterError && masterStarters) {
-        systemStarters = masterStarters.map(s => ({
-          id: s.id,
-          name: s.name,
-          slug: s.slug,
-          description: s.starter_description || s.description,
-          icon: s.icon || '🔌',
-          prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
-          order: s.display_order || 0,
-          category: s.category,
-          type: s.type,
-          difficulty: s.difficulty,
-          tags: s.tags,
-          source: 'system'
-        }));
-      } else if (masterError) {
-        console.warn('Could not fetch system starters from master:', masterError.message);
+      // Icon mapping for categories
+      const categoryIcons = {
+        'commerce': '🛒',
+        'marketing': '📣',
+        'analytics': '📊',
+        'compliance': '🔒',
+        'utility': '🔧',
+        'communication': '💬',
+        'display': '🎨'
+      };
+
+      for (let i = 0; i < jsonFiles.length; i++) {
+        try {
+          const filePath = path.join(examplePluginsDir, jsonFiles[i]);
+          const content = await fs.readFile(filePath, 'utf-8');
+          const pluginData = JSON.parse(content);
+          const plugin = pluginData.plugin || pluginData;
+
+          fileStarters.push({
+            id: `example-${plugin.slug}`,
+            name: plugin.name,
+            slug: plugin.slug,
+            description: plugin.description,
+            icon: categoryIcons[plugin.category] || '🔌',
+            prompt: `Install the ${plugin.name} plugin`,
+            order: i + 1,
+            category: plugin.category,
+            type: plugin.type || 'feature',
+            source: 'example',
+            hasCode: true,
+            fileName: jsonFiles[i]
+          });
+        } catch (parseErr) {
+          console.warn(`Could not parse example plugin ${jsonFiles[i]}:`, parseErr.message);
+        }
+      }
+    } catch (fsErr) {
+      console.warn('Could not read example plugins directory:', fsErr.message);
+    }
+
+    // 2. Fetch additional starters from master database (if any)
+    if (masterDbClient) {
+      try {
+        const { data: masterStarters, error: masterError } = await masterDbClient
+          .from('plugin_starters')
+          .select('id, name, slug, version, description, icon, starter_description, starter_prompt, display_order, category, type, difficulty, tags')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (!masterError && masterStarters) {
+          // Only add if not already in file starters
+          const existingSlugs = new Set(fileStarters.map(s => s.slug));
+          dbStarters = masterStarters
+            .filter(s => !existingSlugs.has(s.slug))
+            .map(s => ({
+              id: s.id,
+              name: s.name,
+              slug: s.slug,
+              description: s.starter_description || s.description,
+              icon: s.icon || '🔌',
+              prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
+              order: (s.display_order || 0) + 50,
+              category: s.category,
+              type: s.type,
+              difficulty: s.difficulty,
+              tags: s.tags,
+              source: 'system'
+            }));
+        }
+      } catch (masterErr) {
+        console.warn('Could not fetch system starters from master:', masterErr.message);
       }
     }
 
-    // 2. Fetch tenant-specific starters (user-created templates marked as starters)
+    // 3. Fetch tenant-specific starters (user-created templates)
     try {
       const tenantDb = await getTenantConnection(req);
       const { data: localStarters, error: tenantError } = await tenantDb
@@ -194,24 +249,27 @@ router.get('/starters', async (req, res) => {
         .order('starter_order', { ascending: true });
 
       if (!tenantError && localStarters) {
-        tenantStarters = localStarters.map(s => ({
-          id: s.id,
-          name: s.name,
-          slug: s.slug,
-          description: s.starter_description || s.description,
-          icon: s.starter_icon || '🔌',
-          prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
-          order: (s.starter_order || 0) + 100, // Tenant starters after system starters
-          category: s.category,
-          source: 'tenant'
-        }));
+        const existingSlugs = new Set([...fileStarters, ...dbStarters].map(s => s.slug));
+        tenantStarters = localStarters
+          .filter(s => !existingSlugs.has(s.slug))
+          .map(s => ({
+            id: s.id,
+            name: s.name,
+            slug: s.slug,
+            description: s.starter_description || s.description,
+            icon: s.starter_icon || '🔌',
+            prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
+            order: (s.starter_order || 0) + 100,
+            category: s.category,
+            source: 'tenant'
+          }));
       }
     } catch (tenantErr) {
       console.warn('Could not fetch tenant starters:', tenantErr.message);
     }
 
-    // 3. Combine and sort by order
-    const allStarters = [...systemStarters, ...tenantStarters]
+    // 4. Combine and sort by order
+    const allStarters = [...fileStarters, ...dbStarters, ...tenantStarters]
       .sort((a, b) => a.order - b.order);
 
     res.json({
