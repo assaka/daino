@@ -926,9 +926,11 @@ const WorkspaceAIPanel = () => {
       // Auto-refresh preview and editor after styling or layout changes
       const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
       console.log('🎨 Response data type check:', response.data?.type, 'in refreshTypes:', refreshTypes.includes(response.data?.type));
+      console.log('🎨 Response data full:', JSON.stringify(response.data, null, 2));
       console.log('🎨 refreshPreview available:', !!refreshPreview, 'triggerConfigurationRefresh available:', !!triggerConfigurationRefresh);
       if (refreshTypes.includes(response.data?.type)) {
         console.log('🎨 Triggering preview refresh for type:', response.data?.type);
+        console.log('🎨 Checking store settings refresh:', { refreshType: response.data?.refreshType, requiresRefresh: response.data?.requiresRefresh });
         setTimeout(() => {
           // Check if this is a store settings change (theme colors, etc.)
           if (response.data?.refreshType === 'store_settings' || response.data?.requiresRefresh) {
