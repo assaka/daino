@@ -42,6 +42,32 @@ const WorkspaceStorefrontPreview = () => {
       }
     }
   }, [previewRefreshTrigger]);
+
+  // Listen for store settings updates (theme colors, etc.) and force full reload
+  useEffect(() => {
+    const handleStoreSettingsUpdated = () => {
+      console.log('🔄 Store settings updated, forcing iframe reload');
+      setRefreshKey(Date.now());
+      setIsLoading(true);
+
+      // Force full iframe reload by reloading the iframe src
+      if (iframeRef.current) {
+        try {
+          iframeRef.current.contentWindow?.location.reload();
+        } catch (e) {
+          // Cross-origin, use src reload instead
+          const currentSrc = iframeRef.current.src;
+          iframeRef.current.src = '';
+          setTimeout(() => {
+            iframeRef.current.src = currentSrc.split('?')[0] + '?_t=' + Date.now();
+          }, 100);
+        }
+      }
+    };
+
+    window.addEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
+    return () => window.removeEventListener('storeSettingsUpdated', handleStoreSettingsUpdated);
+  }, []);
   const [firstProductSlug, setFirstProductSlug] = useState(null);
   const [firstCategorySlug, setFirstCategorySlug] = useState(null);
 
