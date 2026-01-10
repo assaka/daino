@@ -2,7 +2,7 @@
  * Dynamic Plugin Admin Page Loader
  * Loads and renders admin pages from plugin_admin_pages table
  * 100% database-driven - no hardcoded components!
- * Supports both JSX and React.createElement syntax via Babel transformation
+ * JSX is pre-compiled on the backend, so no runtime transformation needed
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -17,35 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as LucideIcons from 'lucide-react';
-
-// Load Babel standalone for JSX transformation
-let babelLoaded = false;
-let babelLoadPromise = null;
-
-const loadBabel = () => {
-  if (babelLoaded) return Promise.resolve();
-  if (babelLoadPromise) return babelLoadPromise;
-
-  babelLoadPromise = new Promise((resolve, reject) => {
-    if (window.Babel) {
-      babelLoaded = true;
-      resolve();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@babel/standalone/babel.min.js';
-    script.async = true;
-    script.onload = () => {
-      babelLoaded = true;
-      resolve();
-    };
-    script.onerror = () => reject(new Error('Failed to load Babel'));
-    document.head.appendChild(script);
-  });
-
-  return babelLoadPromise;
-};
 
 const DynamicPluginAdminPage = () => {
   const { pluginSlug, pageKey } = useParams();
@@ -67,31 +38,17 @@ const DynamicPluginAdminPage = () => {
       // Get plugin ID from slug
       const pluginResponse = await apiClient.get(`plugins/registry`);
 
-      console.log('Plugin API response:', pluginResponse);
-
       // apiClient transforms list responses - it returns array directly
       const plugins = Array.isArray(pluginResponse)
         ? pluginResponse
         : (pluginResponse.data || pluginResponse || []);
-      console.log('Plugins array:', plugins);
-      console.log('Looking for slug:', pluginSlug);
 
       const plugin = Array.isArray(plugins)
         ? plugins.find(p => p.slug === pluginSlug)
         : null;
 
       if (!plugin) {
-        console.error('❌ Plugin not found in response');
-        if (Array.isArray(plugins)) {
-          console.error('Available plugins:');
-          plugins.forEach((p, i) => {
-            console.error(`  ${i + 1}. Name: "${p.name}", Slug: "${p.slug}", ID: ${p.id}`);
-          });
-          console.error(`\nSearching for: "${pluginSlug}"`);
-          console.error('Slug matches:', plugins.map(p => p.slug === pluginSlug));
-        } else {
-          console.error('Plugins is not an array:', plugins);
-        }
+        console.error('❌ Plugin not found:', pluginSlug);
         throw new Error(`Plugin not found: ${pluginSlug}`);
       }
 
@@ -100,13 +57,11 @@ const DynamicPluginAdminPage = () => {
       // Get admin page from plugin_admin_pages table
       const pagesResponse = await apiClient.get(`plugins/registry/${plugin.id}`);
 
-      console.log('Pages API response:', pagesResponse);
-
       // For single record, apiClient returns { success, data: {...} }
       const pluginData = pagesResponse.data || pagesResponse;
       const adminPages = pluginData.adminPages || [];
 
-      console.log('📋 Admin pages for plugin:', adminPages.length, adminPages);
+      console.log('📋 Admin pages for plugin:', adminPages.length);
 
       const adminPage = adminPages.find(p => p.pageKey === pageKey);
 
@@ -115,40 +70,9 @@ const DynamicPluginAdminPage = () => {
       }
 
       console.log('✅ Found admin page:', adminPage.pageName);
-      console.log('📝 Component code length:', adminPage.componentCode?.length);
 
-      // Create React component from database code
+      // Component code is pre-compiled on the backend (JSX -> React.createElement)
       let componentCode = adminPage.componentCode;
-
-      // Remove import statements (we'll provide dependencies as parameters)
-      componentCode = componentCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
-
-      // Extract the default export
-      componentCode = componentCode.replace(/export\s+default\s+/, '');
-
-      console.log('📝 Cleaned component code (first 200 chars):', componentCode.substring(0, 200));
-
-      // Check if code contains JSX (has < followed by letter or / )
-      const hasJSX = /<[A-Za-z\/]/.test(componentCode);
-      console.log('📝 Has JSX:', hasJSX);
-
-      // If JSX, load Babel and transform
-      if (hasJSX) {
-        console.log('📝 Loading Babel for JSX transformation...');
-        await loadBabel();
-
-        try {
-          const transformed = window.Babel.transform(componentCode, {
-            presets: ['react'],
-            filename: 'component.jsx'
-          });
-          componentCode = transformed.code;
-          console.log('📝 Transformed code (first 300 chars):', componentCode.substring(0, 300));
-        } catch (babelError) {
-          console.error('❌ Babel transformation failed:', babelError);
-          throw new Error(`JSX transformation failed: ${babelError.message}`);
-        }
-      }
 
       // Find the function name in the code
       const functionNameMatch = componentCode.match(/(?:function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*(?:\(|function))/);

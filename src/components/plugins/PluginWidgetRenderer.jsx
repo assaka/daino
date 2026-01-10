@@ -1,8 +1,20 @@
-// src/components/plugins/PluginWidgetRenderer.jsx
-import React, { useState, useEffect } from 'react';
+/**
+ * Plugin Widget Renderer
+ * Loads and renders widget components from plugin_widgets table
+ * Widget code is pre-compiled on the backend (JSX -> React.createElement)
+ */
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '@/api/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+
+// Import UI components that widgets can use
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import * as LucideIcons from 'lucide-react';
 
 export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
   const [Widget, setWidget] = useState(null);
@@ -23,7 +35,7 @@ export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
         throw new Error(response.error || 'Failed to load widget');
       }
 
-      // Compile widget component from code
+      // Widget code is pre-compiled on the backend (JSX -> React.createElement)
       const componentCode = response.widget.componentCode;
       const compiledComponent = compileWidgetComponent(componentCode);
 
@@ -37,24 +49,59 @@ export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
   };
 
   const compileWidgetComponent = (code) => {
-    // SECURITY NOTE: This evaluates user code. In production, use proper sandboxing.
     try {
-      // Remove 'export default' from code
+      // Remove 'export default' from code if present
       let cleanCode = code.trim().replace(/^export\s+default\s+/, '');
 
-      // Wrap function declarations in parentheses for evaluation
-      if (cleanCode.startsWith('function')) {
-        cleanCode = `(${cleanCode})`;
+      // Find the function name in the code
+      const functionNameMatch = cleanCode.match(/(?:function\s+(\w+)\s*\(|const\s+(\w+)\s*=\s*(?:\(|function))/);
+      const componentName = functionNameMatch ? (functionNameMatch[1] || functionNameMatch[2]) : null;
+
+      if (!componentName) {
+        // If no named function found, try to wrap as anonymous function
+        if (cleanCode.startsWith('function')) {
+          cleanCode = `(${cleanCode})`;
+        }
+
+        // Create component with just React dependency
+        const createComponent = new Function('React', `
+          'use strict';
+          return ${cleanCode};
+        `);
+        return createComponent(React);
       }
 
-      // Create the component using eval in a controlled scope
-      // This preserves JSX syntax which React will handle
-      const createComponent = new Function('React', `
-        'use strict';
-        return ${cleanCode};
-      `);
+      // Create component with all dependencies
+      const Component = eval(`
+        (function() {
+          const React = arguments[0];
+          const useState = arguments[1];
+          const useEffect = arguments[2];
+          const useCallback = arguments[3];
+          const useMemo = arguments[4];
+          const Card = arguments[5];
+          const CardContent = arguments[6];
+          const CardHeader = arguments[7];
+          const CardTitle = arguments[8];
+          const Button = arguments[9];
+          const Input = arguments[10];
+          const Badge = arguments[11];
+          const LucideIcons = arguments[12];
 
-      return createComponent(React);
+          // Destructure common Lucide icons
+          const { Star, Check, X, Gift, ShoppingCart, Heart, User, Settings } = LucideIcons;
+
+          ${cleanCode}
+
+          return ${componentName};
+        })
+      `)(
+        React, useState, useEffect, useCallback, useMemo,
+        Card, CardContent, CardHeader, CardTitle,
+        Button, Input, Badge, LucideIcons
+      );
+
+      return Component;
     } catch (error) {
       console.error('Failed to compile widget:', error);
       console.error('Widget code:', code);

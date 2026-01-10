@@ -6,6 +6,7 @@ const PluginPurchaseService = require('../services/PluginPurchaseService');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { storeResolver } = require('../middleware/storeResolver');
 const { optionalAuthMiddleware } = require('../middleware/authMiddleware');
+const { transformComponentCode } = require('../utils/jsxTransformer');
 // Note: cron_jobs is in tenant Supabase DB, not Sequelize
 
 /**
@@ -1500,15 +1501,27 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    // Import widgets
+    // Import widgets (with JSX transformation)
     for (const widget of packageData.widgets || []) {
       const uniqueWidgetId = `${widget.widgetId}-${pluginId.substring(0, 8)}`;
+
+      // Transform JSX to React.createElement() if present
+      let componentCode = widget.componentCode;
+      if (componentCode) {
+        const transformResult = await transformComponentCode(componentCode, `${widget.widgetId}.jsx`);
+        if (transformResult.success) {
+          componentCode = transformResult.code;
+        } else {
+          console.warn(`Warning: Failed to transform widget ${widget.widgetId}:`, transformResult.error);
+        }
+      }
+
       await tenantDb.from('plugin_widgets').insert({
         plugin_id: pluginId,
         widget_id: uniqueWidgetId,
         widget_name: widget.widgetName,
         description: widget.description,
-        component_code: widget.componentCode,
+        component_code: componentCode,
         default_config: widget.defaultConfig || {},
         category: widget.category || 'functional',
         icon: widget.icon || 'Box',
@@ -1617,14 +1630,25 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    // Import admin pages
+    // Import admin pages (with JSX transformation)
     for (const page of packageData.adminPages || []) {
+      // Transform JSX to React.createElement() if present
+      let componentCode = page.componentCode;
+      if (componentCode) {
+        const transformResult = await transformComponentCode(componentCode, `${page.pageKey}.jsx`);
+        if (transformResult.success) {
+          componentCode = transformResult.code;
+        } else {
+          console.warn(`Warning: Failed to transform admin page ${page.pageKey}:`, transformResult.error);
+        }
+      }
+
       await tenantDb.from('plugin_admin_pages').insert({
         plugin_id: pluginId,
         page_key: page.pageKey,
         page_name: page.pageName,
         route: page.route,
-        component_code: page.componentCode,
+        component_code: componentCode,
         description: page.description,
         icon: page.icon,
         category: page.category,
@@ -3647,12 +3671,23 @@ router.post('/:id/admin-pages', async (req, res) => {
       const route = (page.route || `/admin/plugins/${plugin.slug}/${page.pageKey}`)
         .replace(/PLUGIN_SLUG/g, plugin.slug);
 
+      // Transform JSX to React.createElement() if present
+      let componentCode = page.componentCode;
+      if (componentCode) {
+        const transformResult = await transformComponentCode(componentCode, `${page.pageKey}.jsx`);
+        if (transformResult.success) {
+          componentCode = transformResult.code;
+        } else {
+          console.warn(`Warning: Failed to transform admin page ${page.pageKey}:`, transformResult.error);
+        }
+      }
+
       const pageData = {
         plugin_id: id,
         page_key: page.pageKey,
         page_name: page.pageName,
         route: route,
-        component_code: page.componentCode,
+        component_code: componentCode,
         icon: page.icon || 'Settings',
         category: page.category || 'settings',
         description: page.description || '',
