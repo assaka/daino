@@ -253,8 +253,8 @@ router.get('/starters/:slug', async (req, res) => {
 
 /**
  * POST /api/plugins/starters/seed
- * Seed plugin_starters table from public/example-plugins folder
- * Syncs all example plugin JSON files to the master database
+ * Seed plugin_starters table with plugin data
+ * Accepts plugins array in POST body, or reads from filesystem if no body provided
  */
 router.post('/starters/seed', async (req, res) => {
   try {
@@ -281,20 +281,38 @@ router.post('/starters/seed', async (req, res) => {
       'marketplace': '🏪'
     };
 
-    // Read all example plugins from folder
-    const examplePluginsDir = path.join(__dirname, '../../../public/example-plugins');
-    const files = await fs.readdir(examplePluginsDir);
-    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    let pluginsToSeed = [];
+
+    // Check if plugins are provided in request body
+    if (req.body && req.body.plugins && Array.isArray(req.body.plugins)) {
+      pluginsToSeed = req.body.plugins;
+    } else {
+      // Fallback: Read from filesystem (for local development)
+      try {
+        const examplePluginsDir = path.join(__dirname, '../../../public/example-plugins');
+        const files = await fs.readdir(examplePluginsDir);
+        const jsonFiles = files.filter(f => f.endsWith('.json'));
+
+        for (const fileName of jsonFiles) {
+          const filePath = path.join(examplePluginsDir, fileName);
+          const content = await fs.readFile(filePath, 'utf-8');
+          pluginsToSeed.push(JSON.parse(content));
+        }
+      } catch (fsErr) {
+        return res.status(400).json({
+          success: false,
+          error: 'No plugins provided in request body and filesystem not available. Send { "plugins": [...] } in POST body.'
+        });
+      }
+    }
 
     let created = 0;
     let updated = 0;
     let failed = 0;
 
-    for (let i = 0; i < jsonFiles.length; i++) {
+    for (let i = 0; i < pluginsToSeed.length; i++) {
       try {
-        const filePath = path.join(examplePluginsDir, jsonFiles[i]);
-        const content = await fs.readFile(filePath, 'utf-8');
-        const pluginData = JSON.parse(content);
+        const pluginData = pluginsToSeed[i];
         const plugin = pluginData.plugin || pluginData;
 
         const starterData = {
@@ -339,7 +357,7 @@ router.post('/starters/seed', async (req, res) => {
           }
         }
       } catch (parseErr) {
-        console.warn(`Failed to parse ${jsonFiles[i]}:`, parseErr.message);
+        console.warn(`Failed to process plugin at index ${i}:`, parseErr.message);
         failed++;
       }
     }
@@ -347,7 +365,7 @@ router.post('/starters/seed', async (req, res) => {
     res.json({
       success: true,
       message: `Seeded ${created} new, updated ${updated}, ${failed} failed`,
-      total: jsonFiles.length,
+      total: pluginsToSeed.length,
       created,
       updated,
       failed
