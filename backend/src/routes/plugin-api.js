@@ -3671,8 +3671,8 @@ router.post('/:id/admin-pages', async (req, res) => {
       .eq('id', id)
       .single();
 
-    if (currentPlugin?.manifest) {
-      const manifest = currentPlugin.manifest;
+    if (currentPlugin?.manifest || savedPages.length > 0) {
+      const manifest = currentPlugin?.manifest || {};
       if (!manifest.adminPages) manifest.adminPages = [];
 
       // Add/update admin page entries in manifest
@@ -3691,10 +3691,37 @@ router.post('/:id/admin-pages', async (req, res) => {
         }
       }
 
+      // Set adminNavigation for sidebar display (uses first admin page as main entry)
+      // This is what AdminNavigationService looks for
+      if (savedPages.length > 0 && !manifest.adminNavigation) {
+        const firstPage = savedPages[0];
+        manifest.adminNavigation = {
+          enabled: true,
+          label: plugin.name,
+          icon: firstPage.icon || 'Puzzle',
+          route: firstPage.route,
+          description: `${plugin.name} settings and management`,
+          order: 100
+        };
+      }
+
       await tenantDb
         .from('plugin_registry')
         .update({ manifest })
         .eq('id', id);
+    }
+
+    // Also register in admin_navigation_registry for immediate visibility
+    const AdminNavigationService = require('../services/AdminNavigationService');
+    for (const page of savedPages) {
+      await AdminNavigationService.registerPluginNavigation(id, [{
+        key: `plugin-${plugin.slug}-${page.page_key}`,
+        label: page.page_name,
+        icon: page.icon || 'Settings',
+        route: page.route,
+        category: 'plugins',
+        order: page.order_position || 100
+      }], tenantDb);
     }
 
     res.json({
