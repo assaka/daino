@@ -850,6 +850,8 @@ function resolveSlotId(userInput, pageType = 'product') {
  * @returns {Object|null} Result object if theme setting was updated, null otherwise
  */
 async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db) {
+  console.log('🔍 detectAndUpdateThemeSetting called:', { slotId, property, value, storeId });
+
   // Map of slot IDs to their theme settings (discovered from slot configs)
   // This is populated by reading the template variables from slot config files
   const slotThemeMap = {
@@ -857,6 +859,7 @@ async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db)
       'backgroundColor': 'add_to_cart_button_bg_color',
       'background': 'add_to_cart_button_bg_color',
       'background-color': 'add_to_cart_button_bg_color',
+      'backgroundcolor': 'add_to_cart_button_bg_color',
       'color': 'add_to_cart_button_text_color',
       'borderRadius': 'add_to_cart_button_border_radius',
       'border-radius': 'add_to_cart_button_border_radius'
@@ -867,10 +870,13 @@ async function detectAndUpdateThemeSetting(slotId, property, value, storeId, db)
   };
 
   const slotSettings = slotThemeMap[slotId];
+  console.log('🔍 Slot settings found:', slotSettings ? 'yes' : 'no', 'for slotId:', slotId);
   if (!slotSettings) return null;
 
   const normalizedProp = property?.toLowerCase().replace(/\s+/g, '');
+  console.log('🔍 Looking for property:', property, 'normalized:', normalizedProp);
   const themeSetting = slotSettings[normalizedProp] || slotSettings[property];
+  console.log('🔍 Theme setting found:', themeSetting);
   if (!themeSetting) return null;
 
   // Map color names to hex (same as update_styling)
