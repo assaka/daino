@@ -2619,10 +2619,9 @@ async function saveEntityDefinition(item) {
   const entityData = {
     entity_name: item.table_name,
     display_name: item.table_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-    description: item.description,
+    description: item.description + (item.important_notes ? ` Note: ${item.important_notes}` : ''),
     table_name: item.table_name,
     fields,
-    metadata: { important_notes: item.important_notes, trained_at: new Date().toISOString() },
     supported_operations: ['list', 'get', 'create', 'update', 'delete'],
     is_active: true,
     category: 'trained',
