@@ -594,6 +594,31 @@ router.get('/active', async (req, res) => {
         // Scripts are optional
       }
 
+      // Load widgets from plugin_widgets table
+      let widgets = [];
+      try {
+        const { data: widgetsResult, error: widgetsError } = await tenantDb
+          .from('plugin_widgets')
+          .select('widget_id, widget_name, description, component_code, default_config, category, icon, is_enabled')
+          .eq('plugin_id', plugin.id)
+          .eq('is_enabled', true);
+
+        if (widgetsError) throw widgetsError;
+
+        widgets = (widgetsResult || []).map(w => ({
+          widgetId: w.widget_id,
+          widgetName: w.widget_name,
+          description: w.description,
+          componentCode: w.component_code,
+          defaultConfig: w.default_config,
+          category: w.category,
+          icon: w.icon,
+          is_enabled: w.is_enabled
+        }));
+      } catch (widgetError) {
+        // Widgets are optional
+      }
+
       // Parse manifest
       const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
 
@@ -610,7 +635,8 @@ router.get('/active', async (req, res) => {
         generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
         hooks: hooks,
         events: events,
-        frontendScripts: frontendScripts // Include scripts in response!
+        frontendScripts: frontendScripts,
+        widgets: widgets // Include widgets in response!
       };
     }));
 

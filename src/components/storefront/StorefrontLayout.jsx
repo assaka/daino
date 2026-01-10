@@ -37,6 +37,7 @@ import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 import LanguageSelector from '@/components/shared/LanguageSelector';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { PreviewModeProvider, usePreviewMode } from '@/contexts/PreviewModeContext';
+import GlobalPluginWidgets from './GlobalPluginWidgets';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1053,6 +1054,9 @@ export default function StorefrontLayout({ children }) {
             {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
             )}
+
+            {/* Global Plugin Widgets (floating chat, support widgets, etc.) */}
+            <GlobalPluginWidgets />
             </div>
         </SeoSettingsProvider>
         </PreviewModeProvider>
