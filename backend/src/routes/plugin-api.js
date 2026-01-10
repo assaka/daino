@@ -1098,7 +1098,16 @@ ${m.down_sql || '-- No down SQL'}`,
         .eq('is_enabled', true)
         .order('page_key', { ascending: true });
 
-      adminPages = adminPagesResult || [];
+      // Transform to camelCase for frontend
+      adminPages = (adminPagesResult || []).map(p => ({
+        pageKey: p.page_key,
+        pageName: p.page_name,
+        route: p.route,
+        componentCode: p.component_code,
+        icon: p.icon,
+        category: p.category,
+        description: p.description
+      }));
     } catch (adminError) {
     }
 
