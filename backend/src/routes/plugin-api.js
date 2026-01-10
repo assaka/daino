@@ -2718,7 +2718,7 @@ router.post('/:pluginId/cron/:cronName/run', async (req, res) => {
  * Uses optionalAuth to populate req.user if authenticated
  * Uses storeResolver to populate req.storeId from domain/referer
  */
-router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (req, res) => {
+router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver({ required: false }), async (req, res) => {
   try {
     const tenantDb = await getTenantConnection(req);
     const { pluginId } = req.params;

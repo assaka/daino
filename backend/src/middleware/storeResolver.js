@@ -14,7 +14,8 @@ const storeResolver = (options = {}) => {
   try {
     if (!req.user || !req.user.id) {
       if (!required) {
-        req.storeId = req.query.store_id || fallbackStoreId;
+        // For unauthenticated requests, try to get store_id from headers/query
+        req.storeId = req.headers['x-store-id'] || req.query.store_id || fallbackStoreId;
         return next();
       }
 
