@@ -26,14 +26,15 @@ const DynamicPluginAdminPage = () => {
 
       console.log('📄 Loading plugin admin page:', { pluginSlug, pageKey });
 
-      // Get plugin ID from slug - try multiple API response formats
+      // Get plugin ID from slug
       const pluginResponse = await apiClient.get(`plugins/registry`);
 
       console.log('Plugin API response:', pluginResponse);
-      console.log('Response data:', pluginResponse.data);
 
-      // Try different response structures
-      const plugins = pluginResponse.data?.data || pluginResponse.data || [];
+      // apiClient transforms list responses - it returns array directly
+      const plugins = Array.isArray(pluginResponse)
+        ? pluginResponse
+        : (pluginResponse.data || pluginResponse || []);
       console.log('Plugins array:', plugins);
       console.log('Looking for slug:', pluginSlug);
 
@@ -60,9 +61,14 @@ const DynamicPluginAdminPage = () => {
 
       // Get admin page from plugin_admin_pages table
       const pagesResponse = await apiClient.get(`plugins/registry/${plugin.id}`);
-      const adminPages = pagesResponse.data?.adminPages || [];
 
-      console.log('📋 Admin pages for plugin:', adminPages.length);
+      console.log('Pages API response:', pagesResponse);
+
+      // For single record, apiClient returns { success, data: {...} }
+      const pluginData = pagesResponse.data || pagesResponse;
+      const adminPages = pluginData.adminPages || [];
+
+      console.log('📋 Admin pages for plugin:', adminPages.length, adminPages);
 
       const adminPage = adminPages.find(p => p.pageKey === pageKey);
 
