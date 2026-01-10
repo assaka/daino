@@ -647,176 +647,70 @@ const WorkspaceHeader = () => {
 
       {/* Plugin How-To Dialog */}
       <Dialog open={showPluginHowTo} onOpenChange={setShowPluginHowTo}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-blue-600" />
-              Plugin Development Guide
+              How to Create Plugins
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 text-sm">
-            {/* Overview */}
+          <div className="space-y-4 text-sm">
+            {/* Using AI */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Quick Reference</h3>
-              <p className="text-blue-800 text-xs mb-3">
-                Plugins extend your store with custom functionality. Create widgets for the storefront, admin pages for management, controllers for API endpoints, and more.
+              <h3 className="font-semibold text-blue-900 mb-2">Using AI Chat</h3>
+              <p className="text-blue-800 text-xs mb-2">
+                Tell the AI what you want to build:
               </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-white rounded p-2">
-                  <span className="font-medium text-blue-700">Widgets</span>
-                  <span className="text-blue-600 block">Storefront React components</span>
-                </div>
-                <div className="bg-white rounded p-2">
-                  <span className="font-medium text-purple-700">Admin Pages</span>
-                  <span className="text-purple-600 block">Dashboard UI pages</span>
-                </div>
-                <div className="bg-white rounded p-2">
-                  <span className="font-medium text-green-700">Controllers</span>
-                  <span className="text-green-600 block">API endpoints with Supabase</span>
-                </div>
-                <div className="bg-white rounded p-2">
-                  <span className="font-medium text-orange-700">Migrations</span>
-                  <span className="text-orange-600 block">Database table creation</span>
-                </div>
+              <div className="bg-white rounded p-2 text-xs font-mono text-gray-700">
+                "Create a chat widget with an admin dashboard to manage conversations"
               </div>
+              <p className="text-blue-700 text-xs mt-2">
+                The AI will generate widgets, admin pages, controllers, and migrations.
+              </p>
             </div>
 
-            {/* Widgets */}
+            {/* Components */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">W</span>
-                Widgets (Storefront Components)
-              </h3>
-              <p className="text-gray-600 mb-2">
-                Widgets are React components that render on the storefront. Use categories like <code className="bg-gray-100 px-1 rounded">support</code>, <code className="bg-gray-100 px-1 rounded">floating</code>, or <code className="bg-gray-100 px-1 rounded">chat</code> for global widgets that appear on every page.
-              </p>
-              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                <pre>{`// Widget receives config and renders React elements
-function MyWidget({ config }) {
-  const [data, setData] = React.useState(null);
-
-  // Always add x-store-id header for tenant isolation
-  const getHeaders = () => {
-    const headers = {};
-    const storeId = localStorage.getItem('storeId');
-    if (storeId) headers['x-store-id'] = storeId;
-    return headers;
-  };
-
-  return React.createElement('div', {
-    style: { position: 'fixed', bottom: '20px', right: '20px' }
-  }, 'Hello Widget!');
-}`}</pre>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                <span className="text-xs text-gray-500">Categories:</span>
-                {['support', 'floating', 'chat', 'global', 'product', 'cart'].map(cat => (
-                  <code key={cat} className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">{cat}</code>
-                ))}
+              <h3 className="font-semibold text-gray-900 mb-2">Plugin Components</h3>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="border rounded p-2">
+                  <span className="font-medium text-blue-700">Widgets</span>
+                  <span className="text-gray-600 block">Storefront components (use React.createElement)</span>
+                </div>
+                <div className="border rounded p-2">
+                  <span className="font-medium text-purple-700">Admin Pages</span>
+                  <span className="text-gray-600 block">Dashboard UI (can use JSX)</span>
+                </div>
+                <div className="border rounded p-2">
+                  <span className="font-medium text-green-700">Controllers</span>
+                  <span className="text-gray-600 block">API endpoints at /exec/{'{path}'}</span>
+                </div>
+                <div className="border rounded p-2">
+                  <span className="font-medium text-orange-700">Migrations</span>
+                  <span className="text-gray-600 block">Database tables (run on install)</span>
+                </div>
               </div>
             </div>
 
-            {/* Admin Pages */}
+            {/* Key Points */}
             <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">A</span>
-                Admin Pages
-              </h3>
-              <p className="text-gray-600 mb-2">
-                Create custom admin dashboard pages with React/JSX. These appear in the admin sidebar when your plugin has <code className="bg-gray-100 px-1 rounded">adminNavigation</code> configured.
-              </p>
-              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                <pre>{`// Admin page with UI components
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-
-export default function Dashboard() {
-  const getHeaders = () => {
-    const storeId = localStorage.getItem('storeId');
-    return storeId ? { 'x-store-id': storeId } : {};
-  };
-
-  // Fetch from your plugin's controllers
-  React.useEffect(() => {
-    fetch('/api/plugins/my-plugin/exec/data', { headers: getHeaders() })
-      .then(r => r.json())
-      .then(data => console.log(data));
-  }, []);
-
-  return (
-    <Card><CardHeader><CardTitle>Dashboard</CardTitle></CardHeader></Card>
-  );
-}`}</pre>
-              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Key Points</h3>
+              <ul className="text-gray-700 text-xs space-y-1">
+                <li>• <strong>Widget categories</strong>: Use <code className="bg-gray-100 px-1 rounded">support</code>, <code className="bg-gray-100 px-1 rounded">floating</code>, or <code className="bg-gray-100 px-1 rounded">chat</code> for global widgets</li>
+                <li>• <strong>Store ID header</strong>: Always include <code className="bg-gray-100 px-1 rounded">x-store-id</code> in API calls</li>
+                <li>• <strong>Database access</strong>: Controllers receive <code className="bg-gray-100 px-1 rounded">{'{ supabase }'}</code> for queries</li>
+                <li>• <strong>API endpoint</strong>: <code className="bg-gray-100 px-1 rounded">/api/plugins/{'{slug}'}/exec/{'{path}'}</code></li>
+              </ul>
             </div>
 
-            {/* Controllers */}
+            {/* Common AI Requests */}
             <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">C</span>
-                Controllers (API Endpoints)
-              </h3>
-              <p className="text-gray-600 mb-2">
-                Controllers handle HTTP requests. They receive <code className="bg-gray-100 px-1 rounded">{'{ supabase }'}</code> for database access. Access at <code className="bg-gray-100 px-1 rounded">/api/plugins/{'<slug>'}/exec/{'<path>'}</code>
-              </p>
-              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                <pre>{`// Controllers receive { supabase } for database access
-async function getItems(req, res, { supabase }) {
-  const { data: items, error } = await supabase
-    .from('my_table')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) return res.status(500).json({ success: false, error: error.message });
-  return res.json({ success: true, items });
-}
-
-async function createItem(req, res, { supabase }) {
-  const { name } = req.body;
-  const { data, error } = await supabase
-    .from('my_table')
-    .insert({ name })
-    .select()
-    .single();
-
-  return res.json({ success: true, item: data });
-}`}</pre>
-              </div>
-            </div>
-
-            {/* Migrations */}
-            <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold">M</span>
-                Migrations (Database Tables)
-              </h3>
-              <p className="text-gray-600 mb-2">
-                Migrations create database tables for your plugin. They run automatically on install.
-              </p>
-              <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                <pre>{`CREATE TABLE IF NOT EXISTS my_plugin_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
-  data JSONB DEFAULT '{}',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_my_items_created ON my_plugin_items(created_at DESC);`}</pre>
-              </div>
-            </div>
-
-            {/* Tips */}
-            <div className="border-t pt-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h3 className="font-semibold text-yellow-900 mb-2">Important Tips</h3>
-                <ul className="text-yellow-800 text-xs space-y-1">
-                  <li>• Always include <code className="bg-yellow-100 px-1 rounded">x-store-id</code> header in fetch calls for tenant isolation</li>
-                  <li>• Controllers receive <code className="bg-yellow-100 px-1 rounded">{'{ supabase }'}</code> - use Supabase methods, not raw SQL</li>
-                  <li>• Widget categories <code className="bg-yellow-100 px-1 rounded">support/floating/chat/global</code> appear on all pages</li>
-                  <li>• See <code className="bg-yellow-100 px-1 rounded">/admin/plugins</code> → How-to for full documentation</li>
-                  <li>• Full docs at <code className="bg-yellow-100 px-1 rounded">docs/PLUGIN_DEVELOPMENT.md</code></li>
-                </ul>
+              <h3 className="font-semibold text-gray-900 mb-2">Example AI Requests</h3>
+              <div className="space-y-2 text-xs">
+                <div className="bg-gray-50 rounded p-2 font-mono">"Add a widget that shows on product pages"</div>
+                <div className="bg-gray-50 rounded p-2 font-mono">"Create an admin page to manage settings"</div>
+                <div className="bg-gray-50 rounded p-2 font-mono">"Add a controller to save user data"</div>
+                <div className="bg-gray-50 rounded p-2 font-mono">"Fix the 401 error on my API calls"</div>
               </div>
             </div>
 
