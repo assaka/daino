@@ -1,0 +1,204 @@
+{
+  "packageVersion": "1.0.0",
+  "exportedAt": "2026-01-10T12:00:00.000Z",
+  "plugin": {
+    "name": "Bol.com Marketplace",
+    "slug": "bolcom-marketplace",
+    "version": "1.0.0",
+    "description": "Sell your products on Bol.com - the largest marketplace in the Netherlands and Belgium",
+    "author": "DainoStore",
+    "category": "marketplace",
+    "type": "integration",
+    "framework": "react",
+    "manifest": {
+      "name": "Bol.com Marketplace",
+      "tags": ["marketplace", "bol.com", "netherlands", "belgium", "orders", "inventory", "sync"],
+      "author": "DainoStore",
+      "version": "1.0.0",
+      "category": "marketplace",
+      "description": "Sync products to Bol.com, import orders, manage inventory and shipments",
+      "permissions": ["products:read", "orders:write", "inventory:write"],
+      "adminNavigation": {
+        "enabled": true,
+        "label": "Bol.com",
+        "icon": "ShoppingBag",
+        "route": "/admin/plugins/bolcom-marketplace/dashboard",
+        "order": 50
+      }
+    },
+    "permissions": ["products:read", "orders:write", "inventory:write"],
+    "dependencies": [],
+    "tags": ["marketplace", "bol.com", "sync", "orders"]
+  },
+  "files": [],
+  "events": [],
+  "hooks": [
+    {
+      "hookName": "product.updated",
+      "fileName": "sync-product-to-bolcom.js",
+      "handlerCode": "async function onProductUpdated(data, { db, storeId, secrets }) {\n  console.log('🛒 Bol.com: Product updated, queuing for sync');\n\n  const product = data?.product || data;\n  if (!product?.id) return;\n\n  // Check if product has EAN (required for Bol.com)\n  if (!product.ean && !product.barcode) {\n    console.log('⚠️ Product missing EAN/barcode, skipping Bol.com sync');\n    return;\n  }\n\n  // Queue product for sync\n  await db.from('bolcom_sync_queue').upsert({\n    product_id: product.id,\n    ean: product.ean || product.barcode,\n    sync_type: 'product',\n    status: 'pending',\n    created_at: new Date().toISOString()\n  }, { onConflict: 'product_id' });\n\n  console.log(`✅ Product ${product.sku || product.id} queued for Bol.com sync`);\n}",
+      "priority": 10
+    },
+    {
+      "hookName": "inventory.updated",
+      "fileName": "sync-stock-to-bolcom.js",
+      "handlerCode": "async function onInventoryUpdated(data, { db, storeId, secrets }) {\n  console.log('📦 Bol.com: Inventory updated, syncing stock');\n\n  const { productId, quantity, sku } = data;\n  if (!productId) return;\n\n  // Get offer ID from mapping table\n  const { data: mapping } = await db\n    .from('bolcom_product_mapping')\n    .select('offer_id, ean')\n    .eq('product_id', productId)\n    .single();\n\n  if (!mapping?.offer_id) {\n    console.log('⚠️ Product not synced to Bol.com yet');\n    return;\n  }\n\n  // Queue stock update\n  await db.from('bolcom_sync_queue').insert({\n    product_id: productId,\n    offer_id: mapping.offer_id,\n    sync_type: 'stock',\n    sync_data: { quantity },\n    status: 'pending',\n    created_at: new Date().toISOString()\n  });\n\n  console.log(`✅ Stock update queued for offer ${mapping.offer_id}`);\n}",
+      "priority": 10
+    },
+    {
+      "hookName": "order.shipped",
+      "fileName": "confirm-shipment-bolcom.js",
+      "handlerCode": "async function onOrderShipped(data, { db, storeId, secrets }) {\n  console.log('🚚 Bol.com: Order shipped, sending confirmation');\n\n  const order = data?.order || data;\n  if (!order?.id) return;\n\n  // Check if this is a Bol.com order\n  if (order.source !== 'bolcom' && !order.external_id?.startsWith('BOL-')) {\n    return;\n  }\n\n  // Queue shipment confirmation\n  await db.from('bolcom_sync_queue').insert({\n    order_id: order.id,\n    external_order_id: order.external_id,\n    sync_type: 'shipment',\n    sync_data: {\n      trackingCode: order.tracking_code,\n      transporterCode: order.carrier || 'TNT'\n    },\n    status: 'pending',\n    created_at: new Date().toISOString()\n  });\n\n  console.log(`✅ Shipment confirmation queued for order ${order.external_id}`);\n}",
+      "priority": 10
+    }
+  ],
+  "widgets": [],
+  "cron": [
+    {
+      "cronName": "sync-products-to-bolcom",
+      "schedule": "0 */2 * * *",
+      "handlerCode": "async function syncProductsToBolcom({ db, storeId, secrets, fetch }) {\n  console.log('🔄 Bol.com: Starting product sync...');\n\n  const clientId = secrets.bolcom_client_id;\n  const clientSecret = secrets.bolcom_client_secret;\n\n  if (!clientId || !clientSecret) {\n    console.error('❌ Missing Bol.com API credentials');\n    return { success: false, error: 'Missing API credentials' };\n  }\n\n  // Get access token\n  const tokenResponse = await fetch('https://login.bol.com/token', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/x-www-form-urlencoded',\n      'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64')\n    },\n    body: 'grant_type=client_credentials'\n  });\n\n  if (!tokenResponse.ok) {\n    console.error('❌ Failed to get Bol.com access token');\n    return { success: false, error: 'Authentication failed' };\n  }\n\n  const { access_token } = await tokenResponse.json();\n\n  // Get pending sync items\n  const { data: pendingItems } = await db\n    .from('bolcom_sync_queue')\n    .select('*')\n    .eq('sync_type', 'product')\n    .eq('status', 'pending')\n    .limit(50);\n\n  let synced = 0;\n  let failed = 0;\n\n  for (const item of pendingItems || []) {\n    try {\n      // Get product details\n      const { data: product } = await db\n        .from('products')\n        .select('*')\n        .eq('id', item.product_id)\n        .single();\n\n      if (!product) continue;\n\n      // Create/update offer on Bol.com\n      const offerData = {\n        ean: product.ean || product.barcode,\n        condition: { name: 'NEW', category: 'NEW' },\n        reference: product.sku || product.id,\n        onHoldByRetailer: !product.is_active,\n        unknownProductTitle: product.name?.substring(0, 500),\n        pricing: {\n          bundlePrices: [{ quantity: 1, unitPrice: parseFloat(product.price) || 0 }]\n        },\n        stock: {\n          amount: Math.max(0, parseInt(product.stock_quantity) || 0),\n          managedByRetailer: true\n        },\n        fulfilment: {\n          method: 'FBR',\n          deliveryCode: '24uurs-23'\n        }\n      };\n\n      const response = await fetch('https://api.bol.com/retailer/offers', {\n        method: 'POST',\n        headers: {\n          'Authorization': `Bearer ${access_token}`,\n          'Content-Type': 'application/vnd.retailer.v9+json',\n          'Accept': 'application/vnd.retailer.v9+json'\n        },\n        body: JSON.stringify(offerData)\n      });\n\n      if (response.ok) {\n        const result = await response.json();\n        \n        // Save mapping\n        await db.from('bolcom_product_mapping').upsert({\n          product_id: product.id,\n          offer_id: result.offerId,\n          ean: offerData.ean,\n          synced_at: new Date().toISOString()\n        }, { onConflict: 'product_id' });\n\n        // Mark as synced\n        await db.from('bolcom_sync_queue')\n          .update({ status: 'completed', synced_at: new Date().toISOString() })\n          .eq('id', item.id);\n\n        synced++;\n      } else {\n        const error = await response.text();\n        await db.from('bolcom_sync_queue')\n          .update({ status: 'failed', error_message: error })\n          .eq('id', item.id);\n        failed++;\n      }\n    } catch (err) {\n      await db.from('bolcom_sync_queue')\n        .update({ status: 'failed', error_message: err.message })\n        .eq('id', item.id);\n      failed++;\n    }\n  }\n\n  console.log(`✅ Bol.com sync complete: ${synced} synced, ${failed} failed`);\n  return { success: true, synced, failed };\n}",
+      "description": "Sync pending products to Bol.com every 2 hours",
+      "isEnabled": true
+    },
+    {
+      "cronName": "import-orders-from-bolcom",
+      "schedule": "*/30 * * * *",
+      "handlerCode": "async function importOrdersFromBolcom({ db, storeId, secrets, fetch }) {\n  console.log('📥 Bol.com: Importing orders...');\n\n  const clientId = secrets.bolcom_client_id;\n  const clientSecret = secrets.bolcom_client_secret;\n\n  if (!clientId || !clientSecret) {\n    console.error('❌ Missing Bol.com API credentials');\n    return { success: false, error: 'Missing API credentials' };\n  }\n\n  // Get access token\n  const tokenResponse = await fetch('https://login.bol.com/token', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/x-www-form-urlencoded',\n      'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64')\n    },\n    body: 'grant_type=client_credentials'\n  });\n\n  if (!tokenResponse.ok) {\n    return { success: false, error: 'Authentication failed' };\n  }\n\n  const { access_token } = await tokenResponse.json();\n\n  // Fetch open orders\n  const ordersResponse = await fetch('https://api.bol.com/retailer/orders?fulfilment-method=FBR&status=OPEN', {\n    headers: {\n      'Authorization': `Bearer ${access_token}`,\n      'Accept': 'application/vnd.retailer.v9+json'\n    }\n  });\n\n  if (!ordersResponse.ok) {\n    return { success: false, error: 'Failed to fetch orders' };\n  }\n\n  const { orders } = await ordersResponse.json();\n  let imported = 0;\n\n  for (const order of orders || []) {\n    // Check if already imported\n    const { data: existing } = await db\n      .from('orders')\n      .select('id')\n      .eq('external_id', order.orderId)\n      .single();\n\n    if (existing) continue;\n\n    // Get full order details\n    const detailResponse = await fetch(`https://api.bol.com/retailer/orders/${order.orderId}`, {\n      headers: {\n        'Authorization': `Bearer ${access_token}`,\n        'Accept': 'application/vnd.retailer.v9+json'\n      }\n    });\n\n    if (!detailResponse.ok) continue;\n\n    const orderDetail = await detailResponse.json();\n    const shipping = orderDetail.shipmentDetails?.address || {};\n\n    // Create order in store\n    const { error } = await db.from('orders').insert({\n      external_id: order.orderId,\n      source: 'bolcom',\n      status: 'pending',\n      customer_email: orderDetail.shipmentDetails?.email,\n      customer_first_name: shipping.firstName,\n      customer_last_name: shipping.surname,\n      shipping_address: {\n        street: shipping.streetName,\n        house_number: shipping.houseNumber,\n        city: shipping.city,\n        postal_code: shipping.zipCode,\n        country: shipping.countryCode || 'NL'\n      },\n      items: (orderDetail.orderItems || []).map(item => ({\n        ean: item.offer?.ean,\n        name: item.product?.title,\n        quantity: item.quantity,\n        price: parseFloat(item.unitPrice) || 0,\n        order_item_id: item.orderItemId\n      })),\n      total: (orderDetail.orderItems || []).reduce((sum, item) => \n        sum + (parseFloat(item.unitPrice) || 0) * item.quantity, 0\n      ),\n      currency: 'EUR',\n      created_at: orderDetail.orderPlacedDateTime\n    });\n\n    if (!error) imported++;\n  }\n\n  console.log(`✅ Imported ${imported} orders from Bol.com`);\n  return { success: true, imported };\n}",
+      "description": "Import new orders from Bol.com every 30 minutes",
+      "isEnabled": true
+    }
+  ],
+  "entities": [
+    {
+      "name": "BolcomProductMapping",
+      "tableName": "bolcom_product_mapping",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "product_id", "type": "UUID", "nullable": false },
+          { "name": "offer_id", "type": "VARCHAR(255)" },
+          { "name": "ean", "type": "VARCHAR(13)" },
+          { "name": "synced_at", "type": "TIMESTAMP WITH TIME ZONE" },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_bolcom_mapping_product", "columns": ["product_id"], "unique": true },
+          { "name": "idx_bolcom_mapping_offer", "columns": ["offer_id"] },
+          { "name": "idx_bolcom_mapping_ean", "columns": ["ean"] }
+        ]
+      },
+      "description": "Maps store products to Bol.com offers"
+    },
+    {
+      "name": "BolcomSyncQueue",
+      "tableName": "bolcom_sync_queue",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "product_id", "type": "UUID", "nullable": true },
+          { "name": "order_id", "type": "UUID", "nullable": true },
+          { "name": "offer_id", "type": "VARCHAR(255)", "nullable": true },
+          { "name": "external_order_id", "type": "VARCHAR(255)", "nullable": true },
+          { "name": "ean", "type": "VARCHAR(13)", "nullable": true },
+          { "name": "sync_type", "type": "VARCHAR(50)", "nullable": false },
+          { "name": "sync_data", "type": "JSONB", "nullable": true },
+          { "name": "status", "type": "VARCHAR(20)", "default": "'pending'" },
+          { "name": "error_message", "type": "TEXT", "nullable": true },
+          { "name": "synced_at", "type": "TIMESTAMP WITH TIME ZONE", "nullable": true },
+          { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" }
+        ],
+        "indexes": [
+          { "name": "idx_bolcom_queue_status", "columns": ["status"] },
+          { "name": "idx_bolcom_queue_type", "columns": ["sync_type"] },
+          { "name": "idx_bolcom_queue_created", "columns": ["created_at"], "order": "DESC" }
+        ]
+      },
+      "description": "Queue for pending Bol.com sync operations"
+    },
+    {
+      "name": "BolcomOrder",
+      "tableName": "bolcom_orders",
+      "schemaDefinition": {
+        "columns": [
+          { "name": "id", "type": "UUID", "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "order_id", "type": "UUID", "nullable": false },
+          { "name": "bolcom_order_id", "type": "VARCHAR(255)", "nullable": false },
+          { "name": "order_items", "type": "JSONB" },
+          { "name": "shipment_id", "type": "VARCHAR(255)", "nullable": true },
+          { "name": "tracking_code", "type": "VARCHAR(255)", "nullable": true },
+          { "name": "status", "type": "VARCHAR(50)", "default": "'open'" },
+          { "name": "imported_at", "type": "TIMESTAMP WITH TIME ZONE", "default": "NOW()" },
+          { "name": "shipped_at", "type": "TIMESTAMP WITH TIME ZONE", "nullable": true }
+        ],
+        "indexes": [
+          { "name": "idx_bolcom_orders_order", "columns": ["order_id"] },
+          { "name": "idx_bolcom_orders_bolcom", "columns": ["bolcom_order_id"], "unique": true }
+        ]
+      },
+      "description": "Bol.com order details and status tracking"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "create_bolcom_tables",
+      "pluginName": "Bol.com Marketplace",
+      "migrationVersion": "1704672000000_create_bolcom_tables",
+      "code": "-- Bol.com Product Mapping\nCREATE TABLE IF NOT EXISTS bolcom_product_mapping (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  product_id UUID NOT NULL,\n  offer_id VARCHAR(255),\n  ean VARCHAR(13),\n  synced_at TIMESTAMP WITH TIME ZONE,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE UNIQUE INDEX IF NOT EXISTS idx_bolcom_mapping_product ON bolcom_product_mapping(product_id);\nCREATE INDEX IF NOT EXISTS idx_bolcom_mapping_offer ON bolcom_product_mapping(offer_id);\nCREATE INDEX IF NOT EXISTS idx_bolcom_mapping_ean ON bolcom_product_mapping(ean);\n\n-- Bol.com Sync Queue\nCREATE TABLE IF NOT EXISTS bolcom_sync_queue (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  product_id UUID,\n  order_id UUID,\n  offer_id VARCHAR(255),\n  external_order_id VARCHAR(255),\n  ean VARCHAR(13),\n  sync_type VARCHAR(50) NOT NULL,\n  sync_data JSONB,\n  status VARCHAR(20) DEFAULT 'pending',\n  error_message TEXT,\n  synced_at TIMESTAMP WITH TIME ZONE,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_bolcom_queue_status ON bolcom_sync_queue(status);\nCREATE INDEX IF NOT EXISTS idx_bolcom_queue_type ON bolcom_sync_queue(sync_type);\nCREATE INDEX IF NOT EXISTS idx_bolcom_queue_created ON bolcom_sync_queue(created_at DESC);\n\n-- Bol.com Orders\nCREATE TABLE IF NOT EXISTS bolcom_orders (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  order_id UUID NOT NULL,\n  bolcom_order_id VARCHAR(255) NOT NULL,\n  order_items JSONB,\n  shipment_id VARCHAR(255),\n  tracking_code VARCHAR(255),\n  status VARCHAR(50) DEFAULT 'open',\n  imported_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n  shipped_at TIMESTAMP WITH TIME ZONE\n);\n\nCREATE INDEX IF NOT EXISTS idx_bolcom_orders_order ON bolcom_orders(order_id);\nCREATE UNIQUE INDEX IF NOT EXISTS idx_bolcom_orders_bolcom ON bolcom_orders(bolcom_order_id);\n"
+    }
+  ],
+  "controllers": [
+    {
+      "name": "testConnection",
+      "method": "POST",
+      "path": "/test-connection",
+      "code": "async function testConnection(req, res, { db, secrets, fetch }) {\n  const clientId = secrets.bolcom_client_id;\n  const clientSecret = secrets.bolcom_client_secret;\n\n  if (!clientId || !clientSecret) {\n    return res.status(400).json({ success: false, error: 'Missing API credentials' });\n  }\n\n  try {\n    const response = await fetch('https://login.bol.com/token', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/x-www-form-urlencoded',\n        'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64')\n      },\n      body: 'grant_type=client_credentials'\n    });\n\n    if (response.ok) {\n      return res.json({ success: true, message: 'Connected to Bol.com API successfully' });\n    } else {\n      const error = await response.text();\n      return res.status(401).json({ success: false, error: 'Authentication failed: ' + error });\n    }\n  } catch (err) {\n    return res.status(500).json({ success: false, error: err.message });\n  }\n}",
+      "description": "Test Bol.com API connection"
+    },
+    {
+      "name": "getSyncStatus",
+      "method": "GET",
+      "path": "/sync-status",
+      "code": "async function getSyncStatus(req, res, { db }) {\n  try {\n    const { data: stats } = await db.rpc('get_bolcom_sync_stats');\n\n    // Fallback if RPC doesn't exist\n    if (!stats) {\n      const { data: pending } = await db\n        .from('bolcom_sync_queue')\n        .select('sync_type, status')\n        .eq('status', 'pending');\n\n      const { data: mappings } = await db\n        .from('bolcom_product_mapping')\n        .select('id');\n\n      return res.json({\n        success: true,\n        stats: {\n          syncedProducts: mappings?.length || 0,\n          pendingItems: pending?.length || 0,\n          lastSync: null\n        }\n      });\n    }\n\n    return res.json({ success: true, stats });\n  } catch (err) {\n    return res.status(500).json({ success: false, error: err.message });\n  }\n}",
+      "description": "Get sync status and statistics"
+    },
+    {
+      "name": "triggerSync",
+      "method": "POST",
+      "path": "/trigger-sync",
+      "code": "async function triggerSync(req, res, { db }) {\n  const { type = 'products' } = req.body;\n\n  try {\n    // Get products without mapping\n    if (type === 'products') {\n      const { data: products } = await db\n        .from('products')\n        .select('id, ean, barcode')\n        .eq('is_active', true)\n        .not('ean', 'is', null);\n\n      const { data: existing } = await db\n        .from('bolcom_product_mapping')\n        .select('product_id');\n\n      const existingIds = new Set((existing || []).map(e => e.product_id));\n      const toSync = (products || []).filter(p => !existingIds.has(p.id));\n\n      // Queue products for sync\n      for (const product of toSync) {\n        await db.from('bolcom_sync_queue').insert({\n          product_id: product.id,\n          ean: product.ean || product.barcode,\n          sync_type: 'product',\n          status: 'pending'\n        });\n      }\n\n      return res.json({ success: true, queued: toSync.length });\n    }\n\n    return res.json({ success: true, message: 'Sync triggered' });\n  } catch (err) {\n    return res.status(500).json({ success: false, error: err.message });\n  }\n}",
+      "description": "Manually trigger sync"
+    }
+  ],
+  "pluginData": [
+    {
+      "key": "settings",
+      "value": {
+        "fulfillmentMethod": "FBR",
+        "defaultDeliveryCode": "24uurs-23",
+        "autoSyncEnabled": true,
+        "syncIntervalHours": 2
+      }
+    }
+  ],
+  "pluginDependencies": [],
+  "pluginDocs": [
+    {
+      "title": "README",
+      "content": "# Bol.com Marketplace Plugin\n\nIntegrate your store with Bol.com - the largest online marketplace in the Netherlands and Belgium.\n\n## Features\n\n- **Product Sync**: Automatically sync your products to Bol.com as offers\n- **Order Import**: Import orders from Bol.com every 30 minutes\n- **Inventory Sync**: Keep stock levels synchronized\n- **Shipment Notifications**: Automatically notify Bol.com when orders ship\n\n## Setup\n\n1. Get your API credentials from the Bol.com Seller Dashboard\n2. Go to Plugin Settings and enter your Client ID and Client Secret\n3. Click 'Test Connection' to verify\n4. Enable auto-sync or trigger manual sync\n\n## Requirements\n\n- Products must have valid EAN/barcode\n- Bol.com Retailer API v9 credentials\n- FBR (Fulfilled by Retailer) or FBB account\n\n## API Endpoints\n\n| Endpoint | Method | Description |\n|----------|--------|-------------|\n| /test-connection | POST | Test API connection |\n| /sync-status | GET | Get sync statistics |\n| /trigger-sync | POST | Manually trigger product sync |\n\n## Cron Jobs\n\n- **sync-products-to-bolcom**: Runs every 2 hours\n- **import-orders-from-bolcom**: Runs every 30 minutes\n\n## Secrets Required\n\n- `bolcom_client_id`: Your Bol.com API Client ID\n- `bolcom_client_secret`: Your Bol.com API Client Secret\n",
+      "category": "readme",
+      "orderPosition": 0,
+      "fileName": "README.md"
+    }
+  ],
+  "adminPages": [
+    {
+      "pageKey": "dashboard",
+      "pageName": "Bol.com Dashboard",
+      "route": "/admin/plugins/bolcom-marketplace/dashboard",
+      "icon": "ShoppingBag",
+      "description": "Manage Bol.com integration",
+      "componentCode": "function BolcomDashboardPage() {\n  const [stats, setStats] = React.useState(null);\n  const [loading, setLoading] = React.useState(true);\n  const [testing, setTesting] = React.useState(false);\n  const [connectionStatus, setConnectionStatus] = React.useState(null);\n\n  React.useEffect(() => {\n    fetchStats();\n  }, []);\n\n  const fetchStats = async () => {\n    try {\n      const response = await fetch('/api/plugins/bolcom-marketplace/sync-status');\n      const data = await response.json();\n      if (data.success) setStats(data.stats);\n    } catch (err) {\n      console.error('Failed to fetch stats:', err);\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  const testConnection = async () => {\n    setTesting(true);\n    try {\n      const response = await fetch('/api/plugins/bolcom-marketplace/test-connection', { method: 'POST' });\n      const data = await response.json();\n      setConnectionStatus(data.success ? 'connected' : 'failed');\n    } catch (err) {\n      setConnectionStatus('failed');\n    } finally {\n      setTesting(false);\n    }\n  };\n\n  const triggerSync = async () => {\n    try {\n      const response = await fetch('/api/plugins/bolcom-marketplace/trigger-sync', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ type: 'products' })\n      });\n      const data = await response.json();\n      alert(`Queued ${data.queued} products for sync`);\n      fetchStats();\n    } catch (err) {\n      alert('Failed to trigger sync');\n    }\n  };\n\n  if (loading) {\n    return React.createElement('div', { className: 'p-6' }, 'Loading...');\n  }\n\n  return React.createElement('div', { className: 'p-6 space-y-6' },\n    React.createElement('div', { className: 'flex items-center justify-between' },\n      React.createElement('h1', { className: 'text-2xl font-bold' }, 'Bol.com Dashboard'),\n      React.createElement('div', { className: 'flex gap-2' },\n        React.createElement('button', {\n          onClick: testConnection,\n          disabled: testing,\n          className: 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50'\n        }, testing ? 'Testing...' : 'Test Connection'),\n        React.createElement('button', {\n          onClick: triggerSync,\n          className: 'px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600'\n        }, 'Sync Products')\n      )\n    ),\n\n    connectionStatus && React.createElement('div', {\n      className: `p-4 rounded ${connectionStatus === 'connected' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`\n    }, connectionStatus === 'connected' ? '✓ Connected to Bol.com API' : '✗ Connection failed - check your credentials'),\n\n    React.createElement('div', { className: 'grid grid-cols-3 gap-4' },\n      React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow' },\n        React.createElement('div', { className: 'text-3xl font-bold' }, stats?.syncedProducts || 0),\n        React.createElement('div', { className: 'text-gray-500' }, 'Synced Products')\n      ),\n      React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow' },\n        React.createElement('div', { className: 'text-3xl font-bold' }, stats?.pendingItems || 0),\n        React.createElement('div', { className: 'text-gray-500' }, 'Pending Sync')\n      ),\n      React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow' },\n        React.createElement('div', { className: 'text-3xl font-bold' }, stats?.importedOrders || 0),\n        React.createElement('div', { className: 'text-gray-500' }, 'Imported Orders')\n      )\n    ),\n\n    React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow' },\n      React.createElement('h2', { className: 'text-lg font-semibold mb-4' }, 'Setup Instructions'),\n      React.createElement('ol', { className: 'list-decimal list-inside space-y-2 text-gray-600' },\n        React.createElement('li', null, 'Go to your Bol.com Seller Dashboard'),\n        React.createElement('li', null, 'Navigate to Settings > API Credentials'),\n        React.createElement('li', null, 'Create new API credentials with Retailer API access'),\n        React.createElement('li', null, 'Add your Client ID and Client Secret in Plugin Settings > Secrets'),\n        React.createElement('li', null, 'Click \"Test Connection\" to verify'),\n        React.createElement('li', null, 'Click \"Sync Products\" to start syncing')\n      )\n    )\n  );\n}"
+    }
+  ]
+}
