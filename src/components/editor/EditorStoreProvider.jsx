@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useContext } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { StoreContext } from '@/components/storefront/StoreProvider';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import TranslationContext from '@/contexts/TranslationContext';
@@ -43,6 +44,7 @@ export const useEditorTranslationContext = () => {
  * Fetches store data based on selected store from StoreSelectionContext.
  */
 export function EditorStoreProvider({ children }) {
+  const queryClient = useQueryClient();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const storeId = getSelectedStoreId();
   const storeSlug = selectedStore?.slug;
@@ -68,13 +70,15 @@ export function EditorStoreProvider({ children }) {
   }, [bootstrap?.themeDefaults]);
 
   // Listen for settings updates from admin panel (e.g., ThemeLayout changes)
-  // Refetch bootstrap to get latest settings without page reload
+  // Invalidate cache and refetch bootstrap to get latest settings without page reload
   useEffect(() => {
     try {
       const channel = new BroadcastChannel('store_settings_update');
-      channel.onmessage = (event) => {
+      channel.onmessage = async (event) => {
         if (event.data.type === 'clear_cache' || event.data.type === 'settings_updated') {
-          console.log('[EditorStoreProvider] Settings updated, refetching bootstrap');
+          console.log('[EditorStoreProvider] Settings updated, invalidating cache and refetching bootstrap');
+          // Invalidate the bootstrap query cache to force fresh fetch (bypasses 15-min staleTime)
+          await queryClient.invalidateQueries({ queryKey: ['bootstrap'] });
           refetchBootstrap();
         }
       };
@@ -83,7 +87,7 @@ export function EditorStoreProvider({ children }) {
       // BroadcastChannel not supported in some browsers
       console.warn('BroadcastChannel not supported:', e);
     }
-  }, [refetchBootstrap]);
+  }, [refetchBootstrap, queryClient]);
 
   // Fetch additional data using React Query hooks (as fallback if not in bootstrap)
   const { data: categories = [] } = useCategories(storeId, { enabled: !!storeId && !bootstrap?.categories });

@@ -16,7 +16,9 @@
       "Bash(cat:*)",
       "Bash(xargs:*)",
       "WebFetch(domain:unsplash.com)",
-      "WebFetch(domain:images.unsplash.com)"
+      "WebFetch(domain:images.unsplash.com)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": [],
