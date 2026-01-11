@@ -39,8 +39,8 @@ export default function SuperAdminMigrations() {
       // Load migrations and status separately to handle errors independently
       try {
         const migrationsRes = await apiClient.get('/superadmin/migrations');
-        if (migrationsRes.data?.success) {
-          setMigrations(migrationsRes.data.migrations || []);
+        if (migrationsRes?.success) {
+          setMigrations(migrationsRes.migrations || []);
         }
       } catch (e) {
         console.error('Error loading migrations:', e);
@@ -48,8 +48,8 @@ export default function SuperAdminMigrations() {
 
       try {
         const statusRes = await apiClient.get('/superadmin/migrations/status');
-        if (statusRes.data?.success) {
-          setMigrationStatus(statusRes.data.stores || []);
+        if (statusRes?.success) {
+          setMigrationStatus(statusRes.stores || []);
         }
       } catch (e) {
         console.error('Error loading migration status:', e);

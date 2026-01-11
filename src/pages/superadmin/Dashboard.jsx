@@ -32,9 +32,9 @@ export default function SuperAdminDashboard() {
         apiClient.get('/superadmin/migrations/status')
       ]);
 
-      const stores = storesRes.status === 'fulfilled' ? storesRes.value.data?.stores || [] : [];
-      const users = usersRes.status === 'fulfilled' ? usersRes.value.data?.users || [] : [];
-      const migrationStatus = migrationsRes.status === 'fulfilled' ? migrationsRes.value.data?.stores || [] : [];
+      const stores = storesRes.status === 'fulfilled' ? storesRes.value?.stores || [] : [];
+      const users = usersRes.status === 'fulfilled' ? usersRes.value?.users || [] : [];
+      const migrationStatus = migrationsRes.status === 'fulfilled' ? migrationsRes.value?.stores || [] : [];
       const pendingStores = migrationStatus.filter(s => s.hasPendingMigrations);
 
       setStats({

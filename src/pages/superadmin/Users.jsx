@@ -35,15 +35,15 @@ export default function SuperAdminUsers() {
     setLoading(true);
     try {
       const response = await apiClient.get('/superadmin/users');
-      if (response.data?.success) {
-        setUsers(response.data.users || []);
+      if (response?.success) {
+        setUsers(response.users || []);
       } else {
-        throw new Error(response.data?.error || 'Failed to load users');
+        throw new Error(response?.error || 'Failed to load users');
       }
     } catch (error) {
       toast({
         title: "Error loading users",
-        description: error.response?.data?.error || error.message || 'Unknown error',
+        description: error.message || 'Unknown error',
         variant: "destructive"
       });
     } finally {
