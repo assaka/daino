@@ -992,4 +992,324 @@ router.post('/refresh-tokens', verifyCronSecret, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/migrate-plugin-cron
+ *
+ * Creates the plugin_cron table and execute_sql function on all tenant databases.
+ * Requires X-Cron-Secret header or authenticated admin/store_owner.
+ */
+router.post('/migrate-plugin-cron', verifyCronSecret, async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { masterDbClient } = require('../database/masterConnection');
+    const { decryptDatabaseCredentials } = require('../utils/encryption');
+    const axios = require('axios');
+
+    const EXECUTE_SQL_FUNCTION = `
+CREATE OR REPLACE FUNCTION execute_sql(sql text)
+RETURNS void AS $
+BEGIN
+  EXECUTE sql;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO anon;
+`;
+
+    const PLUGIN_CRON_TABLE = `
+CREATE TABLE IF NOT EXISTS plugin_cron (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL,
+  cron_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  cron_schedule VARCHAR(100) NOT NULL,
+  timezone VARCHAR(50) DEFAULT 'UTC',
+  handler_method VARCHAR(255) NOT NULL,
+  handler_code TEXT,
+  handler_params JSONB DEFAULT '{}'::jsonb,
+  is_enabled BOOLEAN DEFAULT true,
+  priority INTEGER DEFAULT 10,
+  last_run_at TIMESTAMP WITH TIME ZONE,
+  next_run_at TIMESTAMP WITH TIME ZONE,
+  last_status VARCHAR(50),
+  last_error TEXT,
+  last_result JSONB,
+  run_count INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  failure_count INTEGER DEFAULT 0,
+  consecutive_failures INTEGER DEFAULT 0,
+  max_runs INTEGER,
+  max_failures INTEGER DEFAULT 5,
+  timeout_seconds INTEGER DEFAULT 300,
+  cron_job_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
+`;
+
+    // Helper function to extract project ID from Supabase URL
+    const extractProjectId = (projectUrl) => {
+      if (!projectUrl) return null;
+      const match = projectUrl.match(/https?:\/\/([^.]+)\.supabase\.co/);
+      return match ? match[1] : null;
+    };
+
+    // Helper function to execute SQL via Management API
+    const executeSqlViaManagementAPI = async (accessToken, projectId, sql) => {
+      const response = await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: sql },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      return response.data;
+    };
+
+    console.log('🔄 Starting plugin_cron migration...');
+
+    // Get all active stores
+    const { data: stores, error: storesError } = await masterDbClient
+      .from('store_databases')
+      .select('store_id, database_type, connection_string_encrypted, host')
+      .eq('is_active', true);
+
+    if (storesError) {
+      throw new Error(`Failed to fetch stores: ${storesError.message}`);
+    }
+
+    if (!stores || stores.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No active stores found',
+        stats: { total: 0, success: 0, failed: 0 }
+      });
+    }
+
+    console.log(`Found ${stores.length} active stores`);
+
+    const stats = { total: stores.length, success: 0, failed: 0, errors: [] };
+
+    for (const store of stores) {
+      const storeId = store.store_id;
+
+      try {
+        if (!store.connection_string_encrypted) {
+          stats.failed++;
+          stats.errors.push({ storeId, reason: 'No encrypted credentials' });
+          continue;
+        }
+
+        const credentials = decryptDatabaseCredentials(store.connection_string_encrypted);
+        const hasOAuthAccess = credentials.accessToken && credentials.projectUrl;
+        const projectId = extractProjectId(credentials.projectUrl);
+
+        if (!hasOAuthAccess || !projectId) {
+          stats.failed++;
+          stats.errors.push({ storeId, reason: 'No OAuth access token or project URL' });
+          continue;
+        }
+
+        console.log(`  Processing store ${storeId} (${projectId})...`);
+
+        // Execute migrations via Management API
+        await executeSqlViaManagementAPI(credentials.accessToken, projectId, EXECUTE_SQL_FUNCTION);
+        await executeSqlViaManagementAPI(credentials.accessToken, projectId, PLUGIN_CRON_TABLE);
+
+        stats.success++;
+        console.log(`  ✅ Store ${storeId} migrated`);
+
+      } catch (error) {
+        stats.failed++;
+        const errorMsg = error.response?.data?.message || error.message;
+        stats.errors.push({ storeId, reason: errorMsg });
+        console.error(`  ❌ Store ${storeId} failed: ${errorMsg}`);
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`🔄 Migration completed: ${stats.success}/${stats.total} succeeded (${duration}ms)`);
+
+    res.json({
+      success: true,
+      message: `Migration completed: ${stats.success}/${stats.total} stores migrated`,
+      stats: {
+        ...stats,
+        errors: stats.errors.slice(0, 10) // Limit errors in response
+      },
+      duration: `${duration}ms`
+    });
+
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/run-migrate-plugin-cron
+ *
+ * Store owner accessible endpoint to run plugin_cron migration for their store only.
+ * Requires JWT authentication with admin or store_owner role.
+ */
+router.post('/run-migrate-plugin-cron', authMiddleware, requireRole('admin', 'store_owner'), async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { masterDbClient } = require('../database/masterConnection');
+    const { decryptDatabaseCredentials } = require('../utils/encryption');
+    const axios = require('axios');
+
+    const storeId = req.user.store_id;
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No store_id found in user context'
+      });
+    }
+
+    const EXECUTE_SQL_FUNCTION = `
+CREATE OR REPLACE FUNCTION execute_sql(sql text)
+RETURNS void AS $
+BEGIN
+  EXECUTE sql;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO anon;
+`;
+
+    const PLUGIN_CRON_TABLE = `
+CREATE TABLE IF NOT EXISTS plugin_cron (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL,
+  cron_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  cron_schedule VARCHAR(100) NOT NULL,
+  timezone VARCHAR(50) DEFAULT 'UTC',
+  handler_method VARCHAR(255) NOT NULL,
+  handler_code TEXT,
+  handler_params JSONB DEFAULT '{}'::jsonb,
+  is_enabled BOOLEAN DEFAULT true,
+  priority INTEGER DEFAULT 10,
+  last_run_at TIMESTAMP WITH TIME ZONE,
+  next_run_at TIMESTAMP WITH TIME ZONE,
+  last_status VARCHAR(50),
+  last_error TEXT,
+  last_result JSONB,
+  run_count INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  failure_count INTEGER DEFAULT 0,
+  consecutive_failures INTEGER DEFAULT 0,
+  max_runs INTEGER,
+  max_failures INTEGER DEFAULT 5,
+  timeout_seconds INTEGER DEFAULT 300,
+  cron_job_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
+`;
+
+    // Helper function to extract project ID from Supabase URL
+    const extractProjectId = (projectUrl) => {
+      if (!projectUrl) return null;
+      const match = projectUrl.match(/https?:\/\/([^.]+)\.supabase\.co/);
+      return match ? match[1] : null;
+    };
+
+    console.log(`🔄 [${req.user.email}] Running plugin_cron migration for store ${storeId}...`);
+
+    // Get store database config
+    const { data: store, error: storeError } = await masterDbClient
+      .from('store_databases')
+      .select('store_id, database_type, connection_string_encrypted, host')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .single();
+
+    if (storeError || !store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store database configuration not found'
+      });
+    }
+
+    if (!store.connection_string_encrypted) {
+      return res.status(400).json({
+        success: false,
+        error: 'No encrypted credentials found for this store'
+      });
+    }
+
+    const credentials = decryptDatabaseCredentials(store.connection_string_encrypted);
+    const hasOAuthAccess = credentials.accessToken && credentials.projectUrl;
+    const projectId = extractProjectId(credentials.projectUrl);
+
+    if (!hasOAuthAccess || !projectId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No OAuth access token or project URL available. Please reconnect your Supabase database.'
+      });
+    }
+
+    // Execute migrations via Management API
+    const executeSqlViaManagementAPI = async (sql) => {
+      const response = await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: sql },
+        {
+          headers: {
+            'Authorization': `Bearer ${credentials.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      return response.data;
+    };
+
+    console.log(`  Creating execute_sql function...`);
+    await executeSqlViaManagementAPI(EXECUTE_SQL_FUNCTION);
+
+    console.log(`  Creating plugin_cron table...`);
+    await executeSqlViaManagementAPI(PLUGIN_CRON_TABLE);
+
+    const duration = Date.now() - startTime;
+    console.log(`  ✅ Migration completed for store ${storeId} (${duration}ms)`);
+
+    res.json({
+      success: true,
+      message: 'Plugin cron table and execute_sql function created successfully',
+      storeId,
+      duration: `${duration}ms`
+    });
+
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    const errorMsg = error.response?.data?.message || error.message;
+    res.status(500).json({
+      success: false,
+      error: errorMsg
+    });
+  }
+});
+
 module.exports = router;
