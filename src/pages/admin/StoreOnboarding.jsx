@@ -1117,13 +1117,13 @@ export default function StoreOnboarding() {
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
                 {/* What happens when you click */}
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center justify-center">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                   <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
                   What happens when you click "Connect"?
                 </h4>
-                <ol className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
+                <ol className="text-sm text-gray-700 space-y-2 text-left">
                   <li className="flex items-start">
                     <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">1</span>
                     <span>A <strong>popup window</strong> opens for Supabase login</span>
