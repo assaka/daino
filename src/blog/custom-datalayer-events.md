@@ -43,55 +43,68 @@ DainoStore automatically manages the dataLayer for you, pushing events when cust
 
 ## Built-in Events (Always Active)
 
-DainoStore automatically tracks essential e-commerce events. These are always active and follow Google's Enhanced Ecommerce (GA4) specification:
+DainoStore automatically tracks **21 e-commerce events**. These are always active and follow Google's Enhanced Ecommerce (GA4) specification:
 
-### Core Ecommerce Events
-
-| Event | When It Fires | Data Included |
-|-------|--------------|---------------|
-| `page_view` | Every page load | Page title, URL, store info |
-| `view_item` | Product detail pages | Full product data |
-| `view_item_list` | Category/collection pages | Product list data |
-| `select_item` | Product click in lists | Product and position |
-| `add_to_cart` | Add to cart action | Product, quantity, variant |
-| `remove_from_cart` | Remove from cart | Product and quantity |
-| `view_cart` | Cart page viewed | All cart items, total |
-| `begin_checkout` | Checkout started | Cart items and value |
-| `purchase` | Order completed | Full order details |
-| `search` | Product search | Query and results count |
-
-### Checkout Funnel Events
+### Core Ecommerce Events (10 events)
 
 | Event | When It Fires | Data Included |
 |-------|--------------|---------------|
-| `add_shipping_info` | Shipping method selected | Shipping tier, cart items, total |
-| `add_payment_info` | Payment method selected | Payment type, cart items, coupon |
-| `checkout_progress` | Checkout step completed | Step number, step name, cart data |
+| `page_view` | Every page load | `page_title`, `page_url`, `page_type`, `store_id`, `store_name` |
+| `view_item` | Product detail page viewed | `item_id`, `item_name`, `price`, `item_brand`, `item_category`, `currency` |
+| `view_item_list` | Category/collection page viewed | `item_list_name`, `items[]` with product data and `index` position |
+| `select_item` | Product clicked in a list | `item_list_name`, `items[]` with clicked product and `index` |
+| `add_to_cart` | Product added to cart | `currency`, `value`, `items[]` with `item_id`, `item_name`, `price`, `quantity`, `item_variant` |
+| `remove_from_cart` | Product removed from cart | `currency`, `value`, `items[]` with removed product data |
+| `view_cart` | Cart page viewed | `currency`, `value`, `items[]` with all cart products |
+| `begin_checkout` | Checkout initiated | `currency`, `value`, `items[]` with cart products |
+| `purchase` | Order completed | `transaction_id`, `value`, `tax`, `shipping`, `currency`, `coupon`, `items[]` |
+| `search` | Product search performed | `search_term`, `results_count`, `filters` |
 
-### Engagement Events
-
-| Event | When It Fires | Data Included |
-|-------|--------------|---------------|
-| `add_to_wishlist` | Product added to wishlist | Product data |
-| `view_promotion` | Promotion banner viewed | Promotion details |
-| `select_promotion` | Promotion clicked | Promotion details |
-| `quick_view` | Quick view opened | Product data |
-
-### Coupon Events
+### Checkout Funnel Events (3 events)
 
 | Event | When It Fires | Data Included |
 |-------|--------------|---------------|
-| `coupon_applied` | Coupon successfully applied | Coupon code, discount, cart total |
-| `coupon_removed` | Coupon removed from cart | Coupon code, cart total |
+| `add_shipping_info` | Shipping method selected | `currency`, `value`, `shipping_tier`, `items[]` |
+| `add_payment_info` | Payment method selected | `currency`, `value`, `payment_type`, `coupon`, `items[]` |
+| `checkout_progress` | Checkout step completed | `checkout_step`, `checkout_step_name`, `value`, `items[]`, `shipping_method`, `payment_method`, `coupon_code` |
 
-### Other Events
+### Engagement Events (4 events)
 
 | Event | When It Fires | Data Included |
 |-------|--------------|---------------|
-| `newsletter_signup` | Newsletter form submitted | Form location |
-| `filter_applied` | Product filter used | Filter type, value, results count |
+| `add_to_wishlist` | Product added to wishlist | `currency`, `value`, `items[]` with product data |
+| `view_promotion` | Promotion banner viewed | `items[]` with `promotion_id`, `promotion_name`, `creative_name`, `creative_slot` |
+| `select_promotion` | Promotion banner clicked | `promotion_id`, `promotion_name`, `creative_name`, `creative_slot` |
+| `quick_view` | Quick view modal opened | `item_id`, `item_name`, `price`, `item_category` |
 
-All events are automatically pushed to `window.dataLayer` and tracked in customer activity logs.
+### Coupon Events (2 events)
+
+| Event | When It Fires | Data Included |
+|-------|--------------|---------------|
+| `coupon_applied` | Coupon successfully applied | `coupon_code`, `discount_amount`, `cart_total` |
+| `coupon_removed` | Coupon removed from cart | `coupon_code`, `cart_total` |
+
+### Other Events (2 events)
+
+| Event | When It Fires | Data Included |
+|-------|--------------|---------------|
+| `newsletter_signup` | Newsletter form submitted | `signup_source` (e.g., "footer", "popup") |
+| `filter_applied` | Product filter used | `filter_type`, `filter_value`, `results_count` |
+
+### Complete Event Reference
+
+All 21 built-in events at a glance:
+
+```
+page_view           view_item           view_item_list      select_item
+add_to_cart         remove_from_cart    view_cart           begin_checkout
+add_shipping_info   add_payment_info    checkout_progress   purchase
+search              add_to_wishlist     view_promotion      select_promotion
+quick_view          coupon_applied      coupon_removed      newsletter_signup
+filter_applied
+```
+
+All events are automatically pushed to `window.dataLayer` and tracked in customer activity logs for analytics reporting.
 
 ---
 
