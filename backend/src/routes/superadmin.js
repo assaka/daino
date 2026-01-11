@@ -3,7 +3,7 @@ const router = express.Router();
 const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const TenantMigrationService = require('../services/migrations/TenantMigrationService');
-const ConnectionManager = require('../services/ConnectionManager');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 // Superadmin emails
 const SUPERADMIN_EMAILS = ['hello@dainostore.com', 'hamid@dainostore.com'];
