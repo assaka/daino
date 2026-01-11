@@ -4069,9 +4069,22 @@ INTENTS:
 - plugin: Creating new features
 - translation: Language translations
 - image_analysis: When user uploads an image and asks about it (e.g., "use these colors", "what colors are in this", "analyze this design", "copy this layout")
-- chat: ONLY for general questions about how to use the system, NOT for data queries
+- info: INFORMATIONAL QUESTIONS - Use this for ANY question asking for information, explanations, or help. Examples:
+  * "how much does X cost" → info
+  * "what is the credit pricing" → info
+  * "how do I create a plugin" → info (explain steps, don't create)
+  * "what models are available" → info
+  * "explain how translations work" → info
+  * "how many credits for translation" → info
+  * "what are slots" → info
+  * Questions starting with: "how", "what", "why", "explain", "tell me about"
+- chat: General conversation that doesn't fit other categories
 
-IMPORTANT: If user asks for product data, inventory, sales, or any information from the database - use analytics_query, NOT chat!
+IMPORTANT CLASSIFICATION RULES:
+1. If user asks a QUESTION (how, what, why, explain) → use "info" intent
+2. If user asks for product/sales DATA from database → use "analytics_query"
+3. If user asks to CREATE/UPDATE/DELETE something → use appropriate action intent
+4. NEVER misclassify questions as action intents - asking "how much" is NOT a create action!
 
 For layout_modify, extract:
 - sourceElement: what to move (e.g., "title" → "product_title")
@@ -8114,24 +8127,40 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
       }
 
     } else if (intent.intent === 'info') {
-      // Handle informational questions - use RAG context to provide answers
-      console.log('[AI Chat] Entering info handler - providing informational response');
+      // Handle informational questions - use tool-based knowledge lookup
+      console.log('[AI Chat] Entering info handler - using tool-based knowledge lookup');
 
-      const infoSystemPrompt = `You are a helpful assistant for an e-commerce platform. Answer the user's question using the knowledge provided below.
+      try {
+        // Extract topic from the question
+        const topic = message.toLowerCase()
+          .replace(/how much|what is|what are|how do|how does|explain|tell me about/gi, '')
+          .replace(/\?/g, '')
+          .trim();
+
+        // Use the tool-based knowledge lookup
+        const { getPlatformKnowledge } = require('../services/aiTools');
+        const knowledgeResult = await getPlatformKnowledge({ topic, question: message });
+
+        let knowledge = '';
+        if (knowledgeResult.found && knowledgeResult.knowledge) {
+          knowledge = knowledgeResult.knowledge;
+        }
+
+        const infoSystemPrompt = `You are a helpful assistant for DainoStore, an e-commerce platform.
+Answer the user's question using the knowledge provided below.
 
 IMPORTANT RULES:
 1. ONLY provide information - do NOT take any actions or create anything
 2. If asked "How do I create X?", explain the STEPS to create X - don't actually create it
-3. Use the knowledge base to provide accurate answers
-4. If you don't have relevant information, say so honestly
-5. Be concise but thorough in your explanations
+3. Use the knowledge provided to give accurate answers
+4. Be concise and conversational
+5. If the knowledge doesn't cover the question, say so honestly
 
-KNOWLEDGE BASE:
-${ragContext || 'No specific context available for this query.'}
+KNOWLEDGE:
+${knowledge || ragContext || 'No specific information available.'}
 
-The user is asking an informational question. Provide a helpful answer based on the knowledge above.`;
+Answer the question naturally and helpfully.`;
 
-      try {
         const infoResult = await aiService.generate({
           userId,
           operationType: 'general',
@@ -8147,7 +8176,11 @@ The user is asking an informational question. Provide a helpful answer based on 
         return res.json({
           success: true,
           message: infoResult.content || 'Here is the information you requested.',
-          data: { type: 'informational_response', entity: intent.entity || null },
+          data: {
+            type: 'informational_response',
+            entity: intent.entity || null,
+            knowledgeSources: knowledgeResult.sources || []
+          },
           creditsDeducted: creditsUsed
         });
       } catch (infoError) {

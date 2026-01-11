@@ -322,6 +322,45 @@ class AIServiceClient {
   }
 
   /**
+   * Chat using tool-based AI (dynamic, uses Anthropic tools)
+   * This is the new approach that doesn't require static training data.
+   * The AI uses tools to dynamically look up information.
+   *
+   * @param {string} message - User message
+   * @param {array} conversationHistory - Previous messages
+   * @param {string} storeId - Store ID for context
+   */
+  async chatWithTools(message, conversationHistory = [], storeId) {
+    try {
+      const response = await apiClient.post('/ai/chat-tools', {
+        message,
+        conversationHistory,
+        storeId
+      });
+
+      if (response.success) {
+        return {
+          success: true,
+          message: response.message,
+          data: response.data,
+          toolCalls: response.data?.toolCalls,
+          creditsDeducted: response.creditsDeducted
+        };
+      } else {
+        throw new Error(response.message || 'Chat failed');
+      }
+    } catch (error) {
+      console.error('Chat with Tools Error:', error);
+
+      if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
+        throw new Error('Insufficient credits for chat');
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * Generate code patch
    * @param {string} prompt - What to change
    * @param {string} sourceCode - Current code
