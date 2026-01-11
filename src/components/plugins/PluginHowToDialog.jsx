@@ -1149,7 +1149,7 @@ module.exports = onOrderCompleted;`} />
                 </h2>
 
                 <p className="text-gray-600 mb-4">
-                  Cron jobs are scheduled tasks that run automatically at specified intervals (daily reports, weekly cleanup).
+                  Cron jobs are scheduled tasks that run automatically at specified intervals. Use them for recurring tasks like sending reminder emails, cleaning up old data, or generating reports.
                 </p>
 
                 <h3 className="text-lg font-semibold mb-3">Cron Schedule Format</h3>
@@ -1164,8 +1164,8 @@ module.exports = onOrderCompleted;`} />
                 </div>
                 <div className="grid grid-cols-4 gap-2 text-sm mb-6">
                   <div className="bg-pink-50 rounded p-2 text-center">
-                    <code className="text-pink-700">* * * * *</code>
-                    <div className="text-pink-600 text-xs">Every minute</div>
+                    <code className="text-pink-700">*/15 * * * *</code>
+                    <div className="text-pink-600 text-xs">Every 15 min</div>
                   </div>
                   <div className="bg-pink-50 rounded p-2 text-center">
                     <code className="text-pink-700">0 * * * *</code>
@@ -1176,47 +1176,175 @@ module.exports = onOrderCompleted;`} />
                     <div className="text-pink-600 text-xs">Daily at 9 AM</div>
                   </div>
                   <div className="bg-pink-50 rounded p-2 text-center">
-                    <code className="text-pink-700">0 0 * * 0</code>
-                    <div className="text-pink-600 text-xs">Weekly (Sunday)</div>
+                    <code className="text-pink-700">0 0 * * 1</code>
+                    <div className="text-pink-600 text-xs">Monday midnight</div>
                   </div>
                 </div>
 
-                <h3 className="text-lg font-semibold mb-3">Cron Job Definition</h3>
-                <CodeBlock title="In plugin JSON" code={`{
+                <h3 className="text-lg font-semibold mb-3">Cron Job Definition in Plugin JSON</h3>
+                <CodeBlock title="In your plugin's cronJobs array" code={`{
   "cronJobs": [
     {
-      "name": "daily-report",
-      "schedule": "0 9 * * *",
-      "description": "Send daily sales report at 9 AM",
-      "handlerCode": "async function dailyReport(context) { ... }",
+      "name": "abandoned-cart-reminder",
+      "schedule": "0 */2 * * *",
+      "description": "Send reminder emails for abandoned carts every 2 hours",
+      "handlerCode": "async function abandonedCartReminder(context) { ... }",
+      "isEnabled": true
+    },
+    {
+      "name": "cleanup-old-sessions",
+      "schedule": "0 3 * * *",
+      "description": "Delete chat sessions older than 30 days at 3 AM daily",
+      "handlerCode": "async function cleanupOldSessions(context) { ... }",
       "isEnabled": true
     }
   ]
 }`} />
 
-                <CodeBlock title="Cron Handler Example" code={`async function dailyReport(context) {
+                <h3 className="text-lg font-semibold mt-6 mb-3">Real Example: Abandoned Cart Recovery</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  This cron job finds carts abandoned for 2+ hours and sends reminder emails:
+                </p>
+                <CodeBlock title="Abandoned Cart Reminder (runs every 2 hours)" code={`async function abandonedCartReminder(context) {
   const { supabase } = context;
 
-  // Get today's stats
-  const today = new Date().toISOString().split('T')[0];
-  const { count: ordersCount } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', today);
+  // Find carts updated 2-24 hours ago that haven't been emailed yet
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  console.log(\`Daily Report: \${ordersCount} orders today\`);
-}
+  const { data: abandonedCarts, error } = await supabase
+    .from('carts')
+    .select('id, customer_email, items, total, updated_at')
+    .eq('status', 'active')
+    .eq('reminder_sent', false)
+    .lt('updated_at', twoHoursAgo)
+    .gt('updated_at', oneDayAgo)
+    .not('customer_email', 'is', null);
 
-async function cleanupOldSessions(context) {
+  if (error) {
+    console.error('Failed to fetch abandoned carts:', error);
+    return;
+  }
+
+  console.log(\`Found \${abandonedCarts.length} abandoned carts\`);
+
+  for (const cart of abandonedCarts) {
+    // Send reminder email (using your email service)
+    try {
+      await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: cart.customer_email,
+          template: 'abandoned-cart',
+          data: {
+            items: cart.items,
+            total: cart.total,
+            cartUrl: \`https://yourstore.com/cart?restore=\${cart.id}\`
+          }
+        })
+      });
+
+      // Mark as reminder sent
+      await supabase
+        .from('carts')
+        .update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() })
+        .eq('id', cart.id);
+
+      console.log(\`Sent reminder to \${cart.customer_email}\`);
+    } catch (err) {
+      console.error(\`Failed to send reminder for cart \${cart.id}:\`, err);
+    }
+  }
+}`} />
+
+                <h3 className="text-lg font-semibold mt-6 mb-3">Real Example: Low Stock Alert</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  This cron job checks inventory daily and notifies the store owner of low stock items:
+                </p>
+                <CodeBlock title="Low Stock Alert (runs daily at 8 AM)" code={`async function lowStockAlert(context) {
   const { supabase } = context;
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Find products with stock below threshold
+  const { data: lowStockProducts, error } = await supabase
+    .from('products')
+    .select('id, name, sku, stock_quantity, low_stock_threshold')
+    .lt('stock_quantity', supabase.raw('low_stock_threshold'))
+    .eq('track_inventory', true)
+    .gt('stock_quantity', 0);  // Not completely out of stock
 
-  await supabase
+  if (error) {
+    console.error('Failed to check inventory:', error);
+    return;
+  }
+
+  if (lowStockProducts.length === 0) {
+    console.log('No low stock items found');
+    return;
+  }
+
+  // Build alert message
+  const alertItems = lowStockProducts.map(p =>
+    \`• \${p.name} (SKU: \${p.sku}) - Only \${p.stock_quantity} left\`
+  ).join('\\n');
+
+  // Send notification to store owner
+  await fetch('/api/notifications/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'low-stock-alert',
+      title: \`Low Stock Alert: \${lowStockProducts.length} products need restocking\`,
+      message: alertItems,
+      priority: 'high'
+    })
+  });
+
+  console.log(\`Sent low stock alert for \${lowStockProducts.length} products\`);
+}`} />
+
+                <h3 className="text-lg font-semibold mt-6 mb-3">Real Example: Cleanup Old Data</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  This cron job runs weekly to clean up old chat sessions and maintain database performance:
+                </p>
+                <CodeBlock title="Weekly Cleanup (runs every Sunday at 3 AM)" code={`async function weeklyCleanup(context) {
+  const { supabase } = context;
+  const stats = { sessions: 0, messages: 0 };
+
+  // Delete chat sessions older than 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  // First, get the sessions to delete (for counting)
+  const { data: oldSessions } = await supabase
     .from('chat_sessions')
-    .delete()
-    .lt('updated_at', sevenDaysAgo.toISOString());
+    .select('session_id')
+    .eq('status', 'closed')
+    .lt('updated_at', thirtyDaysAgo.toISOString());
+
+  if (oldSessions && oldSessions.length > 0) {
+    const sessionIds = oldSessions.map(s => s.session_id);
+
+    // Delete messages first (foreign key constraint)
+    const { count: deletedMessages } = await supabase
+      .from('chat_messages')
+      .delete()
+      .in('session_id', sessionIds)
+      .select('*', { count: 'exact', head: true });
+
+    stats.messages = deletedMessages || 0;
+
+    // Then delete sessions
+    const { count: deletedSessions } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .in('session_id', sessionIds)
+      .select('*', { count: 'exact', head: true });
+
+    stats.sessions = deletedSessions || 0;
+  }
+
+  console.log(\`Weekly cleanup complete: Deleted \${stats.sessions} sessions and \${stats.messages} messages\`);
 }`} />
               </section>
 
