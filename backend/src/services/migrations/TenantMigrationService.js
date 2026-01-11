@@ -65,6 +65,14 @@ const MIGRATIONS = [
       CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
       CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
+
+      -- Enable RLS and create policy
+      ALTER TABLE plugin_cron ENABLE ROW LEVEL SECURITY;
+      DROP POLICY IF EXISTS tenant_isolation_plugin_cron ON plugin_cron;
+      CREATE POLICY tenant_isolation_plugin_cron ON plugin_cron
+        FOR ALL
+        USING (is_service_role())
+        WITH CHECK (is_service_role());
     `,
     // Alternative: Try creating table directly via Supabase client (for simple tables)
     async runViaClient(tenantDb) {
