@@ -35,6 +35,13 @@ const BLOG_ARTICLES = [
     color: 'bg-purple-100 text-purple-600',
     articles: [
       {
+        title: 'Custom DataLayer Events for Advanced Tracking',
+        description: 'Track user interactions, checkout funnels, and conversions with Google Tag Manager integration.',
+        slug: 'custom-datalayer-events',
+        readTime: '12 min read',
+        featured: true
+      },
+      {
         title: 'A/B Testing Guide for E-commerce',
         description: 'Run experiments to optimize your store and increase conversions with data-driven decisions.',
         slug: 'ab-testing-guide',
