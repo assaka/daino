@@ -897,6 +897,8 @@ Provide production-ready code with proper error handling and best practices.`;
 
   /**
    * Enhanced chat with context tracking for no-code builder
+   * @deprecated Use unifiedAIChatService.chat() instead
+   * This method is maintained for backwards compatibility but will be removed in a future version.
    */
   async chatWithContext({ message, mode, conversationHistory, pluginConfig, currentStep }) {
     // Fetch relevant context from database

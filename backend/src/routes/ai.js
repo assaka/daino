@@ -9,6 +9,7 @@ const aiContextService = require('../services/aiContextService');
 const aiLearningService = require('../services/aiLearningService');
 const aiTrainingService = require('../services/aiTrainingService');
 const aiTrainingRoutes = require('./ai-training');
+const unifiedAIChat = require('../services/unifiedAIChatService');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 // Mount training routes
@@ -40,7 +41,49 @@ router.get('/models', async (req, res) => {
 });
 
 /**
+ * POST /api/ai/unified-chat
+ * Unified tool-based AI chat - handles ALL AI interactions
+ * Uses Anthropic's tool_use API for dynamic, intelligent responses
+ *
+ * This is the NEW recommended endpoint for all AI chat functionality.
+ * Supports: questions, slot editing, data queries, settings, translations, etc.
+ */
+router.post('/unified-chat', authMiddleware, async (req, res) => {
+  try {
+    const { message, conversationHistory = [], mode = 'general' } = req.body;
+    const userId = req.user?.id;
+    const storeId = req.headers['x-store-id'] || req.body.storeId;
+
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    console.log('🤖 Unified AI Chat - Message:', message?.substring(0, 80));
+
+    const result = await unifiedAIChat.chat({
+      message,
+      conversationHistory,
+      storeId,
+      userId,
+      mode
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Unified AI chat error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'AI chat failed'
+    });
+  }
+});
+
+/**
  * POST /api/ai/smart-chat
+ * @deprecated Use unifiedAIChatService.chat() instead
+ * This endpoint is maintained for backwards compatibility but will be removed in a future version.
+ * All new code should use the unified tool-based AI service.
+ *
  * Ultimate AI chat combining: RAG + Learned Examples + Real-time Data + Natural Reasoning
  * This is the "wow effect" Claude Code-style approach
  */
@@ -3747,6 +3790,10 @@ User request: ${prompt}`,
 
 /**
  * POST /api/ai/chat
+ * @deprecated Use unifiedAIChatService.chat() instead
+ * This endpoint is maintained for backwards compatibility but will be removed in a future version.
+ * All new code should use the unified tool-based AI service.
+ *
  * Conversational AI interface - determines intent and executes
  * Like Bolt, Lovable, v0 - user chats naturally
  */

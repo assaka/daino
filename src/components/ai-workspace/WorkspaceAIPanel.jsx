@@ -470,13 +470,12 @@ const WorkspaceAIPanel = () => {
     setIsProcessingAi(true);
 
     try {
-      const response = await apiClient.post('/ai/chat', {
-        message: prompt,
+      // Use unified AI chat with plugin generation mode
+      const response = await apiClient.post('/ai/unified-chat', {
+        message: `Generate a plugin: ${prompt}`,
         conversationHistory: chatMessages.slice(-10),
         storeId: storeId,
-        modelId: selectedModel,
-        serviceKey: currentModel?.serviceKey,
-        confirmedPlugin: true  // This tells backend to actually generate, not ask again
+        mode: 'plugin'
       });
 
       if (response.success) {
@@ -487,36 +486,11 @@ const WorkspaceAIPanel = () => {
           credits: response.creditsDeducted
         });
 
-        // Auto-refresh preview and editor after styling or layout changes
-        const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
-        if (refreshTypes.includes(response.data?.type)) {
+        // Auto-refresh preview when needed
+        if (response.data?.refreshPreview) {
           setTimeout(() => {
-            // Check if this is a store settings change (theme colors, etc.)
-            if (response.data?.refreshType === 'store_settings' || response.data?.requiresRefresh) {
-              console.log('🔄 Store setting updated via chat, triggering store refresh');
-              try {
-                const storeChannel = new BroadcastChannel('store_settings_update');
-                storeChannel.postMessage({ type: 'clear_cache', storeId });
-                storeChannel.close();
-              } catch (e) {
-                console.warn('BroadcastChannel not supported');
-              }
-              window.dispatchEvent(new CustomEvent('storeSettingsUpdated', { detail: { storeId } }));
-            }
-
             refreshPreview?.();
             triggerConfigurationRefresh?.();
-
-            // Dispatch localStorage event to trigger reload in page editors
-            localStorage.setItem('slot_config_updated', JSON.stringify({
-              storeId,
-              pageType: response.data?.pageType || selectedPageType,
-              timestamp: Date.now()
-            }));
-            window.dispatchEvent(new StorageEvent('storage', {
-              key: 'slot_config_updated',
-              newValue: JSON.stringify({ storeId, pageType: response.data?.pageType || selectedPageType, timestamp: Date.now() })
-            }));
           }, 500);
         }
       } else {
@@ -868,21 +842,12 @@ const WorkspaceAIPanel = () => {
         pendingAction: m.pendingAction // Include any pending action
       }));
 
-      // Use Smart Chat (RAG + learned examples + real-time data)
-      const response = await apiClient.post('ai/smart-chat', {
+      // Use Unified AI Chat (tool-based approach)
+      const response = await apiClient.post('ai/unified-chat', {
         message: userMessage || 'Please analyze this image.',
-        context: selectedPageType,
-        history: historyWithPending,
-        capabilities: [
-          'Add slots', 'Modify slots', 'Remove slots',
-          'Resize slots', 'Move slots', 'Reorder slots',
-          'Create plugins', 'Edit plugins'
-        ],
+        conversationHistory: historyWithPending,
         storeId: storeId,
-        modelId: selectedModel,
-        serviceKey: currentModel?.serviceKey,
-        slotContext, // Pass current layout info
-        images: imagesForApi // Pass images for vision support
+        mode: 'workspace'
       });
 
       // Check if this is a plugin confirmation request from backend
@@ -937,18 +902,17 @@ const WorkspaceAIPanel = () => {
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }
 
-      // Auto-refresh preview and editor after styling or layout changes
-      const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
-      console.log('🎨 Response data type check:', response.data?.type, 'in refreshTypes:', refreshTypes.includes(response.data?.type));
-      console.log('🎨 Response data full:', JSON.stringify(response.data, null, 2));
-      console.log('🎨 refreshPreview available:', !!refreshPreview, 'triggerConfigurationRefresh available:', !!triggerConfigurationRefresh);
-      if (refreshTypes.includes(response.data?.type)) {
-        console.log('🎨 Triggering preview refresh for type:', response.data?.type);
-        console.log('🎨 Checking store settings refresh:', { refreshType: response.data?.refreshType, requiresRefresh: response.data?.requiresRefresh });
+      // Auto-refresh preview when unified service indicates refresh is needed
+      // Check both new unified format (refreshPreview) and legacy format (type-based)
+      const needsRefresh = response.data?.refreshPreview ||
+        ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'].includes(response.data?.type);
+
+      if (needsRefresh) {
+        console.log('🎨 Triggering preview refresh (unified service)');
         setTimeout(() => {
           // Check if this is a store settings change (theme colors, etc.)
           if (response.data?.refreshType === 'store_settings' || response.data?.requiresRefresh) {
-            console.log('🔄 Store setting updated via smart chat, triggering store refresh');
+            console.log('🔄 Store setting updated, triggering store refresh');
             try {
               const storeChannel = new BroadcastChannel('store_settings_update');
               storeChannel.postMessage({ type: 'clear_cache', storeId });
@@ -959,7 +923,6 @@ const WorkspaceAIPanel = () => {
             window.dispatchEvent(new CustomEvent('storeSettingsUpdated', { detail: { storeId } }));
           }
 
-          console.log('🎨 Calling refreshPreview and triggerConfigurationRefresh NOW');
           refreshPreview?.();
           triggerConfigurationRefresh?.();
 
@@ -973,7 +936,6 @@ const WorkspaceAIPanel = () => {
             key: 'slot_config_updated',
             newValue: JSON.stringify({ storeId, pageType: response.data?.pageType || selectedPageType, timestamp: Date.now() })
           }));
-          console.log('🎨 localStorage and StorageEvent dispatched');
         }, 500);
       }
 

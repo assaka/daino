@@ -208,6 +208,10 @@ router.post('/template', async (req, res) => {
 
 /**
  * POST /api/plugins/ai/chat
+ * @deprecated Use unifiedAIChatService.chat() instead
+ * This endpoint is maintained for backwards compatibility but will be removed in a future version.
+ * All new code should use the unified tool-based AI service.
+ *
  * Chat with AI assistant (streaming)
  */
 router.post('/chat', async (req, res) => {

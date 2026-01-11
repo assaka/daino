@@ -1111,23 +1111,52 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plu
         }
 
         const credentials = decryptDatabaseCredentials(store.connection_string_encrypted);
+        let migrated = false;
+
+        // Method 1: Try OAuth Management API first
         const hasOAuthAccess = credentials.accessToken && credentials.projectUrl;
         const projectId = extractProjectId(credentials.projectUrl);
 
-        if (!hasOAuthAccess || !projectId) {
-          stats.failed++;
-          stats.errors.push({ storeId, reason: 'No OAuth access token or project URL' });
-          continue;
+        if (hasOAuthAccess && projectId) {
+          console.log(`  Processing store ${storeId} via Management API (${projectId})...`);
+          try {
+            await executeSqlViaManagementAPI(credentials.accessToken, projectId, EXECUTE_SQL_FUNCTION);
+            await executeSqlViaManagementAPI(credentials.accessToken, projectId, PLUGIN_CRON_TABLE);
+            migrated = true;
+            console.log(`  ✅ Store ${storeId} migrated via Management API`);
+          } catch (apiError) {
+            console.log(`  ⚠️ Management API failed: ${apiError.response?.data?.message || apiError.message}`);
+          }
         }
 
-        console.log(`  Processing store ${storeId} (${projectId})...`);
+        // Method 2: Try direct PostgreSQL connection as fallback
+        if (!migrated && credentials.connectionString && !credentials.connectionString.includes('[password]')) {
+          console.log(`  Processing store ${storeId} via direct PostgreSQL...`);
+          try {
+            const { Client } = require('pg');
+            const pgClient = new Client({
+              connectionString: credentials.connectionString,
+              ssl: { rejectUnauthorized: false }
+            });
+            await pgClient.connect();
 
-        // Execute migrations via Management API
-        await executeSqlViaManagementAPI(credentials.accessToken, projectId, EXECUTE_SQL_FUNCTION);
-        await executeSqlViaManagementAPI(credentials.accessToken, projectId, PLUGIN_CRON_TABLE);
+            await pgClient.query(EXECUTE_SQL_FUNCTION);
+            await pgClient.query(PLUGIN_CRON_TABLE);
 
-        stats.success++;
-        console.log(`  ✅ Store ${storeId} migrated`);
+            await pgClient.end();
+            migrated = true;
+            console.log(`  ✅ Store ${storeId} migrated via PostgreSQL`);
+          } catch (pgError) {
+            console.log(`  ⚠️ PostgreSQL connection failed: ${pgError.message}`);
+          }
+        }
+
+        if (migrated) {
+          stats.success++;
+        } else {
+          stats.failed++;
+          stats.errors.push({ storeId, reason: 'All connection methods failed' });
+        }
 
       } catch (error) {
         stats.failed++;
