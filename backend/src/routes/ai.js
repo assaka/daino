@@ -130,16 +130,16 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
 
     // ALWAYS add hardcoded platform knowledge for common questions
     // This ensures credit pricing, models, etc. are always available
-    const msgLower = message.toLowerCase();
-    if (/credit|pricing|cost|price|model|translation|slot|plugin/.test(msgLower)) {
+    const messageLower = message.toLowerCase();
+    if (/credit|pricing|cost|price|model|translation|slot|plugin/.test(messageLower)) {
       try {
         const { getHardcodedKnowledge } = require('../services/aiTools');
         let topic = '';
-        if (/credit|pricing|cost|price/.test(msgLower)) topic = 'credit';
-        else if (/model/.test(msgLower)) topic = 'model';
-        else if (/translat/.test(msgLower)) topic = 'translation';
-        else if (/slot/.test(msgLower)) topic = 'slot';
-        else if (/plugin/.test(msgLower)) topic = 'plugin';
+        if (/credit|pricing|cost|price/.test(messageLower)) topic = 'credit';
+        else if (/model/.test(messageLower)) topic = 'model';
+        else if (/translat/.test(messageLower)) topic = 'translation';
+        else if (/slot/.test(messageLower)) topic = 'slot';
+        else if (/plugin/.test(messageLower)) topic = 'plugin';
 
         if (topic) {
           const hardcodedResult = getHardcodedKnowledge(topic);

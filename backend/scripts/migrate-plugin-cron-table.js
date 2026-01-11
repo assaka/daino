@@ -1,7 +1,8 @@
 /**
- * Migration Script: Create plugin_cron table for all stores
+ * Migration Script: Create plugin_cron table AND execute_sql function for all stores
  *
- * Run this script to add the plugin_cron table to all existing tenant databases.
+ * This script adds the plugin_cron table and execute_sql function to all existing
+ * tenant databases using direct PostgreSQL connections.
  *
  * Usage: node backend/scripts/migrate-plugin-cron-table.js
  */
@@ -9,9 +10,25 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const { masterDbClient } = require('../src/database/masterConnection');
-const ConnectionManager = require('../src/services/database/ConnectionManager');
+const { decryptDatabaseCredentials } = require('../src/utils/encryption');
 
-const PLUGIN_CRON_SQL = `
+// SQL to create the execute_sql function (needed for future migrations via REST API)
+const EXECUTE_SQL_FUNCTION = `
+CREATE OR REPLACE FUNCTION execute_sql(sql text)
+RETURNS void AS $
+BEGIN
+  EXECUTE sql;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to all roles
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO anon;
+`;
+
+// SQL to create the plugin_cron table
+const PLUGIN_CRON_TABLE = `
 CREATE TABLE IF NOT EXISTS plugin_cron (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL,
@@ -47,17 +64,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plu
 `;
 
 async function migrateAllStores() {
-  console.log('='.repeat(60));
-  console.log('Plugin Cron Table Migration');
-  console.log('='.repeat(60));
+  console.log('='.repeat(70));
+  console.log('Plugin Cron Table & Execute SQL Function Migration');
+  console.log('='.repeat(70));
   console.log('');
 
   try {
-    // 1. Get all active stores from master database
+    // 1. Get all active stores with their encrypted credentials
     console.log('Fetching all stores from master database...');
     const { data: stores, error: storesError } = await masterDbClient
       .from('store_databases')
-      .select('store_id, database_type')
+      .select('store_id, database_type, connection_string_encrypted, host')
       .eq('is_active', true);
 
     if (storesError) {
@@ -71,75 +88,126 @@ async function migrateAllStores() {
 
     console.log(`Found ${stores.length} active store(s).\n`);
 
-    // 2. Iterate through each store and create the table
+    // 2. Iterate through each store
     let successCount = 0;
     let errorCount = 0;
+    let skippedCount = 0;
+    const failedStores = [];
 
     for (const store of stores) {
       const storeId = store.store_id;
-      console.log(`[${successCount + errorCount + 1}/${stores.length}] Processing store: ${storeId}`);
+      console.log(`\n[${successCount + errorCount + skippedCount + 1}/${stores.length}] Processing store: ${storeId}`);
+      console.log(`   Database type: ${store.database_type}`);
+      console.log(`   Host: ${store.host || 'N/A'}`);
 
       try {
-        // Get connection to tenant database
-        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        // Decrypt credentials
+        if (!store.connection_string_encrypted) {
+          console.log('   ⚠️  No encrypted credentials found, skipping...');
+          skippedCount++;
+          continue;
+        }
 
-        // Try to execute SQL via RPC
-        try {
-          const { error: rpcError } = await tenantDb.rpc('execute_sql', { sql: PLUGIN_CRON_SQL });
+        const credentials = decryptDatabaseCredentials(store.connection_string_encrypted);
 
-          if (rpcError) {
-            // RPC failed, try alternative method - check if table exists by querying it
-            console.log(`   RPC failed, checking if table exists...`);
-            const { error: checkError } = await tenantDb.from('plugin_cron').select('id').limit(1);
+        // Check if we have a valid connection string
+        if (!credentials.connectionString) {
+          console.log('   ⚠️  No connectionString in credentials');
 
-            if (checkError && checkError.message.includes('does not exist')) {
-              console.log(`   ❌ Table does not exist and could not be created via RPC`);
-              console.log(`   ⚠️  Please create manually in Supabase SQL Editor for store: ${storeId}`);
-              errorCount++;
-              continue;
-            } else if (!checkError) {
-              console.log(`   ✅ Table already exists`);
-              successCount++;
-              continue;
-            }
-          }
-        } catch (rpcErr) {
-          // RPC might not exist, check if table exists
-          const { error: checkError } = await tenantDb.from('plugin_cron').select('id').limit(1);
-
-          if (!checkError) {
-            console.log(`   ✅ Table already exists`);
-            successCount++;
+          // Try to construct one for Supabase if we have the details
+          if (store.database_type === 'supabase' && credentials.projectUrl) {
+            console.log('   ℹ️  Supabase store without direct connection string');
+            console.log('   ⚠️  Please run the SQL manually in Supabase SQL Editor');
+            failedStores.push({ storeId, reason: 'No direct connection string - Supabase OAuth store' });
+            errorCount++;
             continue;
           }
 
-          console.log(`   ❌ Could not create table: ${rpcErr.message}`);
+          skippedCount++;
+          continue;
+        }
+
+        // Check for password placeholder
+        if (credentials.connectionString.includes('[password]')) {
+          console.log('   ⚠️  Connection string has [password] placeholder');
+          console.log('   ⚠️  Please run the SQL manually in Supabase SQL Editor');
+          failedStores.push({ storeId, reason: 'Connection string has password placeholder' });
           errorCount++;
           continue;
         }
 
-        console.log(`   ✅ Table created successfully`);
+        // Connect directly via PostgreSQL
+        const { Client } = require('pg');
+        const pgClient = new Client({
+          connectionString: credentials.connectionString,
+          ssl: { rejectUnauthorized: false }
+        });
+
+        console.log('   Connecting to PostgreSQL...');
+        await pgClient.connect();
+
+        // First, create the execute_sql function
+        console.log('   Creating execute_sql function...');
+        try {
+          await pgClient.query(EXECUTE_SQL_FUNCTION);
+          console.log('   ✅ execute_sql function created');
+        } catch (funcError) {
+          if (funcError.message.includes('already exists')) {
+            console.log('   ✅ execute_sql function already exists');
+          } else {
+            console.log(`   ⚠️  execute_sql function error: ${funcError.message}`);
+          }
+        }
+
+        // Then, create the plugin_cron table
+        console.log('   Creating plugin_cron table...');
+        try {
+          await pgClient.query(PLUGIN_CRON_TABLE);
+          console.log('   ✅ plugin_cron table created');
+        } catch (tableError) {
+          if (tableError.message.includes('already exists')) {
+            console.log('   ✅ plugin_cron table already exists');
+          } else {
+            throw tableError;
+          }
+        }
+
+        await pgClient.end();
+        console.log('   ✅ Migration complete for this store');
         successCount++;
 
       } catch (err) {
         console.log(`   ❌ Error: ${err.message}`);
+        failedStores.push({ storeId, reason: err.message });
         errorCount++;
       }
     }
 
     // 3. Summary
-    console.log('');
-    console.log('='.repeat(60));
+    console.log('\n');
+    console.log('='.repeat(70));
     console.log('Migration Summary');
-    console.log('='.repeat(60));
+    console.log('='.repeat(70));
     console.log(`✅ Successful: ${successCount}`);
+    console.log(`⚠️  Skipped: ${skippedCount}`);
     console.log(`❌ Failed: ${errorCount}`);
     console.log('');
 
-    if (errorCount > 0) {
-      console.log('For failed stores, please run this SQL manually in Supabase SQL Editor:');
-      console.log('');
-      console.log(PLUGIN_CRON_SQL);
+    if (failedStores.length > 0) {
+      console.log('Failed stores that need manual migration:');
+      console.log('-'.repeat(70));
+      for (const { storeId, reason } of failedStores) {
+        console.log(`  Store: ${storeId}`);
+        console.log(`  Reason: ${reason}`);
+        console.log('');
+      }
+
+      console.log('\nFor failed stores, please run this SQL manually in the Supabase SQL Editor:');
+      console.log('='.repeat(70));
+      console.log('\n-- Step 1: Create execute_sql function');
+      console.log(EXECUTE_SQL_FUNCTION);
+      console.log('\n-- Step 2: Create plugin_cron table');
+      console.log(PLUGIN_CRON_TABLE);
     }
 
   } catch (error) {
@@ -151,7 +219,7 @@ async function migrateAllStores() {
 // Run the migration
 migrateAllStores()
   .then(() => {
-    console.log('Migration complete.');
+    console.log('\nMigration complete.');
     process.exit(0);
   })
   .catch((err) => {
