@@ -1105,6 +1105,18 @@ export default function StoreOnboarding() {
           {/* Step 3: Connect Database */}
           {currentStep === 3 && !oauthCompleted && (
             <form onSubmit={handleConnectDatabase} className="space-y-6">
+              {/* Why you need a database */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h4 className="font-semibold text-amber-900 mb-2 flex items-center">
+                  <Database className="w-4 h-4 mr-2" />
+                  Why do I need a database?
+                </h4>
+                <p className="text-sm text-amber-800">
+                  Your Supabase database is where all your store data lives - products, categories, customers, orders, and settings.
+                  You own and control your data completely. We just help you set it up!
+                </p>
+              </div>
+
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Database className="w-10 h-10 text-green-600" />
@@ -1113,27 +1125,33 @@ export default function StoreOnboarding() {
                   Connect Your Supabase Database
                 </h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  We'll securely connect to your Supabase account using OAuth, create all necessary tables, and seed initial data automatically.
+                  We'll securely connect to your Supabase account using OAuth, then set up everything your store needs automatically.
                 </p>
+
+                {/* What happens when you click */}
                 <div className="bg-white/80 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center justify-center">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
-                    Your store is just 3 clicks away!
+                    What happens when you click "Connect"?
                   </h4>
-                  <ul className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
+                  <ol className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
                     <li className="flex items-start">
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span><strong>Connect instantly</strong> with secure OAuth authorization</span>
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">1</span>
+                      <span>A <strong>popup window</strong> opens for Supabase login</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span><strong>Choose your project</strong> from your Supabase account</span>
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">2</span>
+                      <span>You <strong>select a project</strong> from your Supabase account</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span><strong>Sit back & relax</strong> while we build your entire database</span>
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">3</span>
+                      <span>You <strong>authorize access</strong> so we can create tables</span>
                     </li>
-                  </ul>
+                    <li className="flex items-start">
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">4</span>
+                      <span>Popup closes and you're <strong>brought back here</strong> automatically</span>
+                    </li>
+                  </ol>
                 </div>
               </div>
 
@@ -1163,6 +1181,52 @@ export default function StoreOnboarding() {
             <form onSubmit={handleProvisionDatabase} className="space-y-6">
               {/* Show progress when provisioning is active (either started now or resumed) */}
               {(loading && provisioningStatus) || (provisioningStatus && !needsServiceKey) ? (
+                provisioningStatus === 'completed' ? (
+                  /* Completion celebration UI */
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-8 text-center">
+                    <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
+                      <CheckCircle2 className="w-14 h-14 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-green-800 mb-2">
+                      Your Store is Ready!
+                    </h2>
+                    <p className="text-green-700 text-lg mb-4">
+                      Congratulations! <strong>{storeData.name}</strong> has been successfully set up.
+                    </p>
+                    <div className="bg-white/80 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                      <h4 className="font-semibold text-gray-900 mb-3">What's been set up:</h4>
+                      <ul className="text-sm text-gray-700 space-y-2 text-left">
+                        <li className="flex items-center">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 flex-shrink-0" />
+                          <span>129 database tables created</span>
+                        </li>
+                        <li className="flex items-center">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 flex-shrink-0" />
+                          <span>Store configuration applied</span>
+                        </li>
+                        <li className="flex items-center">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 flex-shrink-0" />
+                          <span><strong>{selectedThemePreset.toUpperCase()}</strong> theme installed</span>
+                        </li>
+                        {provisionDemoData && (
+                          <li className="flex items-center">
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 flex-shrink-0" />
+                            <span>Demo products and orders added</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-center text-blue-800">
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        <span className="font-medium">Redirecting to your dashboard...</span>
+                      </div>
+                      <p className="text-blue-600 text-sm mt-1">
+                        You'll be there in a moment!
+                      </p>
+                    </div>
+                  </div>
+                ) : (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
                   <div className="text-center mb-6">
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -1173,7 +1237,7 @@ export default function StoreOnboarding() {
                     </h3>
                     <div className="space-y-2">
                       <p className="text-gray-600 text-sm">
-                        Your store is being set up. This takes a few minutes.
+                        We're building your store right now. This usually takes 2-5 minutes.
                       </p>
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                         <p className="text-green-800 text-sm font-medium flex items-center justify-center">
@@ -1187,14 +1251,21 @@ export default function StoreOnboarding() {
                     </div>
                   </div>
 
+                  {/* What's happening right now */}
+                  <div className="bg-white/60 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-gray-600 text-center">
+                      <strong>What's happening:</strong> We're creating {provisioningStatus === 'tables_creating' || provisioningStatus === 'pending' ? 'database tables' : provisioningStatus === 'seed_running' ? 'store settings' : provisioningStatus === 'demo_running' ? 'demo content' : 'your store'} for <strong>{storeData.name}</strong>
+                    </p>
+                  </div>
+
                   {/* Progress Steps */}
                   <div className="space-y-3">
                     {[
-                      { status: 'tables_creating', label: 'Creating database tables', description: '129 tables for your store' },
+                      { status: 'tables_creating', label: 'Creating database tables', description: '129 tables for products, orders, customers, etc.' },
                       { status: 'tables_completed', label: 'Tables created', description: 'Database structure ready' },
-                      { status: 'seed_running', label: 'Adding initial data', description: 'Core configuration and settings' },
-                      { status: 'seed_completed', label: 'Initial data added', description: 'Store configuration complete' },
-                      { status: 'demo_running', label: 'Adding demo content', description: 'Sample products and categories' },
+                      { status: 'seed_running', label: 'Adding store settings', description: 'Currency, tax rules, shipping options' },
+                      { status: 'seed_completed', label: 'Settings configured', description: 'Store configuration complete' },
+                      { status: 'demo_running', label: 'Adding demo content', description: 'Sample products, categories, and orders' },
                       { status: 'completed', label: 'Setup complete', description: 'Your store is ready!' },
                     ].map((step, index) => {
                       const stepOrder = ['pending', 'tables_creating', 'tables_completed', 'seed_running', 'seed_completed', 'demo_running', 'completed'];
@@ -1250,15 +1321,47 @@ export default function StoreOnboarding() {
                     })}
                   </div>
                 </div>
+                )
               ) : (
                 <>
+                  {/* What is provisioning? */}
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-purple-900 mb-2 flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      What is "Provisioning"?
+                    </h4>
+                    <p className="text-sm text-purple-800 mb-3">
+                      Provisioning means we're setting up everything your store needs to work:
+                    </p>
+                    <ul className="text-sm text-purple-700 space-y-1 ml-2">
+                      <li className="flex items-start">
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                        <span><strong>Database tables</strong> - for products, orders, customers, categories</span>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                        <span><strong>Store settings</strong> - currency, tax rules, shipping options</span>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                        <span><strong>Your theme</strong> - the {selectedThemePreset.toUpperCase()} theme you selected</span>
+                      </li>
+                      {provisionDemoData && (
+                        <li className="flex items-start">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                          <span><strong>Demo content</strong> - sample products and orders to explore</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      One more step!
+                      <Info className="w-4 h-4 mr-2" />
+                      One more step - Service Role Key
                     </h4>
                     <p className="text-sm text-blue-800 mb-2">
-                      To complete the setup, we need your Supabase Service Role Key.
+                      To create tables in your database, we need your Supabase Service Role Key:
                     </p>
                     <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
                       <li>Go to your Supabase Dashboard → Project Settings → API Keys</li>
