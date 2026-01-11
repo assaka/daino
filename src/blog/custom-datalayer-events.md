@@ -383,7 +383,14 @@ This lets you visualize where customers abandon the checkout process.
 
 ## Creating Custom Events
 
-To create a custom event for tracking specific user interactions:
+Custom events configured in the admin are automatically loaded and executed by the **CustomEventLoader** component on every storefront page.
+
+### How Custom Events Work
+
+1. **You configure** events in the admin UI with trigger types and CSS selectors
+2. **CustomEventLoader** fetches enabled events from the API on page load
+3. **Event listeners** are attached to the document using event delegation
+4. **When triggered**, events push to `window.dataLayer` and optionally log to backend
 
 ### Step 1: Navigate to Custom Events
 
@@ -411,7 +418,10 @@ For click and form triggers, specify which elements trigger the event:
 #newsletter-form           /* ID selector */
 [data-track="video-play"]  /* Attribute selector */
 button.add-review          /* Combined selector */
+[data-product-id]          /* Any element with data attribute */
 ```
+
+**Important:** The CustomEventLoader uses event delegation, so selectors work even for dynamically added elements.
 
 ### Step 4: Add Event Parameters
 
@@ -426,6 +436,24 @@ Define what data to capture with each event:
 ```
 
 Use `{{variable}}` syntax to capture dynamic values from the page context.
+
+### Step 5: Add Data Attributes to Elements
+
+For dynamic parameters to work, add `data-*` attributes to your HTML elements:
+
+```html
+<button
+  class="wishlist-button"
+  data-product-id="prod_123"
+  data-product-name="Blue Widget"
+  data-price="29.99"
+  data-category="Electronics"
+>
+  Add to Wishlist
+</button>
+```
+
+The CustomEventLoader will automatically extract these values when the event fires.
 
 ### Step 5: Configure Options
 
@@ -542,19 +570,172 @@ Use template variables to capture dynamic values:
 
 ### Available Template Variables
 
-| Variable | Description |
-|----------|-------------|
-| `{{product_id}}` | Current product ID |
-| `{{product_name}}` | Product name |
-| `{{product_price}}` | Product price |
-| `{{product_sku}}` | Product SKU |
-| `{{category_name}}` | Current category |
-| `{{page_url}}` | Current page URL |
-| `{{page_title}}` | Page title |
-| `{{user_authenticated}}` | Whether user is logged in |
-| `{{session_id}}` | Current session ID |
-| `{{cart_total}}` | Current cart total |
-| `{{cart_items_count}}` | Number of items in cart |
+| Variable | Source | Description |
+|----------|--------|-------------|
+| `{{product_id}}` | `data-product-id` | Product ID from element or parent |
+| `{{product_name}}` | `data-product-name` | Product name from element or parent |
+| `{{product_price}}` | `data-price` | Product price from element |
+| `{{category_name}}` | `data-category` | Category from element |
+| `{{page_url}}` | `window.location.href` | Current page URL |
+| `{{page_title}}` | `document.title` | Page title |
+| `{{page_type}}` | `body[data-page-type]` | Page type (product, category, etc.) |
+| `{{href}}` | Element attribute | Link href if applicable |
+| `{{text}}` | Element content | Element text (max 100 chars) |
+| `{{scroll_percent}}` | Scroll event | Scroll depth percentage |
+| `{{form_id}}` | Form element | Form ID if applicable |
+| `{{session_id}}` | sessionStorage | Current session ID |
+| `{{timestamp}}` | Generated | ISO timestamp |
+
+---
+
+## SQL Examples for Custom Events
+
+You can also insert custom events directly into the database. Here are working examples:
+
+### Click Event: Wishlist Button
+
+```sql
+INSERT INTO custom_analytics_events (
+  store_id, event_name, display_name, description,
+  event_category, trigger_type, trigger_selector,
+  event_parameters, enabled, priority,
+  fire_once_per_session, send_to_backend
+) VALUES (
+  'your-store-uuid',
+  'wishlist_click',
+  'Wishlist Button Click',
+  'Tracks when users click the wishlist button',
+  'engagement',
+  'click',
+  '.wishlist-btn, [data-wishlist], button[aria-label*="wishlist"]',
+  '{"item_id": "{{product_id}}", "item_name": "{{product_name}}", "price": "{{product_price}}"}',
+  true, 10, false, true
+);
+```
+
+### Form Submit Event: Newsletter
+
+```sql
+INSERT INTO custom_analytics_events (
+  store_id, event_name, display_name, description,
+  event_category, trigger_type, trigger_selector,
+  event_parameters, enabled, priority,
+  fire_once_per_session, send_to_backend
+) VALUES (
+  'your-store-uuid',
+  'newsletter_signup',
+  'Newsletter Signup',
+  'Tracks newsletter form submissions',
+  'conversion',
+  'form_submit',
+  '#newsletter-form, .newsletter-form, form[data-newsletter]',
+  '{"form_location": "{{page_url}}", "source": "footer"}',
+  true, 10, true, true
+);
+```
+
+### Scroll Depth Tracking
+
+```sql
+INSERT INTO custom_analytics_events (
+  store_id, event_name, display_name, description,
+  event_category, trigger_type, trigger_condition,
+  event_parameters, enabled, priority,
+  fire_once_per_session, send_to_backend
+) VALUES (
+  'your-store-uuid',
+  'scroll_depth',
+  'Scroll Depth',
+  'Tracks how far users scroll on pages',
+  'engagement',
+  'scroll',
+  '{"scroll_depths": [25, 50, 75, 100]}',
+  '{"depth": "{{scroll_percent}}", "page": "{{page_url}}"}',
+  true, 5, false, false
+);
+```
+
+### Timer Event: Engaged User
+
+```sql
+INSERT INTO custom_analytics_events (
+  store_id, event_name, display_name, description,
+  event_category, trigger_type, trigger_condition,
+  event_parameters, enabled, priority,
+  fire_once_per_session, send_to_backend
+) VALUES (
+  'your-store-uuid',
+  'engaged_user',
+  'Engaged User',
+  'Fires after 60 seconds on page',
+  'engagement',
+  'timer',
+  '{"delay_seconds": 60}',
+  '{"page_url": "{{page_url}}", "page_title": "{{page_title}}"}',
+  true, 5, true, true
+);
+```
+
+### Page Load Event: Promo Pages
+
+```sql
+INSERT INTO custom_analytics_events (
+  store_id, event_name, display_name, description,
+  event_category, trigger_type, trigger_condition,
+  event_parameters, enabled, priority,
+  fire_once_per_session, send_to_backend
+) VALUES (
+  'your-store-uuid',
+  'promo_page_view',
+  'Promo Page Viewed',
+  'Tracks views of promotional pages',
+  'ecommerce',
+  'page_load',
+  '{"url_pattern": "/promo|/sale|/deals"}',
+  '{"page_url": "{{page_url}}", "campaign": "seasonal"}',
+  true, 10, true, true
+);
+```
+
+### Custom Event: Video Play
+
+```sql
+INSERT INTO custom_analytics_events (
+  store_id, event_name, display_name, description,
+  event_category, trigger_type, trigger_selector,
+  event_parameters, enabled, priority,
+  fire_once_per_session, send_to_backend
+) VALUES (
+  'your-store-uuid',
+  'video_play',
+  'Video Play',
+  'Tracks when users play product videos',
+  'engagement',
+  'click',
+  '.video-play-btn, [data-video-play], .product-video-trigger',
+  '{"video_id": "{{product_id}}", "page_type": "{{page_type}}"}',
+  true, 10, false, true
+);
+```
+
+---
+
+## Programmatic Event Triggering
+
+For events with `trigger_type: 'custom'`, or to fire any event programmatically:
+
+```javascript
+// Fire a configured custom event
+window.fireCustomEvent('video_play', videoElement, {
+  video_duration: '120',
+  video_title: 'Product Demo'
+});
+
+// Fire an ad-hoc event (not configured in admin)
+window.fireCustomEvent('my_custom_event', null, {
+  custom_param: 'value'
+});
+```
 
 ---
 
