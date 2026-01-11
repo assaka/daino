@@ -5,8 +5,7 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
-  Play,
-  Flag
+  Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -27,7 +26,6 @@ export default function SuperAdminMigrations() {
   const [migrationStatus, setMigrationStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [runningMigrations, setRunningMigrations] = useState(false);
-  const [flaggingStores, setFlaggingStores] = useState(false);
 
   useEffect(() => {
     loadMigrations();
@@ -62,28 +60,6 @@ export default function SuperAdminMigrations() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFlagAllStores = async () => {
-    setFlaggingStores(true);
-    try {
-      const response = await apiClient.post('/superadmin/migrations/flag-all');
-      if (response?.success) {
-        toast({
-          title: "Stores flagged",
-          description: `${response.data?.storesFlagged || 0} stores flagged for migration`,
-        });
-        loadMigrations();
-      }
-    } catch (error) {
-      toast({
-        title: "Error flagging stores",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setFlaggingStores(false);
     }
   };
 
@@ -122,10 +98,6 @@ export default function SuperAdminMigrations() {
           <Button variant="outline" onClick={loadMigrations} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
-          </Button>
-          <Button variant="outline" onClick={handleFlagAllStores} disabled={flaggingStores}>
-            <Flag className={`h-4 w-4 mr-2 ${flaggingStores ? 'animate-spin' : ''}`} />
-            Flag All Stores
           </Button>
           <Button onClick={handleRunAllMigrations} disabled={runningMigrations || pendingStores.length === 0}>
             <Play className={`h-4 w-4 mr-2 ${runningMigrations ? 'animate-spin' : ''}`} />

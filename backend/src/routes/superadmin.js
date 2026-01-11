@@ -176,26 +176,6 @@ router.get('/migrations/status', async (req, res) => {
 });
 
 /**
- * POST /api/superadmin/migrations/flag-all
- * Flag all stores for pending migration
- */
-router.post('/migrations/flag-all', async (req, res) => {
-  try {
-    const result = await TenantMigrationService.flagAllStoresForMigration();
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    console.error('Superadmin flag-all error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
  * POST /api/superadmin/migrations/run-all
  * Run pending migrations for all stores
  */

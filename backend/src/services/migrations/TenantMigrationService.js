@@ -91,14 +91,10 @@ class TenantMigrationService {
     if (!masterDbClient) return false;
 
     try {
-      const latestVersion = await this.getLatestVersion();
-      const hasPending = version < latestVersion;
-
       const { error } = await masterDbClient
         .from('store_databases')
         .update({
           schema_version: version,
-          has_pending_migration: hasPending,
           last_migration_at: new Date().toISOString()
         })
         .eq('store_id', storeId);
@@ -236,53 +232,6 @@ class TenantMigrationService {
   clearCache() {
     this.migrationsCache = null;
     this.cacheExpiry = null;
-  }
-
-  /**
-   * Flag all stores as having pending migrations (call when adding new migration)
-   */
-  async flagAllStoresForMigration() {
-    if (!masterDbClient) return { success: false, error: 'No master DB client' };
-
-    try {
-      const { data, error } = await masterDbClient
-        .from('store_databases')
-        .update({ has_pending_migration: true })
-        .eq('is_active', true)
-        .select('store_id');
-
-      if (error) throw error;
-
-      // Clear cache so new migrations are loaded
-      this.clearCache();
-
-      const count = data?.length || 0;
-      console.log(`[Migration] Flagged ${count} stores for pending migration`);
-      return { success: true, storesFlagged: count };
-    } catch (err) {
-      console.error('[Migration] Error flagging stores:', err.message);
-      return { success: false, error: err.message };
-    }
-  }
-
-  /**
-   * Check if store has pending migration flag set (fast - no migrations table query)
-   */
-  async checkPendingMigrationFlag(storeId) {
-    if (!masterDbClient) return false;
-
-    try {
-      const { data, error } = await masterDbClient
-        .from('store_databases')
-        .select('has_pending_migration')
-        .eq('store_id', storeId)
-        .single();
-
-      if (error) return false;
-      return data?.has_pending_migration === true;
-    } catch (err) {
-      return false;
-    }
   }
 
   /**
