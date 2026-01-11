@@ -20,7 +20,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',  -- Replace with actual store UUID
@@ -59,7 +59,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
@@ -97,7 +97,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
@@ -134,7 +134,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
@@ -170,7 +170,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
@@ -206,7 +206,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
@@ -242,7 +242,7 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  is_enabled,
+  enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
