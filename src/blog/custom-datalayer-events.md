@@ -317,9 +317,9 @@ To create a custom event for tracking specific user interactions:
 
 ### Step 1: Navigate to Custom Events
 
-1. Go to **Settings > Tracking & Data Layer**
+1. Go to **Analytics** in your admin sidebar (or visit `/admin/analytics`)
 2. Click the **DataLayer Events** tab
-3. Click **New Event**
+3. Click **+ New Event** button
 
 ### Step 2: Configure the Event
 
@@ -494,10 +494,10 @@ Once your custom events are configured, set up GTM to use them:
 
 ### Step 1: Enable GTM in DainoStore
 
-1. Go to **Settings > Tracking & Data Layer**
-2. Enable **Google Tag Manager**
+1. Go to **Analytics** in your admin sidebar (or visit `/admin/analytics`)
+2. In the **GTM Configuration** tab, enable **Google Tag Manager**
 3. Enter your GTM Container ID (GTM-XXXXXX)
-4. Save settings
+4. Click **Save Settings**
 
 ### Step 2: Create a Custom Event Trigger in GTM
 
@@ -684,8 +684,8 @@ if (window.daino) {
 
 ## Need Help?
 
-- **Test events**: Use the **Test Datalayer** button in Settings
-- **View activity**: Check the **Customer Activity** page for logged events
-- **Export data**: Use the **Export** tab to download your configuration
+- **Test events**: Use the **Test Datalayer** button in the Analytics page
+- **View activity**: Check the **Customer Activity** page (`/admin/customer-activity`) for logged events
+- **Export data**: Use the **Export** tab in Analytics to download your configuration
 - **GTM debugging**: Use GTM Preview mode and browser DevTools
-- **Analytics Dashboard**: View conversion funnels and event metrics
+- **Analytics Dashboard**: View conversion funnels and event metrics at `/admin/analytics-dashboard`
