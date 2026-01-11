@@ -652,17 +652,21 @@ CRON JOBS (Scheduled Tasks):
 When user asks for "scheduled task", "cron job", "run every hour/day/week", "background job":
 Generate a cron file (name must include "cron" and end with ".json"):
 
-Cron file format:
+Cron file format (MUST match database schema exactly):
 \`\`\`json
 {
   "cron_name": "cleanup_old_sessions",
   "description": "Clean up expired chat sessions daily",
-  "schedule": "0 3 * * *",
-  "is_enabled": true,
-  "handler_code": "// Available: db (Supabase client), storeId, params, fetch, apiBaseUrl, console\\n\\nconst { data, error } = await db\\n  .from('chat_sessions')\\n  .delete()\\n  .lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());\\n\\nif (error) throw error;\\n\\nreturn { deleted: data?.length || 0, message: 'Cleanup completed' };",
-  "handler_params": {}
+  "cron_schedule": "0 3 * * *",
+  "timezone": "UTC",
+  "handler_method": "cleanupSessions",
+  "handler_code": "const { data, error } = await db.from('chat_sessions').delete().lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());\\nif (error) throw error;\\nreturn { deleted: data?.length || 0 };",
+  "handler_params": {},
+  "is_enabled": true
 }
 \`\`\`
+
+Required fields: cron_name, cron_schedule, handler_method, handler_code
 
 Common cron schedules:
 - "*/5 * * * *" = every 5 minutes
