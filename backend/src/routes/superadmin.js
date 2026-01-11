@@ -35,6 +35,7 @@ router.get('/stores', async (req, res) => {
       .from('stores')
       .select(`
         id,
+        user_id,
         name,
         slug,
         is_active,
@@ -53,25 +54,20 @@ router.get('/stores', async (req, res) => {
 
     if (dbError) throw dbError;
 
-    // Get owners
+    // Get owners (stores.user_id -> users.id)
     const { data: users, error: usersError } = await masterDbClient
       .from('users')
-      .select('id, email, store_id');
+      .select('id, email');
 
     if (usersError) throw usersError;
 
     // Merge data
     const dbMap = new Map(databases?.map(d => [d.store_id, d]) || []);
-    const ownerMap = new Map();
-    users?.forEach(u => {
-      if (u.store_id && !ownerMap.has(u.store_id)) {
-        ownerMap.set(u.store_id, u.email);
-      }
-    });
+    const userMap = new Map(users?.map(u => [u.id, u.email]) || []);
 
     const enrichedStores = (stores || []).map(store => ({
       ...store,
-      owner_email: ownerMap.get(store.id) || null,
+      owner_email: userMap.get(store.user_id) || null,
       schema_version: dbMap.get(store.id)?.schema_version || 0,
       has_pending_migration: dbMap.get(store.id)?.has_pending_migration || false,
       db_active: dbMap.get(store.id)?.is_active || false
@@ -96,16 +92,32 @@ router.get('/stores', async (req, res) => {
  */
 router.get('/users', async (req, res) => {
   try {
+    // Get users
     const { data: users, error } = await masterDbClient
       .from('users')
-      .select('id, email, full_name, role, email_verified, store_id, created_at')
+      .select('id, email, full_name, role, email_verified, created_at')
       .order('created_at', { ascending: false });
+
+    // Get stores to find which user owns which store
+    const { data: stores } = await masterDbClient
+      .from('stores')
+      .select('id, user_id');
+
+    const userStoreMap = new Map();
+    stores?.forEach(s => {
+      if (s.user_id) userStoreMap.set(s.user_id, s.id);
+    });
+
+    const enrichedUsers = (users || []).map(u => ({
+      ...u,
+      store_id: userStoreMap.get(u.id) || null
+    }));
 
     if (error) throw error;
 
     res.json({
       success: true,
-      users: users || []
+      users: enrichedUsers
     });
   } catch (error) {
     console.error('Superadmin users error:', error);
