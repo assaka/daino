@@ -749,6 +749,19 @@ Return ONLY valid JSON.`;
       responseMessage = toolCall.message || response.content;
     }
 
+    // If responseMessage is still JSON with a message field, extract it
+    if (typeof responseMessage === 'string' && responseMessage.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(responseMessage);
+        if (parsed.message) {
+          responseMessage = parsed.message;
+          console.log('📝 Extracted message from JSON wrapper');
+        }
+      } catch (e) {
+        // Not valid JSON, use as-is
+      }
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // STEP 9: Return response with any pending action for confirmation
     // ═══════════════════════════════════════════════════════════════════

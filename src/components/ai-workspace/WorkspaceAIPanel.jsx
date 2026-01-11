@@ -634,6 +634,20 @@ const WorkspaceAIPanel = () => {
         const hasPluginStructure = response.plugin_structure?.main_file;
         let messageContent = response.message || response.explanation || response.content || '';
 
+        // Handle case where message is a JSON string with embedded message
+        // e.g., {"tool": "chat", "message": "actual content..."}
+        if (typeof messageContent === 'string' && messageContent.trim().startsWith('{') && messageContent.includes('"message"')) {
+          try {
+            const parsed = JSON.parse(messageContent);
+            if (parsed.message) {
+              messageContent = parsed.message;
+              console.log('📝 Extracted message from JSON wrapper');
+            }
+          } catch (e) {
+            // Not valid JSON, continue with normal processing
+          }
+        }
+
         // If message is a JSON string, try to parse it first
         let embeddedJson = null;
         let embeddedFiles = null;
