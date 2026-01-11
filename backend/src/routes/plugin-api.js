@@ -30,6 +30,61 @@ async function getTenantConnection(req) {
 }
 
 /**
+ * Ensure plugin_cron table exists in tenant database
+ * This handles existing stores that don't have this table yet
+ */
+const ensuredPluginCronTables = new Set();
+async function ensurePluginCronTable(tenantDb, storeId) {
+  // Only run once per store per server session
+  const cacheKey = storeId || 'default';
+  if (ensuredPluginCronTables.has(cacheKey)) return;
+
+  try {
+    await tenantDb.rpc('execute_sql', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS plugin_cron (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          plugin_id UUID NOT NULL,
+          cron_name VARCHAR(255) NOT NULL,
+          description TEXT,
+          cron_schedule VARCHAR(100) NOT NULL,
+          timezone VARCHAR(50) DEFAULT 'UTC',
+          handler_method VARCHAR(255) NOT NULL,
+          handler_code TEXT,
+          handler_params JSONB DEFAULT '{}'::jsonb,
+          is_enabled BOOLEAN DEFAULT true,
+          priority INTEGER DEFAULT 10,
+          last_run_at TIMESTAMP WITH TIME ZONE,
+          next_run_at TIMESTAMP WITH TIME ZONE,
+          last_status VARCHAR(50),
+          last_error TEXT,
+          last_result JSONB,
+          run_count INTEGER DEFAULT 0,
+          success_count INTEGER DEFAULT 0,
+          failure_count INTEGER DEFAULT 0,
+          consecutive_failures INTEGER DEFAULT 0,
+          max_runs INTEGER,
+          max_failures INTEGER DEFAULT 5,
+          timeout_seconds INTEGER DEFAULT 300,
+          cron_job_id UUID,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
+        CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
+      `
+    });
+    ensuredPluginCronTables.add(cacheKey);
+  } catch (error) {
+    // Table might already exist or RPC not available, silently continue
+    // The table creation will be attempted but if it fails,
+    // we'll try the query anyway and let it fail with a proper error
+    ensuredPluginCronTables.add(cacheKey);
+  }
+}
+
+/**
  * GET /api/plugins
  * Get ALL plugins (installed + available) from plugin_registry table
  */
@@ -1141,6 +1196,8 @@ ${m.down_sql || '-- No down SQL'}`,
     // Load cron jobs from plugin_cron table
     let cronJobs = [];
     try {
+      const storeId = req.headers['x-store-id'] || req.storeId;
+      await ensurePluginCronTable(tenantDb, storeId);
       const { data: cronResult } = await tenantDb
         .from('plugin_cron')
         .select('*')
@@ -1283,6 +1340,8 @@ router.get('/:id/export', async (req, res) => {
       .order('load_order', { ascending: true });
 
     // Get cron jobs
+    const storeIdForCron = req.headers['x-store-id'] || req.storeId;
+    await ensurePluginCronTable(tenantDb, storeIdForCron);
     const { data: cronJobs } = await tenantDb
       .from('plugin_cron')
       .select('cron_name, cron_schedule, handler_method, description, is_enabled')
@@ -1696,15 +1755,19 @@ router.post('/import', async (req, res) => {
     }
 
     // Import cron jobs
-    for (const cron of packageData.cronJobs || []) {
-      await tenantDb.from('plugin_cron').insert({
-        plugin_id: pluginId,
-        cron_name: cron.cronName,
-        cron_schedule: cron.cronSchedule,
-        handler_method: cron.handlerMethod,
-        description: cron.description || `Scheduled task: ${cron.cronName}`,
-        is_enabled: cron.isEnabled !== false
-      });
+    if (packageData.cronJobs && packageData.cronJobs.length > 0) {
+      const storeId = req.headers['x-store-id'] || req.storeId;
+      await ensurePluginCronTable(tenantDb, storeId);
+      for (const cron of packageData.cronJobs) {
+        await tenantDb.from('plugin_cron').insert({
+          plugin_id: pluginId,
+          cron_name: cron.cronName,
+          cron_schedule: cron.cronSchedule,
+          handler_method: cron.handlerMethod,
+          description: cron.description || `Scheduled task: ${cron.cronName}`,
+          is_enabled: cron.isEnabled !== false
+        });
+      }
     }
 
     res.json({
@@ -1889,6 +1952,10 @@ router.put('/registry/:id/files', async (req, res) => {
     if (normalizedRequestPath.startsWith('cron/')) {
       const cronFileName = normalizedRequestPath.replace('cron/', '').replace('.json', '');
       try {
+        // Ensure plugin_cron table exists (for existing stores)
+        const storeId = req.headers['x-store-id'] || req.storeId;
+        await ensurePluginCronTable(tenantDb, storeId);
+
         // Parse cron job definition (handle both string and object content)
         const cronData = typeof content === 'object' ? content : JSON.parse(content);
         const cronName = cronData.cron_name || cronFileName;
@@ -2307,6 +2374,8 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
 router.get('/:pluginId/cron', async (req, res) => {
   try {
     const tenantDb = await getTenantConnection(req);
+    const storeId = req.headers['x-store-id'] || req.storeId;
+    await ensurePluginCronTable(tenantDb, storeId);
     const { pluginId } = req.params;
 
     const { data: cronJobs, error } = await tenantDb
@@ -2337,6 +2406,8 @@ router.get('/:pluginId/cron', async (req, res) => {
 router.post('/:pluginId/cron', async (req, res) => {
   try {
     const tenantDb = await getTenantConnection(req);
+    const storeId = req.headers['x-store-id'] || req.storeId;
+    await ensurePluginCronTable(tenantDb, storeId);
     const { pluginId } = req.params;
     const {
       cron_name,
@@ -3041,6 +3112,8 @@ router.delete('/registry/:id/files', async (req, res) => {
       const cronName = normalizedPath.replace('cron/', '').replace('.json', '');
       attemptedTable = 'plugin_cron';
       try {
+        const storeId = req.headers['x-store-id'] || req.storeId;
+        await ensurePluginCronTable(tenantDb, storeId);
         const { data, error } = await tenantDb
           .from('plugin_cron')
           .delete()

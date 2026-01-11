@@ -2889,6 +2889,35 @@ CREATE TABLE IF NOT EXISTS plugins (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS plugin_cron (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL,
+  cron_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  cron_schedule VARCHAR(100) NOT NULL,
+  timezone VARCHAR(50) DEFAULT 'UTC',
+  handler_method VARCHAR(255) NOT NULL,
+  handler_code TEXT,
+  handler_params JSONB DEFAULT '{}'::jsonb,
+  is_enabled BOOLEAN DEFAULT true,
+  priority INTEGER DEFAULT 10,
+  last_run_at TIMESTAMP WITH TIME ZONE,
+  next_run_at TIMESTAMP WITH TIME ZONE,
+  last_status VARCHAR(50),
+  last_error TEXT,
+  last_result JSONB,
+  run_count INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  failure_count INTEGER DEFAULT 0,
+  consecutive_failures INTEGER DEFAULT 0,
+  max_runs INTEGER,
+  max_failures INTEGER DEFAULT 5,
+  timeout_seconds INTEGER DEFAULT 300,
+  cron_job_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS product_attribute_values (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL,
@@ -3776,6 +3805,14 @@ CREATE INDEX IF NOT EXISTS idx_plugin_controllers_enabled ON plugin_controllers 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_method_path ON plugin_controllers USING btree (method, path);
 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_plugin_id ON plugin_controllers USING btree (plugin_id);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron USING btree (is_enabled) WHERE (is_enabled = true);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_next_run ON plugin_cron USING btree (next_run_at) WHERE (is_enabled = true);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron USING btree (plugin_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron USING btree (plugin_id, cron_name);
 
 CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data USING btree (data_key);
 
