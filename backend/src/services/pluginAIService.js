@@ -672,16 +672,24 @@ Common cron schedules:
 - "0 0 * * 0" = weekly on Sunday
 - "0 0 1 * *" = monthly on the 1st
 
-Handler code has access to:
-- db: Supabase tenant database client
-- storeId: Current store ID
-- params: Custom parameters from handler_params
-- secrets: Plugin API keys and settings (e.g., secrets.ebay_api_key, secrets.webhook_url)
-- fetch: For HTTP requests
-- apiBaseUrl: Backend API URL
-- console: For logging
+CRON HANDLER CONTEXT VARIABLES (available in handler_code):
+| Variable    | Type     | Description                                          |
+|-------------|----------|------------------------------------------------------|
+| db          | Supabase | Tenant database client (db.from('table').select())   |
+| storeId     | string   | Current store UUID                                   |
+| params      | object   | Values from handler_params config                    |
+| secrets     | object   | Decrypted plugin secrets (API keys, tokens)          |
+| fetch       | function | Global fetch for HTTP requests                       |
+| apiBaseUrl  | string   | Backend API URL for internal calls                   |
+| console     | object   | For logging (console.log, console.error)             |
 
-Example using secrets for eBay API:
+Example - Query database:
+\`\`\`javascript
+const { data, error } = await db.from('orders').select('*').eq('status', 'pending');
+return { pendingOrders: data.length };
+\`\`\`
+
+Example - Use secrets for external API:
 \`\`\`javascript
 const { ebay_api_key, ebay_client_secret } = secrets;
 
