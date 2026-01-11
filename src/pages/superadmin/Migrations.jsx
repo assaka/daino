@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import apiClient from "@/api/client";
 import {
   RefreshCw,
@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -26,15 +27,21 @@ export default function SuperAdminMigrations() {
   const [migrationStatus, setMigrationStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [runningMigrations, setRunningMigrations] = useState(false);
+  const [jobProgress, setJobProgress] = useState(null);
+  const pollingRef = useRef(null);
 
   useEffect(() => {
     loadMigrations();
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
   }, []);
 
   const loadMigrations = async () => {
     setLoading(true);
     try {
-      // Load migrations and status separately to handle errors independently
       try {
         const migrationsRes = await apiClient.get('/superadmin/migrations');
         if (migrationsRes?.success) {
@@ -63,24 +70,81 @@ export default function SuperAdminMigrations() {
     }
   };
 
+  const pollJobStatus = async (jobId) => {
+    try {
+      const response = await apiClient.get(`/superadmin/migrations/job/${jobId}`);
+      if (response?.success) {
+        const { status, progress, progressMessage, result, error } = response.data;
+
+        setJobProgress({
+          status,
+          progress: progress || 0,
+          message: progressMessage || 'Processing...'
+        });
+
+        if (status === 'completed') {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setRunningMigrations(false);
+          setJobProgress(null);
+          toast({
+            title: "Migrations completed",
+            description: result?.message || 'All migrations finished successfully',
+          });
+          loadMigrations();
+        } else if (status === 'failed') {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setRunningMigrations(false);
+          setJobProgress(null);
+          toast({
+            title: "Migration failed",
+            description: error || 'An error occurred during migration',
+            variant: "destructive"
+          });
+          loadMigrations();
+        }
+      }
+    } catch (error) {
+      console.error('Error polling job status:', error);
+    }
+  };
+
   const handleRunAllMigrations = async () => {
     setRunningMigrations(true);
+    setJobProgress({ status: 'starting', progress: 0, message: 'Starting migration job...' });
+
     try {
       const response = await apiClient.post('/superadmin/migrations/run-all');
-      toast({
-        title: response?.success ? "Migrations completed" : "Some migrations failed",
-        description: response?.data?.message,
-        variant: response?.success ? "default" : "destructive"
-      });
-      loadMigrations();
+
+      if (response?.success) {
+        const jobId = response.data?.jobId;
+
+        if (!jobId) {
+          // No pending migrations
+          setRunningMigrations(false);
+          setJobProgress(null);
+          toast({
+            title: "No pending migrations",
+            description: response.data?.message || 'All stores are up to date',
+          });
+          return;
+        }
+
+        // Start polling for job status
+        setJobProgress({ status: 'pending', progress: 0, message: 'Job scheduled, waiting to start...' });
+        pollingRef.current = setInterval(() => pollJobStatus(jobId), 2000);
+      } else {
+        throw new Error(response?.error || 'Failed to start migration job');
+      }
     } catch (error) {
+      setRunningMigrations(false);
+      setJobProgress(null);
       toast({
         title: "Error running migrations",
         description: error.message,
         variant: "destructive"
       });
-    } finally {
-      setRunningMigrations(false);
     }
   };
 
@@ -95,7 +159,7 @@ export default function SuperAdminMigrations() {
           <p className="text-gray-500">Manage tenant database migrations</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadMigrations} disabled={loading}>
+          <Button variant="outline" onClick={loadMigrations} disabled={loading || runningMigrations}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -105,6 +169,20 @@ export default function SuperAdminMigrations() {
           </Button>
         </div>
       </div>
+
+      {/* Job Progress */}
+      {jobProgress && (
+        <Card className="mb-6 border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <span className="font-medium text-blue-900">Migration in progress</span>
+            </div>
+            <Progress value={jobProgress.progress} className="h-2 mb-2" />
+            <p className="text-sm text-blue-700">{jobProgress.message}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">

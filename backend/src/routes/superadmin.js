@@ -3,7 +3,7 @@ const router = express.Router();
 const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const TenantMigrationService = require('../services/migrations/TenantMigrationService');
-const ConnectionManager = require('../services/database/ConnectionManager');
+const jobManager = require('../core/BackgroundJobManager');
 
 // Superadmin emails
 const SUPERADMIN_EMAILS = ['hello@dainostore.com', 'hamid@dainostore.com'];
@@ -177,7 +177,7 @@ router.get('/migrations/status', async (req, res) => {
 
 /**
  * POST /api/superadmin/migrations/run-all
- * Run pending migrations for all stores
+ * Schedule background job to run pending migrations for all stores
  */
 router.post('/migrations/run-all', async (req, res) => {
   try {
@@ -186,47 +186,73 @@ router.post('/migrations/run-all', async (req, res) => {
     if (stores.length === 0) {
       return res.json({
         success: true,
-        message: 'No stores with pending migrations',
-        results: []
+        data: {
+          message: 'No stores with pending migrations',
+          jobId: null
+        }
       });
     }
 
-    console.log(`[Superadmin] Running migrations for ${stores.length} store(s)`);
+    console.log(`[Superadmin] Scheduling migration job for ${stores.length} store(s)`);
 
-    const results = [];
-
-    for (const store of stores) {
-      const storeId = store.store_id;
-      try {
-        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-        const result = await TenantMigrationService.runPendingMigrations(storeId, tenantDb);
-        results.push({
-          storeId,
-          success: result.success,
-          applied: result.applied,
-          failed: result.failed
-        });
-      } catch (error) {
-        results.push({
-          storeId,
-          success: false,
-          error: error.message
-        });
+    // Schedule background job
+    const job = await jobManager.scheduleJob({
+      type: 'tenant:migration:run-all',
+      payload: {},
+      priority: 'high',
+      maxRetries: 1,
+      userId: req.user?.id,
+      metadata: {
+        triggeredBy: req.user?.email,
+        storeCount: stores.length
       }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failedCount = results.filter(r => !r.success).length;
+    });
 
     res.json({
-      success: failedCount === 0,
+      success: true,
       data: {
-        message: `Migrations completed: ${successCount} succeeded, ${failedCount} failed`,
-        results
+        message: `Migration job scheduled for ${stores.length} store(s)`,
+        jobId: job.id
       }
     });
   } catch (error) {
     console.error('Superadmin run-all error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/superadmin/migrations/job/:jobId
+ * Get migration job status
+ */
+router.get('/migrations/job/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const job = await jobManager.getJobStatus(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        jobId: job.id,
+        status: job.status,
+        progress: job.progress || 0,
+        progressMessage: job.progress_message,
+        result: job.result,
+        error: job.last_error
+      }
+    });
+  } catch (error) {
+    console.error('Superadmin job status error:', error);
     res.status(500).json({
       success: false,
       error: error.message

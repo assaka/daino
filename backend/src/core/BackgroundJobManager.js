@@ -156,6 +156,9 @@ class BackgroundJobManager extends EventEmitter {
       // Store provisioning jobs
       ['store:provision', './jobs/StoreProvisioningJob'],
 
+      // Tenant migration jobs
+      ['tenant:migration:run-all', './jobs/TenantMigrationJob'],
+
       // Translation jobs
       ['translation:ui-labels:bulk', './jobs/UILabelsBulkTranslationJob'],
 
