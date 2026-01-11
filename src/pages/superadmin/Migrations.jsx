@@ -220,7 +220,7 @@ export default function SuperAdminMigrations() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Store ID</TableHead>
+                  <TableHead>Store</TableHead>
                   <TableHead>Current Version</TableHead>
                   <TableHead>Latest Version</TableHead>
                   <TableHead>Status</TableHead>
@@ -231,8 +231,9 @@ export default function SuperAdminMigrations() {
                 {migrationStatus.map((store) => (
                   <TableRow key={store.storeId}>
                     <TableCell>
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                        {store.storeId.slice(0, 8)}...
+                      <div className="font-medium">{store.storeName || 'Unknown'}</div>
+                      <code className="text-xs text-gray-400">
+                        {store.storeId?.slice(0, 8)}...
                       </code>
                     </TableCell>
                     <TableCell>

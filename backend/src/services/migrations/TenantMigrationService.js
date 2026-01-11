@@ -195,20 +195,35 @@ class TenantMigrationService {
     try {
       const latestVersion = await this.getLatestVersion();
 
-      const { data: stores, error } = await masterDbClient
+      // Get all active stores
+      const { data: stores, error: storesError } = await masterDbClient
+        .from('stores')
+        .select('id, name, status')
+        .in('status', ['active', 'demo', 'provisioning']);
+
+      if (storesError) throw storesError;
+
+      // Get store_databases info
+      const { data: databases, error: dbError } = await masterDbClient
         .from('store_databases')
-        .select('store_id, schema_version, has_pending_migration, last_migration_at')
-        .eq('is_active', true);
+        .select('store_id, schema_version, has_pending_migration, last_migration_at');
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
-      return (stores || []).map(store => ({
-        storeId: store.store_id,
-        schemaVersion: store.schema_version || 0,
-        latestVersion,
-        hasPendingMigrations: (store.schema_version || 0) < latestVersion,
-        lastMigrationAt: store.last_migration_at
-      }));
+      const dbMap = new Map((databases || []).map(d => [d.store_id, d]));
+
+      return (stores || []).map(store => {
+        const db = dbMap.get(store.id);
+        const schemaVersion = db?.schema_version || 0;
+        return {
+          storeId: store.id,
+          storeName: store.name,
+          schemaVersion,
+          latestVersion,
+          hasPendingMigrations: schemaVersion < latestVersion,
+          lastMigrationAt: db?.last_migration_at || null
+        };
+      });
     } catch (err) {
       console.error('[Migration] Error getting status:', err.message);
       return [];
