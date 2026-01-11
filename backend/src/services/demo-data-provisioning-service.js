@@ -126,7 +126,8 @@ class DemoDataProvisioningService {
         this.createDemoCoupons(),
         this.createDemoSEOTemplates(),
         this.createDemoProductTabs(),
-        this.createDemoProductLabels()
+        this.createDemoProductLabels(),
+        this.createDemoCustomAnalyticsEvents()
       ]);
 
       // Phase 2: Attributes depend on AttributeSets
@@ -2060,6 +2061,115 @@ class DemoDataProvisioningService {
   }
 
   /**
+   * Create demo custom analytics events for CustomEventLoader
+   */
+  async createDemoCustomAnalyticsEvents() {
+    const events = [
+      {
+        event_name: 'product_card_click',
+        event_category: 'engagement',
+        trigger_type: 'click',
+        trigger_selector: '[data-product-id]',
+        trigger_condition: null,
+        event_parameters: {
+          product_id: '{{product_id}}',
+          product_name: '{{product_name}}',
+          price: '{{price}}',
+          category: '{{category}}',
+          page_url: '{{page_url}}',
+          timestamp: '{{timestamp}}'
+        },
+        fire_once_per_session: false,
+        send_to_backend: true,
+        priority: 100
+      },
+      {
+        event_name: 'checkout_page_view',
+        event_category: 'ecommerce',
+        trigger_type: 'page_load',
+        trigger_selector: null,
+        trigger_condition: { url_pattern: '/checkout' },
+        event_parameters: {
+          page_url: '{{page_url}}',
+          page_title: '{{page_title}}',
+          session_id: '{{session_id}}',
+          timestamp: '{{timestamp}}'
+        },
+        fire_once_per_session: true,
+        send_to_backend: true,
+        priority: 80
+      },
+      {
+        event_name: 'scroll_depth',
+        event_category: 'engagement',
+        trigger_type: 'scroll',
+        trigger_selector: null,
+        trigger_condition: { scroll_depths: [25, 50, 75, 100] },
+        event_parameters: {
+          scroll_percent: '{{scroll_percent}}',
+          page_url: '{{page_url}}',
+          page_title: '{{page_title}}'
+        },
+        fire_once_per_session: false,
+        send_to_backend: false,
+        priority: 50
+      },
+      {
+        event_name: 'engaged_user',
+        event_category: 'engagement',
+        trigger_type: 'timer',
+        trigger_selector: null,
+        trigger_condition: { delay_seconds: 30 },
+        event_parameters: {
+          page_url: '{{page_url}}',
+          page_title: '{{page_title}}',
+          session_id: '{{session_id}}'
+        },
+        fire_once_per_session: true,
+        send_to_backend: true,
+        priority: 40
+      },
+      {
+        event_name: 'newsletter_signup',
+        event_category: 'lead_generation',
+        trigger_type: 'form_submit',
+        trigger_selector: '#newsletter-form, .newsletter-form, [data-form="newsletter"]',
+        trigger_condition: null,
+        event_parameters: {
+          form_id: '{{form_id}}',
+          page_url: '{{page_url}}',
+          timestamp: '{{timestamp}}'
+        },
+        fire_once_per_session: true,
+        send_to_backend: true,
+        priority: 70
+      }
+    ];
+
+    for (const event of events) {
+      await this.tenantDb
+        .from('custom_analytics_events')
+        .insert({
+          id: uuidv4(),
+          store_id: this.storeId,
+          event_name: event.event_name,
+          event_category: event.event_category,
+          trigger_type: event.trigger_type,
+          trigger_selector: event.trigger_selector,
+          trigger_condition: event.trigger_condition,
+          event_parameters: event.event_parameters,
+          fire_once_per_session: event.fire_once_per_session,
+          send_to_backend: event.send_to_backend,
+          is_enabled: true,
+          priority: event.priority,
+          demo: true
+        });
+    }
+
+    this.createdIds.customAnalyticsEvents = events.length;
+  }
+
+  /**
    * Get provisioning summary
    */
   getProvisioningSummary() {
@@ -2079,7 +2189,8 @@ class DemoDataProvisioningService {
       coupons: 3,
       seoTemplates: 3,
       productTabs: 3,
-      productLabels: 3
+      productLabels: 3,
+      customAnalyticsEvents: this.createdIds.customAnalyticsEvents || 5
     };
   }
 }
