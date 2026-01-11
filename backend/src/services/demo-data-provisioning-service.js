@@ -2148,6 +2148,56 @@ class DemoDataProvisioningService {
         fire_once_per_session: true,
         send_to_backend: true,
         priority: 70
+      },
+      {
+        event_name: 'customer_login',
+        display_name: 'Customer Login',
+        event_category: 'conversion',
+        trigger_type: 'form_submit',
+        trigger_selector: '#login-form, .login-form, [data-form="login"]',
+        trigger_condition: null,
+        event_parameters: {
+          page_url: '{{page_url}}',
+          timestamp: '{{timestamp}}',
+          session_id: '{{session_id}}'
+        },
+        fire_once_per_session: true,
+        send_to_backend: true,
+        priority: 85
+      },
+      {
+        event_name: 'customer_registration',
+        display_name: 'Customer Registration',
+        event_category: 'conversion',
+        trigger_type: 'form_submit',
+        trigger_selector: '#register-form, .register-form, [data-form="register"]',
+        trigger_condition: null,
+        event_parameters: {
+          page_url: '{{page_url}}',
+          timestamp: '{{timestamp}}',
+          session_id: '{{session_id}}'
+        },
+        fire_once_per_session: true,
+        send_to_backend: true,
+        priority: 85
+      },
+      {
+        event_name: 'wishlist_click',
+        display_name: 'Wishlist Button Click',
+        event_category: 'engagement',
+        trigger_type: 'click',
+        trigger_selector: '.wishlist-btn, [data-action="wishlist"], [data-action="save"]',
+        trigger_condition: null,
+        event_parameters: {
+          product_id: '{{product_id}}',
+          product_name: '{{product_name}}',
+          price: '{{price}}',
+          page_url: '{{page_url}}',
+          timestamp: '{{timestamp}}'
+        },
+        fire_once_per_session: false,
+        send_to_backend: true,
+        priority: 75
       }
     ];
 
@@ -2196,7 +2246,7 @@ class DemoDataProvisioningService {
       seoTemplates: 3,
       productTabs: 3,
       productLabels: 3,
-      customAnalyticsEvents: this.createdIds.customAnalyticsEvents || 5
+      customAnalyticsEvents: this.createdIds.customAnalyticsEvents || 8
     };
   }
 }

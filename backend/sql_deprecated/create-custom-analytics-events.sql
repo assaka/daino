@@ -264,6 +264,336 @@ INSERT INTO custom_analytics_events (
 );
 
 -- ================================================================
+-- EXAMPLE 8: Customer Login
+-- Fires when login form is submitted
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'customer_login',
+  'Customer Login',
+  'conversion',
+  'form_submit',
+  '#login-form, .login-form, [data-form="login"]',
+  NULL,
+  '{
+    "page_url": "{{page_url}}",
+    "timestamp": "{{timestamp}}",
+    "session_id": "{{session_id}}"
+  }',
+  true,
+  true,
+  true,
+  85
+);
+
+-- ================================================================
+-- EXAMPLE 9: Customer Registration
+-- Fires when registration form is submitted
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'customer_registration',
+  'Customer Registration',
+  'conversion',
+  'form_submit',
+  '#register-form, .register-form, [data-form="register"]',
+  NULL,
+  '{
+    "page_url": "{{page_url}}",
+    "timestamp": "{{timestamp}}",
+    "session_id": "{{session_id}}"
+  }',
+  true,
+  true,
+  true,
+  85
+);
+
+-- ================================================================
+-- EXAMPLE 10: Wishlist Button Click
+-- Fires when wishlist/save button is clicked
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'wishlist_click',
+  'Wishlist Button Click',
+  'engagement',
+  'click',
+  '.wishlist-btn, [data-action="wishlist"], [data-action="save"]',
+  NULL,
+  '{
+    "product_id": "{{product_id}}",
+    "product_name": "{{product_name}}",
+    "price": "{{price}}",
+    "page_url": "{{page_url}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  true,
+  true,
+  75
+);
+
+-- ================================================================
+-- EXAMPLE 11: Contact Form Submit
+-- Fires when contact form is submitted
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'contact_form_submit',
+  'Contact Form Submit',
+  'conversion',
+  'form_submit',
+  '#contact-form, .contact-form, [data-form="contact"]',
+  NULL,
+  '{
+    "form_id": "{{form_id}}",
+    "page_url": "{{page_url}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  true,
+  true,
+  70
+);
+
+-- ================================================================
+-- EXAMPLE 12: Search Performed
+-- Fires when search form is submitted
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'search_performed',
+  'Search Performed',
+  'engagement',
+  'form_submit',
+  '#search-form, .search-form, [data-form="search"]',
+  NULL,
+  '{
+    "form_id": "{{form_id}}",
+    "page_url": "{{page_url}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  false,
+  true,
+  65
+);
+
+-- ================================================================
+-- EXAMPLE 13: Product Page View
+-- Fires when product detail page loads
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'product_page_view',
+  'Product Page View',
+  'ecommerce',
+  'page_load',
+  NULL,
+  '{"url_pattern": "/product/"}',
+  '{
+    "page_url": "{{page_url}}",
+    "page_title": "{{page_title}}",
+    "session_id": "{{session_id}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  true,
+  true,
+  80
+);
+
+-- ================================================================
+-- EXAMPLE 14: Category Page View
+-- Fires when category page loads
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'category_page_view',
+  'Category Page View',
+  'ecommerce',
+  'page_load',
+  NULL,
+  '{"url_pattern": "/category/"}',
+  '{
+    "page_url": "{{page_url}}",
+    "page_title": "{{page_title}}",
+    "session_id": "{{session_id}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  true,
+  true,
+  80
+);
+
+-- ================================================================
+-- EXAMPLE 15: Cart Page View
+-- Fires when cart page loads
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'cart_page_view',
+  'Cart Page View',
+  'ecommerce',
+  'page_load',
+  NULL,
+  '{"url_pattern": "/cart"}',
+  '{
+    "page_url": "{{page_url}}",
+    "page_title": "{{page_title}}",
+    "session_id": "{{session_id}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  true,
+  true,
+  80
+);
+
+-- ================================================================
+-- EXAMPLE 16: External Link Click
+-- Fires when external link is clicked
+-- ================================================================
+INSERT INTO custom_analytics_events (
+  store_id,
+  event_name,
+  display_name,
+  event_category,
+  trigger_type,
+  trigger_selector,
+  trigger_condition,
+  event_parameters,
+  fire_once_per_session,
+  send_to_backend,
+  enabled,
+  priority
+) VALUES (
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
+  'external_link_click',
+  'External Link Click',
+  'navigation',
+  'click',
+  'a[target="_blank"], a[href^="http"]:not([href*="yourdomain.com"])',
+  NULL,
+  '{
+    "href": "{{href}}",
+    "text": "{{text}}",
+    "page_url": "{{page_url}}",
+    "timestamp": "{{timestamp}}"
+  }',
+  false,
+  false,
+  true,
+  50
+);
+
+-- ================================================================
 -- DYNAMIC PARAMETERS REFERENCE
 -- ================================================================
 -- These variables are automatically resolved by CustomEventLoader:
