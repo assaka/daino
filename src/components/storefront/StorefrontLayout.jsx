@@ -24,6 +24,7 @@ import { SeoSettingsProvider } from '@/components/storefront/SeoSettingsProvider
 import { CountrySelect } from "@/components/ui/country-select";
 import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
+import CustomEventLoader from '@/components/storefront/CustomEventLoader';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
 import StorefrontPreviewBanner from '@/components/storefront/StorefrontPreviewBanner';
@@ -714,6 +715,7 @@ export default function StorefrontLayout({ children }) {
                 <StorefrontPreviewBanner />
                 <RoleSwitcher />
                 <DataLayerManager />
+                <CustomEventLoader />
 
                 {/* Paused Store Overlay - uses PreviewModeContext to persist preview mode across navigation */}
                 <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} />
