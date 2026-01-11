@@ -121,6 +121,22 @@ CREATE INDEX IF NOT EXISTS idx_store_databases_active ON store_databases(is_acti
 CREATE INDEX IF NOT EXISTS idx_store_databases_pending_migrations ON store_databases(has_pending_migration) WHERE is_active = true AND has_pending_migration = true;
 
 -- ============================================
+-- 3.5. MIGRATIONS TABLE
+-- Stores tenant database migration definitions
+-- ============================================
+CREATE TABLE IF NOT EXISTS migrations (
+  id SERIAL PRIMARY KEY,
+  version INTEGER NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  sql_up TEXT NOT NULL,
+  sql_down TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_migrations_version ON migrations(version);
+
+-- ============================================
 -- 4. STORE_HOSTNAMES TABLE
 -- Maps hostnames to stores for fast resolution
 -- ============================================
