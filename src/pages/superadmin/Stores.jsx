@@ -35,13 +35,15 @@ export default function SuperAdminStores() {
     setLoading(true);
     try {
       const response = await apiClient.get('/superadmin/stores');
-      if (response.data.success) {
+      if (response.data?.success) {
         setStores(response.data.stores || []);
+      } else {
+        throw new Error(response.data?.error || 'Failed to load stores');
       }
     } catch (error) {
       toast({
         title: "Error loading stores",
-        description: error.message,
+        description: error.response?.data?.error || error.message || 'Unknown error',
         variant: "destructive"
       });
     } finally {

@@ -26,15 +26,15 @@ export default function SuperAdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const [storesRes, usersRes, migrationsRes] = await Promise.all([
+      const [storesRes, usersRes, migrationsRes] = await Promise.allSettled([
         apiClient.get('/superadmin/stores'),
         apiClient.get('/superadmin/users'),
         apiClient.get('/superadmin/migrations/status')
       ]);
 
-      const stores = storesRes.data.stores || [];
-      const users = usersRes.data.users || [];
-      const migrationStatus = migrationsRes.data.stores || [];
+      const stores = storesRes.status === 'fulfilled' ? storesRes.value.data?.stores || [] : [];
+      const users = usersRes.status === 'fulfilled' ? usersRes.value.data?.users || [] : [];
+      const migrationStatus = migrationsRes.status === 'fulfilled' ? migrationsRes.value.data?.stores || [] : [];
       const pendingStores = migrationStatus.filter(s => s.hasPendingMigrations);
 
       setStats({
