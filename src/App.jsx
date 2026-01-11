@@ -553,7 +553,12 @@ function App() {
           <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
 
           {/* Superadmin dashboard - no store context needed */}
-          <Route path="/superadmin" element={<Pages.SuperAdmin />} />
+          <Route path="/superadmin" element={<Pages.SuperAdminLayout />}>
+            <Route index element={<Pages.SuperAdminDashboard />} />
+            <Route path="stores" element={<Pages.SuperAdminStores />} />
+            <Route path="users" element={<Pages.SuperAdminUsers />} />
+            <Route path="migrations" element={<Pages.SuperAdminMigrations />} />
+          </Route>
 
           {/* Team Invitation */}
           <Route path="/accept-invitation/:token" element={<Pages.AcceptInvitation />} />
