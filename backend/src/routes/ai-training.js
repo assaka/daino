@@ -1939,6 +1939,148 @@ To add a component:
 - AI Workspace (/ai) - AI tools`
     },
     {
+      name: 'Frontend Structure',
+      content: `src/ directory structure:
+- components/ - Reusable React components
+  - storefront/ - Customer-facing components (Header, ProductCard, Cart)
+  - admin/ - Admin panel components
+  - editor/ - Slot editor components (UnifiedSlotsEditor, SlotRenderer)
+  - ui/ - Base UI components (Button, Input, Modal) using shadcn/ui
+  - ai-workspace/ - AI chat and workspace components
+- pages/ - Route components
+  - storefront/ - Customer pages (ProductDetail, CategoryPage, Checkout)
+  - admin/ - Admin pages
+  - editor/ - Slot editor pages (ProductSlotsEditor, HeaderSlotsEditor)
+- contexts/ - React contexts
+  - StoreSelectionContext - Current store selection
+  - AIWorkspaceContext - AI workspace state
+  - CartContext - Shopping cart state
+  - TranslationContext - i18n translations
+- hooks/ - Custom React hooks
+  - useApiQueries - React Query hooks for API calls
+  - useStoreBootstrap - Fetch store config on load
+  - useDraftConfiguration - Draft vs published configs
+- services/ - API service functions
+- utils/ - Utility functions`
+    },
+    {
+      name: 'Backend Structure',
+      content: `backend/src/ directory structure:
+- routes/ - Express route handlers
+  - ai.js - AI chat endpoint (/api/ai/chat)
+  - ai-training.js - AI training endpoints
+  - products.js - Product CRUD
+  - orders.js - Order management
+  - stores.js - Store settings
+  - public/ - Public storefront API
+- services/ - Business logic
+  - pluginService.js - Plugin execution
+  - orderService.js - Order processing
+  - emailService.js - Email sending
+- database/ - Database connections
+  - masterConnection.js - Master (shared) DB
+  - tenantConnection.js - Per-store DB
+- middleware/ - Express middleware
+  - tenantMiddleware.js - Multi-tenant routing
+  - authMiddleware.js - Authentication`
+    },
+    {
+      name: 'Key React Components',
+      content: `Important components:
+- UnifiedSlotsEditor (src/components/editor/) - Main slot editor, handles all page types
+- SlotRenderer - Renders slot configurations to React components
+- ResponsiveIframe - Preview iframe with context bridging
+- StoreProvider - Provides store context to storefront
+- EditorStoreProvider - Provides store context to editor
+- WorkspaceAIPanel - AI chat interface in workspace
+- ProductCard - Product display in listings
+- MiniCart - Cart dropdown in header
+- StorefrontHeader - Main header component`
+    },
+    {
+      name: 'Key Backend Services',
+      content: `Important services:
+- slotConfigurationService - Save/load slot configs
+- pluginService - Execute plugins on events
+- storageService - File uploads (Supabase/R2)
+- emailService - Transactional emails
+- analyticsService - Track events
+- importService - CSV/Excel imports
+- exportService - Data exports`
+    },
+    {
+      name: 'Data Flow Pattern',
+      content: `Storefront data flow:
+1. User visits store URL
+2. tenantMiddleware resolves store from domain/slug
+3. Bootstrap API loads store config, settings, categories
+4. StoreProvider provides data to all components
+5. Components render using slot configurations
+
+Editor data flow:
+1. Admin selects store in StoreSelectionContext
+2. EditorStoreProvider fetches store data
+3. UnifiedSlotsEditor loads slot configuration
+4. User edits slots visually
+5. Save writes to slot_configurations table`
+    },
+    {
+      name: 'Multi-Tenant Architecture',
+      content: `Two database types:
+1. Master DB (Supabase) - Shared data
+   - tenants, users, subscriptions
+   - ai_* tables for AI knowledge
+   - plugin_registry
+
+2. Tenant DBs (per-store) - Store-specific
+   - products, categories, orders
+   - customers, slot_configurations
+   - store settings in stores.settings JSONB
+
+Connection: tenantMiddleware.js resolves DB from request`
+    },
+    {
+      name: 'API Patterns',
+      content: `API conventions:
+- GET /api/public/* - Public storefront APIs (no auth)
+- GET/POST/PUT/DELETE /api/* - Admin APIs (auth required)
+- Responses: { success: true, data: {...} } or { success: false, message: "error" }
+- Pagination: ?page=1&limit=20
+- Filtering: ?status=active&store_id=uuid
+- Sorting: ?sort=created_at&order=desc`
+    },
+    {
+      name: 'Slot Types Reference',
+      content: `Available slot types for slot editor:
+- container - Wrapper div
+- text - Text content with HTML
+- image - Image with src, alt
+- button - Clickable button
+- grid - CSS Grid layout
+- flex - Flexbox layout
+- html - Raw HTML injection
+- product-card - Product display
+- category-card - Category display
+- breadcrumb - Navigation breadcrumb
+- cms-block - Embedded CMS block
+- custom - Custom component by name`
+    },
+    {
+      name: 'Plugin System',
+      content: `Plugin types:
+1. Event Plugins - Trigger on storefront events
+   - Triggers: page_view, add_to_cart, checkout_complete
+   - Actions: show_popup, inject_script, send_webhook
+
+2. Integration Plugins - Connect external services
+   - Bol.com, Amazon, Shopify imports
+   - Payment gateways (Stripe, PayPal, Mollie)
+
+3. AI Plugins - AI-generated automations
+   - Created via AI chat
+   - Stored in plugin_data table`
+    },
+    {
       name: 'Translation Pattern',
       content: `Products and categories use translations JSONB:
 {
