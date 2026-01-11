@@ -686,14 +686,15 @@ CRON HANDLER CONTEXT VARIABLES (available in handler_code):
 | fetch        | function | Global fetch for HTTP requests                       |
 | apiBaseUrl   | string   | Backend API URL for internal calls                   |
 | console      | object   | For logging (console.log, console.error)             |
-| emailService | object   | Send emails (same as customer registration uses)     |
+| emailService | object   | Send emails without requiring database templates     |
 
-Example - Send email (like customer registration):
+Example - Send email:
 \`\`\`javascript
-await emailService.sendTransactionalEmail(storeId, 'custom_notification', {
-  recipientEmail: 'user@example.com',
+await emailService.sendSimpleEmail(storeId, {
+  to: 'user@example.com',
   subject: 'Your Report',
-  body: 'Here is your daily report...'
+  body: 'Here is your daily report...',
+  html: '<p>Here is your daily report...</p>'
 });
 return { emailSent: true };
 \`\`\`
@@ -742,8 +743,8 @@ RULES:
 - Use DOUBLE QUOTES for all strings (not backticks!) - this is JSON, not JavaScript
 - Escape newlines as \\n in code strings
 - The "message" field MUST be human-readable text (no code!)
-- For SENDING EMAILS: ALWAYS use emailService.sendTransactionalEmail() - NEVER use nodemailer, require(), or external SMTP
-  Example: await emailService.sendTransactionalEmail(storeId, 'template_name', { recipientEmail: 'user@example.com', subject: 'Subject', body: 'Content' });
+- For SENDING EMAILS: ALWAYS use emailService.sendSimpleEmail() - NEVER use nodemailer, require(), or external SMTP
+  Example: await emailService.sendSimpleEmail(storeId, { to: 'user@example.com', subject: 'Subject', body: 'Plain text', html: '<p>HTML content</p>' });
 - Code goes ONLY in generatedFiles[].code or generatedAdminPages[].componentCode
 - Generate only the files needed for the specific request
 - Use DainoStore plugin hooks and patterns

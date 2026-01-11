@@ -99,6 +99,66 @@ class MasterEmailService {
   }
 
   /**
+   * Send a simple email without requiring a template
+   * Used as fallback for tenant emails when no provider is configured
+   * @param {Object} options - Email options
+   * @returns {Promise<Object>} Send result
+   */
+  async sendSimpleEmail({ to, subject, body, html }) {
+    if (!this.isConfigured) {
+      console.warn('[MASTER EMAIL SERVICE] Skipping simple email - not configured');
+      return {
+        success: false,
+        message: 'Master email service not configured'
+      };
+    }
+
+    try {
+      console.log(`[MASTER EMAIL SERVICE] Sending simple email to: ${to}`);
+      console.log(`[MASTER EMAIL SERVICE] Subject: ${subject}`);
+
+      // Initialize Brevo API client
+      const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+      apiInstance.authentications['apiKey'].apiKey = this.apiKey;
+
+      // Prepare email
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.sender = {
+        name: this.senderName,
+        email: this.senderEmail
+      };
+      sendSmtpEmail.to = [{ email: to }];
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html || `<p>${body}</p>`;
+      sendSmtpEmail.textContent = body;
+
+      // Send email
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+      console.log(`[MASTER EMAIL SERVICE] Simple email sent successfully. MessageId: ${response.messageId}`);
+
+      // Log the email send
+      await this.logEmail(to, subject, 'sent', response.messageId);
+
+      return {
+        success: true,
+        message: 'Email sent successfully',
+        messageId: response.messageId
+      };
+    } catch (error) {
+      console.error('[MASTER EMAIL SERVICE] Send simple email error:', error.response?.body || error.message);
+
+      // Log the failed attempt
+      await this.logEmail(to, subject, 'failed', null, error.message);
+
+      return {
+        success: false,
+        message: error.response?.body?.message || error.message
+      };
+    }
+  }
+
+  /**
    * Log email send attempt to master database
    * @param {string} recipientEmail - Recipient email
    * @param {string} subject - Email subject

@@ -43,7 +43,7 @@ DainoStore automatically manages the dataLayer for you, pushing events when cust
 
 ## Built-in Events (Always Active)
 
-DainoStore automatically tracks **21 e-commerce events**. These are always active and follow Google's Enhanced Ecommerce (GA4) specification:
+DainoStore automatically tracks **24 e-commerce events**. These are always active and follow Google's Enhanced Ecommerce (GA4) specification:
 
 ### Core Ecommerce Events (10 events)
 
@@ -60,13 +60,14 @@ DainoStore automatically tracks **21 e-commerce events**. These are always activ
 | `purchase` | Order completed | `transaction_id`, `value`, `tax`, `shipping`, `currency`, `coupon`, `items[]` |
 | `search` | Product search performed | `search_term`, `results_count`, `filters` |
 
-### Checkout Funnel Events (3 events)
+### Checkout Funnel Events (4 events)
 
 | Event | When It Fires | Data Included |
 |-------|--------------|---------------|
 | `add_shipping_info` | Shipping method selected | `currency`, `value`, `shipping_tier`, `items[]` |
 | `add_payment_info` | Payment method selected | `currency`, `value`, `payment_type`, `coupon`, `items[]` |
 | `checkout_progress` | Checkout step completed | `checkout_step`, `checkout_step_name`, `value`, `items[]`, `shipping_method`, `payment_method`, `coupon_code` |
+| `delivery_date_selected` | Delivery date chosen | `currency`, `value`, `delivery_date`, `delivery_type`, `items[]` |
 
 ### Engagement Events (4 events)
 
@@ -91,17 +92,24 @@ DainoStore automatically tracks **21 e-commerce events**. These are always activ
 | `newsletter_signup` | Newsletter form submitted | `signup_source` (e.g., "footer", "popup") |
 | `filter_applied` | Product filter used | `filter_type`, `filter_value`, `results_count` |
 
+### Customer Events (2 events)
+
+| Event | When It Fires | Data Included |
+|-------|--------------|---------------|
+| `login` | Customer logs in | `method` (email, google, facebook), `customer_id` |
+| `sign_up` | Customer registers | `method` (email, google, facebook), `customer_id` |
+
 ### Complete Event Reference
 
-All 21 built-in events at a glance:
+All 24 built-in events at a glance:
 
 ```
-page_view           view_item           view_item_list      select_item
-add_to_cart         remove_from_cart    view_cart           begin_checkout
-add_shipping_info   add_payment_info    checkout_progress   purchase
-search              add_to_wishlist     view_promotion      select_promotion
-quick_view          coupon_applied      coupon_removed      newsletter_signup
-filter_applied
+page_view              view_item              view_item_list         select_item
+add_to_cart            remove_from_cart       view_cart              begin_checkout
+add_shipping_info      add_payment_info       checkout_progress      delivery_date_selected
+purchase               search                 add_to_wishlist        view_promotion
+select_promotion       quick_view             coupon_applied         coupon_removed
+newsletter_signup      filter_applied         login                  sign_up
 ```
 
 All events are automatically pushed to `window.dataLayer` and tracked in customer activity logs for analytics reporting.
@@ -134,7 +142,12 @@ window.daino.trackBeginCheckout(cartItems, cartTotal)
 window.daino.trackCheckoutStep(stepNumber, stepName, cartItems, cartTotal, additionalData)
 window.daino.trackShippingMethodSelected(shippingMethod, cartItems, cartTotal)
 window.daino.trackPaymentMethodSelected(paymentMethod, cartItems, cartTotal, couponCode)
+window.daino.trackDeliveryDateSelected(deliveryDate, deliveryType, cartItems, cartTotal)
 window.daino.trackPurchase(order)
+
+// Customer tracking
+window.daino.trackCustomerLogin(customerId, method)
+window.daino.trackCustomerRegistration(customerId, method)
 
 // Engagement tracking
 window.daino.trackAddToWishlist(product)

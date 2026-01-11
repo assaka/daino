@@ -274,6 +274,39 @@ class SendGridService {
       return null;
     }
   }
+
+  /**
+   * Send a simple email without template
+   * @param {string} apiKey - SendGrid API key
+   * @param {Object} options - Email options
+   * @returns {Promise<Object>} Send result
+   */
+  async sendSimpleEmail(apiKey, { to, subject, body, html, from }) {
+    try {
+      const response = await axios.post(
+        `${this.sendgridApiUrl}/mail/send`,
+        {
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: from },
+          subject: subject,
+          content: [
+            { type: 'text/plain', value: body },
+            { type: 'text/html', value: html || `<p>${body}</p>` }
+          ]
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      return { success: true, statusCode: response.status };
+    } catch (error) {
+      console.error('SendGrid sendSimpleEmail error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.errors?.[0]?.message || error.message);
+    }
+  }
 }
 
 module.exports = new SendGridService();

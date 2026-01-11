@@ -273,6 +273,37 @@ class BrevoService {
       return null;
     }
   }
+
+  /**
+   * Send a simple email without template
+   * @param {string} apiKey - Brevo API key
+   * @param {Object} options - Email options
+   * @returns {Promise<Object>} Send result
+   */
+  async sendSimpleEmail(apiKey, { to, subject, body, html, from, fromName }) {
+    try {
+      const response = await axios.post(
+        `${this.brevoApiUrl}/smtp/email`,
+        {
+          sender: { email: from, name: fromName || 'DainoStore' },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: html || `<p>${body}</p>`,
+          textContent: body
+        },
+        {
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      return { success: true, messageId: response.data?.messageId };
+    } catch (error) {
+      console.error('Brevo sendSimpleEmail error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || error.message);
+    }
+  }
 }
 
 module.exports = new BrevoService();

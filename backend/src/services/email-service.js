@@ -870,6 +870,67 @@ class EmailService {
   }
 
   /**
+   * Send a simple email without requiring a database template
+   * Useful for cron jobs, notifications, and quick emails
+   * @param {string} storeId - Store ID
+   * @param {Object} options - Email options
+   * @param {string} options.to - Recipient email address
+   * @param {string} options.subject - Email subject
+   * @param {string} options.body - Email body (plain text)
+   * @param {string} options.html - Email body (HTML, optional)
+   * @returns {Promise<Object>} Send result
+   */
+  async sendSimpleEmail(storeId, { to, subject, body, html }) {
+    try {
+      console.log(`📧 [EMAIL SERVICE] Sending simple email to: ${to}, subject: ${subject}`);
+
+      // Get the primary email provider (brevo or sendgrid)
+      const emailConfig = await IntegrationConfig.findPrimaryEmailProvider(storeId, ['brevo', 'sendgrid']);
+
+      if (!emailConfig) {
+        // Fallback to master Brevo
+        console.log(`📧 [EMAIL SERVICE] No provider configured, using master Brevo fallback`);
+        const masterEmailService = require('./master-email-service');
+        if (masterEmailService.isConfigured) {
+          return await masterEmailService.sendSimpleEmail({ to, subject, body, html });
+        }
+        throw new Error('No email provider configured for this store');
+      }
+
+      const provider = emailConfig.integration_type;
+      const configData = emailConfig.config_data || {};
+
+      if (provider === 'brevo') {
+        const result = await brevoService.sendSimpleEmail(configData.apiKey, {
+          to,
+          subject,
+          body,
+          html,
+          from: configData.senderEmail || 'noreply@dainostore.com',
+          fromName: configData.senderName || 'DainoStore'
+        });
+        console.log(`✅ [EMAIL SERVICE] Simple email sent via Brevo`);
+        return { success: true, provider: 'brevo', result };
+      } else if (provider === 'sendgrid') {
+        const result = await sendgridService.sendSimpleEmail(configData.apiKey, {
+          to,
+          subject,
+          body,
+          html,
+          from: configData.senderEmail || 'noreply@dainostore.com'
+        });
+        console.log(`✅ [EMAIL SERVICE] Simple email sent via SendGrid`);
+        return { success: true, provider: 'sendgrid', result };
+      } else {
+        throw new Error(`Unsupported email provider: ${provider}`);
+      }
+    } catch (error) {
+      console.error(`❌ [EMAIL SERVICE] Failed to send simple email:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Send test email with example data
    * @param {string} storeId - Store ID
    * @param {string} templateIdentifier - Template identifier

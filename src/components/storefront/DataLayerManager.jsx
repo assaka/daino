@@ -650,6 +650,42 @@ export const trackDeliveryDateSelected = (deliveryDate, deliveryType = 'standard
 };
 
 /**
+ * CUSTOMER LOGIN
+ */
+export const trackCustomerLogin = (customerId = null, method = 'email') => {
+  pushToDataLayer({
+    event: 'login',
+    method: method,
+    customer_id: customerId
+  });
+
+  trackActivity('customer_login', {
+    metadata: {
+      login_method: method,
+      customer_id: customerId
+    }
+  });
+};
+
+/**
+ * CUSTOMER REGISTRATION (SIGN UP)
+ */
+export const trackCustomerRegistration = (customerId = null, method = 'email') => {
+  pushToDataLayer({
+    event: 'sign_up',
+    method: method,
+    customer_id: customerId
+  });
+
+  trackActivity('customer_registration', {
+    metadata: {
+      registration_method: method,
+      customer_id: customerId
+    }
+  });
+};
+
+/**
  * QUICK VIEW
  */
 export const trackQuickView = (product) => {
@@ -769,7 +805,10 @@ export default function DataLayerManager() {
         trackFilterApplied,
         trackCouponApplied,
         trackCouponRemoved,
-        trackQuickView
+        trackQuickView,
+        // Customer tracking
+        trackCustomerLogin,
+        trackCustomerRegistration
       };
     }
   }, [store, settings]);
