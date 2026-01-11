@@ -215,7 +215,12 @@ export default function SuperAdminMigrations() {
                       <Badge variant="outline" className="font-mono">v{store.latestVersion}</Badge>
                     </TableCell>
                     <TableCell>
-                      {store.hasPendingMigrations ? (
+                      {store.migrationInProgress ? (
+                        <Badge className="gap-1 bg-blue-500">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          In Progress
+                        </Badge>
+                      ) : store.hasPendingMigrations ? (
                         <Badge variant="destructive" className="gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Pending

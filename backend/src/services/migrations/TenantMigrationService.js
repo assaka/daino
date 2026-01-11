@@ -128,6 +128,51 @@ class TenantMigrationService {
   }
 
   /**
+   * Mark migration as in progress
+   */
+  async setMigrationInProgress(storeId, inProgress) {
+    if (!masterDbClient) return false;
+
+    try {
+      const { error } = await masterDbClient
+        .from('store_databases')
+        .update({
+          migration_in_progress: inProgress,
+          migration_started_at: inProgress ? new Date().toISOString() : null
+        })
+        .eq('store_id', storeId);
+
+      return !error;
+    } catch (err) {
+      console.error(`[Migration] Error setting migration progress:`, err.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get stores with stuck/incomplete migrations (started but not finished)
+   */
+  async getStoresWithStuckMigrations(timeoutMinutes = 10) {
+    if (!masterDbClient) return [];
+
+    try {
+      const cutoffTime = new Date(Date.now() - timeoutMinutes * 60 * 1000).toISOString();
+
+      const { data, error } = await masterDbClient
+        .from('store_databases')
+        .select('store_id, migration_started_at')
+        .eq('migration_in_progress', true)
+        .lt('migration_started_at', cutoffTime);
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('[Migration] Error getting stuck migrations:', err.message);
+      return [];
+    }
+  }
+
+  /**
    * Run pending migrations for a store
    */
   async runPendingMigrations(storeId, tenantDb) {
@@ -141,6 +186,9 @@ class TenantMigrationService {
         failed: []
       };
     }
+
+    // Mark migration as in progress
+    await this.setMigrationInProgress(storeId, true);
 
     console.log(`[Migration] Running ${pendingMigrations.length} migration(s) for store ${storeId}`);
 
@@ -170,6 +218,9 @@ class TenantMigrationService {
         break;
       }
     }
+
+    // Mark migration as complete
+    await this.setMigrationInProgress(storeId, false);
 
     return {
       success: failed.length === 0,
@@ -202,7 +253,7 @@ class TenantMigrationService {
       // Get store_databases info
       const { data: databases, error: dbError } = await masterDbClient
         .from('store_databases')
-        .select('store_id, schema_version, has_pending_migration, last_migration_at');
+        .select('store_id, schema_version, last_migration_at, migration_in_progress, migration_started_at');
 
       if (dbError) throw dbError;
 
@@ -217,6 +268,8 @@ class TenantMigrationService {
           schemaVersion,
           latestVersion,
           hasPendingMigrations: schemaVersion < latestVersion,
+          migrationInProgress: db?.migration_in_progress || false,
+          migrationStartedAt: db?.migration_started_at || null,
           lastMigrationAt: db?.last_migration_at || null
         };
       });
