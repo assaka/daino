@@ -492,23 +492,32 @@ For plugin generation: Return ONLY valid JSON following the exact structure show
 
 DEVELOPER MODE - Generate concise, production-ready code.
 
-RESPONSE FORMAT - Always return ONLY valid JSON:
+⚠️ CRITICAL: You MUST return ONLY valid JSON. No markdown, no backticks, no explanation text outside JSON.
+
+RESPONSE FORMAT:
 {
+  "message": "Human-readable explanation of what was created",
   "generatedFiles": [
-    { "name": "filename.js", "code": "// working code" }
+    { "name": "filename.js", "code": "function example() {\\n  return true;\\n}" }
   ],
   "generatedAdminPages": [
     {
       "pageKey": "settings",
       "pageName": "Settings",
       "route": "/admin/plugins/PLUGIN_SLUG/settings",
-      "componentCode": "// React component code",
+      "componentCode": "function Settings() {\\n  return <div>Settings</div>;\\n}",
       "icon": "Settings",
       "description": "Manage plugin settings"
     }
   ],
-  "explanation": "One sentence summary."
+  "explanation": "One sentence summary for logs"
 }
+
+JSON STRING RULES (CRITICAL!):
+- ALL strings must use DOUBLE QUOTES ("), never backticks (\`)
+- Newlines in code must be escaped as \\n
+- Double quotes in code must be escaped as \\"
+- Example: "code": "function hello() {\\n  console.log(\\"Hi\\");\\n}"
 
 ADMIN PAGE GENERATION:
 When user asks to create an admin page, settings page, or management page:
@@ -698,6 +707,8 @@ MESSAGE GUIDELINES:
 
 RULES:
 - ALWAYS return valid JSON - never plain text or markdown
+- Use DOUBLE QUOTES for all strings (not backticks!) - this is JSON, not JavaScript
+- Escape newlines as \\n in code strings
 - The "message" field MUST be human-readable text (no code!)
 - Code goes ONLY in generatedFiles[].code or generatedAdminPages[].componentCode
 - Generate only the files needed for the specific request
@@ -817,61 +828,14 @@ Provide production-ready code with proper error handling and best practices.`;
    * Parse AI response into structured format
    */
   parseAIResponse(responseText, mode) {
-    console.log('🔍 Parsing AI response, length:', responseText?.length);
-
     try {
-      // 1. Try to extract JSON from markdown code blocks
-      const jsonBlockMatch = responseText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-      if (jsonBlockMatch) {
-        console.log('📦 Found JSON in code block');
-        const parsed = JSON.parse(jsonBlockMatch[1]);
-        return parsed;
-      }
-
-      // 2. Try to parse entire response as JSON (if it starts with {)
-      if (responseText.trim().startsWith('{')) {
-        console.log('📦 Response starts with {, parsing as JSON');
-        return JSON.parse(responseText);
-      }
-
-      // 3. Try to find JSON object anywhere in the response
-      const jsonObjectMatch = responseText.match(/\{[\s\S]*"(?:message|generatedFiles|generatedAdminPages)"[\s\S]*\}/);
-      if (jsonObjectMatch) {
-        console.log('📦 Found JSON object in response');
-        // Find the complete JSON by matching braces
-        const startIdx = responseText.indexOf('{');
-        if (startIdx !== -1) {
-          let braceCount = 0;
-          let endIdx = startIdx;
-          for (let i = startIdx; i < responseText.length; i++) {
-            if (responseText[i] === '{') braceCount++;
-            if (responseText[i] === '}') {
-              braceCount--;
-              if (braceCount === 0) {
-                endIdx = i + 1;
-                break;
-              }
-            }
-          }
-          const jsonStr = responseText.substring(startIdx, endIdx);
-          const parsed = JSON.parse(jsonStr);
-          console.log('✅ Extracted JSON:', Object.keys(parsed));
-          return parsed;
-        }
-      }
-
-      // 4. If nothing worked, return as conversational
-      console.log('⚠️ No JSON found, treating as conversational response');
-      return {
-        type: 'conversation',
-        message: responseText,
-        isConversational: true
-      };
+      // AI should return pure JSON - just parse it
+      return JSON.parse(responseText.trim());
     } catch (error) {
       console.error('❌ JSON parse error:', error.message);
-      console.log('📝 Raw response preview:', responseText?.substring(0, 500));
+      console.log('📝 Raw response:', responseText?.substring(0, 300));
 
-      // Return plain text response
+      // Fallback: treat as conversational
       return {
         type: 'conversation',
         message: responseText,

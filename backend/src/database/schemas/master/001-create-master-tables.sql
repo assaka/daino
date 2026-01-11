@@ -118,28 +118,7 @@ CREATE TABLE IF NOT EXISTS store_databases (
 
 CREATE INDEX IF NOT EXISTS idx_store_databases_store_id ON store_databases(store_id);
 CREATE INDEX IF NOT EXISTS idx_store_databases_active ON store_databases(is_active) WHERE is_active = true;
-CREATE INDEX IF NOT EXISTS idx_store_databases_pending_migrations ON store_databases(schema_version) WHERE is_active = true;
-
--- ============================================
--- 3.5. TENANT_MIGRATIONS TABLE
--- Tracks which migrations have been applied to each tenant database
--- ============================================
-CREATE TABLE IF NOT EXISTS tenant_migrations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-  migration_name VARCHAR(255) NOT NULL,
-  migration_version INTEGER NOT NULL,
-  description TEXT,
-  applied_at TIMESTAMP DEFAULT NOW(),
-  success BOOLEAN DEFAULT true,
-  error_message TEXT,
-  execution_time_ms INTEGER,
-
-  UNIQUE(store_id, migration_name)
-);
-
-CREATE INDEX IF NOT EXISTS idx_tenant_migrations_store_id ON tenant_migrations(store_id);
-CREATE INDEX IF NOT EXISTS idx_tenant_migrations_version ON tenant_migrations(migration_version);
+CREATE INDEX IF NOT EXISTS idx_store_databases_pending_migrations ON store_databases(has_pending_migration) WHERE is_active = true AND has_pending_migration = true;
 
 -- ============================================
 -- 4. STORE_HOSTNAMES TABLE
