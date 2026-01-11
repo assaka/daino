@@ -8,7 +8,9 @@ import {
   Database,
   LayoutDashboard,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Menu,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +31,7 @@ export default function SuperAdminLayout() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -44,6 +47,11 @@ export default function SuperAdminLayout() {
     setAuthorized(true);
     setLoading(false);
   }, [navigate]);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   if (loading) {
     return (
@@ -66,18 +74,38 @@ export default function SuperAdminLayout() {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
+      <aside className={cn(
+        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-200 ease-in-out lg:transform-none",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}>
         {/* Logo */}
         <div className="p-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary rounded-lg">
-              <Shield className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary rounded-lg">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="font-bold text-lg">Super Admin</h1>
+                <p className="text-xs text-slate-400">Platform Management</p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-bold text-lg">Super Admin</h1>
-              <p className="text-xs text-slate-400">Platform Management</p>
-            </div>
+            {/* Mobile close button */}
+            <button
+              className="lg:hidden p-1 hover:bg-slate-800 rounded"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
 
@@ -129,9 +157,25 @@ export default function SuperAdminLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile header */}
+        <header className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3">
+          <button
+            className="p-2 hover:bg-gray-100 rounded-lg"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Super Admin</span>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

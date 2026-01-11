@@ -134,22 +134,23 @@ export default function SuperAdminMigrations() {
   const latestVersion = migrations.length > 0 ? Math.max(...migrations.map(m => m.version)) : 0;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Migrations</h1>
-          <p className="text-gray-500">Manage tenant database migrations</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Migrations</h1>
+          <p className="text-sm sm:text-base text-gray-500">Manage tenant database migrations</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadMigrations} disabled={loading || runningMigrations}>
+          <Button variant="outline" onClick={loadMigrations} disabled={loading || runningMigrations} size="sm" className="sm:size-default">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button onClick={handleRunAllMigrations} disabled={runningMigrations || pendingStores.length === 0}>
+          <Button onClick={handleRunAllMigrations} disabled={runningMigrations || pendingStores.length === 0} size="sm" className="sm:size-default">
             <Play className={`h-4 w-4 mr-2 ${runningMigrations ? 'animate-spin' : ''}`} />
-            Run All Migrations
+            <span className="hidden sm:inline">Run All Migrations</span>
+            <span className="sm:hidden">Run All</span>
           </Button>
         </div>
       </div>
@@ -169,34 +170,34 @@ export default function SuperAdminMigrations() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Latest Version</p>
-          <p className="text-2xl font-bold">v{latestVersion}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <Card className="p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Latest Version</p>
+          <p className="text-xl sm:text-2xl font-bold">v{latestVersion}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Total Migrations</p>
-          <p className="text-2xl font-bold">{migrations.length}</p>
+        <Card className="p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Total Migrations</p>
+          <p className="text-xl sm:text-2xl font-bold">{migrations.length}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Stores Up to Date</p>
-          <p className="text-2xl font-bold text-green-600">
+        <Card className="p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Stores Up to Date</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-600">
             {migrationStatus.length - pendingStores.length}
           </p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Pending</p>
-          <p className="text-2xl font-bold text-orange-600">{pendingStores.length}</p>
+        <Card className="p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Pending</p>
+          <p className="text-xl sm:text-2xl font-bold text-orange-600">{pendingStores.length}</p>
         </Card>
       </div>
 
       {/* Available Migrations */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Available Migrations</CardTitle>
-          <CardDescription>Migration definitions stored in the database</CardDescription>
+      <Card className="mb-6 overflow-hidden">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Available Migrations</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">Migration definitions stored in the database</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -204,46 +205,51 @@ export default function SuperAdminMigrations() {
           ) : migrations.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No migrations found</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">Version</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-32">Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {migrations.map((migration) => (
-                  <TableRow key={migration.id}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">v{migration.version}</Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{migration.name}</TableCell>
-                    <TableCell className="text-gray-500">{migration.description}</TableCell>
-                    <TableCell className="text-gray-500 text-sm">
-                      {new Date(migration.created_at).toLocaleDateString()}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20 sm:w-24">Version</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Description</TableHead>
+                    <TableHead className="hidden sm:table-cell w-32">Created</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {migrations.map((migration) => (
+                    <TableRow key={migration.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono text-xs">v{migration.version}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-sm">{migration.name}</div>
+                        <div className="text-xs text-gray-400 sm:hidden">{migration.description}</div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-gray-500">{migration.description}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-gray-500 text-sm">
+                        {new Date(migration.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Store Migration Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Store Migration Status</CardTitle>
-          <CardDescription>
+      <Card className="overflow-hidden">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Store Migration Status</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             {pendingStores.length > 0
               ? `${pendingStores.length} store(s) need migrations`
               : "All stores are up to date"
             }
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -251,59 +257,61 @@ export default function SuperAdminMigrations() {
           ) : migrationStatus.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No stores found</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Store</TableHead>
-                  <TableHead>Current Version</TableHead>
-                  <TableHead>Latest Version</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Migration</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {migrationStatus.map((store) => (
-                  <TableRow key={store.storeId}>
-                    <TableCell>
-                      <div className="font-medium">{store.storeName || 'Unknown'}</div>
-                      <code className="text-xs text-gray-400">
-                        {store.storeId?.slice(0, 8)}...
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">v{store.schemaVersion}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">v{store.latestVersion}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {store.migrationInProgress ? (
-                        <Badge className="gap-1 bg-blue-500">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          In Progress
-                        </Badge>
-                      ) : store.hasPendingMigrations ? (
-                        <Badge variant="destructive" className="gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          Pending
-                        </Badge>
-                      ) : (
-                        <Badge className="gap-1 bg-green-500">
-                          <CheckCircle className="h-3 w-3" />
-                          Up to date
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-gray-500 text-sm">
-                      {store.lastMigrationAt
-                        ? new Date(store.lastMigrationAt).toLocaleString()
-                        : '-'
-                      }
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Store</TableHead>
+                    <TableHead>Current</TableHead>
+                    <TableHead className="hidden sm:table-cell">Latest</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Last Migration</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {migrationStatus.map((store) => (
+                    <TableRow key={store.storeId}>
+                      <TableCell>
+                        <div className="font-medium text-sm">{store.storeName || 'Unknown'}</div>
+                        <code className="text-xs text-gray-400">
+                          {store.storeId?.slice(0, 8)}...
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono text-xs">v{store.schemaVersion}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="font-mono text-xs">v{store.latestVersion}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {store.migrationInProgress ? (
+                          <Badge className="gap-1 bg-blue-500 text-xs">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span className="hidden sm:inline">In Progress</span>
+                          </Badge>
+                        ) : store.hasPendingMigrations ? (
+                          <Badge variant="destructive" className="gap-1 text-xs">
+                            <AlertCircle className="h-3 w-3" />
+                            <span className="hidden sm:inline">Pending</span>
+                          </Badge>
+                        ) : (
+                          <Badge className="gap-1 bg-green-500 text-xs">
+                            <CheckCircle className="h-3 w-3" />
+                            <span className="hidden sm:inline">Up to date</span>
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-gray-500 text-sm">
+                        {store.lastMigrationAt
+                          ? new Date(store.lastMigrationAt).toLocaleString()
+                          : '-'
+                        }
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

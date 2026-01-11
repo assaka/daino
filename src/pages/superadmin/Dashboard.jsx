@@ -86,10 +86,10 @@ export default function SuperAdminDashboard() {
   ];
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Platform overview and quick stats</p>
+    <div className="p-4 sm:p-6">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-500">Platform overview and quick stats</p>
       </div>
 
       {loading ? (
@@ -99,20 +99,20 @@ export default function SuperAdminDashboard() {
       ) : (
         <>
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
             {statCards.map((stat) => {
               const Icon = stat.icon;
               return (
                 <Link key={stat.title} to={stat.link}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-6">
+                    <CardContent className="p-3 sm:p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">{stat.title}</p>
-                          <p className="text-3xl font-bold">{stat.value}</p>
+                          <p className="text-xs sm:text-sm text-gray-500 mb-1">{stat.title}</p>
+                          <p className="text-xl sm:text-3xl font-bold">{stat.value}</p>
                         </div>
-                        <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                          <Icon className={`h-6 w-6 ${stat.color}`} />
+                        <div className={`p-2 sm:p-3 rounded-full ${stat.bgColor} hidden sm:block`}>
+                          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.color}`} />
                         </div>
                       </div>
                     </CardContent>
@@ -123,7 +123,7 @@ export default function SuperAdminDashboard() {
           </div>
 
           {/* Quick Links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
