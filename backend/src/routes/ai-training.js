@@ -686,6 +686,42 @@ async function runComprehensiveTraining() {
     }
   }
 
+  // 9. Train Credit Pricing Knowledge
+  console.log('\n9️⃣ Training Credit Pricing Knowledge...');
+  const creditKnowledge = getCreditPricingKnowledge();
+  for (const credit of creditKnowledge) {
+    try {
+      await saveContextDocument('credit_pricing', credit);
+      console.log(`   ✅ ${credit.name}`);
+    } catch (e) {
+      console.log(`   ❌ ${credit.name}: ${e.message}`);
+    }
+  }
+
+  // 10. Train LLM Model Selection Knowledge
+  console.log('\n🔟 Training LLM Model Selection Knowledge...');
+  const llmKnowledge = getLLMModelKnowledge();
+  for (const model of llmKnowledge) {
+    try {
+      await saveContextDocument('llm_models', model);
+      console.log(`   ✅ ${model.name}`);
+    } catch (e) {
+      console.log(`   ❌ ${model.name}: ${e.message}`);
+    }
+  }
+
+  // 11. Train AI Translation Knowledge
+  console.log('\n1️⃣1️⃣ Training AI Translation Knowledge...');
+  const translationKnowledge = getAITranslationKnowledge();
+  for (const trans of translationKnowledge) {
+    try {
+      await saveContextDocument('ai_translation', trans);
+      console.log(`   ✅ ${trans.name}`);
+    } catch (e) {
+      console.log(`   ❌ ${trans.name}: ${e.message}`);
+    }
+  }
+
   console.log('\n✅ Comprehensive AI Training Complete!');
 }
 
@@ -2936,6 +2972,417 @@ function getTroubleshootingKnowledge() {
         'Verify JSONB structure: { key: "value" }',
         'Add missing translation via admin panel or API'
       ]
+    }
+  ];
+}
+
+/**
+ * AI Credit Pricing Knowledge
+ */
+function getCreditPricingKnowledge() {
+  return [
+    {
+      name: 'Credit System Overview',
+      content: `AI features use a credit-based system. Credits are deducted based on:
+- Model used (more powerful = more credits)
+- Input tokens (text sent to AI)
+- Output tokens (AI response length)
+- Task complexity
+
+Credit Balance: Check at Admin → Settings → Usage or GET /api/credits/balance
+Usage History: Admin → Settings → Usage History or GET /api/credits/usage`
+    },
+    {
+      name: 'Credit Costs by Model',
+      content: `Credit costs per 1000 tokens (approximate):
+
+CLAUDE MODELS (Anthropic):
+- Claude 3.5 Sonnet: 3 credits input / 15 credits output - Best for complex coding, analysis
+- Claude 3 Haiku: 0.25 credits input / 1.25 credits output - Fast, cheap for simple tasks
+- Claude 3 Opus: 15 credits input / 75 credits output - Most powerful, use sparingly
+
+GPT MODELS (OpenAI):
+- GPT-4o: 2.5 credits input / 10 credits output - Good all-rounder
+- GPT-4o-mini: 0.15 credits input / 0.6 credits output - Cheapest, basic tasks
+- GPT-4 Turbo: 10 credits input / 30 credits output - Complex reasoning
+
+GEMINI MODELS (Google):
+- Gemini 1.5 Pro: 1.25 credits input / 5 credits output - Long context, good value
+- Gemini 1.5 Flash: 0.075 credits input / 0.3 credits output - Very fast and cheap`
+    },
+    {
+      name: 'Task Credit Estimates',
+      content: `Typical credit usage per task:
+
+LIGHT TASKS (1-5 credits):
+- Simple chat response
+- Quick question answer
+- Short text generation
+
+MEDIUM TASKS (5-20 credits):
+- Product description generation
+- Code snippet creation
+- Translation of short text
+
+HEAVY TASKS (20-100 credits):
+- Full page content generation
+- Complex code generation
+- Plugin creation
+- Bulk translations
+
+VERY HEAVY (100+ credits):
+- Full codebase analysis
+- Large document processing
+- Batch operations with AI`
+    },
+    {
+      name: 'Credit Optimization Tips',
+      content: `How to reduce credit usage:
+
+1. USE THE RIGHT MODEL:
+   - Simple tasks → Haiku or GPT-4o-mini (10x cheaper)
+   - Complex tasks → Sonnet or GPT-4o
+   - Only use Opus for critical complex work
+
+2. REDUCE TOKEN USAGE:
+   - Be concise in prompts
+   - Don't repeat information
+   - Use system prompts efficiently
+
+3. CACHE RESULTS:
+   - Store AI responses for reuse
+   - Don't regenerate same content
+
+4. BATCH OPERATIONS:
+   - Group similar requests
+   - Use bulk endpoints when available
+
+5. SET LIMITS:
+   - Configure max_tokens in requests
+   - Set daily/monthly credit limits per user`
+    },
+    {
+      name: 'Credit Plans and Limits',
+      content: `Subscription plans include monthly credits:
+
+STARTER: 1,000 credits/month
+- Basic AI chat
+- Simple automations
+
+PROFESSIONAL: 10,000 credits/month
+- Full AI workspace
+- Plugin generation
+- Bulk operations
+
+ENTERPRISE: 100,000+ credits/month
+- Custom limits
+- Priority processing
+- Dedicated support
+
+Overage: Additional credits at $0.01 per credit
+Credits reset monthly on billing date
+Unused credits do NOT roll over`
+    }
+  ];
+}
+
+/**
+ * LLM Model Selection Knowledge
+ */
+function getLLMModelKnowledge() {
+  return [
+    {
+      name: 'Model Selection Guide',
+      content: `Choosing the right model for each task:
+
+FOR CHAT/CONVERSATION:
+- Default: Claude 3.5 Sonnet - Best balance of quality and speed
+- Budget: Claude 3 Haiku - Fast responses, lower cost
+- Complex: Claude 3 Opus - When highest quality matters
+
+FOR CODE GENERATION:
+- Recommended: Claude 3.5 Sonnet - Excellent at coding
+- Alternative: GPT-4o - Good for diverse languages
+- Quick fixes: Claude 3 Haiku - Simple code changes
+
+FOR TRANSLATIONS:
+- Best quality: Claude 3.5 Sonnet - Understands context well
+- Bulk/cheap: GPT-4o-mini or Gemini Flash - Good enough for most
+- Technical: GPT-4o - Better for technical terminology
+
+FOR CONTENT GENERATION:
+- Marketing copy: Claude 3.5 Sonnet - Creative and on-brand
+- Product descriptions: GPT-4o-mini - Fast and adequate
+- Long-form: Gemini 1.5 Pro - Handles large context
+
+FOR ANALYSIS/REASONING:
+- Complex: Claude 3 Opus - Best reasoning capability
+- Standard: Claude 3.5 Sonnet - Good for most analysis
+- Quick: GPT-4o - Fast analytical responses`
+    },
+    {
+      name: 'Model Capabilities Comparison',
+      content: `Model strengths and weaknesses:
+
+CLAUDE 3.5 SONNET:
+✅ Best coding ability
+✅ Follows instructions precisely
+✅ Good at structured output (JSON)
+✅ Excellent reasoning
+❌ Higher cost than Haiku/mini
+
+CLAUDE 3 HAIKU:
+✅ Very fast (< 1 second)
+✅ Very cheap
+✅ Good for simple tasks
+❌ Less capable for complex reasoning
+❌ May miss nuances
+
+CLAUDE 3 OPUS:
+✅ Highest quality output
+✅ Best for complex analysis
+✅ Most creative
+❌ Expensive (5x Sonnet)
+❌ Slower response
+
+GPT-4o:
+✅ Good all-rounder
+✅ Handles images well
+✅ Wide language support
+❌ Sometimes verbose
+
+GPT-4o-mini:
+✅ Cheapest option
+✅ Fast responses
+✅ Good for basic tasks
+❌ Lower quality on complex tasks
+
+GEMINI 1.5 PRO:
+✅ 1M token context window
+✅ Good for large documents
+✅ Competitive pricing
+❌ Sometimes inconsistent`
+    },
+    {
+      name: 'Model Configuration in Code',
+      content: `How to specify models in API calls:
+
+// In AI chat endpoint
+POST /api/ai/chat
+{
+  "message": "Generate product description",
+  "model": "claude-3-5-sonnet",  // or "gpt-4o", "claude-3-haiku"
+  "max_tokens": 1000
+}
+
+// Available model IDs:
+Claude: claude-3-5-sonnet, claude-3-haiku, claude-3-opus
+GPT: gpt-4o, gpt-4o-mini, gpt-4-turbo
+Gemini: gemini-1.5-pro, gemini-1.5-flash
+
+// In plugin code
+const response = await ai.generate({
+  model: 'claude-3-haiku',  // Use cheapest for simple tasks
+  prompt: 'Summarize this text',
+  maxTokens: 500
+});
+
+// Default model (if not specified): claude-3-5-sonnet`
+    },
+    {
+      name: 'When to Use Each Model',
+      content: `Quick decision guide:
+
+"I need it fast and cheap" → Claude 3 Haiku or GPT-4o-mini
+"I need good quality" → Claude 3.5 Sonnet (default)
+"I need the absolute best" → Claude 3 Opus
+"I have a huge document" → Gemini 1.5 Pro
+"I need to process images" → GPT-4o or Claude 3.5 Sonnet
+
+TASK → RECOMMENDED MODEL:
+- Chat responses → Sonnet
+- Quick Q&A → Haiku
+- Code generation → Sonnet
+- Code review → Sonnet or Opus
+- Translations → Sonnet or GPT-4o-mini (bulk)
+- Product descriptions → GPT-4o-mini or Haiku
+- Complex analysis → Opus
+- Plugin generation → Sonnet
+- Email generation → Haiku
+- SEO content → Sonnet`
+    }
+  ];
+}
+
+/**
+ * AI Translation Knowledge
+ */
+function getAITranslationKnowledge() {
+  return [
+    {
+      name: 'AI Translation System Overview',
+      content: `The platform supports AI-powered translations:
+
+AUTOMATIC TRANSLATION:
+- Products, categories, CMS pages can be auto-translated
+- Triggered manually or via background jobs
+- Uses context-aware AI for better quality
+
+TRANSLATION STORAGE:
+- Stored in 'translations' JSONB column on each entity
+- Structure: { "en": { "name": "...", "description": "..." }, "de": { ... } }
+- Fallback to default language if translation missing
+
+SUPPORTED ENTITIES:
+- Products (name, description, meta_title, meta_description)
+- Categories (name, description)
+- CMS Pages (title, content)
+- CMS Blocks (content)
+- Email templates (subject, body)
+- UI Labels (via translations table)`
+    },
+    {
+      name: 'Translate via Admin Panel',
+      content: `To translate content in admin:
+
+FOR PRODUCTS:
+1. Go to Admin → Products → Click product
+2. Click "Translations" tab
+3. Select target language from dropdown
+4. Click "Auto-Translate" button to fill with AI
+5. Review and edit translations
+6. Click "Save"
+
+FOR CATEGORIES:
+1. Go to Admin → Categories → Click category
+2. Same process as products
+
+FOR CMS PAGES:
+1. Go to Admin → Content → Pages
+2. Click page → Translations tab
+3. Auto-translate or manual entry
+
+BULK TRANSLATION:
+1. Go to Admin → Settings → Languages
+2. Click "Translate All" for a language
+3. Background job processes all content
+4. Check progress in Admin → Jobs`
+    },
+    {
+      name: 'Translation API Endpoints',
+      content: `API endpoints for translations:
+
+TRANSLATE SINGLE ENTITY:
+POST /api/translations/translate
+{
+  "entity_type": "product",
+  "entity_id": "uuid",
+  "source_language": "en",
+  "target_language": "de",
+  "fields": ["name", "description"]
+}
+
+BULK TRANSLATE:
+POST /api/translations/bulk
+{
+  "entity_type": "product",
+  "target_language": "de",
+  "limit": 100  // Process in batches
+}
+
+GET TRANSLATIONS:
+GET /api/products/:id?include_translations=true
+
+UPDATE TRANSLATIONS MANUALLY:
+PUT /api/products/:id
+{
+  "translations": {
+    "de": { "name": "Produktname", "description": "..." }
+  }
+}`
+    },
+    {
+      name: 'Translation Best Practices',
+      content: `Tips for quality translations:
+
+1. ALWAYS REVIEW AI TRANSLATIONS:
+   - AI is good but not perfect
+   - Check product names, technical terms
+   - Verify pricing/sizing terminology
+
+2. USE GLOSSARY:
+   - Define brand terms that shouldn't translate
+   - Add technical terms with specific translations
+   - Store in Admin → Settings → Translation Glossary
+
+3. TRANSLATE IN ORDER:
+   - First: UI labels (small, reusable)
+   - Then: Categories (affects navigation)
+   - Then: Products (bulk, review samples)
+   - Last: CMS pages (longer content)
+
+4. CONTEXT MATTERS:
+   - AI uses product context for better translations
+   - Category names help translate products correctly
+   - Always translate parent before children
+
+5. COST OPTIMIZATION:
+   - Use GPT-4o-mini for bulk translations
+   - Use Sonnet for important marketing content
+   - Cache translations, don't re-translate unchanged content`
+    },
+    {
+      name: 'Language Configuration',
+      content: `Setting up store languages:
+
+ADD NEW LANGUAGE:
+1. Admin → Settings → Languages
+2. Click "Add Language"
+3. Select language code (de, fr, nl, es, etc.)
+4. Set display name
+5. Check "Active" to enable on storefront
+6. Optionally set as default
+
+LANGUAGE SETTINGS:
+- Default Language: Shown when no translation exists
+- Active Languages: Available on storefront selector
+- RTL Support: For Arabic, Hebrew (is_rtl = true)
+
+STOREFRONT LANGUAGE SELECTOR:
+- Enable in Settings → Theme → show_language_selector = true
+- Shows in header as dropdown
+- Remembers customer preference in localStorage
+
+URL STRUCTURE:
+- Default: /product/my-product
+- With language: /de/product/mein-produkt
+- Slug can be translated per language`
+    },
+    {
+      name: 'Translation Cron Jobs',
+      content: `Automated translation jobs:
+
+SETUP AUTO-TRANSLATION:
+- Runs nightly for new/updated content
+- Configure in Admin → Settings → Automation
+- Select languages to auto-translate
+
+JOB TYPES:
+- translate_new_products: Products without translations
+- translate_updated_products: Changed since last translation
+- translate_categories: Category tree
+- translate_cms: CMS pages and blocks
+
+MONITOR JOBS:
+GET /api/jobs?type=translation
+- Shows status: pending, running, completed, failed
+- Shows progress percentage
+- Shows error count and details
+
+RETRY FAILED:
+POST /api/jobs/:id/retry
+- Re-runs failed translation job
+- Picks up where it left off`
     }
   ];
 }
