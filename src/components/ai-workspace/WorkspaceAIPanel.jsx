@@ -625,7 +625,8 @@ const WorkspaceAIPanel = () => {
         // If message is a JSON string, try to parse it first
         let embeddedJson = null;
         let embeddedFiles = null;
-        if (messageContent.trim().startsWith('{') && messageContent.includes('generatedFiles')) {
+        // Check for generatedFiles OR generatedAdminPages (admin pages might be returned without files)
+        if (messageContent.trim().startsWith('{') && (messageContent.includes('generatedFiles') || messageContent.includes('generatedAdminPages'))) {
           try {
             // Fix common JSON issues: escape unescaped newlines inside string values
             let fixedJson = messageContent;
@@ -674,7 +675,8 @@ const WorkspaceAIPanel = () => {
 
         // If we didn't find embedded JSON above, try regex matching
         if (!embeddedJson) {
-          const jsonMatch = messageContent.match(/\{\s*"generatedFiles"[\s\S]*?\[\s*\{[\s\S]*?\}\s*\]\s*[,\}]/);
+          // Match either generatedFiles or generatedAdminPages
+          const jsonMatch = messageContent.match(/\{\s*"(?:generatedFiles|generatedAdminPages)"[\s\S]*?\[\s*\{[\s\S]*?\}\s*\]\s*[,\}]/);
           if (jsonMatch) {
             try {
               // Find the complete JSON object

@@ -676,8 +676,12 @@ Return JSON with a conversational "message" field that feels like chatting with 
 {
   "message": "Your conversational response here (2-4 sentences, friendly, helpful)",
   "generatedFiles": [...],
+  "generatedAdminPages": [...],
   "explanation": "Short 1-line summary for logs"
 }
+
+NOTE: Include generatedAdminPages when user asks for admin page, settings page, dashboard, or management page.
+Include generatedFiles when user asks for backend code, hooks, migrations, controllers, cron jobs.
 
 MESSAGE GUIDELINES:
 - Be conversational and friendly, like a helpful colleague
