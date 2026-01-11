@@ -1113,48 +1113,42 @@ export default function StoreOnboarding() {
                 </h4>
                 <p className="text-sm text-amber-800">
                   Your Supabase database is where all your store data lives - products, categories, customers, orders, and settings.
-                  You own and control your data completely. We just help you set it up!
+                  <strong>You own and control your data</strong> completely. We just help you set it up!
                 </p>
               </div>
 
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Database className="w-10 h-10 text-green-600" />
-                </div>
-
                 {/* What happens when you click */}
-                <div className="bg-white/80 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
-                    What happens when you click "Connect"?
-                  </h4>
-                  <ol className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
-                    <li className="flex items-start">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">1</span>
-                      <span>A <strong>popup window</strong> opens for Supabase login</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">2</span>
-                      <span>You <strong>select a project</strong> from your Supabase account</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">3</span>
-                      <span>You <strong>authorize access</strong> so we can create tables</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">4</span>
-                      <span>Popup closes and you're <strong>brought back here</strong> automatically</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">5</span>
-                      <span>Enter your <strong>Service Role Key</strong> to authorize database setup</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">6</span>
-                      <span>Your <strong>database is provisioned</strong> and store is ready!</span>
-                    </li>
-                  </ol>
-                </div>
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
+                  What happens when you click "Connect"?
+                </h4>
+                <ol className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
+                  <li className="flex items-start">
+                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">1</span>
+                    <span>A <strong>popup window</strong> opens for Supabase login</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">2</span>
+                    <span>You <strong>select a project</strong> from your Supabase account</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">3</span>
+                    <span>You <strong>authorize access</strong> so we can create tables</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">4</span>
+                    <span>Popup closes and you're <strong>brought back here</strong> automatically</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">5</span>
+                    <span>Enter your <strong>Service Role Key</strong> to authorize database setup</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">6</span>
+                    <span>Your <strong>database is provisioned</strong> and store is ready!</span>
+                  </li>
+                </ol>
               </div>
 
               <div className="flex gap-3">
