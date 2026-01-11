@@ -2166,7 +2166,7 @@ class DemoDataProvisioningService {
           event_parameters: event.event_parameters,
           fire_once_per_session: event.fire_once_per_session,
           send_to_backend: event.send_to_backend,
-          is_enabled: true,
+          enabled: true,
           priority: event.priority,
           demo: true
         });
