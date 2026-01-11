@@ -1082,30 +1082,143 @@ export default function AnalyticsSettings() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <CheckCircle className="w-5 h-5 text-green-600" />
-                                Built-in Events (Always Active)
+                                Built-in Events (21 Events - Always Active)
                             </CardTitle>
+                            <CardDescription>
+                                These events are automatically tracked and pushed to <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">window.dataLayer</code> for Google Tag Manager.
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {[
-                                    { name: 'page_view', label: 'Page View', desc: 'Every page load' },
-                                    { name: 'view_item', label: 'Product View', desc: 'Product detail pages' },
-                                    { name: 'add_to_cart', label: 'Add to Cart', desc: 'Products added to cart' },
-                                    { name: 'remove_from_cart', label: 'Remove from Cart', desc: 'Products removed' },
-                                    { name: 'begin_checkout', label: 'Checkout Started', desc: 'Checkout initiated' },
-                                    { name: 'purchase', label: 'Purchase', desc: 'Order completed' },
-                                    { name: 'search', label: 'Search', desc: 'Product searches' },
-                                    { name: 'view_item_list', label: 'Product List View', desc: 'Category pages' },
-                                    { name: 'select_item', label: 'Product Click', desc: 'Product clicks in lists' },
-                                ].map((event) => (
-                                    <div key={event.name} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
-                                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="font-medium text-sm">{event.label}</p>
-                                            <p className="text-xs text-gray-500">{event.desc}</p>
+                        <CardContent className="space-y-4">
+                            {/* Core Ecommerce Events */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Core Ecommerce (10 events)</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+                                    {[
+                                        { name: 'page_view', label: 'Page View' },
+                                        { name: 'view_item', label: 'Product View' },
+                                        { name: 'view_item_list', label: 'Product List' },
+                                        { name: 'select_item', label: 'Product Click' },
+                                        { name: 'add_to_cart', label: 'Add to Cart' },
+                                        { name: 'remove_from_cart', label: 'Remove from Cart' },
+                                        { name: 'view_cart', label: 'View Cart' },
+                                        { name: 'begin_checkout', label: 'Begin Checkout' },
+                                        { name: 'purchase', label: 'Purchase' },
+                                        { name: 'search', label: 'Search' },
+                                    ].map((event) => (
+                                        <div key={event.name} className="flex items-center gap-1.5 p-2 bg-blue-50 rounded text-xs">
+                                            <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                            <code className="text-blue-800">{event.name}</code>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Checkout Funnel Events */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Checkout Funnel (3 events)</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                    {[
+                                        { name: 'add_shipping_info', label: 'Shipping Selected' },
+                                        { name: 'add_payment_info', label: 'Payment Selected' },
+                                        { name: 'checkout_progress', label: 'Checkout Step' },
+                                    ].map((event) => (
+                                        <div key={event.name} className="flex items-center gap-1.5 p-2 bg-purple-50 rounded text-xs">
+                                            <CheckCircle className="w-3 h-3 text-purple-600 flex-shrink-0" />
+                                            <code className="text-purple-800">{event.name}</code>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Engagement & Other Events */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Engagement & Other (8 events)</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                                    {[
+                                        { name: 'add_to_wishlist', label: 'Wishlist' },
+                                        { name: 'view_promotion', label: 'View Promo' },
+                                        { name: 'select_promotion', label: 'Click Promo' },
+                                        { name: 'quick_view', label: 'Quick View' },
+                                        { name: 'coupon_applied', label: 'Coupon Applied' },
+                                        { name: 'coupon_removed', label: 'Coupon Removed' },
+                                        { name: 'newsletter_signup', label: 'Newsletter' },
+                                        { name: 'filter_applied', label: 'Filter Applied' },
+                                    ].map((event) => (
+                                        <div key={event.name} className="flex items-center gap-1.5 p-2 bg-green-50 rounded text-xs">
+                                            <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                            <code className="text-green-800">{event.name}</code>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Programmatic Tracking API Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <Code className="w-5 h-5 text-indigo-600" />
+                                Programmatic Tracking API
+                            </CardTitle>
+                            <CardDescription>
+                                Use <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">window.daino</code> to track events programmatically in custom code or slot components.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Quick Reference */}
+                            <div className="p-4 bg-gray-900 rounded-lg overflow-x-auto">
+                                <pre className="text-sm text-gray-100 font-mono whitespace-pre-wrap">
+{`// Product tracking
+window.daino?.trackProductView(product)
+window.daino?.trackAddToCart(product, quantity)
+window.daino?.trackRemoveFromCart(product, quantity)
+
+// Checkout tracking
+window.daino?.trackBeginCheckout(cartItems, cartTotal)
+window.daino?.trackShippingMethodSelected(method, items, total)
+window.daino?.trackPaymentMethodSelected(method, items, total, coupon)
+window.daino?.trackCheckoutStep(stepNum, stepName, items, total)
+window.daino?.trackPurchase(order)
+
+// Engagement tracking
+window.daino?.trackAddToWishlist(product)
+window.daino?.trackCouponApplied(code, discount, total)
+window.daino?.trackCouponRemoved(code, total)
+window.daino?.trackSearch(query, resultsCount)
+
+// Custom events
+window.daino?.trackEvent('custom_event_name', { data })
+window.daino?.pushToDataLayer({ event: 'my_event', ... })`}
+                                </pre>
+                            </div>
+
+                            {/* Slot-Based Architecture Note */}
+                            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                <h4 className="font-semibold text-indigo-900 mb-2">Slot-Based Components</h4>
+                                <p className="text-sm text-indigo-800 mb-3">
+                                    In the slot-based storefront architecture, tracking is handled by page-level components that pass handlers to slots:
+                                </p>
+                                <ul className="text-sm text-indigo-700 space-y-1">
+                                    <li>• <strong>ProductDetail.jsx</strong> - handles view_item, add_to_cart, add_to_wishlist</li>
+                                    <li>• <strong>Cart.jsx</strong> - handles view_cart, remove_from_cart, begin_checkout, coupons</li>
+                                    <li>• <strong>Checkout.jsx</strong> - handles checkout steps, shipping, payment selection</li>
+                                </ul>
+                            </div>
+
+                            {/* Link to Documentation */}
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                <div>
+                                    <p className="font-medium text-sm">Complete Documentation</p>
+                                    <p className="text-xs text-gray-500">Learn more about all events, parameters, and GTM integration</p>
+                                </div>
+                                <a
+                                    href="/blog/custom-datalayer-events"
+                                    target="_blank"
+                                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                    Read Guide <ExternalLink className="w-3 h-3" />
+                                </a>
                             </div>
                         </CardContent>
                     </Card>
