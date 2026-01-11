@@ -2,246 +2,228 @@
  * TenantMigrationService
  *
  * Handles automatic migrations for tenant databases.
- * Migrations run automatically when a store is accessed and has pending migrations.
- *
- * Migration tracking is stored in the master DB's store_databases table.
+ * Migration tracking is stored in master DB's tenant_migrations table.
+ * Migration SQL files are in ./tenant/ directory.
  */
 
+const fs = require('fs');
+const path = require('path');
 const { masterDbClient } = require('../../database/masterConnection');
 
-// Current schema version - increment this when adding new migrations
-const CURRENT_SCHEMA_VERSION = 1;
-
-// Migration definitions - each migration runs once per store
-const MIGRATIONS = [
-  {
-    version: 1,
-    name: 'add_plugin_cron_table',
-    description: 'Creates plugin_cron table and execute_sql function',
-    // SQL to run via execute_sql RPC (if available)
-    sql: `
-      -- Create execute_sql function if not exists
-      CREATE OR REPLACE FUNCTION execute_sql(sql text)
-      RETURNS void AS $func$
-      BEGIN
-        EXECUTE sql;
-      END;
-      $func$ LANGUAGE plpgsql SECURITY DEFINER;
-
-      GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO authenticated;
-      GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO service_role;
-      GRANT EXECUTE ON FUNCTION execute_sql(TEXT) TO anon;
-
-      -- Create plugin_cron table
-      CREATE TABLE IF NOT EXISTS plugin_cron (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        plugin_id UUID NOT NULL,
-        cron_name VARCHAR(255) NOT NULL,
-        description TEXT,
-        cron_schedule VARCHAR(100) NOT NULL,
-        timezone VARCHAR(50) DEFAULT 'UTC',
-        handler_method VARCHAR(255) NOT NULL,
-        handler_code TEXT,
-        handler_params JSONB DEFAULT '{}'::jsonb,
-        is_enabled BOOLEAN DEFAULT true,
-        priority INTEGER DEFAULT 10,
-        last_run_at TIMESTAMP WITH TIME ZONE,
-        next_run_at TIMESTAMP WITH TIME ZONE,
-        last_status VARCHAR(50),
-        last_error TEXT,
-        last_result JSONB,
-        run_count INTEGER DEFAULT 0,
-        success_count INTEGER DEFAULT 0,
-        failure_count INTEGER DEFAULT 0,
-        consecutive_failures INTEGER DEFAULT 0,
-        max_runs INTEGER,
-        max_failures INTEGER DEFAULT 5,
-        timeout_seconds INTEGER DEFAULT 300,
-        cron_job_id UUID,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
-      CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
-
-      -- Enable RLS and create policy
-      ALTER TABLE plugin_cron ENABLE ROW LEVEL SECURITY;
-      DROP POLICY IF EXISTS tenant_isolation_plugin_cron ON plugin_cron;
-      CREATE POLICY tenant_isolation_plugin_cron ON plugin_cron
-        FOR ALL
-        USING (is_service_role())
-        WITH CHECK (is_service_role());
-    `,
-    // Alternative: Try creating table directly via Supabase client (for simple tables)
-    async runViaClient(tenantDb) {
-      // First check if table exists
-      const { error: checkError } = await tenantDb
-        .from('plugin_cron')
-        .select('id')
-        .limit(1);
-
-      // If table doesn't exist (PGRST116 means table not found)
-      if (checkError && checkError.code === '42P01') {
-        // Try to create via RPC if execute_sql exists
-        try {
-          await tenantDb.rpc('execute_sql', { sql: this.sql });
-          return { success: true, method: 'rpc' };
-        } catch (rpcError) {
-          // execute_sql doesn't exist, can't create table via REST API
-          return { success: false, error: 'execute_sql function not available', needsManualMigration: true };
-        }
-      } else if (!checkError) {
-        // Table already exists
-        return { success: true, method: 'already_exists' };
-      }
-
-      return { success: false, error: checkError?.message };
-    }
-  }
-];
+// Directory containing migration SQL files
+const MIGRATIONS_DIR = path.join(__dirname, 'tenant');
 
 class TenantMigrationService {
   constructor() {
-    this.migrationCache = new Map(); // Cache migration status per store
+    this.migrationsCache = null; // Cache loaded migrations
   }
 
   /**
-   * Get current schema version for a store
+   * Load all migration files from the tenant directory
+   * Files should be named: 001_description.sql, 002_description.sql, etc.
    */
-  async getStoreSchemaVersion(storeId) {
-    if (!masterDbClient) return 0;
+  loadMigrations() {
+    if (this.migrationsCache) {
+      return this.migrationsCache;
+    }
+
+    const migrations = [];
+
+    if (!fs.existsSync(MIGRATIONS_DIR)) {
+      console.warn(`[Migration] Migrations directory not found: ${MIGRATIONS_DIR}`);
+      return migrations;
+    }
+
+    const files = fs.readdirSync(MIGRATIONS_DIR)
+      .filter(f => f.endsWith('.sql'))
+      .sort(); // Ensure alphabetical order (001, 002, etc.)
+
+    for (const file of files) {
+      const match = file.match(/^(\d+)_(.+)\.sql$/);
+      if (!match) {
+        console.warn(`[Migration] Skipping invalid migration file: ${file}`);
+        continue;
+      }
+
+      const version = parseInt(match[1], 10);
+      const name = match[2];
+      const filePath = path.join(MIGRATIONS_DIR, file);
+      const sql = fs.readFileSync(filePath, 'utf-8');
+
+      // Extract description from first comment line
+      const descMatch = sql.match(/^-- Description:\s*(.+)$/m);
+      const description = descMatch ? descMatch[1] : name.replace(/_/g, ' ');
+
+      migrations.push({
+        version,
+        name: file.replace('.sql', ''),
+        description,
+        sql,
+        filePath
+      });
+    }
+
+    this.migrationsCache = migrations;
+    console.log(`[Migration] Loaded ${migrations.length} migration(s)`);
+    return migrations;
+  }
+
+  /**
+   * Get applied migrations for a store from master DB
+   */
+  async getAppliedMigrations(storeId) {
+    if (!masterDbClient) return [];
 
     try {
       const { data, error } = await masterDbClient
-        .from('store_databases')
-        .select('schema_version')
+        .from('tenant_migrations')
+        .select('migration_name, migration_version, applied_at, success')
         .eq('store_id', storeId)
-        .single();
+        .eq('success', true)
+        .order('migration_version', { ascending: true });
 
-      if (error || !data) return 0;
-      return data.schema_version || 0;
+      if (error) {
+        console.error(`[Migration] Error fetching applied migrations:`, error.message);
+        return [];
+      }
+
+      return data || [];
     } catch (err) {
-      console.error(`Error getting schema version for store ${storeId}:`, err.message);
-      return 0;
+      console.error(`[Migration] Error fetching applied migrations:`, err.message);
+      return [];
     }
   }
 
   /**
-   * Update schema version for a store
+   * Record a migration as applied in master DB
    */
-  async updateStoreSchemaVersion(storeId, version) {
+  async recordMigration(storeId, migration, success, errorMessage = null, executionTimeMs = null) {
     if (!masterDbClient) return false;
 
     try {
       const { error } = await masterDbClient
-        .from('store_databases')
-        .update({
-          schema_version: version,
-          last_migration_at: new Date().toISOString()
-        })
-        .eq('store_id', storeId);
+        .from('tenant_migrations')
+        .upsert({
+          store_id: storeId,
+          migration_name: migration.name,
+          migration_version: migration.version,
+          description: migration.description,
+          applied_at: new Date().toISOString(),
+          success,
+          error_message: errorMessage,
+          execution_time_ms: executionTimeMs
+        }, {
+          onConflict: 'store_id,migration_name'
+        });
 
       if (error) {
-        console.error(`Error updating schema version for store ${storeId}:`, error.message);
+        console.error(`[Migration] Error recording migration:`, error.message);
         return false;
       }
 
-      // Update cache
-      this.migrationCache.set(storeId, version);
+      // Also update store_databases
+      if (success) {
+        // Check if there are more pending migrations
+        const allMigrations = this.loadMigrations();
+        const latestVersion = Math.max(...allMigrations.map(m => m.version));
+        const hasPending = migration.version < latestVersion;
+
+        await masterDbClient
+          .from('store_databases')
+          .update({
+            schema_version: migration.version,
+            has_pending_migration: hasPending,
+            last_migration_at: new Date().toISOString()
+          })
+          .eq('store_id', storeId);
+      }
+
       return true;
     } catch (err) {
-      console.error(`Error updating schema version for store ${storeId}:`, err.message);
+      console.error(`[Migration] Error recording migration:`, err.message);
       return false;
     }
+  }
+
+  /**
+   * Get pending migrations for a store
+   */
+  async getPendingMigrations(storeId) {
+    const allMigrations = this.loadMigrations();
+    const appliedMigrations = await this.getAppliedMigrations(storeId);
+    const appliedNames = new Set(appliedMigrations.map(m => m.migration_name));
+
+    return allMigrations.filter(m => !appliedNames.has(m.name));
   }
 
   /**
    * Check if store has pending migrations
    */
   async hasPendingMigrations(storeId) {
-    // Check cache first
-    if (this.migrationCache.has(storeId)) {
-      return this.migrationCache.get(storeId) < CURRENT_SCHEMA_VERSION;
-    }
-
-    const currentVersion = await this.getStoreSchemaVersion(storeId);
-    this.migrationCache.set(storeId, currentVersion);
-    return currentVersion < CURRENT_SCHEMA_VERSION;
+    const pending = await this.getPendingMigrations(storeId);
+    return pending.length > 0;
   }
 
   /**
-   * Run pending migrations for a store using its tenant connection
+   * Run pending migrations for a store
    *
    * @param {string} storeId - Store UUID
-   * @param {Object} tenantDb - Supabase client or adapter for the tenant DB
+   * @param {Object} tenantDb - Supabase client for the tenant DB
    * @returns {Object} Migration result
    */
   async runPendingMigrations(storeId, tenantDb) {
-    const currentVersion = await this.getStoreSchemaVersion(storeId);
+    const pendingMigrations = await this.getPendingMigrations(storeId);
 
-    if (currentVersion >= CURRENT_SCHEMA_VERSION) {
-      return { success: true, message: 'No pending migrations', version: currentVersion };
+    if (pendingMigrations.length === 0) {
+      return {
+        success: true,
+        message: 'No pending migrations',
+        applied: [],
+        failed: []
+      };
     }
 
-    console.log(`[Migration] Running migrations for store ${storeId} (v${currentVersion} -> v${CURRENT_SCHEMA_VERSION})`);
+    console.log(`[Migration] Running ${pendingMigrations.length} migration(s) for store ${storeId}`);
 
-    const results = [];
-    let newVersion = currentVersion;
+    const applied = [];
+    const failed = [];
 
-    for (const migration of MIGRATIONS) {
-      if (migration.version <= currentVersion) {
-        continue; // Already applied
-      }
-
-      console.log(`[Migration] Running: ${migration.name} (v${migration.version})`);
+    for (const migration of pendingMigrations) {
+      console.log(`[Migration] Running: ${migration.name}`);
+      const startTime = Date.now();
 
       try {
-        // Try running via client method first
-        if (migration.runViaClient) {
-          const result = await migration.runViaClient.call(migration, tenantDb);
-          results.push({
-            version: migration.version,
-            name: migration.name,
-            ...result
-          });
+        // Try to execute via RPC (execute_sql function)
+        const { error } = await tenantDb.rpc('execute_sql', { sql: migration.sql });
 
-          if (result.success) {
-            newVersion = migration.version;
-            console.log(`[Migration] ✅ ${migration.name} completed (${result.method})`);
-          } else if (result.needsManualMigration) {
-            console.log(`[Migration] ⚠️ ${migration.name} needs manual migration`);
-            // Don't update version - migration is pending
-            break;
-          } else {
-            console.error(`[Migration] ❌ ${migration.name} failed: ${result.error}`);
-            break;
-          }
+        if (error) {
+          throw new Error(error.message);
         }
+
+        const executionTime = Date.now() - startTime;
+        await this.recordMigration(storeId, migration, true, null, executionTime);
+        applied.push({ name: migration.name, version: migration.version, executionTime });
+        console.log(`[Migration] ✅ ${migration.name} completed (${executionTime}ms)`);
+
       } catch (error) {
-        console.error(`[Migration] ❌ ${migration.name} error:`, error.message);
-        results.push({
-          version: migration.version,
-          name: migration.name,
-          success: false,
-          error: error.message
-        });
+        const executionTime = Date.now() - startTime;
+        await this.recordMigration(storeId, migration, false, error.message, executionTime);
+        failed.push({ name: migration.name, version: migration.version, error: error.message });
+        console.error(`[Migration] ❌ ${migration.name} failed: ${error.message}`);
+
+        // Stop on first failure
         break;
       }
     }
 
-    // Update schema version if any migrations succeeded
-    if (newVersion > currentVersion) {
-      await this.updateStoreSchemaVersion(storeId, newVersion);
-    }
-
     return {
-      success: newVersion >= CURRENT_SCHEMA_VERSION,
-      previousVersion: currentVersion,
-      currentVersion: newVersion,
-      targetVersion: CURRENT_SCHEMA_VERSION,
-      results
+      success: failed.length === 0,
+      message: failed.length === 0
+        ? `Applied ${applied.length} migration(s)`
+        : `Applied ${applied.length}, failed ${failed.length}`,
+      applied,
+      failed,
+      pending: pendingMigrations.length - applied.length - failed.length
     };
   }
 
@@ -252,6 +234,11 @@ class TenantMigrationService {
     if (!masterDbClient) return [];
 
     try {
+      const allMigrations = this.loadMigrations();
+      const latestVersion = allMigrations.length > 0
+        ? Math.max(...allMigrations.map(m => m.version))
+        : 0;
+
       const { data: stores, error } = await masterDbClient
         .from('store_databases')
         .select('store_id, schema_version, last_migration_at')
@@ -262,29 +249,89 @@ class TenantMigrationService {
       return (stores || []).map(store => ({
         storeId: store.store_id,
         schemaVersion: store.schema_version || 0,
-        targetVersion: CURRENT_SCHEMA_VERSION,
-        hasPendingMigrations: (store.schema_version || 0) < CURRENT_SCHEMA_VERSION,
+        latestVersion,
+        hasPendingMigrations: (store.schema_version || 0) < latestVersion,
         lastMigrationAt: store.last_migration_at
       }));
     } catch (err) {
-      console.error('Error getting migration status:', err.message);
+      console.error('[Migration] Error getting status:', err.message);
       return [];
     }
   }
 
   /**
-   * Clear migration cache (useful after manual migrations)
+   * Clear migrations cache (useful when adding new migration files)
    */
-  clearCache(storeId = null) {
-    if (storeId) {
-      this.migrationCache.delete(storeId);
-    } else {
-      this.migrationCache.clear();
+  clearCache() {
+    this.migrationsCache = null;
+  }
+
+  /**
+   * Flag all stores as having pending migrations
+   * Call this when deploying new migrations
+   */
+  async flagAllStoresForMigration() {
+    if (!masterDbClient) return { success: false, error: 'No master DB client' };
+
+    try {
+      const { data, error } = await masterDbClient
+        .from('store_databases')
+        .update({ has_pending_migration: true })
+        .eq('is_active', true)
+        .select('store_id');
+
+      if (error) throw error;
+
+      const count = data?.length || 0;
+      console.log(`[Migration] Flagged ${count} stores for pending migration`);
+      return { success: true, storesFlagged: count };
+    } catch (err) {
+      console.error('[Migration] Error flagging stores:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Check if store has pending migration (using the flag)
+   */
+  async checkPendingMigrationFlag(storeId) {
+    if (!masterDbClient) return false;
+
+    try {
+      const { data, error } = await masterDbClient
+        .from('store_databases')
+        .select('has_pending_migration')
+        .eq('store_id', storeId)
+        .single();
+
+      if (error) return false;
+      return data?.has_pending_migration === true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /**
+   * Get all stores with pending migrations
+   */
+  async getStoresWithPendingMigrations() {
+    if (!masterDbClient) return [];
+
+    try {
+      const { data, error } = await masterDbClient
+        .from('store_databases')
+        .select('store_id, schema_version, last_migration_at')
+        .eq('is_active', true)
+        .eq('has_pending_migration', true);
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('[Migration] Error getting pending stores:', err.message);
+      return [];
     }
   }
 }
 
 // Export singleton instance
 module.exports = new TenantMigrationService();
-module.exports.CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
-module.exports.MIGRATIONS = MIGRATIONS;

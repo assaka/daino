@@ -2982,22 +2982,38 @@ router.delete('/:id', authMiddleware, async (req, res) => {
  */
 router.get('/migrations/status', authMiddleware, async (req, res) => {
   try {
-    const status = await TenantMigrationService.getAllMigrationStatus();
-
-    const pending = status.filter(s => s.hasPendingMigrations);
-    const upToDate = status.filter(s => !s.hasPendingMigrations);
+    const pendingStores = await TenantMigrationService.getStoresWithPendingMigrations();
+    const allMigrations = TenantMigrationService.loadMigrations();
 
     res.json({
       success: true,
-      summary: {
-        total: status.length,
-        pending: pending.length,
-        upToDate: upToDate.length
-      },
-      stores: status
+      availableMigrations: allMigrations.map(m => ({
+        version: m.version,
+        name: m.name,
+        description: m.description
+      })),
+      storesWithPendingMigrations: pendingStores.length,
+      stores: pendingStores
     });
   } catch (error) {
     console.error('Get all migration status error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/stores/migrations/flag-all
+ * Flag all stores as having pending migrations (call after deploying new migrations)
+ */
+router.post('/migrations/flag-all', authMiddleware, async (req, res) => {
+  try {
+    const result = await TenantMigrationService.flagAllStoresForMigration();
+    res.json(result);
+  } catch (error) {
+    console.error('Flag all stores error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -3013,16 +3029,21 @@ router.get('/:id/migrations', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
 
-    const hasPending = await TenantMigrationService.hasPendingMigrations(storeId);
-    const currentVersion = await TenantMigrationService.getStoreSchemaVersion(storeId);
-    const { CURRENT_SCHEMA_VERSION } = require('../services/migrations/TenantMigrationService');
+    const hasPendingFlag = await TenantMigrationService.checkPendingMigrationFlag(storeId);
+    const pendingMigrations = await TenantMigrationService.getPendingMigrations(storeId);
+    const appliedMigrations = await TenantMigrationService.getAppliedMigrations(storeId);
 
     res.json({
       success: true,
       storeId,
-      schemaVersion: currentVersion,
-      targetVersion: CURRENT_SCHEMA_VERSION,
-      hasPendingMigrations: hasPending
+      hasPendingMigration: hasPendingFlag,
+      pendingCount: pendingMigrations.length,
+      pendingMigrations: pendingMigrations.map(m => ({ version: m.version, name: m.name })),
+      appliedMigrations: appliedMigrations.map(m => ({
+        name: m.migration_name,
+        version: m.migration_version,
+        appliedAt: m.applied_at
+      }))
     });
   } catch (error) {
     console.error('Get migration status error:', error);
@@ -3042,7 +3063,7 @@ router.post('/:id/migrations/run', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
 
     // Check if store has pending migrations
-    const hasPending = await TenantMigrationService.hasPendingMigrations(storeId);
+    const hasPending = await TenantMigrationService.checkPendingMigrationFlag(storeId);
     if (!hasPending) {
       return res.json({
         success: true,
