@@ -490,6 +490,131 @@ export const trackCouponApplied = (couponCode, discountAmount, cartTotal) => {
 };
 
 /**
+ * COUPON REMOVED
+ */
+export const trackCouponRemoved = (couponCode, cartTotal) => {
+  pushToDataLayer({
+    event: 'coupon_removed',
+    coupon_code: couponCode,
+    cart_total: parseFloat(cartTotal)
+  });
+};
+
+/**
+ * CHECKOUT STEP (Generic step tracking)
+ * Steps: 1=Cart, 2=Shipping Info, 3=Shipping Method, 4=Payment, 5=Review
+ */
+export const trackCheckoutStep = (stepNumber, stepName, cartItems = [], cartTotal = 0, additionalData = {}) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'checkout_progress',
+    ecommerce: {
+      currency: 'USD',
+      value: parseFloat(cartTotal),
+      checkout_step: stepNumber,
+      checkout_step_name: stepName,
+      items: items,
+      ...additionalData
+    }
+  });
+
+  trackActivity('checkout_step', {
+    metadata: {
+      step_number: stepNumber,
+      step_name: stepName,
+      cart_items_count: items.length,
+      cart_value: cartTotal,
+      ...additionalData
+    }
+  });
+};
+
+/**
+ * SHIPPING METHOD SELECTED (GA4: add_shipping_info)
+ */
+export const trackShippingMethodSelected = (shippingMethod, cartItems = [], cartTotal = 0) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'add_shipping_info',
+    ecommerce: {
+      currency: 'USD',
+      value: parseFloat(cartTotal),
+      shipping_tier: shippingMethod.name || shippingMethod.tier || shippingMethod,
+      items: items
+    }
+  });
+
+  trackActivity('shipping_method_selected', {
+    metadata: {
+      shipping_method: shippingMethod.name || shippingMethod,
+      shipping_cost: shippingMethod.cost || shippingMethod.price || 0,
+      shipping_tier: shippingMethod.tier || shippingMethod.name || shippingMethod,
+      cart_items_count: items.length,
+      cart_value: cartTotal
+    }
+  });
+};
+
+/**
+ * PAYMENT METHOD SELECTED (GA4: add_payment_info)
+ */
+export const trackPaymentMethodSelected = (paymentMethod, cartItems = [], cartTotal = 0, couponCode = null) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  const ecommerceData = {
+    currency: 'USD',
+    value: parseFloat(cartTotal),
+    payment_type: paymentMethod.name || paymentMethod.type || paymentMethod,
+    items: items
+  };
+
+  if (couponCode) {
+    ecommerceData.coupon = couponCode;
+  }
+
+  pushToDataLayer({
+    event: 'add_payment_info',
+    ecommerce: ecommerceData
+  });
+
+  trackActivity('payment_method_selected', {
+    metadata: {
+      payment_method: paymentMethod.name || paymentMethod.type || paymentMethod,
+      payment_type: paymentMethod.type || paymentMethod,
+      cart_items_count: items.length,
+      cart_value: cartTotal,
+      coupon_code: couponCode
+    }
+  });
+};
+
+/**
  * QUICK VIEW
  */
 export const trackQuickView = (product) => {
@@ -595,6 +720,9 @@ export default function DataLayerManager() {
         trackViewCart,
         // Checkout tracking
         trackBeginCheckout,
+        trackCheckoutStep,
+        trackShippingMethodSelected,
+        trackPaymentMethodSelected,
         trackPurchase,
         trackSearch,
         // Engagement tracking
@@ -604,6 +732,7 @@ export default function DataLayerManager() {
         trackNewsletterSignup,
         trackFilterApplied,
         trackCouponApplied,
+        trackCouponRemoved,
         trackQuickView
       };
     }

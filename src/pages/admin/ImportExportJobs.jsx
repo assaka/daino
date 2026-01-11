@@ -87,6 +87,7 @@ const ImportExportJobs = () => {
       amazonExports: exports.filter(j => j.type.includes('amazon')).length,
       ebayExports: exports.filter(j => j.type.includes('ebay')).length,
       shopifyImports: imports.filter(j => j.type.includes('shopify')).length,
+      woocommerceImports: imports.filter(j => j.type.includes('woocommerce')).length,
       akeneoImports: imports.filter(j => j.type.includes('akeneo')).length,
 
       // Calculate estimated product count (from metadata)
@@ -223,7 +224,7 @@ const ImportExportJobs = () => {
             <CardContent>
               <div className="text-3xl font-bold text-purple-600">{analytics.productsImported}</div>
               <div className="text-xs text-gray-600 mt-2">
-                From Shopify, Akeneo PIM
+                From Shopify, WooCommerce, Akeneo
               </div>
             </CardContent>
           </Card>
@@ -259,7 +260,7 @@ const ImportExportJobs = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="p-4 bg-orange-50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="w-5 h-5 text-orange-500" />
@@ -284,6 +285,15 @@ const ImportExportJobs = () => {
                   <span className="font-semibold">Shopify</span>
                 </div>
                 <div className="text-2xl font-bold">{analytics.shopifyImports}</div>
+                <div className="text-xs text-gray-600">Imports</div>
+              </div>
+
+              <div className="p-4 bg-indigo-50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Download className="w-5 h-5 text-indigo-500" />
+                  <span className="font-semibold">WooCommerce</span>
+                </div>
+                <div className="text-2xl font-bold">{analytics.woocommerceImports}</div>
                 <div className="text-xs text-gray-600">Imports</div>
               </div>
 

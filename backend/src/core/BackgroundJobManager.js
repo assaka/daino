@@ -167,6 +167,11 @@ class BackgroundJobManager extends EventEmitter {
       ['shopify:import:products', './jobs/ShopifyImportProductsJob'],
       ['shopify:import:all', './jobs/ShopifyImportAllJob'],
 
+      // WooCommerce import jobs
+      ['woocommerce:import:categories', './jobs/WooCommerceImportCategoriesJob'],
+      ['woocommerce:import:products', './jobs/WooCommerceImportProductsJob'],
+      ['woocommerce:import:all', './jobs/WooCommerceImportAllJob'],
+
       // Amazon export jobs
       ['amazon:export:products', './jobs/AmazonExportProductsJob'],
       ['amazon:sync:inventory', './jobs/AmazonSyncInventoryJob'],

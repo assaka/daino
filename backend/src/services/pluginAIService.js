@@ -742,6 +742,8 @@ RULES:
 - Use DOUBLE QUOTES for all strings (not backticks!) - this is JSON, not JavaScript
 - Escape newlines as \\n in code strings
 - The "message" field MUST be human-readable text (no code!)
+- For SENDING EMAILS: ALWAYS use emailService.sendTransactionalEmail() - NEVER use nodemailer, require(), or external SMTP
+  Example: await emailService.sendTransactionalEmail(storeId, 'template_name', { recipientEmail: 'user@example.com', subject: 'Subject', body: 'Content' });
 - Code goes ONLY in generatedFiles[].code or generatedAdminPages[].componentCode
 - Generate only the files needed for the specific request
 - Use DainoStore plugin hooks and patterns

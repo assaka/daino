@@ -602,6 +602,19 @@ export default function Cart() {
             const result = await cartService.updateCart(updatedItems, store.id);
 
             if (result.success) {
+                // Track remove from cart in dataLayer
+                window.daino?.trackRemoveFromCart(
+                    {
+                        id: itemToRemove.product_id,
+                        name: itemToRemove.product?.name || itemToRemove.name,
+                        price: itemToRemove.price || itemToRemove.product?.sale_price || itemToRemove.product?.price,
+                        category_name: itemToRemove.product?.category_name,
+                        brand: itemToRemove.product?.brand,
+                        sku: itemToRemove.product?.sku
+                    },
+                    itemToRemove.quantity
+                );
+
                 // Apply after remove hooks
                 hookSystem.do('cart.afterRemoveItem', {
                     itemId,
@@ -781,6 +794,13 @@ export default function Cart() {
                     setAppliedCoupon(coupon);
                     setFlashMessage({ type: 'success', message: t('cart.coupon_applied', `Coupon "${coupon.name}" applied!`).replace('{coupon}', coupon.name) });
                     setCouponCode(''); // Clear the input after successful application
+
+                    // Track coupon applied in dataLayer
+                    const cartTotal = subtotal + (customOptionsTotal || 0);
+                    const discountAmount = coupon.discount_type === 'fixed'
+                        ? coupon.discount_value
+                        : (subtotal * coupon.discount_value / 100);
+                    window.daino?.trackCouponApplied(coupon.code, discountAmount, cartTotal);
                 } else {
                     setFlashMessage({ type: 'error', message: t('cart.coupon_apply_failed', 'Failed to apply coupon. Please try again.') });
                 }
@@ -800,8 +820,15 @@ export default function Cart() {
     };
 
     const handleRemoveCoupon = () => {
+        const removedCouponCode = appliedCoupon?.code;
         const result = couponService.removeAppliedCoupon();
         if (result.success) {
+            // Track coupon removal before clearing state
+            if (removedCouponCode) {
+                const cartTotal = subtotal + (customOptionsTotal || 0);
+                window.daino?.trackCouponRemoved(removedCouponCode, cartTotal);
+            }
+
             setAppliedCoupon(null);
             setCouponCode('');
             setFlashMessage({ type: 'success', message: t('cart.coupon_removed', 'Coupon removed.') });
@@ -1039,6 +1066,20 @@ export default function Cart() {
             ...cartContext
         });
 
+        // Track begin checkout in dataLayer
+        window.daino?.trackBeginCheckout(
+            cartItems.map(item => ({
+                product_id: item.product_id,
+                product_name: item.product?.name || item.name,
+                unit_price: item.price || item.product?.sale_price || item.product?.price,
+                quantity: item.quantity,
+                category_name: item.product?.category_name,
+                brand: item.product?.brand,
+                sku: item.product?.sku
+            })),
+            total
+        );
+
         navigate(checkoutUrl);
     }, [cartItems, subtotal, discount, tax, total, cartContext, store?.slug, navigate]);
 
@@ -1072,6 +1113,22 @@ export default function Cart() {
                 total,
                 ...cartContext
             });
+
+            // Track view cart in dataLayer
+            if (cartItems.length > 0) {
+                window.daino?.trackViewCart(
+                    cartItems.map(item => ({
+                        product_id: item.product_id,
+                        product_name: item.product?.name || item.name,
+                        unit_price: item.price || item.product?.sale_price || item.product?.price,
+                        quantity: item.quantity,
+                        category_name: item.product?.category_name,
+                        brand: item.product?.brand,
+                        sku: item.product?.sku
+                    })),
+                    total
+                );
+            }
         }
     }, [loading, cartItems, subtotal, discount, tax, total, cartContext, pluginsReady]);
 

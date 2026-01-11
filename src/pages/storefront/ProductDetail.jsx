@@ -699,6 +699,20 @@ export default function ProductDetail() {
             storeId: store.id
           });
           setIsInWishlist(true);
+
+          // Track add to wishlist in dataLayer
+          window.daino?.trackAddToWishlist({
+            id: product.id,
+            name: getProductName(product, getCurrentLanguage()) || product.name,
+            price: safeNumber(product.sale_price || product.price),
+            category_name: (() => {
+              const category = categories.find(cat => cat.id === product.category_ids?.[0]);
+              return category ? getTranslatedCategoryName(category) : '';
+            })(),
+            brand: product.brand,
+            sku: product.sku
+          });
+
           setFlashMessage({
             type: 'success',
             message: 'Product added to wishlist'

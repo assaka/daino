@@ -815,6 +815,13 @@ export default function Checkout() {
         if (result.success) {
           setAppliedCoupon(coupon);
           setCouponCode(''); // Clear the input after successful application
+
+          // Track coupon applied
+          const cartTotal = calculateSubtotal() + calculateOptionsTotal();
+          const discountAmount = coupon.discount_type === 'fixed'
+            ? coupon.discount_value
+            : (subtotal * coupon.discount_value / 100);
+          window.daino?.trackCouponApplied(coupon.code, discountAmount, cartTotal);
         } else {
           setCouponError(t('common.failed_apply_coupon', 'Failed to apply coupon'));
         }
@@ -829,8 +836,15 @@ export default function Checkout() {
   };
 
   const handleRemoveCoupon = () => {
+    const removedCouponCode = appliedCoupon?.code;
     const result = couponService.removeAppliedCoupon();
     if (result.success) {
+      // Track coupon removal before clearing state
+      if (removedCouponCode) {
+        const cartTotal = calculateSubtotal() + calculateOptionsTotal();
+        window.daino?.trackCouponRemoved(removedCouponCode, cartTotal);
+      }
+
       setAppliedCoupon(null);
       setCouponCode('');
       setCouponError('');
@@ -1130,6 +1144,26 @@ export default function Checkout() {
     const method = shippingMethods.find(m => m.name === methodName);
     if (method) {
       calculateShippingCost(method);
+
+      // Track shipping method selection
+      const cartTotal = calculateSubtotal() + calculateOptionsTotal();
+      window.daino?.trackShippingMethodSelected(
+        {
+          name: method.name,
+          cost: method.flat_rate_cost || 0,
+          tier: method.type || method.name
+        },
+        cartItems.map(item => ({
+          product_id: item.product_id,
+          product_name: cartProducts[item.product_id]?.name || item.name,
+          unit_price: item.unit_price || item.price,
+          quantity: item.quantity,
+          category_name: cartProducts[item.product_id]?.category_name,
+          brand: cartProducts[item.product_id]?.brand,
+          sku: cartProducts[item.product_id]?.sku
+        })),
+        cartTotal
+      );
     }
   };
 
@@ -1638,8 +1672,33 @@ export default function Checkout() {
   const goToNextStep = () => {
     if (canGoNext()) {
       if (validateCurrentStep()) {
-        setCurrentStep(currentStep + 1);
+        const nextStep = currentStep + 1;
+        setCurrentStep(nextStep);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Track checkout step progression
+        const stepConfig = getStepConfig();
+        const stepName = stepConfig.steps[nextStep] || `Step ${nextStep + 1}`;
+        const cartTotal = calculateSubtotal() + calculateOptionsTotal();
+        window.daino?.trackCheckoutStep(
+          nextStep + 1, // 1-indexed step number
+          stepName,
+          cartItems.map(item => ({
+            product_id: item.product_id,
+            product_name: cartProducts[item.product_id]?.name || item.name,
+            unit_price: item.unit_price || item.price,
+            quantity: item.quantity,
+            category_name: cartProducts[item.product_id]?.category_name,
+            brand: cartProducts[item.product_id]?.brand,
+            sku: cartProducts[item.product_id]?.sku
+          })),
+          cartTotal,
+          {
+            shipping_method: selectedShippingMethod || null,
+            payment_method: selectedPaymentMethod || null,
+            coupon_code: appliedCoupon?.code || null
+          }
+        );
       }
     }
   };
@@ -2266,6 +2325,27 @@ export default function Checkout() {
                       onChange={(e) => {
                         setSelectedPaymentMethod(e.target.value);
                         calculatePaymentFee(e.target.value);
+
+                        // Track payment method selection
+                        const cartTotal = calculateSubtotal() + calculateOptionsTotal();
+                        window.daino?.trackPaymentMethodSelected(
+                          {
+                            name: method.name,
+                            type: method.code,
+                            code: method.code
+                          },
+                          cartItems.map(item => ({
+                            product_id: item.product_id,
+                            product_name: cartProducts[item.product_id]?.name || item.name,
+                            unit_price: item.unit_price || item.price,
+                            quantity: item.quantity,
+                            category_name: cartProducts[item.product_id]?.category_name,
+                            brand: cartProducts[item.product_id]?.brand,
+                            sku: cartProducts[item.product_id]?.sku
+                          })),
+                          cartTotal,
+                          appliedCoupon?.code || null
+                        );
                       }}
                       className="text-blue-600"
                     />
