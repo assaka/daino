@@ -10,7 +10,7 @@ const express = require('express');
 const router = express.Router();
 const Anthropic = require('@anthropic-ai/sdk');
 const { PLATFORM_TOOLS, executeTool } = require('../services/aiTools');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 const anthropic = new Anthropic();
 
