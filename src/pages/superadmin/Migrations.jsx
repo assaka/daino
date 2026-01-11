@@ -19,15 +19,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function SuperAdminMigrations() {
-  const { toast } = useToast();
   const [migrations, setMigrations] = useState([]);
   const [migrationStatus, setMigrationStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [runningMigrations, setRunningMigrations] = useState(false);
   const [jobProgress, setJobProgress] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
   const pollingRef = useRef(null);
 
   useEffect(() => {
@@ -60,11 +60,7 @@ export default function SuperAdminMigrations() {
         console.error('Error loading migration status:', e);
       }
     } catch (error) {
-      toast({
-        title: "Error loading migrations",
-        description: error.message || 'Unknown error',
-        variant: "destructive"
-      });
+      setFlashMessage({ type: 'error', message: error.message || 'Error loading migrations' });
     } finally {
       setLoading(false);
     }
@@ -87,21 +83,14 @@ export default function SuperAdminMigrations() {
           pollingRef.current = null;
           setRunningMigrations(false);
           setJobProgress(null);
-          toast({
-            title: "Migrations completed",
-            description: result?.message || 'All migrations finished successfully',
-          });
+          setFlashMessage({ type: 'success', message: result?.message || 'All migrations finished successfully' });
           loadMigrations();
         } else if (status === 'failed') {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
           setRunningMigrations(false);
           setJobProgress(null);
-          toast({
-            title: "Migration failed",
-            description: error || 'An error occurred during migration',
-            variant: "destructive"
-          });
+          setFlashMessage({ type: 'error', message: error || 'An error occurred during migration' });
           loadMigrations();
         }
       }
@@ -124,10 +113,7 @@ export default function SuperAdminMigrations() {
           // No pending migrations
           setRunningMigrations(false);
           setJobProgress(null);
-          toast({
-            title: "No pending migrations",
-            description: response.data?.message || 'All stores are up to date',
-          });
+          setFlashMessage({ type: 'success', message: response.data?.message || 'All stores are up to date' });
           return;
         }
 
@@ -140,11 +126,7 @@ export default function SuperAdminMigrations() {
     } catch (error) {
       setRunningMigrations(false);
       setJobProgress(null);
-      toast({
-        title: "Error running migrations",
-        description: error.message,
-        variant: "destructive"
-      });
+      setFlashMessage({ type: 'error', message: error.message || 'Error running migrations' });
     }
   };
 
@@ -153,6 +135,8 @@ export default function SuperAdminMigrations() {
 
   return (
     <div className="p-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Migrations</h1>

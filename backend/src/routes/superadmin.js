@@ -50,7 +50,7 @@ router.get('/stores', async (req, res) => {
     // Get store_databases info
     const { data: databases, error: dbError } = await masterDbClient
       .from('store_databases')
-      .select('store_id, schema_version, has_pending_migration, last_migration_at, is_active');
+      .select('store_id, schema_version, last_migration_at, is_active');
 
     if (dbError) throw dbError;
 
@@ -69,7 +69,6 @@ router.get('/stores', async (req, res) => {
       ...store,
       owner_email: userMap.get(store.user_id) || null,
       schema_version: dbMap.get(store.id)?.schema_version || 0,
-      has_pending_migration: dbMap.get(store.id)?.has_pending_migration || false,
       db_active: dbMap.get(store.id)?.is_active || false
     }));
 
