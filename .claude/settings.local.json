@@ -23,7 +23,8 @@
       "Bash(node -e:*)",
       "Bash(python:*)",
       "Bash(echo $RENDER_API_KEY)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(where curl)"
     ],
     "deny": [],
     "ask": [],
