@@ -36,7 +36,7 @@ export default function SuperAdminStores() {
     try {
       const response = await apiClient.get('/superadmin/stores');
       if (response?.success) {
-        setStores(response.stores || []);
+        setStores(response.data?.stores || []);
       } else {
         throw new Error(response?.error || 'Failed to load stores');
       }

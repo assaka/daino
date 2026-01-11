@@ -40,7 +40,7 @@ export default function SuperAdminMigrations() {
       try {
         const migrationsRes = await apiClient.get('/superadmin/migrations');
         if (migrationsRes?.success) {
-          setMigrations(migrationsRes.migrations || []);
+          setMigrations(migrationsRes.data?.migrations || []);
         }
       } catch (e) {
         console.error('Error loading migrations:', e);
@@ -49,7 +49,7 @@ export default function SuperAdminMigrations() {
       try {
         const statusRes = await apiClient.get('/superadmin/migrations/status');
         if (statusRes?.success) {
-          setMigrationStatus(statusRes.stores || []);
+          setMigrationStatus(statusRes.data?.stores || []);
         }
       } catch (e) {
         console.error('Error loading migration status:', e);
@@ -69,10 +69,10 @@ export default function SuperAdminMigrations() {
     setFlaggingStores(true);
     try {
       const response = await apiClient.post('/superadmin/migrations/flag-all');
-      if (response.data.success) {
+      if (response?.success) {
         toast({
           title: "Stores flagged",
-          description: `${response.data.storesFlagged} stores flagged for migration`,
+          description: `${response.data?.storesFlagged || 0} stores flagged for migration`,
         });
         loadMigrations();
       }
@@ -92,9 +92,9 @@ export default function SuperAdminMigrations() {
     try {
       const response = await apiClient.post('/superadmin/migrations/run-all');
       toast({
-        title: response.data.success ? "Migrations completed" : "Some migrations failed",
-        description: response.data.message,
-        variant: response.data.success ? "default" : "destructive"
+        title: response?.success ? "Migrations completed" : "Some migrations failed",
+        description: response?.data?.message,
+        variant: response?.success ? "default" : "destructive"
       });
       loadMigrations();
     } catch (error) {

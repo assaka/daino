@@ -75,7 +75,7 @@ router.get('/stores', async (req, res) => {
 
     res.json({
       success: true,
-      stores: enrichedStores
+      data: { stores: enrichedStores }
     });
   } catch (error) {
     console.error('Superadmin stores error:', error);
@@ -118,7 +118,7 @@ router.get('/users', async (req, res) => {
 
     res.json({
       success: true,
-      users: enrichedUsers
+      data: { users: enrichedUsers }
     });
   } catch (error) {
     console.error('Superadmin users error:', error);
@@ -144,7 +144,7 @@ router.get('/migrations', async (req, res) => {
 
     res.json({
       success: true,
-      migrations: migrations || []
+      data: { migrations: migrations || [] }
     });
   } catch (error) {
     console.error('Superadmin migrations error:', error);
@@ -164,7 +164,7 @@ router.get('/migrations/status', async (req, res) => {
     const status = await TenantMigrationService.getAllMigrationStatus();
     res.json({
       success: true,
-      stores: status
+      data: { stores: status }
     });
   } catch (error) {
     console.error('Superadmin migration status error:', error);
@@ -182,7 +182,10 @@ router.get('/migrations/status', async (req, res) => {
 router.post('/migrations/flag-all', async (req, res) => {
   try {
     const result = await TenantMigrationService.flagAllStoresForMigration();
-    res.json(result);
+    res.json({
+      success: true,
+      data: result
+    });
   } catch (error) {
     console.error('Superadmin flag-all error:', error);
     res.status(500).json({
@@ -237,8 +240,10 @@ router.post('/migrations/run-all', async (req, res) => {
 
     res.json({
       success: failedCount === 0,
-      message: `Migrations completed: ${successCount} succeeded, ${failedCount} failed`,
-      results
+      data: {
+        message: `Migrations completed: ${successCount} succeeded, ${failedCount} failed`,
+        results
+      }
     });
   } catch (error) {
     console.error('Superadmin run-all error:', error);

@@ -476,7 +476,7 @@ class ApiClient {
         });
         return result;
       }
-      
+
       let transformedResult = result;
       if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
         // If data is already an array, return it directly (for list responses)

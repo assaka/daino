@@ -36,7 +36,7 @@ export default function SuperAdminUsers() {
     try {
       const response = await apiClient.get('/superadmin/users');
       if (response?.success) {
-        setUsers(response.users || []);
+        setUsers(response.data?.users || []);
       } else {
         throw new Error(response?.error || 'Failed to load users');
       }
