@@ -3,7 +3,7 @@
 -- For use with CustomEventLoader component
 -- ================================================================
 -- NOTE: Table should already exist. These are example INSERT statements.
--- Replace 'YOUR_STORE_ID' with actual store UUID before running.
+-- Replace 'a8297c3e-6c49-4cd9-9881-ab0a4a349be5' with actual store UUID before running.
 
 -- ================================================================
 -- EXAMPLE 1: Product Card Click Tracking
@@ -23,7 +23,7 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',  -- Replace with actual store UUID
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',  -- Replace with actual store UUID
   'product_card_click',
   'Product Card Click',
   'engagement',
@@ -62,7 +62,7 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
   'custom_add_to_cart_click',
   'Add to Cart Click',
   'ecommerce',
@@ -100,7 +100,7 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
   'checkout_page_view',
   'Checkout Page View',
   'ecommerce',
@@ -137,7 +137,7 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
   'scroll_depth',
   'Scroll Depth Tracking',
   'engagement',
@@ -173,7 +173,7 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
   'engaged_user',
   'Engaged User (30s)',
   'engagement',
@@ -209,10 +209,10 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
   'newsletter_signup',
   'Newsletter Signup',
-  'lead_generation',
+  'conversion',
   'form_submit',
   '#newsletter-form, .newsletter-form, [data-form="newsletter"]',
   NULL,
@@ -245,7 +245,7 @@ INSERT INTO custom_analytics_events (
   enabled,
   priority
 ) VALUES (
-  'YOUR_STORE_ID',
+  'a8297c3e-6c49-4cd9-9881-ab0a4a349be5',
   'delivery_date_custom',
   'Delivery Date Selected',
   'ecommerce',

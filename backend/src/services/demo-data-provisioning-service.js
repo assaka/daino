@@ -2136,7 +2136,7 @@ class DemoDataProvisioningService {
       {
         event_name: 'newsletter_signup',
         display_name: 'Newsletter Signup',
-        event_category: 'lead_generation',
+        event_category: 'conversion',
         trigger_type: 'form_submit',
         trigger_selector: '#newsletter-form, .newsletter-form, [data-form="newsletter"]',
         trigger_condition: null,
