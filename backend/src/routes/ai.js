@@ -128,29 +128,6 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
       } catch (e) { console.error('RAG fallback failed:', e); }
     }
 
-    // ALWAYS add hardcoded platform knowledge for common questions
-    // This ensures credit pricing, models, etc. are always available
-    const messageLower = message.toLowerCase();
-    if (/credit|pricing|cost|price|model|translation|slot|plugin/.test(messageLower)) {
-      try {
-        const { getHardcodedKnowledge } = require('../services/aiTools');
-        let topic = '';
-        if (/credit|pricing|cost|price/.test(messageLower)) topic = 'credit';
-        else if (/model/.test(messageLower)) topic = 'model';
-        else if (/translat/.test(messageLower)) topic = 'translation';
-        else if (/slot/.test(messageLower)) topic = 'slot';
-        else if (/plugin/.test(messageLower)) topic = 'plugin';
-
-        if (topic) {
-          const hardcodedResult = getHardcodedKnowledge(topic);
-          if (hardcodedResult.found && hardcodedResult.knowledge) {
-            knowledgeBase = hardcodedResult.knowledge + '\n\n' + (knowledgeBase || '');
-            console.log('📖 Added hardcoded knowledge for topic:', topic);
-          }
-        }
-      } catch (e) { console.error('Hardcoded knowledge lookup failed:', e.message); }
-    }
-
     // ═══════════════════════════════════════════════════════════════════
     // STEP 2.5: Load Recent Chat History from Database (for context)
     // ═══════════════════════════════════════════════════════════════════

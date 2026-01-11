@@ -900,35 +900,13 @@ Provide production-ready code with proper error handling and best practices.`;
    */
   async chatWithContext({ message, mode, conversationHistory, pluginConfig, currentStep }) {
     // Fetch relevant context from database
-    let dynamicContext = await aiContextService.getContextForQuery({
+    const dynamicContext = await aiContextService.getContextForQuery({
       mode: mode || 'nocode',
       category: pluginConfig.category,
       query: message,
       storeId: pluginConfig.storeId,
       limit: 8
     });
-
-    // Add hardcoded platform knowledge for common questions
-    const msgLower = message.toLowerCase();
-    if (/credit|pricing|cost|price|model|translation|slot/.test(msgLower)) {
-      try {
-        const { getHardcodedKnowledge } = require('./aiTools');
-        let topic = '';
-        if (/credit|pricing|cost|price/.test(msgLower)) topic = 'credit';
-        else if (/model/.test(msgLower)) topic = 'model';
-        else if (/translat/.test(msgLower)) topic = 'translation';
-        else if (/slot/.test(msgLower)) topic = 'slot';
-
-        if (topic) {
-          const result = getHardcodedKnowledge(topic);
-          if (result.found && result.knowledge) {
-            dynamicContext = result.knowledge + '\n\n' + (dynamicContext || '');
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load hardcoded knowledge:', e.message);
-      }
-    }
 
     const systemPrompt = `You are an AI assistant helping users build plugins through conversation.
 

@@ -210,7 +210,7 @@ async function executeTool(toolName, toolInput, context = {}) {
 }
 
 /**
- * Get platform knowledge from the knowledge base
+ * Get platform knowledge from the knowledge base (database only, no hardcoded fallback)
  */
 async function getPlatformKnowledge({ topic, question }) {
   try {
@@ -218,19 +218,16 @@ async function getPlatformKnowledge({ topic, question }) {
     const searchTerms = topic.toLowerCase().split(' ');
 
     // Query ai_context_documents for matching content
-    let query = masterDbClient
+    const { data: docs, error } = await masterDbClient
       .from('ai_context_documents')
       .select('title, content, type, category')
       .eq('is_active', true)
       .order('priority', { ascending: false })
-      .limit(5);
-
-    // Search in title and content using ilike
-    const { data: docs, error } = await query;
+      .limit(10);
 
     if (error) {
       console.error('Knowledge query error:', error);
-      return { error: 'Failed to search knowledge base' };
+      return { found: false, error: 'Failed to search knowledge base' };
     }
 
     // Filter docs that match the topic
@@ -246,8 +243,11 @@ async function getPlatformKnowledge({ topic, question }) {
     });
 
     if (matchingDocs.length === 0) {
-      // Fallback to hardcoded essential knowledge
-      return getHardcodedKnowledge(topic);
+      return {
+        found: false,
+        topic,
+        message: `No documentation found for "${topic}". The knowledge base may need to be updated with this information.`
+      };
     }
 
     // Format the knowledge for the AI
@@ -263,141 +263,8 @@ async function getPlatformKnowledge({ topic, question }) {
     };
   } catch (error) {
     console.error('getPlatformKnowledge error:', error);
-    return getHardcodedKnowledge(topic);
+    return { found: false, error: error.message };
   }
-}
-
-/**
- * Hardcoded essential platform knowledge as fallback
- */
-function getHardcodedKnowledge(topic) {
-  const knowledge = {
-    'credit': {
-      found: true,
-      topic: 'credits',
-      knowledge: `## Credit Pricing
-
-Credits are used for AI operations. Cost per 1000 tokens:
-
-**Claude Models:**
-- Claude 3.5 Sonnet: 3 credits input / 15 credits output (recommended for most tasks)
-- Claude 3 Haiku: 0.25 credits input / 1.25 credits output (fast & cheap)
-- Claude 3 Opus: 15 credits input / 75 credits output (highest quality)
-
-**GPT Models:**
-- GPT-4o: 2.5 credits input / 10 credits output
-- GPT-4o-mini: 0.15 credits input / 0.6 credits output (cheapest)
-
-**Typical Usage:**
-- Simple chat: 1-5 credits
-- Product description: 5-20 credits
-- Plugin generation: 20-100 credits
-- Bulk translations: 100+ credits
-
-**Plans:**
-- Starter: 1,000 credits/month
-- Professional: 10,000 credits/month
-- Enterprise: 100,000+ credits/month
-- Overage: $0.01 per credit
-
-So 500 credits = $5.00 at overage rate, or included in your plan allocation.`
-    },
-    'model': {
-      found: true,
-      topic: 'llm models',
-      knowledge: `## LLM Model Selection
-
-**For Coding/Complex Tasks:** Claude 3.5 Sonnet (best quality/cost balance)
-**For Quick/Simple Tasks:** Claude 3 Haiku or GPT-4o-mini (10x cheaper)
-**For Highest Quality:** Claude 3 Opus (5x more expensive, best reasoning)
-**For Long Documents:** Gemini 1.5 Pro (1M token context)
-
-**Task Recommendations:**
-- Chat responses → Sonnet
-- Quick Q&A → Haiku
-- Code generation → Sonnet
-- Translations → Sonnet (quality) or GPT-4o-mini (bulk/cheap)
-- Product descriptions → Haiku
-- Complex analysis → Opus`
-    },
-    'translation': {
-      found: true,
-      topic: 'translations',
-      knowledge: `## AI Translation System
-
-Translations are stored in the 'translations' JSONB column on each entity.
-Structure: { "en": { "name": "...", "description": "..." }, "de": { ... } }
-
-**To translate via Admin:**
-1. Go to entity (Product/Category/Page)
-2. Click "Translations" tab
-3. Select target language
-4. Click "Auto-Translate" for AI translation
-5. Review and save
-
-**Bulk Translation:**
-Admin → Settings → Languages → "Translate All"
-
-**API:** POST /api/translations/translate
-{ entity_type, entity_id, source_language, target_language, fields }`
-    },
-    'slot': {
-      found: true,
-      topic: 'slot system',
-      knowledge: `## Slot-Based Page System
-
-DainoStore uses a slot-based layout system, NOT raw HTML.
-
-**Concepts:**
-- Pages are built from configurable slots (components)
-- Each slot has: type, props, children, styles
-- Slots are stored in slot_configurations table
-- Changes are made via slot configuration, not HTML editing
-
-**Common Slots:**
-- product_title, product_sku, product_price, price_container
-- stock_status, add_to_cart_button, product_gallery
-- header_logo, header_navigation, mini_cart
-
-**Page Types:** product, category, cart, checkout, homepage, header`
-    },
-    'plugin': {
-      found: true,
-      topic: 'plugin development',
-      knowledge: `## Plugin Development
-
-Plugins extend DainoStore functionality. They can add:
-- Custom slot types (React components)
-- Backend routes (Express handlers)
-- Admin pages
-- Cron jobs
-- Database migrations
-
-**Structure:**
-- manifest.json: Plugin metadata and configuration
-- frontend/: React components
-- backend/: Express routes and services
-- migrations/: Database schema changes
-
-**Creating Plugins:**
-Use the AI Workspace → "Create a plugin that..." or
-Admin → Plugins → Developer → New Plugin`
-    }
-  };
-
-  // Find matching knowledge by keyword
-  const topicLower = topic.toLowerCase();
-  for (const [key, value] of Object.entries(knowledge)) {
-    if (topicLower.includes(key)) {
-      return value;
-    }
-  }
-
-  return {
-    found: false,
-    topic,
-    knowledge: `I don't have specific documentation about "${topic}". You can ask me to look up related topics or check the Admin panel for more information.`
-  };
 }
 
 /**
@@ -816,6 +683,5 @@ async function translateContent({ entity_type, entity_id, target_language, field
 module.exports = {
   PLATFORM_TOOLS,
   executeTool,
-  getPlatformKnowledge,
-  getHardcodedKnowledge
+  getPlatformKnowledge
 };
