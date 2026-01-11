@@ -86,7 +86,7 @@ export default function SuperAdmin() {
   const loadStores = async () => {
     setLoadingStores(true);
     try {
-      const response = await apiClient.get('/api/superadmin/stores');
+      const response = await apiClient.get('/superadmin/stores');
       if (response.data.success) {
         setStores(response.data.stores || []);
       }
@@ -104,7 +104,7 @@ export default function SuperAdmin() {
   const loadUsers = async () => {
     setLoadingUsers(true);
     try {
-      const response = await apiClient.get('/api/superadmin/users');
+      const response = await apiClient.get('/superadmin/users');
       if (response.data.success) {
         setUsers(response.data.users || []);
       }
@@ -123,8 +123,8 @@ export default function SuperAdmin() {
     setLoadingMigrations(true);
     try {
       const [migrationsRes, statusRes] = await Promise.all([
-        apiClient.get('/api/superadmin/migrations'),
-        apiClient.get('/api/superadmin/migrations/status')
+        apiClient.get('/superadmin/migrations'),
+        apiClient.get('/superadmin/migrations/status')
       ]);
 
       if (migrationsRes.data.success) {
@@ -147,7 +147,7 @@ export default function SuperAdmin() {
   const handleFlagAllStores = async () => {
     setFlaggingStores(true);
     try {
-      const response = await apiClient.post('/api/superadmin/migrations/flag-all');
+      const response = await apiClient.post('/superadmin/migrations/flag-all');
       if (response.data.success) {
         toast({
           title: "Stores flagged",
@@ -169,7 +169,7 @@ export default function SuperAdmin() {
   const handleRunAllMigrations = async () => {
     setRunningMigrations(true);
     try {
-      const response = await apiClient.post('/api/superadmin/migrations/run-all');
+      const response = await apiClient.post('/superadmin/migrations/run-all');
       if (response.data.success) {
         toast({
           title: "Migrations completed",
