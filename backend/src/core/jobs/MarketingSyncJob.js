@@ -1,6 +1,6 @@
 const BaseJobHandler = require('./BaseJobHandler');
 const { masterDbClient } = require('../../database/masterConnection');
-const ConnectionManager = require('../../database/ConnectionManager');
+const ConnectionManager = require('../../services/database/ConnectionManager');
 
 /**
  * Background job for syncing contacts to marketing platforms

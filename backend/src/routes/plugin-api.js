@@ -1983,6 +1983,16 @@ router.put('/registry/:id/files', async (req, res) => {
             is_enabled: cronData.is_enabled !== false
           });
         }
+
+        // Also save to plugin_scripts so it appears in file tree
+        const fileContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+        const { data: existingScript } = await tenantDb.from('plugin_scripts').select('id').eq('plugin_id', id).eq('file_name', normalizedRequestPath);
+        if (existingScript && existingScript.length > 0) {
+          await tenantDb.from('plugin_scripts').update({ file_content: fileContent, updated_at: new Date().toISOString() }).eq('plugin_id', id).eq('file_name', normalizedRequestPath);
+        } else {
+          await tenantDb.from('plugin_scripts').insert({ plugin_id: id, file_name: normalizedRequestPath, file_content: fileContent, file_type: 'cron' });
+        }
+
         return res.json({ success: true, message: 'Cron job saved successfully' });
       } catch (cronError) {
         console.error('Cron save error:', cronError);

@@ -1,5 +1,5 @@
 const BaseJobHandler = require('./BaseJobHandler');
-const ConnectionManager = require('../../database/ConnectionManager');
+const ConnectionManager = require('../../services/database/ConnectionManager');
 const EmailCampaign = require('../../models/EmailCampaign');
 const EmailCampaignRecipient = require('../../models/EmailCampaignRecipient');
 
