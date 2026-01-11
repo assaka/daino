@@ -322,20 +322,22 @@ class AIServiceClient {
   }
 
   /**
-   * Chat using tool-based AI (dynamic, uses Anthropic tools)
-   * This is the new approach that doesn't require static training data.
-   * The AI uses tools to dynamically look up information.
+   * Chat using unified tool-based AI
+   * Uses Anthropic's tool_use API for dynamic, intelligent responses.
+   * Handles: questions, slot editing, data queries, settings, translations, etc.
    *
    * @param {string} message - User message
    * @param {array} conversationHistory - Previous messages
    * @param {string} storeId - Store ID for context
+   * @param {string} mode - 'general', 'workspace', 'plugin' (optional)
    */
-  async chatWithTools(message, conversationHistory = [], storeId) {
+  async chat(message, conversationHistory = [], storeId, mode = 'general') {
     try {
-      const response = await apiClient.post('/ai/chat-tools', {
+      const response = await apiClient.post('/ai/unified-chat', {
         message,
         conversationHistory,
-        storeId
+        storeId,
+        mode
       });
 
       if (response.success) {
@@ -344,13 +346,14 @@ class AIServiceClient {
           message: response.message,
           data: response.data,
           toolCalls: response.data?.toolCalls,
+          refreshPreview: response.data?.refreshPreview,
           creditsDeducted: response.creditsDeducted
         };
       } else {
         throw new Error(response.message || 'Chat failed');
       }
     } catch (error) {
-      console.error('Chat with Tools Error:', error);
+      console.error('Unified Chat Error:', error);
 
       if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
         throw new Error('Insufficient credits for chat');
@@ -358,6 +361,14 @@ class AIServiceClient {
 
       throw error;
     }
+  }
+
+  /**
+   * @deprecated Use chat() instead
+   * Chat using tool-based AI (legacy method)
+   */
+  async chatWithTools(message, conversationHistory = [], storeId) {
+    return this.chat(message, conversationHistory, storeId, 'general');
   }
 
   /**
