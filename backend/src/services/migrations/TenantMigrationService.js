@@ -195,11 +195,11 @@ class TenantMigrationService {
     try {
       const latestVersion = await this.getLatestVersion();
 
-      // Get all active stores
+      // Get all active stores (exclude provisioning - DB not ready yet)
       const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
         .select('id, name, status')
-        .in('status', ['active', 'demo', 'provisioning']);
+        .in('status', ['active', 'demo']);
 
       if (storesError) throw storesError;
 
