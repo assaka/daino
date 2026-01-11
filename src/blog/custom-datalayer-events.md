@@ -223,6 +223,63 @@ window.daino?.trackPaymentMethodSelected(
 
 > **Note:** Always use optional chaining (`?.`) when calling `window.daino` methods to handle cases where the DataLayerManager hasn't initialized yet.
 
+### Tracking in Slot-Based Components
+
+DainoStore uses a slot-based architecture where UI components are rendered dynamically. Here's how tracking works in this system:
+
+#### How It Works
+
+1. **Page-level handlers** (e.g., `ProductDetail.jsx`, `Cart.jsx`, `Checkout.jsx`) define tracking functions
+2. **Handlers are passed** to the `UnifiedSlotRenderer` via the `productData` or context prop
+3. **Slot components** call these handlers or use `window.daino` directly when user interactions occur
+
+#### Example: Add to Cart in a Slot Component
+
+```javascript
+// In your slot component (e.g., AddToCartButton)
+const handleAddToCart = () => {
+  // Perform the add to cart action
+  cartService.addItem(product.id, quantity, price);
+
+  // Track the event via window.daino
+  if (typeof window !== 'undefined' && window.daino?.trackAddToCart) {
+    window.daino.trackAddToCart(product, quantity);
+  }
+};
+```
+
+#### Example: Using Passed Handler from Page
+
+```javascript
+// ProductDetail.jsx passes handleAddToCart to slots via productData
+<UnifiedSlotRenderer
+  slots={config.slots}
+  productData={{
+    product,
+    handleAddToCart: () => {
+      cartService.addItem(...);
+      window.daino?.trackAddToCart(product, quantity);
+    }
+  }}
+/>
+
+// Slot component uses the passed handler
+const AddToCartSlot = ({ productData }) => {
+  return (
+    <Button onClick={productData.handleAddToCart}>
+      Add to Cart
+    </Button>
+  );
+};
+```
+
+#### Best Practices for Slot Tracking
+
+1. **Centralize tracking logic** in page-level components when possible
+2. **Pass handlers via context** to keep slot components clean
+3. **Use optional chaining** (`window.daino?.method()`) for safety
+4. **Track after successful actions** - only fire events when the action succeeds
+
 ---
 
 ## Checkout Funnel Tracking
