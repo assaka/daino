@@ -2067,6 +2067,7 @@ class DemoDataProvisioningService {
     const events = [
       {
         event_name: 'product_card_click',
+        display_name: 'Product Card Click',
         event_category: 'engagement',
         trigger_type: 'click',
         trigger_selector: '[data-product-id]',
@@ -2085,6 +2086,7 @@ class DemoDataProvisioningService {
       },
       {
         event_name: 'checkout_page_view',
+        display_name: 'Checkout Page View',
         event_category: 'ecommerce',
         trigger_type: 'page_load',
         trigger_selector: null,
@@ -2101,6 +2103,7 @@ class DemoDataProvisioningService {
       },
       {
         event_name: 'scroll_depth',
+        display_name: 'Scroll Depth Tracking',
         event_category: 'engagement',
         trigger_type: 'scroll',
         trigger_selector: null,
@@ -2116,6 +2119,7 @@ class DemoDataProvisioningService {
       },
       {
         event_name: 'engaged_user',
+        display_name: 'Engaged User (30s)',
         event_category: 'engagement',
         trigger_type: 'timer',
         trigger_selector: null,
@@ -2131,6 +2135,7 @@ class DemoDataProvisioningService {
       },
       {
         event_name: 'newsletter_signup',
+        display_name: 'Newsletter Signup',
         event_category: 'lead_generation',
         trigger_type: 'form_submit',
         trigger_selector: '#newsletter-form, .newsletter-form, [data-form="newsletter"]',
@@ -2153,6 +2158,7 @@ class DemoDataProvisioningService {
           id: uuidv4(),
           store_id: this.storeId,
           event_name: event.event_name,
+          display_name: event.display_name,
           event_category: event.event_category,
           trigger_type: event.trigger_type,
           trigger_selector: event.trigger_selector,

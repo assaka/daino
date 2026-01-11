@@ -1,10 +1,18 @@
 -- ================================================================
+-- Custom Analytics Events - Example INSERT Statements
+-- For use with CustomEventLoader component
+-- ================================================================
+-- NOTE: Table should already exist. These are example INSERT statements.
+-- Replace 'YOUR_STORE_ID' with actual store UUID before running.
+
+-- ================================================================
 -- EXAMPLE 1: Product Card Click Tracking
 -- Fires when user clicks on any product card (uses data attributes)
 -- ================================================================
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -12,11 +20,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',  -- Replace with actual store UUID
   'product_card_click',
+  'Product Card Click',
   'engagement',
   'click',
   '[data-product-id]',  -- Targets any element with data-product-id
@@ -42,6 +51,7 @@ INSERT INTO custom_analytics_events (
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -49,11 +59,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
   'custom_add_to_cart_click',
+  'Add to Cart Click',
   'ecommerce',
   'click',
   '.btn-add-to-cart, [data-action="add-to-cart"]',
@@ -78,6 +89,7 @@ INSERT INTO custom_analytics_events (
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -85,11 +97,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
   'checkout_page_view',
+  'Checkout Page View',
   'ecommerce',
   'page_load',
   NULL,
@@ -113,6 +126,7 @@ INSERT INTO custom_analytics_events (
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -120,11 +134,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
   'scroll_depth',
+  'Scroll Depth Tracking',
   'engagement',
   'scroll',
   NULL,
@@ -147,6 +162,7 @@ INSERT INTO custom_analytics_events (
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -154,11 +170,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
   'engaged_user',
+  'Engaged User (30s)',
   'engagement',
   'timer',
   NULL,
@@ -181,6 +198,7 @@ INSERT INTO custom_analytics_events (
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -188,11 +206,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
   'newsletter_signup',
+  'Newsletter Signup',
   'lead_generation',
   'form_submit',
   '#newsletter-form, .newsletter-form, [data-form="newsletter"]',
@@ -215,6 +234,7 @@ INSERT INTO custom_analytics_events (
 INSERT INTO custom_analytics_events (
   store_id,
   event_name,
+  display_name,
   event_category,
   trigger_type,
   trigger_selector,
@@ -222,11 +242,12 @@ INSERT INTO custom_analytics_events (
   event_parameters,
   fire_once_per_session,
   send_to_backend,
-  enabled,
+  is_enabled,
   priority
 ) VALUES (
   'YOUR_STORE_ID',
   'delivery_date_custom',
+  'Delivery Date Selected',
   'ecommerce',
   'custom',  -- Triggered programmatically
   NULL,
