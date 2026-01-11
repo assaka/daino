@@ -331,6 +331,9 @@ class DynamicCronJob extends BaseJobHandler {
       }
     }
 
+    // Load email service for cron handlers
+    const emailService = require('../../services/email-service');
+
     // Build execution context
     const context = {
       db,
@@ -338,15 +341,16 @@ class DynamicCronJob extends BaseJobHandler {
       cronJobId: cronJob.id,
       params,
       secrets,
+      emailService,
       apiBaseUrl: process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3001'
     };
 
     try {
       // Create async function from handler_code
-      // Available variables: db, storeId, params, secrets, fetch, apiBaseUrl
+      // Available variables: db, storeId, params, secrets, fetch, apiBaseUrl, emailService
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
       const handlerFn = new AsyncFunction(
-        'db', 'storeId', 'params', 'secrets', 'fetch', 'apiBaseUrl', 'console',
+        'db', 'storeId', 'params', 'secrets', 'fetch', 'apiBaseUrl', 'console', 'emailService',
         handler_code
       );
 
@@ -358,7 +362,8 @@ class DynamicCronJob extends BaseJobHandler {
         secrets,
         fetch,
         context.apiBaseUrl,
-        console
+        console,
+        emailService
       );
 
       console.log(`✅ Handler completed:`, result);

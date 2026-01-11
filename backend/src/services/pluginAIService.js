@@ -677,15 +677,26 @@ Common cron schedules:
 - "0 0 1 * *" = monthly on the 1st
 
 CRON HANDLER CONTEXT VARIABLES (available in handler_code):
-| Variable    | Type     | Description                                          |
-|-------------|----------|------------------------------------------------------|
-| db          | Supabase | Tenant database client (db.from('table').select())   |
-| storeId     | string   | Current store UUID                                   |
-| params      | object   | Values from handler_params config                    |
-| secrets     | object   | Decrypted plugin secrets (API keys, tokens)          |
-| fetch       | function | Global fetch for HTTP requests                       |
-| apiBaseUrl  | string   | Backend API URL for internal calls                   |
-| console     | object   | For logging (console.log, console.error)             |
+| Variable     | Type     | Description                                          |
+|--------------|----------|------------------------------------------------------|
+| db           | Supabase | Tenant database client (db.from('table').select())   |
+| storeId      | string   | Current store UUID                                   |
+| params       | object   | Values from handler_params config                    |
+| secrets      | object   | Decrypted plugin secrets (API keys, tokens)          |
+| fetch        | function | Global fetch for HTTP requests                       |
+| apiBaseUrl   | string   | Backend API URL for internal calls                   |
+| console      | object   | For logging (console.log, console.error)             |
+| emailService | object   | Send emails (same as customer registration uses)     |
+
+Example - Send email (like customer registration):
+\`\`\`javascript
+await emailService.sendTransactionalEmail(storeId, 'custom_notification', {
+  recipientEmail: 'user@example.com',
+  subject: 'Your Report',
+  body: 'Here is your daily report...'
+});
+return { emailSent: true };
+\`\`\`
 
 Example - Query database:
 \`\`\`javascript
