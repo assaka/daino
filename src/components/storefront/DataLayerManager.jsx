@@ -615,6 +615,41 @@ export const trackPaymentMethodSelected = (paymentMethod, cartItems = [], cartTo
 };
 
 /**
+ * DELIVERY DATE SELECTED
+ */
+export const trackDeliveryDateSelected = (deliveryDate, deliveryType = 'standard', cartItems = [], cartTotal = 0) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'delivery_date_selected',
+    ecommerce: {
+      currency: 'USD',
+      value: parseFloat(cartTotal),
+      delivery_date: deliveryDate,
+      delivery_type: deliveryType,
+      items: items
+    }
+  });
+
+  trackActivity('delivery_date_selected', {
+    metadata: {
+      delivery_date: deliveryDate,
+      delivery_type: deliveryType,
+      cart_items_count: items.length,
+      cart_value: cartTotal
+    }
+  });
+};
+
+/**
  * QUICK VIEW
  */
 export const trackQuickView = (product) => {
@@ -723,6 +758,7 @@ export default function DataLayerManager() {
         trackCheckoutStep,
         trackShippingMethodSelected,
         trackPaymentMethodSelected,
+        trackDeliveryDateSelected,
         trackPurchase,
         trackSearch,
         // Engagement tracking
