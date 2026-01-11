@@ -468,7 +468,6 @@ function App() {
           <Route path="/admin/uptime-report" element={<PageWrapper Component={Pages.UptimeReport} pageName="UptimeReport" />} />
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
           <Route path="/admin/access-requests" element={<PageWrapper Component={Pages.AccessRequestsPage} pageName="AccessRequestsPage" />} />
-          <Route path="/admin/superadmin" element={<PageWrapper Component={Pages.SuperAdmin} pageName="SuperAdmin" />} />
           <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.StoreOnboarding} pageName="StoreOnboarding" />} />
           <Route path="/admin/verify-email" element={<Pages.StoreOwnerEmailVerification />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
@@ -552,6 +551,9 @@ function App() {
 
           {/* Auth route - redirect to admin auth */}
           <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
+
+          {/* Superadmin dashboard - no store context needed */}
+          <Route path="/superadmin" element={<Pages.SuperAdmin />} />
 
           {/* Team Invitation */}
           <Route path="/accept-invitation/:token" element={<Pages.AcceptInvitation />} />

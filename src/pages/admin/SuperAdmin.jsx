@@ -58,7 +58,11 @@ export default function SuperAdmin() {
   // Check authorization on mount
   useEffect(() => {
     const user = getCurrentUser();
-    if (!user || !SUPERADMIN_EMAILS.includes(user.email?.toLowerCase())) {
+    if (!user) {
+      navigate('/admin/auth');
+      return;
+    }
+    if (!SUPERADMIN_EMAILS.includes(user.email?.toLowerCase())) {
       navigate('/admin/dashboard');
       return;
     }
