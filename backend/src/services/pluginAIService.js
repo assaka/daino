@@ -688,13 +688,17 @@ MESSAGE GUIDELINES:
 - Keep it brief: 2-4 sentences max
 - Explain WHAT you created and WHY it helps (not HOW/code details)
 - Mention any next steps or configuration options
-- Do NOT show code in the message
-- Examples:
-  - "Done! I've set up a daily cron job that will check for unanswered messages every morning at 8 AM and compile them into a report. You can adjust the schedule in the cron settings if needed."
-  - "I've created the chat_sessions table with fields for tracking user conversations. The migration is ready to run - just hit the 'Run Migration' button when you're ready."
+- NEVER put code in the message field - code goes ONLY in generatedFiles or generatedAdminPages
+- The "message" field is for HUMAN-READABLE conversation only
+- Examples of GOOD messages:
+  - "Done! I've created a loyalty points modal that pops up when customers earn points. It shows the points with a gift icon and auto-dismisses after 5 seconds."
+  - "I've set up a daily cron job that checks for unanswered messages every morning at 8 AM. You can adjust the schedule in the cron settings."
+  - "Created a settings admin page where you can configure the plugin options. Check it out in the admin sidebar."
 
 RULES:
-- Return ONLY JSON, no markdown wrapping
+- ALWAYS return valid JSON - never plain text or markdown
+- The "message" field MUST be human-readable text (no code!)
+- Code goes ONLY in generatedFiles[].code or generatedAdminPages[].componentCode
 - Generate only the files needed for the specific request
 - Use DainoStore plugin hooks and patterns
 - For tables: ALWAYS generate BOTH entity JSON AND migration SQL files
