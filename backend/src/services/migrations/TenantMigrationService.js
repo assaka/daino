@@ -251,7 +251,7 @@ class TenantMigrationService {
   }
 
   /**
-   * Check if store has pending migration flag set
+   * Check if store has pending migration flag set (fast - no migrations table query)
    */
   async checkPendingMigrationFlag(storeId) {
     if (!masterDbClient) return false;
@@ -259,33 +259,29 @@ class TenantMigrationService {
     try {
       const { data, error } = await masterDbClient
         .from('store_databases')
-        .select('has_pending_migration, schema_version')
+        .select('has_pending_migration')
         .eq('store_id', storeId)
         .single();
 
       if (error) return false;
-
-      const latestVersion = await this.getLatestVersion();
-      return data?.has_pending_migration === true || (data?.schema_version || 0) < latestVersion;
+      return data?.has_pending_migration === true;
     } catch (err) {
       return false;
     }
   }
 
   /**
-   * Get all stores with pending migrations
+   * Get all stores with pending migrations (flag-based)
    */
   async getStoresWithPendingMigrations() {
     if (!masterDbClient) return [];
 
     try {
-      const latestVersion = await this.getLatestVersion();
-
       const { data, error } = await masterDbClient
         .from('store_databases')
         .select('store_id, schema_version, last_migration_at')
         .eq('is_active', true)
-        .or(`has_pending_migration.eq.true,schema_version.lt.${latestVersion}`);
+        .eq('has_pending_migration', true);
 
       if (error) throw error;
       return data || [];
