@@ -23,7 +23,11 @@ import {
   FileJson,
   Settings,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Puzzle,
+  Wrench,
+  FolderCode,
+  Activity
 } from 'lucide-react';
 
 const CodeBlock = ({ code, title }) => (
@@ -45,7 +49,11 @@ const sections = [
   { id: 'admin', label: 'Admin Pages', icon: Settings },
   { id: 'controllers', label: 'Controllers', icon: Code },
   { id: 'migrations', label: 'Migrations', icon: Database },
+  { id: 'components', label: 'Components', icon: Puzzle },
+  { id: 'services', label: 'Services', icon: Wrench },
+  { id: 'utils', label: 'Utilities', icon: FolderCode },
   { id: 'hooks', label: 'Hooks', icon: Zap },
+  { id: 'events', label: 'Events', icon: Activity },
   { id: 'cron', label: 'Cron Jobs', icon: Clock },
   { id: 'manifest', label: 'Manifest', icon: FileJson },
   { id: 'troubleshooting', label: 'Troubleshooting', icon: AlertCircle },
@@ -678,6 +686,292 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id
                 </table>
               </section>
 
+              {/* COMPONENTS */}
+              <section id="section-components" className="pt-6 border-t">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Puzzle className="w-6 h-6 text-indigo-600" />
+                  Components
+                </h2>
+
+                <p className="text-gray-600 mb-4">
+                  Components are reusable UI pieces that can be used in hooks, admin pages, or other parts of your plugin. They help organize your code by separating UI logic into smaller, manageable files.
+                </p>
+
+                <h3 className="text-lg font-semibold mb-3">When to Use Components</h3>
+                <div className="bg-gray-50 rounded-lg p-4 text-sm mb-6">
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• <strong>Reusable UI</strong> - Create once, use in multiple places (modals, cards, banners)</li>
+                    <li>• <strong>Hook injection</strong> - Return HTML strings to inject into pages via hooks</li>
+                    <li>• <strong>Complex widgets</strong> - Break large widgets into smaller sub-components</li>
+                  </ul>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Component File Location</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  Components go in the <code className="bg-gray-100 px-1 rounded">components/</code> folder of your plugin:
+                </p>
+                <div className="bg-gray-100 rounded p-3 font-mono text-xs mb-4">
+                  <div>my-plugin/</div>
+                  <div className="ml-4">├── components/</div>
+                  <div className="ml-8">├── WelcomeBanner.js</div>
+                  <div className="ml-8">├── ProductBadge.js</div>
+                  <div className="ml-8">└── NotificationPopup.js</div>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Component Examples</h3>
+                <CodeBlock title="components/WelcomeBanner.js" code={`// components/WelcomeBanner.js
+// Components return HTML strings for hook injection
+
+function WelcomeBanner(config) {
+  const { title, message, backgroundColor } = config;
+
+  return \`
+    <div class="welcome-banner" style="
+      background: \${backgroundColor || '#3b82f6'};
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    ">
+      <h2 style="margin: 0 0 8px 0;">\${title || 'Welcome!'}</h2>
+      <p style="margin: 0; opacity: 0.9;">\${message || 'Thanks for visiting.'}</p>
+    </div>
+  \`;
+}
+
+module.exports = WelcomeBanner;`} />
+
+                <h3 className="text-lg font-semibold mt-6 mb-3">Using Components in Hooks</h3>
+                <CodeBlock title="index.js - Using component in a hook" code={`// index.js
+class MyPlugin {
+  onAppReady(context) {
+    // Load the component
+    const WelcomeBanner = require('./components/WelcomeBanner');
+
+    // Generate HTML with config from plugin settings
+    const bannerHtml = WelcomeBanner({
+      title: this.config.bannerTitle,
+      message: this.config.bannerMessage,
+      backgroundColor: this.config.primaryColor
+    });
+
+    // Inject into page
+    const container = document.createElement('div');
+    container.innerHTML = bannerHtml;
+    document.body.prepend(container);
+
+    return context;
+  }
+}
+
+module.exports = MyPlugin;`} />
+              </section>
+
+              {/* SERVICES */}
+              <section id="section-services" className="pt-6 border-t">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Wrench className="w-6 h-6 text-amber-600" />
+                  Services
+                </h2>
+
+                <p className="text-gray-600 mb-4">
+                  Services are classes that handle business logic, data operations, and external integrations. They keep your hooks and controllers clean by extracting complex logic into reusable modules.
+                </p>
+
+                <h3 className="text-lg font-semibold mb-3">When to Use Services</h3>
+                <div className="bg-gray-50 rounded-lg p-4 text-sm mb-6">
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• <strong>Data operations</strong> - Complex database queries, data transformations</li>
+                    <li>• <strong>External APIs</strong> - Email services, payment gateways, third-party integrations</li>
+                    <li>• <strong>Business rules</strong> - Pricing calculations, inventory checks, validation</li>
+                    <li>• <strong>Shared logic</strong> - Code used by multiple controllers or hooks</li>
+                  </ul>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Service File Location</h3>
+                <div className="bg-gray-100 rounded p-3 font-mono text-xs mb-4">
+                  <div>my-plugin/</div>
+                  <div className="ml-4">├── services/</div>
+                  <div className="ml-8">├── ChatService.js</div>
+                  <div className="ml-8">├── NotificationService.js</div>
+                  <div className="ml-8">└── AnalyticsService.js</div>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Service Example</h3>
+                <CodeBlock title="services/ChatService.js" code={`// services/ChatService.js
+class ChatService {
+  constructor(supabase) {
+    this.supabase = supabase;
+  }
+
+  async createSession(customerEmail) {
+    const sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    const { data, error } = await this.supabase
+      .from('chat_sessions')
+      .insert({
+        session_id: sessionId,
+        customer_email: customerEmail,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getActiveChats() {
+    const { data, error } = await this.supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async closeSession(sessionId) {
+    await this.supabase
+      .from('chat_sessions')
+      .update({ status: 'closed', closed_at: new Date().toISOString() })
+      .eq('session_id', sessionId);
+  }
+}
+
+module.exports = ChatService;`} />
+
+                <h3 className="text-lg font-semibold mt-6 mb-3">Using Services in Controllers</h3>
+                <CodeBlock code={`// In a controller
+async function getActiveChats(req, res, { supabase }) {
+  // Import and instantiate the service
+  const ChatService = require('./services/ChatService');
+  const chatService = new ChatService(supabase);
+
+  try {
+    const chats = await chatService.getActiveChats();
+    return res.json({ success: true, chats });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}`} />
+              </section>
+
+              {/* UTILITIES */}
+              <section id="section-utils" className="pt-6 border-t">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <FolderCode className="w-6 h-6 text-teal-600" />
+                  Utilities
+                </h2>
+
+                <p className="text-gray-600 mb-4">
+                  Utilities are pure helper functions with no side effects. They perform common operations like formatting, validation, and data transformation that can be used anywhere in your plugin.
+                </p>
+
+                <h3 className="text-lg font-semibold mb-3">Utility vs Service</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+                  <div className="border rounded-lg p-3">
+                    <div className="font-semibold text-teal-700 mb-2">Utilities</div>
+                    <ul className="text-gray-600 space-y-1">
+                      <li>• Pure functions (no state)</li>
+                      <li>• No database access</li>
+                      <li>• No external API calls</li>
+                      <li>• Same input = same output</li>
+                    </ul>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-semibold text-amber-700 mb-2">Services</div>
+                    <ul className="text-gray-600 space-y-1">
+                      <li>• Classes with state</li>
+                      <li>• Database operations</li>
+                      <li>• External integrations</li>
+                      <li>• Business logic</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Utility File Location</h3>
+                <div className="bg-gray-100 rounded p-3 font-mono text-xs mb-4">
+                  <div>my-plugin/</div>
+                  <div className="ml-4">├── utils/</div>
+                  <div className="ml-8">├── format.js</div>
+                  <div className="ml-8">├── validation.js</div>
+                  <div className="ml-8">└── helpers.js</div>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Utility Examples</h3>
+                <CodeBlock title="utils/format.js" code={`// utils/format.js
+const formatUtils = {
+  formatPrice(amount, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency
+    }).format(amount);
+  },
+
+  formatDate(date) {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  },
+
+  timeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return Math.floor(seconds / 60) + ' min ago';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+    return Math.floor(seconds / 86400) + ' days ago';
+  }
+};
+
+module.exports = formatUtils;`} />
+
+                <CodeBlock title="utils/validation.js" code={`// utils/validation.js
+const validation = {
+  isValidEmail(email) {
+    return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+  },
+
+  sanitizeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  },
+
+  truncate(str, maxLength = 100) {
+    if (str.length <= maxLength) return str;
+    return str.slice(0, maxLength - 3) + '...';
+  }
+};
+
+module.exports = validation;`} />
+
+                <h3 className="text-lg font-semibold mt-6 mb-3">Using Utilities</h3>
+                <CodeBlock code={`// In a controller or component
+const { formatPrice, formatDate } = require('./utils/format');
+const { isValidEmail, sanitizeHtml } = require('./utils/validation');
+
+async function sendMessage(req, res, { supabase }) {
+  const { email, message } = req.body;
+
+  // Validate email
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  // Sanitize user input before saving
+  const cleanMessage = sanitizeHtml(message);
+
+  // Save to database...
+}`} />
+              </section>
+
               {/* HOOKS */}
               <section id="section-hooks" className="pt-6 border-t">
                 <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -739,6 +1033,112 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id
                     <li>• <strong>Events</strong>: React to actions, fire-and-forget, don't return values</li>
                   </ul>
                 </div>
+              </section>
+
+              {/* EVENTS */}
+              <section id="section-events" className="pt-6 border-t">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Activity className="w-6 h-6 text-rose-600" />
+                  Events & Lifecycle
+                </h2>
+
+                <p className="text-gray-600 mb-4">
+                  Events are triggered at specific points in your plugin's lifecycle. Unlike hooks, events are <strong>fire-and-forget</strong> - they don't need to return a value and can't modify behavior.
+                </p>
+
+                <h3 className="text-lg font-semibold mb-3">Plugin Lifecycle Events</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  These methods are called automatically at different stages of your plugin's life:
+                </p>
+                <div className="space-y-3 mb-6">
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-rose-700">install()</div>
+                    <p className="text-sm text-gray-600">Called once when the plugin is first installed. Use for initial setup, creating default config, etc.</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-green-700">onEnable()</div>
+                    <p className="text-sm text-gray-600">Called when the plugin is enabled/activated. Use to start background tasks, register listeners.</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-orange-700">onDisable()</div>
+                    <p className="text-sm text-gray-600">Called when the plugin is disabled. Use to cleanup resources, stop background tasks.</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-blue-700">onConfigUpdate(newConfig, oldConfig)</div>
+                    <p className="text-sm text-gray-600">Called when store owner changes plugin settings. Use to apply new configuration.</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-red-700">uninstall()</div>
+                    <p className="text-sm text-gray-600">Called when the plugin is uninstalled. Use to clean up data, remove tables if needed.</p>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Lifecycle Example</h3>
+                <CodeBlock title="index.js" code={`// index.js
+class MyPlugin {
+  // Called when plugin is installed
+  async install() {
+    console.log('Plugin installed!');
+    // Create default settings, initialize data
+  }
+
+  // Called when plugin is enabled
+  onEnable() {
+    console.log('Plugin enabled!');
+    // Start background tasks, register listeners
+  }
+
+  // Called when plugin is disabled
+  onDisable() {
+    console.log('Plugin disabled!');
+    // Stop background tasks, cleanup
+  }
+
+  // Called when settings change
+  onConfigUpdate(newConfig, oldConfig) {
+    if (newConfig.apiKey !== oldConfig.apiKey) {
+      // Reconnect to external service with new key
+      this.reconnectService(newConfig.apiKey);
+    }
+  }
+
+  // Called when plugin is uninstalled
+  async uninstall() {
+    console.log('Plugin uninstalled!');
+    // Cleanup data, remove plugin-specific data
+  }
+}
+
+module.exports = MyPlugin;`} />
+
+                <h3 className="text-lg font-semibold mt-6 mb-3">System Events</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  React to system-wide events like orders, user actions, etc. Define in your manifest and implement handlers:
+                </p>
+                <CodeBlock title="events/order-completed.js" code={`// events/order-completed.js
+// Called when any order is completed
+
+async function onOrderCompleted(event, context) {
+  const { order, customer, items } = event;
+
+  // Send thank you email
+  await context.services.email.send({
+    to: customer.email,
+    subject: 'Thank you for your order!',
+    body: \`Order #\${order.id} has been confirmed.\`
+  });
+
+  // Track analytics
+  await context.services.analytics.track('purchase', {
+    orderId: order.id,
+    total: order.total,
+    itemCount: items.length
+  });
+
+  // Note: Events don't return values
+}
+
+module.exports = onOrderCompleted;`} />
               </section>
 
               {/* CRON JOBS */}
