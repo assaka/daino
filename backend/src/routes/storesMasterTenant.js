@@ -3092,4 +3092,61 @@ router.post('/:id/migrations/run', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/stores/migrations/run-all
+ * Run pending migrations for all stores with has_pending_migration = true
+ */
+router.post('/migrations/run-all', authMiddleware, async (req, res) => {
+  try {
+    const stores = await TenantMigrationService.getStoresWithPendingMigrations();
+
+    if (stores.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No stores with pending migrations',
+        results: []
+      });
+    }
+
+    console.log(`[Migration] Running migrations for ${stores.length} store(s)`);
+
+    const results = [];
+
+    for (const store of stores) {
+      const storeId = store.store_id;
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        const result = await TenantMigrationService.runPendingMigrations(storeId, tenantDb);
+        results.push({
+          storeId,
+          success: result.success,
+          applied: result.applied,
+          failed: result.failed
+        });
+      } catch (error) {
+        results.push({
+          storeId,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
+
+    res.json({
+      success: failedCount === 0,
+      message: `Migrations completed: ${successCount} succeeded, ${failedCount} failed`,
+      results
+    });
+  } catch (error) {
+    console.error('Run all migrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
