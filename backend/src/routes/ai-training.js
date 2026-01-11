@@ -656,6 +656,36 @@ async function runComprehensiveTraining() {
     }
   }
 
+  // 7. Train Workflow Knowledge - Multi-step task guides
+  console.log('\n7️⃣ Training Workflow Knowledge...');
+  const workflowKnowledge = getWorkflowKnowledge();
+  for (const workflow of workflowKnowledge) {
+    try {
+      await saveContextDocument('workflow', {
+        name: workflow.name,
+        content: `${workflow.description}\n\nSteps:\n${workflow.steps.join('\n')}\n\nExamples: ${workflow.examples.join(', ')}`
+      });
+      console.log(`   ✅ ${workflow.name}`);
+    } catch (e) {
+      console.log(`   ❌ ${workflow.name}: ${e.message}`);
+    }
+  }
+
+  // 8. Train Troubleshooting Knowledge
+  console.log('\n8️⃣ Training Troubleshooting Knowledge...');
+  const troubleshootingKnowledge = getTroubleshootingKnowledge();
+  for (const issue of troubleshootingKnowledge) {
+    try {
+      await saveContextDocument('troubleshooting', {
+        name: issue.problem,
+        content: `Problem: ${issue.problem}\n\nPossible causes:\n- ${issue.causes.join('\n- ')}\n\nSolutions:\n- ${issue.solutions.join('\n- ')}`
+      });
+      console.log(`   ✅ ${issue.problem}`);
+    } catch (e) {
+      console.log(`   ❌ ${issue.problem}: ${e.message}`);
+    }
+  }
+
   console.log('\n✅ Comprehensive AI Training Complete!');
 }
 
@@ -2731,6 +2761,181 @@ To add "above" something:
 To add "inside" something:
 1. Add new slot to slots object
 2. Add ID to target slot's children array`
+    }
+  ];
+}
+
+/**
+ * Workflow Knowledge - Multi-step task guides
+ */
+function getWorkflowKnowledge() {
+  return [
+    {
+      name: 'Launch a Sale',
+      workflow_type: 'multi_step',
+      description: 'How to set up a store-wide or product sale',
+      steps: [
+        '1. Create coupon: POST /api/coupons with discount_type, discount_value, dates',
+        '2. Optionally create "SALE" product label: POST /api/product-labels',
+        '3. Assign label to sale products: PUT /api/products/:id with label_ids',
+        '4. Update homepage banner via slot editor if needed',
+        '5. Send email campaign (external)'
+      ],
+      examples: ['start a 20% off sale', 'create black friday discount', 'launch summer sale']
+    },
+    {
+      name: 'Add New Product with Variants',
+      workflow_type: 'multi_step',
+      description: 'Create a product with size/color variants',
+      steps: [
+        '1. Create base product: POST /api/products',
+        '2. Upload images: POST /api/storage/upload for each image',
+        '3. Update product with image URLs',
+        '4. Create variants: POST /api/products/:id/variants for each size/color',
+        '5. Set inventory per variant: PUT /api/inventory/:productId'
+      ],
+      examples: ['add new t-shirt with sizes', 'create product with color options']
+    },
+    {
+      name: 'Set Up Multi-Currency',
+      workflow_type: 'configuration',
+      description: 'Enable multiple currencies for the store',
+      steps: [
+        '1. Add currencies: POST /api/currencies for each (EUR, GBP, etc.)',
+        '2. Set exchange rates relative to default currency',
+        '3. Enable currency selector: update_store_setting(show_currency_selector, true)',
+        '4. Test checkout with different currencies'
+      ],
+      examples: ['enable euro currency', 'add gbp to store', 'set up multi-currency']
+    },
+    {
+      name: 'Set Up Shipping',
+      workflow_type: 'configuration',
+      description: 'Configure shipping methods and rates',
+      steps: [
+        '1. Create shipping methods: POST /api/shipping-methods',
+        '2. Set prices and conditions per method',
+        '3. Configure free shipping threshold if desired',
+        '4. Assign countries to each method'
+      ],
+      examples: ['add free shipping over 50', 'set up flat rate shipping', 'configure shipping for europe']
+    },
+    {
+      name: 'Configure Payment Methods',
+      workflow_type: 'configuration',
+      description: 'Set up payment options',
+      steps: [
+        '1. Add payment method: POST /api/payment-methods',
+        '2. Configure provider settings (API keys)',
+        '3. Set min/max order amounts if needed',
+        '4. Assign allowed countries',
+        '5. Test checkout flow'
+      ],
+      examples: ['enable paypal', 'add stripe payment', 'set up bank transfer']
+    },
+    {
+      name: 'Import Products from CSV',
+      workflow_type: 'bulk_operation',
+      description: 'Bulk import products from spreadsheet',
+      steps: [
+        '1. Upload CSV file: POST /api/storage/upload',
+        '2. Start import job: POST /api/imports with file_url and type="products"',
+        '3. Poll job status: GET /api/imports/:id',
+        '4. Review any errors in import result'
+      ],
+      examples: ['import products from csv', 'bulk upload products', 'import from spreadsheet']
+    },
+    {
+      name: 'Set Up SEO',
+      workflow_type: 'configuration',
+      description: 'Configure SEO settings and templates',
+      steps: [
+        '1. Create SEO templates: POST /api/seo-templates for products/categories',
+        '2. Set meta title pattern: {{product.name}} | {{store.name}}',
+        '3. Set meta description pattern',
+        '4. Configure URL redirects for old URLs: POST /api/redirects',
+        '5. Update Google Analytics: PUT /api/analytics-settings'
+      ],
+      examples: ['improve seo', 'set up meta tags', 'configure google analytics']
+    },
+    {
+      name: 'Customize Checkout Flow',
+      workflow_type: 'configuration',
+      description: 'Configure checkout experience',
+      steps: [
+        '1. Set checkout steps: update_store_setting(checkout_steps_count, 2 or 3)',
+        '2. Rename steps: update_store_setting(checkout_2step_step1_name, "Your Info")',
+        '3. Configure guest checkout: update_store_setting(allow_guest_checkout, true)',
+        '4. Set phone requirement: update_store_setting(collect_phone_number_at_checkout, true)'
+      ],
+      examples: ['enable guest checkout', 'make checkout 3 steps', 'require phone at checkout']
+    }
+  ];
+}
+
+/**
+ * Troubleshooting Knowledge
+ */
+function getTroubleshootingKnowledge() {
+  return [
+    {
+      problem: 'Products not showing on storefront',
+      causes: ['Product status is not "active"', 'Product not assigned to category', 'Category is not active', 'No stock (if inventory tracking enabled)'],
+      solutions: [
+        'Check product status: GET /api/products/:id - ensure status="active"',
+        'Verify category assignment: product.category_ids should contain valid IDs',
+        'Check category status: GET /api/categories/:id - ensure is_active=true',
+        'If using inventory: ensure stock_quantity > 0 or infinite_stock=true'
+      ]
+    },
+    {
+      problem: 'Images not loading',
+      causes: ['Invalid image URL', 'CORS issues', 'Storage bucket permissions', 'CDN cache'],
+      solutions: [
+        'Verify URL is accessible directly in browser',
+        'Check Supabase storage bucket is public',
+        'Re-upload image via /api/storage/upload',
+        'Clear CDN cache if using'
+      ]
+    },
+    {
+      problem: 'Checkout not working',
+      causes: ['Payment method not configured', 'No shipping method for country', 'Cart validation failed'],
+      solutions: [
+        'Check payment methods: GET /api/payment-methods - ensure at least one is_active',
+        'Check shipping methods: GET /api/shipping-methods - ensure country is covered',
+        'Check product stock availability',
+        'Verify minimum order amount is met'
+      ]
+    },
+    {
+      problem: 'Settings not saving',
+      causes: ['Cache not invalidated', 'React Query stale time', 'Database error'],
+      solutions: [
+        'Refresh the page',
+        'Clear browser cache',
+        'Check browser console for errors',
+        'Verify API response shows success:true'
+      ]
+    },
+    {
+      problem: 'Slot editor changes not showing',
+      causes: ['Draft not published', 'Browser cache', 'Preview vs Live mode'],
+      solutions: [
+        'Click Publish in slot editor',
+        'Clear cache or use incognito',
+        'Check if viewing draft or published version',
+        'Verify slot_configurations table has correct page_type'
+      ]
+    },
+    {
+      problem: 'Translations missing',
+      causes: ['Translation key not defined', 'Wrong language code', 'Not in translations JSONB'],
+      solutions: [
+        'Check translations table for store_id + language_code',
+        'Verify JSONB structure: { key: "value" }',
+        'Add missing translation via admin panel or API'
+      ]
     }
   ];
 }
