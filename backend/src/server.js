@@ -1495,6 +1495,10 @@ app.use('/api/background-jobs', backgroundJobRoutes); // Background job manageme
 // Admin scripts (cron-protected endpoints for running maintenance tasks)
 const adminScriptsRoutes = require('./routes/admin-scripts');
 app.use('/api/admin', adminScriptsRoutes);
+
+// Superadmin routes (restricted to specific emails)
+const superadminRoutes = require('./routes/superadmin');
+app.use('/api/superadmin', superadminRoutes);
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
