@@ -20,6 +20,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const TenantProvisioningService = require('../services/database/TenantProvisioningService');
 const DemoDataProvisioningService = require('../services/demo-data-provisioning-service');
 const { encryptDatabaseCredentials } = require('../utils/encryption');
+const TenantMigrationService = require('../services/migrations/TenantMigrationService');
 
 // Master database models
 const MasterStore = require('../models/master/MasterStore');
@@ -2966,6 +2967,106 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete store'
+    });
+  }
+});
+
+// ============================================
+// MIGRATION ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/stores/migrations/status
+ * Get migration status for all stores (admin)
+ * NOTE: This route must be defined BEFORE /:id routes
+ */
+router.get('/migrations/status', authMiddleware, async (req, res) => {
+  try {
+    const status = await TenantMigrationService.getAllMigrationStatus();
+
+    const pending = status.filter(s => s.hasPendingMigrations);
+    const upToDate = status.filter(s => !s.hasPendingMigrations);
+
+    res.json({
+      success: true,
+      summary: {
+        total: status.length,
+        pending: pending.length,
+        upToDate: upToDate.length
+      },
+      stores: status
+    });
+  } catch (error) {
+    console.error('Get all migration status error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/stores/:id/migrations
+ * Get migration status for a store
+ */
+router.get('/:id/migrations', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    const hasPending = await TenantMigrationService.hasPendingMigrations(storeId);
+    const currentVersion = await TenantMigrationService.getStoreSchemaVersion(storeId);
+    const { CURRENT_SCHEMA_VERSION } = require('../services/migrations/TenantMigrationService');
+
+    res.json({
+      success: true,
+      storeId,
+      schemaVersion: currentVersion,
+      targetVersion: CURRENT_SCHEMA_VERSION,
+      hasPendingMigrations: hasPending
+    });
+  } catch (error) {
+    console.error('Get migration status error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/stores/:id/migrations/run
+ * Run pending migrations for a store
+ */
+router.post('/:id/migrations/run', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    // Check if store has pending migrations
+    const hasPending = await TenantMigrationService.hasPendingMigrations(storeId);
+    if (!hasPending) {
+      return res.json({
+        success: true,
+        message: 'No pending migrations',
+        storeId
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Run migrations
+    const result = await TenantMigrationService.runPendingMigrations(storeId, tenantDb);
+
+    res.json({
+      success: result.success,
+      message: result.success ? 'Migrations completed' : 'Some migrations failed',
+      ...result
+    });
+  } catch (error) {
+    console.error('Run migrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

@@ -107,12 +107,17 @@ CREATE TABLE IF NOT EXISTS store_databases (
     'timeout'
   )),
 
+  -- Migration tracking
+  schema_version INTEGER DEFAULT 0,
+  last_migration_at TIMESTAMP,
+
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_store_databases_store_id ON store_databases(store_id);
 CREATE INDEX IF NOT EXISTS idx_store_databases_active ON store_databases(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_store_databases_pending_migrations ON store_databases(schema_version) WHERE is_active = true;
 
 -- ============================================
 -- 4. STORE_HOSTNAMES TABLE
