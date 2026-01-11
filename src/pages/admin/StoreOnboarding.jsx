@@ -1121,12 +1121,6 @@ export default function StoreOnboarding() {
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Database className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Connect Your Supabase Database
-                </h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  We'll securely connect to your Supabase account using OAuth, then set up everything your store needs automatically.
-                </p>
 
                 {/* What happens when you click */}
                 <div className="bg-white/80 rounded-lg p-4 mb-4">
@@ -1150,6 +1144,14 @@ export default function StoreOnboarding() {
                     <li className="flex items-start">
                       <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">4</span>
                       <span>Popup closes and you're <strong>brought back here</strong> automatically</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">5</span>
+                      <span>Enter your <strong>Service Role Key</strong> to authorize database setup</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">6</span>
+                      <span>Your <strong>database is provisioned</strong> and store is ready!</span>
                     </li>
                   </ol>
                 </div>
