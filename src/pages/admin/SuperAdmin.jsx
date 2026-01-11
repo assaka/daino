@@ -288,7 +288,7 @@ export default function SuperAdmin() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Store Name</TableHead>
-                  <TableHead>Code</TableHead>
+                  <TableHead>Slug</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Schema Version</TableHead>
@@ -312,7 +312,7 @@ export default function SuperAdmin() {
                   stores.map((store) => (
                     <TableRow key={store.id}>
                       <TableCell className="font-medium">{store.name}</TableCell>
-                      <TableCell><code className="text-xs bg-muted px-1 py-0.5 rounded">{store.store_code}</code></TableCell>
+                      <TableCell><code className="text-xs bg-muted px-1 py-0.5 rounded">{store.slug}</code></TableCell>
                       <TableCell>{store.owner_email || '-'}</TableCell>
                       <TableCell>
                         <Badge variant={store.is_active ? "default" : "secondary"}>

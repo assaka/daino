@@ -36,8 +36,9 @@ router.get('/stores', async (req, res) => {
       .select(`
         id,
         name,
-        store_code,
+        slug,
         is_active,
+        status,
         created_at,
         updated_at
       `)
