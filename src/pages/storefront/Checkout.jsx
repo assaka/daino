@@ -1256,6 +1256,30 @@ export default function Checkout() {
     return deliverySettings.delivery_time_slots.filter(slot => slot.is_active);
   };
 
+  const handleDeliveryDateChange = (date) => {
+    setDeliveryDate(date);
+
+    // Track delivery date selection
+    if (date) {
+      const cartTotal = calculateSubtotal() + calculateOptionsTotal();
+      const deliveryType = selectedShippingMethod || 'standard';
+      window.daino?.trackDeliveryDateSelected(
+        date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        typeof deliveryType === 'string' ? deliveryType : deliveryType.name || 'standard',
+        cartItems.map(item => ({
+          product_id: item.product_id,
+          product_name: cartProducts[item.product_id]?.name || item.name,
+          unit_price: item.unit_price || item.price,
+          quantity: item.quantity,
+          category_name: cartProducts[item.product_id]?.category_name,
+          brand: cartProducts[item.product_id]?.brand,
+          sku: cartProducts[item.product_id]?.sku
+        })),
+        cartTotal
+      );
+    }
+  };
+
   const getShippingCountry = () => {
     // If user has selected a saved address, use that country
     if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
@@ -2258,7 +2282,7 @@ export default function Checkout() {
                         <Calendar
                           mode="single"
                           selected={deliveryDate}
-                          onSelect={setDeliveryDate}
+                          onSelect={handleDeliveryDateChange}
                           disabled={isDateDisabled}
                           initialFocus
                         />
