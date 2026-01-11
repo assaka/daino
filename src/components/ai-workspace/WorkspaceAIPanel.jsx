@@ -603,123 +603,17 @@ const WorkspaceAIPanel = () => {
           return;
         }
 
-        // Check for various response structures the AI might return
-        let hasGeneratedFiles = response.generatedFiles && response.generatedFiles.length > 0;
+        // Response is clean JSON from backend with: message, generatedFiles, generatedAdminPages
+        const files = response.generatedFiles || [];
+        const adminPages = response.generatedAdminPages || [];
+        const hasFiles = files.length > 0;
+        const hasAdminPages = adminPages.length > 0;
         const hasPluginStructure = response.plugin_structure?.main_file;
-        let messageContent = response.message || response.explanation || response.content || '';
 
-        // Handle case where message is a JSON string with embedded message
-        // e.g., {"tool": "chat", "message": "actual content..."}
-        if (typeof messageContent === 'string' && messageContent.trim().startsWith('{') && messageContent.includes('"message"')) {
-          try {
-            const parsed = JSON.parse(messageContent);
-            if (parsed.message) {
-              messageContent = parsed.message;
-              console.log('📝 Extracted message from JSON wrapper');
-            }
-          } catch (e) {
-            // Not valid JSON, continue with normal processing
-          }
-        }
+        // Human-readable message from AI
+        const conversationalMessage = response.message || response.explanation || 'Done! Your changes have been saved.';
 
-        // If message is a JSON string, try to parse it first
-        let embeddedJson = null;
-        let embeddedFiles = null;
-        // Check for generatedFiles OR generatedAdminPages (admin pages might be returned without files)
-        if (messageContent.trim().startsWith('{') && (messageContent.includes('generatedFiles') || messageContent.includes('generatedAdminPages'))) {
-          try {
-            // Fix common JSON issues: escape unescaped newlines inside string values
-            let fixedJson = messageContent;
-            // Replace actual newlines inside strings with escaped newlines
-            // This regex finds strings and escapes newlines within them
-            fixedJson = fixedJson.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
-              return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-            });
-
-            embeddedJson = JSON.parse(fixedJson);
-            embeddedFiles = embeddedJson.generatedFiles;
-            console.log('📦 Parsed message as JSON:', embeddedJson);
-            // Use the explanation from the parsed JSON
-            messageContent = embeddedJson.explanation || 'Plugin updated.';
-          } catch (e) {
-            console.log('⚠️ Message looks like JSON but failed to parse:', e.message);
-            // Try one more approach: extract generatedFiles manually with regex
-            try {
-              const filesMatch = messageContent.match(/"generatedFiles"\s*:\s*\[([\s\S]*?)\]\s*[,}]/);
-              const explanationMatch = messageContent.match(/"explanation"\s*:\s*"([^"]+)"/);
-              if (filesMatch) {
-                // Extract file objects manually
-                const filesStr = filesMatch[1];
-                const fileMatches = filesStr.matchAll(/"name"\s*:\s*"([^"]+)"[\s\S]*?"code"\s*:\s*"([\s\S]*?)(?:"\s*})/g);
-                embeddedFiles = [];
-                for (const match of fileMatches) {
-                  embeddedFiles.push({
-                    name: match[1],
-                    code: match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"')
-                  });
-                }
-                if (embeddedFiles.length > 0) {
-                  console.log('📦 Extracted files via regex:', embeddedFiles);
-                  messageContent = explanationMatch ? explanationMatch[1] : 'Plugin updated.';
-                }
-              }
-            } catch (e2) {
-              console.log('⚠️ Regex extraction also failed:', e2.message);
-            }
-          }
-        }
-
-        // Check if response contains code blocks (even in "conversational" responses)
-        const codeBlockMatch = messageContent.match(/```(?:javascript|js|jsx)?\n([\s\S]*?)```/);
-        let hasCodeBlock = !!codeBlockMatch;
-
-        // If we didn't find embedded JSON above, try regex matching
-        if (!embeddedJson) {
-          // Match either generatedFiles or generatedAdminPages
-          const jsonMatch = messageContent.match(/\{\s*"(?:generatedFiles|generatedAdminPages)"[\s\S]*?\[\s*\{[\s\S]*?\}\s*\]\s*[,\}]/);
-          if (jsonMatch) {
-            try {
-              // Find the complete JSON object
-              let braceCount = 0;
-              let jsonEndIndex = 0;
-              for (let i = 0; i < messageContent.length; i++) {
-                if (messageContent[i] === '{') braceCount++;
-                if (messageContent[i] === '}') {
-                  braceCount--;
-                  if (braceCount === 0) {
-                    jsonEndIndex = i + 1;
-                    break;
-                  }
-                }
-              }
-              const startIndex = messageContent.indexOf('{');
-              if (startIndex !== -1 && jsonEndIndex > startIndex) {
-                const fullJson = messageContent.substring(startIndex, jsonEndIndex);
-                embeddedJson = JSON.parse(fullJson);
-                embeddedFiles = embeddedJson.generatedFiles;
-                console.log('📦 Found embedded JSON in message:', embeddedJson);
-              }
-            } catch (e) {
-              console.log('⚠️ Failed to parse embedded JSON:', e.message);
-            }
-          }
-        }
-
-        // Update flags based on embedded JSON
-        const actualGeneratedFiles = response.generatedFiles || embeddedFiles;
-        const actualHasGeneratedFiles = actualGeneratedFiles && actualGeneratedFiles.length > 0;
-
-        // Check for admin pages (AI-generated admin UI)
-        const actualGeneratedAdminPages = response.generatedAdminPages || embeddedJson?.generatedAdminPages;
-        const actualHasAdminPages = actualGeneratedAdminPages && actualGeneratedAdminPages.length > 0;
-
-        if (actualHasGeneratedFiles || hasPluginStructure || actualHasAdminPages) {
-          // Code was generated in structured format - show success and dispatch event
-          const files = actualGeneratedFiles || [];
-          const adminPages = actualGeneratedAdminPages || [];
-
-          // Use conversational message from AI, fallback to explanation
-          const conversationalMessage = embeddedJson?.message || response.message || embeddedJson?.explanation || response.explanation || 'Done! Your changes have been saved.';
+        if (hasFiles || hasPluginStructure || hasAdminPages) {
 
           // Build file count for subtle info
           let fileInfo = '';
@@ -737,7 +631,7 @@ const WorkspaceAIPanel = () => {
               type: 'plugin_code_generated',
               files: files,
               adminPages: adminPages,
-              pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure
+              pluginStructure: response.plugin_structure
             }
           });
 
@@ -747,9 +641,9 @@ const WorkspaceAIPanel = () => {
               pluginId: pluginToEdit.id,
               files: files,
               adminPages: adminPages,
-              pluginStructure: response.plugin_structure || embeddedJson?.plugin_structure,
-              code: response.plugin_structure?.main_file || embeddedJson?.plugin_structure?.main_file || (files[0]?.code),
-              taskName: userMessage // Pass the user's request for version commit message
+              pluginStructure: response.plugin_structure,
+              code: response.plugin_structure?.main_file || files[0]?.code,
+              taskName: userMessage
             }
           }));
 
@@ -767,50 +661,11 @@ const WorkspaceAIPanel = () => {
               console.error('❌ Failed to save admin pages:', adminError);
             }
           }
-        } else if (hasCodeBlock) {
-          // Response contains code block in markdown - extract and save
-          console.log('📝 Found code block in response, extracting and saving...');
-          const extractedCode = codeBlockMatch[1];
-
-          // Show clean message without raw code
-          addChatMessage({
-            role: 'assistant',
-            content: `✅ Code generated and saved to plugin.`,
-            data: { type: 'plugin_code_generated' }
-          });
-
-          // Dispatch event with extracted code
-          console.log('🚀 Dispatching plugin-ai-code-generated event with extracted code');
-          window.dispatchEvent(new CustomEvent('plugin-ai-code-generated', {
-            detail: {
-              pluginId: pluginToEdit.id,
-              files: [{ name: 'hook.js', code: extractedCode }],
-              code: extractedCode,
-              taskName: userMessage // Pass the user's request for version commit message
-            }
-          }));
         } else {
-          // Pure conversational response - clean up any JSON/code from display
-          console.log('💬 Conversational response (no code detected)');
-
-          // Remove any JSON or code blocks from the display message
-          let cleanMessage = messageContent || 'I can help you modify this plugin. What would you like to add or change?';
-
-          // Remove JSON objects from message
-          cleanMessage = cleanMessage.replace(/\{[\s\S]*?"generatedFiles"[\s\S]*?\}(?:\s*\})?/g, '').trim();
-          // Remove code blocks
-          cleanMessage = cleanMessage.replace(/```[\s\S]*?```/g, '').trim();
-          // Remove any remaining raw JSON-like content
-          cleanMessage = cleanMessage.replace(/^\s*\{[\s\S]*\}\s*$/g, '').trim();
-
-          // If message is now empty or just whitespace, use a default
-          if (!cleanMessage || cleanMessage.length < 10) {
-            cleanMessage = '✅ Plugin updated successfully.';
-          }
-
+          // Conversational response (no files generated)
           addChatMessage({
             role: 'assistant',
-            content: cleanMessage,
+            content: conversationalMessage,
             data: response
           });
         }
