@@ -286,20 +286,44 @@ class TenantMigrationService {
   }
 
   /**
-   * Get all stores with pending migrations (flag-based)
+   * Get all stores with pending migrations (version-based check)
    */
   async getStoresWithPendingMigrations() {
     if (!masterDbClient) return [];
 
     try {
-      const { data, error } = await masterDbClient
-        .from('store_databases')
-        .select('store_id, schema_version, last_migration_at')
-        .eq('is_active', true)
-        .eq('has_pending_migration', true);
+      const latestVersion = await this.getLatestVersion();
+      if (latestVersion === 0) return []; // No migrations defined
 
-      if (error) throw error;
-      return data || [];
+      // Get all active/demo stores
+      const { data: stores, error: storesError } = await masterDbClient
+        .from('stores')
+        .select('id, name')
+        .in('status', ['active', 'demo']);
+
+      if (storesError) throw storesError;
+
+      // Get store_databases info
+      const { data: databases, error: dbError } = await masterDbClient
+        .from('store_databases')
+        .select('store_id, schema_version');
+
+      if (dbError) throw dbError;
+
+      const dbMap = new Map((databases || []).map(d => [d.store_id, d]));
+
+      // Return stores where schema_version < latestVersion
+      return (stores || [])
+        .filter(store => {
+          const db = dbMap.get(store.id);
+          const schemaVersion = db?.schema_version || 0;
+          return schemaVersion < latestVersion;
+        })
+        .map(store => ({
+          store_id: store.id,
+          store_name: store.name,
+          schema_version: dbMap.get(store.id)?.schema_version || 0
+        }));
     } catch (err) {
       console.error('[Migration] Error getting pending stores:', err.message);
       return [];
