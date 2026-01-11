@@ -138,6 +138,7 @@ class PluginAIService {
       systemPrompt
     });
 
+    console.log('🤖 Raw AI response preview:', response.content?.substring(0, 300));
     return this.parseAIResponse(response.content, mode);
   }
 
@@ -816,21 +817,61 @@ Provide production-ready code with proper error handling and best practices.`;
    * Parse AI response into structured format
    */
   parseAIResponse(responseText, mode) {
+    console.log('🔍 Parsing AI response, length:', responseText?.length);
+
     try {
-      // Try to extract JSON from markdown code blocks
-      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[1]);
+      // 1. Try to extract JSON from markdown code blocks
+      const jsonBlockMatch = responseText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (jsonBlockMatch) {
+        console.log('📦 Found JSON in code block');
+        const parsed = JSON.parse(jsonBlockMatch[1]);
+        return parsed;
       }
 
-      // Try to parse entire response as JSON
-      return JSON.parse(responseText);
-    } catch (error) {
-      // Not JSON - this is a conversational response
-      console.log('AI returned conversational response (not JSON)');
+      // 2. Try to parse entire response as JSON (if it starts with {)
+      if (responseText.trim().startsWith('{')) {
+        console.log('📦 Response starts with {, parsing as JSON');
+        return JSON.parse(responseText);
+      }
 
-      // Return plain text response in a format the frontend can handle
-      // The frontend will display this as a regular chat message
+      // 3. Try to find JSON object anywhere in the response
+      const jsonObjectMatch = responseText.match(/\{[\s\S]*"(?:message|generatedFiles|generatedAdminPages)"[\s\S]*\}/);
+      if (jsonObjectMatch) {
+        console.log('📦 Found JSON object in response');
+        // Find the complete JSON by matching braces
+        const startIdx = responseText.indexOf('{');
+        if (startIdx !== -1) {
+          let braceCount = 0;
+          let endIdx = startIdx;
+          for (let i = startIdx; i < responseText.length; i++) {
+            if (responseText[i] === '{') braceCount++;
+            if (responseText[i] === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                endIdx = i + 1;
+                break;
+              }
+            }
+          }
+          const jsonStr = responseText.substring(startIdx, endIdx);
+          const parsed = JSON.parse(jsonStr);
+          console.log('✅ Extracted JSON:', Object.keys(parsed));
+          return parsed;
+        }
+      }
+
+      // 4. If nothing worked, return as conversational
+      console.log('⚠️ No JSON found, treating as conversational response');
+      return {
+        type: 'conversation',
+        message: responseText,
+        isConversational: true
+      };
+    } catch (error) {
+      console.error('❌ JSON parse error:', error.message);
+      console.log('📝 Raw response preview:', responseText?.substring(0, 500));
+
+      // Return plain text response
       return {
         type: 'conversation',
         message: responseText,
