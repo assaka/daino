@@ -570,7 +570,8 @@ export default function StoreOnboarding() {
     e.preventDefault();
     setCompletedSteps([1, 2]);
     setCurrentStep(3);
-    setSuccess('Customization saved');
+    const demoText = provisionDemoData ? ' with demo data' : '';
+    setSuccess(<>You have selected the <strong>{selectedThemePreset.toUpperCase()}</strong> theme{demoText}</>);
   };
 
   const handleConnectDatabase = async (e) => {
