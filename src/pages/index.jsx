@@ -31,6 +31,7 @@ export { default as Stores } from './admin/Stores';
 export { default as Settings } from './admin/Settings';
 export { default as DatabaseIntegrations } from './admin/DatabaseIntegrations';
 export { default as ShopifyIntegration } from './admin/ShopifyIntegration';
+export { default as WooCommerceIntegration } from './admin/WooCommerceIntegration';
 export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
 export { default as InstagramShopping } from './admin/InstagramShopping';
 // Workflow Automation Integrations

@@ -2177,8 +2177,9 @@ VALUES
     ('571cf04b-2b04-428a-ad55-9192a56f7976', 'marketplace_hub', 'Marketplace Hub', 'ShoppingCart', '/admin/marketplace-hub', 'import_export', 1, false, 'import_export', NULL, 'Unified marketplace management: Amazon, eBay, and more with AI optimization', '{"text":"New","color":"blue","variant":"default"}'::jsonb, 'new', NOW(), NOW()),
     ('0162fe04-d1b3-4871-a92a-be7d54afd002', 'shopify_integration', 'Shopify', 'ShoppingBag', '/admin/shopify-integration', 'import_export', 2, true, 'import_export', NULL, NULL, NULL, 'standard', NOW(), NOW()),
     ('4a706191-0c65-48c4-8efa-f355454fab8e', 'akeneo_integration', 'Akeneo', 'Database', '/admin/akeneo-integration', 'import_export', 3, true, 'import_export', NULL, NULL, NULL, 'beta', NOW(), NOW()),
-    ('a1b2c3d4-e5f6-7890-abcd-000000000030', 'workflow_integrations', 'Workflows', 'Webhook', '/admin/integrations/workflows', 'import_export', 4, true, 'import_export', NULL, 'n8n, Zapier, Make webhook automations', NULL, 'standard', NOW(), NOW()),
-    ('5415ee5a-1276-4883-ac01-33d3dfcb1c2b', 'import_export_jobs', 'Jobs & Analytics', 'BarChart3', '/admin/import-export-jobs', 'import_export', 5, true, 'import_export', NULL, 'Monitor import/export jobs and view performance analytics', NULL, 'standard', NOW(), NOW()),
+    ('b2c3d4e5-f6a7-4890-bcde-111111111111', 'woocommerce_integration', 'WooCommerce', 'ShoppingCart', '/admin/woocommerce-integration', 'import_export', 4, true, 'import_export', NULL, 'Import products and categories from WooCommerce', NULL, 'standard', NOW(), NOW()),
+    ('a1b2c3d4-e5f6-7890-abcd-000000000030', 'workflow_integrations', 'Workflows', 'Webhook', '/admin/integrations/workflows', 'import_export', 5, true, 'import_export', NULL, 'n8n, Zapier, Make webhook automations', NULL, 'standard', NOW(), NOW()),
+    ('5415ee5a-1276-4883-ac01-33d3dfcb1c2b', 'import_export_jobs', 'Jobs & Analytics', 'BarChart3', '/admin/import-export-jobs', 'import_export', 6, true, 'import_export', NULL, 'Monitor import/export jobs and view performance analytics', NULL, 'standard', NOW(), NOW()),
 
     -- =============================================
     -- SEO CHILDREN (parent: seo, order: 1, 2, 3...)

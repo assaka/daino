@@ -72,7 +72,8 @@ const allNavItems = [
   // Import/Export
   { key: 'akeneo_integration', label: 'Akeneo', icon: 'Database', route: '/admin/akeneo-integration', order: 70, category: 'import_export' },
   { key: 'shopify_integration', label: 'Shopify', icon: 'ShoppingBag', route: '/admin/shopify-integration', order: 71, category: 'import_export' },
-  { key: 'workflow_integrations', label: 'Workflows', icon: 'Webhook', route: '/admin/integrations/workflows', order: 72, category: 'import_export' },
+  { key: 'woocommerce_integration', label: 'WooCommerce', icon: 'ShoppingCart', route: '/admin/woocommerce-integration', order: 72, category: 'import_export' },
+  { key: 'workflow_integrations', label: 'Workflows', icon: 'Webhook', route: '/admin/integrations/workflows', order: 73, category: 'import_export' },
 
   // Store Settings
   { key: 'settings', label: 'General Settings', icon: 'Settings', route: '/admin/settings', order: 80, category: 'store' },

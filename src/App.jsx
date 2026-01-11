@@ -453,6 +453,7 @@ function App() {
           <Route path="/admin/import-export-jobs" element={<PageWrapper Component={Pages.ImportExportJobs} pageName="IMPORT_EXPORT_JOBS" />} />
           <Route path="/admin/embedding-backfill" element={<PageWrapper Component={Pages.EmbeddingBackfill} pageName="EMBEDDING_BACKFILL" />} />
           <Route path="/admin/shopify-integration" element={<PageWrapper Component={Pages.ShopifyIntegration} pageName="ShopifyIntegration" />} />
+          <Route path="/admin/woocommerce-integration" element={<PageWrapper Component={Pages.WooCommerceIntegration} pageName="WooCommerceIntegration" />} />
           <Route path="/admin/integrations/instagram-shopping" element={<PageWrapper Component={Pages.InstagramShopping} pageName="instagram-shopping" />} />
           {/* Workflow Automation Integrations */}
           <Route path="/admin/integrations/workflows" element={<PageWrapper Component={Pages.WorkflowIntegrations} pageName="workflow-integrations" />} />
