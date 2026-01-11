@@ -95,7 +95,7 @@ router.get('/users', async (req, res) => {
     // Get users
     const { data: users, error } = await masterDbClient
       .from('users')
-      .select('id, email, full_name, role, email_verified, created_at')
+      .select('id, email, first_name, last_name, role, email_verified, created_at')
       .order('created_at', { ascending: false });
 
     // Get stores to find which user owns which store
@@ -110,6 +110,7 @@ router.get('/users', async (req, res) => {
 
     const enrichedUsers = (users || []).map(u => ({
       ...u,
+      full_name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
       store_id: userStoreMap.get(u.id) || null
     }));
 
