@@ -36,21 +36,28 @@ export default function SuperAdminMigrations() {
   const loadMigrations = async () => {
     setLoading(true);
     try {
-      const [migrationsRes, statusRes] = await Promise.all([
-        apiClient.get('/superadmin/migrations'),
-        apiClient.get('/superadmin/migrations/status')
-      ]);
-
-      if (migrationsRes.data.success) {
-        setMigrations(migrationsRes.data.migrations || []);
+      // Load migrations and status separately to handle errors independently
+      try {
+        const migrationsRes = await apiClient.get('/superadmin/migrations');
+        if (migrationsRes.data?.success) {
+          setMigrations(migrationsRes.data.migrations || []);
+        }
+      } catch (e) {
+        console.error('Error loading migrations:', e);
       }
-      if (statusRes.data.success) {
-        setMigrationStatus(statusRes.data.stores || []);
+
+      try {
+        const statusRes = await apiClient.get('/superadmin/migrations/status');
+        if (statusRes.data?.success) {
+          setMigrationStatus(statusRes.data.stores || []);
+        }
+      } catch (e) {
+        console.error('Error loading migration status:', e);
       }
     } catch (error) {
       toast({
         title: "Error loading migrations",
-        description: error.message,
+        description: error.message || 'Unknown error',
         variant: "destructive"
       });
     } finally {
