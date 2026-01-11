@@ -273,6 +273,10 @@ const ProductItemCard = ({
       style={templateConfig.styles || {}}
       data-product-card={isEditorMode ? 'editable' : undefined}
       data-slot-id={isEditorMode ? 'product_card_template' : undefined}
+      data-product-id={product.id}
+      data-product-name={translatedProductName}
+      data-price={formatPriceNumber(getPriceDisplay(product).displayPrice)}
+      data-category={product.category_ids?.[0] || ''}
       onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_template') : undefined}
     >
       <CardContent className="p-0">

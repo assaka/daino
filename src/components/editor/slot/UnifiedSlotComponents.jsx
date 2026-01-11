@@ -608,7 +608,14 @@ const ProductRecommendations = createSlotComponent({
               const translatedProductName = relatedProduct.name;
 
               return (
-                <Card key={relatedProduct.id} className="group hover:shadow-lg transition-shadow duration-200">
+                <Card
+                  key={relatedProduct.id}
+                  className="group hover:shadow-lg transition-shadow duration-200"
+                  data-product-id={relatedProduct.id}
+                  data-product-name={translatedProductName}
+                  data-price={relatedProduct.price}
+                  data-category={relatedProduct.category_ids?.[0] || ''}
+                >
                   <div className="relative aspect-square overflow-hidden rounded-t-lg">
                     <img
                       src={relatedProduct.images?.[0] || 'https://placehold.co/300x300?text=No+Image'}

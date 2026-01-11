@@ -301,6 +301,10 @@ const SlotBasedProductCard = ({
     <div
       className={`${templateSlot.className || ''} ${className}`}
       style={{ ...templateSlot.styles, overflow: 'visible', width: '100%', position: 'relative' }}
+      data-product-id={product.id}
+      data-product-name={formattedProduct.name}
+      data-price={formattedProduct.price_number}
+      data-category={product.category_ids?.[0] || ''}
     >
       {/* Product labels - positioned absolutely over the image */}
       {renderProductLabels(formattedProduct, productLabels)}
