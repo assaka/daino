@@ -430,7 +430,7 @@ export function HeaderSlotRenderer({
         };
 
         return (
-          <div key={id} className={`${colSpanClasses}${className || ''}`} data-slot-id={id}>
+          <div key={id} className={finalClassName} data-slot-id={id}>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -449,13 +449,20 @@ export function HeaderSlotRenderer({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {
-                    navigate?.(createPublicUrl(store?.slug, 'ACCOUNT'));
+                    const accountUrl = createPublicUrl(store?.slug, 'ACCOUNT');
+                    if (navigate) {
+                      navigate(accountUrl);
+                    } else {
+                      window.location.href = accountUrl;
+                    }
                   }}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>{t('common.my_account', 'My Account')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    handleCustomerLogout?.();
+                    if (handleCustomerLogout) {
+                      handleCustomerLogout();
+                    }
                   }}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>{t('common.logout', 'Logout')}</span>
@@ -469,7 +476,12 @@ export function HeaderSlotRenderer({
                 onClick={() => {
                   localStorage.setItem('customer_auth_store_id', store?.id);
                   localStorage.setItem('customer_auth_store_code', store?.slug);
-                  navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
+                  const loginUrl = createPublicUrl(store?.slug, 'CUSTOMER_AUTH');
+                  if (navigate) {
+                    navigate(loginUrl);
+                  } else {
+                    window.location.href = loginUrl;
+                  }
                 }}
                 disabled={userLoading}
                 style={{ color: headerIconColor }}
@@ -570,13 +582,20 @@ export function HeaderSlotRenderer({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {
-                    navigate?.(createPublicUrl(store?.slug, 'ACCOUNT'));
+                    const accountUrl = createPublicUrl(store?.slug, 'ACCOUNT');
+                    if (navigate) {
+                      navigate(accountUrl);
+                    } else {
+                      window.location.href = accountUrl;
+                    }
                   }}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>{t('common.my_account', 'My Account')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    handleCustomerLogout?.();
+                    if (handleCustomerLogout) {
+                      handleCustomerLogout();
+                    }
                   }}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>{t('common.logout', 'Logout')}</span>
@@ -588,7 +607,12 @@ export function HeaderSlotRenderer({
                 onClick={() => {
                   localStorage.setItem('customer_auth_store_id', store?.id);
                   localStorage.setItem('customer_auth_store_code', store?.slug);
-                  navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
+                  const loginUrl = createPublicUrl(store?.slug, 'CUSTOMER_AUTH');
+                  if (navigate) {
+                    navigate(loginUrl);
+                  } else {
+                    window.location.href = loginUrl;
+                  }
                 }}
                 disabled={userLoading}
                 variant="themed"
