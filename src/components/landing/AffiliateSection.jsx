@@ -59,7 +59,7 @@ export default function AffiliateSection() {
                 </h3>
                 <p className="text-white/80 text-lg mb-6">
                   Already have a store? Refer other entrepreneurs and earn free credits
-                  for every new store owner that signs up through your link.
+                  for every new store owner you refer.
                 </p>
 
                 {/* Stats */}
