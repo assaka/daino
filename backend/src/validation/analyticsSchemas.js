@@ -15,7 +15,9 @@ const ACTIVITY_TYPES = [
     'remove_from_cart',
     'checkout_started',
     'order_completed',
-    'search'
+    'search',
+    'customer_login',
+    'customer_registration'
 ];
 
 /**
