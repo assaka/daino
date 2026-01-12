@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import storefrontApiClient from '@/api/storefront-client';
 import { SaveButton } from '@/components/ui/save-button';
+import { trackCustomerLogin, trackCustomerRegistration } from '@/components/storefront/DataLayerManager';
 
 // Helper function to replace placeholders with React components
 const replacePlaceholders = (text, replacements) => {
@@ -337,6 +338,9 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         // Token is already saved by CustomerAuth.login() with store-specific key
         // Just remove the logged out flag
         localStorage.removeItem('user_logged_out');
+
+        // Track login event
+        trackCustomerLogin(response.data?.user?.id || null, 'email');
 
         // Check if email verification is required
         if (response.data?.requiresVerification) {
@@ -796,6 +800,9 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
       if (response.success) {
         // Token is already saved by CustomerAuth.register()
         localStorage.removeItem('user_logged_out');
+
+        // Track registration event
+        trackCustomerRegistration(response.data?.user?.id || null, 'email');
 
         // Check if email verification is required
         if (response.data?.requiresVerification) {
