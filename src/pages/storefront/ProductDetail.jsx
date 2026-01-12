@@ -9,10 +9,9 @@ import eventSystem from '@/core/EventSystem';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
-import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // React Query hooks for optimized API calls
-import { useProduct, useUser, useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/hooks/useApiQueries";
+import { useProduct, useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/hooks/useApiQueries";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
@@ -100,7 +99,6 @@ export default function ProductDetail() {
   const { t, currentLanguage, translations } = useTranslation();
 
   // Use React Query hooks for optimized API calls with automatic deduplication
-  const { data: user } = useUser();
   const {
     data: productData,
     isLoading: productLoading,
