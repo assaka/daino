@@ -81,25 +81,20 @@ async function getDueCronJobs() {
         }
 
         // Also check plugin_cron table for plugin cron jobs
-        console.log(`  Checking plugin_cron for store ${store.slug}...`);
         const { data: pluginCrons, error: pluginCronError } = await tenantDb
           .from('plugin_cron')
           .select('*')
           .eq('is_enabled', true);
 
         if (pluginCronError) {
-          console.log(`  plugin_cron error for ${store.slug}: ${pluginCronError.message}`);
-        } else {
-          console.log(`  Found ${pluginCrons?.length || 0} enabled plugin_crons for ${store.slug}`);
+          // Table might not exist yet, that's okay
+          if (!pluginCronError.message.includes('does not exist')) {
+            console.error(`Error fetching plugin_cron for store ${store.slug}:`, pluginCronError.message);
+          }
         }
 
         if (pluginCrons && pluginCrons.length > 0) {
           // Filter plugin crons that are due based on cron_schedule
-          const now = new Date();
-          pluginCrons.forEach(cron => {
-            const isDue = isCronDue(cron.cron_schedule, cron.last_run_at, cron.timezone);
-            console.log(`    Cron "${cron.cron_name}" schedule="${cron.cron_schedule}" last_run="${cron.last_run_at}" isDue=${isDue}`);
-          });
           const dueCrons = pluginCrons.filter(cron => {
             if (!cron.cron_schedule) return false;
             return isCronDue(cron.cron_schedule, cron.last_run_at, cron.timezone);
