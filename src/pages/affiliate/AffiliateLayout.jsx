@@ -1,58 +1,68 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Outlet, Link } from "react-router-dom";
-import { getCurrentUser } from "@/utils/auth";
 import {
-  Shield,
-  Store,
-  Users,
-  Database,
   LayoutDashboard,
+  Users,
+  DollarSign,
   LogOut,
   ChevronRight,
   Menu,
   X,
-  UserPlus,
-  Award,
-  DollarSign
+  Link2,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-
-const SUPERADMIN_EMAILS = ['hello@dainostore.com', 'hamid@dainostore.com'];
+import apiClient from "@/api/client";
 
 const sidebarItems = [
-  { path: '/superadmin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { path: '/superadmin/stores', label: 'Stores', icon: Store },
-  { path: '/superadmin/users', label: 'Users', icon: Users },
-  { path: '/superadmin/migrations', label: 'Migrations', icon: Database },
-  { path: '/superadmin/affiliates', label: 'Affiliates', icon: UserPlus },
-  { path: '/superadmin/affiliate-tiers', label: 'Affiliate Tiers', icon: Award },
-  { path: '/superadmin/affiliate-payouts', label: 'Payouts', icon: DollarSign },
+  { path: '/affiliate/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { path: '/affiliate/referrals', label: 'Referrals', icon: Users },
+  { path: '/affiliate/earnings', label: 'Earnings', icon: TrendingUp },
+  { path: '/affiliate/payouts', label: 'Payouts', icon: DollarSign },
 ];
 
-export default function SuperAdminLayout() {
+export default function AffiliateLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [authorized, setAuthorized] = useState(false);
+  const [affiliate, setAffiliate] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      navigate('/admin/auth');
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('affiliateToken');
+    if (!token) {
+      navigate('/affiliate/login');
       return;
     }
-    if (!SUPERADMIN_EMAILS.includes(currentUser.email?.toLowerCase())) {
-      navigate('/admin/dashboard');
-      return;
+
+    try {
+      const response = await apiClient.get('/affiliates/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response?.success) {
+        setAffiliate(response.data);
+      } else {
+        throw new Error('Not authenticated');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('affiliateToken');
+      navigate('/affiliate/login');
+    } finally {
+      setLoading(false);
     }
-    setUser(currentUser);
-    setAuthorized(true);
-    setLoading(false);
-  }, [navigate]);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('affiliateToken');
+    navigate('/affiliate/login');
+  };
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -65,10 +75,6 @@ export default function SuperAdminLayout() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!authorized) {
-    return null;
   }
 
   const isActive = (path, exact = false) => {
@@ -90,30 +96,39 @@ export default function SuperAdminLayout() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-200 ease-in-out lg:transform-none",
+        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-indigo-900 to-purple-900 text-white flex flex-col transform transition-transform duration-200 ease-in-out lg:transform-none",
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Logo */}
-        <div className="p-4 border-b border-slate-700">
+        <div className="p-4 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg">
-                <Shield className="h-6 w-6 text-white" />
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Link2 className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">Super Admin</h1>
-                <p className="text-xs text-slate-400">Platform Management</p>
+                <h1 className="font-bold text-lg">Affiliate Portal</h1>
+                <p className="text-xs text-white/60">Earn with referrals</p>
               </div>
             </div>
-            {/* Mobile close button */}
             <button
-              className="lg:hidden p-1 hover:bg-slate-800 rounded"
+              className="lg:hidden p-1 hover:bg-white/10 rounded"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
+
+        {/* Referral Link */}
+        {affiliate?.referral_code && (
+          <div className="p-4 border-b border-white/10">
+            <p className="text-xs text-white/60 mb-2">Your Referral Code</p>
+            <div className="bg-white/10 rounded-lg px-3 py-2">
+              <code className="text-sm font-mono text-white">{affiliate.referral_code}</code>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
@@ -127,8 +142,8 @@ export default function SuperAdminLayout() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                   active
-                    ? "bg-primary text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    ? "bg-white/20 text-white"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -140,24 +155,26 @@ export default function SuperAdminLayout() {
         </nav>
 
         {/* User info */}
-        <div className="p-4 border-t border-slate-700">
+        <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium">
-              {user?.email?.[0]?.toUpperCase() || 'S'}
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-medium">
+              {affiliate?.first_name?.[0]?.toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.full_name || 'Super Admin'}</p>
-              <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+              <p className="text-sm font-medium truncate">
+                {affiliate?.first_name} {affiliate?.last_name}
+              </p>
+              <p className="text-xs text-white/60 truncate">{affiliate?.email}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
-            onClick={() => navigate('/admin/dashboard')}
+            className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
+            onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-2" />
-            Back to Admin
+            Logout
           </Button>
         </div>
       </aside>
@@ -173,13 +190,13 @@ export default function SuperAdminLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Super Admin</span>
+            <Link2 className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Affiliate Portal</span>
           </div>
         </header>
 
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <Outlet context={{ affiliate, refreshAffiliate: checkAuth }} />
         </main>
       </div>
     </div>

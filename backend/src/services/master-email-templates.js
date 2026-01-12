@@ -1284,6 +1284,220 @@ const storeReadyEmail = (data) => {
 };
 
 /**
+ * Affiliate Welcome Email Template
+ * Sent when an affiliate application is approved
+ */
+const affiliateWelcomeEmail = (data) => {
+  const {
+    affiliateName,
+    affiliateFirstName,
+    referralCode,
+    setupUrl,
+    expiresIn = '7 days'
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Welcome to the Affiliate Program!',
+    subtitle: 'Your application has been approved'
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi <strong>${affiliateFirstName || affiliateName}</strong>,
+          </p>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Great news! Your affiliate application has been approved. You can now start earning commissions by referring new store owners to ${PLATFORM_NAME}.
+          </p>
+
+          <!-- Referral Code Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" style="border-collapse: collapse; background-color: #f3f4f6; border-radius: 12px;">
+                  <tr>
+                    <td style="padding: 24px 48px;">
+                      <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                        Your Referral Code
+                      </p>
+                      <p style="margin: 0; color: #6366f1; font-size: 28px; font-weight: 700; letter-spacing: 2px; font-family: monospace;">
+                        ${referralCode}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            To get started, please set up your password to access your affiliate dashboard:
+          </p>
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <a href="${setupUrl}" style="display: inline-block; padding: 14px 32px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+                  Set Up Your Password
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- What You Can Do Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 15px; font-weight: 600;">
+                  What You Can Do in Your Dashboard
+                </h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px;">✓</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Get your personalized referral link to share</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px;">✓</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Track clicks, signups, and conversions in real-time</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px;">✓</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">View your earnings and commission history</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px;">✓</span>
+                    </td>
+                    <td style="padding: 8px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Request payouts via Stripe Connect</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Info Box -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid #6366f1; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
+                  This setup link expires in <strong>${expiresIn}</strong>. If you need a new link, you can request a password reset from the login page.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Welcome aboard!<br>
+            <strong>The ${PLATFORM_NAME} Team</strong>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Your ${PLATFORM_NAME} affiliate application has been approved! Set up your password to get started.`
+  });
+};
+
+/**
+ * Affiliate Password Reset Email Template
+ * Sent when an affiliate requests a password reset
+ */
+const affiliatePasswordResetEmail = (data) => {
+  const {
+    affiliateName,
+    affiliateFirstName,
+    resetLink,
+    expiresIn = '1 hour'
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Reset Your Password',
+    subtitle: 'Affiliate Portal Access'
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi <strong>${affiliateFirstName || affiliateName}</strong>,
+          </p>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            We received a request to reset the password for your ${PLATFORM_NAME} affiliate account. Click the button below to create a new password.
+          </p>
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <a href="${resetLink}" style="display: inline-block; padding: 14px 32px; background-color: #ef4444; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+                  Reset Password
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Warning Box -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid #6366f1; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
+                  This link will expire in <strong>${expiresIn}</strong>. If you didn't request a password reset, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+            If the button doesn't work, copy and paste this link:<br>
+            <a href="${resetLink}" style="color: #6366f1; word-break: break-all;">${resetLink}</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Reset your ${PLATFORM_NAME} affiliate password. This link expires in ${expiresIn}.`
+  });
+};
+
+/**
  * Store Setup Failed Email Template
  * Sent when store provisioning fails
  */
@@ -1391,6 +1605,8 @@ module.exports = {
   onboardingEmail,
   storeReadyEmail,
   storeSetupFailedEmail,
+  affiliateWelcomeEmail,
+  affiliatePasswordResetEmail,
 
   // Constants
   PLATFORM_NAME,

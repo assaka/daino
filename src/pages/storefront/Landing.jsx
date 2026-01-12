@@ -3,6 +3,7 @@ import Header from '@/components/landing/Header';
 import Hero from '@/components/landing/Hero';
 import StoreGallery from '@/components/landing/StoreGallery';
 import AIFeatures from '@/components/landing/AIFeatures';
+import AffiliateSection from '@/components/landing/AffiliateSection';
 import Pricing from '@/components/landing/Pricing';
 import CTA from '@/components/landing/CTA';
 
@@ -13,6 +14,7 @@ export default function Home() {
         <Hero />
         <StoreGallery />
         <AIFeatures />
+        <AffiliateSection />
         <Pricing />
         <CTA />
       </div>

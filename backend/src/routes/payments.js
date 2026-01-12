@@ -3249,6 +3249,22 @@ router.post('/webhook', async (req, res) => {
             // Don't fail the webhook if email fails
           }
 
+          // Process affiliate commission if applicable
+          try {
+            const affiliateService = require('../services/affiliate-service');
+            const subtotal = parseFloat(paymentIntent.metadata?.subtotal || (paymentIntent.amount / 100));
+            await affiliateService.processCommission({
+              userId: paymentIntent.metadata.user_id,
+              purchaseAmount: subtotal,
+              transactionId: paymentIntent.metadata.transaction_id,
+              sourceType: 'credit_purchase'
+            });
+            console.log(`🤝 [${piRequestId}] Affiliate commission processed for credit purchase`);
+          } catch (affiliateError) {
+            // Don't fail the webhook if affiliate processing fails
+            console.error(`⚠️ [${piRequestId}] Affiliate commission error (non-fatal):`, affiliateError.message);
+          }
+
           console.log('='.repeat(80));
         } catch (error) {
           console.error('='.repeat(80));

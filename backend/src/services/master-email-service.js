@@ -19,6 +19,8 @@ const {
   onboardingEmail,
   storeReadyEmail,
   storeSetupFailedEmail,
+  affiliateWelcomeEmail,
+  affiliatePasswordResetEmail,
   PLATFORM_NAME,
   PLATFORM_URL
 } = require('./master-email-templates');
@@ -489,6 +491,60 @@ class MasterEmailService {
     const htmlContent = success
       ? storeReadyEmail({ storeName, dashboardUrl })
       : storeSetupFailedEmail({ storeName, retryUrl: dashboardUrl });
+
+    return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send affiliate welcome email when application is approved
+   * @param {Object} data - Affiliate data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendAffiliateWelcomeEmail(data) {
+    const {
+      recipientEmail,
+      affiliateName,
+      affiliateFirstName,
+      referralCode,
+      setupUrl,
+      expiresIn = '7 days'
+    } = data;
+
+    const htmlContent = affiliateWelcomeEmail({
+      affiliateName,
+      affiliateFirstName: affiliateFirstName || affiliateName?.split(' ')[0] || 'there',
+      referralCode,
+      setupUrl,
+      expiresIn
+    });
+
+    const subject = `Welcome to the ${PLATFORM_NAME} Affiliate Program!`;
+
+    return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send affiliate password reset email
+   * @param {Object} data - Reset data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendAffiliatePasswordResetEmail(data) {
+    const {
+      recipientEmail,
+      affiliateName,
+      affiliateFirstName,
+      resetLink,
+      expiresIn = '1 hour'
+    } = data;
+
+    const htmlContent = affiliatePasswordResetEmail({
+      affiliateName,
+      affiliateFirstName: affiliateFirstName || affiliateName?.split(' ')[0] || 'there',
+      resetLink,
+      expiresIn
+    });
+
+    const subject = `Reset Your ${PLATFORM_NAME} Affiliate Password`;
 
     return await this.sendEmail(recipientEmail, subject, htmlContent);
   }

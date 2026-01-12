@@ -3,3 +3,7 @@ export { default as SuperAdminDashboard } from './Dashboard';
 export { default as SuperAdminStores } from './Stores';
 export { default as SuperAdminUsers } from './Users';
 export { default as SuperAdminMigrations } from './Migrations';
+export { default as SuperAdminAffiliates } from './Affiliates';
+export { default as SuperAdminAffiliateDetail } from './AffiliateDetail';
+export { default as SuperAdminAffiliateTiers } from './AffiliateTiers';
+export { default as SuperAdminAffiliatePayouts } from './AffiliatePayouts';

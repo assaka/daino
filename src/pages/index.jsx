@@ -73,7 +73,7 @@ export { default as Translations } from './admin/Translations';
 export { default as Plugins } from './admin/Plugins';
 
 // Superadmin Pages
-export { SuperAdminLayout, SuperAdminDashboard, SuperAdminStores, SuperAdminUsers, SuperAdminMigrations } from './superadmin';
+export { SuperAdminLayout, SuperAdminDashboard, SuperAdminStores, SuperAdminUsers, SuperAdminMigrations, SuperAdminAffiliates, SuperAdminAffiliateDetail, SuperAdminAffiliateTiers, SuperAdminAffiliatePayouts } from './superadmin';
 export { default as CookieConsent } from './admin/CookieConsent';
 export { default as NavigationManager } from './admin/NavigationManager';
 export { default as AdminForgotPassword } from './admin/AdminForgotPassword';
@@ -131,3 +131,7 @@ export { default as NotFound } from '@/components/shared/NotFoundPage';
 
 // Invitation Pages
 export { default as AcceptInvitation } from './AcceptInvitation';
+
+// Affiliate Pages
+export { default as AffiliateApply } from './AffiliateApply';
+export { AffiliateLayout, AffiliateLogin, AffiliateDashboard, AffiliateReferrals, AffiliateEarnings, AffiliatePayouts } from './affiliate';

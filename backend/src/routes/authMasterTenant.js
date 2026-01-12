@@ -109,6 +109,22 @@ router.post('/register', async (req, res) => {
         });
     }
 
+    // Process affiliate referral if present
+    const affiliateCode = req.cookies?.affiliate_ref || req.body.referral_code;
+    if (affiliateCode) {
+      try {
+        const affiliateService = require('../services/affiliate-service');
+        await affiliateService.processSignupReferral(userId, affiliateCode, {
+          ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress,
+          userAgent: req.headers['user-agent']
+        });
+        console.log(`🤝 Affiliate referral processed for user ${userId} with code ${affiliateCode}`);
+      } catch (affiliateError) {
+        // Don't fail registration if affiliate tracking fails
+        console.error('⚠️ Failed to process affiliate referral:', affiliateError.message);
+      }
+    }
+
     // Note: Store is NOT created during registration
     // Store will be created during onboarding when user provides store name
     const storeId = null;

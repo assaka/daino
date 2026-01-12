@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ const GoogleLogo = () => (
 
 export default function MarketingSignup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Form state - same fields as regular registration
   const [formData, setFormData] = useState({
@@ -39,6 +40,7 @@ export default function MarketingSignup() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState(null);
 
   // Check if already logged in
   useEffect(() => {
@@ -47,6 +49,25 @@ export default function MarketingSignup() {
       navigate('/admin/onboarding', { replace: true });
     }
   }, [navigate]);
+
+  // Track affiliate referral if present
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setReferralCode(ref);
+      // Track the click
+      apiClient.post('/api/affiliates/track-click', {
+        referral_code: ref,
+        landing_page: window.location.href,
+        utm_source: searchParams.get('utm_source'),
+        utm_medium: searchParams.get('utm_medium'),
+        utm_campaign: searchParams.get('utm_campaign'),
+        source: 'signup_page'
+      }).catch(err => {
+        console.log('Referral tracking:', err.message);
+      });
+    }
+  }, [searchParams]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -175,7 +196,8 @@ export default function MarketingSignup() {
         password: formData.password,
         first_name: formData.firstName,
         last_name: formData.lastName,
-        role: 'store_owner'
+        role: 'store_owner',
+        referral_code: referralCode // Include referral code if present
       };
 
       const response = await Auth.register(registerData);

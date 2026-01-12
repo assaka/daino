@@ -559,6 +559,24 @@ function App() {
             <Route path="stores" element={<Pages.SuperAdminStores />} />
             <Route path="users" element={<Pages.SuperAdminUsers />} />
             <Route path="migrations" element={<Pages.SuperAdminMigrations />} />
+            <Route path="affiliates" element={<Pages.SuperAdminAffiliates />} />
+            <Route path="affiliates/:id" element={<Pages.SuperAdminAffiliateDetail />} />
+            <Route path="affiliate-tiers" element={<Pages.SuperAdminAffiliateTiers />} />
+            <Route path="affiliate-payouts" element={<Pages.SuperAdminAffiliatePayouts />} />
+          </Route>
+
+          {/* Affiliate Application */}
+          <Route path="/affiliate/apply" element={<Pages.AffiliateApply />} />
+
+          {/* Affiliate Portal */}
+          <Route path="/affiliate/login" element={<Pages.AffiliateLogin />} />
+          <Route path="/affiliate/reset-password" element={<Pages.AffiliateLogin />} />
+          <Route path="/affiliate" element={<Pages.AffiliateLayout />}>
+            <Route index element={<Pages.AffiliateDashboard />} />
+            <Route path="dashboard" element={<Pages.AffiliateDashboard />} />
+            <Route path="referrals" element={<Pages.AffiliateReferrals />} />
+            <Route path="earnings" element={<Pages.AffiliateEarnings />} />
+            <Route path="payouts" element={<Pages.AffiliatePayouts />} />
           </Route>
 
           {/* Team Invitation */}

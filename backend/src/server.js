@@ -141,6 +141,8 @@ const brevoOAuthRoutes = require('./routes/brevo-oauth');
 const sendgridRoutes = require('./routes/sendgrid');
 const storefrontsRoutes = require('./routes/storefronts');
 const demoDataRoutes = require('./routes/demo-data');
+const affiliatesPublicRoutes = require('./routes/affiliates-public');
+const affiliatesAuthRoutes = require('./routes/affiliates-auth');
 
 // Marketing and CRM routes
 const segmentsRoutes = require('./routes/segments');
@@ -418,6 +420,11 @@ app.use('/api/sitemap', sitemapRoutes);
 
 // AI Agent API
 app.use('/api/ai-agent', aiAgentApiRoutes);
+
+// Public affiliate routes (track clicks, apply, validate)
+app.use('/api/affiliates', affiliatesPublicRoutes);
+// Affiliate portal auth routes (login, password, dashboard data)
+app.use('/api/affiliates/auth', affiliatesAuthRoutes);
 // Public preview routes (no authentication required)
 app.use('/api/preview', previewRoutes);
 
