@@ -236,11 +236,13 @@ export default function CustomerAuth() {
         );
 
         // CustomerAuthAPI returns { success: true, data: { token, user } }
+        console.log('🔐 Login response:', response);
         if (response.success) {
           // Clear logged out flag
           localStorage.removeItem('user_logged_out');
 
           // Track email login
+          console.log('🔐 Tracking login for user:', response.data?.user?.id);
           trackCustomerLogin(response.data?.user?.id || null, 'email');
 
           // Token is already stored by CustomerAuthAPI.login()
@@ -287,6 +289,7 @@ export default function CustomerAuth() {
         const response = await CustomerAuthAPI.register(registerData);
 
         // CustomerAuthAPI returns { success: true, data: { token, user } }
+        console.log('📝 Registration response:', response);
         if (response.success) {
           // Set success message for welcome email
           setSuccess(t('customer_auth.success.registration'));
@@ -295,6 +298,7 @@ export default function CustomerAuth() {
           localStorage.removeItem('user_logged_out');
 
           // Track registration
+          console.log('📝 Tracking registration for user:', response.data?.user?.id);
           trackCustomerRegistration(response.data?.user?.id || null, 'email');
 
           // Token is already stored by CustomerAuthAPI.register()
