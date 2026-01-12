@@ -240,6 +240,37 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
   const storeForVariables = storefrontStore || adminStore;
   const settingsForVariables = storefrontSettings || null;
 
+  // Track promotion views for hero/banner positions
+  useEffect(() => {
+    if (blocks.length > 0 && (position === 'homepage_hero' || position === 'homepage_above_hero' || position === 'homepage_below_hero' || position.includes('banner') || position.includes('promo'))) {
+      const promotions = blocks.map((block, index) => ({
+        id: block.id,
+        name: block.title || block.name || `CMS Block ${index + 1}`,
+        creative: block.identifier || block.title,
+        position: position
+      }));
+
+      if (typeof window !== 'undefined' && window.daino?.trackPromotionView) {
+        window.daino.trackPromotionView(promotions);
+      }
+    }
+  }, [blocks, position]);
+
+  // Track promotion clicks within CMS blocks
+  const handleBlockClick = (e, block) => {
+    const link = e.target.closest('a');
+    if (link && (position === 'homepage_hero' || position === 'homepage_above_hero' || position === 'homepage_below_hero' || position.includes('banner') || position.includes('promo'))) {
+      if (typeof window !== 'undefined' && window.daino?.trackPromotionClick) {
+        window.daino.trackPromotionClick({
+          id: block.id,
+          name: block.title || block.name || 'CMS Block',
+          creative: block.identifier || block.title,
+          position: position
+        });
+      }
+    }
+  };
+
   return (
     <div className="cms-blocks">
       {blocks.map((block) => {
@@ -253,6 +284,7 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
           <div
             key={block.id}
             className="cms-block relative"
+            onClick={(e) => handleBlockClick(e, block)}
           >
             {block.demo && (
               <div className="absolute top-2 right-2 z-10 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300 rounded-md opacity-75">

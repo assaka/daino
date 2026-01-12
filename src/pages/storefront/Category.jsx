@@ -228,6 +228,15 @@ export default function Category() {
           store_id: store.id
         });
       }
+
+      // Track product impressions (view_item_list)
+      const productsToTrack = ensureArray(categoryData.products);
+      if (productsToTrack.length > 0 && typeof window !== 'undefined' && window.daino?.trackProductImpressions) {
+        window.daino.trackProductImpressions(
+          productsToTrack,
+          getCategoryName(categoryData.category, getCurrentLanguage()) || 'Category Page'
+        );
+      }
     } else if (categoryError) {
       showNotFound(`Category "${categorySlug}" not found`);
       setProducts([]);
@@ -400,6 +409,31 @@ export default function Category() {
     }
   }, [activeFilters, setPage]);
 
+  // Track filter changes
+  const handleFilterChangeWithTracking = (newFilters) => {
+    // Track each filter that was applied
+    if (typeof window !== 'undefined' && window.daino?.trackFilterApplied) {
+      const previousFilters = activeFilters;
+
+      // Find newly added or changed filters
+      Object.entries(newFilters).forEach(([filterType, filterValue]) => {
+        const prevValue = previousFilters[filterType];
+        const valueChanged = JSON.stringify(prevValue) !== JSON.stringify(filterValue);
+
+        if (valueChanged && filterValue && (Array.isArray(filterValue) ? filterValue.length > 0 : true)) {
+          const displayValue = Array.isArray(filterValue) ? filterValue.join(', ') : String(filterValue);
+          window.daino.trackFilterApplied(
+            filterType,
+            displayValue,
+            filteredProducts.length
+          );
+        }
+      });
+    }
+
+    setActiveFilters(newFilters);
+  };
+
 
   // Build dynamic filters from database attributes where is_filterable = true
   // Only show options that have products (count > 0)
@@ -565,7 +599,7 @@ export default function Category() {
     slots: categorySlots, // Add slots to context for breadcrumb configuration access
     taxes: [],
     selectedCountry: null,
-    handleFilterChange: setActiveFilters,
+    handleFilterChange: handleFilterChangeWithTracking,
     handleSortChange: handleSortChange,
     handlePageChange: handlePageChange,
     onViewModeChange: setViewMode,
@@ -577,7 +611,17 @@ export default function Category() {
     },
     getProductImageUrl: (product) => product?.images?.[0]?.url || PLACEHOLDER_IMAGE,
     navigate: (url) => window.location.href = url,
-    onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug)
+    onProductClick: (product, index = 0) => {
+      // Track product click (select_item)
+      if (typeof window !== 'undefined' && window.daino?.trackProductClick) {
+        window.daino.trackProductClick(
+          product,
+          index,
+          getCategoryName(currentCategory, getCurrentLanguage()) || 'Category Page'
+        );
+      }
+      window.location.href = createProductUrl(storeCode, product.slug);
+    }
   };
 
   // Combined loading state from both store and category
@@ -640,12 +684,22 @@ export default function Category() {
                 totalPages,
                 itemsPerPage,
                 filteredProductsCount: filteredProducts.length,
-                handleFilterChange: setActiveFilters,
+                handleFilterChange: handleFilterChangeWithTracking,
                 handleSortChange,
                 handleSearchChange: () => {},
                 handlePageChange,
                 clearFilters: () => setActiveFilters({}),
-                onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug),
+                onProductClick: (product, index = 0) => {
+                  // Track product click (select_item)
+                  if (typeof window !== 'undefined' && window.daino?.trackProductClick) {
+                    window.daino.trackProductClick(
+                      product,
+                      index,
+                      getCategoryName(currentCategory, getCurrentLanguage()) || 'Category Page'
+                    );
+                  }
+                  window.location.href = createProductUrl(storeCode, product.slug);
+                },
                 navigate: (url) => window.location.href = url,
                 formatDisplayPrice: (product) => formatPrice(typeof product === 'object' ? product.price : product),
                 getProductImageUrl: (product) => product?.images?.[0]?.url || PLACEHOLDER_IMAGE,
