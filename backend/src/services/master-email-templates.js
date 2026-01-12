@@ -1355,7 +1355,7 @@ const affiliateApplicationReceivedEmail = (data) => {
                       <span style="color: #6366f1; font-size: 14px; font-weight: bold;">1.</span>
                     </td>
                     <td style="padding: 6px 0; vertical-align: top;">
-                      <p style="margin: 0; color: #374151; font-size: 14px;">Our team reviews your application (usually within 1-2 business days)</p>
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Our team reviews your application (within 48 hours)</p>
                     </td>
                   </tr>
                   <tr>
