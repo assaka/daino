@@ -2786,32 +2786,8 @@ router.post('/:pluginId/cron/:cronName/run', async (req, res) => {
       });
     }
 
-    // Get plugin info for secrets
-    const { data: plugin, error: pluginError } = await tenantDb
-      .from('plugin_registry')
-      .select('id, name, slug, settings, secrets')
-      .eq('id', pluginId)
-      .single();
-
-    if (pluginError) throw pluginError;
-
-    // Load secrets
-    let secrets = {};
-    if (plugin.secrets) {
-      try {
-        if (typeof plugin.secrets === 'string' && plugin.secrets.includes(':')) {
-          const { decrypt } = require('../utils/encryption');
-          secrets = JSON.parse(decrypt(plugin.secrets));
-        } else {
-          secrets = plugin.secrets;
-        }
-      } catch (e) {
-        console.warn('Could not decrypt plugin secrets:', e.message);
-      }
-    }
-    if (plugin.settings) {
-      secrets = { ...plugin.settings, ...secrets };
-    }
+    // Secrets are empty for now - plugins can store secrets in handler_params if needed
+    const secrets = {};
 
     // Update status to running
     await tenantDb
