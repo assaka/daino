@@ -1186,34 +1186,34 @@ const DeveloperPluginEditor = ({
     addTerminalOutput(`   Handler: ${selectedFile.handler_method}`, 'info');
 
     try {
-      const response = await apiClient.post(`plugins/${plugin.id}/cron/${selectedFile.cron_name}/run`);
+      const result = await apiClient.post(`plugins/${plugin.id}/cron/${selectedFile.cron_name}/run`);
 
-      if (response.data.success) {
+      if (result.success) {
         addTerminalOutput(`\n✅ Cron job executed successfully!`, 'success');
-        addTerminalOutput(`   Duration: ${response.data.duration}`, 'info');
+        addTerminalOutput(`   Duration: ${result.duration}`, 'info');
 
         // Show logs if any
-        if (response.data.logs && response.data.logs.length > 0) {
+        if (result.logs && result.logs.length > 0) {
           addTerminalOutput(`\n📋 Execution logs:`, 'info');
-          response.data.logs.forEach(log => {
+          result.logs.forEach(log => {
             const typeMap = { error: 'error', warn: 'warning', info: 'info', log: 'info' };
             addTerminalOutput(`   [${log.level}] ${log.message}`, typeMap[log.level] || 'info');
           });
         }
 
         // Show result
-        if (response.data.result) {
+        if (result.result) {
           addTerminalOutput(`\n📤 Result:`, 'info');
-          addTerminalOutput(`   ${JSON.stringify(response.data.result, null, 2)}`, 'success');
+          addTerminalOutput(`   ${JSON.stringify(result.result, null, 2)}`, 'success');
         }
       } else {
         addTerminalOutput(`\n❌ Cron job failed!`, 'error');
-        addTerminalOutput(`   Error: ${response.data.error}`, 'error');
+        addTerminalOutput(`   Error: ${result.error}`, 'error');
 
         // Still show logs on failure
-        if (response.data.logs && response.data.logs.length > 0) {
+        if (result.logs && result.logs.length > 0) {
           addTerminalOutput(`\n📋 Execution logs:`, 'info');
-          response.data.logs.forEach(log => {
+          result.logs.forEach(log => {
             const typeMap = { error: 'error', warn: 'warning', info: 'info', log: 'info' };
             addTerminalOutput(`   [${log.level}] ${log.message}`, typeMap[log.level] || 'info');
           });
@@ -1221,8 +1221,8 @@ const DeveloperPluginEditor = ({
       }
     } catch (error) {
       addTerminalOutput(`\n❌ Failed to run cron job: ${error.message}`, 'error');
-      if (error.response?.data?.error) {
-        addTerminalOutput(`   Server error: ${error.response.data.error}`, 'error');
+      if (error.data?.error) {
+        addTerminalOutput(`   Server error: ${error.data.error}`, 'error');
       }
     } finally {
       setIsRunningCron(false);
