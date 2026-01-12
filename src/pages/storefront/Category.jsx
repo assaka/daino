@@ -220,6 +220,11 @@ export default function Category() {
 
       // Track category view
       if (typeof window !== 'undefined' && window.daino?.trackEvent) {
+        console.log('📊 Category page_view:', {
+          page_type: 'category',
+          category_name: getCategoryName(categoryData.category, getCurrentLanguage()),
+          category_id: categoryData.category.id
+        });
         window.daino.trackEvent('page_view', {
           page_type: 'category',
           category_name: getCategoryName(categoryData.category, getCurrentLanguage()),
@@ -232,6 +237,10 @@ export default function Category() {
       // Track product impressions (view_item_list)
       const productsToTrack = ensureArray(categoryData.products);
       if (productsToTrack.length > 0 && typeof window !== 'undefined' && window.daino?.trackProductImpressions) {
+        console.log('📊 view_item_list:', {
+          products_count: productsToTrack.length,
+          category: getCategoryName(categoryData.category, getCurrentLanguage())
+        });
         window.daino.trackProductImpressions(
           productsToTrack,
           getCategoryName(categoryData.category, getCurrentLanguage()) || 'Category Page'
@@ -422,6 +431,11 @@ export default function Category() {
 
         if (valueChanged && filterValue && (Array.isArray(filterValue) ? filterValue.length > 0 : true)) {
           const displayValue = Array.isArray(filterValue) ? filterValue.join(', ') : String(filterValue);
+          console.log('📊 filter_applied:', {
+            filter_type: filterType,
+            filter_value: displayValue,
+            results_count: filteredProducts.length
+          });
           window.daino.trackFilterApplied(
             filterType,
             displayValue,
@@ -614,6 +628,12 @@ export default function Category() {
     onProductClick: (product, index = 0) => {
       // Track product click (select_item)
       if (typeof window !== 'undefined' && window.daino?.trackProductClick) {
+        console.log('📊 select_item:', {
+          product_id: product.id,
+          product_name: product.name,
+          position: index,
+          category: getCategoryName(currentCategory, getCurrentLanguage())
+        });
         window.daino.trackProductClick(
           product,
           index,
@@ -692,6 +712,12 @@ export default function Category() {
                 onProductClick: (product, index = 0) => {
                   // Track product click (select_item)
                   if (typeof window !== 'undefined' && window.daino?.trackProductClick) {
+                    console.log('📊 select_item:', {
+                      product_id: product.id,
+                      product_name: product.name,
+                      position: index,
+                      category: getCategoryName(currentCategory, getCurrentLanguage())
+                    });
                     window.daino.trackProductClick(
                       product,
                       index,
