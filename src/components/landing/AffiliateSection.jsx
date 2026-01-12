@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Users, ArrowRight, DollarSign, TrendingUp, Sparkles } from 'lucide-react';
+import { Store, Users, ArrowRight, DollarSign, TrendingUp, Sparkles, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import apiClient from '@/api/client';
 
@@ -93,11 +93,15 @@ export default function AffiliateSection() {
                   </li>
                   <li className="flex items-center gap-3 text-white/90">
                     <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                      <ArrowRight className="h-3 w-3" />
+                      <Gift className="h-3 w-3" />
                     </div>
-                    Custom domain support
+                    Earn 30 credits for every referral
                   </li>
                 </ul>
+
+                <p className="text-white/50 text-xs mb-4">
+                  * Referral rewards require at least 1 active store
+                </p>
 
                 <Link to="/signup">
                   <Button
