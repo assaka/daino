@@ -847,7 +847,7 @@ function LayoutInner({ children, currentPageName }) {
             )}
 
             {/* Affiliate Program - user-level feature */}
-            {!isPendingDatabase && (
+            {!isPendingDatabase && user?.email === 'hello@dainostore.com' && (
               <Link
                 to="/admin/affiliate"
                 className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-2 ${
@@ -864,7 +864,7 @@ function LayoutInner({ children, currentPageName }) {
             )}
 
             {/* TEMPORARY: Reprovision Slot Configs Button for Testing */}
-            {!isPendingDatabase && selectedStore?.id && user?.email === 'hamid@sprtags.io' && (
+            {!isPendingDatabase && selectedStore?.id && user?.email === 'hello@dainostore.com' && (
               <button
                 onClick={async () => {
                   if (!confirm('This will delete and re-create all slot configurations. Continue?')) return;
