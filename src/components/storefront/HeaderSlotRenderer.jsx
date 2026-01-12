@@ -430,25 +430,54 @@ export function HeaderSlotRenderer({
         };
 
         return (
-          <Button
-            key={id}
-            variant="ghost"
-            className={`${colSpanClasses}h-11 w-11 p-0 flex items-center justify-center ${className || ''}`}
-            onClick={() => {
-              if (user) {
-                // Show dropdown or navigate to account
-              } else {
-                localStorage.setItem('customer_auth_store_id', store?.id);
-                localStorage.setItem('customer_auth_store_code', store?.slug);
-                navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
-              }
-            }}
-            disabled={userLoading}
-            data-slot-id={id}
-            style={{ color: headerIconColor }}
-          >
-            {getMobileUserIcon()}
-          </Button>
+          <div key={id} className={`${colSpanClasses}${className || ''}`} data-slot-id={id}>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-11 w-11 p-0 flex items-center justify-center"
+                    disabled={userLoading}
+                    style={{ color: headerIconColor }}
+                  >
+                    {getMobileUserIcon()}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuLabel>
+                    {user.first_name || user.name || user.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    navigate?.(createPublicUrl(store?.slug, 'ACCOUNT'));
+                  }}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>{t('common.my_account', 'My Account')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    handleCustomerLogout?.();
+                  }}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t('common.logout', 'Logout')}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="ghost"
+                className="h-11 w-11 p-0 flex items-center justify-center"
+                onClick={() => {
+                  localStorage.setItem('customer_auth_store_id', store?.id);
+                  localStorage.setItem('customer_auth_store_code', store?.slug);
+                  navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
+                }}
+                disabled={userLoading}
+                style={{ color: headerIconColor }}
+              >
+                {getMobileUserIcon()}
+              </Button>
+            )}
+          </div>
         );
 
       case 'WishlistDropdown':
