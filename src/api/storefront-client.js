@@ -279,8 +279,13 @@ class StorefrontApiClient {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Clear invalid customer token
+          // Clear invalid customer token and auth cache
           this.setCustomerToken(null);
+          this.customerToken = null;
+          // Clear auth cache to prevent stale data
+          if (window.__authMeCache) {
+            window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+          }
           throw new Error('Customer session expired. Please log in again.');
         }
         
@@ -341,16 +346,22 @@ class StorefrontApiClient {
     } catch (error) {
       console.error('Customer logout failed:', error.message);
     }
-    
+
     // Clear all customer-related data
     this.setCustomerToken(null);
     localStorage.removeItem('customer_user_data');
     localStorage.removeItem('cart_session_id');
-    localStorage.removeItem('user_logged_out'); // Clear this flag too
-    
+    localStorage.removeItem('customer_current_store');
+    localStorage.removeItem('customer_auth_store_code');
+
+    // Clear auth cache
+    if (window.__authMeCache) {
+      window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+    }
+
     // Reset customer token reference
     this.customerToken = null;
-    
+
     return { success: true };
   }
 

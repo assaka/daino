@@ -308,7 +308,11 @@ class ApiClient {
                              errorMessage.includes('Invalid token') ||
                              errorMessage.includes('Unauthorized') ||
                              errorMessage.includes('Authentication failed') ||
-                             errorMessage.includes('Token expired');
+                             errorMessage.includes('Token expired') ||
+                             errorMessage.includes('session expired') ||
+                             errorMessage.includes('Session expired') ||
+                             errorMessage.includes('User not found') ||
+                             errorMessage.includes('No authentication token');
 
           if (isAuthError && !isAuthRoute) {
             console.warn('❌ Authentication failure detected, logging out user:', errorMessage);
@@ -731,10 +735,22 @@ class ApiClient {
     localStorage.removeItem('guest_session_id');
     localStorage.removeItem('cart_session_id');
     localStorage.removeItem('session_created_at');
-    
+    localStorage.removeItem('customer_current_store');
+    localStorage.removeItem('customer_auth_store_code');
+
+    // Clear ALL store-specific customer tokens (customer_auth_token_{slug})
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('customer_auth_token_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
     // Set logout flag
     localStorage.setItem('user_logged_out', 'true');
-    
+
     // Clear API client state
     this.token = null;
     this.isLoggedOut = true;
@@ -766,15 +782,7 @@ class ApiClient {
 
   // Manual logout for testing
   manualLogout() {
-    // Clear role-specific tokens
-    localStorage.removeItem('customer_auth_token');
-    localStorage.removeItem('customer_user_data');
-    localStorage.removeItem('store_owner_auth_token');
-    localStorage.removeItem('store_owner_user_data');
-    localStorage.setItem('user_logged_out', 'true');
-    localStorage.removeItem('selectedStoreId');
-    this.token = null;
-    this.isLoggedOut = true;
+    this.clearAllAuthData();
   }
 
   // Manual role assignment for testing
