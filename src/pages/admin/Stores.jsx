@@ -183,7 +183,8 @@ export default function Stores() {
 
         // Check payment methods - need at least one active
         const pmResponse = await apiClient.get(`payment-methods?store_id=${storeId}&limit=100`);
-        const paymentMethods = pmResponse?.data?.payment_methods || pmResponse?.payment_methods || [];
+        // apiClient transforms paginated responses and returns the array directly
+        const paymentMethods = Array.isArray(pmResponse) ? pmResponse : (pmResponse?.data?.payment_methods || pmResponse?.payment_methods || []);
         const hasActivePaymentMethod = paymentMethods.some(pm => pm.is_active === true);
 
         // If either is missing, show validation error modal

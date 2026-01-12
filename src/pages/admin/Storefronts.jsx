@@ -94,14 +94,15 @@ export default function Storefronts() {
       }
 
       const response = await apiClient.get(`/storefronts?store_id=${storeId}`);
-      let storefrontsList = response.data?.data || [];
+      // apiClient transforms paginated responses and returns the array directly
+      let storefrontsList = Array.isArray(response) ? response : (response.data?.data || []);
 
       // If no storefronts exist, create a default one from current store data
       if (storefrontsList.length === 0) {
         await createDefaultStorefront(storeId);
         // Reload after creating default
         const reloadResponse = await apiClient.get(`/storefronts?store_id=${storeId}`);
-        storefrontsList = reloadResponse.data?.data || [];
+        storefrontsList = Array.isArray(reloadResponse) ? reloadResponse : (reloadResponse.data?.data || []);
       }
 
       setStorefronts(storefrontsList);

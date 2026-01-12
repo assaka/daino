@@ -359,8 +359,10 @@ export default function Dashboard() {
           interval: 'day'
         });
         const thisWeekResponse = await apiClient.get(`/analytics-dashboard/${storeId}/timeseries?${thisWeekParams}`);
-        if (thisWeekResponse.data && Array.isArray(thisWeekResponse.data)) {
-          pageViewsThisWeek = thisWeekResponse.data.reduce((sum, d) => sum + (d.page_views || 0), 0);
+        // apiClient transforms paginated responses and returns the array directly
+        const thisWeekData = Array.isArray(thisWeekResponse) ? thisWeekResponse : thisWeekResponse.data;
+        if (thisWeekData && Array.isArray(thisWeekData)) {
+          pageViewsThisWeek = thisWeekData.reduce((sum, d) => sum + (d.page_views || 0), 0);
         }
 
         // Fetch last week's data
@@ -370,8 +372,9 @@ export default function Dashboard() {
           interval: 'day'
         });
         const lastWeekResponse = await apiClient.get(`/analytics-dashboard/${storeId}/timeseries?${lastWeekParams}`);
-        if (lastWeekResponse.data && Array.isArray(lastWeekResponse.data)) {
-          pageViewsLastWeek = lastWeekResponse.data.reduce((sum, d) => sum + (d.page_views || 0), 0);
+        const lastWeekData = Array.isArray(lastWeekResponse) ? lastWeekResponse : lastWeekResponse.data;
+        if (lastWeekData && Array.isArray(lastWeekData)) {
+          pageViewsLastWeek = lastWeekData.reduce((sum, d) => sum + (d.page_views || 0), 0);
         }
 
         pageViewsGrowth = calculateGrowth(pageViewsThisWeek, pageViewsLastWeek);

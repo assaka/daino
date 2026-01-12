@@ -411,7 +411,8 @@ const WooCommerceIntegration = () => {
     setLoadingSchedules(true);
     try {
       const response = await apiClient.get('/woocommerce/schedules');
-      const scheduleData = response.data?.schedules || response.schedules || [];
+      // apiClient transforms paginated responses and returns the array directly
+      const scheduleData = Array.isArray(response) ? response : (response.data?.schedules || response.schedules || []);
       setSchedules(scheduleData);
     } catch (error) {
       console.error('Failed to load schedules:', error);
