@@ -466,6 +466,7 @@ function App() {
           <Route path="/admin/stores" element={<PageWrapper Component={Pages.Stores} pageName="STORES" />} />
           <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />
           <Route path="/admin/credits" element={<PageWrapper Component={Pages.Credits} pageName="Credits" />} />
+          <Route path="/admin/affiliate" element={<PageWrapper Component={Pages.AdminAffiliate} pageName="AdminAffiliate" />} />
           <Route path="/admin/uptime-report" element={<PageWrapper Component={Pages.UptimeReport} pageName="UptimeReport" />} />
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
           <Route path="/admin/access-requests" element={<PageWrapper Component={Pages.AccessRequestsPage} pageName="AccessRequestsPage" />} />

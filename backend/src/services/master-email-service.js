@@ -19,6 +19,8 @@ const {
   onboardingEmail,
   storeReadyEmail,
   storeSetupFailedEmail,
+  affiliateApplicationReceivedEmail,
+  affiliateApplicationAdminEmail,
   affiliateWelcomeEmail,
   affiliatePasswordResetEmail,
   PLATFORM_NAME,
@@ -547,6 +549,70 @@ class MasterEmailService {
     const subject = `Reset Your ${PLATFORM_NAME} Affiliate Password`;
 
     return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send affiliate application received confirmation email
+   * @param {Object} data - Affiliate data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendAffiliateApplicationReceivedEmail(data) {
+    const {
+      recipientEmail,
+      affiliateName,
+      affiliateFirstName,
+      referralCode
+    } = data;
+
+    const htmlContent = affiliateApplicationReceivedEmail({
+      affiliateName,
+      affiliateFirstName: affiliateFirstName || affiliateName?.split(' ')[0] || 'there',
+      email: recipientEmail,
+      referralCode
+    });
+
+    const subject = `Application Received - ${PLATFORM_NAME} Affiliate Program`;
+
+    return await this.sendEmail(recipientEmail, subject, htmlContent);
+  }
+
+  /**
+   * Send affiliate application notification to admin
+   * @param {Object} data - Affiliate data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendAffiliateApplicationAdminEmail(data) {
+    const {
+      affiliateName,
+      email,
+      affiliateType,
+      companyName,
+      websiteUrl,
+      phone,
+      applicationNotes,
+      referralCode,
+      affiliateId
+    } = data;
+
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'hello@dainostore.com';
+    const baseUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'https://www.dainostore.com';
+    const reviewUrl = `${baseUrl}/superadmin/affiliates/${affiliateId}`;
+
+    const htmlContent = affiliateApplicationAdminEmail({
+      affiliateName,
+      email,
+      affiliateType,
+      companyName,
+      websiteUrl,
+      phone,
+      applicationNotes,
+      referralCode,
+      reviewUrl
+    });
+
+    const subject = `New Affiliate Application: ${affiliateName}`;
+
+    return await this.sendEmail(adminEmail, subject, htmlContent);
   }
 
   /**

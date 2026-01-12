@@ -846,6 +846,23 @@ function LayoutInner({ children, currentPageName }) {
               </Link>
             )}
 
+            {/* Affiliate Program - user-level feature */}
+            {!isPendingDatabase && (
+              <Link
+                to="/admin/affiliate"
+                className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-2 ${
+                  location.pathname === '/admin/affiliate'
+                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Users className="w-5 h-5" />
+                <span className="flex-1">Affiliate</span>
+                {location.pathname === '/admin/affiliate' && <ChevronRight className="w-4 h-4 ml-auto" />}
+              </Link>
+            )}
+
             {/* TEMPORARY: Reprovision Slot Configs Button for Testing */}
             {!isPendingDatabase && selectedStore?.id && user?.email === 'hamid@sprtags.io' && (
               <button

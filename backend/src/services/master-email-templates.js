@@ -1284,6 +1284,244 @@ const storeReadyEmail = (data) => {
 };
 
 /**
+ * Affiliate Application Received Email Template
+ * Sent to affiliate when they submit an application
+ */
+const affiliateApplicationReceivedEmail = (data) => {
+  const {
+    affiliateName,
+    affiliateFirstName,
+    email,
+    referralCode
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'Application Received',
+    subtitle: 'Thank you for applying to our affiliate program'
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi <strong>${affiliateFirstName || affiliateName}</strong>,
+          </p>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Thank you for applying to the ${PLATFORM_NAME} Affiliate Program! We've received your application and our team will review it shortly.
+          </p>
+
+          <!-- Application Details Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 15px; font-weight: 600;">
+                  Application Details
+                </h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 120px;">Email:</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 500;">${email}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Referral Code:</td>
+                    <td style="padding: 8px 0; color: #6366f1; font-size: 14px; font-weight: 600; font-family: monospace;">${referralCode}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Status:</td>
+                    <td style="padding: 8px 0; color: #f59e0b; font-size: 14px; font-weight: 500;">Pending Review</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- What's Next Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #eef2ff; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <h3 style="margin: 0 0 16px 0; color: #3730a3; font-size: 15px; font-weight: 600;">
+                  What Happens Next?
+                </h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 6px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px; font-weight: bold;">1.</span>
+                    </td>
+                    <td style="padding: 6px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Our team reviews your application (usually within 1-2 business days)</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px; font-weight: bold;">2.</span>
+                    </td>
+                    <td style="padding: 6px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">You'll receive an email with your approval status</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; vertical-align: top; width: 24px;">
+                      <span style="color: #6366f1; font-size: 14px; font-weight: bold;">3.</span>
+                    </td>
+                    <td style="padding: 6px 0; vertical-align: top;">
+                      <p style="margin: 0; color: #374151; font-size: 14px;">Once approved, you can set up your password and start earning!</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            We look forward to having you in our affiliate program!<br><br>
+            <strong>The ${PLATFORM_NAME} Team</strong>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `Your ${PLATFORM_NAME} affiliate application has been received and is pending review.`
+  });
+};
+
+/**
+ * Affiliate Application Admin Notification Email Template
+ * Sent to admin when a new affiliate application is submitted
+ */
+const affiliateApplicationAdminEmail = (data) => {
+  const {
+    affiliateName,
+    email,
+    affiliateType,
+    companyName,
+    websiteUrl,
+    phone,
+    applicationNotes,
+    referralCode,
+    reviewUrl
+  } = data;
+
+  const header = masterEmailHeader({
+    title: 'New Affiliate Application',
+    subtitle: 'A new affiliate has applied to the program'
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            A new affiliate application has been submitted and requires review.
+          </p>
+
+          <!-- Applicant Details Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 15px; font-weight: 600;">
+                  Applicant Details
+                </h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 140px;">Name:</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 500;">${affiliateName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Email:</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px;">${email}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Type:</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px; text-transform: capitalize;">${affiliateType || 'Individual'}</td>
+                  </tr>
+                  ${companyName ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Company:</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px;">${companyName}</td>
+                  </tr>
+                  ` : ''}
+                  ${websiteUrl ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Website:</td>
+                    <td style="padding: 8px 0; color: #6366f1; font-size: 14px;">
+                      <a href="${websiteUrl}" style="color: #6366f1; text-decoration: none;">${websiteUrl}</a>
+                    </td>
+                  </tr>
+                  ` : ''}
+                  ${phone ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Phone:</td>
+                    <td style="padding: 8px 0; color: #111827; font-size: 14px;">${phone}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Referral Code:</td>
+                    <td style="padding: 8px 0; color: #6366f1; font-size: 14px; font-weight: 600; font-family: monospace;">${referralCode}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          ${applicationNotes ? `
+          <!-- Application Notes -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 16px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 8px 0; color: #92400e; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                  Application Notes
+                </p>
+                <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.5;">
+                  ${applicationNotes}
+                </p>
+              </td>
+            </tr>
+          </table>
+          ` : ''}
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <a href="${reviewUrl}" style="display: inline-block; padding: 14px 32px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px;">
+                  Review Application
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+            You can also review this application in the <a href="${reviewUrl}" style="color: #6366f1;">Superadmin Dashboard</a>.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `New affiliate application from ${affiliateName} - pending review`
+  });
+};
+
+/**
  * Affiliate Welcome Email Template
  * Sent when an affiliate application is approved
  */
@@ -1605,6 +1843,8 @@ module.exports = {
   onboardingEmail,
   storeReadyEmail,
   storeSetupFailedEmail,
+  affiliateApplicationReceivedEmail,
+  affiliateApplicationAdminEmail,
   affiliateWelcomeEmail,
   affiliatePasswordResetEmail,
 

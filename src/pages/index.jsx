@@ -62,6 +62,7 @@ export { default as HeatmapAnalytics } from './admin/HeatmapAnalytics';
 export { default as ABTesting } from './admin/ABTesting';
 export { default as Billing } from './admin/Billing';
 export { default as Credits } from './admin/Credits';
+export { default as AdminAffiliate } from './admin/AdminAffiliate';
 export { default as UptimeReport } from './admin/UptimeReport';
 export { default as TeamPage } from './admin/TeamPage';
 export { default as AccessRequestsPage } from './admin/AccessRequestsPage';

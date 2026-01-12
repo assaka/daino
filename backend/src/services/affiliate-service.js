@@ -180,6 +180,38 @@ class AffiliateService {
       .single();
 
     if (error) throw error;
+
+    // Send confirmation email to affiliate and notification to admin
+    try {
+      const masterEmailService = require('./master-email-service');
+
+      // Send confirmation email to affiliate
+      await masterEmailService.sendAffiliateApplicationReceivedEmail({
+        recipientEmail: affiliate.email,
+        affiliateName: `${affiliate.first_name} ${affiliate.last_name}`,
+        affiliateFirstName: affiliate.first_name,
+        referralCode: affiliate.referral_code
+      });
+      console.log('📧 Affiliate application confirmation sent to:', affiliate.email);
+
+      // Send notification email to admin
+      await masterEmailService.sendAffiliateApplicationAdminEmail({
+        affiliateName: `${affiliate.first_name} ${affiliate.last_name}`,
+        email: affiliate.email,
+        affiliateType: affiliate.affiliate_type,
+        companyName: affiliate.company_name,
+        websiteUrl: affiliate.website_url,
+        phone: affiliate.phone,
+        applicationNotes: affiliate.application_notes,
+        referralCode: affiliate.referral_code,
+        affiliateId: affiliate.id
+      });
+      console.log('📧 Affiliate application notification sent to admin');
+    } catch (emailError) {
+      console.error('⚠️ Failed to send affiliate application emails:', emailError.message);
+      // Don't fail the application if emails fail
+    }
+
     return affiliate;
   }
 
