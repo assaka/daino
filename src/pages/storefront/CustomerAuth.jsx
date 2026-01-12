@@ -12,6 +12,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import { PageLoader } from '@/components/ui/page-loader';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { getUserDataForRole } from '@/utils/auth';
+import { trackCustomerLogin, trackCustomerRegistration } from '@/components/storefront/DataLayerManager';
 
 export default function CustomerAuth() {
   const { t } = useTranslation();
@@ -146,6 +147,9 @@ export default function CustomerAuth() {
             // Save user data
             localStorage.setItem('customer_user_data', JSON.stringify(userData));
 
+            // Track Google login
+            trackCustomerLogin(userData.id, 'google');
+
             // Redirect to account page
             const accountUrl = await getCustomerAccountUrl();
             navigate(accountUrl, { replace: true });
@@ -236,6 +240,9 @@ export default function CustomerAuth() {
           // Clear logged out flag
           localStorage.removeItem('user_logged_out');
 
+          // Track email login
+          trackCustomerLogin(response.data?.user?.id || null, 'email');
+
           // Token is already stored by CustomerAuthAPI.login()
           // Navigate to customer account
           const accountUrl = await getCustomerAccountUrl();
@@ -286,6 +293,9 @@ export default function CustomerAuth() {
 
           // Clear logged out flag
           localStorage.removeItem('user_logged_out');
+
+          // Track registration
+          trackCustomerRegistration(response.data?.user?.id || null, 'email');
 
           // Token is already stored by CustomerAuthAPI.register()
           // Wait a moment to show the success message before redirecting
