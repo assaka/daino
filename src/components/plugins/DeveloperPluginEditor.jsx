@@ -90,6 +90,7 @@ const DeveloperPluginEditor = ({
   const [editingCronSchedule, setEditingCronSchedule] = useState('');
   const [editingCronHandlerMethod, setEditingCronHandlerMethod] = useState('');
   const [editingControllerMethod, setEditingControllerMethod] = useState('POST');
+  const [isRunningCron, setIsRunningCron] = useState(false);
   const [isRunningMigration, setIsRunningMigration] = useState(false);
   const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
   const [migrationResult, setMigrationResult] = useState(null);
@@ -1171,6 +1172,63 @@ const DeveloperPluginEditor = ({
     // This should run plugin validation, linting, or other tests
   };
 
+  const handleTestCron = async () => {
+    if (!selectedFile?.cron_name) {
+      addTerminalOutput('✗ No cron job selected', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    setIsRunningCron(true);
+    setShowTerminal(true);
+    addTerminalOutput(`\n🔄 Testing cron job: ${selectedFile.cron_name}...`, 'info');
+    addTerminalOutput(`   Schedule: ${selectedFile.cron_schedule}`, 'info');
+    addTerminalOutput(`   Handler: ${selectedFile.handler_method}`, 'info');
+
+    try {
+      const response = await apiClient.post(`plugins/${plugin.id}/cron/${selectedFile.cron_name}/run`);
+
+      if (response.data.success) {
+        addTerminalOutput(`\n✅ Cron job executed successfully!`, 'success');
+        addTerminalOutput(`   Duration: ${response.data.duration}`, 'info');
+
+        // Show logs if any
+        if (response.data.logs && response.data.logs.length > 0) {
+          addTerminalOutput(`\n📋 Execution logs:`, 'info');
+          response.data.logs.forEach(log => {
+            const typeMap = { error: 'error', warn: 'warning', info: 'info', log: 'info' };
+            addTerminalOutput(`   [${log.level}] ${log.message}`, typeMap[log.level] || 'info');
+          });
+        }
+
+        // Show result
+        if (response.data.result) {
+          addTerminalOutput(`\n📤 Result:`, 'info');
+          addTerminalOutput(`   ${JSON.stringify(response.data.result, null, 2)}`, 'success');
+        }
+      } else {
+        addTerminalOutput(`\n❌ Cron job failed!`, 'error');
+        addTerminalOutput(`   Error: ${response.data.error}`, 'error');
+
+        // Still show logs on failure
+        if (response.data.logs && response.data.logs.length > 0) {
+          addTerminalOutput(`\n📋 Execution logs:`, 'info');
+          response.data.logs.forEach(log => {
+            const typeMap = { error: 'error', warn: 'warning', info: 'info', log: 'info' };
+            addTerminalOutput(`   [${log.level}] ${log.message}`, typeMap[log.level] || 'info');
+          });
+        }
+      }
+    } catch (error) {
+      addTerminalOutput(`\n❌ Failed to run cron job: ${error.message}`, 'error');
+      if (error.response?.data?.error) {
+        addTerminalOutput(`   Server error: ${error.response.data.error}`, 'error');
+      }
+    } finally {
+      setIsRunningCron(false);
+    }
+  };
+
   const handleCreateNewFile = async () => {
     if (!newFileName.trim()) {
       addTerminalOutput('✗ File name cannot be empty', 'error');
@@ -1959,6 +2017,21 @@ const DeveloperPluginEditor = ({
                         >
                           <Code className="w-4 h-4 mr-1" />
                           Edit Controller
+                        </Button>
+                      )}
+
+                      {/* Test Cron button - only for cron files */}
+                      {selectedFile?.cron_name && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                          onClick={handleTestCron}
+                          disabled={isRunningCron}
+                          title="Execute this cron job now and see output in terminal"
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          {isRunningCron ? 'Running...' : 'Test Cron'}
                         </Button>
                       )}
 

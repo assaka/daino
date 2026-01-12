@@ -2753,12 +2753,15 @@ router.post('/:pluginId/cron/:cronName/toggle', async (req, res) => {
 
 /**
  * POST /api/plugins/:pluginId/cron/:cronName/run
- * Manually trigger a cron job execution
+ * Manually trigger a cron job execution and return results
  */
 router.post('/:pluginId/cron/:cronName/run', async (req, res) => {
   try {
     const tenantDb = await getTenantConnection(req);
     const { pluginId, cronName } = req.params;
+    const storeId = req.headers['x-store-id'] || req.storeId;
+
+    console.log(`🔄 Manual cron trigger: ${cronName} for plugin ${pluginId}`);
 
     // Get cron job details
     const { data: cronJob, error: fetchError } = await tenantDb
@@ -2776,37 +2779,152 @@ router.post('/:pluginId/cron/:cronName/run', async (req, res) => {
       });
     }
 
-    // Get plugin info
+    if (!cronJob.handler_code) {
+      return res.status(400).json({
+        success: false,
+        error: 'No handler_code defined for this cron job'
+      });
+    }
+
+    // Get plugin info for secrets
     const { data: plugin, error: pluginError } = await tenantDb
       .from('plugin_registry')
-      .select('id, name, slug')
+      .select('id, name, slug, settings, secrets')
       .eq('id', pluginId)
       .single();
 
     if (pluginError) throw pluginError;
 
-    // TODO: Queue the job for immediate execution via BackgroundJobManager
-    // For now, just update last_run_at to indicate it was triggered
-    const { data, error } = await tenantDb
+    // Load secrets
+    let secrets = {};
+    if (plugin.secrets) {
+      try {
+        if (typeof plugin.secrets === 'string' && plugin.secrets.includes(':')) {
+          const { decrypt } = require('../utils/encryption');
+          secrets = JSON.parse(decrypt(plugin.secrets));
+        } else {
+          secrets = plugin.secrets;
+        }
+      } catch (e) {
+        console.warn('Could not decrypt plugin secrets:', e.message);
+      }
+    }
+    if (plugin.settings) {
+      secrets = { ...plugin.settings, ...secrets };
+    }
+
+    // Update status to running
+    await tenantDb
       .from('plugin_cron')
       .update({
         last_run_at: new Date().toISOString(),
         last_status: 'running',
-        run_count: (cronJob.run_count || 0) + 1,
         updated_at: new Date().toISOString()
       })
       .eq('plugin_id', pluginId)
-      .eq('cron_name', cronName)
-      .select()
-      .single();
+      .eq('cron_name', cronName);
 
-    if (error) throw error;
+    // Execute the handler_code
+    const startTime = Date.now();
+    let result = null;
+    let error = null;
+    const logs = [];
+
+    // Create a custom console that captures logs
+    const captureConsole = {
+      log: (...args) => {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        logs.push({ level: 'log', message: msg, timestamp: new Date().toISOString() });
+        console.log(`[CRON ${cronName}]`, ...args);
+      },
+      error: (...args) => {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        logs.push({ level: 'error', message: msg, timestamp: new Date().toISOString() });
+        console.error(`[CRON ${cronName}]`, ...args);
+      },
+      warn: (...args) => {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        logs.push({ level: 'warn', message: msg, timestamp: new Date().toISOString() });
+        console.warn(`[CRON ${cronName}]`, ...args);
+      },
+      info: (...args) => {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        logs.push({ level: 'info', message: msg, timestamp: new Date().toISOString() });
+        console.info(`[CRON ${cronName}]`, ...args);
+      }
+    };
+
+    try {
+      // Load email service
+      const emailService = require('../services/email-service');
+
+      // Create async function from handler_code
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const handlerFn = new AsyncFunction(
+        'db', 'storeId', 'params', 'secrets', 'fetch', 'apiBaseUrl', 'console', 'emailService',
+        cronJob.handler_code
+      );
+
+      const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3001';
+
+      // Execute
+      result = await handlerFn(
+        tenantDb,
+        storeId,
+        cronJob.handler_params || {},
+        secrets,
+        fetch,
+        apiBaseUrl,
+        captureConsole,
+        emailService
+      );
+
+      // Update success status
+      await tenantDb
+        .from('plugin_cron')
+        .update({
+          last_status: 'success',
+          last_result: result,
+          last_error: null,
+          run_count: (cronJob.run_count || 0) + 1,
+          success_count: (cronJob.success_count || 0) + 1,
+          consecutive_failures: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('plugin_id', pluginId)
+        .eq('cron_name', cronName);
+
+    } catch (execError) {
+      error = execError.message;
+      console.error(`❌ Cron ${cronName} execution failed:`, execError);
+
+      // Update failure status
+      await tenantDb
+        .from('plugin_cron')
+        .update({
+          last_status: 'failed',
+          last_error: error,
+          run_count: (cronJob.run_count || 0) + 1,
+          failure_count: (cronJob.failure_count || 0) + 1,
+          consecutive_failures: (cronJob.consecutive_failures || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('plugin_id', pluginId)
+        .eq('cron_name', cronName);
+    }
+
+    const duration = Date.now() - startTime;
 
     res.json({
-      success: true,
-      message: `Cron job '${cronName}' triggered for execution`,
-      cronJob: data
+      success: !error,
+      message: error ? `Cron job '${cronName}' failed` : `Cron job '${cronName}' executed successfully`,
+      cronName,
+      duration: `${duration}ms`,
+      result,
+      error,
+      logs
     });
+
   } catch (error) {
     console.error('Failed to trigger plugin cron job:', error);
     res.status(500).json({
