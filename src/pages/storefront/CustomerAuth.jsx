@@ -211,6 +211,7 @@ export default function CustomerAuth() {
   const { settings } = useStore();
 
   const handleAuth = async (formData, isLogin) => {
+    console.log('🚀 handleAuth called, isLogin:', isLogin);
     setAuthLoading(true);
     setError("");
     setSuccess("");
