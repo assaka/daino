@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function AffiliateLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
+  const [flashMessage, setFlashMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState('login'); // login, forgot, reset, setup
@@ -53,16 +53,15 @@ export default function AffiliateLogin() {
 
       if (response?.success) {
         localStorage.setItem('affiliateToken', response.data.token);
-        toast({ title: "Welcome back!" });
+        setFlashMessage({ type: 'success', message: 'Welcome back!' });
         navigate('/affiliate/dashboard');
       } else {
         throw new Error(response?.error || 'Login failed');
       }
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: error.message || "Invalid email or password",
-        variant: "destructive"
+      setFlashMessage({
+        type: 'error',
+        message: error.message || 'Invalid email or password'
       });
     } finally {
       setLoading(false);
@@ -79,16 +78,15 @@ export default function AffiliateLogin() {
       });
 
       if (response?.success) {
-        toast({ title: "Reset link sent", description: "Check your email for the reset link." });
+        setFlashMessage({ type: 'success', message: 'Reset link sent! Check your email.' });
         setMode('login');
       } else {
         throw new Error(response?.error || 'Failed to send reset link');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
+      setFlashMessage({
+        type: 'error',
+        message: error.message || 'Failed to send reset link'
       });
     } finally {
       setLoading(false);
@@ -99,19 +97,12 @@ export default function AffiliateLogin() {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        variant: "destructive"
-      });
+      setFlashMessage({ type: 'error', message: "Passwords don't match" });
       return;
     }
 
     if (formData.password.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters",
-        variant: "destructive"
-      });
+      setFlashMessage({ type: 'error', message: 'Password must be at least 8 characters' });
       return;
     }
 
@@ -125,17 +116,16 @@ export default function AffiliateLogin() {
       });
 
       if (response?.success) {
-        toast({ title: "Password set successfully!", description: "You can now log in." });
+        setFlashMessage({ type: 'success', message: 'Password set successfully! You can now log in.' });
         setMode('login');
         setFormData({ email: "", password: "", confirmPassword: "" });
       } else {
         throw new Error(response?.error || 'Failed to set password');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
+      setFlashMessage({
+        type: 'error',
+        message: error.message || 'Failed to set password'
       });
     } finally {
       setLoading(false);
@@ -144,6 +134,8 @@ export default function AffiliateLogin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
