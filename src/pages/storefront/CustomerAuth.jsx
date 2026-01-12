@@ -169,9 +169,14 @@ export default function CustomerAuth() {
     handleOAuthCallback();
   }, [searchParams, storeCode, store, navigate]);
 
+  // Check auth status only after store is loaded (store context needed for token retrieval)
   useEffect(() => {
+    // Don't check auth until store is loaded - the token retrieval needs store context
+    if (storeLoading || !store) {
+      return;
+    }
     checkAuthStatus();
-  }, []);
+  }, [storeLoading, store]);
 
   const checkAuthStatus = async () => {
     try {
