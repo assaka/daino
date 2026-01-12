@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Users, ArrowRight, DollarSign, TrendingUp, Sparkles, Gift } from 'lucide-react';
+import { Users, ArrowRight, DollarSign, TrendingUp, Sparkles, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import apiClient from '@/api/client';
 
@@ -29,19 +29,19 @@ export default function AffiliateSection() {
         <div className="text-center mb-12 sm:mb-16">
           <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-4">
             <Sparkles className="h-4 w-4" />
-            Join Our Community
+            Referral Programs
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Two Ways to Grow With Us
+            Earn By Referring Others
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-            Whether you want to launch your own store or earn by referring others, we have a path for you
+            Whether you're a store owner or content creator, earn rewards by bringing new entrepreneurs to our platform
           </p>
         </div>
 
         {/* Two Column Cards */}
         <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
-          {/* Store Owners Card */}
+          {/* Store Owners Referral Card */}
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl transform group-hover:scale-[1.02] transition-transform duration-300" />
             <div className="relative bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 sm:p-8 lg:p-10 text-white overflow-hidden">
@@ -51,29 +51,27 @@ export default function AffiliateSection() {
 
               <div className="relative">
                 <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                  <Store className="h-7 w-7 text-white" />
+                  <Gift className="h-7 w-7 text-white" />
                 </div>
 
                 <h3 className="text-2xl sm:text-3xl font-bold mb-3">
                   For Store Owners
                 </h3>
                 <p className="text-white/80 text-lg mb-6">
-                  Launch your e-commerce store in minutes with AI-powered tools,
-                  beautiful themes, and everything you need to sell online.
+                  Already have a store? Refer other entrepreneurs and earn free credits
+                  for every new store owner that signs up through your link.
                 </p>
 
                 {/* Stats */}
                 <div className="flex items-center gap-6 mb-8">
                   <div>
-                    <p className="text-3xl sm:text-4xl font-bold">
-                      {stats.activeStores > 0 ? stats.activeStores.toLocaleString() : '50'}+
-                    </p>
-                    <p className="text-white/60 text-sm">Active Stores</p>
+                    <p className="text-3xl sm:text-4xl font-bold">30</p>
+                    <p className="text-white/60 text-sm">Credits Per Referral</p>
                   </div>
                   <div className="w-px h-12 bg-white/20" />
                   <div>
-                    <p className="text-3xl sm:text-4xl font-bold">30</p>
-                    <p className="text-white/60 text-sm">Free Credits</p>
+                    <p className="text-3xl sm:text-4xl font-bold">∞</p>
+                    <p className="text-white/60 text-sm">Unlimited Referrals</p>
                   </div>
                 </div>
 
@@ -81,34 +79,34 @@ export default function AffiliateSection() {
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-center gap-3 text-white/90">
                     <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                      <ArrowRight className="h-3 w-3" />
-                    </div>
-                    AI-powered product descriptions
-                  </li>
-                  <li className="flex items-center gap-3 text-white/90">
-                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                      <ArrowRight className="h-3 w-3" />
-                    </div>
-                    Multiple payment gateways
-                  </li>
-                  <li className="flex items-center gap-3 text-white/90">
-                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                       <Gift className="h-3 w-3" />
                     </div>
-                    Earn 30 credits for every referral
+                    30 free credits for each successful referral
+                  </li>
+                  <li className="flex items-center gap-3 text-white/90">
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                      <TrendingUp className="h-3 w-3" />
+                    </div>
+                    Track referrals in your dashboard
+                  </li>
+                  <li className="flex items-center gap-3 text-white/90">
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                      <ArrowRight className="h-3 w-3" />
+                    </div>
+                    Use credits for AI features & more
                   </li>
                 </ul>
 
                 <p className="text-white/50 text-xs mb-4">
-                  * Referral rewards require at least 1 active store
+                  * Requires at least 1 active store to participate
                 </p>
 
-                <Link to="/signup">
+                <Link to="/admin/affiliate">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-white text-indigo-700 hover:bg-gray-100"
                   >
-                    Start Your Store
+                    Start Referring
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
