@@ -9,6 +9,11 @@ import apiClient from '@/api/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
+// Check if user has admin authentication
+const hasAdminAuth = () => {
+  return !!(localStorage.getItem('store_owner_auth_token') || localStorage.getItem('admin_auth_token'));
+};
+
 // Import UI components that widgets can use
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +34,13 @@ export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
     try {
       setLoading(true);
 
+      // Skip widget loading if no admin auth (storefront guest users)
+      // The widget API requires authentication
+      if (!hasAdminAuth()) {
+        setLoading(false);
+        return;
+      }
+
       const response = await apiClient.get(`/plugins/widgets/${widgetId}`);
 
       if (!response.success) {
@@ -41,6 +53,11 @@ export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
 
       setWidget(() => compiledComponent);
     } catch (err) {
+      // Silently fail for auth errors - expected for guest users on storefront
+      if (err.message?.includes('Session') || err.message?.includes('401') || err.message?.includes('token')) {
+        setLoading(false);
+        return;
+      }
       console.error('Failed to load widget:', err);
       setError(err.message);
     } finally {
