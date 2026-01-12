@@ -11,6 +11,7 @@ import {
 import apiClient from '@/utils/api';
 import { Auth } from '@/api/entities';
 import { WHATS_NEW } from '@/constants/MarketingContent';
+import { trackCustomerRegistration } from '@/components/storefront/DataLayerManager';
 
 // Google logo SVG component
 const GoogleLogo = () => (
@@ -187,6 +188,10 @@ export default function MarketingSignup() {
         if (response.token) {
           localStorage.setItem('store_owner_auth_token', response.token);
         }
+
+        // Track registration
+        trackCustomerRegistration(response.user?.id || response.id || null, 'email');
+
         // Navigate to email verification page
         navigate(`/admin/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {

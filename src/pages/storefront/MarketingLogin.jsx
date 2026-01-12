@@ -15,6 +15,7 @@ import { Auth as AuthService, User } from '@/api/entities';
 import { setRoleBasedAuthData } from '@/utils/auth';
 import { createAdminUrl } from '@/utils/urlUtils';
 import { WHATS_NEW } from '@/constants/MarketingContent';
+import { trackCustomerLogin } from '@/components/storefront/DataLayerManager';
 
 // Google logo SVG component
 const GoogleLogo = () => (
@@ -94,6 +95,9 @@ export default function MarketingLogin() {
 
       // Save user data to localStorage
       setRoleBasedAuthData(user, token);
+
+      // Track Google login
+      trackCustomerLogin(user.id, 'google');
 
       // Redirect to dashboard - let StoreSelectionContext handle store loading
       if (redirectUrl) {
@@ -178,6 +182,9 @@ export default function MarketingLogin() {
           const userData = actualResponse.data?.user || actualResponse.user || actualResponse;
           if (userData && userData.id) {
             setRoleBasedAuthData(userData, token);
+
+            // Track email login
+            trackCustomerLogin(userData.id, 'email');
           }
 
           // Check for verification or onboarding needs
