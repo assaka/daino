@@ -33,11 +33,21 @@ export const resetTracking = () => {
 };
 
 export const pushToDataLayer = (event) => {
-  if (typeof window !== 'undefined' && window.dataLayer) {
+  if (typeof window !== 'undefined') {
+    // Ensure dataLayer exists
+    if (!window.dataLayer) {
+      window.dataLayer = [];
+    }
+
     window.dataLayer.push(event);
-    
+
     // Also dispatch a custom event for debugging
     window.dispatchEvent(new CustomEvent('dataLayerPush', { detail: event }));
+
+    // Debug log for auth events
+    if (event.event === 'login' || event.event === 'sign_up') {
+      console.log('📊 Auth DataLayer Event:', event);
+    }
   }
 };
 
