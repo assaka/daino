@@ -470,24 +470,17 @@ export function HeaderSlotRenderer({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button
-                variant="ghost"
-                className="h-11 w-11 p-0 flex items-center justify-center"
+              <Link
+                to={createPublicUrl(store?.slug, 'CUSTOMER_AUTH')}
+                className="h-11 w-11 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground rounded-md"
                 onClick={() => {
                   localStorage.setItem('customer_auth_store_id', store?.id);
                   localStorage.setItem('customer_auth_store_code', store?.slug);
-                  const loginUrl = createPublicUrl(store?.slug, 'CUSTOMER_AUTH');
-                  if (navigate) {
-                    navigate(loginUrl);
-                  } else {
-                    window.location.href = loginUrl;
-                  }
                 }}
-                disabled={userLoading}
                 style={{ color: headerIconColor }}
               >
                 {getMobileUserIcon()}
-              </Button>
+              </Link>
             )}
           </div>
         );
@@ -603,25 +596,18 @@ export function HeaderSlotRenderer({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button
+              <Link
+                to={createPublicUrl(store?.slug, 'CUSTOMER_AUTH')}
                 onClick={() => {
                   localStorage.setItem('customer_auth_store_id', store?.id);
                   localStorage.setItem('customer_auth_store_code', store?.slug);
-                  const loginUrl = createPublicUrl(store?.slug, 'CUSTOMER_AUTH');
-                  if (navigate) {
-                    navigate(loginUrl);
-                  } else {
-                    window.location.href = loginUrl;
-                  }
                 }}
-                disabled={userLoading}
-                variant="themed"
-                className="px-2 lg:px-4 py-2 flex items-center"
+                className="px-2 lg:px-4 py-2 flex items-center rounded-md shadow-sm btn-themed"
                 style={buttonStyles}
               >
                 {getUserIcon('w-4 h-4')}
                 <span className="hidden lg:inline ml-2">{t('common.sign_in', 'Sign In')}</span>
-              </Button>
+              </Link>
             )}
           </div>
         );
