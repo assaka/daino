@@ -14,7 +14,7 @@ export default function Home() {
         <Hero />
         <StoreGallery />
         <AIFeatures />
-        <AffiliateSection />
+        <AffiliateSection className='hidden' />
         <Pricing />
         <CTA />
       </div>
