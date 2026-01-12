@@ -148,11 +148,11 @@ async function getDueCronJobs() {
  */
 function isCronDue(cronExpression, lastRunAt, timezone = 'UTC') {
   try {
-    const cronParser = require('cron-parser');
+    const { CronExpressionParser } = require('cron-parser');
     const now = new Date();
 
-    // Parse the cron expression
-    const interval = cronParser.parseExpression(cronExpression, {
+    // Parse the cron expression (v5 API)
+    const interval = CronExpressionParser.parse(cronExpression, {
       currentDate: lastRunAt ? new Date(lastRunAt) : new Date(now.getTime() - 3600000), // Default to 1 hour ago
       tz: timezone
     });
@@ -499,8 +499,8 @@ async function executeWebhook(cronJob) {
  */
 function calculateNextRun(cronExpression, timezone = 'UTC') {
   try {
-    const cronParser = require('cron-parser');
-    const interval = cronParser.parseExpression(cronExpression, {
+    const { CronExpressionParser } = require('cron-parser');
+    const interval = CronExpressionParser.parse(cronExpression, {
       currentDate: new Date(),
       tz: timezone
     });
