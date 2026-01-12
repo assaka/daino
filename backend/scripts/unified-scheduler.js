@@ -57,6 +57,7 @@ async function getDueCronJobs() {
       try {
         const tenantDb = await ConnectionManager.getConnection(store.id);
 
+        // Check cron_jobs table
         const { data: jobs, error: jobsError } = await tenantDb
           .from('cron_jobs')
           .select('*')
@@ -67,11 +68,8 @@ async function getDueCronJobs() {
 
         if (jobsError) {
           console.error(`Error fetching jobs for store ${store.slug}:`, jobsError.message);
-          continue;
-        }
-
-        if (jobs && jobs.length > 0) {
-          console.log(`  Store ${store.slug}: ${jobs.length} due jobs`);
+        } else if (jobs && jobs.length > 0) {
+          console.log(`  Store ${store.slug}: ${jobs.length} due jobs from cron_jobs`);
           jobs.forEach(job => {
             dueJobs.push({
               ...job,
@@ -80,6 +78,53 @@ async function getDueCronJobs() {
               _tenantDb: tenantDb
             });
           });
+        }
+
+        // Also check plugin_cron table for plugin cron jobs
+        const { data: pluginCrons, error: pluginCronError } = await tenantDb
+          .from('plugin_cron')
+          .select('*')
+          .eq('is_enabled', true);
+
+        if (pluginCronError) {
+          // Table might not exist yet, that's okay
+          if (!pluginCronError.message.includes('does not exist')) {
+            console.error(`Error fetching plugin_cron for store ${store.slug}:`, pluginCronError.message);
+          }
+        } else if (pluginCrons && pluginCrons.length > 0) {
+          // Filter plugin crons that are due based on cron_schedule
+          const now = new Date();
+          const dueCrons = pluginCrons.filter(cron => {
+            if (!cron.cron_schedule) return false;
+            return isCronDue(cron.cron_schedule, cron.last_run_at, cron.timezone);
+          });
+
+          if (dueCrons.length > 0) {
+            console.log(`  Store ${store.slug}: ${dueCrons.length} due jobs from plugin_cron`);
+            dueCrons.forEach(cron => {
+              dueJobs.push({
+                id: cron.id,
+                name: cron.cron_name,
+                job_type: 'plugin_cron',
+                cron_expression: cron.cron_schedule,
+                timezone: cron.timezone || 'UTC',
+                configuration: {
+                  plugin_id: cron.plugin_id,
+                  handler_method: cron.handler_method,
+                  handler_params: cron.handler_params || {},
+                  handler_code: cron.handler_code
+                },
+                store_id: store.id,
+                store_slug: store.slug,
+                run_count: cron.run_count,
+                success_count: cron.success_count,
+                failure_count: cron.failure_count,
+                consecutive_failures: cron.consecutive_failures,
+                _tenantDb: tenantDb,
+                _isPluginCron: true
+              });
+            });
+          }
         }
       } catch (err) {
         console.error(`Error connecting to tenant ${store.slug}:`, err.message);
@@ -93,10 +138,35 @@ async function getDueCronJobs() {
 }
 
 /**
+ * Check if a cron schedule is due to run
+ */
+function isCronDue(cronExpression, lastRunAt, timezone = 'UTC') {
+  try {
+    const { parseExpression } = require('cron-parser');
+    const now = new Date();
+
+    // Parse the cron expression
+    const interval = parseExpression(cronExpression, {
+      currentDate: lastRunAt ? new Date(lastRunAt) : new Date(now.getTime() - 3600000), // Default to 1 hour ago
+      tz: timezone
+    });
+
+    // Get the next scheduled time after last run
+    const nextRun = interval.next().toDate();
+
+    // If next run is in the past or within the current minute, it's due
+    return nextRun <= now;
+  } catch (error) {
+    console.warn(`Could not parse cron expression "${cronExpression}": ${error.message}`);
+    return false;
+  }
+}
+
+/**
  * Execute a single cron job
  */
 async function executeCronJob(cronJob) {
-  const { id, name, job_type, configuration, store_id, store_slug, _tenantDb } = cronJob;
+  const { id, name, job_type, configuration, store_id, store_slug, _tenantDb, _isPluginCron } = cronJob;
 
   console.log(`\n  Executing: ${name} (${job_type}) for store ${store_slug}`);
 
@@ -104,15 +174,18 @@ async function executeCronJob(cronJob) {
   let result = { success: false };
 
   try {
-    // Create execution record
-    const executionId = require('crypto').randomUUID();
-    await _tenantDb.from('cron_job_executions').insert({
-      id: executionId,
-      cron_job_id: id,
-      status: 'running',
-      triggered_by: 'unified_scheduler',
-      server_instance: 'render-cron'
-    });
+    // Create execution record (only for cron_jobs table entries)
+    let executionId = null;
+    if (!_isPluginCron) {
+      executionId = require('crypto').randomUUID();
+      await _tenantDb.from('cron_job_executions').insert({
+        id: executionId,
+        cron_job_id: id,
+        status: 'running',
+        triggered_by: 'unified_scheduler',
+        server_instance: 'render-cron'
+      });
+    }
 
     // Route to appropriate handler based on job_type
     switch (job_type) {
@@ -132,6 +205,10 @@ async function executeCronJob(cronJob) {
         result = await executePluginJob(cronJob);
         break;
 
+      case 'plugin_cron':
+        result = await executePluginCron(cronJob);
+        break;
+
       case 'webhook':
         result = await executeWebhook(cronJob);
         break;
@@ -143,42 +220,63 @@ async function executeCronJob(cronJob) {
 
     const duration = Date.now() - startTime;
 
-    // Update execution record
-    await _tenantDb
-      .from('cron_job_executions')
-      .update({
-        status: result.success ? 'success' : 'failed',
-        completed_at: new Date().toISOString(),
-        duration_ms: duration,
-        result: result,
-        error_message: result.error || null
-      })
-      .eq('id', executionId);
+    // Update execution record (only for cron_jobs table entries)
+    if (executionId) {
+      await _tenantDb
+        .from('cron_job_executions')
+        .update({
+          status: result.success ? 'success' : 'failed',
+          completed_at: new Date().toISOString(),
+          duration_ms: duration,
+          result: result,
+          error_message: result.error || null
+        })
+        .eq('id', executionId);
+    }
 
-    // Update cron_job stats and next_run_at
-    const nextRun = calculateNextRun(cronJob.cron_expression, cronJob.timezone);
-    await _tenantDb
-      .from('cron_jobs')
-      .update({
-        last_run_at: new Date().toISOString(),
-        next_run_at: nextRun.toISOString(),
-        last_status: result.success ? 'success' : 'failed',
-        last_error: result.error || null,
-        run_count: (cronJob.run_count || 0) + 1,
-        success_count: result.success ? (cronJob.success_count || 0) + 1 : cronJob.success_count,
-        failure_count: result.success ? cronJob.failure_count : (cronJob.failure_count || 0) + 1,
-        consecutive_failures: result.success ? 0 : (cronJob.consecutive_failures || 0) + 1,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id);
-
-    // Handle one-time schedules
-    if (cronJob.metadata?.schedule_type === 'once') {
+    // Update stats based on source table
+    if (_isPluginCron) {
+      // Update plugin_cron table
+      await _tenantDb
+        .from('plugin_cron')
+        .update({
+          last_run_at: new Date().toISOString(),
+          last_status: result.success ? 'success' : 'failed',
+          last_error: result.error || null,
+          last_result: result,
+          run_count: (cronJob.run_count || 0) + 1,
+          success_count: result.success ? (cronJob.success_count || 0) + 1 : cronJob.success_count,
+          failure_count: result.success ? cronJob.failure_count : (cronJob.failure_count || 0) + 1,
+          consecutive_failures: result.success ? 0 : (cronJob.consecutive_failures || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+    } else {
+      // Update cron_jobs table
+      const nextRun = calculateNextRun(cronJob.cron_expression, cronJob.timezone);
       await _tenantDb
         .from('cron_jobs')
-        .update({ is_active: false })
+        .update({
+          last_run_at: new Date().toISOString(),
+          next_run_at: nextRun.toISOString(),
+          last_status: result.success ? 'success' : 'failed',
+          last_error: result.error || null,
+          run_count: (cronJob.run_count || 0) + 1,
+          success_count: result.success ? (cronJob.success_count || 0) + 1 : cronJob.success_count,
+          failure_count: result.success ? cronJob.failure_count : (cronJob.failure_count || 0) + 1,
+          consecutive_failures: result.success ? 0 : (cronJob.consecutive_failures || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id);
-      console.log(`    Deactivated one-time schedule: ${name}`);
+
+      // Handle one-time schedules
+      if (cronJob.metadata?.schedule_type === 'once') {
+        await _tenantDb
+          .from('cron_jobs')
+          .update({ is_active: false })
+          .eq('id', id);
+        console.log(`    Deactivated one-time schedule: ${name}`);
+      }
     }
 
     console.log(`    ${result.success ? 'SUCCESS' : 'FAILED'} (${duration}ms)`);
@@ -311,6 +409,52 @@ async function executePluginJob(cronJob) {
 
     return { success: true, job_id: job.id };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Execute plugin cron job (from plugin_cron table)
+ * Directly executes handler_code - same as manual test
+ */
+async function executePluginCron(cronJob) {
+  const { configuration, store_id, _tenantDb } = cronJob;
+  const { handler_code, handler_method, handler_params = {} } = configuration;
+
+  console.log(`    Plugin cron: ${handler_method}`);
+
+  if (!handler_code) {
+    return { success: false, error: 'No handler_code defined' };
+  }
+
+  try {
+    // Load email service
+    const emailService = require('../src/services/email-service');
+
+    // Create async function from handler_code
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+    const handlerFn = new AsyncFunction(
+      'db', 'storeId', 'params', 'secrets', 'fetch', 'apiBaseUrl', 'console', 'emailService',
+      handler_code
+    );
+
+    const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3001';
+
+    // Execute
+    const result = await handlerFn(
+      _tenantDb,
+      store_id,
+      handler_params,
+      {}, // secrets - empty for now
+      fetch,
+      apiBaseUrl,
+      console,
+      emailService
+    );
+
+    return { success: true, result };
+  } catch (error) {
+    console.error(`    Plugin cron execution failed:`, error.message);
     return { success: false, error: error.message };
   }
 }
