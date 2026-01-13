@@ -56,16 +56,11 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
     const [checkingAccess, setCheckingAccess] = useState(true);
     const [flashMessage, setFlashMessage] = useState(null);
+    const [isStoreOwnerWithPublishedPreview, setIsStoreOwnerWithPublishedPreview] = useState(false);
 
     // Also check URL params as fallback (for initial load before context initializes)
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const isInPreviewModeFromUrl = urlParams?.get('version') === 'published' || urlParams?.get('mode') === 'workspace';
-
-    // Check if ANY store owner is logged in with version=published
-    // This allows store owners to preview their store even if store_id doesn't match exactly
-    // (e.g., when they have multiple stores or there's a data sync issue)
-    const hasStoreOwnerToken = typeof window !== 'undefined' && !!localStorage.getItem('store_owner_auth_token');
-    const isStoreOwnerWithPublishedPreview = hasStoreOwnerToken && urlParams?.get('version') === 'published';
 
     // Check for pause_access_email and pause_access_token in URL (from approval email link)
     const pauseAccessEmail = urlParams?.get('pause_access_email');
@@ -74,6 +69,14 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     // Check localStorage for approved access on mount
     useEffect(() => {
         const checkAccess = async () => {
+            // Check if store owner is logged in with version=published
+            // This allows store owners to preview their store even if store_id doesn't match exactly
+            const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
+            const hasPublishedParam = urlParams?.get('version') === 'published';
+            if (hasStoreOwnerToken && hasPublishedParam) {
+                setIsStoreOwnerWithPublishedPreview(true);
+            }
+
             if (!store?.id) {
                 setCheckingAccess(false);
                 return;
