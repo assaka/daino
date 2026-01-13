@@ -5,7 +5,7 @@ import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { handleLogout, getUserDataForRole } from '@/utils/auth';
 import { CustomerAuth } from '@/api/storefront-entities';
-import { StorePauseAccess } from '@/api/entities';
+import { StorePauseAccess, Store } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Menu, Search, ChevronDown, Settings, LogOut, X } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,6 +54,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const [linkSent, setLinkSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
+    const [hasStoreAccess, setHasStoreAccess] = useState(false);
     const [checkingAccess, setCheckingAccess] = useState(true);
     const [flashMessage, setFlashMessage] = useState(null);
 
@@ -71,6 +72,23 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
             if (!store?.id) {
                 setCheckingAccess(false);
                 return;
+            }
+
+            // Check if store owner/team member has access via API
+            // This handles cases where store_id in session doesn't match but user has team access
+            const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
+            const hasPublishedParam = urlParams?.get('version') === 'published';
+            if (hasStoreOwnerToken && hasPublishedParam) {
+                try {
+                    const result = await Store.checkAccess(store.id);
+                    if (result?.hasAccess) {
+                        setHasStoreAccess(true);
+                        setCheckingAccess(false);
+                        return;
+                    }
+                } catch (error) {
+                    // Continue to other checks
+                }
             }
 
             // First check URL params (from approval email)
@@ -121,10 +139,10 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         }
     }, [flashMessage]);
 
-    // Only store owners or users with approved access can bypass the paused overlay
+    // Only store owners, team members, or users with approved access can bypass the paused overlay
     // Random visitors cannot bypass with URL params like ?version=published
     // However, AI Workspace mode (mode=workspace) should always bypass the pause modal
-    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
+    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess || hasStoreAccess;
     const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
 
     // AI Workspace mode bypasses pause modal - check both context and URL directly
