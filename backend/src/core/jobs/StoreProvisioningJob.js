@@ -144,26 +144,22 @@ class StoreProvisioningJob extends BaseJobHandler {
       if (activateError) {
         throw new Error(`Failed to activate store: ${activateError.message}`);
       }
-      this.log('Store status updated successfully');
+      console.log(`📧 [PROVISIONING] Store ${storeId} updated to ${finalStatus} - now sending email to ${userEmail}`);
 
-      await this.updateProgress(95, 'Sending notification email...');
-      this.log('Step: About to send notification email');
-
-      // Send completion email
-      try {
-        this.log(`Sending completion email to ${userEmail} for store "${storeName}"`);
-        if (!userEmail) {
-          this.log('WARNING: userEmail is missing from job payload - cannot send completion email', 'warn');
-        } else {
+      // Send completion email IMMEDIATELY after store update
+      if (userEmail) {
+        try {
+          console.log(`📧 [PROVISIONING] Calling sendProvisioningCompleteEmail for ${userEmail}`);
           const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
             userEmail,
             storeName,
             `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
             true
           );
-          this.log(`Provisioning complete email result: ${JSON.stringify(emailResult)}`);
+          console.log(`📧 [PROVISIONING] Email result:`, JSON.stringify(emailResult));
+
           if (emailResult.success) {
-            // Mark email as sent to prevent duplicate from fallback endpoint
+            // Mark email as sent
             await masterDbClient
               .from('stores')
               .update({
@@ -177,16 +173,16 @@ class StoreProvisioningJob extends BaseJobHandler {
                 }
               })
               .eq('id', storeId);
-            this.log('Email sent flag updated in provisioning_progress');
-          } else {
-            this.log(`EMAIL NOT SENT: ${emailResult.message}`, 'warn');
+            console.log(`📧 [PROVISIONING] Email sent flag saved for store ${storeId}`);
           }
+        } catch (emailError) {
+          console.error(`📧 [PROVISIONING] Email failed:`, emailError.message);
         }
-      } catch (emailError) {
-        this.log(`Failed to send completion email: ${emailError.message}`, 'warn');
-        console.error('Email error stack:', emailError.stack);
-        // Don't fail the job if email fails
+      } else {
+        console.warn(`📧 [PROVISIONING] No userEmail in payload - cannot send email`);
       }
+
+      await this.updateProgress(100, 'Store provisioning completed!');
 
       await this.updateProgress(100, 'Store provisioning completed!');
       this.log('Step: Job completed successfully, returning result');
