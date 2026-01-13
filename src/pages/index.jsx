@@ -8,6 +8,7 @@ export { default as Categories } from './admin/Categories';
 export { default as Attributes } from './admin/Attributes';
 export { default as Orders } from './admin/Orders';
 export { default as SalesSettings } from './admin/SalesSettings';
+export { default as UCPSettings } from './admin/UCPSettings';
 export { default as Customers } from './admin/Customers';
 export { default as Blacklist } from './admin/Blacklist';
 export { default as CustomerActivity } from './admin/CustomerActivity';

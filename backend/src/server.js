@@ -122,6 +122,7 @@ const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
 const extensionsRoutes = require('./routes/extensions');
 const previewRoutes = require('./routes/preview');
+const ucpRoutes = require('./routes/ucp');
 const slotConfigurationRoutes = require('./routes/slotConfigurations');
 const dynamicPluginRoutes = require('./routes/dynamic-plugins');
 const adminNavigationRoutes = require('./routes/admin-navigation');
@@ -421,6 +422,9 @@ app.use('/api/sitemap', sitemapRoutes);
 // AI Agent API
 app.use('/api/ai-agent', aiAgentApiRoutes);
 
+// Universal Commerce Protocol (UCP) for agentic commerce
+app.use('/api/ucp', ucpRoutes);
+
 // Public affiliate routes (track clicks, apply, validate)
 app.use('/api/affiliates', affiliatesPublicRoutes);
 // Affiliate portal auth routes (login, password, dashboard data)
@@ -503,6 +507,88 @@ Sitemap: ${baseUrl}/sitemap.xml`;
     }).send(`User-agent: *
 Allow: /
 Disallow: /admin/`);
+  }
+});
+
+// UCP Business Profile discovery endpoint (for agentic commerce)
+// Supports both /.well-known/ucp (custom domain) and /public/:storeSlug/.well-known/ucp (platform domain)
+app.get('/public/:storeSlug/.well-known/ucp', async (req, res) => {
+  try {
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const ucpService = require('./services/ucp-service');
+    const { storeSlug } = req.params;
+
+    console.log(`[UCP] Business profile request for store: ${storeSlug}`);
+
+    // Find store by slug
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
+
+    if (storeError || !store) {
+      console.warn(`[UCP] Store not found for slug: ${storeSlug}`);
+      return res.status(404).json({
+        status: 'error',
+        messages: [{
+          type: 'error',
+          code: 'store_not_found',
+          message: 'Store not found',
+          severity: 'fatal'
+        }]
+      });
+    }
+
+    // Check if UCP is enabled
+    const ucpEnabled = await ucpService.isUcpEnabled(store.id);
+    if (!ucpEnabled) {
+      return res.status(403).json({
+        status: 'error',
+        messages: [{
+          type: 'error',
+          code: 'ucp_not_enabled',
+          message: 'UCP is not enabled for this store',
+          severity: 'fatal'
+        }]
+      });
+    }
+
+    // Build base URL
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const baseUrl = await buildStoreUrl({
+      tenantDb,
+      storeId: store.id,
+      storeSlug: store.slug
+    });
+
+    // Build and return the business profile
+    const profile = await ucpService.buildBusinessProfile({
+      storeId: store.id,
+      storeSlug: store.slug,
+      baseUrl
+    });
+
+    // Set UCP headers
+    res.set({
+      'Content-Type': 'application/json',
+      'UCP-Version': ucpService.UCP_VERSION,
+      'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+    });
+
+    res.json(profile);
+  } catch (error) {
+    console.error('[UCP] Error serving business profile:', error);
+    res.status(500).json({
+      status: 'error',
+      messages: [{
+        type: 'error',
+        code: 'internal_error',
+        message: 'Failed to build UCP profile',
+        severity: 'fatal'
+      }]
+    });
   }
 });
 
