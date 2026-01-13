@@ -16,7 +16,11 @@ class StoreProvisioningJob extends BaseJobHandler {
   }
 
   async execute() {
+    console.log('🚀🚀🚀 [StoreProvisioningJob] EXECUTE METHOD CALLED 🚀🚀🚀');
+
     const payload = this.getPayload();
+    console.log('🚀 [StoreProvisioningJob] Payload:', JSON.stringify(payload, null, 2));
+
     const {
       storeId,
       userId,
@@ -32,7 +36,7 @@ class StoreProvisioningJob extends BaseJobHandler {
       country
     } = payload;
 
-    this.log(`Starting provisioning for store ${storeId} (${storeName})`);
+    console.log(`🚀 [StoreProvisioningJob] storeId=${storeId}, userEmail=${userEmail}`);
     this.log(`Job payload - userEmail: ${userEmail}, userId: ${userId}, themePreset: ${themePreset}`);
 
     try {
@@ -183,9 +187,7 @@ class StoreProvisioningJob extends BaseJobHandler {
       }
 
       await this.updateProgress(100, 'Store provisioning completed!');
-
-      await this.updateProgress(100, 'Store provisioning completed!');
-      this.log('Step: Job completed successfully, returning result');
+      console.log('🏁🏁🏁 [StoreProvisioningJob] JOB COMPLETE - RETURNING RESULT 🏁🏁🏁');
 
       return {
         success: true,
