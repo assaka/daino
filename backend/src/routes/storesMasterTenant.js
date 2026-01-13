@@ -969,8 +969,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
           provisionDemoData: !!provisionDemoData,
           country: storeData?.country || null
         },
-        store_id: storeId,
-        user_id: req.user.id,
+        storeId,  // camelCase for scheduleJob
+        userId: req.user.id,  // camelCase for scheduleJob
         priority: 'high'
       };
 
