@@ -23,7 +23,7 @@ import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
 const STEPS = [
   { id: 1, title: 'Create Store', description: 'Store details & location', icon: Store, required: true },
   { id: 2, title: 'Customize', description: 'Theme & demo data', icon: Palette, required: true },
-  { id: 3, title: 'Connect Database', description: 'Link your Supabase', icon: Database, required: true },
+  { id: 3, title: 'Connect SupaBase Database', description: '', icon: Database, required: true },
   { id: 4, title: 'Provision Store', description: 'Set up your store', icon: Sparkles, required: true },
 ];
 
