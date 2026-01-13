@@ -492,13 +492,16 @@ class MasterEmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendProvisioningCompleteEmail(recipientEmail, storeName, dashboardUrl, success = true) {
-    console.log('[MASTER EMAIL SERVICE] sendProvisioningCompleteEmail called:', {
-      recipientEmail,
-      storeName,
-      dashboardUrl,
-      success,
-      isConfigured: this.isConfigured
-    });
+    console.log('[MASTER EMAIL SERVICE] ====== PROVISIONING EMAIL ======');
+    console.log('[MASTER EMAIL SERVICE] This is the MASTER/PLATFORM email service');
+    console.log('[MASTER EMAIL SERVICE] API Key present:', !!this.apiKey);
+    console.log('[MASTER EMAIL SERVICE] API Key prefix:', this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'NOT SET');
+    console.log('[MASTER EMAIL SERVICE] isConfigured:', this.isConfigured);
+    console.log('[MASTER EMAIL SERVICE] Sender email:', this.senderEmail);
+    console.log('[MASTER EMAIL SERVICE] Recipient:', recipientEmail);
+    console.log('[MASTER EMAIL SERVICE] Store name:', storeName);
+    console.log('[MASTER EMAIL SERVICE] Success:', success);
+    console.log('[MASTER EMAIL SERVICE] ================================');
 
     if (!recipientEmail) {
       console.error('[MASTER EMAIL SERVICE] ERROR: recipientEmail is empty/undefined');
