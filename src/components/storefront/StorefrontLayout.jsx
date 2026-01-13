@@ -56,7 +56,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
     const [checkingAccess, setCheckingAccess] = useState(true);
     const [flashMessage, setFlashMessage] = useState(null);
-    const [isStoreOwnerWithPublishedPreview, setIsStoreOwnerWithPublishedPreview] = useState(false);
 
     // Also check URL params as fallback (for initial load before context initializes)
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -69,14 +68,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     // Check localStorage for approved access on mount
     useEffect(() => {
         const checkAccess = async () => {
-            // Check if store owner is logged in with version=published
-            // This allows store owners to preview their store even if store_id doesn't match exactly
-            const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
-            const hasPublishedParam = urlParams?.get('version') === 'published';
-            if (hasStoreOwnerToken && hasPublishedParam) {
-                setIsStoreOwnerWithPublishedPreview(true);
-            }
-
             if (!store?.id) {
                 setCheckingAccess(false);
                 return;
@@ -133,8 +124,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     // Only store owners or users with approved access can bypass the paused overlay
     // Random visitors cannot bypass with URL params like ?version=published
     // However, AI Workspace mode (mode=workspace) should always bypass the pause modal
-    // ALSO: Store owners with ?version=published can bypass even if store_id doesn't match exactly
-    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess || isStoreOwnerWithPublishedPreview;
+    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
     const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
 
     // AI Workspace mode bypasses pause modal - check both context and URL directly
