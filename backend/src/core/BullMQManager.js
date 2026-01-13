@@ -253,6 +253,8 @@ class BullMQManager {
     const job = await queue.add(queueName, jobData, bullMQOptions);
 
     console.log(`BullMQ: Added job ${job.id} to queue "${queueName}" (type: ${jobType})`);
+    console.log(`BullMQ: Worker exists for ${jobType}:`, this.workers.has(jobType));
+    console.log(`BullMQ: Total workers running:`, this.workers.size);
     return job;
   }
 
@@ -287,6 +289,8 @@ class BullMQManager {
     const worker = new Worker(
       queueName,
       async (job) => {
+        console.log(`BullMQ: ===== WORKER PICKED UP JOB =====`);
+        console.log(`BullMQ: Queue: ${queueName}, Job ID: ${job.id}`);
 
         const jobRecordId = job.data.jobRecord?.id;
         console.log(`BullMQ: jobRecordId = ${jobRecordId}`);
