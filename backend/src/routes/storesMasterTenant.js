@@ -1360,7 +1360,7 @@ router.post('/:id/send-ready-email', authMiddleware, async (req, res) => {
     // Get store from master DB
     const { data: store, error } = await masterDbClient
       .from('stores')
-      .select('id, name, provisioning_status')
+      .select('id, name, provisioning_status, provisioning_progress')
       .eq('id', storeId)
       .eq('user_id', req.user.id)
       .single();
@@ -1374,6 +1374,12 @@ router.post('/:id/send-ready-email', authMiddleware, async (req, res) => {
       return res.json({ success: false, message: 'Store not yet provisioned' });
     }
 
+    // Check if email was already sent (prevent duplicates)
+    if (store.provisioning_progress?.email_sent) {
+      console.log('📧 [Fallback] Email already sent, skipping duplicate');
+      return res.json({ success: true, message: 'Email already sent', alreadySent: true });
+    }
+
     // Send the email
     console.log('📧 [Fallback] Sending store ready email to:', req.user.email);
     const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
@@ -1383,6 +1389,20 @@ router.post('/:id/send-ready-email', authMiddleware, async (req, res) => {
       true
     );
     console.log('📧 [Fallback] Email result:', emailResult);
+
+    // Mark email as sent in provisioning_progress
+    if (emailResult.success) {
+      await masterDbClient
+        .from('stores')
+        .update({
+          provisioning_progress: {
+            ...store.provisioning_progress,
+            email_sent: true,
+            email_sent_at: new Date().toISOString()
+          }
+        })
+        .eq('id', storeId);
+    }
 
     res.json({
       success: emailResult.success,

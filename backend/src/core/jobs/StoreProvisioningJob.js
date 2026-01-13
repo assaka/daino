@@ -162,7 +162,23 @@ class StoreProvisioningJob extends BaseJobHandler {
             true
           );
           this.log(`Provisioning complete email result: ${JSON.stringify(emailResult)}`);
-          if (!emailResult.success) {
+          if (emailResult.success) {
+            // Mark email as sent to prevent duplicate from fallback endpoint
+            await masterDbClient
+              .from('stores')
+              .update({
+                provisioning_progress: {
+                  step: 'completed',
+                  message: 'Store setup completed successfully!',
+                  demo_requested: !!provisionDemoData,
+                  demo_success: demoDataResult?.success ?? null,
+                  email_sent: true,
+                  email_sent_at: new Date().toISOString()
+                }
+              })
+              .eq('id', storeId);
+            this.log('Email sent flag updated in provisioning_progress');
+          } else {
             this.log(`EMAIL NOT SENT: ${emailResult.message}`, 'warn');
           }
         }
