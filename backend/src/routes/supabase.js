@@ -415,7 +415,7 @@ router.get('/callback', async (req, res) => {
           <h1>Successfully Connected!</h1>
           <p>Your Supabase account has been connected</p>
           <button id="closeBtn">Close & Continue</button>
-          <p style="font-size: 12px; margin-top: 20px; opacity: 0.7;">Window will auto-close in 5 seconds or click above</p>
+          <p style="font-size: 12px; margin-top: 20px; opacity: 0.7;">Window will auto-close in 3 seconds or click above</p>
         </div>
         <script>
           (function() {
@@ -445,7 +445,7 @@ router.get('/callback', async (req, res) => {
               // Auto-close after 5 seconds as fallback
               setTimeout(() => {
                 closeWindow();
-              }, 5000);
+              }, 3000);
             }
 
             function closeWindow() {
