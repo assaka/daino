@@ -105,7 +105,7 @@ export default function StoreOnboarding() {
           // Redirect to dashboard after showing success screen
           setTimeout(() => {
             window.location.href = '/admin/dashboard';
-          }, 5000);
+          }, 7000);
           return;
         }
 
@@ -756,7 +756,7 @@ export default function StoreOnboarding() {
           // Redirect to dashboard after showing success screen
           setTimeout(() => {
             window.location.href = '/admin/dashboard';
-          }, 5000);
+          }, 7000);
           return;
         }
 
