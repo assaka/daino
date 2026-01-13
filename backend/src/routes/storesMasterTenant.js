@@ -953,6 +953,22 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         .eq('id', storeId)
         .single();
 
+      // Update store status to provisioning FIRST (before scheduling job)
+      // This ensures the store is in correct state even if browser closes mid-request
+      await masterDbClient
+        .from('stores')
+        .update({
+          status: 'provisioning',
+          provisioning_status: 'pending',
+          provisioning_progress: {
+            step: 'queued',
+            message: 'Provisioning job queued',
+            demo_requested: !!provisionDemoData
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+
       const jobData = {
         type: 'store:provision',
         payload: {
@@ -977,12 +993,10 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       try {
         const job = await backgroundJobManager.scheduleJob(jobData);
 
-        // Update store status to provisioning
+        // Update progress with job ID
         await masterDbClient
           .from('stores')
           .update({
-            status: 'provisioning',
-            provisioning_status: 'pending',
             provisioning_progress: {
               step: 'queued',
               message: 'Provisioning job queued',
@@ -1007,8 +1021,17 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         });
       } catch (jobError) {
         console.error('❌ Failed to queue provisioning job:', jobError.message);
-        // Fall through to synchronous provisioning
+        // Revert status and fall through to synchronous provisioning
         console.log('⚠️ Falling back to synchronous provisioning');
+        await masterDbClient
+          .from('stores')
+          .update({
+            status: 'pending_database',
+            provisioning_status: null,
+            provisioning_progress: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', storeId);
       }
     }
 

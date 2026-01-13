@@ -410,14 +410,23 @@ class BackgroundJobManager extends EventEmitter {
    */
   async processLoop() {
     let cleanupCounter = 0;
+    let logCounter = 0;
 
     while (this.isRunning) {
       try {
         if (this.processing.size < this.maxConcurrentJobs) {
           const job = await this.getNextJob();
           if (job) {
+            console.log(`📥 [DB Queue] Found pending job: ${job.job_type} (ID: ${job.id})`);
             this.processJob(job);
           }
+        }
+
+        // Log heartbeat every 60 seconds (12 iterations * 5s)
+        logCounter++;
+        if (logCounter >= 12) {
+          logCounter = 0;
+          console.log(`💓 [DB Queue] Heartbeat - processing: ${this.processing.size}, useBullMQ: ${this.useBullMQ}`);
         }
 
         // Cleanup stuck 'cancelling' jobs every 12 iterations (about 1 minute)
