@@ -173,6 +173,13 @@ function LayoutInner({ children, currentPageName }) {
   });
   const [dynamicNavItems, setDynamicNavItems] = useState([]);
 
+
+  // Add this block to handle the RobotsTxt page
+  if (currentPageName === 'RobotsTxt') {
+    return <>{children}</>;
+  }
+  // End of new block
+
   useEffect(() => {
     const loadData = async () => {
         await loadUserAndHandleCredits(); // Combined function
@@ -372,12 +379,6 @@ function LayoutInner({ children, currentPageName }) {
   
   // Apply role-based access control for admin, editor, plugin, AI Studio, and AI Workspace pages
   useRoleProtection(isAdminPage || isEditorPage || isPluginPage || isAIWorkspacePage);
-
-  // Handle RobotsTxt page - render children directly without layout
-  // IMPORTANT: This must be AFTER all hooks to comply with React Rules of Hooks
-  if (currentPageName === 'RobotsTxt') {
-    return <>{children}</>;
-  }
 
   if (isLoading && (isAdminPage || isEditorPage || isPluginPage || isAIWorkspacePage)) {
     return <PageLoader size="lg" />;
