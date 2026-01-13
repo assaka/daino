@@ -15,7 +15,7 @@ import {
   Store, Database, Palette, Clock,
   CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info, LogOut, Mail
 } from 'lucide-react';
-import { handleLogout } from '@/utils/auth';
+import { handleLogout, getCurrentUser } from '@/utils/auth';
 import apiClient from '@/utils/api';
 import { Store as StoreEntity } from '@/api/entities';
 import { ThemePresetSelector } from '@/components/admin/ThemePresetSelector';
@@ -52,6 +52,7 @@ export default function StoreOnboarding() {
   const [provisioningStatus, setProvisioningStatus] = useState(null); // Current provisioning step
   const [provisioningMessage, setProvisioningMessage] = useState(''); // User-friendly message
   const [backgroundJobStarted, setBackgroundJobStarted] = useState(false); // Track if background job was started
+  const [userEmail, setUserEmail] = useState(''); // Store owner's email for notifications
   const slugCheckTimeoutRef = React.useRef(null);
   const provisioningPollRef = React.useRef(null);
 
@@ -127,6 +128,11 @@ export default function StoreOnboarding() {
     if (!token) {
       navigate('/admin/auth', { replace: true });
       return;
+    }
+    // Get user's email for notification messages
+    const currentUser = getCurrentUser();
+    if (currentUser?.email) {
+      setUserEmail(currentUser.email);
     }
     setAuthChecked(true);
   }, [navigate]);
@@ -1241,7 +1247,7 @@ export default function StoreOnboarding() {
                           You can safely close this page
                         </p>
                         <p className="text-green-700 text-xs mt-1">
-                          We'll email you when your store is ready!
+                          We'll email you at <strong>{userEmail}</strong> when your store is ready!
                         </p>
                       </div>
                     </div>
@@ -1389,7 +1395,7 @@ export default function StoreOnboarding() {
                         Setup takes a few minutes. You can close this page after starting.
                       </p>
                       <p className="text-sm text-green-700 mt-1">
-                        We'll email you when your store is ready!
+                        We'll email you at <strong>{userEmail}</strong> when your store is ready!
                       </p>
                     </div>
                   </div>

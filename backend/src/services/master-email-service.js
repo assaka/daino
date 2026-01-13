@@ -486,6 +486,19 @@ class MasterEmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendProvisioningCompleteEmail(recipientEmail, storeName, dashboardUrl, success = true) {
+    console.log('[MASTER EMAIL SERVICE] sendProvisioningCompleteEmail called:', {
+      recipientEmail,
+      storeName,
+      dashboardUrl,
+      success,
+      isConfigured: this.isConfigured
+    });
+
+    if (!recipientEmail) {
+      console.error('[MASTER EMAIL SERVICE] ERROR: recipientEmail is empty/undefined');
+      return { success: false, message: 'Recipient email is required' };
+    }
+
     const subject = success
       ? `Your store "${storeName}" is ready!`
       : `Issue with your store "${storeName}" setup`;
@@ -494,7 +507,10 @@ class MasterEmailService {
       ? storeReadyEmail({ storeName, dashboardUrl })
       : storeSetupFailedEmail({ storeName, retryUrl: dashboardUrl });
 
-    return await this.sendEmail(recipientEmail, subject, htmlContent);
+    console.log('[MASTER EMAIL SERVICE] Sending provisioning email with subject:', subject);
+    const result = await this.sendEmail(recipientEmail, subject, htmlContent);
+    console.log('[MASTER EMAIL SERVICE] Provisioning email result:', result);
+    return result;
   }
 
   /**

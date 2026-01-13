@@ -29,6 +29,7 @@ const StoreHostname = require('../models/master/StoreHostname');
 const SupabaseIntegration = require('../services/supabase-integration');
 const creditService = require('../services/credit-service');
 const backgroundJobManager = require('../core/BackgroundJobManager');
+const masterEmailService = require('../services/master-email-service');
 
 // Minimum credits required to set a store to running (published)
 const MINIMUM_CREDITS_TO_RUN = 10;
@@ -1172,6 +1173,21 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     console.log('✅ Store activated and provisioning marked complete!');
 
+    // Send completion email (synchronous path)
+    try {
+      console.log('📧 Sending store ready email to:', req.user.email);
+      const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
+        req.user.email,
+        storeName || 'Your Store',
+        `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
+        true
+      );
+      console.log('📧 Store ready email result:', emailResult);
+    } catch (emailError) {
+      console.error('📧 Failed to send store ready email:', emailError.message);
+      // Don't fail the request if email fails
+    }
+
     res.json({
       success: true,
       message: 'Store setup completed successfully!',
@@ -1484,6 +1500,20 @@ router.post('/:id/complete-provisioning', authMiddleware, async (req, res) => {
       .eq('id', storeId);
 
     console.log(`✅ Provisioning completed for store ${storeId}`);
+
+    // Send completion email
+    try {
+      console.log('📧 Sending store ready email to:', req.user.email);
+      const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
+        req.user.email,
+        store.name || 'Your Store',
+        `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
+        true
+      );
+      console.log('📧 Store ready email result:', emailResult);
+    } catch (emailError) {
+      console.error('📧 Failed to send store ready email:', emailError.message);
+    }
 
     res.json({
       success: true,

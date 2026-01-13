@@ -33,6 +33,7 @@ class StoreProvisioningJob extends BaseJobHandler {
     } = payload;
 
     this.log(`Starting provisioning for store ${storeId} (${storeName})`);
+    this.log(`Job payload - userEmail: ${userEmail}, userId: ${userId}, themePreset: ${themePreset}`);
 
     try {
       // Update provisioning status to tables_creating
@@ -115,11 +116,14 @@ class StoreProvisioningJob extends BaseJobHandler {
       }
 
       await this.updateProgress(90, 'Finalizing store setup...');
+      this.log('Step: Finalizing store setup');
 
       // Determine final status based on demo data
       const finalStatus = provisionDemoData ? 'demo' : 'active';
+      this.log(`Final status will be: ${finalStatus}`);
 
       // Update store to active/demo status
+      this.log('Updating store status in master DB...');
       const { error: activateError } = await masterDbClient
         .from('stores')
         .update({
@@ -140,19 +144,28 @@ class StoreProvisioningJob extends BaseJobHandler {
       if (activateError) {
         throw new Error(`Failed to activate store: ${activateError.message}`);
       }
+      this.log('Store status updated successfully');
 
       await this.updateProgress(95, 'Sending notification email...');
+      this.log('Step: About to send notification email');
 
       // Send completion email
       try {
         this.log(`Sending completion email to ${userEmail} for store "${storeName}"`);
-        const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
-          userEmail,
-          storeName,
-          `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
-          true
-        );
-        this.log(`Provisioning complete email result: ${JSON.stringify(emailResult)}`);
+        if (!userEmail) {
+          this.log('WARNING: userEmail is missing from job payload - cannot send completion email', 'warn');
+        } else {
+          const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
+            userEmail,
+            storeName,
+            `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
+            true
+          );
+          this.log(`Provisioning complete email result: ${JSON.stringify(emailResult)}`);
+          if (!emailResult.success) {
+            this.log(`EMAIL NOT SENT: ${emailResult.message}`, 'warn');
+          }
+        }
       } catch (emailError) {
         this.log(`Failed to send completion email: ${emailError.message}`, 'warn');
         console.error('Email error stack:', emailError.stack);
@@ -160,6 +173,7 @@ class StoreProvisioningJob extends BaseJobHandler {
       }
 
       await this.updateProgress(100, 'Store provisioning completed!');
+      this.log('Step: Job completed successfully, returning result');
 
       return {
         success: true,
@@ -190,12 +204,18 @@ class StoreProvisioningJob extends BaseJobHandler {
 
       // Send failure email
       try {
-        await masterEmailService.sendProvisioningCompleteEmail(
-          userEmail,
-          storeName,
-          `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/onboarding?step=3&storeId=${storeId}&resume=true`,
-          false
-        );
+        this.log(`Sending failure notification email to ${userEmail}`);
+        if (!userEmail) {
+          this.log('WARNING: userEmail is missing - cannot send failure email', 'warn');
+        } else {
+          const failEmailResult = await masterEmailService.sendProvisioningCompleteEmail(
+            userEmail,
+            storeName,
+            `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/onboarding?step=3&storeId=${storeId}&resume=true`,
+            false
+          );
+          this.log(`Failure email result: ${JSON.stringify(failEmailResult)}`);
+        }
       } catch (emailError) {
         this.log(`Failed to send failure email: ${emailError.message}`, 'warn');
       }
