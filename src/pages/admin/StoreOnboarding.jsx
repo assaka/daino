@@ -90,6 +90,7 @@ export default function StoreOnboarding() {
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
+          setNeedsServiceKey(false);  // Reset so success screen shows
           setProvisioningStatus('completed');
           setProvisioningMessage('Provisioning completed successfully');
           setCompletedSteps([1, 2, 3, 4]);
@@ -741,6 +742,7 @@ export default function StoreOnboarding() {
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
+          setNeedsServiceKey(false);  // Reset so success screen shows
           setProvisioningStatus('completed');
           setProvisioningMessage('Provisioning completed successfully');
           setCompletedSteps([1, 2, 3, 4]);
