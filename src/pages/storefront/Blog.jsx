@@ -152,7 +152,8 @@ const TAGS = {
   'advanced': { label: 'Advanced', color: 'bg-gray-100 text-gray-700 border-gray-200' },
   'ai': { label: 'AI', color: 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200' },
   'crm': { label: 'CRM', color: 'bg-rose-100 text-rose-700 border-rose-200' },
-  'migration': { label: 'Migration', color: 'bg-amber-100 text-amber-700 border-amber-200' }
+  'migration': { label: 'Migration', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  'agentic': { label: 'Agentic Commerce', color: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 border-indigo-200' }
 };
 
 // Blog article metadata
@@ -572,6 +573,18 @@ const BLOG_ARTICLES = {
     readTime: '15 min read',
     date: 'December 2024',
     author: 'DainoStore Team'
+  },
+  // Agentic Commerce
+  'universal-commerce-protocol-guide': {
+    title: 'Universal Commerce Protocol (UCP): The Future of AI-Powered Shopping',
+    description: 'Learn how UCP enables AI agents like Google Gemini and ChatGPT to discover and purchase from your store.',
+    category: 'Agentic Commerce',
+    categoryIcon: Zap,
+    categoryColor: 'bg-indigo-100 text-indigo-600',
+    tags: ['agentic', 'ai', 'advanced', 'integrations'],
+    readTime: '18 min read',
+    date: 'January 2025',
+    author: 'DainoStore Team'
   }
 };
 
@@ -622,7 +635,9 @@ const CONTENT_PATHS = {
   'workflow-integrations-guide': '/blog/workflow-integrations-guide.md',
   'multi-tenant-architecture': '/blog/multi-tenant-architecture.md',
   // Migration
-  'shopify-migration': '/blog/shopify-migration.md'
+  'shopify-migration': '/blog/shopify-migration.md',
+  // Agentic Commerce
+  'universal-commerce-protocol-guide': '/blog/universal-commerce-protocol-guide.md'
 };
 
 function BlogHeader() {
