@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CountrySelect } from '@/components/ui/country-select';
 import {
   Store, Database, Palette, Clock,
-  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info, LogOut, Mail
+  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle, X, Info, LogOut, Mail, Lock
 } from 'lucide-react';
 import { handleLogout, getCurrentUser } from '@/utils/auth';
 import apiClient from '@/utils/api';
@@ -1357,24 +1357,11 @@ export default function StoreOnboarding() {
                     </ul>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                      <Info className="w-4 h-4 mr-2" />
-                      One more step - Service Role Key
-                    </h4>
-                    <p className="text-sm text-blue-800 mb-2">
-                      To create tables in your database, we need your Supabase Service Role Key:
-                    </p>
-                    <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
-                      <li>Go to your Supabase Dashboard → Project Settings → API Keys</li>
-                      <li>Find the "service_role" key under "Legacy anon, service_role API keys"</li>
-                      <li>Copy the service_role key (starts with "eyJh...")</li>
-                      <li>Paste it in the field below</li>
-                    </ol>
-                  </div>
-
                   <div>
                     <Label htmlFor="serviceRoleKey">Supabase Service Role Key *</Label>
+                    <p className="text-xs text-gray-500 mt-1 mb-2">
+                      Find this in Supabase Dashboard → Project Settings → API Keys
+                    </p>
                     <Input
                       id="serviceRoleKey"
                       type="password"
@@ -1383,8 +1370,12 @@ export default function StoreOnboarding() {
                       onChange={(e) => setDbData({ ...dbData, serviceRoleKey: e.target.value })}
                       required
                       autoFocus
-                      className="mt-2 font-mono text-xs"
+                      className="font-mono text-xs"
                     />
+                    <p className="text-xs text-gray-400 mt-2 flex items-center">
+                      <Lock className="w-3 h-3 mr-1" />
+                      Used only for initial setup, not stored
+                    </p>
                   </div>
 
                   {/* Info about email notification */}
