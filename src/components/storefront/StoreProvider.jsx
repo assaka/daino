@@ -230,7 +230,9 @@ export const StoreProvider = ({ children }) => {
 
           const isAdminPage = window.location.pathname.includes('/admin/');
           if (!isAdminPage) {
+            console.log('[StoreProvider] DEBUG: clear_cache received, triggering reload in 1s');
             setTimeout(() => {
+              console.log('[StoreProvider] DEBUG: Reloading now...');
               window.location.reload();
             }, 1000);
           } else {

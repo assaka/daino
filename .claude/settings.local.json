@@ -24,7 +24,8 @@
       "Bash(python:*)",
       "Bash(echo $RENDER_API_KEY)",
       "Bash(gh run list:*)",
-      "Bash(where curl)"
+      "Bash(where curl)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": [],

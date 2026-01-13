@@ -133,6 +133,9 @@ function getIconComponent(iconName) {
 }
 
 function LayoutInner({ children, currentPageName }) {
+  // DEBUG: Track renders and page name
+  console.log('[LayoutInner] Render - currentPageName:', currentPageName, 'path:', window.location.pathname);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
