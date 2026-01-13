@@ -5,7 +5,7 @@ import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { handleLogout, getUserDataForRole } from '@/utils/auth';
 import { CustomerAuth } from '@/api/storefront-entities';
-import { StorePauseAccess, Store } from '@/api/entities';
+import { StorePauseAccess } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Menu, Search, ChevronDown, Settings, LogOut, X } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -73,22 +73,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
                 return;
             }
 
-            // Check if store owner/team member has access via API (for ?version=published preview)
-            const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
-            const hasPublishedParam = urlParams?.get('version') === 'published';
-            if (hasStoreOwnerToken && hasPublishedParam) {
-                try {
-                    const result = await Store.checkAccess(store.id);
-                    if (result?.hasAccess) {
-                        setHasApprovedAccess(true);
-                        setCheckingAccess(false);
-                        return;
-                    }
-                } catch (error) {
-                    // Continue to other checks
-                }
-            }
-
             // First check URL params (from approval email)
             if (pauseAccessEmail && pauseAccessToken) {
                 try {
@@ -137,7 +121,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         }
     }, [flashMessage]);
 
-    // Store owners, team members, or users with approved access can bypass the paused overlay
+    // Only store owners or users with approved access can bypass the paused overlay
     // Random visitors cannot bypass with URL params like ?version=published
     // However, AI Workspace mode (mode=workspace) should always bypass the pause modal
     const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
