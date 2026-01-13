@@ -86,6 +86,7 @@ export default function StoreOnboarding() {
 
         if (isComplete) {
           // Provisioning completed successfully
+          console.log('🎉 Provisioning complete detected! Showing success screen...');
           clearInterval(provisioningPollRef.current);
           provisioningPollRef.current = null;
           setLoading(false);
@@ -93,6 +94,7 @@ export default function StoreOnboarding() {
           setProvisioningMessage('Provisioning completed successfully');
           setCompletedSteps([1, 2, 3, 4]);
           setSuccess('🎉 Your store is ready! Redirecting to dashboard...');
+          console.log('🎉 State updated, success screen should be visible for 5 seconds');
 
           // Clear old store selection data
           localStorage.removeItem('selectedStoreId');
