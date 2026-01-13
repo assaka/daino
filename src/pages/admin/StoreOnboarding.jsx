@@ -95,7 +95,16 @@ export default function StoreOnboarding() {
           setProvisioningMessage('Provisioning completed successfully');
           setCompletedSteps([1, 2, 3, 4]);
           setSuccess('🎉 Your store is ready! Redirecting to dashboard...');
-          console.log('🎉 State updated, success screen should be visible for 5 seconds');
+          console.log('🎉 State updated, success screen should be visible for 7 seconds');
+
+          // Trigger email sending as fallback (in case background job didn't send it)
+          try {
+            console.log('📧 Triggering fallback email send...');
+            await apiClient.post(`/stores/${targetStoreId}/send-ready-email`);
+            console.log('📧 Fallback email request sent');
+          } catch (emailErr) {
+            console.warn('📧 Fallback email failed:', emailErr.message);
+          }
 
           // Clear old store selection data
           localStorage.removeItem('selectedStoreId');

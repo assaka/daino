@@ -1327,6 +1327,52 @@ router.get('/:id/provisioning-status', authMiddleware, async (req, res) => {
 });
 
 /**
+ * POST /api/stores/:id/send-ready-email
+ * Send store ready email - called by frontend as fallback when background job email fails
+ */
+router.post('/:id/send-ready-email', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    // Get store from master DB
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('id, name, provisioning_status')
+      .eq('id', storeId)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (error || !store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    // Only send if provisioning is complete
+    if (store.provisioning_status !== 'completed') {
+      return res.json({ success: false, message: 'Store not yet provisioned' });
+    }
+
+    // Send the email
+    console.log('📧 [Fallback] Sending store ready email to:', req.user.email);
+    const emailResult = await masterEmailService.sendProvisioningCompleteEmail(
+      req.user.email,
+      store.name || 'Your Store',
+      `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/admin/dashboard`,
+      true
+    );
+    console.log('📧 [Fallback] Email result:', emailResult);
+
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Email sent successfully' : 'Failed to send email',
+      emailResult
+    });
+  } catch (error) {
+    console.error('Send ready email error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send email' });
+  }
+});
+
+/**
  * POST /api/stores/:id/complete-onboarding
  * Complete store onboarding (step 3) - sets store to active
  * Requires country to be set
