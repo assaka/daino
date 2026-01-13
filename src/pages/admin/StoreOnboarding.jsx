@@ -832,16 +832,28 @@ export default function StoreOnboarding() {
       <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl flex flex-col items-center">
       <Card className="w-full shadow-2xl relative">
-        {/* Cancel Button - always show for users who can go back to stores */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-2 z-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
-          onClick={() => navigate('/admin/stores')}
-          title="Cancel and return to stores"
-        >
-          <X className="w-5 h-5" />
-        </Button>
+        {/* Cancel Button - disabled during provisioning until job is confirmed */}
+        {(provisioningStatus && !backgroundJobStarted && provisioningStatus !== 'completed') ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 z-10 text-gray-300 cursor-not-allowed rounded-full"
+            disabled
+            title="Please wait - setup is starting..."
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 z-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
+            onClick={() => navigate('/admin/stores')}
+            title="Cancel and return to stores"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        )}
         {/* Progress Bar */}
         <div className="px-6 pt-6">
           <div className="flex items-center justify-between mb-2 pr-8">
