@@ -1331,7 +1331,7 @@ export default function StoreOnboarding() {
               ) : (
                 <>
                   {/* What is provisioning? */}
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="hidden bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <h4 className="font-semibold text-purple-900 mb-2 flex items-center">
                       <Sparkles className="w-4 h-4 mr-2" />
                       What is "Provisioning"?
@@ -1364,10 +1364,10 @@ export default function StoreOnboarding() {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
                       <Info className="w-4 h-4 mr-2" />
-                      One more step - Service Role Key
+                      Last step - Service Role Key
                     </h4>
                     <p className="text-sm text-blue-800 mb-2">
-                      To create tables in your database, we need your Supabase Service Role Key:
+                      To set up everything your store needs to work, we need your Supabase Service Role Key:
                     </p>
                     <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
                       <li>Go to your Supabase Dashboard → Project Settings → API Keys</li>
@@ -1396,7 +1396,7 @@ export default function StoreOnboarding() {
                     <Mail className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm text-green-800 font-medium">
-                        Setup takes a few minutes. You can close this page after starting.
+                        Setup takes a few minutes. You can close this page if you want after starting.
                       </p>
                       <p className="text-sm text-green-700 mt-1">
                         We'll email you at <strong>{userEmail}</strong> when your store is ready!
@@ -1410,7 +1410,7 @@ export default function StoreOnboarding() {
                     </Button>
                     <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.serviceRoleKey}>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Provision Store
+                      Set up Store
                     </Button>
                   </div>
                 </>

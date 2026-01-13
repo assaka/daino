@@ -255,6 +255,11 @@ class BullMQManager {
     console.log(`BullMQ: Added job ${job.id} to queue "${queueName}" (type: ${jobType})`);
     console.log(`BullMQ: Worker exists for ${jobType}:`, this.workers.has(jobType));
     console.log(`BullMQ: Total workers running:`, this.workers.size);
+
+    // Check queue status
+    const jobCounts = await queue.getJobCounts();
+    console.log(`BullMQ: Queue "${queueName}" status:`, jobCounts);
+
     return job;
   }
 
@@ -509,6 +514,11 @@ class BullMQManager {
 
     worker.on('ready', () => {
       console.log(`BullMQ: Worker for ${queueName} is READY to process jobs`);
+      console.log(`BullMQ: Worker connection state:`, worker.isRunning() ? 'RUNNING' : 'NOT RUNNING');
+    });
+
+    worker.on('active', (job) => {
+      console.log(`BullMQ: Worker ACTIVE - processing job ${job.id}`);
     });
 
     worker.on('closing', () => {
