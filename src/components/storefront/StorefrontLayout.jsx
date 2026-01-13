@@ -44,7 +44,6 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Separate component for the paused overlay that can use the preview mode context
 function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
-    console.log('[PausedStoreOverlay] Render - store:', store?.id, 'isOwner:', isStoreOwnerViewingOwnStore);
     const { isPreviewDraftMode, isPublishedPreview, isWorkspaceMode } = usePreviewMode();
     const { t } = useTranslation();
     const [showRequestForm, setShowRequestForm] = useState(false);
