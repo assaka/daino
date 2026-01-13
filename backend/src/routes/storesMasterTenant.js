@@ -160,6 +160,62 @@ router.get('/check-slug', authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /api/stores/:id/check-access
+ * Check if the current user has access to the store (owner or team member)
+ * Used by storefront to bypass pause modal for authorized users
+ */
+router.get('/:id/check-access', authMiddleware, async (req, res) => {
+  try {
+    const { id: storeId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.json({ success: true, hasAccess: false });
+    }
+
+    // Check direct ownership
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, user_id')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (storeError || !store) {
+      return res.json({ success: true, hasAccess: false });
+    }
+
+    // Direct owner has access to their own store
+    if (store.user_id === userId) {
+      return res.json({ success: true, hasAccess: true, accessType: 'owner' });
+    }
+
+    // Check team membership for this specific store
+    const { data: teamMember, error: teamError } = await masterDbClient
+      .from('store_teams')
+      .select('role, status')
+      .eq('store_id', storeId)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (teamError || !teamMember) {
+      return res.json({ success: true, hasAccess: false });
+    }
+
+    return res.json({
+      success: true,
+      hasAccess: true,
+      accessType: 'team_member',
+      role: teamMember.role
+    });
+  } catch (error) {
+    console.error('Check access error:', error);
+    res.json({ success: true, hasAccess: false });
+  }
+});
+
+/**
  * POST /api/stores
  * Create a new store in master DB
  */
