@@ -1286,13 +1286,6 @@ export default function StoreOnboarding() {
                     </div>
                   </div>
 
-                  {/* What's happening right now */}
-                  <div className="bg-white/60 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-gray-600 text-center">
-                      <strong>What's happening:</strong> We're creating {provisioningStatus === 'tables_creating' || provisioningStatus === 'pending' ? 'database tables' : provisioningStatus === 'seed_running' ? 'store settings' : provisioningStatus === 'demo_running' ? 'demo content' : 'your store'} for <strong>{storeData.name}</strong>
-                    </p>
-                  </div>
-
                   {/* Progress Steps */}
                   <div className="space-y-3">
                     {[
