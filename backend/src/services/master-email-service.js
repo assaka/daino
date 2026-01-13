@@ -34,6 +34,12 @@ class MasterEmailService {
     this.senderName = process.env.MASTER_SENDER_NAME || PLATFORM_NAME;
     this.isConfigured = !!this.apiKey;
 
+    // Debug: Log which env vars are present
+    console.log('[MASTER EMAIL SERVICE] Checking env vars:');
+    console.log('  MASTER_BREVO_API_KEY:', process.env.MASTER_BREVO_API_KEY ? `set (${process.env.MASTER_BREVO_API_KEY.substring(0, 8)}...)` : 'NOT SET');
+    console.log('  BREVO_API_KEY:', process.env.BREVO_API_KEY ? `set (${process.env.BREVO_API_KEY.substring(0, 8)}...)` : 'NOT SET');
+    console.log('  MASTER_SENDER_EMAIL:', process.env.MASTER_SENDER_EMAIL || 'NOT SET');
+
     if (!this.isConfigured) {
       console.warn('[MASTER EMAIL SERVICE] No API key configured. Platform emails will not be sent.');
       console.warn('[MASTER EMAIL SERVICE] Set MASTER_BREVO_API_KEY or BREVO_API_KEY environment variable.');
