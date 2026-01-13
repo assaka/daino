@@ -99,10 +99,10 @@ export default function StoreOnboarding() {
           localStorage.removeItem('selectedStoreName');
           localStorage.removeItem('selectedStoreSlug');
 
-          // Redirect to dashboard after a short delay
+          // Redirect to dashboard after showing success screen
           setTimeout(() => {
             window.location.href = '/admin/dashboard';
-          }, 2000);
+          }, 5000);
           return;
         }
 
@@ -749,10 +749,10 @@ export default function StoreOnboarding() {
           localStorage.removeItem('selectedStoreName');
           localStorage.removeItem('selectedStoreSlug');
 
-          // Redirect to dashboard after a short delay
+          // Redirect to dashboard after showing success screen
           setTimeout(() => {
             window.location.href = '/admin/dashboard';
-          }, 2000);
+          }, 5000);
           return;
         }
 
