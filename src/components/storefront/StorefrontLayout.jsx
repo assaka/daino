@@ -138,9 +138,11 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         }
     }, [flashMessage]);
 
-    // Store owners, team members, or users with approved access can bypass the paused overlay
+    // These users can bypass the paused overlay:
+    // 1. Store owners viewing their own store (isStoreOwnerViewingOwnStore)
+    // 2. Team members with ?version=published (verified via API, sets hasApprovedAccess)
+    // 3. Users with approved pause access requests (via email link or localStorage)
     // Random visitors cannot bypass with URL params like ?version=published
-    // Team members are verified via API when ?version=published is in URL
     // AI Workspace mode (mode=workspace) should always bypass the pause modal
     const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
     const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
