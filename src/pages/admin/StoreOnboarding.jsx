@@ -1124,16 +1124,34 @@ export default function StoreOnboarding() {
           {/* Step 3: Connect Database */}
           {currentStep === 3 && !oauthCompleted && (
             <form onSubmit={handleConnectDatabase} className="space-y-6">
-              {/* Why you need a database */}
+              {/* Benefits of connecting your own database */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <h4 className="font-semibold text-amber-900 mb-2 flex items-center">
+                <h4 className="font-semibold text-amber-900 mb-3 flex items-center">
                   <Database className="w-4 h-4 mr-2" />
-                  Why do I need a database?
+                  Benefits of Your Own Database
                 </h4>
-                <p className="text-sm text-amber-800">
-                  Your Supabase database is where all your store data lives - products, categories, customers, orders, and settings.
-                  <strong>You own and control your data</strong> completely. We just help you set it up!
-                </p>
+                <ul className="text-sm text-amber-800 space-y-2">
+                  <li className="flex items-start">
+                    <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">1</span>
+                    <span><strong>Own your data</strong> - Full control and ownership of all your store data</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">2</span>
+                    <span><strong>Better performance</strong> - Dedicated resources for faster queries</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">3</span>
+                    <span><strong>Enhanced privacy</strong> - Your data is isolated and secure</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">4</span>
+                    <span><strong>GDPR compliance</strong> - Choose a region that meets your requirements</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">5</span>
+                    <span><strong>Free tier</strong> - Get started at no cost with Supabase's generous free plan</span>
+                  </li>
+                </ul>
               </div>
 
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
@@ -1254,15 +1272,24 @@ export default function StoreOnboarding() {
                       <p className="text-gray-600 text-sm">
                         We're building your store right now. This usually takes 2-5 minutes.
                       </p>
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                        <p className="text-green-800 text-sm font-medium flex items-center justify-center">
-                          <Mail className="w-4 h-4 mr-2" />
-                          You can safely close this page
-                        </p>
-                        <p className="text-green-700 text-xs mt-1">
-                          We'll email you at <strong>{userEmail}</strong> when your store is ready!
-                        </p>
-                      </div>
+                      {backgroundJobStarted ? (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <p className="text-green-800 text-sm font-medium flex items-center justify-center">
+                            <Mail className="w-4 h-4 mr-2" />
+                            You can safely close this page
+                          </p>
+                          <p className="text-green-700 text-xs mt-1">
+                            We'll email you at <strong>{userEmail}</strong> when your store is ready!
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-blue-800 text-sm font-medium flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Please wait while we start the setup...
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
