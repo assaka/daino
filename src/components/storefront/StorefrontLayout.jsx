@@ -714,14 +714,11 @@ export default function StorefrontLayout({ children }) {
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
                 <StorefrontPreviewBanner />
                 <RoleSwitcher />
-                <DataLayerManager />
-                <CustomEventLoader />
-
-                {/* Paused Store Overlay - TEMPORARILY DISABLED to debug React #310 */}
+                {/* TEMPORARILY DISABLED to debug React #310 */}
+                {/* <DataLayerManager /> */}
+                {/* <CustomEventLoader /> */}
                 {/* <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} /> */}
-                
-                {/* Heatmap Tracker - Lazy loaded to not block LCP */}
-                <Suspense fallback={null}>
+                {/* <Suspense fallback={null}>
                     <HeatmapTrackerComponent
                         storeId={store?.id}
                         config={{
@@ -735,7 +732,7 @@ export default function StorefrontLayout({ children }) {
                             excludeSelectors: ['.heatmap-exclude', '[data-heatmap-exclude]', '.role-switcher']
                         }}
                     />
-                </Suspense>
+                </Suspense> */}
             {/* Fonts are loaded in useEffect to ensure they're in <head> */}
             {settings?.theme?.font_script && (
               <div dangerouslySetInnerHTML={{ __html: settings.theme.font_script }} />
@@ -1051,8 +1048,8 @@ export default function StorefrontLayout({ children }) {
                 <CookieConsentBanner />
             )}
 
-            {/* Global Plugin Widgets (floating chat, support widgets, etc.) */}
-            <GlobalPluginWidgets />
+            {/* Global Plugin Widgets - TEMPORARILY DISABLED to debug React #310 */}
+            {/* <GlobalPluginWidgets /> */}
             </div>
         </SeoSettingsProvider>
         </PreviewModeProvider>
