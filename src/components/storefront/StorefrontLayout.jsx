@@ -712,8 +712,9 @@ export default function StorefrontLayout({ children }) {
         <PreviewModeProvider>
         <SeoSettingsProvider>
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
-                <StorefrontPreviewBanner />
-                <RoleSwitcher />
+                {/* DISABLED for debugging */}
+                {/* <StorefrontPreviewBanner /> */}
+                {/* <RoleSwitcher /> */}
                 {/* TEMPORARILY DISABLED to debug React #310 */}
                 {/* <DataLayerManager /> */}
                 {/* <CustomEventLoader /> */}
@@ -733,20 +734,20 @@ export default function StorefrontLayout({ children }) {
                         }}
                     />
                 </Suspense> */}
-            {/* Fonts are loaded in useEffect to ensure they're in <head> */}
-            {settings?.theme?.font_script && (
+            {/* DISABLED - Fonts are loaded in useEffect to ensure they're in <head> */}
+            {/* {settings?.theme?.font_script && (
               <div dangerouslySetInnerHTML={{ __html: settings.theme.font_script }} />
             )}
             {gtmScript && (
                 <div dangerouslySetInnerHTML={{ __html: gtmScript }} />
-            )}
-            <style>{themeStyles}</style>
-            
-            <SeoHeadManager
+            )} */}
+            {/* <style>{themeStyles}</style> */}
+
+            {/* <SeoHeadManager
                 pageType="storefront"
                 pageTitle={store?.name || 'Daino Store'}
                 pageDescription={store?.description || 'Welcome to our store.'}
-            />
+            /> */}
 
             {/* HEADER DISABLED FOR DEBUGGING React #310 */}
             {false && !hideHeader && headerConfigLoaded && headerSlots ? (
@@ -1019,35 +1020,38 @@ export default function StorefrontLayout({ children }) {
                 </>
             )}
 
-            <CmsBlockRenderer position="header" page={getCurrentPage()} />
+            {/* CmsBlockRenderer DISABLED */}
+            {/* <CmsBlockRenderer position="header" page={getCurrentPage()} /> */}
 
             <div className="flex-1">
                 {/* Main Content - Full Width */}
                 <main className="w-full px-2 sm:px-4 lg:px-8 pb-8">
-                    <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
+                    {/* <CmsBlockRenderer position="before_content" page={getCurrentPage()} /> */}
 
-                    {/* Global Flash Message */}
-                    {flashMessage && (
+                    {/* Global Flash Message - DISABLED */}
+                    {/* {flashMessage && (
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
                             <FlashMessage
                                 message={flashMessage}
                                 onClose={() => setFlashMessage(null)}
                             />
                         </div>
-                    )}
+                    )} */}
 
-                    <RedirectHandler storeId={store?.id}>
+                    {/* RedirectHandler DISABLED */}
+                    {/* <RedirectHandler storeId={store?.id}> */}
                         {children}
-                    </RedirectHandler>
-                    <CmsBlockRenderer position="after_content" page={getCurrentPage()} />
+                    {/* </RedirectHandler> */}
+                    {/* <CmsBlockRenderer position="after_content" page={getCurrentPage()} /> */}
                 </main>
             </div>
 
-            <CmsBlockRenderer position="footer" page={getCurrentPage()} />
-            
-            {settings?.cookie_consent?.enabled && (
+            {/* <CmsBlockRenderer position="footer" page={getCurrentPage()} /> */}
+
+            {/* CookieConsentBanner DISABLED */}
+            {/* {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
-            )}
+            )} */}
 
             {/* Global Plugin Widgets - TEMPORARILY DISABLED to debug React #310 */}
             {/* <GlobalPluginWidgets /> */}
