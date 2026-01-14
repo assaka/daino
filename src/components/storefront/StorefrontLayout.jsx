@@ -716,8 +716,8 @@ export default function StorefrontLayout({ children }) {
                 <RoleSwitcher />
                 <DataLayerManager />
                 <CustomEventLoader />
-                {/* <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} /> */}
-                {/* <Suspense fallback={null}>
+                <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} />
+                <Suspense fallback={null}>
                     <HeatmapTrackerComponent
                         storeId={store?.id}
                         config={{
@@ -731,7 +731,7 @@ export default function StorefrontLayout({ children }) {
                             excludeSelectors: ['.heatmap-exclude', '[data-heatmap-exclude]', '.role-switcher']
                         }}
                     />
-                </Suspense> */}
+                </Suspense>
             {/* DISABLED - Fonts are loaded in useEffect to ensure they're in <head> */}
             {/* {settings?.theme?.font_script && (
               <div dangerouslySetInnerHTML={{ __html: settings.theme.font_script }} />
