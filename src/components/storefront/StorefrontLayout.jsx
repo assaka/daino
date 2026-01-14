@@ -712,8 +712,7 @@ export default function StorefrontLayout({ children }) {
         <PreviewModeProvider>
         <SeoSettingsProvider>
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
-                {/* DISABLED for debugging */}
-                {/* <StorefrontPreviewBanner /> */}
+                <StorefrontPreviewBanner />
                 {/* <RoleSwitcher /> */}
                 {/* TEMPORARILY DISABLED to debug React #310 */}
                 {/* <DataLayerManager /> */}
