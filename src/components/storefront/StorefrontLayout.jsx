@@ -714,9 +714,8 @@ export default function StorefrontLayout({ children }) {
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
                 <StorefrontPreviewBanner />
                 <RoleSwitcher />
-                {/* TEMPORARILY DISABLED to debug React #310 */}
-                {/* <DataLayerManager /> */}
-                {/* <CustomEventLoader /> */}
+                <DataLayerManager />
+                <CustomEventLoader />
                 {/* <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} /> */}
                 {/* <Suspense fallback={null}>
                     <HeatmapTrackerComponent
