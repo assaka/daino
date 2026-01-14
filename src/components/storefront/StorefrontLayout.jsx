@@ -1017,8 +1017,7 @@ export default function StorefrontLayout({ children }) {
                 </>
             )}
 
-            {/* CmsBlockRenderer DISABLED */}
-            {/* <CmsBlockRenderer position="header" page={getCurrentPage()} /> */}
+            <CmsBlockRenderer position="header" page={getCurrentPage()} />
 
             <div className="flex-1">
                 {/* Main Content - Full Width */}
@@ -1050,8 +1049,8 @@ export default function StorefrontLayout({ children }) {
                 <CookieConsentBanner />
             )} */}
 
-            {/* Global Plugin Widgets - TEMPORARILY DISABLED to debug React #310 */}
-            {/* <GlobalPluginWidgets /> */}
+            {/* Global Plugin Widgets (floating chat, support widgets, etc.) */}
+            <GlobalPluginWidgets />
             </div>
         </SeoSettingsProvider>
         </PreviewModeProvider>
