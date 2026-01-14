@@ -229,14 +229,21 @@ export const StoreProvider = ({ children }) => {
           clearCache();
 
           const isAdminPage = window.location.pathname.includes('/admin/');
-          if (!isAdminPage) {
+          // Only auto-reload for AI workspace mode (mode=workspace) or preview mode (version=published)
+          // Regular storefront visitors should not have their page randomly reload
+          const urlParams = new URLSearchParams(window.location.search);
+          const isWorkspaceMode = urlParams.get('mode') === 'workspace';
+          const isPreviewMode = urlParams.get('version') === 'published';
+
+          if (!isAdminPage && (isWorkspaceMode || isPreviewMode)) {
             setTimeout(() => {
               window.location.reload();
             }, 1000);
-          } else {
+          } else if (isAdminPage) {
             // For admin pages, refetch the data without full reload
             refetchBootstrap();
           }
+          // For regular storefront visitors, just clear cache silently (no reload)
         }
       };
 
@@ -264,7 +271,12 @@ export const StoreProvider = ({ children }) => {
           deleteCacheKey(translationsCacheKey);
 
           const isAdminPage = window.location.pathname.includes('/admin/');
-          if (!isAdminPage) {
+          // Only auto-reload for workspace/preview mode, not regular visitors
+          const urlParams = new URLSearchParams(window.location.search);
+          const isWorkspaceMode = urlParams.get('mode') === 'workspace';
+          const isPreviewMode = urlParams.get('version') === 'published';
+
+          if (!isAdminPage && (isWorkspaceMode || isPreviewMode)) {
             window.location.reload(true);
           }
         }
