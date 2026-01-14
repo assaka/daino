@@ -713,7 +713,7 @@ export default function StorefrontLayout({ children }) {
         <SeoSettingsProvider>
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
                 <StorefrontPreviewBanner />
-                {/* <RoleSwitcher /> */}
+                <RoleSwitcher />
                 {/* TEMPORARILY DISABLED to debug React #310 */}
                 {/* <DataLayerManager /> */}
                 {/* <CustomEventLoader /> */}
