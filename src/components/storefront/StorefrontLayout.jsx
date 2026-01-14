@@ -740,7 +740,7 @@ export default function StorefrontLayout({ children }) {
                 <div dangerouslySetInnerHTML={{ __html: gtmScript }} />
             )}
             <style>{themeStyles}</style>
-
+            
             <SeoHeadManager
                 pageType="storefront"
                 pageTitle={store?.name || 'Daino Store'}
@@ -1024,29 +1024,28 @@ export default function StorefrontLayout({ children }) {
                 <main className="w-full px-2 sm:px-4 lg:px-8 pb-8">
                     <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
 
-                    {/* Global Flash Message - DISABLED */}
-                    {/* {flashMessage && (
+                    {/* Global Flash Message */}
+                    {flashMessage && (
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
                             <FlashMessage
                                 message={flashMessage}
                                 onClose={() => setFlashMessage(null)}
                             />
                         </div>
-                    )} */}
+                    )}
 
-                    {/* RedirectHandler DISABLED */}
-                    {/* <RedirectHandler storeId={store?.id}> */}
+                    <RedirectHandler storeId={store?.id}>
                         {children}
-                    {/* </RedirectHandler> */}
+                    </RedirectHandler>
                     <CmsBlockRenderer position="after_content" page={getCurrentPage()} />
                 </main>
             </div>
 
             <CmsBlockRenderer position="footer" page={getCurrentPage()} />
 
-            {/* {settings?.cookie_consent?.enabled && (
+            {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
-            )} */}
+            )}
 
             {/* Global Plugin Widgets (floating chat, support widgets, etc.) */}
             <GlobalPluginWidgets />
