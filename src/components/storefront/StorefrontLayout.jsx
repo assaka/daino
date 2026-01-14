@@ -717,8 +717,8 @@ export default function StorefrontLayout({ children }) {
                 <DataLayerManager />
                 <CustomEventLoader />
 
-                {/* Paused Store Overlay - uses PreviewModeContext to persist preview mode across navigation */}
-                <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} />
+                {/* Paused Store Overlay - TEMPORARILY DISABLED to debug React #310 */}
+                {/* <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} /> */}
                 
                 {/* Heatmap Tracker - Lazy loaded to not block LCP */}
                 <Suspense fallback={null}>
