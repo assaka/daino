@@ -1042,11 +1042,11 @@ export default function StorefrontLayout({ children }) {
                 </main>
             </div>
 
-            <CmsBlockRenderer position="footer" page={getCurrentPage()} />
+            {/* <CmsBlockRenderer position="footer" page={getCurrentPage()} /> */}
 
-            {settings?.cookie_consent?.enabled && (
+            {/* {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
-            )}
+            )} */}
 
             {/* Global Plugin Widgets (floating chat, support widgets, etc.) */}
             <GlobalPluginWidgets />
