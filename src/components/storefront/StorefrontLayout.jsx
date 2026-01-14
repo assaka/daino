@@ -732,20 +732,20 @@ export default function StorefrontLayout({ children }) {
                         }}
                     />
                 </Suspense>
-            {/* DISABLED - Fonts are loaded in useEffect to ensure they're in <head> */}
-            {/* {settings?.theme?.font_script && (
+            {/* Fonts are loaded in useEffect to ensure they're in <head> */}
+            {settings?.theme?.font_script && (
               <div dangerouslySetInnerHTML={{ __html: settings.theme.font_script }} />
             )}
             {gtmScript && (
                 <div dangerouslySetInnerHTML={{ __html: gtmScript }} />
-            )} */}
-            {/* <style>{themeStyles}</style> */}
+            )}
+            <style>{themeStyles}</style>
 
-            {/* <SeoHeadManager
+            <SeoHeadManager
                 pageType="storefront"
                 pageTitle={store?.name || 'Daino Store'}
                 pageDescription={store?.description || 'Welcome to our store.'}
-            /> */}
+            />
 
             {!hideHeader && headerConfigLoaded && headerSlots ? (
                 <>
