@@ -1042,7 +1042,7 @@ export default function StorefrontLayout({ children }) {
                 </main>
             </div>
 
-            {/* <CmsBlockRenderer position="footer" page={getCurrentPage()} /> */}
+            <CmsBlockRenderer position="footer" page={getCurrentPage()} />
 
             {/* {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
