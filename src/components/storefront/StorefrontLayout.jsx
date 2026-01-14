@@ -1022,7 +1022,7 @@ export default function StorefrontLayout({ children }) {
             <div className="flex-1">
                 {/* Main Content - Full Width */}
                 <main className="w-full px-2 sm:px-4 lg:px-8 pb-8">
-                    {/* <CmsBlockRenderer position="before_content" page={getCurrentPage()} /> */}
+                    <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
 
                     {/* Global Flash Message - DISABLED */}
                     {/* {flashMessage && (
@@ -1038,7 +1038,7 @@ export default function StorefrontLayout({ children }) {
                     {/* <RedirectHandler storeId={store?.id}> */}
                         {children}
                     {/* </RedirectHandler> */}
-                    {/* <CmsBlockRenderer position="after_content" page={getCurrentPage()} /> */}
+                    <CmsBlockRenderer position="after_content" page={getCurrentPage()} />
                 </main>
             </div>
 
