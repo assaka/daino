@@ -61,11 +61,6 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const isInPreviewModeFromUrl = urlParams?.get('version') === 'published' || urlParams?.get('mode') === 'workspace';
 
-    // Check if ANY store owner is logged in with version=published
-    // This allows store owners to preview their store even if store_id doesn't match exactly
-    const hasStoreOwnerToken = typeof window !== 'undefined' && !!localStorage.getItem('store_owner_auth_token');
-    const isStoreOwnerWithPublishedPreview = hasStoreOwnerToken && urlParams?.get('version') === 'published';
-
     // Check for pause_access_email and pause_access_token in URL (from approval email link)
     const pauseAccessEmail = urlParams?.get('pause_access_email');
     const pauseAccessToken = urlParams?.get('pause_access_token');
@@ -129,8 +124,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     // Only store owners or users with approved access can bypass the paused overlay
     // Random visitors cannot bypass with URL params like ?version=published
     // However, AI Workspace mode (mode=workspace) should always bypass the pause modal
-    // Store owners with ?version=published can bypass even if store_id doesn't match exactly
-    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess || isStoreOwnerWithPublishedPreview;
+    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
     const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
 
     // AI Workspace mode bypasses pause modal - check both context and URL directly
