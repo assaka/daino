@@ -717,8 +717,8 @@ export default function StorefrontLayout({ children }) {
                 <DataLayerManager />
                 <CustomEventLoader />
 
-                {/* Paused Store Overlay - TEMPORARILY DISABLED for debugging React #310 */}
-                {/* <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} /> */}
+                {/* Paused Store Overlay - uses PreviewModeContext to persist preview mode across navigation */}
+                <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} />
                 
                 {/* Heatmap Tracker - Lazy loaded to not block LCP */}
                 <Suspense fallback={null}>
@@ -871,16 +871,19 @@ export default function StorefrontLayout({ children }) {
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         ) : (
-                                            <Link
-                                                to={createPublicUrl(store.slug, 'CUSTOMER_AUTH')}
-                                                className="h-11 w-11 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground rounded-md"
+                                            <Button
+                                                variant="ghost"
+                                                className="h-11 w-11 p-0 flex items-center justify-center"
                                                 onClick={() => {
+                                                    // Save store info for redirect after login
                                                     localStorage.setItem('customer_auth_store_id', store.id);
                                                     localStorage.setItem('customer_auth_store_code', store.slug);
+                                                    navigate(createPublicUrl(store.slug, 'CUSTOMER_AUTH'));
                                                 }}
+                                                disabled={userLoading}
                                             >
                                                 <UserIcon className="w-5 h-5 pointer-events-none" />
-                                            </Link>
+                                            </Button>
                                         )}
                                         <WishlistDropdown />
                                      </div>
@@ -953,18 +956,21 @@ export default function StorefrontLayout({ children }) {
                                                 </DropdownMenu>
                                             </div>
                                         ) : (
-                                            <Link
-                                                to={createPublicUrl(store.slug, 'CUSTOMER_AUTH')}
+                                            <Button
                                                 onClick={() => {
+                                                    // Save store info for redirect after login
                                                     localStorage.setItem('customer_auth_store_id', store.id);
                                                     localStorage.setItem('customer_auth_store_code', store.slug);
+                                                    navigate(createPublicUrl(store.slug, 'CUSTOMER_AUTH'));
                                                 }}
-                                                className="text-white px-4 py-2 rounded-lg flex items-center space-x-2 btn-themed"
+                                                disabled={userLoading}
+                                                variant="themed"
+                                                className="text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                                 style={{ backgroundColor: settings?.theme?.primary_button_color || defaults.primary_button_color }}
                                             >
                                                 <UserIcon className="w-5 h-5 mr-2" />
                                                 <span>{t('common.sign_in', 'Sign In')}</span>
-                                            </Link>
+                                            </Button>
                                         )}
                                         <WishlistDropdown />
                                      </div>

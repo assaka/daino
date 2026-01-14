@@ -173,8 +173,12 @@ function LayoutInner({ children, currentPageName }) {
   });
   const [dynamicNavItems, setDynamicNavItems] = useState([]);
 
-  // IMPORTANT: All useEffect hooks MUST be called before any conditional returns
-  // to comply with React's Rules of Hooks (prevents Error #310)
+
+  // Add this block to handle the RobotsTxt page
+  if (currentPageName === 'RobotsTxt') {
+    return <>{children}</>;
+  }
+  // End of new block
 
   useEffect(() => {
     const loadData = async () => {
@@ -375,12 +379,6 @@ function LayoutInner({ children, currentPageName }) {
   
   // Apply role-based access control for admin, editor, plugin, AI Studio, and AI Workspace pages
   useRoleProtection(isAdminPage || isEditorPage || isPluginPage || isAIWorkspacePage);
-
-  // Handle RobotsTxt page - render children only (no layout)
-  // IMPORTANT: This must be AFTER all hooks to comply with React Rules of Hooks
-  if (currentPageName === 'RobotsTxt') {
-    return <>{children}</>;
-  }
 
   if (isLoading && (isAdminPage || isEditorPage || isPluginPage || isAIWorkspacePage)) {
     return <PageLoader size="lg" />;
@@ -848,25 +846,8 @@ function LayoutInner({ children, currentPageName }) {
               </Link>
             )}
 
-            {/* Affiliate Program - user-level feature */}
-            {!isPendingDatabase && user?.email === 'hello@dainostore.com' && (
-              <Link
-                to="/admin/affiliate"
-                className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-2 ${
-                  location.pathname === '/admin/affiliate'
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <Users className="w-5 h-5" />
-                <span className="flex-1">Affiliate</span>
-                {location.pathname === '/admin/affiliate' && <ChevronRight className="w-4 h-4 ml-auto" />}
-              </Link>
-            )}
-
             {/* TEMPORARY: Reprovision Slot Configs Button for Testing */}
-            {!isPendingDatabase && selectedStore?.id && user?.email === 'hello@dainostore.com' && (
+            {!isPendingDatabase && selectedStore?.id && user?.email === 'hamid@sprtags.io' && (
               <button
                 onClick={async () => {
                   if (!confirm('This will delete and re-create all slot configurations. Continue?')) return;
