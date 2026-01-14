@@ -706,10 +706,7 @@ export default function StorefrontLayout({ children }) {
     // Check if store owner is viewing their own store (must have valid token AND user data)
     const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
     const storeOwnerData = hasStoreOwnerToken ? (getUserDataForRole('store_owner') || getUserDataForRole('admin')) : null;
-    // Allow store owner bypass with ?version=published even if store_id doesn't match exactly
-    const urlParamsForBypass = new URLSearchParams(window.location.search);
-    const isStoreOwnerWithPublishedParam = hasStoreOwnerToken && urlParamsForBypass.get('version') === 'published';
-    const isStoreOwnerViewingOwnStore = (storeOwnerData && storeOwnerData.store_id === store?.id) || isStoreOwnerWithPublishedParam;
+    const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
 
     return (
         <PreviewModeProvider>
