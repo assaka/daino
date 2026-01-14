@@ -748,7 +748,8 @@ export default function StorefrontLayout({ children }) {
                 pageDescription={store?.description || 'Welcome to our store.'}
             />
 
-            {!hideHeader && headerConfigLoaded && headerSlots ? (
+            {/* HEADER DISABLED FOR DEBUGGING React #310 */}
+            {false && !hideHeader && headerConfigLoaded && headerSlots ? (
                 <>
                     {/* New slot-based header */}
                     <HeaderSlotRenderer
@@ -778,7 +779,7 @@ export default function StorefrontLayout({ children }) {
                         }}
                     />
                 </>
-            ) : !hideHeader && (
+            ) : false && !hideHeader && (
                 <>
                     {/* Fallback to old hardcoded header */}
                     <header
