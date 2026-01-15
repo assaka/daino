@@ -25,7 +25,8 @@
       "Bash(echo $RENDER_API_KEY)",
       "Bash(gh run list:*)",
       "Bash(where curl)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(git status:*)"
     ],
     "deny": [],
     "ask": [],

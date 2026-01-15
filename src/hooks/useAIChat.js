@@ -188,7 +188,15 @@ export const useAIChat = ({
       }
 
       // Dispatch refresh event if AI performed a data-modifying action
-      if (response.data?.refreshPage || response.data?.refreshPreview || response.data?.action) {
+      const shouldRefresh = response.data?.refreshPage || response.data?.refreshPreview || response.data?.action;
+      console.log('[useAIChat] Response data:', {
+        refreshPage: response.data?.refreshPage,
+        refreshPreview: response.data?.refreshPreview,
+        action: response.data?.action,
+        shouldRefresh
+      });
+      if (shouldRefresh) {
+        console.log('[useAIChat] Dispatching ai-admin-refresh event');
         setTimeout(() => {
           dispatchAIRefresh(response.data?.action || 'update');
         }, 300);

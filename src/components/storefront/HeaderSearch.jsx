@@ -154,6 +154,12 @@ export default function HeaderSearch({ styles = {} }) {
   };
 
   const handleProductClick = (product) => {
+    // Track search when user clicks on a search result
+    if (searchQuery.trim()) {
+      console.log('🔍 Tracking search (from click):', searchQuery.trim(), 'results:', searchResults.length);
+      trackSearch(searchQuery.trim(), searchResults.length);
+    }
+
     if (storeCode) {
       const productUrl = createProductUrl(storeCode, product.slug);
       navigate(productUrl);

@@ -27,15 +27,18 @@ export const useAIRefresh = (callback, options = {}) => {
 
   const handleRefresh = useCallback((event) => {
     const { action } = event.detail || {};
+    console.log('[useAIRefresh] Received ai-admin-refresh event:', { action, detail: event.detail });
 
     // If specific actions are defined, only refresh for those
     if (actions && actions.length > 0) {
       if (!action || !actions.includes(action)) {
+        console.log('[useAIRefresh] Skipping refresh - action not in filter list');
         return;
       }
     }
 
     // Call the refresh callback
+    console.log('[useAIRefresh] Calling refresh callback');
     callback?.();
   }, [callback, actions]);
 

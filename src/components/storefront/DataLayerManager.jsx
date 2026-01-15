@@ -700,6 +700,39 @@ export const trackCustomerRegistration = (customerId = null, method = 'email') =
 };
 
 /**
+ * CUSTOMER SIGN OUT
+ */
+export const trackSignOut = () => {
+  const event = {
+    event: 'sign_out'
+  };
+  console.log('🚪 DataLayer Sign Out Event:', event);
+  pushToDataLayer(event);
+
+  trackActivity('customer_sign_out', {
+    metadata: {}
+  });
+};
+
+/**
+ * EMAIL VERIFIED
+ */
+export const trackEmailVerified = (email = null) => {
+  const event = {
+    event: 'email_verified',
+    email: email
+  };
+  console.log('✅ DataLayer Email Verified Event:', event);
+  pushToDataLayer(event);
+
+  trackActivity('email_verified', {
+    metadata: {
+      email: email
+    }
+  });
+};
+
+/**
  * QUICK VIEW
  */
 export const trackQuickView = (product) => {
@@ -940,6 +973,8 @@ export default function DataLayerManager() {
         // Customer tracking
         trackCustomerLogin,
         trackCustomerRegistration,
+        trackSignOut,
+        trackEmailVerified,
         // Additional tracking
         trackConsentUpdate,
         trackCountryChange,

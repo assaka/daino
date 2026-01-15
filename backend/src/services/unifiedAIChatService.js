@@ -571,21 +571,21 @@ async function manageEntity({ entity_type, operation, data, id }, storeId) {
           .select()
           .single();
         if (error) return { error: error.message };
-        return { success: true, message: `Created ${entity_type}`, data: created };
+        return { success: true, message: `Created ${entity_type}`, data: created, refreshPreview: true, action: 'create' };
       }
 
       case 'update': {
         if (!id) return { error: 'ID required for update' };
         const { error } = await db.from(table).update(data).eq('id', id);
         if (error) return { error: error.message };
-        return { success: true, message: `Updated ${entity_type}` };
+        return { success: true, message: `Updated ${entity_type}`, refreshPreview: true, action: 'update' };
       }
 
       case 'delete': {
         if (!id) return { error: 'ID required for delete' };
         const { error } = await db.from(table).delete().eq('id', id);
         if (error) return { error: error.message };
-        return { success: true, message: `Deleted ${entity_type}` };
+        return { success: true, message: `Deleted ${entity_type}`, refreshPreview: true, action: 'delete' };
       }
     }
   } catch (e) {
@@ -771,8 +771,10 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
   const needsRefresh = toolCalls.some(t =>
     t.result?.refreshPreview ||
     t.result?.refreshRequired ||
-    ['modify_slot', 'update_store_setting'].includes(t.name)
+    ['modify_slot', 'update_store_setting', 'update_order_status', 'manage_entity'].includes(t.name)
   );
+
+  console.log('🔄 Refresh needed:', needsRefresh, 'Tool calls:', toolCalls.map(t => ({ name: t.name, refreshPreview: t.result?.refreshPreview })));
 
   return {
     success: true,

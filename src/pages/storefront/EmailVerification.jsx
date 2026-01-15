@@ -5,6 +5,7 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Mail, AlertCircle } from 'lucide-react';
+import { trackEmailVerified } from '@/components/storefront/DataLayerManager';
 
 export default function EmailVerification() {
   const [searchParams] = useSearchParams();
@@ -83,6 +84,10 @@ export default function EmailVerification() {
 
       if (response.success) {
         setSuccess(true);
+
+        // Track email verified event
+        trackEmailVerified(email);
+
         // Clear auth cache so CustomerDashboard fetches fresh user data with email_verified: true
         if (window.__authMeCache) {
           window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };

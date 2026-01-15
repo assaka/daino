@@ -23,7 +23,7 @@ import RedirectHandler from '@/components/shared/RedirectHandler';
 import { SeoSettingsProvider } from '@/components/storefront/SeoSettingsProvider';
 import { CountrySelect } from "@/components/ui/country-select";
 import SeoHeadManager from './SeoHeadManager';
-import DataLayerManager from '@/components/storefront/DataLayerManager';
+import DataLayerManager, { trackSignOut } from '@/components/storefront/DataLayerManager';
 import CustomEventLoader from '@/components/storefront/CustomEventLoader';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
@@ -444,6 +444,9 @@ export default function StorefrontLayout({ children }) {
     // This ensures store owner sessions are not affected when logging out from storefront
     const handleCustomerLogout = async () => {
         try {
+            // Track sign out event
+            trackSignOut();
+
             // IMPORTANT: Only call CustomerAuth.logout() which only clears customer tokens
             // This will NOT clear store_owner_auth_token or store_owner_user_data
             await CustomerAuth.logout();

@@ -8,6 +8,7 @@ import { Product } from "@/api/entities";
 import { useAlertTypes } from "@/hooks/useAlert";
 import { t } from '@/utils/translationHelper';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
+import { trackSignOut } from '@/components/storefront/DataLayerManager';
 
 import {
   User as UserIcon,
@@ -1091,6 +1092,9 @@ export default function CustomerDashboard() {
 
   const handleLogout = async () => {
     try {
+      // Track sign out event
+      trackSignOut();
+
       await CustomerAuth.logout();
 
       // Clear any remaining customer session data

@@ -51,6 +51,7 @@ import { useCheckoutPageBootstrap } from '@/hooks/usePageBootstrap';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { paymentMethodSupportsCurrency, getCurrencyForCountry } from '@/utils/countryUtils';
+import { trackSignOut } from '@/components/storefront/DataLayerManager';
 
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
@@ -1094,6 +1095,9 @@ export default function Checkout() {
 
   const handleLogout = async () => {
     try {
+      // Track sign out event
+      trackSignOut();
+
       await CustomerAuth.logout();
       setUser(null);
       setUserAddresses([]);
