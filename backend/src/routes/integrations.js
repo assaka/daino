@@ -1829,6 +1829,72 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
         return res.status(500).json({ success: false, message: `Shopify error: ${shopifyError.message}` });
       }
 
+    } else if (source === 'woocommerce') {
+      // Fetch from WooCommerce
+      try {
+        console.log('📂 [WOOCOMMERCE] Starting category fetch for store:', storeId);
+        const woocommerceIntegration = require('../services/woocommerce-integration');
+
+        console.log('📂 [WOOCOMMERCE] Getting client...');
+        const client = await woocommerceIntegration.getClient(storeId);
+
+        console.log('📂 [WOOCOMMERCE] Calling getAllCategories...');
+        const wooCategories = await client.getAllCategories();
+        console.log(`📂 [WOOCOMMERCE] Fetched ${wooCategories?.length || 0} categories`);
+
+        // Apply root category filter if provided
+        if (filters.rootCategories && filters.rootCategories.length > 0) {
+          console.log(`🌱 [WOOCOMMERCE] Filtering to root categories: ${filters.rootCategories.join(', ')}`);
+
+          const selectedCategoryTree = new Set();
+
+          // Add selected root categories (convert to string for comparison)
+          filters.rootCategories.forEach(rootCode => {
+            const rootId = String(rootCode);
+            if (wooCategories.find(cat => String(cat.id) === rootId)) {
+              selectedCategoryTree.add(rootId);
+            }
+          });
+
+          // Recursively add descendants
+          const addDescendants = (parentId) => {
+            wooCategories.forEach(cat => {
+              const catId = String(cat.id);
+              const catParent = String(cat.parent || 0);
+              if (catParent === parentId && !selectedCategoryTree.has(catId)) {
+                selectedCategoryTree.add(catId);
+                addDescendants(catId);
+              }
+            });
+          };
+
+          filters.rootCategories.forEach(rootCode => addDescendants(String(rootCode)));
+
+          const filteredCategories = wooCategories.filter(cat => selectedCategoryTree.has(String(cat.id)));
+          console.log(`📊 [WOOCOMMERCE] After filtering: ${filteredCategories.length} categories`);
+
+          categories = filteredCategories.map(cat => ({
+            id: String(cat.id),
+            code: String(cat.id),
+            name: cat.name,
+            parent_code: cat.parent && cat.parent !== 0 ? String(cat.parent) : null
+          }));
+        } else {
+          categories = (wooCategories || []).map(cat => ({
+            id: String(cat.id),
+            code: String(cat.id),
+            name: cat.name,
+            parent_code: cat.parent && cat.parent !== 0 ? String(cat.parent) : null
+          }));
+        }
+
+        console.log(`✅ [WOOCOMMERCE] Fetched ${categories.length} categories`);
+      } catch (wooError) {
+        console.error('❌ [WOOCOMMERCE] Error:', wooError.message);
+        console.error('❌ [WOOCOMMERCE] Stack:', wooError.stack);
+        return res.status(500).json({ success: false, message: `WooCommerce error: ${wooError.message}` });
+      }
+
     } else {
       return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
     }
@@ -1958,7 +2024,7 @@ router.post('/category-mappings/:source/create-categories-job', authMiddleware, 
       return res.status(400).json({ success: false, message: 'Store ID required' });
     }
 
-    if (!['akeneo', 'shopify'].includes(source)) {
+    if (!['akeneo', 'shopify', 'woocommerce'].includes(source)) {
       return res.status(400).json({ success: false, message: `Unknown integration source: ${source}` });
     }
 
