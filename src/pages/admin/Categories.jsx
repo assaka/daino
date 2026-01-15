@@ -76,6 +76,7 @@ import { ImageOptimizerModal } from "@/components/image-optimizer";
 import AIImageOptimizerGrid from "@/components/admin/AIImageOptimizerGrid";
 import { TranslationIndicator } from "@/components/admin/TranslationFields";
 import { getCategoryName, getCategoryDescription } from "@/utils/translationUtils";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { cn } from "@/lib/utils";
 
 export default function Categories() {
@@ -145,6 +146,13 @@ export default function Categories() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadCategories();
+    }
+  });
 
   const loadStoreSettings = async () => {
     const storeId = getSelectedStoreId();

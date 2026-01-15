@@ -11,6 +11,7 @@ import { formatPrice, safeNumber } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { getProductName, getProductShortDescription, getCurrentLanguage } from '@/utils/translationUtils';
 import { getPrimaryImageUrl } from '@/utils/fileUtils';
+import { trackSearch } from '@/components/storefront/DataLayerManager';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
@@ -137,9 +138,8 @@ export default function HeaderSearch({ styles = {} }) {
 
     if (searchQuery.trim()) {
       // Track search event
-      if (typeof window !== 'undefined' && window.daino?.trackSearch) {
-        window.daino.trackSearch(searchQuery.trim(), searchResults.length);
-      }
+      console.log('🔍 Tracking search:', searchQuery.trim(), 'results:', searchResults.length);
+      trackSearch(searchQuery.trim(), searchResults.length);
 
       // Navigate to Storefront page with search parameter
       if (storeCode) {

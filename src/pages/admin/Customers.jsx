@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
+import { useAIRefresh } from '@/hooks/useAIRefresh';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -50,6 +51,13 @@ export default function Customers() {
         window.addEventListener('storeSelectionChanged', handleStoreChange);
         return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
     }, [selectedStore]);
+
+    // Silently refresh when AI chat performs actions
+    useAIRefresh(() => {
+        if (selectedStore) {
+            loadData();
+        }
+    });
 
     const loadData = async () => {
         const storeId = getSelectedStoreId();

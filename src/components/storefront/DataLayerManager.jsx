@@ -663,11 +663,13 @@ export const trackDeliveryDateSelected = (deliveryDate, deliveryType = 'standard
  * CUSTOMER LOGIN
  */
 export const trackCustomerLogin = (customerId = null, method = 'email') => {
-  pushToDataLayer({
+  const event = {
     event: 'login',
     method: method,
     customer_id: customerId
-  });
+  };
+  console.log('🔐 DataLayer Login Event:', event);
+  pushToDataLayer(event);
 
   trackActivity('customer_login', {
     metadata: {
@@ -681,11 +683,13 @@ export const trackCustomerLogin = (customerId = null, method = 'email') => {
  * CUSTOMER REGISTRATION (SIGN UP)
  */
 export const trackCustomerRegistration = (customerId = null, method = 'email') => {
-  pushToDataLayer({
+  const event = {
     event: 'sign_up',
     method: method,
     customer_id: customerId
-  });
+  };
+  console.log('📝 DataLayer Sign Up Event:', event);
+  pushToDataLayer(event);
 
   trackActivity('customer_registration', {
     metadata: {
@@ -760,12 +764,14 @@ export const trackPurchase = (order) => {
  * SEARCH
  */
 export const trackSearch = (query, resultsCount = 0, filters = {}) => {
-  pushToDataLayer({
+  const event = {
     event: 'search',
     search_term: query,
     search_results: resultsCount,
     search_filters: filters
-  });
+  };
+  console.log('🔍 DataLayer Search Event:', event);
+  pushToDataLayer(event);
 
   trackActivity('search', {
     search_query: query,
