@@ -334,6 +334,17 @@ async function deleteCategory(storeId, categoryId) {
     .delete()
     .eq('category_id', categoryId);
 
+  // Clear integration mappings that reference this category
+  // This allows the category to be re-imported from external sources
+  await tenantDb
+    .from('integration_category_mappings')
+    .update({
+      internal_category_id: null,
+      mapping_type: 'manual',
+      updated_at: new Date().toISOString()
+    })
+    .eq('internal_category_id', categoryId);
+
   // Delete the category
   const { error } = await tenantDb
     .from('categories')
