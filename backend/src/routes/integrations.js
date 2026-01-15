@@ -1916,6 +1916,12 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
     const results = await mappingService.syncExternalCategories(categories);
     console.log(`📂 [SYNC] Results:`, JSON.stringify(results));
 
+    // Auto-match categories to existing store categories by name/slug
+    console.log(`📂 [SYNC] Running auto-match to find existing categories...`);
+    const matchResults = await mappingService.autoMatchAll();
+    console.log(`📂 [SYNC] Auto-match results: ${matchResults.matched} matched, ${matchResults.unmatched} unmatched`);
+    results.matched = matchResults.matched;
+
     // Save import statistics for the category sync
     try {
       const ImportStatistic = require('../models/ImportStatistic');

@@ -550,11 +550,33 @@ class CategoryMappingService {
    */
   async syncExternalCategories(externalCategories) {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
-    const results = { created: 0, updated: 0, deleted: 0, errors: [] };
+    const results = { created: 0, updated: 0, deleted: 0, reset: 0, errors: [] };
     const now = new Date().toISOString();
 
     console.log(`📁 syncExternalCategories called with ${externalCategories?.length || 0} categories`);
     console.log(`📁 Store ID: ${this.storeId}, Source: ${this.integrationSource}`);
+
+    // First, reset all existing mappings (clear internal_category_id)
+    // This ensures fresh sync every time and auto-match will find correct matches
+    console.log(`📁 Resetting all existing mappings for fresh sync...`);
+    const { data: resetData, error: resetError } = await tenantDb
+      .from('integration_category_mappings')
+      .update({
+        internal_category_id: null,
+        auto_created: false,
+        updated_at: now
+      })
+      .eq('store_id', this.storeId)
+      .eq('integration_source', this.integrationSource)
+      .not('internal_category_id', 'is', null)
+      .select('id');
+
+    if (resetError) {
+      console.error(`📁 Reset error:`, resetError.message);
+    } else {
+      results.reset = resetData?.length || 0;
+      console.log(`📁 Reset ${results.reset} existing mappings`);
+    }
 
     // If no categories fetched, clear all mappings for this source
     if (!externalCategories || externalCategories.length === 0) {
@@ -595,53 +617,6 @@ class CategoryMappingService {
       }
 
       console.log(`📁 Found ${existingMappings?.length || 0} existing mappings`);
-
-      // Clean up orphaned mappings (where internal_category_id points to deleted categories)
-      const mappingsWithInternalId = (existingMappings || []).filter(m => m.internal_category_id);
-      console.log(`📁 [SYNC ORPHAN] ${mappingsWithInternalId.length} mappings have internal_category_id`);
-
-      if (mappingsWithInternalId.length > 0) {
-        const internalCategoryIds = [...new Set(mappingsWithInternalId.map(m => m.internal_category_id))];
-        console.log(`📁 [SYNC ORPHAN] Checking category IDs:`, internalCategoryIds);
-
-        // Check which categories still exist AND are active
-        const { data: existingCategories } = await tenantDb
-          .from('categories')
-          .select('id')
-          .eq('store_id', this.storeId)
-          .eq('is_active', true)
-          .in('id', internalCategoryIds);
-
-        console.log(`📁 [SYNC ORPHAN] Found ${existingCategories?.length || 0} existing categories`);
-
-        const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
-        const orphanedMappings = mappingsWithInternalId.filter(m => !existingCategoryIds.has(m.internal_category_id));
-
-        console.log(`📁 [SYNC ORPHAN] Found ${orphanedMappings.length} orphaned mappings`);
-
-        if (orphanedMappings.length > 0) {
-          console.log(`🧹 Cleaning up ${orphanedMappings.length} orphaned mappings (categories were deleted)`);
-          const orphanedIds = orphanedMappings.map(m => m.id);
-
-          await tenantDb
-            .from('integration_category_mappings')
-            .update({
-              internal_category_id: null,
-              mapping_type: 'manual',
-              updated_at: now
-            })
-            .in('id', orphanedIds);
-
-          // Update in-memory mappings too
-          for (const m of existingMappings) {
-            if (orphanedIds.includes(m.id)) {
-              m.internal_category_id = null;
-            }
-          }
-
-          console.log(`✅ Cleared ${orphanedMappings.length} orphaned mappings`);
-        }
-      }
 
       // Build lookup maps for existing mappings
       const existingByCode = new Map();
