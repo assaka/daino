@@ -228,19 +228,8 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
     return () => window.removeEventListener('languageChanged', handleLanguageChange);
   }, [position, storeIdToUse]);
 
-  if (loading) {
-    return null; // Don't show loading spinner for CMS blocks
-  }
-
-  if (blocks.length === 0) {
-    return null;
-  }
-
-  // Get store and settings for variable processing
-  const storeForVariables = storefrontStore || adminStore;
-  const settingsForVariables = storefrontSettings || null;
-
   // Track promotion views for hero/banner positions
+  // IMPORTANT: This useEffect must be BEFORE any conditional returns (React Rules of Hooks)
   useEffect(() => {
     if (blocks.length > 0 && (position === 'homepage_hero' || position === 'homepage_above_hero' || position === 'homepage_below_hero' || position.includes('banner') || position.includes('promo'))) {
       const promotions = blocks.map((block, index) => ({
@@ -255,6 +244,18 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
       }
     }
   }, [blocks, position]);
+
+  // Get store and settings for variable processing (moved before conditional returns)
+  const storeForVariables = storefrontStore || adminStore;
+  const settingsForVariables = storefrontSettings || null;
+
+  if (loading) {
+    return null; // Don't show loading spinner for CMS blocks
+  }
+
+  if (blocks.length === 0) {
+    return null;
+  }
 
   // Track promotion clicks within CMS blocks
   const handleBlockClick = (e, block) => {
