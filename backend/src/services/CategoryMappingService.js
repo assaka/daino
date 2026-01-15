@@ -430,6 +430,60 @@ class CategoryMappingService {
   }
 
   /**
+   * Clean up orphaned mappings where internal_category_id points to deleted categories
+   * This allows categories to be re-imported after deletion
+   */
+  async cleanOrphanedMappings() {
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    // Get all mappings with internal_category_id set
+    const { data: mappingsWithInternal, error: fetchError } = await tenantDb
+      .from('integration_category_mappings')
+      .select('id, internal_category_id')
+      .eq('store_id', this.storeId)
+      .eq('integration_source', this.integrationSource)
+      .not('internal_category_id', 'is', null);
+
+    if (fetchError || !mappingsWithInternal || mappingsWithInternal.length === 0) {
+      return { cleaned: 0 };
+    }
+
+    // Get unique internal category IDs
+    const internalCategoryIds = [...new Set(mappingsWithInternal.map(m => m.internal_category_id))];
+
+    // Check which categories still exist
+    const { data: existingCategories } = await tenantDb
+      .from('categories')
+      .select('id')
+      .in('id', internalCategoryIds);
+
+    const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
+
+    // Find orphaned mappings
+    const orphanedMappings = mappingsWithInternal.filter(m => !existingCategoryIds.has(m.internal_category_id));
+
+    if (orphanedMappings.length === 0) {
+      return { cleaned: 0 };
+    }
+
+    console.log(`🧹 Cleaning ${orphanedMappings.length} orphaned ${this.integrationSource} mappings`);
+
+    // Clear the orphaned mappings
+    const orphanedIds = orphanedMappings.map(m => m.id);
+    await tenantDb
+      .from('integration_category_mappings')
+      .update({
+        internal_category_id: null,
+        mapping_type: 'manual',
+        updated_at: new Date().toISOString()
+      })
+      .in('id', orphanedIds);
+
+    console.log(`✅ Cleared ${orphanedMappings.length} orphaned mappings`);
+    return { cleaned: orphanedMappings.length };
+  }
+
+  /**
    * Sync external categories to the mappings table
    * This creates mapping records for all external categories (without auto-matching)
    * Also removes mappings for categories that no longer exist in external source
@@ -482,6 +536,44 @@ class CategoryMappingService {
       }
 
       console.log(`📁 Found ${existingMappings?.length || 0} existing mappings`);
+
+      // Clean up orphaned mappings (where internal_category_id points to deleted categories)
+      const mappingsWithInternalId = (existingMappings || []).filter(m => m.internal_category_id);
+      if (mappingsWithInternalId.length > 0) {
+        const internalCategoryIds = [...new Set(mappingsWithInternalId.map(m => m.internal_category_id))];
+
+        // Check which categories still exist
+        const { data: existingCategories } = await tenantDb
+          .from('categories')
+          .select('id')
+          .in('id', internalCategoryIds);
+
+        const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
+        const orphanedMappings = mappingsWithInternalId.filter(m => !existingCategoryIds.has(m.internal_category_id));
+
+        if (orphanedMappings.length > 0) {
+          console.log(`🧹 Cleaning up ${orphanedMappings.length} orphaned mappings (categories were deleted)`);
+          const orphanedIds = orphanedMappings.map(m => m.id);
+
+          await tenantDb
+            .from('integration_category_mappings')
+            .update({
+              internal_category_id: null,
+              mapping_type: 'manual',
+              updated_at: now
+            })
+            .in('id', orphanedIds);
+
+          // Update in-memory mappings too
+          for (const m of existingMappings) {
+            if (orphanedIds.includes(m.id)) {
+              m.internal_category_id = null;
+            }
+          }
+
+          console.log(`✅ Cleared ${orphanedMappings.length} orphaned mappings`);
+        }
+      }
 
       // Build lookup maps for existing mappings
       const existingByCode = new Map();

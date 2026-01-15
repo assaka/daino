@@ -1666,6 +1666,10 @@ router.get('/category-mappings/:source', authMiddleware, storeResolver(), async 
     }
 
     const mappingService = new CategoryMappingService(storeId, source);
+
+    // Clean up orphaned mappings before returning (categories that were deleted)
+    await mappingService.cleanOrphanedMappings();
+
     const mappings = await mappingService.getMappings();
     const storeCategories = await mappingService.getStoreCategories();
 
