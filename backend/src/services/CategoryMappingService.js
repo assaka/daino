@@ -430,6 +430,39 @@ class CategoryMappingService {
   }
 
   /**
+   * Reset all mappings (clear internal_category_id) for this integration source
+   * This forces all categories to be unmapped and available for reimport
+   */
+  async resetAllMappings() {
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    console.log(`🔄 [RESET] Resetting all ${this.integrationSource} mappings for store ${this.storeId}`);
+
+    const { data, error } = await tenantDb
+      .from('integration_category_mappings')
+      .update({
+        internal_category_id: null,
+        mapping_type: 'manual',
+        auto_created: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('store_id', this.storeId)
+      .eq('integration_source', this.integrationSource)
+      .not('internal_category_id', 'is', null)
+      .select('id');
+
+    if (error) {
+      console.error(`❌ [RESET] Error:`, error.message);
+      throw error;
+    }
+
+    const count = data?.length || 0;
+    console.log(`✅ [RESET] Reset ${count} mappings`);
+
+    return { count };
+  }
+
+  /**
    * Clean up orphaned mappings where internal_category_id points to deleted categories
    * This allows categories to be re-imported after deletion
    */

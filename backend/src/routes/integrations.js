@@ -2100,6 +2100,33 @@ router.post('/category-mappings/:source/auto-match', authMiddleware, storeResolv
 });
 
 /**
+ * POST /integrations/category-mappings/:source/reset
+ * Reset all mappings (clear internal_category_id) for a source
+ */
+router.post('/category-mappings/:source/reset', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { source } = req.params;
+    const storeId = req.store?.id || req.body.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'Store ID required' });
+    }
+
+    const mappingService = new CategoryMappingService(storeId, source);
+    const results = await mappingService.resetAllMappings();
+
+    res.json({
+      success: true,
+      message: `Reset ${results.count} mappings`,
+      results
+    });
+  } catch (error) {
+    console.error('Error resetting mappings:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * PUT /integrations/category-mappings/:source/:externalCode
  * Update a single category mapping
  */
