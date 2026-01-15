@@ -564,8 +564,11 @@ class CategoryMappingService {
 
       // Clean up orphaned mappings (where internal_category_id points to deleted categories)
       const mappingsWithInternalId = (existingMappings || []).filter(m => m.internal_category_id);
+      console.log(`📁 [SYNC ORPHAN] ${mappingsWithInternalId.length} mappings have internal_category_id`);
+
       if (mappingsWithInternalId.length > 0) {
         const internalCategoryIds = [...new Set(mappingsWithInternalId.map(m => m.internal_category_id))];
+        console.log(`📁 [SYNC ORPHAN] Checking category IDs:`, internalCategoryIds);
 
         // Check which categories still exist (filter by store_id)
         const { data: existingCategories } = await tenantDb
@@ -574,8 +577,12 @@ class CategoryMappingService {
           .eq('store_id', this.storeId)
           .in('id', internalCategoryIds);
 
+        console.log(`📁 [SYNC ORPHAN] Found ${existingCategories?.length || 0} existing categories`);
+
         const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
         const orphanedMappings = mappingsWithInternalId.filter(m => !existingCategoryIds.has(m.internal_category_id));
+
+        console.log(`📁 [SYNC ORPHAN] Found ${orphanedMappings.length} orphaned mappings`);
 
         if (orphanedMappings.length > 0) {
           console.log(`🧹 Cleaning up ${orphanedMappings.length} orphaned mappings (categories were deleted)`);
