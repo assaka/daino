@@ -168,6 +168,12 @@ button:focus-visible {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
+
+  /* Vertical text for collapsed panels */
+  .writing-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
 }
 
 /* Category Page Filter Radio/Checkbox Styling - Outside @layer for higher specificity */

@@ -14,6 +14,8 @@ import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
 import ModeHeader from '@/components/shared/ModeHeader';
+import { AdminAssistantProvider } from '@/contexts/AdminAssistantContext';
+import AdminAssistantPanel from '@/components/admin/AdminAssistantPanel';
 
 import {
   Menu,
@@ -548,6 +550,7 @@ function LayoutInner({ children, currentPageName }) {
   return (
     <StoreProvider>
       <PriceUtilsProvider>
+      <AdminAssistantProvider>
       <div className="h-screen bg-gray-50 flex overflow-hidden">
         <RoleSwitcher />
       <style>{`
@@ -991,8 +994,11 @@ function LayoutInner({ children, currentPageName }) {
         </div>
       </div>
 
+      {/* ASI Assistant Panel - Fixed right sidebar on desktop, floating on mobile */}
+      {showSidebar && <AdminAssistantPanel />}
 
       </div>
+      </AdminAssistantProvider>
       </PriceUtilsProvider>
     </StoreProvider>
   );
