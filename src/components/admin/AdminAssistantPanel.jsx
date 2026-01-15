@@ -357,10 +357,10 @@ const AdminAssistantPanel = ({ className }) => {
                         )}
                       >
                         <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                        {message.credits && (
+                        {message.role === 'assistant' && typeof message.credits === 'number' && (
                           <p className="text-xs mt-1 opacity-60">
                             <Zap className="w-3 h-3 inline mr-1" />
-                            {message.credits} credits
+                            {message.credits} credits used
                           </p>
                         )}
                       </div>
@@ -648,10 +648,10 @@ const AdminAssistantPanel = ({ className }) => {
                         )}
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
-                        {message.credits && message.role === 'assistant' && (
+                        {message.role === 'assistant' && typeof message.credits === 'number' && (
                           <p className="text-xs mt-1 opacity-60">
                             <Zap className="w-3 h-3 inline mr-1" />
-                            {message.credits} credits
+                            {message.credits} credits used
                           </p>
                         )}
                       </div>

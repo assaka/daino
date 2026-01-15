@@ -181,7 +181,7 @@ export const useAIChat = ({
       saveMessage('assistant', response.message || 'Processing complete.', response.data, response.creditsDeducted);
 
       // Dispatch credits update event
-      if (response.creditsDeducted) {
+      if (typeof response.creditsDeducted === 'number') {
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
         onCreditsUpdate?.(response.creditsDeducted);
       }
