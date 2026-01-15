@@ -144,10 +144,18 @@ export default function Credits() {
         params.end_date = format(filters.end_date, 'yyyy-MM-dd');
       }
 
-      const data = await CreditUsage.getUsage(params);
-      setUsageData(data || { usage: [], pagination: {}, summary: {} });
+      const response = await CreditUsage.getUsage(params);
+      // API returns { success, data: { usage, pagination, summary, filters } }
+      const data = response?.data || response || {};
+      setUsageData({
+        usage: data.usage || [],
+        pagination: data.pagination || {},
+        summary: data.summary || {},
+        filters: data.filters || { types: [], models: [] }
+      });
     } catch (error) {
       console.error('Error loading usage data:', error);
+      setUsageData({ usage: [], pagination: {}, summary: {}, filters: { types: [], models: [] } });
     } finally {
       setLoading(false);
     }
@@ -160,10 +168,13 @@ export default function Credits() {
       if (filters.store_ids && filters.store_ids.length > 0) {
         params.store_ids = filters.store_ids.join(',');
       }
-      const stats = await CreditUsage.getStats(params);
-      setUsageStats(stats || {});
+      const response = await CreditUsage.getStats(params);
+      // API returns { success, data: { total_credits_used, daily_average, ... } }
+      const stats = response?.data || response || {};
+      setUsageStats(stats);
     } catch (error) {
       console.error('Error loading usage stats:', error);
+      setUsageStats({});
     } finally {
       setStatsLoading(false);
     }
