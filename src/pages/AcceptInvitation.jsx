@@ -48,12 +48,24 @@ export default function AcceptInvitation() {
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
   const [flashMessage, setFlashMessage] = useState(null);
+  const [loggedInUserEmail, setLoggedInUserEmail] = useState(null);
 
   useEffect(() => {
     // Check if user is logged in (check token exists and user not marked as logged out)
     const authToken = localStorage.getItem('store_owner_auth_token');
     const isLoggedOut = localStorage.getItem('user_logged_out') === 'true';
-    setIsLoggedIn(!!authToken && !isLoggedOut);
+    const loggedIn = !!authToken && !isLoggedOut;
+    setIsLoggedIn(loggedIn);
+
+    // Get logged-in user's email from stored user data
+    if (loggedIn) {
+      try {
+        const userData = JSON.parse(localStorage.getItem('store_owner_user_data') || '{}');
+        setLoggedInUserEmail(userData.email || null);
+      } catch (e) {
+        setLoggedInUserEmail(null);
+      }
+    }
 
     if (token) {
       fetchInvitation();
@@ -96,6 +108,19 @@ export default function AcceptInvitation() {
     if (!/\d/.test(pwd)) return 'Password must contain a number';
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) return 'Password must contain a special character';
     return null;
+  };
+
+  // Check if logged-in user's email matches invitation email
+  const hasEmailMismatch = isLoggedIn && loggedInUserEmail && invitation?.email &&
+    loggedInUserEmail.toLowerCase() !== invitation.email.toLowerCase();
+
+  const handleLogout = () => {
+    localStorage.removeItem('store_owner_auth_token');
+    localStorage.removeItem('store_owner_user_data');
+    localStorage.setItem('user_logged_out', 'true');
+    setIsLoggedIn(false);
+    setLoggedInUserEmail(null);
+    setFlashMessage({ type: 'info', message: 'Logged out. Please sign in with the correct account.' });
   };
 
   const handleAccept = async (e) => {
@@ -384,6 +409,31 @@ export default function AcceptInvitation() {
             </div>
           )}
 
+          {/* Email Mismatch Warning */}
+          {hasEmailMismatch && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-800 mb-1">Wrong Account</p>
+                  <p className="text-sm text-red-700 mb-3">
+                    This invitation was sent to <strong>{invitation.email}</strong>, but you're logged in as <strong>{loggedInUserEmail}</strong>.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-300 text-red-700 hover:bg-red-100"
+                    onClick={handleLogout}
+                  >
+                    Log out and sign in with correct account
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Account Creation/Login Form for non-logged-in users */}
           {!isLoggedIn && (
             <form onSubmit={handleAccept} className="mb-6 space-y-4">
@@ -493,7 +543,7 @@ export default function AcceptInvitation() {
             <Button
               className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-semibold shadow-lg shadow-blue-500/25"
               onClick={handleAccept}
-              disabled={accepting}
+              disabled={accepting || hasEmailMismatch}
             >
               {accepting ? (
                 <>

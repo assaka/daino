@@ -821,15 +821,24 @@ router.get('/invitation/:token', async (req, res) => {
       inviter = inviterInfo;
     }
 
+    // Check if a user with this email already exists
+    const { data: existingUser } = await masterDbClient
+      .from('users')
+      .select('id')
+      .eq('email', invitation.invited_email)
+      .maybeSingle();
+
     res.json({
       success: true,
       data: {
         id: invitation.id,
+        email: invitation.invited_email,
         role: invitation.role,
         message: invitation.message,
         expires_at: invitation.expires_at,
         store: store || { name: 'Store' },
-        inviter
+        inviter,
+        userExists: !!existingUser
       }
     });
   } catch (error) {
@@ -872,11 +881,11 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       });
     }
 
-    // Check if invitee email matches current user
-    if (invitation.invited_email !== req.user.email) {
+    // Check if invitee email matches current user (case-insensitive)
+    if (invitation.invited_email.toLowerCase() !== req.user.email.toLowerCase()) {
       return res.status(403).json({
         success: false,
-        message: 'This invitation is not for your email address'
+        message: `This invitation was sent to ${invitation.invited_email}. You are logged in as ${req.user.email}. Please log out and sign in with the correct account.`
       });
     }
 
