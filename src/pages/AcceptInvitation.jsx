@@ -229,6 +229,12 @@ export default function AcceptInvitation() {
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <img src="/logo_red.svg" alt="DainoStore" className="h-10" />
+          <span className="font-bold text-xl text-slate-900">DainoStore</span>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-4">
