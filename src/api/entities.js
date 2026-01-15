@@ -535,6 +535,18 @@ class StoreService extends BaseEntity {
       throw error;
     }
   }
+
+  // Check if current user has access to store (owner or team member)
+  // Used by storefront to bypass pause modal for authorized users
+  async checkAccess(storeId) {
+    try {
+      const response = await apiClient.get(`stores/${storeId}/check-access`);
+      return response;
+    } catch (error) {
+      console.error(`StoreService.checkAccess() error:`, error.message);
+      return { hasAccess: false };
+    }
+  }
 }
 
 // Product service with additional methods
