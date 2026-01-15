@@ -436,6 +436,8 @@ class CategoryMappingService {
   async cleanOrphanedMappings() {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
+    console.log(`🔍 [ORPHAN CHECK] Starting for ${this.integrationSource}, store: ${this.storeId}`);
+
     // Get all mappings with internal_category_id set
     const { data: mappingsWithInternal, error: fetchError } = await tenantDb
       .from('integration_category_mappings')
@@ -444,33 +446,50 @@ class CategoryMappingService {
       .eq('integration_source', this.integrationSource)
       .not('internal_category_id', 'is', null);
 
-    if (fetchError || !mappingsWithInternal || mappingsWithInternal.length === 0) {
+    if (fetchError) {
+      console.error(`❌ [ORPHAN CHECK] Fetch error:`, fetchError.message);
+      return { cleaned: 0 };
+    }
+
+    console.log(`🔍 [ORPHAN CHECK] Found ${mappingsWithInternal?.length || 0} mappings with internal_category_id`);
+
+    if (!mappingsWithInternal || mappingsWithInternal.length === 0) {
       return { cleaned: 0 };
     }
 
     // Get unique internal category IDs
     const internalCategoryIds = [...new Set(mappingsWithInternal.map(m => m.internal_category_id))];
+    console.log(`🔍 [ORPHAN CHECK] Checking ${internalCategoryIds.length} unique category IDs:`, internalCategoryIds);
 
     // Check which categories still exist
-    const { data: existingCategories } = await tenantDb
+    const { data: existingCategories, error: catError } = await tenantDb
       .from('categories')
       .select('id')
       .in('id', internalCategoryIds);
+
+    if (catError) {
+      console.error(`❌ [ORPHAN CHECK] Category check error:`, catError.message);
+    }
+
+    console.log(`🔍 [ORPHAN CHECK] Found ${existingCategories?.length || 0} existing categories`);
 
     const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
 
     // Find orphaned mappings
     const orphanedMappings = mappingsWithInternal.filter(m => !existingCategoryIds.has(m.internal_category_id));
 
+    console.log(`🔍 [ORPHAN CHECK] Found ${orphanedMappings.length} orphaned mappings`);
+
     if (orphanedMappings.length === 0) {
       return { cleaned: 0 };
     }
 
     console.log(`🧹 Cleaning ${orphanedMappings.length} orphaned ${this.integrationSource} mappings`);
+    console.log(`🧹 Orphaned IDs:`, orphanedMappings.map(m => ({ mappingId: m.id, categoryId: m.internal_category_id })));
 
     // Clear the orphaned mappings
     const orphanedIds = orphanedMappings.map(m => m.id);
-    await tenantDb
+    const { error: updateError } = await tenantDb
       .from('integration_category_mappings')
       .update({
         internal_category_id: null,
@@ -478,6 +497,11 @@ class CategoryMappingService {
         updated_at: new Date().toISOString()
       })
       .in('id', orphanedIds);
+
+    if (updateError) {
+      console.error(`❌ [ORPHAN CHECK] Update error:`, updateError.message);
+      return { cleaned: 0 };
+    }
 
     console.log(`✅ Cleared ${orphanedMappings.length} orphaned mappings`);
     return { cleaned: orphanedMappings.length };
