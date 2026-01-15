@@ -234,7 +234,9 @@ export default function AcceptInvitation() {
           <div className="w-16 h-16 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Users className="w-8 h-8 text-indigo-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">You're Invited!</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">
+            You're Invited by {invitation?.inviter?.first_name || 'the store owner'}!
+          </h1>
           <p className="text-slate-600">Join the team and start collaborating</p>
         </div>
 
