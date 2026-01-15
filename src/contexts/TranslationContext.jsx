@@ -33,6 +33,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
   const [translations, setTranslations] = useState(initialTranslations?.labels || {});
   const [loading, setLoading] = useState(true);
   const [isRTL, setIsRTL] = useState(false);
+  const initialLoadCompleteRef = useRef(false);
 
   /**
    * Load available languages from API (only if not provided via initialLanguages)
@@ -328,12 +329,19 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       } else {
         setLoading(false);
       }
+
+      // Mark initial load as complete
+      initialLoadCompleteRef.current = true;
     };
 
     initializeTranslations();
 
     // Listen for store selection changes and reload languages
+    // Skip during initial load to prevent duplicate API calls
     const handleStoreChange = () => {
+      if (!initialLoadCompleteRef.current) {
+        return; // Skip during initial load
+      }
       // Clear the cache so languages get reloaded for the new store
       window.__languagesCache = null;
       window.__languagesFetching = false;

@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Store } from "@/api/entities";
-import { User } from "@/api/entities";
 import apiClient from "@/api/client";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import { useUser } from "@/hooks/useApiQueries";
 import { formatPrice } from "@/utils/priceUtils";
 import {
   Puzzle,
@@ -85,10 +85,10 @@ import PluginHowToDialog from "@/components/plugins/PluginHowToDialog";
 
 export default function Plugins() {
   const navigate = useNavigate();
+  const { availableStores: stores, selectedStore } = useStoreSelection();
+  const { data: user } = useUser();
   const [plugins, setPlugins] = useState([]);
   const [marketplacePlugins, setMarketplacePlugins] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -201,22 +201,15 @@ export default function Plugins() {
   const [creatingPlugin, setCreatingPlugin] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore?.id) {
+      loadData();
+    }
+  }, [selectedStore?.id]);
 
   const loadData = async () => {
     try {
-      // Load stores and user first to get storeId
-      const [storesData, userData] = await Promise.all([
-        Store.list(),
-        User.me()
-      ]);
-
-      // Use selected store from localStorage, fallback to first store
-      const selectedStoreId = localStorage.getItem('selectedStoreId');
-      const currentStoreId = selectedStoreId && storesData.find(s => s.id === selectedStoreId)
-        ? selectedStoreId
-        : storesData[0]?.id;
+      // Use selected store from context (already loaded by StoreSelectionContext)
+      const currentStoreId = selectedStore?.id;
 
       // Load modern plugin system with store-specific status
       const [pluginsResponse, marketplaceResponse] = await Promise.all([
@@ -281,8 +274,6 @@ export default function Plugins() {
 
       setPlugins(allPlugins);
       setMarketplacePlugins(marketplacePlugins || []);
-      setStores(storesData);
-      setUser(userData);
 
     } catch (error) {
       console.error("Error loading data:", error);

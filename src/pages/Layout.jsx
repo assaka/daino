@@ -142,6 +142,7 @@ function LayoutInner({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const navigationLoadedRef = React.useRef(false);
 
   // Set favicon to logo_red.svg for admin and landing pages
   useEffect(() => {
@@ -208,8 +209,11 @@ function LayoutInner({ children, currentPageName }) {
     };
 
     // Listen for store selection changes (e.g., after first store creation)
+    // Skip during initial load since loadData already handles navigation
     const handleStoreSelectionChanged = () => {
-      loadDynamicNavigation();
+      if (navigationLoadedRef.current) {
+        loadDynamicNavigation();
+      }
     };
 
     // Add global click detector to debug logout issues
@@ -341,6 +345,7 @@ function LayoutInner({ children, currentPageName }) {
         }
 
         setDynamicNavItems(navigationGroups);
+        navigationLoadedRef.current = true;
       }
     } catch (error) {
     }
