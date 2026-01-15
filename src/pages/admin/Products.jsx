@@ -68,6 +68,7 @@ import AIImageOptimizerGrid from "@/components/admin/AIImageOptimizerGrid";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { SaveButton } from "@/components/ui/save-button";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import api from "@/utils/api";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -163,6 +164,13 @@ export default function Products() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();

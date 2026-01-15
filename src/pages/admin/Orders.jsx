@@ -7,6 +7,7 @@ import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { formatPrice, _setStoreContext } from "@/utils/priceUtils";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import {
   Search,
   ChevronDown,
@@ -123,6 +124,13 @@ export default function Orders() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadOrders();
+    }
+  });
 
   const loadOrders = async () => {
     const storeId = getSelectedStoreId();

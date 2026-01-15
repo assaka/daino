@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import apiClient from '@/api/client';
+import { dispatchAIRefresh } from './useAIRefresh';
 
 /**
  * useAIChat - Shared AI chat engine hook
@@ -186,6 +187,13 @@ export const useAIChat = ({
         onCreditsUpdate?.(response.creditsDeducted);
       }
 
+      // Dispatch refresh event if AI performed a data-modifying action
+      if (response.data?.refreshPage || response.data?.refreshPreview || response.data?.action) {
+        setTimeout(() => {
+          dispatchAIRefresh(response.data?.action || 'update');
+        }, 300);
+      }
+
       return {
         success: true,
         message: assistantMessage,
@@ -335,6 +343,13 @@ export const useAIChat = ({
       });
 
       saveMessage('assistant', fullText || 'Processing complete.');
+
+      // Dispatch refresh event if tools were used (likely data modification)
+      if (tools.length > 0) {
+        setTimeout(() => {
+          dispatchAIRefresh('update');
+        }, 300);
+      }
 
       return {
         success: true,

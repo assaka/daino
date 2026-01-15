@@ -192,6 +192,43 @@ const TOOLS = [
       },
       required: ["target_language"]
     }
+  },
+  {
+    name: "update_order_status",
+    description: "Update an order's status, payment status, or fulfillment status. Use when user asks to mark orders as shipped, paid, completed, cancelled, etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        order_id: {
+          type: "string",
+          description: "The order ID or order number to update"
+        },
+        status: {
+          type: "string",
+          enum: ["pending", "processing", "completed", "cancelled", "refunded", "on_hold"],
+          description: "New order status"
+        },
+        payment_status: {
+          type: "string",
+          enum: ["pending", "paid", "failed", "refunded", "partially_refunded"],
+          description: "New payment status"
+        },
+        fulfillment_status: {
+          type: "string",
+          enum: ["unfulfilled", "partially_fulfilled", "fulfilled", "shipped", "delivered", "returned"],
+          description: "New fulfillment/shipping status"
+        },
+        tracking_number: {
+          type: "string",
+          description: "Shipping tracking number (optional)"
+        },
+        notes: {
+          type: "string",
+          description: "Internal notes about the status change (optional)"
+        }
+      },
+      required: ["order_id"]
+    }
   }
 ];
 
@@ -206,6 +243,7 @@ You have tools to help users with ANYTHING they need:
 - **get_store_settings / update_store_setting**: Check or change store configuration
 - **modify_slot**: Change page layouts, colors, visibility of elements
 - **manage_entity**: Create/update products, categories, coupons, pages
+- **update_order_status**: Update order status, payment status, fulfillment status, add tracking
 - **generate_plugin_code**: Create custom plugins and features
 - **translate_content**: Translate text or stored content
 
@@ -251,6 +289,9 @@ async function executeTool(name, input, context) {
 
     case 'translate_content':
       return await translateContent(input, storeId);
+
+    case 'update_order_status':
+      return await updateOrderStatus(input, storeId);
 
     default:
       return { error: `Unknown tool: ${name}` };
@@ -575,6 +616,74 @@ async function translateContent({ text, target_language, entity_type, entity_id 
     entity_id,
     note: 'Use Admin → Translations for bulk translation'
   };
+}
+
+/**
+ * Update order status
+ */
+async function updateOrderStatus({ order_id, status, payment_status, fulfillment_status, tracking_number, notes }, storeId) {
+  if (!storeId) return { error: 'No store selected' };
+  if (!order_id) return { error: 'Order ID is required' };
+
+  try {
+    const db = await ConnectionManager.getStoreConnection(storeId);
+
+    // Find the order by ID or order number
+    let query = db.from('orders').select('id, order_number, status, payment_status, fulfillment_status');
+
+    // Check if it's a UUID or order number
+    if (order_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      query = query.eq('id', order_id);
+    } else {
+      query = query.eq('order_number', order_id);
+    }
+
+    const { data: order, error: findError } = await query.single();
+
+    if (findError || !order) {
+      return { error: `Order not found: ${order_id}` };
+    }
+
+    // Build update object with only provided fields
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (status) updateData.status = status;
+    if (payment_status) updateData.payment_status = payment_status;
+    if (fulfillment_status) updateData.fulfillment_status = fulfillment_status;
+    if (tracking_number) updateData.tracking_number = tracking_number;
+    if (notes) updateData.admin_notes = notes;
+
+    // Perform the update
+    const { error: updateError } = await db
+      .from('orders')
+      .update(updateData)
+      .eq('id', order.id);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    // Build response message
+    const changes = [];
+    if (status) changes.push(`status → ${status}`);
+    if (payment_status) changes.push(`payment → ${payment_status}`);
+    if (fulfillment_status) changes.push(`fulfillment → ${fulfillment_status}`);
+    if (tracking_number) changes.push(`tracking: ${tracking_number}`);
+
+    return {
+      success: true,
+      message: `Order ${order.order_number || order.id} updated: ${changes.join(', ')}`,
+      order_id: order.id,
+      order_number: order.order_number,
+      changes: updateData,
+      refreshPreview: true,
+      action: 'update'
+    };
+  } catch (e) {
+    return { error: e.message };
+  }
 }
 
 /**

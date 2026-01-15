@@ -845,6 +845,28 @@ export const trackRemoveFromWishlist = (product) => {
 };
 
 /**
+ * WISHLIST OPEN
+ */
+export const trackWishlistOpen = (wishlistItems = []) => {
+  const items = wishlistItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product?.name || item.name,
+    price: item.product?.price || item.price,
+    category_name: item.product?.category_name,
+    brand: item.product?.brand,
+    sku: item.product?.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'wishlist_open',
+    ecommerce: {
+      items_count: items.length,
+      items: items
+    }
+  });
+};
+
+/**
  * MINICART OPEN
  */
 export const trackMinicartOpen = (cartItems = [], cartTotal = 0) => {
@@ -916,6 +938,7 @@ export default function DataLayerManager() {
         trackConsentUpdate,
         trackCountryChange,
         trackRemoveFromWishlist,
+        trackWishlistOpen,
         trackMinicartOpen
       };
     }

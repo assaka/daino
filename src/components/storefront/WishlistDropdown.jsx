@@ -26,6 +26,15 @@ export default function WishlistDropdown({ iconVariant = 'outline', iconColor })
   const wishlistData = fetchedWishlist.length > 0 ? fetchedWishlist : (bootstrapWishlist || []);
 
   const [wishlistItems, setWishlistItems] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Handle wishlist open with tracking
+  const handleOpenChange = (open) => {
+    setIsOpen(open);
+    if (open && typeof window !== 'undefined' && window.daino?.trackWishlistOpen) {
+      window.daino.trackWishlistOpen(wishlistItems);
+    }
+  };
 
   // Choose icon based on variant - pointer-events-none ensures clicks go to button
   const getWishlistIcon = () => {
@@ -121,7 +130,7 @@ export default function WishlistDropdown({ iconVariant = 'outline', iconColor })
   };
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="relative h-11 w-11 p-0 flex items-center justify-center">
           {getWishlistIcon()}
