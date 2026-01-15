@@ -170,20 +170,31 @@ export default function CookieConsentBanner() {
   const saveConsent = async (consentGiven, categories) => {
     const sessionId = getSessionId();
     const cookieSettings = settings.cookie_consent;
-    
+
     // Store consent in localStorage
     localStorage.setItem('cookie_consent', JSON.stringify(categories));
-    localStorage.setItem('cookie_consent_expiry', 
+    localStorage.setItem('cookie_consent_expiry',
       new Date(Date.now() + ((cookieSettings?.consent_expiry_days || 365) * 24 * 60 * 60 * 1000)).toISOString()
     );
-    
-    
+
+    // Determine consent method
+    const consentMethod = categories.length === (cookieSettings?.categories?.length || 0) ? 'accept_all' :
+                         categories.filter(cat => !cookieSettings?.categories?.find(c => c.id === cat && c.required)).length === 0 ? 'reject_all' :
+                         'custom';
+
+    // Track consent update in dataLayer
+    if (typeof window !== 'undefined' && window.daino?.trackConsentUpdate) {
+      window.daino.trackConsentUpdate({
+        consent_given: consentGiven,
+        consent_method: consentMethod,
+        categories_accepted: categories,
+        country_code: userCountry,
+        is_gdpr_country: isGDPRCountry(userCountry)
+      });
+    }
+
     // Save consent to backend for audit purposes
     try {
-      const consentMethod = categories.length === (cookieSettings?.categories?.length || 0) ? 'accept_all' : 
-                           categories.filter(cat => !cookieSettings?.categories?.find(c => c.id === cat && c.required)).length === 0 ? 'reject_all' : 
-                           'custom';
-      
       await ConsentLog.create({
         store_id: store?.id,
         session_id: sessionId,
@@ -194,11 +205,11 @@ export default function CookieConsentBanner() {
         consent_method: consentMethod,
         page_url: window.location.href
       });
-      
+
     } catch (error) {
       console.warn('Failed to save consent to backend (non-critical):', error);
     }
-    
+
     setShowBanner(false);
     setShowPreferences(false);
   };

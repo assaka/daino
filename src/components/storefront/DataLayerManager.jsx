@@ -776,6 +776,99 @@ export const trackSearch = (query, resultsCount = 0, filters = {}) => {
   });
 };
 
+/**
+ * COOKIE CONSENT UPDATE
+ */
+export const trackConsentUpdate = (consentData) => {
+  pushToDataLayer({
+    event: 'consent_update',
+    consent_given: consentData.consent_given,
+    consent_method: consentData.consent_method, // 'accept_all', 'reject_all', 'custom'
+    categories_accepted: consentData.categories_accepted,
+    country_code: consentData.country_code,
+    is_gdpr_country: consentData.is_gdpr_country
+  });
+
+  trackActivity('consent_update', {
+    metadata: {
+      consent_given: consentData.consent_given,
+      consent_method: consentData.consent_method,
+      categories_accepted: consentData.categories_accepted,
+      country_code: consentData.country_code,
+      is_gdpr_country: consentData.is_gdpr_country
+    }
+  });
+};
+
+/**
+ * COUNTRY CHANGE
+ */
+export const trackCountryChange = (oldCountry, newCountry) => {
+  pushToDataLayer({
+    event: 'country_change',
+    previous_country: oldCountry,
+    new_country: newCountry
+  });
+
+  trackActivity('country_change', {
+    metadata: {
+      previous_country: oldCountry,
+      new_country: newCountry
+    }
+  });
+};
+
+/**
+ * REMOVE FROM WISHLIST
+ */
+export const trackRemoveFromWishlist = (product) => {
+  const productData = formatProduct(product);
+
+  pushToDataLayer({
+    event: 'remove_from_wishlist',
+    ecommerce: {
+      currency: productData.currency,
+      value: productData.price,
+      items: [productData]
+    }
+  });
+
+  trackActivity('remove_from_wishlist', {
+    product_id: product.id,
+    metadata: {
+      product_name: product.name,
+      product_sku: product.sku,
+      product_price: product.price,
+      currency: productData.currency
+    }
+  });
+};
+
+/**
+ * MINICART OPEN
+ */
+export const trackMinicartOpen = (cartItems = [], cartTotal = 0) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'minicart_open',
+    ecommerce: {
+      currency: 'USD',
+      value: parseFloat(cartTotal),
+      items_count: items.length,
+      items: items
+    }
+  });
+};
+
 export default function DataLayerManager() {
   const { store, settings } = useStore();
   const hasTrackedPageRef = useRef(false);
@@ -818,7 +911,12 @@ export default function DataLayerManager() {
         trackQuickView,
         // Customer tracking
         trackCustomerLogin,
-        trackCustomerRegistration
+        trackCustomerRegistration,
+        // Additional tracking
+        trackConsentUpdate,
+        trackCountryChange,
+        trackRemoveFromWishlist,
+        trackMinicartOpen
       };
     }
   }, [store, settings]);

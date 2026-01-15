@@ -681,6 +681,19 @@ export default function ProductDetail() {
 
     try {
       if (isInWishlist) {
+        // Track remove from wishlist in dataLayer
+        window.daino?.trackRemoveFromWishlist({
+          id: product.id,
+          name: getProductName(product, getCurrentLanguage()) || product.name,
+          price: safeNumber(product.sale_price || product.price),
+          category_name: (() => {
+            const category = categories.find(cat => cat.id === product.category_ids?.[0]);
+            return category ? getTranslatedCategoryName(category) : '';
+          })(),
+          brand: product.brand,
+          sku: product.sku
+        });
+
         await removeFromWishlistMutation.mutateAsync({
           productId: product.id,
           storeId: store.id

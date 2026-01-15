@@ -282,9 +282,15 @@ export const StoreProvider = ({ children }) => {
 
   // Country selection handler
   const handleSetSelectedCountry = useCallback((country) => {
+    const previousCountry = selectedCountry;
     setSelectedCountry(country);
     localStorage.setItem('selectedCountry', country);
-  }, []);
+
+    // Track country change in dataLayer
+    if (previousCountry !== country && typeof window !== 'undefined' && window.daino?.trackCountryChange) {
+      window.daino.trackCountryChange(previousCountry, country);
+    }
+  }, [selectedCountry]);
 
   // Use centralized config to decide if we should skip StoreProvider
   // Admin/editor pages use StoreSelectionContext instead - see domainConfig.js

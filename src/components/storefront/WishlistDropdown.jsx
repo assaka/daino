@@ -101,8 +101,19 @@ export default function WishlistDropdown({ iconVariant = 'outline', iconColor })
     return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
   }, [refetch]);
 
-  const handleRemoveFromWishlist = async (productId) => {
+  const handleRemoveFromWishlist = async (productId, product = null) => {
     try {
+      // Track remove from wishlist in dataLayer
+      if (product && typeof window !== 'undefined' && window.daino?.trackRemoveFromWishlist) {
+        window.daino.trackRemoveFromWishlist({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          sku: product.sku,
+          category_name: product.category_name
+        });
+      }
+
       await removeFromWishlist.mutateAsync({ productId, storeId: store?.id });
     } catch (error) {
       console.error("WishlistDropdown: Error removing item from wishlist:", error);
@@ -155,7 +166,7 @@ export default function WishlistDropdown({ iconVariant = 'outline', iconColor })
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemoveFromWishlist(item.product_id)}
+                    onClick={() => handleRemoveFromWishlist(item.product_id, item.product)}
                     className="text-red-500 hover:text-red-700 p-1"
                   >
                     <Trash2 className="w-4 h-4" />

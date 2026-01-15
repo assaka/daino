@@ -350,9 +350,16 @@ export default function MiniCart({ iconVariant = 'outline', iconColor }) {
 
   const totalItems = getTotalItems();
 
+  // Handle minicart open with tracking
+  const handleOpenChange = (open) => {
+    setIsOpen(open);
+    if (open && typeof window !== 'undefined' && window.daino?.trackMinicartOpen) {
+      window.daino.trackMinicartOpen(cartItems, getTotalPrice());
+    }
+  };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="relative h-11 w-11 p-0 flex items-center justify-center">
           {getCartIcon()}
