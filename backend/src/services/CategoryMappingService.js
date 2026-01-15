@@ -494,18 +494,19 @@ class CategoryMappingService {
     const internalCategoryIds = [...new Set(mappingsWithInternal.map(m => m.internal_category_id))];
     console.log(`🔍 [ORPHAN CHECK] Checking ${internalCategoryIds.length} unique category IDs:`, internalCategoryIds);
 
-    // Check which categories still exist (filter by store_id to ensure same store)
+    // Check which categories still exist AND are active (visible in UI)
     const { data: existingCategories, error: catError } = await tenantDb
       .from('categories')
       .select('id')
       .eq('store_id', this.storeId)
+      .eq('is_active', true)
       .in('id', internalCategoryIds);
 
     if (catError) {
       console.error(`❌ [ORPHAN CHECK] Category check error:`, catError.message);
     }
 
-    console.log(`🔍 [ORPHAN CHECK] Found ${existingCategories?.length || 0} existing categories for store ${this.storeId}`);
+    console.log(`🔍 [ORPHAN CHECK] Found ${existingCategories?.length || 0} active categories for store ${this.storeId}`);
 
     const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
 
@@ -603,11 +604,12 @@ class CategoryMappingService {
         const internalCategoryIds = [...new Set(mappingsWithInternalId.map(m => m.internal_category_id))];
         console.log(`📁 [SYNC ORPHAN] Checking category IDs:`, internalCategoryIds);
 
-        // Check which categories still exist (filter by store_id)
+        // Check which categories still exist AND are active
         const { data: existingCategories } = await tenantDb
           .from('categories')
           .select('id')
           .eq('store_id', this.storeId)
+          .eq('is_active', true)
           .in('id', internalCategoryIds);
 
         console.log(`📁 [SYNC ORPHAN] Found ${existingCategories?.length || 0} existing categories`);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp, Plus, Download, RotateCcw } from 'lucide-react';
+import { FolderTree, RefreshCw, Wand2, Check, X, AlertCircle, ChevronDown, ChevronUp, Plus, Download } from 'lucide-react';
 import apiClient from '../../utils/api';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
@@ -161,32 +161,6 @@ const CategoryMappingPanel = ({
       setFlashMessage({ type: 'error', message: 'Failed to auto-match categories' });
     } finally {
       setAutoMatching(false);
-    }
-  };
-
-  // Reset all mappings
-  const [resetting, setResetting] = useState(false);
-  const handleResetMappings = async () => {
-    if (!confirm('Are you sure you want to reset all mappings? This will unmap all categories.')) {
-      return;
-    }
-
-    setResetting(true);
-    setFlashMessage(null);
-    try {
-      const response = await apiClient.post(`/integrations/category-mappings/${integrationSource}/reset`);
-      if (response.success) {
-        await fetchMappings();
-        setFlashMessage({
-          type: 'success',
-          message: `Reset ${response.results?.count || 0} mappings`
-        });
-      }
-    } catch (error) {
-      console.error('Error resetting mappings:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to reset mappings' });
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -498,17 +472,6 @@ const CategoryMappingPanel = ({
               <Wand2 className={`h-4 w-4 mr-1.5 ${autoMatching ? 'animate-pulse' : ''}`} />
               {autoMatching ? 'Matching...' : 'Auto-Match'}
             </button>
-
-            {stats.mapped > 0 && (
-              <button
-                onClick={handleResetMappings}
-                disabled={resetting}
-                className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50"
-              >
-                <RotateCcw className={`h-4 w-4 mr-1.5 ${resetting ? 'animate-spin' : ''}`} />
-                {resetting ? 'Resetting...' : 'Reset Mappings'}
-              </button>
-            )}
 
             <div className="flex-1" />
 

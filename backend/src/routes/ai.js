@@ -50,27 +50,64 @@ router.get('/models', async (req, res) => {
  */
 router.post('/unified-chat', authMiddleware, async (req, res) => {
   try {
-    const { message, conversationHistory = [], mode = 'general' } = req.body;
+    const { message, conversationHistory = [], mode = 'general', modelId, images } = req.body;
     const userId = req.user?.id;
     const storeId = req.headers['x-store-id'] || req.body.storeId;
 
-    if (!message) {
-      return res.status(400).json({ success: false, message: 'Message is required' });
+    if (!message && (!images || images.length === 0)) {
+      return res.status(400).json({ success: false, message: 'Message or images required' });
     }
 
     console.log('🤖 Unified AI Chat - Message:', message?.substring(0, 80));
+
+    // Check credits before processing
+    const creditCheck = await aiService.checkCredits(userId, 'general', null, modelId);
+    if (!creditCheck.hasCredits) {
+      console.log(`❌ Insufficient credits for user ${userId}. Required: ${creditCheck.required}, Available: ${creditCheck.available}`);
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${creditCheck.required}, Available: ${creditCheck.available}`,
+        required: creditCheck.required,
+        available: creditCheck.available
+      });
+    }
 
     const result = await unifiedAIChat.chat({
       message,
       conversationHistory,
       storeId,
       userId,
-      mode
+      mode,
+      images
     });
+
+    // Deduct credits after successful response
+    if (result.success !== false) {
+      const creditsDeducted = await aiService.deductCredits(userId, 'general', {
+        storeId,
+        modelId,
+        mode,
+        tokensInput: result.data?.usage?.input || 0,
+        tokensOutput: result.data?.usage?.output || 0
+      });
+      result.creditsDeducted = creditsDeducted;
+      console.log(`💳 Credits deducted: ${creditsDeducted} for unified-chat (user: ${userId})`);
+    }
 
     res.json(result);
   } catch (error) {
     console.error('Unified AI chat error:', error);
+
+    // Handle insufficient credits error
+    if (error.message?.includes('Insufficient credits')) {
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: error.message
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || 'AI chat failed'

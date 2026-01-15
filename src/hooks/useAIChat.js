@@ -164,6 +164,7 @@ export const useAIChat = ({
         storeId: storeId,
         mode: mode,
         images: imagesForApi,
+        modelId: extraContext.modelId,
         ...extraContext
       });
 
