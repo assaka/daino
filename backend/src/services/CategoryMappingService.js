@@ -102,7 +102,6 @@ class CategoryMappingService {
 
     // Clear orphaned internal_category_id references in database (async, don't wait)
     if (orphanedMappingIds.length > 0) {
-      console.log(`🧹 Clearing ${orphanedMappingIds.length} orphaned category references...`);
       tenantDb
         .from('integration_category_mappings')
         .update({ internal_category_id: null, mapping_type: 'manual' })
@@ -110,8 +109,6 @@ class CategoryMappingService {
         .then(({ error }) => {
           if (error) {
             console.error('Error clearing orphaned references:', error.message);
-          } else {
-            console.log(`✅ Cleared ${orphanedMappingIds.length} orphaned references`);
           }
         });
     }
@@ -280,7 +277,6 @@ class CategoryMappingService {
     for (const cat of storeCategories) {
       const catSlug = (cat.slug || '').toLowerCase().replace(/[-_]/g, '');
       if (catSlug && catSlug === normalizedSlug) {
-        console.log(`🎯 Auto-matched by slug: "${code}" → "${cat.name}" (${cat.id})`);
         return { categoryId: cat.id, confidence: 1.0, matchType: 'slug' };
       }
     }
@@ -289,7 +285,6 @@ class CategoryMappingService {
     for (const cat of storeCategories) {
       const catName = (cat.name || '').toLowerCase().trim();
       if (catName && catName === normalizedName) {
-        console.log(`🎯 Auto-matched by name: "${name}" → "${cat.name}" (${cat.id})`);
         return { categoryId: cat.id, confidence: 0.95, matchType: 'name' };
       }
     }
@@ -298,7 +293,6 @@ class CategoryMappingService {
     for (const cat of storeCategories) {
       const catSlug = (cat.slug || '').toLowerCase().replace(/[-_]/g, '');
       if (catSlug && catSlug === normalizedCode) {
-        console.log(`🎯 Auto-matched by code→slug: "${code}" → "${cat.name}" (${cat.id})`);
         return { categoryId: cat.id, confidence: 0.9, matchType: 'code_slug' };
       }
     }
@@ -313,13 +307,11 @@ class CategoryMappingService {
         const shorter = Math.min(catName.length, normalizedName.length);
         const longer = Math.max(catName.length, normalizedName.length);
         if (shorter / longer >= 0.7) {
-          console.log(`🎯 Auto-matched by partial name: "${name}" → "${cat.name}" (${cat.id})`);
           return { categoryId: cat.id, confidence: 0.7, matchType: 'partial' };
         }
       }
     }
 
-    console.log(`⚠️ No auto-match found for: "${name}" (${code})`);
     return null;
   }
 
@@ -404,7 +396,6 @@ class CategoryMappingService {
 
     if (error) throw error;
 
-    console.log(`✅ Manually mapped: ${externalCategoryCode} → ${internalCategoryId}`);
     return true;
   }
 
@@ -436,8 +427,6 @@ class CategoryMappingService {
   async resetAllMappings() {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-    console.log(`🔄 [RESET] Resetting all ${this.integrationSource} mappings for store ${this.storeId}`);
-
     const { data, error } = await tenantDb
       .from('integration_category_mappings')
       .update({
@@ -451,15 +440,9 @@ class CategoryMappingService {
       .not('internal_category_id', 'is', null)
       .select('id');
 
-    if (error) {
-      console.error(`❌ [RESET] Error:`, error.message);
-      throw error;
-    }
+    if (error) throw error;
 
-    const count = data?.length || 0;
-    console.log(`✅ [RESET] Reset ${count} mappings`);
-
-    return { count };
+    return { count: data?.length || 0 };
   }
 
   /**
@@ -469,8 +452,6 @@ class CategoryMappingService {
   async cleanOrphanedMappings() {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-    console.log(`🔍 [ORPHAN CHECK] Starting for ${this.integrationSource}, store: ${this.storeId}`);
-
     // Get all mappings with internal_category_id set
     const { data: mappingsWithInternal, error: fetchError } = await tenantDb
       .from('integration_category_mappings')
@@ -479,48 +460,29 @@ class CategoryMappingService {
       .eq('integration_source', this.integrationSource)
       .not('internal_category_id', 'is', null);
 
-    if (fetchError) {
-      console.error(`❌ [ORPHAN CHECK] Fetch error:`, fetchError.message);
-      return { cleaned: 0 };
-    }
-
-    console.log(`🔍 [ORPHAN CHECK] Found ${mappingsWithInternal?.length || 0} mappings with internal_category_id`);
-
-    if (!mappingsWithInternal || mappingsWithInternal.length === 0) {
+    if (fetchError || !mappingsWithInternal || mappingsWithInternal.length === 0) {
       return { cleaned: 0 };
     }
 
     // Get unique internal category IDs
     const internalCategoryIds = [...new Set(mappingsWithInternal.map(m => m.internal_category_id))];
-    console.log(`🔍 [ORPHAN CHECK] Checking ${internalCategoryIds.length} unique category IDs:`, internalCategoryIds);
 
-    // Check which categories still exist AND are active (visible in UI)
-    const { data: existingCategories, error: catError } = await tenantDb
+    // Check which categories still exist AND are active
+    const { data: existingCategories } = await tenantDb
       .from('categories')
       .select('id')
       .eq('store_id', this.storeId)
       .eq('is_active', true)
       .in('id', internalCategoryIds);
 
-    if (catError) {
-      console.error(`❌ [ORPHAN CHECK] Category check error:`, catError.message);
-    }
-
-    console.log(`🔍 [ORPHAN CHECK] Found ${existingCategories?.length || 0} active categories for store ${this.storeId}`);
-
     const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
 
-    // Find orphaned mappings
+    // Find orphaned mappings (internal category deleted or inactive)
     const orphanedMappings = mappingsWithInternal.filter(m => !existingCategoryIds.has(m.internal_category_id));
-
-    console.log(`🔍 [ORPHAN CHECK] Found ${orphanedMappings.length} orphaned mappings`);
 
     if (orphanedMappings.length === 0) {
       return { cleaned: 0 };
     }
-
-    console.log(`🧹 Cleaning ${orphanedMappings.length} orphaned ${this.integrationSource} mappings`);
-    console.log(`🧹 Orphaned IDs:`, orphanedMappings.map(m => ({ mappingId: m.id, categoryId: m.internal_category_id })));
 
     // Clear the orphaned mappings
     const orphanedIds = orphanedMappings.map(m => m.id);
@@ -534,11 +496,9 @@ class CategoryMappingService {
       .in('id', orphanedIds);
 
     if (updateError) {
-      console.error(`❌ [ORPHAN CHECK] Update error:`, updateError.message);
       return { cleaned: 0 };
     }
 
-    console.log(`✅ Cleared ${orphanedMappings.length} orphaned mappings`);
     return { cleaned: orphanedMappings.length };
   }
 
@@ -553,12 +513,8 @@ class CategoryMappingService {
     const results = { created: 0, updated: 0, deleted: 0, reset: 0, errors: [] };
     const now = new Date().toISOString();
 
-    console.log(`📁 syncExternalCategories called with ${externalCategories?.length || 0} categories`);
-    console.log(`📁 Store ID: ${this.storeId}, Source: ${this.integrationSource}`);
-
     // First, reset all existing mappings (clear internal_category_id)
     // This ensures fresh sync every time and auto-match will find correct matches
-    console.log(`📁 Resetting all existing mappings for fresh sync...`);
     const { data: resetData, error: resetError } = await tenantDb
       .from('integration_category_mappings')
       .update({
@@ -571,16 +527,12 @@ class CategoryMappingService {
       .not('internal_category_id', 'is', null)
       .select('id');
 
-    if (resetError) {
-      console.error(`📁 Reset error:`, resetError.message);
-    } else {
+    if (!resetError) {
       results.reset = resetData?.length || 0;
-      console.log(`📁 Reset ${results.reset} existing mappings`);
     }
 
     // If no categories fetched, clear all mappings for this source
     if (!externalCategories || externalCategories.length === 0) {
-      console.log('📁 No categories fetched - clearing all mappings for this source');
       const { data: deleted, error: deleteError } = await tenantDb
         .from('integration_category_mappings')
         .delete()
@@ -589,21 +541,15 @@ class CategoryMappingService {
         .select('id');
 
       if (deleteError) {
-        console.error('❌ Error clearing mappings:', deleteError.message);
         results.errors.push({ error: `Delete error: ${deleteError.message}` });
       } else {
         results.deleted = deleted?.length || 0;
-        console.log(`📁 Cleared ${results.deleted} mappings`);
       }
       return results;
     }
 
     try {
-      // 1. Fetch ALL existing mappings in ONE query
-      const externalCodes = externalCategories.map(c => c.code).filter(Boolean);
-      const externalIds = externalCategories.map(c => c.id).filter(Boolean);
-
-      console.log(`📁 Checking for existing mappings...`);
+      // Fetch existing mappings
       const { data: existingMappings, error: fetchError } = await tenantDb
         .from('integration_category_mappings')
         .select('id, external_category_id, external_category_code, internal_category_id')
@@ -611,12 +557,9 @@ class CategoryMappingService {
         .eq('integration_source', this.integrationSource);
 
       if (fetchError) {
-        console.error('❌ Error fetching existing mappings:', fetchError.message);
         results.errors.push({ error: `Fetch error: ${fetchError.message}` });
         return results;
       }
-
-      console.log(`📁 Found ${existingMappings?.length || 0} existing mappings`);
 
       // Build lookup maps for existing mappings
       const existingByCode = new Map();
@@ -666,29 +609,19 @@ class CategoryMappingService {
         return !codeMatch && !idMatch;
       });
 
-      console.log(`📁 To insert: ${toInsert.length}, To update: ${toUpdate.length}, To delete: ${toDelete.length}`);
-
-      // 3. Batch insert new mappings (max 100 at a time for Supabase)
+      // Batch insert new mappings
       const BATCH_SIZE = 100;
       for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
         const batch = toInsert.slice(i, i + BATCH_SIZE);
-        console.log(`📁 Inserting batch ${i}-${i + batch.length}...`);
 
-        console.log(`📁 Batch data sample:`, JSON.stringify(batch[0], null, 2));
-
-        const { data: insertedData, error } = await tenantDb
+        const { error } = await tenantDb
           .from('integration_category_mappings')
           .insert(batch)
           .select();
 
         if (error) {
-          console.error('❌ Batch insert error:', error.message);
-          console.error('❌ Error details:', error.details);
-          console.error('❌ Error hint:', error.hint);
-          console.error('❌ Error code:', error.code);
-          results.errors.push({ batch: `insert ${i}-${i + batch.length}`, error: error.message, details: error.details });
+          results.errors.push({ batch: `insert ${i}-${i + batch.length}`, error: error.message });
         } else {
-          console.log(`✅ Inserted ${insertedData?.length || batch.length} records`);
           results.created += batch.length;
         }
       }
@@ -722,10 +655,9 @@ class CategoryMappingService {
         }
       }
 
-      // 5. Delete mappings for categories no longer in external source
+      // Delete mappings for categories no longer in external source
       if (toDelete.length > 0) {
         const deleteIds = toDelete.map(m => m.id);
-        console.log(`📁 Deleting ${deleteIds.length} obsolete mappings...`);
 
         for (let i = 0; i < deleteIds.length; i += BATCH_SIZE) {
           const batch = deleteIds.slice(i, i + BATCH_SIZE);
@@ -735,7 +667,6 @@ class CategoryMappingService {
             .in('id', batch);
 
           if (deleteError) {
-            console.error('❌ Batch delete error:', deleteError.message);
             results.errors.push({ error: `Delete error: ${deleteError.message}` });
           } else {
             results.deleted += batch.length;
@@ -744,11 +675,9 @@ class CategoryMappingService {
       }
 
     } catch (err) {
-      console.error('Error in batch sync:', err.message);
       results.errors.push({ error: err.message });
     }
 
-    console.log(`📁 Synced ${this.integrationSource} categories: ${results.created} created, ${results.updated} updated, ${results.deleted} deleted`);
     return results;
   }
 
@@ -763,7 +692,7 @@ class CategoryMappingService {
       const autoMatch = await this.findAutoMatch({
         code: mapping.external_category_code,
         name: mapping.external_category_name,
-        slug: mapping.external_category_code // Use code as slug for matching
+        slug: mapping.external_category_code
       });
 
       if (autoMatch) {
@@ -774,7 +703,6 @@ class CategoryMappingService {
       }
     }
 
-    console.log(`🔄 Auto-match results: ${results.matched} matched, ${results.unmatched} unmatched`);
     return results;
   }
 
@@ -932,7 +860,6 @@ class CategoryMappingService {
         .maybeSingle();
 
       if (existing) {
-        console.log(`📁 Category with slug "${slug}" already exists (${existing.id}), using existing`);
         // Update the mapping to point to existing category
         await this.upsertMapping({
           external_category_id: externalCategory.id,
@@ -1024,13 +951,10 @@ class CategoryMappingService {
         mapping_type: 'auto'
       });
 
-      console.log(`✅ Auto-created category: "${categoryName}" (${slug}) → ${categoryId}`);
-      console.log(`   Settings: is_active=${defaultIsActive}, hide_in_menu=${defaultHideInMenu}`);
-
       return categoryId;
 
     } catch (error) {
-      console.error(`❌ Error auto-creating category "${externalCategory.name}":`, error.message);
+      console.error(`Error auto-creating category "${externalCategory.name}":`, error.message);
       return null;
     }
   }
@@ -1051,7 +975,6 @@ class CategoryMappingService {
     // Check if auto-creation is enabled
     const settings = await this.getAutoCreateSettings();
     if (!settings.enabled) {
-      console.log(`⚠️ No mapping for "${externalCategory.name}" and auto-create is disabled`);
       return null;
     }
 

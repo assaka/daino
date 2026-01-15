@@ -1700,17 +1700,9 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
     const storeId = req.store?.id || req.body.store_id;
     const { filters = {} } = req.body;
 
-    console.log(`📂 [SYNC START] source=${source}, storeId=${storeId}`);
-    console.log(`📂 [SYNC] req.store:`, req.store?.id);
-    console.log(`📂 [SYNC] req.body:`, JSON.stringify(req.body));
-
     if (!storeId) {
-      console.log(`❌ [SYNC] No storeId found`);
       return res.status(400).json({ success: false, message: 'Store ID required' });
     }
-
-    console.log(`📂 Fetching categories from ${source} for store ${storeId}...`);
-    console.log(`📂 Filters:`, filters);
 
     let categories = [];
 
@@ -1721,8 +1713,6 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
         if (!config || !config.config_data) {
           return res.status(400).json({ success: false, message: 'Akeneo integration not configured' });
         }
-
-        console.log('📂 Connecting to Akeneo:', config.config_data.baseUrl);
 
         const AkeneoClient = require('../services/akeneo-client');
         const client = new AkeneoClient(
@@ -1735,11 +1725,9 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
         );
 
         let akeneoCategories = await client.getAllCategories();
-        console.log(`📂 Raw Akeneo categories count: ${akeneoCategories?.length || 0}`);
 
         // Apply root category filter if provided
         if (filters.rootCategories && filters.rootCategories.length > 0) {
-          console.log(`🌱 Filtering to root categories: ${filters.rootCategories.join(', ')}`);
 
           const selectedCategoryTree = new Set();
 
@@ -1763,7 +1751,6 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
           filters.rootCategories.forEach(rootCode => addDescendants(rootCode));
 
           akeneoCategories = akeneoCategories.filter(cat => selectedCategoryTree.has(cat.code));
-          console.log(`📊 After filtering: ${akeneoCategories.length} categories`);
         }
 
         categories = (akeneoCategories || []).map(cat => ({
@@ -1772,52 +1759,26 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
           name: cat.labels?.en_US || cat.labels?.en_GB || cat.labels?.en || cat.code,
           parent_code: cat.parent || null
         }));
-
-        console.log(`✅ Fetched ${categories.length} categories from Akeneo`);
       } catch (akeneoError) {
-        console.error('❌ Akeneo category fetch error:', akeneoError.message);
         return res.status(500).json({ success: false, message: `Akeneo error: ${akeneoError.message}` });
       }
 
     } else if (source === 'shopify') {
       // Fetch from Shopify
       try {
-        console.log('📂 [SHOPIFY] Starting collection fetch for store:', storeId);
         const shopifyIntegration = require('../services/shopify-integration');
-
-        console.log('📂 [SHOPIFY] Getting access token...');
         const accessToken = await shopifyIntegration.getAccessToken(storeId);
-        console.log('📂 [SHOPIFY] Access token:', accessToken ? 'Found' : 'Not found');
-
-        console.log('📂 [SHOPIFY] Getting shop domain...');
         const shopDomain = await shopifyIntegration.getShopDomain(storeId);
-        console.log('📂 [SHOPIFY] Shop domain:', shopDomain);
 
         if (!accessToken || !shopDomain) {
-          console.log('❌ [SHOPIFY] Missing accessToken or shopDomain');
           return res.status(400).json({ success: false, message: 'Shopify integration not configured' });
         }
 
-        console.log('📂 [SHOPIFY] Creating ShopifyClient...');
         const ShopifyClient = require('../services/shopify-client');
         const client = new ShopifyClient(shopDomain, accessToken);
 
-        console.log('📂 [SHOPIFY] Calling getAllCollections...');
         const collectionsData = await client.getAllCollections();
-        const customCollections = collectionsData?.custom || [];
-        const smartCollections = collectionsData?.smart || [];
         const allCollections = collectionsData?.all || [];
-
-        console.log(`📂 [SHOPIFY] Custom collections: ${customCollections.length}`);
-        console.log(`📂 [SHOPIFY] Smart collections: ${smartCollections.length}`);
-        console.log(`📂 [SHOPIFY] Total collections: ${allCollections.length}`);
-
-        if (smartCollections.length > 0) {
-          console.log(`📂 [SHOPIFY] Smart collection names: ${smartCollections.map(c => c.title).join(', ')}`);
-        }
-        if (customCollections.length > 0) {
-          console.log(`📂 [SHOPIFY] Custom collection names: ${customCollections.map(c => c.title).join(', ')}`);
-        }
 
         categories = allCollections.map(col => ({
           id: String(col.id),
@@ -1825,31 +1786,20 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
           name: col.title || `Collection ${col.id}`,
           parent_code: null // Shopify collections are flat
         }));
-
-        console.log(`✅ [SHOPIFY] Fetched ${categories.length} collections`);
       } catch (shopifyError) {
-        console.error('❌ [SHOPIFY] Error:', shopifyError.message);
-        console.error('❌ [SHOPIFY] Stack:', shopifyError.stack);
+        console.error('Shopify category sync error:', shopifyError.message);
         return res.status(500).json({ success: false, message: `Shopify error: ${shopifyError.message}` });
       }
 
     } else if (source === 'woocommerce') {
       // Fetch from WooCommerce
       try {
-        console.log('📂 [WOOCOMMERCE] Starting category fetch for store:', storeId);
         const woocommerceIntegration = require('../services/woocommerce-integration');
-
-        console.log('📂 [WOOCOMMERCE] Getting client...');
         const client = await woocommerceIntegration.getClient(storeId);
-
-        console.log('📂 [WOOCOMMERCE] Calling getAllCategories...');
         const wooCategories = await client.getAllCategories();
-        console.log(`📂 [WOOCOMMERCE] Fetched ${wooCategories?.length || 0} categories`);
 
         // Apply root category filter if provided
         if (filters.rootCategories && filters.rootCategories.length > 0) {
-          console.log(`🌱 [WOOCOMMERCE] Filtering to root categories: ${filters.rootCategories.join(', ')}`);
-
           const selectedCategoryTree = new Set();
 
           // Add selected root categories (convert to string for comparison)
@@ -1875,7 +1825,6 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
           filters.rootCategories.forEach(rootCode => addDescendants(String(rootCode)));
 
           const filteredCategories = wooCategories.filter(cat => selectedCategoryTree.has(String(cat.id)));
-          console.log(`📊 [WOOCOMMERCE] After filtering: ${filteredCategories.length} categories`);
 
           categories = filteredCategories.map(cat => ({
             id: String(cat.id),
@@ -1891,11 +1840,8 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
             parent_code: cat.parent && cat.parent !== 0 ? String(cat.parent) : null
           }));
         }
-
-        console.log(`✅ [WOOCOMMERCE] Fetched ${categories.length} categories`);
       } catch (wooError) {
-        console.error('❌ [WOOCOMMERCE] Error:', wooError.message);
-        console.error('❌ [WOOCOMMERCE] Stack:', wooError.stack);
+        console.error('WooCommerce category sync error:', wooError.message);
         return res.status(500).json({ success: false, message: `WooCommerce error: ${wooError.message}` });
       }
 
@@ -1912,14 +1858,10 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
     }
 
     const mappingService = new CategoryMappingService(storeId, source);
-    console.log(`📂 [SYNC] Calling syncExternalCategories with ${categories.length} categories...`);
     const results = await mappingService.syncExternalCategories(categories);
-    console.log(`📂 [SYNC] Results:`, JSON.stringify(results));
 
     // Auto-match categories to existing store categories by name/slug
-    console.log(`📂 [SYNC] Running auto-match to find existing categories...`);
     const matchResults = await mappingService.autoMatchAll();
-    console.log(`📂 [SYNC] Auto-match results: ${matchResults.matched} matched, ${matchResults.unmatched} unmatched`);
     results.matched = matchResults.matched;
 
     // Save import statistics for the category sync
@@ -1931,24 +1873,19 @@ router.post('/category-mappings/:source/sync', authMiddleware, storeResolver(), 
         failedImports: 0,
         skippedImports: 0,
         importMethod: 'manual',
-        importSource: source // 'shopify' or 'akeneo'
+        importSource: source
       });
-      console.log(`📊 [SYNC] Saved import statistics for ${source} collections`);
     } catch (statsError) {
-      console.error(`📊 [SYNC] Failed to save import statistics:`, statsError);
       // Don't fail the sync if stats saving fails
     }
 
-    const response = {
+    res.json({
       success: true,
       message: `Synced ${results.created + results.updated} categories (${results.created} new, ${results.updated} updated)`,
       results
-    };
-    console.log(`📂 [SYNC] Sending response:`, JSON.stringify(response));
-    res.json(response);
+    });
   } catch (error) {
-    console.error('❌ [SYNC] Error syncing category mappings:', error);
-    console.error('❌ [SYNC] Stack:', error.stack);
+    console.error('Category mapping sync error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 });

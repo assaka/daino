@@ -210,13 +210,6 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
 async function updateCategoryWithTranslations(storeId, categoryId, categoryData = {}, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  console.log('📦 updateCategoryWithTranslations - received categoryData:', {
-    categoryId,
-    hasMediaAssetId: !!categoryData.media_asset_id,
-    media_asset_id: categoryData.media_asset_id,
-    allKeys: Object.keys(categoryData)
-  });
-
   // Remove fields that don't belong in categories table:
   // - name, description: belong in category_translations
   // - image_url: deprecated, use media_asset_id instead
@@ -228,12 +221,6 @@ async function updateCategoryWithTranslations(storeId, categoryId, categoryData 
       ...validCategoryData,
       updated_at: new Date().toISOString()
     };
-
-    console.log('📝 updateCategoryWithTranslations - updateFields:', {
-      categoryId,
-      fields: Object.keys(updateFields),
-      media_asset_id: updateFields.media_asset_id
-    });
 
     const { error } = await tenantDb
       .from('categories')
@@ -312,9 +299,7 @@ async function deleteCategory(storeId, categoryId) {
         if (asset.file_path) {
           try {
             await storageManager.deleteFile(storeId, asset.file_path);
-            console.log(`🗑️ Deleted category image from storage: ${asset.file_path}`);
           } catch (storageError) {
-            console.error(`Failed to delete category image from storage: ${asset.file_path}`, storageError.message);
             // Continue even if storage deletion fails
           }
         }
