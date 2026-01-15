@@ -1,5 +1,6 @@
 const BaseJobHandler = require('./BaseJobHandler');
 const CategoryMappingService = require('../../services/CategoryMappingService');
+const ImportStatistic = require('../../models/ImportStatistic');
 
 /**
  * Background job handler for creating store categories from unmapped external categories
@@ -161,6 +162,21 @@ class IntegrationCreateCategoriesJob extends BaseJobHandler {
       }
 
       await this.updateProgress(100, 'Category creation completed');
+
+      // Save import statistics
+      try {
+        await ImportStatistic.saveImportResults(storeId, 'categories', {
+          totalProcessed: stats.total,
+          successfulImports: stats.created,
+          failedImports: stats.failed,
+          skippedImports: stats.filtered,
+          importSource: integrationSource,
+          importMethod: 'background_job'
+        });
+        this.log(`Saved import statistics for ${integrationSource} categories`);
+      } catch (statsError) {
+        this.log(`Failed to save import statistics: ${statsError.message}`);
+      }
 
       const filterMsg = stats.filtered > 0 ? `, ${stats.filtered} excluded by filter` : '';
       const result = {
