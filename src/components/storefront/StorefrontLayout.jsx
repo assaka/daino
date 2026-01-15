@@ -5,7 +5,7 @@ import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { handleLogout, getUserDataForRole } from '@/utils/auth';
 import { CustomerAuth } from '@/api/storefront-entities';
-import { StorePauseAccess } from '@/api/entities';
+import { StorePauseAccess, StoreTeam } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Menu, Search, ChevronDown, Settings, LogOut, X } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,6 +54,7 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const [linkSent, setLinkSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [hasApprovedAccess, setHasApprovedAccess] = useState(false);
+    const [isTeamMember, setIsTeamMember] = useState(false);
     const [checkingAccess, setCheckingAccess] = useState(true);
     const [flashMessage, setFlashMessage] = useState(null);
 
@@ -65,12 +66,36 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
     const pauseAccessEmail = urlParams?.get('pause_access_email');
     const pauseAccessToken = urlParams?.get('pause_access_token');
 
-    // Check localStorage for approved access on mount
+    // Check localStorage for approved access and team membership on mount
     useEffect(() => {
         const checkAccess = async () => {
             if (!store?.id) {
                 setCheckingAccess(false);
                 return;
+            }
+
+            // Check if current user is a team member of this store
+            const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
+            if (hasStoreOwnerToken) {
+                try {
+                    const storeOwnerData = getUserDataForRole('store_owner') || getUserDataForRole('admin');
+                    const userEmail = storeOwnerData?.email;
+
+                    if (userEmail) {
+                        // Fetch team members for this store
+                        const teamMembers = await StoreTeam.getTeamMembers(store.id);
+                        const isMember = teamMembers.some(member =>
+                            member.email?.toLowerCase() === userEmail.toLowerCase()
+                        );
+                        if (isMember) {
+                            setIsTeamMember(true);
+                            setCheckingAccess(false);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    // Team member check failed, continue with other checks
+                }
             }
 
             // First check URL params (from approval email)
@@ -121,10 +146,10 @@ function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
         }
     }, [flashMessage]);
 
-    // Only store owners or users with approved access can bypass the paused overlay
+    // Store owners, team members, or users with approved access can bypass the paused overlay
     // Random visitors cannot bypass with URL params like ?version=published
     // However, AI Workspace mode (mode=workspace) should always bypass the pause modal
-    const canBypassPause = isStoreOwnerViewingOwnStore || hasApprovedAccess;
+    const canBypassPause = isStoreOwnerViewingOwnStore || isTeamMember || hasApprovedAccess;
     const isInPreviewMode = canBypassPause && (isPreviewDraftMode || isInPreviewModeFromUrl);
 
     // AI Workspace mode bypasses pause modal - check both context and URL directly
