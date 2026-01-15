@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, XCircle, UserPlus, Shield, AlertCircle, Eye, EyeOff, Users, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, UserPlus, AlertCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
 import apiClient from '@/api/client';
 import FlashMessage from '@/components/storefront/FlashMessage';
-
-const ROLE_COLORS = {
-  admin: 'bg-blue-100 text-blue-800',
-  editor: 'bg-green-100 text-green-800',
-  viewer: 'bg-slate-100 text-slate-800'
-};
 
 export default function AcceptInvitation() {
   const { token } = useParams();
@@ -237,48 +230,12 @@ export default function AcceptInvitation() {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-indigo-600" />
-          </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">
             You're Invited by {invitation?.inviter?.first_name || 'the store owner'}!
           </h1>
           <p className="text-slate-600">
-            To join <span className="font-medium">{invitation?.store?.name}</span> as <span className="font-medium">{invitation?.role}</span>
+            To join <span className="font-bold">{invitation?.store?.name}</span> as <span className="font-bold">{invitation?.role}</span>
           </p>
-        </div>
-
-        {/* Store info */}
-        <div className="flex items-center gap-3 p-4 bg-indigo-50 rounded-xl mb-5">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-xl font-bold text-indigo-600">
-              {invitation?.store?.name?.charAt(0)?.toUpperCase() || 'S'}
-            </span>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide">Joining store</p>
-            <h3 className="font-bold text-slate-900">{invitation?.store?.name}</h3>
-            {invitation?.store?.domain && <p className="text-sm text-slate-500">{invitation.store.domain}</p>}
-          </div>
-        </div>
-
-        {/* Role & Inviter */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="p-3 bg-slate-50 rounded-lg">
-            <p className="text-xs text-slate-500 uppercase mb-1">Your Role</p>
-            <Badge className={`${ROLE_COLORS[invitation?.role]} text-sm`}>
-              <Shield className="w-3 h-3 mr-1" />
-              {invitation?.role?.charAt(0).toUpperCase() + invitation?.role?.slice(1)}
-            </Badge>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-lg">
-            <p className="text-xs text-slate-500 uppercase mb-1">Invited By</p>
-            <p className="text-slate-900 font-medium text-sm truncate">
-              {invitation?.inviter?.first_name
-                ? `${invitation.inviter.first_name} ${invitation.inviter.last_name || ''}`
-                : invitation?.inviter?.email || 'Store Owner'}
-            </p>
-          </div>
         </div>
 
         {/* Message */}
