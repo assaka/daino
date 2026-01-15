@@ -17,6 +17,7 @@ import {
   Filter, UserCheck, ChevronDown, ChevronUp, Layers, BarChart3
 } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
+import { useAIRefresh } from '@/hooks/useAIRefresh';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { PageLoader } from '@/components/ui/page-loader';
 import SegmentBuilder from '@/components/admin/marketing/SegmentBuilder';
@@ -64,6 +65,13 @@ export default function Segments() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const getAuthHeaders = () => ({
     'Content-Type': 'application/json',

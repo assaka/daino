@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 
 import ShippingMethodForm from "@/components/admin/shipping/ShippingMethodForm";
 
@@ -112,6 +113,13 @@ export default function ShippingMethodsPage() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();

@@ -23,6 +23,7 @@ import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
 import { queryClient } from '@/config/queryClient';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { PageLoader } from '@/components/ui/page-loader';
+import { useAIRefresh } from '@/hooks/useAIRefresh';
 import StoreLogoUpload from '@/components/admin/StoreLogoUpload';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { COUNTRY_TO_CURRENCY } from '@/utils/countryUtils';
@@ -64,6 +65,13 @@ export default function Settings() {
       loadStore();
     }
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadStore();
+    }
+  });
 
   const loadStore = async () => {
     try {

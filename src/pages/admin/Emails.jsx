@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, Mail, Send, Languages, FileText } from "lucide-reac
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import api from "@/utils/api";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -56,6 +57,14 @@ export default function Emails() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadTemplates();
+      loadPdfTemplates();
+    }
+  });
 
   const loadTemplates = async () => {
     const storeId = getSelectedStoreId();

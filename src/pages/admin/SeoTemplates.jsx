@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { clearSeoTemplatesCache } from "@/utils/cacheUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { PageLoader } from "@/components/ui/page-loader";
 import SeoTemplateForm from "@/components/admin/seo/SeoTemplateForm";
 
@@ -39,6 +40,13 @@ export default function SeoTemplates() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadTemplates();
+    }
+  });
 
   const loadTemplates = async () => {
     const storeId = getSelectedStoreId();

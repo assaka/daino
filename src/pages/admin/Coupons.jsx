@@ -30,6 +30,7 @@ import { formatPrice } from "@/utils/priceUtils";
 
 import CouponForm from "@/components/admin/coupons/CouponForm";
 import FlashMessage from "@/components/storefront/FlashMessage";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -65,6 +66,13 @@ export default function CouponsPage() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();

@@ -13,6 +13,7 @@ import { Plus, Edit, Trash2, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { clearCmsBlocksCache } from "@/utils/cacheUtils";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +48,13 @@ export default function CmsBlocks() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadBlocks();
+    }
+  });
 
   const loadBlocks = async (page = currentPage) => {
     const storeId = getSelectedStoreId();

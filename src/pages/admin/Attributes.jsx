@@ -60,6 +60,7 @@ import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { getAttributeLabel } from "@/utils/attributeUtils";
 
 export default function Attributes() {
@@ -111,6 +112,13 @@ export default function Attributes() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();

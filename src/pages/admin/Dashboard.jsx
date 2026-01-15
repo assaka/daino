@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Added CardDescription
 import { PageLoader } from "@/components/ui/page-loader";
 import { Badge } from "@/components/ui/badge";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { SetupGuide } from '@/components/admin/dashboard/SetupGuide'; // Moved SetupGuide to its own file
 import { ProvisioningIncompleteModal } from '@/components/admin/dashboard/ProvisioningIncompleteModal';
 import { checkStripeConnectStatus } from '@/api/functions';
@@ -107,6 +108,13 @@ export default function Dashboard() {
       checkProvisioningStatus();
     }
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadDashboardData();
+    }
+  });
 
   // Check if provisioning was completed successfully
   const checkProvisioningStatus = async () => {

@@ -17,6 +17,7 @@ import {
   Target, FileText, Zap
 } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
+import { useAIRefresh } from '@/hooks/useAIRefresh';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -74,6 +75,13 @@ export default function Campaigns() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const getAuthHeaders = () => ({
     'Content-Type': 'application/json',

@@ -22,6 +22,7 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import { queryClient } from '@/config/queryClient';
 import { PageLoader } from '@/components/ui/page-loader';
+import { useAIRefresh } from '@/hooks/useAIRefresh';
 import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -176,6 +177,14 @@ export default function ThemeLayout() {
             fetchAvailableThemes();
         }
     }, [selectedStore]);
+
+    // Silently refresh when AI chat performs actions
+    useAIRefresh(() => {
+        if (selectedStore) {
+            loadStore();
+            fetchAvailableThemes();
+        }
+    });
 
     // Fetch available themes (system + store-specific custom themes)
     const fetchAvailableThemes = async () => {

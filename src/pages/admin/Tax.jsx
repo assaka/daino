@@ -32,6 +32,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 
 import TaxForm from "@/components/admin/tax/TaxForm";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -86,6 +87,13 @@ export default function TaxPage() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  });
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();

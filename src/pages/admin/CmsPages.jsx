@@ -30,6 +30,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CmsPageForm from "@/components/admin/cms/CmsPageForm";
 import { getPageTitle } from "@/utils/translationUtils";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { useAIRefresh } from "@/hooks/useAIRefresh";
 import { clearCmsPagesCache } from "@/utils/cacheUtils";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -75,6 +76,13 @@ export default function CmsPages() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  // Silently refresh when AI chat performs actions
+  useAIRefresh(() => {
+    if (selectedStore) {
+      loadPages();
+    }
+  });
 
   const loadPages = async () => {
     const storeId = getSelectedStoreId();
