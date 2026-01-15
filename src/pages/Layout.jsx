@@ -999,7 +999,7 @@ function LayoutInner({ children, currentPageName }) {
         </div>
       </div>
 
-      {/* ASI Assistant Panel - Fixed right sidebar on desktop, floating on mobile */}
+      {/* AI Assistant Panel - Fixed right sidebar on desktop, floating on mobile */}
       {showSidebar && <AdminAssistantPanel />}
 
       </div>

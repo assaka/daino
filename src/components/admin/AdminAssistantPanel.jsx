@@ -276,8 +276,7 @@ const AdminAssistantPanel = ({ className }) => {
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">ASI Assistant</h3>
-                  <p className="text-white/70 text-xs">AI-powered help</p>
+                  <h3 className="text-white font-semibold text-sm">AI Assistant</h3>
                 </div>
               </div>
               <Button
@@ -591,7 +590,7 @@ const AdminAssistantPanel = ({ className }) => {
           className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-b from-blue-600 to-indigo-600 text-white px-1.5 py-4 rounded-l-lg shadow-lg hover:shadow-xl transition-all items-center gap-1 group"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span className="writing-vertical text-xs font-medium">ASI Assistant</span>
+          <span className="writing-vertical text-xs font-medium">AI Assistant</span>
         </button>
       )}
 
@@ -608,7 +607,7 @@ const AdminAssistantPanel = ({ className }) => {
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-xl">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-white" />
-                <h3 className="text-white font-semibold">ASI Assistant</h3>
+                <h3 className="text-white font-semibold">AI Assistant</h3>
               </div>
               <Button
                 variant="ghost"
