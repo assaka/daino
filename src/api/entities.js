@@ -1387,6 +1387,10 @@ class StorePauseAccessService {
       const queryParams = new URLSearchParams(params).toString();
       const url = queryParams ? `${this.endpoint}/${storeId}?${queryParams}` : `${this.endpoint}/${storeId}`;
       const response = await apiClient.get(url);
+      // apiClient auto-extracts arrays from wrapped responses, so handle both cases
+      if (Array.isArray(response)) {
+        return { requests: response, pagination: {} };
+      }
       return response?.data || response || { requests: [], pagination: {} };
     } catch (error) {
       console.error(`StorePauseAccessService.getRequests() error:`, error.message);
