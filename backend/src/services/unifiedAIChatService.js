@@ -25,6 +25,7 @@ const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('./database/ConnectionManager');
 const aiContextService = require('./aiContextService');
 const aiLearningService = require('./aiLearningService');
+const aiEntityService = require('./aiEntityService');
 
 const anthropic = new Anthropic();
 
@@ -448,6 +449,7 @@ const TOOLS = [
 async function buildSystemPrompt(storeId, message) {
   let ragContext = '';
   let learnedExamples = '';
+  let entitySchemas = '';
 
   // Fetch RAG context from ai_context_documents
   try {
@@ -475,6 +477,27 @@ async function buildSystemPrompt(storeId, message) {
     console.error('[UnifiedAI] Failed to load learned examples:', err.message);
   }
 
+  // Fetch entity definitions (database schemas) from ai_entity_definitions
+  try {
+    const entities = await aiEntityService.getEntityDefinitions();
+    if (entities?.length > 0) {
+      // Format key entities for the prompt
+      const keyEntities = entities.filter(e =>
+        ['product', 'category', 'order', 'customer', 'attribute', 'coupon'].includes(e.entity_name)
+      );
+      if (keyEntities.length > 0) {
+        entitySchemas = keyEntities.map(e => {
+          const relatedTables = e.related_tables?.length > 0
+            ? `\n   Related tables: ${e.related_tables.join(', ')}`
+            : '';
+          return `• ${e.entity_name}: table="${e.table_name}"${relatedTables}`;
+        }).join('\n');
+      }
+    }
+  } catch (err) {
+    console.error('[UnifiedAI] Failed to load entity definitions:', err.message);
+  }
+
   return `You are the AI assistant for DainoStore, a visual e-commerce platform.
 
 You have DIRECT DATABASE ACCESS through tools. You EXECUTE actions, not explain them.
@@ -491,7 +514,7 @@ AVAILABLE TOOLS:
 - **Knowledge**: search_knowledge
 - **Stats**: get_store_stats
 - **Translation**: translate_content
-
+${entitySchemas ? `\nDATABASE SCHEMA:\n${entitySchemas}\n` : ''}
 RULES:
 1. USE TOOLS for actionable requests - don't just explain
 2. When updating entities, find them by name/SKU first
@@ -499,7 +522,6 @@ RULES:
 4. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions
 5. If you get a DATABASE ERROR (column not found, etc.), use search_knowledge to look up the correct schema before retrying
 6. NEVER say "technical issues" or generic errors - always explain the specific problem
-4. If something fails, explain why
 
 ${ragContext ? `\nPLATFORM KNOWLEDGE:\n${ragContext}\n` : ''}
 ${learnedExamples ? `\nLEARNED PATTERNS:\n${learnedExamples}\n` : ''}`;
