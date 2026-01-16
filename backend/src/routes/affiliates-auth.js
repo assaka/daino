@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const { masterDbClient } = require('../database/masterConnection');
 const { generateTokenPair } = require('../utils/jwt');
 const masterEmailService = require('../services/master-email-service');
@@ -403,6 +404,148 @@ router.get('/me', async (req, res) => {
       success: false,
       error: 'Failed to get affiliate info'
     });
+  }
+});
+
+/**
+ * POST /api/affiliates/auth/activate
+ * Activate affiliate account for store owners (auto-approved)
+ * Store owners don't need to apply - they just activate
+ */
+router.post('/activate', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+
+    const token = authHeader.substring(7);
+    const { verifyToken } = require('../utils/jwt');
+
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    // Get user info
+    const { data: user, error: userError } = await masterDbClient
+      .from('users')
+      .select('id, email, name')
+      .eq('id', decoded.id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Check if already an affiliate
+    const { data: existingAffiliate } = await masterDbClient
+      .from('affiliates')
+      .select('id, status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existingAffiliate) {
+      return res.status(400).json({
+        success: false,
+        error: 'You already have an affiliate account',
+        data: { status: existingAffiliate.status }
+      });
+    }
+
+    // Also check by email
+    const { data: existingByEmail } = await masterDbClient
+      .from('affiliates')
+      .select('id, status, user_id')
+      .eq('email', user.email)
+      .maybeSingle();
+
+    if (existingByEmail) {
+      // Link existing affiliate to user if not linked
+      if (!existingByEmail.user_id) {
+        await masterDbClient
+          .from('affiliates')
+          .update({ user_id: user.id })
+          .eq('id', existingByEmail.id);
+      }
+      return res.status(400).json({
+        success: false,
+        error: 'An affiliate account with this email already exists',
+        data: { status: existingByEmail.status }
+      });
+    }
+
+    // Get store owner tier (or default tier)
+    const { data: storeOwnerTier } = await masterDbClient
+      .from('affiliate_tiers')
+      .select('id')
+      .eq('code', 'store_owner')
+      .maybeSingle();
+
+    const { data: defaultTier } = await masterDbClient
+      .from('affiliate_tiers')
+      .select('id')
+      .eq('is_default', true)
+      .maybeSingle();
+
+    // Generate referral code from name
+    const nameParts = (user.name || user.email.split('@')[0]).split(' ');
+    const firstName = nameParts[0] || 'User';
+    const lastName = nameParts[1] || '';
+    const base = `${firstName}${lastName}`.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    let referralCode = `${base}${random}`;
+
+    // Ensure unique
+    const { data: codeCheck } = await masterDbClient
+      .from('affiliates')
+      .select('id')
+      .eq('referral_code', referralCode)
+      .maybeSingle();
+
+    if (codeCheck) {
+      referralCode = `${base}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    }
+
+    // Create affiliate account - auto-approved for store owners
+    const { data: affiliate, error: createError } = await masterDbClient
+      .from('affiliates')
+      .insert({
+        id: uuidv4(),
+        user_id: user.id,
+        email: user.email,
+        first_name: firstName,
+        last_name: lastName || firstName,
+        affiliate_type: 'business',
+        tier_id: storeOwnerTier?.id || defaultTier?.id,
+        referral_code: referralCode,
+        status: 'approved', // Auto-approved for store owners
+        is_store_owner_affiliate: true,
+        reward_type: 'commission', // Default to commission
+        approved_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('*, affiliate_tiers(name, code, commission_rate)')
+      .single();
+
+    if (createError) {
+      console.error('Create affiliate error:', createError);
+      return res.status(500).json({ success: false, error: 'Failed to activate affiliate account' });
+    }
+
+    console.log(`[AFFILIATE] Store owner ${user.email} activated as affiliate: ${affiliate.id}`);
+
+    res.json({
+      success: true,
+      message: 'Affiliate account activated successfully!',
+      data: affiliate
+    });
+  } catch (error) {
+    console.error('Activate affiliate error:', error);
+    res.status(500).json({ success: false, error: 'Failed to activate affiliate account' });
   }
 });
 

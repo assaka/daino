@@ -52,6 +52,7 @@ export default function AdminAffiliate() {
   const [requestingPayout, setRequestingPayout] = useState(false);
   const [updatingRewardType, setUpdatingRewardType] = useState(false);
   const [claimingCredits, setClaimingCredits] = useState(false);
+  const [activating, setActivating] = useState(false);
 
   useEffect(() => {
     loadAffiliateData();
@@ -172,6 +173,24 @@ export default function AdminAffiliate() {
     }
   };
 
+  const handleActivateAffiliate = async () => {
+    try {
+      setActivating(true);
+      const response = await apiClient.post('/affiliates/auth/activate');
+
+      if (response.success) {
+        toast.success('Affiliate account activated!');
+        loadAffiliateData(); // Refresh to show dashboard
+      } else {
+        toast.error(response.error || 'Failed to activate affiliate account');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to activate affiliate account');
+    } finally {
+      setActivating(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const variants = {
       pending: { variant: 'secondary', icon: Clock, label: 'Pending' },
@@ -258,12 +277,17 @@ export default function AdminAffiliate() {
             </div>
 
             <div className="text-center">
-              <Button asChild size="lg">
-                <Link to="/affiliate/apply">
-                  Apply to Become an Affiliate
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+              <Button
+                size="lg"
+                onClick={handleActivateAffiliate}
+                disabled={activating}
+              >
+                {activating ? 'Activating...' : 'Activate Affiliate Account'}
+                {!activating && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
+              <p className="text-xs text-gray-500 mt-2">
+                Instant activation - no application needed
+              </p>
             </div>
           </CardContent>
         </Card>
