@@ -461,6 +461,356 @@ const TOOLS = [
   },
 
   // ═══════════════════════════════════════════════════════════════
+  // CMS PAGES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_cms_pages",
+    description: "List all CMS pages (About, Contact, Terms, etc.).",
+    input_schema: {
+      type: "object",
+      properties: {
+        include_inactive: { type: "boolean", description: "Include inactive pages" }
+      }
+    }
+  },
+  {
+    name: "create_cms_page",
+    description: "Create a new CMS page.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Page title" },
+        slug: { type: "string", description: "URL slug (auto-generated if not provided)" },
+        content: { type: "string", description: "Page content (HTML)" },
+        is_active: { type: "boolean", description: "Page active status (default true)" }
+      },
+      required: ["title", "content"]
+    }
+  },
+  {
+    name: "update_cms_page",
+    description: "Update a CMS page by title or slug.",
+    input_schema: {
+      type: "object",
+      properties: {
+        page: { type: "string", description: "Page title or slug to find" },
+        updates: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            content: { type: "string" },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["page", "updates"]
+    }
+  },
+  {
+    name: "delete_cms_page",
+    description: "Delete a CMS page by title or slug.",
+    input_schema: {
+      type: "object",
+      properties: {
+        page: { type: "string", description: "Page title or slug to delete" }
+      },
+      required: ["page"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // CMS BLOCKS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_cms_blocks",
+    description: "List all CMS blocks (reusable content snippets).",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "create_cms_block",
+    description: "Create a new CMS block.",
+    input_schema: {
+      type: "object",
+      properties: {
+        identifier: { type: "string", description: "Block identifier/code" },
+        title: { type: "string", description: "Block title" },
+        content: { type: "string", description: "Block content (HTML)" },
+        is_active: { type: "boolean", description: "Block active status (default true)" }
+      },
+      required: ["identifier", "title", "content"]
+    }
+  },
+  {
+    name: "update_cms_block",
+    description: "Update a CMS block by identifier or title.",
+    input_schema: {
+      type: "object",
+      properties: {
+        block: { type: "string", description: "Block identifier or title" },
+        updates: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            content: { type: "string" },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["block", "updates"]
+    }
+  },
+  {
+    name: "delete_cms_block",
+    description: "Delete a CMS block by identifier.",
+    input_schema: {
+      type: "object",
+      properties: {
+        block: { type: "string", description: "Block identifier or title" }
+      },
+      required: ["block"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PRODUCT LABELS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_product_labels",
+    description: "List all product labels/badges (Sale, New, etc.).",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "create_product_label",
+    description: "Create a new product label/badge.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Label name" },
+        text: { type: "string", description: "Display text on label" },
+        color: { type: "string", description: "Text color (hex)" },
+        background_color: { type: "string", description: "Background color (hex)" },
+        position: { type: "string", enum: ["top-left", "top-right", "bottom-left", "bottom-right"], description: "Label position on product image" }
+      },
+      required: ["name", "text"]
+    }
+  },
+  {
+    name: "update_product_label",
+    description: "Update a product label.",
+    input_schema: {
+      type: "object",
+      properties: {
+        label: { type: "string", description: "Label name to find" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            text: { type: "string" },
+            color: { type: "string" },
+            background_color: { type: "string" },
+            position: { type: "string", enum: ["top-left", "top-right", "bottom-left", "bottom-right"] },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["label", "updates"]
+    }
+  },
+  {
+    name: "delete_product_label",
+    description: "Delete a product label.",
+    input_schema: {
+      type: "object",
+      properties: {
+        label: { type: "string", description: "Label name to delete" }
+      },
+      required: ["label"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SHIPPING METHODS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_shipping_methods",
+    description: "List all shipping methods.",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "create_shipping_method",
+    description: "Create a new shipping method.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Shipping method code (e.g., 'standard', 'express')" },
+        name: { type: "string", description: "Display name" },
+        price: { type: "number", description: "Shipping price" },
+        min_order_amount: { type: "number", description: "Minimum order for this method" },
+        estimated_days: { type: "string", description: "Estimated delivery (e.g., '3-5 days')" }
+      },
+      required: ["code", "name", "price"]
+    }
+  },
+  {
+    name: "update_shipping_method",
+    description: "Update a shipping method.",
+    input_schema: {
+      type: "object",
+      properties: {
+        method: { type: "string", description: "Shipping method code or name" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            price: { type: "number" },
+            min_order_amount: { type: "number" },
+            estimated_days: { type: "string" },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["method", "updates"]
+    }
+  },
+  {
+    name: "delete_shipping_method",
+    description: "Delete a shipping method.",
+    input_schema: {
+      type: "object",
+      properties: {
+        method: { type: "string", description: "Shipping method code or name" }
+      },
+      required: ["method"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PAYMENT METHODS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_payment_methods",
+    description: "List all payment methods.",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "update_payment_method",
+    description: "Update a payment method (enable/disable, update settings).",
+    input_schema: {
+      type: "object",
+      properties: {
+        method: { type: "string", description: "Payment method code or name" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            is_active: { type: "boolean" },
+            sort_order: { type: "number" }
+          }
+        }
+      },
+      required: ["method", "updates"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // EMAIL TEMPLATES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_email_templates",
+    description: "List all email templates (order confirmation, shipping, etc.).",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "update_email_template",
+    description: "Update an email template.",
+    input_schema: {
+      type: "object",
+      properties: {
+        template: { type: "string", description: "Template code or name (e.g., 'order_confirmation')" },
+        updates: {
+          type: "object",
+          properties: {
+            subject: { type: "string" },
+            content: { type: "string" },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["template", "updates"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // TAXES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_taxes",
+    description: "List all tax configurations.",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "create_tax",
+    description: "Create a new tax configuration.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Tax name (e.g., 'VAT', 'Sales Tax')" },
+        rate: { type: "number", description: "Tax rate percentage (e.g., 21 for 21%)" },
+        country_code: { type: "string", description: "Country code (e.g., 'US', 'NL')" }
+      },
+      required: ["name", "rate"]
+    }
+  },
+  {
+    name: "update_tax",
+    description: "Update a tax configuration.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tax: { type: "string", description: "Tax name to find" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            rate: { type: "number" },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["tax", "updates"]
+    }
+  },
+  {
+    name: "delete_tax",
+    description: "Delete a tax configuration.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tax: { type: "string", description: "Tax name to delete" }
+      },
+      required: ["tax"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
   // STORE SETTINGS
   // ═══════════════════════════════════════════════════════════════
   {
@@ -690,10 +1040,17 @@ You have DIRECT DATABASE ACCESS through tools. You EXECUTE actions, not explain 
 AVAILABLE TOOLS:
 - **Products**: list_products, update_product, create_product, delete_product
 - **Categories**: list_categories, update_category, set_category_visible, set_category_hidden, create_category, delete_category, add_product_to_category, remove_product_from_category
-- **Attributes**: list_attributes, create_attribute, delete_attribute
+- **Attributes**: list_attributes, create_attribute, update_attribute, delete_attribute
 - **Orders**: list_orders, update_order_status
 - **Customers**: list_customers
 - **Coupons**: list_coupons, create_coupon, delete_coupon
+- **CMS Pages**: list_cms_pages, create_cms_page, update_cms_page, delete_cms_page
+- **CMS Blocks**: list_cms_blocks, create_cms_block, update_cms_block, delete_cms_block
+- **Product Labels**: list_product_labels, create_product_label, update_product_label, delete_product_label
+- **Shipping**: list_shipping_methods, create_shipping_method, update_shipping_method, delete_shipping_method
+- **Payments**: list_payment_methods, update_payment_method
+- **Email Templates**: list_email_templates, update_email_template
+- **Taxes**: list_taxes, create_tax, update_tax, delete_tax
 - **Settings**: get_store_settings, update_store_setting, update_stock_settings, update_display_settings, update_category_settings, update_checkout_settings, update_navigation_settings, update_gallery_settings
 - **Layout**: modify_slot
 - **Knowledge**: search_knowledge
@@ -807,6 +1164,92 @@ async function executeTool(name, input, context) {
         break;
       case 'delete_coupon':
         result = await deleteCoupon(input, storeId);
+        break;
+
+      // CMS Page tools
+      case 'list_cms_pages':
+        result = await listCmsPages(input, storeId);
+        break;
+      case 'create_cms_page':
+        result = await createCmsPage(input, storeId);
+        break;
+      case 'update_cms_page':
+        result = await updateCmsPage(input, storeId);
+        break;
+      case 'delete_cms_page':
+        result = await deleteCmsPage(input, storeId);
+        break;
+
+      // CMS Block tools
+      case 'list_cms_blocks':
+        result = await listCmsBlocks(storeId);
+        break;
+      case 'create_cms_block':
+        result = await createCmsBlock(input, storeId);
+        break;
+      case 'update_cms_block':
+        result = await updateCmsBlock(input, storeId);
+        break;
+      case 'delete_cms_block':
+        result = await deleteCmsBlock(input, storeId);
+        break;
+
+      // Product Label tools
+      case 'list_product_labels':
+        result = await listProductLabels(storeId);
+        break;
+      case 'create_product_label':
+        result = await createProductLabel(input, storeId);
+        break;
+      case 'update_product_label':
+        result = await updateProductLabel(input, storeId);
+        break;
+      case 'delete_product_label':
+        result = await deleteProductLabel(input, storeId);
+        break;
+
+      // Shipping Method tools
+      case 'list_shipping_methods':
+        result = await listShippingMethods(storeId);
+        break;
+      case 'create_shipping_method':
+        result = await createShippingMethod(input, storeId);
+        break;
+      case 'update_shipping_method':
+        result = await updateShippingMethod(input, storeId);
+        break;
+      case 'delete_shipping_method':
+        result = await deleteShippingMethod(input, storeId);
+        break;
+
+      // Payment Method tools
+      case 'list_payment_methods':
+        result = await listPaymentMethods(storeId);
+        break;
+      case 'update_payment_method':
+        result = await updatePaymentMethod(input, storeId);
+        break;
+
+      // Email Template tools
+      case 'list_email_templates':
+        result = await listEmailTemplates(storeId);
+        break;
+      case 'update_email_template':
+        result = await updateEmailTemplate(input, storeId);
+        break;
+
+      // Tax tools
+      case 'list_taxes':
+        result = await listTaxes(storeId);
+        break;
+      case 'create_tax':
+        result = await createTax(input, storeId);
+        break;
+      case 'update_tax':
+        result = await updateTax(input, storeId);
+        break;
+      case 'delete_tax':
+        result = await deleteTax(input, storeId);
         break;
 
       // Settings tools
@@ -1147,20 +1590,26 @@ async function updateProduct({ product, updates }, storeId) {
     }
   }
 
-  // Update product_translations table (name, description)
+  // Update product_translations table (name, description) - UPSERT
   if (newName !== undefined || newDescription !== undefined) {
-    const translationUpdates = {};
-    if (newName !== undefined) translationUpdates.name = newName;
-    if (newDescription !== undefined) translationUpdates.description = newDescription;
+    const translationData = {
+      product_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (newName !== undefined) translationData.name = newName;
+    if (newDescription !== undefined) translationData.description = newDescription;
 
+    // Use upsert to insert or update
     const { error: transError } = await db
       .from('product_translations')
-      .update(translationUpdates)
-      .eq('product_id', found.id)
-      .eq('language_code', 'en');
+      .upsert(translationData, {
+        onConflict: 'product_id,language_code',
+        ignoreDuplicates: false
+      });
 
     if (transError) {
-      console.log('   [updateProduct] Translation update error:', transError);
+      console.log('   [updateProduct] Translation upsert error:', transError);
       return { error: transError.message };
     }
   }
@@ -1306,17 +1755,22 @@ async function updateCategory({ category, updates }, storeId) {
     if (error) return { error: error.message };
   }
 
-  // Update category_translations table (name, description)
+  // Update category_translations table (name, description) - UPSERT
   if (newName !== undefined || newDescription !== undefined) {
-    const translationUpdates = {};
-    if (newName !== undefined) translationUpdates.name = newName;
-    if (newDescription !== undefined) translationUpdates.description = newDescription;
+    const translationData = {
+      category_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (newName !== undefined) translationData.name = newName;
+    if (newDescription !== undefined) translationData.description = newDescription;
 
     const { error: transError } = await db
       .from('category_translations')
-      .update(translationUpdates)
-      .eq('category_id', found.id)
-      .eq('language_code', 'en');
+      .upsert(translationData, {
+        onConflict: 'category_id,language_code',
+        ignoreDuplicates: false
+      });
 
     if (transError) return { error: transError.message };
   }
@@ -1838,6 +2292,767 @@ async function deleteCoupon({ code }, storeId) {
     success: true,
     message: `Deleted coupon "${code}"`,
     refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CMS PAGE TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listCmsPages({ include_inactive = false }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  let query = db.from('cms_pages').select('id, slug, is_active, created_at');
+  if (!include_inactive) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data: pages, error } = await query.order('created_at', { ascending: false }).limit(50);
+  if (error) return { error: error.message };
+
+  // Get translations
+  const pageIds = (pages || []).map(p => p.id);
+  const { data: translations } = await db
+    .from('cms_page_translations')
+    .select('cms_page_id, title')
+    .in('cms_page_id', pageIds)
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.cms_page_id, t.title]) || []);
+
+  return {
+    pages: pages.map(p => ({
+      id: p.id,
+      slug: p.slug,
+      title: transMap.get(p.id) || p.slug,
+      is_active: p.is_active
+    })),
+    count: pages.length
+  };
+}
+
+async function createCmsPage({ title, slug, content, is_active = true }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const generatedSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  const { data: created, error } = await db
+    .from('cms_pages')
+    .insert({ slug: generatedSlug, is_active })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  // Insert translation
+  await db.from('cms_page_translations').insert({
+    cms_page_id: created.id,
+    language_code: 'en',
+    title,
+    content: content || ''
+  });
+
+  return {
+    success: true,
+    message: `Created CMS page "${title}" (/${generatedSlug})`,
+    page: { id: created.id, slug: generatedSlug, title },
+    refreshPreview: true,
+    action: 'create'
+  };
+}
+
+async function updateCmsPage({ page, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find by slug or title
+  const { data: pages } = await db
+    .from('cms_pages')
+    .select('id, slug, is_active');
+
+  const { data: translations } = await db
+    .from('cms_page_translations')
+    .select('cms_page_id, title')
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.cms_page_id, t.title]) || []);
+
+  const found = pages?.find(p =>
+    p.slug.toLowerCase() === page.toLowerCase() ||
+    (transMap.get(p.id) || '').toLowerCase() === page.toLowerCase()
+  );
+
+  if (!found) return { error: `CMS page "${page}" not found` };
+
+  // Update cms_pages table
+  if (updates.is_active !== undefined) {
+    await db.from('cms_pages').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+  }
+
+  // Update translations - UPSERT
+  if (updates.title !== undefined || updates.content !== undefined) {
+    const translationData = {
+      cms_page_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (updates.title !== undefined) translationData.title = updates.title;
+    if (updates.content !== undefined) translationData.content = updates.content;
+
+    await db.from('cms_page_translations').upsert(translationData, {
+      onConflict: 'cms_page_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated CMS page "${transMap.get(found.id) || found.slug}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+async function deleteCmsPage({ page }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: pages } = await db.from('cms_pages').select('id, slug');
+  const { data: translations } = await db.from('cms_page_translations').select('cms_page_id, title').eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.cms_page_id, t.title]) || []);
+  const found = pages?.find(p =>
+    p.slug.toLowerCase() === page.toLowerCase() ||
+    (transMap.get(p.id) || '').toLowerCase() === page.toLowerCase()
+  );
+
+  if (!found) return { error: `CMS page "${page}" not found` };
+
+  await db.from('cms_page_translations').delete().eq('cms_page_id', found.id);
+  await db.from('cms_pages').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted CMS page "${transMap.get(found.id) || found.slug}"`,
+    refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CMS BLOCK TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listCmsBlocks(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: blocks, error } = await db
+    .from('cms_blocks')
+    .select('id, identifier, is_active')
+    .order('identifier')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  const blockIds = (blocks || []).map(b => b.id);
+  const { data: translations } = await db
+    .from('cms_block_translations')
+    .select('cms_block_id, title')
+    .in('cms_block_id', blockIds)
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.cms_block_id, t.title]) || []);
+
+  return {
+    blocks: blocks.map(b => ({
+      id: b.id,
+      identifier: b.identifier,
+      title: transMap.get(b.id) || b.identifier,
+      is_active: b.is_active
+    })),
+    count: blocks.length
+  };
+}
+
+async function createCmsBlock({ identifier, title, content, is_active = true }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: created, error } = await db
+    .from('cms_blocks')
+    .insert({ identifier, is_active })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  await db.from('cms_block_translations').insert({
+    cms_block_id: created.id,
+    language_code: 'en',
+    title,
+    content: content || ''
+  });
+
+  return {
+    success: true,
+    message: `Created CMS block "${title}" (${identifier})`,
+    block: { id: created.id, identifier, title },
+    refreshPreview: true,
+    action: 'create'
+  };
+}
+
+async function updateCmsBlock({ block, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: blocks } = await db.from('cms_blocks').select('id, identifier, is_active');
+  const { data: translations } = await db.from('cms_block_translations').select('cms_block_id, title').eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.cms_block_id, t.title]) || []);
+  const found = blocks?.find(b =>
+    b.identifier.toLowerCase() === block.toLowerCase() ||
+    (transMap.get(b.id) || '').toLowerCase() === block.toLowerCase()
+  );
+
+  if (!found) return { error: `CMS block "${block}" not found` };
+
+  if (updates.is_active !== undefined) {
+    await db.from('cms_blocks').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+  }
+
+  if (updates.title !== undefined || updates.content !== undefined) {
+    const translationData = {
+      cms_block_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (updates.title !== undefined) translationData.title = updates.title;
+    if (updates.content !== undefined) translationData.content = updates.content;
+
+    await db.from('cms_block_translations').upsert(translationData, {
+      onConflict: 'cms_block_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated CMS block "${transMap.get(found.id) || found.identifier}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+async function deleteCmsBlock({ block }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: blocks } = await db.from('cms_blocks').select('id, identifier');
+  const found = blocks?.find(b => b.identifier.toLowerCase() === block.toLowerCase());
+
+  if (!found) return { error: `CMS block "${block}" not found` };
+
+  await db.from('cms_block_translations').delete().eq('cms_block_id', found.id);
+  await db.from('cms_blocks').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted CMS block "${found.identifier}"`,
+    refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCT LABEL TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listProductLabels(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: labels, error } = await db
+    .from('product_labels')
+    .select('id, name, slug, text, color, background_color, position, is_active')
+    .order('priority', { ascending: false })
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  return { labels: labels || [], count: labels?.length || 0 };
+}
+
+async function createProductLabel({ name, text, color = '#FFFFFF', background_color = '#FF0000', position = 'top-left' }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  const { data: created, error } = await db
+    .from('product_labels')
+    .insert({
+      name,
+      slug,
+      text,
+      color,
+      background_color,
+      position,
+      is_active: true
+    })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: `Created product label "${name}" with text "${text}"`,
+    label: { id: created.id, name, text },
+    refreshPreview: true,
+    action: 'create'
+  };
+}
+
+async function updateProductLabel({ label, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: labels } = await db.from('product_labels').select('id, name, slug');
+  const found = labels?.find(l =>
+    l.name.toLowerCase() === label.toLowerCase() ||
+    l.slug.toLowerCase() === label.toLowerCase()
+  );
+
+  if (!found) return { error: `Product label "${label}" not found` };
+
+  const updateData = { updated_at: new Date().toISOString() };
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.text !== undefined) updateData.text = updates.text;
+  if (updates.color !== undefined) updateData.color = updates.color;
+  if (updates.background_color !== undefined) updateData.background_color = updates.background_color;
+  if (updates.position !== undefined) updateData.position = updates.position;
+  if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
+
+  await db.from('product_labels').update(updateData).eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Updated product label "${found.name}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+async function deleteProductLabel({ label }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: labels } = await db.from('product_labels').select('id, name');
+  const found = labels?.find(l => l.name.toLowerCase() === label.toLowerCase());
+
+  if (!found) return { error: `Product label "${label}" not found` };
+
+  await db.from('product_labels').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted product label "${found.name}"`,
+    refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHIPPING METHOD TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listShippingMethods(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: methods, error } = await db
+    .from('shipping_methods')
+    .select('id, code, price, min_order_amount, is_active, sort_order')
+    .order('sort_order')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  const methodIds = (methods || []).map(m => m.id);
+  const { data: translations } = await db
+    .from('shipping_method_translations')
+    .select('shipping_method_id, name, description')
+    .in('shipping_method_id', methodIds)
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.shipping_method_id, { name: t.name, description: t.description }]) || []);
+
+  return {
+    methods: methods.map(m => ({
+      id: m.id,
+      code: m.code,
+      name: transMap.get(m.id)?.name || m.code,
+      price: m.price,
+      min_order_amount: m.min_order_amount,
+      is_active: m.is_active
+    })),
+    count: methods.length
+  };
+}
+
+async function createShippingMethod({ code, name, price, min_order_amount = 0, estimated_days }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: created, error } = await db
+    .from('shipping_methods')
+    .insert({
+      code,
+      price,
+      min_order_amount,
+      is_active: true
+    })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  await db.from('shipping_method_translations').insert({
+    shipping_method_id: created.id,
+    language_code: 'en',
+    name,
+    description: estimated_days || ''
+  });
+
+  return {
+    success: true,
+    message: `Created shipping method "${name}" ($${price})`,
+    method: { id: created.id, code, name, price },
+    refreshPreview: true,
+    action: 'create'
+  };
+}
+
+async function updateShippingMethod({ method, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: methods } = await db.from('shipping_methods').select('id, code');
+  const { data: translations } = await db.from('shipping_method_translations').select('shipping_method_id, name').eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.shipping_method_id, t.name]) || []);
+  const found = methods?.find(m =>
+    m.code.toLowerCase() === method.toLowerCase() ||
+    (transMap.get(m.id) || '').toLowerCase() === method.toLowerCase()
+  );
+
+  if (!found) return { error: `Shipping method "${method}" not found` };
+
+  const methodUpdates = { updated_at: new Date().toISOString() };
+  if (updates.price !== undefined) methodUpdates.price = updates.price;
+  if (updates.min_order_amount !== undefined) methodUpdates.min_order_amount = updates.min_order_amount;
+  if (updates.is_active !== undefined) methodUpdates.is_active = updates.is_active;
+
+  if (Object.keys(methodUpdates).length > 1) {
+    await db.from('shipping_methods').update(methodUpdates).eq('id', found.id);
+  }
+
+  if (updates.name !== undefined || updates.estimated_days !== undefined) {
+    const translationData = {
+      shipping_method_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (updates.name !== undefined) translationData.name = updates.name;
+    if (updates.estimated_days !== undefined) translationData.description = updates.estimated_days;
+
+    await db.from('shipping_method_translations').upsert(translationData, {
+      onConflict: 'shipping_method_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated shipping method "${transMap.get(found.id) || found.code}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+async function deleteShippingMethod({ method }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: methods } = await db.from('shipping_methods').select('id, code');
+  const found = methods?.find(m => m.code.toLowerCase() === method.toLowerCase());
+
+  if (!found) return { error: `Shipping method "${method}" not found` };
+
+  await db.from('shipping_method_translations').delete().eq('shipping_method_id', found.id);
+  await db.from('shipping_methods').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted shipping method "${found.code}"`,
+    refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAYMENT METHOD TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listPaymentMethods(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: methods, error } = await db
+    .from('payment_methods')
+    .select('id, code, is_active, sort_order')
+    .order('sort_order')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  const methodIds = (methods || []).map(m => m.id);
+  const { data: translations } = await db
+    .from('payment_method_translations')
+    .select('payment_method_id, name')
+    .in('payment_method_id', methodIds)
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.payment_method_id, t.name]) || []);
+
+  return {
+    methods: methods.map(m => ({
+      id: m.id,
+      code: m.code,
+      name: transMap.get(m.id) || m.code,
+      is_active: m.is_active
+    })),
+    count: methods.length
+  };
+}
+
+async function updatePaymentMethod({ method, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: methods } = await db.from('payment_methods').select('id, code');
+  const { data: translations } = await db.from('payment_method_translations').select('payment_method_id, name').eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.payment_method_id, t.name]) || []);
+  const found = methods?.find(m =>
+    m.code.toLowerCase() === method.toLowerCase() ||
+    (transMap.get(m.id) || '').toLowerCase() === method.toLowerCase()
+  );
+
+  if (!found) return { error: `Payment method "${method}" not found` };
+
+  if (updates.is_active !== undefined || updates.sort_order !== undefined) {
+    const methodUpdates = { updated_at: new Date().toISOString() };
+    if (updates.is_active !== undefined) methodUpdates.is_active = updates.is_active;
+    if (updates.sort_order !== undefined) methodUpdates.sort_order = updates.sort_order;
+    await db.from('payment_methods').update(methodUpdates).eq('id', found.id);
+  }
+
+  if (updates.name !== undefined) {
+    await db.from('payment_method_translations').upsert({
+      payment_method_id: found.id,
+      language_code: 'en',
+      name: updates.name,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'payment_method_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated payment method "${transMap.get(found.id) || found.code}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EMAIL TEMPLATE TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listEmailTemplates(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: templates, error } = await db
+    .from('email_templates')
+    .select('id, code, is_active')
+    .order('code')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  const templateIds = (templates || []).map(t => t.id);
+  const { data: translations } = await db
+    .from('email_template_translations')
+    .select('email_template_id, subject')
+    .in('email_template_id', templateIds)
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.email_template_id, t.subject]) || []);
+
+  return {
+    templates: templates.map(t => ({
+      id: t.id,
+      code: t.code,
+      subject: transMap.get(t.id) || t.code,
+      is_active: t.is_active
+    })),
+    count: templates.length
+  };
+}
+
+async function updateEmailTemplate({ template, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: templates } = await db.from('email_templates').select('id, code');
+  const found = templates?.find(t => t.code.toLowerCase() === template.toLowerCase());
+
+  if (!found) return { error: `Email template "${template}" not found` };
+
+  if (updates.is_active !== undefined) {
+    await db.from('email_templates').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+  }
+
+  if (updates.subject !== undefined || updates.content !== undefined) {
+    const translationData = {
+      email_template_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (updates.subject !== undefined) translationData.subject = updates.subject;
+    if (updates.content !== undefined) translationData.content = updates.content;
+
+    await db.from('email_template_translations').upsert(translationData, {
+      onConflict: 'email_template_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated email template "${found.code}"`,
+    action: 'update'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAX TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listTaxes(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: taxes, error } = await db
+    .from('taxes')
+    .select('id, rate, country_code, is_active')
+    .order('rate')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  const taxIds = (taxes || []).map(t => t.id);
+  const { data: translations } = await db
+    .from('tax_translations')
+    .select('tax_id, name')
+    .in('tax_id', taxIds)
+    .eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.tax_id, t.name]) || []);
+
+  return {
+    taxes: taxes.map(t => ({
+      id: t.id,
+      name: transMap.get(t.id) || `Tax ${t.rate}%`,
+      rate: t.rate,
+      country_code: t.country_code,
+      is_active: t.is_active
+    })),
+    count: taxes.length
+  };
+}
+
+async function createTax({ name, rate, country_code }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: created, error } = await db
+    .from('taxes')
+    .insert({
+      rate,
+      country_code: country_code || null,
+      is_active: true
+    })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  await db.from('tax_translations').insert({
+    tax_id: created.id,
+    language_code: 'en',
+    name
+  });
+
+  return {
+    success: true,
+    message: `Created tax "${name}" (${rate}%)`,
+    tax: { id: created.id, name, rate },
+    action: 'create'
+  };
+}
+
+async function updateTax({ tax, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: taxes } = await db.from('taxes').select('id, rate');
+  const { data: translations } = await db.from('tax_translations').select('tax_id, name').eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.tax_id, t.name]) || []);
+  const found = taxes?.find(t => (transMap.get(t.id) || '').toLowerCase() === tax.toLowerCase());
+
+  if (!found) return { error: `Tax "${tax}" not found` };
+
+  if (updates.rate !== undefined || updates.is_active !== undefined) {
+    const taxUpdates = { updated_at: new Date().toISOString() };
+    if (updates.rate !== undefined) taxUpdates.rate = updates.rate;
+    if (updates.is_active !== undefined) taxUpdates.is_active = updates.is_active;
+    await db.from('taxes').update(taxUpdates).eq('id', found.id);
+  }
+
+  if (updates.name !== undefined) {
+    await db.from('tax_translations').upsert({
+      tax_id: found.id,
+      language_code: 'en',
+      name: updates.name,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'tax_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated tax "${transMap.get(found.id)}"`,
+    action: 'update'
+  };
+}
+
+async function deleteTax({ tax }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: taxes } = await db.from('taxes').select('id');
+  const { data: translations } = await db.from('tax_translations').select('tax_id, name').eq('language_code', 'en');
+
+  const transMap = new Map(translations?.map(t => [t.tax_id, t.name]) || []);
+  const found = taxes?.find(t => (transMap.get(t.id) || '').toLowerCase() === tax.toLowerCase());
+
+  if (!found) return { error: `Tax "${tax}" not found` };
+
+  await db.from('tax_translations').delete().eq('tax_id', found.id);
+  await db.from('taxes').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted tax "${transMap.get(found.id)}"`,
     action: 'delete'
   };
 }
