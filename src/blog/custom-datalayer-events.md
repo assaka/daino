@@ -43,7 +43,7 @@ DainoStore automatically manages the dataLayer for you, pushing events when cust
 
 ## Built-in Events (Always Active)
 
-DainoStore automatically tracks **24 e-commerce events**. These are always active and follow Google's Enhanced Ecommerce (GA4) specification:
+DainoStore automatically tracks **32 e-commerce events**. These are always active and follow Google's Enhanced Ecommerce (GA4) specification:
 
 ### Core Ecommerce Events (10 events)
 
@@ -58,7 +58,7 @@ DainoStore automatically tracks **24 e-commerce events**. These are always activ
 | `view_cart` | Cart page viewed | `currency`, `value`, `items[]` with all cart products |
 | `begin_checkout` | Checkout initiated | `currency`, `value`, `items[]` with cart products |
 | `purchase` | Order completed | `transaction_id`, `value`, `tax`, `shipping`, `currency`, `coupon`, `items[]` |
-| `search` | Product search performed | `search_term`, `results_count`, `filters` |
+| `search` | Product search performed | `search_term`, `search_results`, `search_filters`, `ecommerce.items[]` |
 
 ### Checkout Funnel Events (4 events)
 
@@ -85,6 +85,21 @@ DainoStore automatically tracks **24 e-commerce events**. These are always activ
 | `coupon_applied` | Coupon successfully applied | `coupon_code`, `discount_amount`, `cart_total` |
 | `coupon_removed` | Coupon removed from cart | `coupon_code`, `cart_total` |
 
+### UI Interaction Events (4 events)
+
+| Event | When It Fires | Data Included |
+|-------|--------------|---------------|
+| `wishlist_open` | Wishlist dropdown opened | `items_count`, `items[]` with product data |
+| `remove_from_wishlist` | Product removed from wishlist | `currency`, `value`, `items[]` with product data |
+| `minicart_open` | Mini cart dropdown opened | `currency`, `value`, `items_count`, `items[]` |
+| `country_change` | Country/locale switched | `previous_country`, `new_country` |
+
+### Consent Events (1 event)
+
+| Event | When It Fires | Data Included |
+|-------|--------------|---------------|
+| `consent_update` | Cookie consent accepted/rejected | `consent_given`, `consent_method`, `categories_accepted`, `country_code`, `is_gdpr_country` |
+
 ### Other Events (2 events)
 
 | Event | When It Fires | Data Included |
@@ -92,24 +107,29 @@ DainoStore automatically tracks **24 e-commerce events**. These are always activ
 | `newsletter_signup` | Newsletter form submitted | `signup_source` (e.g., "footer", "popup") |
 | `filter_applied` | Product filter used | `filter_type`, `filter_value`, `results_count` |
 
-### Customer Events (2 events)
+### Customer Events (5 events)
 
 | Event | When It Fires | Data Included |
 |-------|--------------|---------------|
-| `login` | Customer logs in | `method` (email, google, facebook), `customer_id` |
-| `sign_up` | Customer registers | `method` (email, google, facebook), `customer_id` |
+| `login` | Customer logs in | `method` (email, google), `customer_id` |
+| `sign_up` | Customer registers | `method` (email, google), `customer_id` |
+| `sign_out` | Customer logs out | - |
+| `email_verify` | Email verification page visited | `email` |
+| `email_verified` | Email verification successful | `email` |
 
 ### Complete Event Reference
 
-All 24 built-in events at a glance:
+All 32 built-in events at a glance:
 
 ```
 page_view              view_item              view_item_list         select_item
 add_to_cart            remove_from_cart       view_cart              begin_checkout
 add_shipping_info      add_payment_info       checkout_progress      delivery_date_selected
-purchase               search                 add_to_wishlist        view_promotion
-select_promotion       quick_view             coupon_applied         coupon_removed
-newsletter_signup      filter_applied         login                  sign_up
+purchase               search                 add_to_wishlist        remove_from_wishlist
+view_promotion         select_promotion       quick_view             coupon_applied
+coupon_removed         newsletter_signup      filter_applied         login
+sign_up                sign_out               email_verify           email_verified
+wishlist_open          minicart_open          country_change         consent_update
 ```
 
 All events are automatically pushed to `window.dataLayer` and tracked in customer activity logs for analytics reporting.
@@ -148,16 +168,26 @@ window.daino.trackPurchase(order)
 // Customer tracking
 window.daino.trackCustomerLogin(customerId, method)
 window.daino.trackCustomerRegistration(customerId, method)
+window.daino.trackSignOut()
+window.daino.trackEmailVerify(email)
+window.daino.trackEmailVerified(email)
 
 // Engagement tracking
 window.daino.trackAddToWishlist(product)
-window.daino.trackSearch(query, resultsCount, filters)
+window.daino.trackRemoveFromWishlist(product)
+window.daino.trackWishlistOpen(wishlistItems)
+window.daino.trackMinicartOpen(cartItems, cartTotal)
+window.daino.trackSearch(query, resultsCount, filters, products)
 window.daino.trackPromotionView(promotions)
 window.daino.trackPromotionClick(promotion)
 window.daino.trackNewsletterSignup(source)
 window.daino.trackFilterApplied(filterType, filterValue, resultsCount)
 window.daino.trackCouponApplied(couponCode, discountAmount, cartTotal)
 window.daino.trackCouponRemoved(couponCode, cartTotal)
+
+// Consent & Locale tracking
+window.daino.trackConsentUpdate(consentData)
+window.daino.trackCountryChange(oldCountry, newCountry)
 ```
 
 ### Usage Examples
