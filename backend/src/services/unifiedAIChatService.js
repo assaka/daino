@@ -496,8 +496,9 @@ RULES:
 1. USE TOOLS for actionable requests - don't just explain
 2. When updating entities, find them by name/SKU first
 3. Be concise and confirm actions taken
-4. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions (e.g., "I couldn't find a product with SKU 'xyz'. Try using list_products to see available products.")
-5. NEVER say "technical issues" or generic errors - always explain the specific problem
+4. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions
+5. If you get a DATABASE ERROR (column not found, etc.), use search_knowledge to look up the correct schema before retrying
+6. NEVER say "technical issues" or generic errors - always explain the specific problem
 4. If something fails, explain why
 
 ${ragContext ? `\nPLATFORM KNOWLEDGE:\n${ragContext}\n` : ''}
