@@ -429,26 +429,26 @@ router.post('/activate', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    // Get user info - token uses 'userId' field, not 'id'
+    // Get user info from token - token is already authenticated
     const userId = decoded.userId || decoded.id;
-    console.log('[AFFILIATE ACTIVATE] Token decoded:', JSON.stringify(decoded, null, 2));
-    console.log('[AFFILIATE ACTIVATE] Looking for userId:', userId);
+    const userEmail = decoded.email;
+    const userName = decoded.firstName ? `${decoded.firstName} ${decoded.lastName || ''}`.trim() : userEmail.split('@')[0];
 
-    const { data: user, error: userError } = await masterDbClient
-      .from('users')
-      .select('id, email, name')
-      .eq('id', userId)
-      .single();
+    console.log('[AFFILIATE ACTIVATE] Using token data - userId:', userId, 'email:', userEmail);
 
-    console.log('[AFFILIATE ACTIVATE] User query result:', { user, userError });
-
-    if (userError || !user) {
-      return res.status(404).json({
+    if (!userId || !userEmail) {
+      return res.status(400).json({
         success: false,
-        error: 'User not found',
-        debug: { userId, decoded: { userId: decoded.userId, id: decoded.id, email: decoded.email, role: decoded.role } }
+        error: 'Invalid token - missing user information'
       });
     }
+
+    // Build user object from token data
+    const user = {
+      id: userId,
+      email: userEmail,
+      name: userName
+    };
 
     // Check if already an affiliate
     const { data: existingAffiliate } = await masterDbClient
