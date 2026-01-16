@@ -4,7 +4,8 @@
 
 -- Clear existing entries for these entities
 DELETE FROM ai_entity_definitions WHERE entity_name IN (
-  'product', 'category', 'order', 'customer', 'attribute', 'coupon'
+  'product', 'product_translation', 'category', 'category_translation',
+  'order', 'customer', 'attribute', 'attribute_translation', 'attribute_value', 'coupon'
 );
 
 -- PRODUCTS
@@ -214,20 +215,19 @@ INSERT INTO ai_entity_definitions (
 ) VALUES (
   'attribute',
   'Attribute',
-  'Product attributes like Color, Size. Has translations JSONB for name. Values stored in values JSONB array.',
+  'Product attributes like Color, Size. Names/descriptions in attribute_translations table. Values in attribute_values + attribute_value_translations tables.',
   'attributes',
   'id',
   'store_id',
-  '["product_attribute_values"]',
+  '["attribute_translations", "attribute_values", "attribute_value_translations", "product_attribute_values"]',
   '["list", "get", "create", "update", "delete"]',
   '[
     {"name": "id", "type": "uuid", "description": "Attribute ID"},
+    {"name": "name", "type": "string", "description": "Attribute name (fallback)"},
     {"name": "code", "type": "string", "description": "Unique code like color, size"},
     {"name": "type", "type": "enum", "values": ["select", "multiselect", "text", "number", "boolean"]},
-    {"name": "translations", "type": "jsonb", "description": "Name translations: {en: {name: \"Color\"}}"},
-    {"name": "values", "type": "jsonb", "description": "Predefined values array"},
     {"name": "is_filterable", "type": "boolean", "description": "Show in filters"},
-    {"name": "is_visible", "type": "boolean", "description": "Show on product page"}
+    {"name": "is_searchable", "type": "boolean", "description": "Include in search"}
   ]',
   '["attribute", "attributes", "color", "size", "variant", "option"]',
   '[
@@ -237,6 +237,61 @@ INSERT INTO ai_entity_definitions (
   ]',
   'catalog',
   75,
+  true
+);
+
+-- ATTRIBUTE_TRANSLATIONS (related table)
+INSERT INTO ai_entity_definitions (
+  entity_name, display_name, description, table_name, primary_key, tenant_column,
+  related_tables, supported_operations, fields, intent_keywords, example_prompts,
+  category, priority, is_active
+) VALUES (
+  'attribute_translation',
+  'Attribute Translation',
+  'Attribute names and descriptions by language. Join with attributes on attribute_id.',
+  'attribute_translations',
+  'id',
+  NULL,
+  '["attributes"]',
+  '["list", "get", "create", "update"]',
+  '[
+    {"name": "id", "type": "uuid", "description": "Translation ID"},
+    {"name": "attribute_id", "type": "uuid", "description": "FK to attributes.id"},
+    {"name": "language_code", "type": "string", "description": "e.g., en, de, fr"},
+    {"name": "label", "type": "string", "description": "Attribute display name"},
+    {"name": "description", "type": "text", "description": "Attribute description"}
+  ]',
+  '["translation", "label", "language"]',
+  '[]',
+  'catalog',
+  70,
+  true
+);
+
+-- ATTRIBUTE_VALUES (related table)
+INSERT INTO ai_entity_definitions (
+  entity_name, display_name, description, table_name, primary_key, tenant_column,
+  related_tables, supported_operations, fields, intent_keywords, example_prompts,
+  category, priority, is_active
+) VALUES (
+  'attribute_value',
+  'Attribute Value',
+  'Predefined values for attributes (e.g., Red, Blue for Color). Labels in attribute_value_translations.',
+  'attribute_values',
+  'id',
+  NULL,
+  '["attributes", "attribute_value_translations"]',
+  '["list", "get", "create", "update", "delete"]',
+  '[
+    {"name": "id", "type": "uuid", "description": "Value ID"},
+    {"name": "attribute_id", "type": "uuid", "description": "FK to attributes.id"},
+    {"name": "code", "type": "string", "description": "Value code like red, blue"},
+    {"name": "sort_order", "type": "integer", "description": "Display order"}
+  ]',
+  '["value", "option", "color", "size"]',
+  '[]',
+  'catalog',
+  65,
   true
 );
 
@@ -278,5 +333,5 @@ INSERT INTO ai_entity_definitions (
 
 -- Verify
 SELECT entity_name, table_name, related_tables FROM ai_entity_definitions
-WHERE entity_name IN ('product', 'product_translation', 'category', 'category_translation', 'order', 'customer', 'attribute', 'coupon')
+WHERE entity_name IN ('product', 'product_translation', 'category', 'category_translation', 'order', 'customer', 'attribute', 'attribute_translation', 'attribute_value', 'coupon')
 ORDER BY priority DESC;

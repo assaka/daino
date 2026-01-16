@@ -343,7 +343,7 @@ const TOOLS = [
   },
   {
     name: "update_attribute",
-    description: "Update an attribute by code. Can update: name, values, is_filterable, is_visible.",
+    description: "Update an attribute by code. Can update: name (via attribute_translations), description, values (via attribute_values), is_filterable, is_searchable.",
     input_schema: {
       type: "object",
       properties: {
@@ -352,10 +352,11 @@ const TOOLS = [
           type: "object",
           description: "Fields to update",
           properties: {
-            name: { type: "string", description: "Display name" },
-            values: { type: "array", items: { type: "string" }, description: "Add new values" },
+            name: { type: "string", description: "Display name (stored in attribute_translations.label)" },
+            description: { type: "string", description: "Attribute description (stored in attribute_translations)" },
+            values: { type: "array", items: { type: "string" }, description: "Add new values (stored in attribute_values + attribute_value_translations)" },
             is_filterable: { type: "boolean", description: "Show in filters" },
-            is_visible: { type: "boolean", description: "Show on product page" }
+            is_searchable: { type: "boolean", description: "Include in search" }
           }
         }
       },
@@ -1442,46 +1443,103 @@ async function createAttribute({ code, name, type, values = [] }, storeId) {
 async function updateAttribute({ code, updates }, storeId) {
   const db = await ConnectionManager.getStoreConnection(storeId);
 
+  // Get attribute with its translation
   const { data: attr } = await db
     .from('attributes')
-    .select('id, code, translations, values, is_filterable, is_visible')
+    .select('id, name, code, is_filterable, is_searchable')
     .eq('code', code)
     .single();
 
   if (!attr) return { error: `Attribute "${code}" not found` };
 
-  const updateData = { updated_at: new Date().toISOString() };
+  // Get current translation for display name
+  const { data: trans } = await db
+    .from('attribute_translations')
+    .select('id, label, description')
+    .eq('attribute_id', attr.id)
+    .eq('language_code', 'en')
+    .single();
 
-  // Update name in translations JSONB
-  if (updates.name !== undefined) {
-    const translations = attr.translations || {};
-    translations.en = translations.en || {};
-    translations.en.name = updates.name;
-    updateData.translations = translations;
+  const currentName = trans?.label || attr.name || code;
+
+  // Update attributes table directly (for settings)
+  const attributeUpdates = { updated_at: new Date().toISOString() };
+  if (updates.is_filterable !== undefined) attributeUpdates.is_filterable = updates.is_filterable;
+  if (updates.is_searchable !== undefined) attributeUpdates.is_searchable = updates.is_searchable;
+
+  if (Object.keys(attributeUpdates).length > 1) {
+    const { error } = await db.from('attributes').update(attributeUpdates).eq('id', attr.id);
+    if (error) return { error: error.message };
   }
 
-  // Add new values to existing values
+  // Update attribute_translations table (for name/description)
+  if (updates.name !== undefined || updates.description !== undefined) {
+    const translationUpdates = { updated_at: new Date().toISOString() };
+    if (updates.name !== undefined) translationUpdates.label = updates.name;
+    if (updates.description !== undefined) translationUpdates.description = updates.description;
+
+    if (trans?.id) {
+      // Update existing translation
+      const { error } = await db
+        .from('attribute_translations')
+        .update(translationUpdates)
+        .eq('id', trans.id);
+      if (error) return { error: error.message };
+    } else {
+      // Insert new translation
+      const { error } = await db
+        .from('attribute_translations')
+        .insert({
+          attribute_id: attr.id,
+          language_code: 'en',
+          label: updates.name || attr.name,
+          description: updates.description || null
+        });
+      if (error) return { error: error.message };
+    }
+  }
+
+  // Add new values to attribute_values and attribute_value_translations
   if (updates.values && Array.isArray(updates.values)) {
-    const existingValues = attr.values || [];
-    const existingValueStrings = existingValues.map(v => v.value || v);
-    const newValues = updates.values
-      .filter(v => !existingValueStrings.includes(v.toLowerCase().replace(/[^a-z0-9_]/g, '_')))
-      .map((v, i) => ({
-        value: v.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-        label: { en: v },
-        sort_order: existingValues.length + i
-      }));
-    updateData.values = [...existingValues, ...newValues];
+    // Get existing values
+    const { data: existingValues } = await db
+      .from('attribute_values')
+      .select('code')
+      .eq('attribute_id', attr.id);
+
+    const existingCodes = (existingValues || []).map(v => v.code);
+    const maxSortOrder = existingValues?.length || 0;
+
+    for (let i = 0; i < updates.values.length; i++) {
+      const valueLabel = updates.values[i];
+      const valueCode = valueLabel.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+      if (!existingCodes.includes(valueCode)) {
+        // Insert attribute_value
+        const { data: newValue, error: valueError } = await db
+          .from('attribute_values')
+          .insert({
+            attribute_id: attr.id,
+            code: valueCode,
+            sort_order: maxSortOrder + i
+          })
+          .select('id')
+          .single();
+
+        if (valueError) return { error: valueError.message };
+
+        // Insert attribute_value_translation
+        await db
+          .from('attribute_value_translations')
+          .insert({
+            attribute_value_id: newValue.id,
+            language_code: 'en',
+            label: valueLabel
+          });
+      }
+    }
   }
 
-  // Update visibility settings
-  if (updates.is_filterable !== undefined) updateData.is_filterable = updates.is_filterable;
-  if (updates.is_visible !== undefined) updateData.is_visible = updates.is_visible;
-
-  const { error } = await db.from('attributes').update(updateData).eq('id', attr.id);
-  if (error) return { error: error.message };
-
-  const currentName = attr.translations?.en?.name || code;
   const changes = Object.entries(updates).map(([k, v]) =>
     Array.isArray(v) ? `${k}=[${v.join(', ')}]` : `${k}=${v}`
   ).join(', ');
