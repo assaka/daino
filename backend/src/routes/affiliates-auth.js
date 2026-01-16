@@ -371,21 +371,29 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    if (decoded.role !== 'affiliate') {
-      return res.status(403).json({
-        success: false,
-        error: 'Not an affiliate account'
-      });
+    // Get fresh affiliate data - handle both affiliate portal and store owner tokens
+    let affiliate = null;
+
+    if (decoded.role === 'affiliate') {
+      // Affiliate portal login - lookup by affiliate ID
+      const { data, error } = await masterDbClient
+        .from('affiliates')
+        .select('*, affiliate_tiers(name, code, commission_rate, commission_type)')
+        .eq('id', decoded.id)
+        .single();
+      affiliate = data;
+    } else {
+      // Store owner - lookup by user_id
+      const userId = decoded.userId || decoded.id;
+      const { data, error } = await masterDbClient
+        .from('affiliates')
+        .select('*, affiliate_tiers(name, code, commission_rate, commission_type)')
+        .eq('user_id', userId)
+        .maybeSingle();
+      affiliate = data;
     }
 
-    // Get fresh affiliate data
-    const { data: affiliate, error } = await masterDbClient
-      .from('affiliates')
-      .select('*, affiliate_tiers(name, code, commission_rate, commission_type)')
-      .eq('id', decoded.id)
-      .single();
-
-    if (error || !affiliate) {
+    if (!affiliate) {
       return res.status(404).json({
         success: false,
         error: 'Affiliate not found'
