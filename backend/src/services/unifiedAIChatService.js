@@ -147,7 +147,7 @@ const TOOLS = [
   },
   {
     name: "update_product",
-    description: "Update a product by name or SKU. Can update: price, stock_quantity, status, featured, compare_price (sale price).",
+    description: "Update a product by name or SKU. Can update: name, description, price, stock_quantity, status, featured, compare_price.",
     input_schema: {
       type: "object",
       properties: {
@@ -157,8 +157,10 @@ const TOOLS = [
         },
         updates: {
           type: "object",
-          description: "Fields to update: { price, stock_quantity, status, featured, compare_price }",
+          description: "Fields to update",
           properties: {
+            name: { type: "string", description: "Product name" },
+            description: { type: "string", description: "Product description" },
             price: { type: "number" },
             stock_quantity: { type: "number" },
             status: { type: "string", enum: ["active", "draft", "archived"] },
@@ -216,7 +218,7 @@ const TOOLS = [
   },
   {
     name: "update_category",
-    description: "Update a category by name or slug. Can set visibility (is_active, hide_in_menu), sort_order.",
+    description: "Update a category by name or slug. Can update: name, description, visibility (is_active, hide_in_menu), sort_order.",
     input_schema: {
       type: "object",
       properties: {
@@ -228,6 +230,8 @@ const TOOLS = [
           type: "object",
           description: "Fields to update",
           properties: {
+            name: { type: "string", description: "Category name" },
+            description: { type: "string", description: "Category description" },
             is_active: { type: "boolean", description: "Category active/visible" },
             hide_in_menu: { type: "boolean", description: "Hide from navigation menu" },
             sort_order: { type: "number", description: "Display order" }
@@ -335,6 +339,27 @@ const TOOLS = [
         }
       },
       required: ["code", "name", "type"]
+    }
+  },
+  {
+    name: "update_attribute",
+    description: "Update an attribute by code. Can update: name, values, is_filterable, is_visible.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Attribute code to find" },
+        updates: {
+          type: "object",
+          description: "Fields to update",
+          properties: {
+            name: { type: "string", description: "Display name" },
+            values: { type: "array", items: { type: "string" }, description: "Add new values" },
+            is_filterable: { type: "boolean", description: "Show in filters" },
+            is_visible: { type: "boolean", description: "Show on product page" }
+          }
+        }
+      },
+      required: ["code", "updates"]
     }
   },
   {
@@ -661,6 +686,9 @@ async function executeTool(name, input, context) {
         break;
       case 'create_attribute':
         result = await createAttribute(input, storeId);
+        break;
+      case 'update_attribute':
+        result = await updateAttribute(input, storeId);
         break;
       case 'delete_attribute':
         result = await deleteAttribute(input, storeId);
@@ -992,18 +1020,45 @@ async function updateProduct({ product, updates }, storeId) {
   if (updates.price !== undefined) previousValues.price = found.price;
   if (updates.status !== undefined) previousValues.status = found.status;
   if (updates.featured !== undefined) previousValues.featured = found.featured;
+  if (updates.name !== undefined) previousValues.name = found.name;
 
-  const { error } = await db
-    .from('products')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', found.id);
+  // Separate product table updates from translation updates
+  const { name: newName, description: newDescription, ...productUpdates } = updates;
 
-  if (error) {
-    console.log('   [updateProduct] Update error:', error);
-    return { error: error.message };
+  // Update products table (if there are any product fields to update)
+  if (Object.keys(productUpdates).length > 0) {
+    const { error } = await db
+      .from('products')
+      .update({ ...productUpdates, updated_at: new Date().toISOString() })
+      .eq('id', found.id);
+
+    if (error) {
+      console.log('   [updateProduct] Product update error:', error);
+      return { error: error.message };
+    }
   }
 
-  const changes = Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ');
+  // Update product_translations table (name, description)
+  if (newName !== undefined || newDescription !== undefined) {
+    const translationUpdates = {};
+    if (newName !== undefined) translationUpdates.name = newName;
+    if (newDescription !== undefined) translationUpdates.description = newDescription;
+
+    const { error: transError } = await db
+      .from('product_translations')
+      .update(translationUpdates)
+      .eq('product_id', found.id)
+      .eq('language_code', 'en');
+
+    if (transError) {
+      console.log('   [updateProduct] Translation update error:', transError);
+      return { error: transError.message };
+    }
+  }
+
+  const changes = Object.entries(updates).map(([k, v]) =>
+    typeof v === 'string' && v.length > 50 ? `${k}="${v.substring(0, 50)}..."` : `${k}=${v}`
+  ).join(', ');
   console.log('   [updateProduct] Success:', changes);
 
   return {
@@ -1012,7 +1067,7 @@ async function updateProduct({ product, updates }, storeId) {
     product: {
       id: found.id,
       sku: found.sku,
-      name: found.name,
+      name: newName ?? found.name,
       price: updates.price ?? found.price,
       stock_quantity: updates.stock_quantity ?? found.stock_quantity,
       status: updates.status ?? found.status
@@ -1129,18 +1184,42 @@ async function updateCategory({ category, updates }, storeId) {
     return { error: `Category "${category}" not found` };
   }
 
-  const { error } = await db
-    .from('categories')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', found.id);
+  // Separate category table updates from translation updates
+  const { name: newName, description: newDescription, ...categoryUpdates } = updates;
 
-  if (error) return { error: error.message };
+  // Update categories table (if there are any category fields to update)
+  if (Object.keys(categoryUpdates).length > 0) {
+    const { error } = await db
+      .from('categories')
+      .update({ ...categoryUpdates, updated_at: new Date().toISOString() })
+      .eq('id', found.id);
 
-  const changes = Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ');
+    if (error) return { error: error.message };
+  }
+
+  // Update category_translations table (name, description)
+  if (newName !== undefined || newDescription !== undefined) {
+    const translationUpdates = {};
+    if (newName !== undefined) translationUpdates.name = newName;
+    if (newDescription !== undefined) translationUpdates.description = newDescription;
+
+    const { error: transError } = await db
+      .from('category_translations')
+      .update(translationUpdates)
+      .eq('category_id', found.id)
+      .eq('language_code', 'en');
+
+    if (transError) return { error: transError.message };
+  }
+
+  const changes = Object.entries(updates).map(([k, v]) =>
+    typeof v === 'string' && v.length > 50 ? `${k}="${v.substring(0, 50)}..."` : `${k}=${v}`
+  ).join(', ');
+
   return {
     success: true,
     message: `Updated category "${found.name}": ${changes}`,
-    category: { id: found.id, slug: found.slug, name: found.name },
+    category: { id: found.id, slug: found.slug, name: newName ?? found.name },
     refreshPreview: true,
     action: 'update'
   };
@@ -1357,6 +1436,62 @@ async function createAttribute({ code, name, type, values = [] }, storeId) {
     attribute: { id: created.id, code: created.code, name, values },
     refreshPreview: true,
     action: 'create'
+  };
+}
+
+async function updateAttribute({ code, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: attr } = await db
+    .from('attributes')
+    .select('id, code, translations, values, is_filterable, is_visible')
+    .eq('code', code)
+    .single();
+
+  if (!attr) return { error: `Attribute "${code}" not found` };
+
+  const updateData = { updated_at: new Date().toISOString() };
+
+  // Update name in translations JSONB
+  if (updates.name !== undefined) {
+    const translations = attr.translations || {};
+    translations.en = translations.en || {};
+    translations.en.name = updates.name;
+    updateData.translations = translations;
+  }
+
+  // Add new values to existing values
+  if (updates.values && Array.isArray(updates.values)) {
+    const existingValues = attr.values || [];
+    const existingValueStrings = existingValues.map(v => v.value || v);
+    const newValues = updates.values
+      .filter(v => !existingValueStrings.includes(v.toLowerCase().replace(/[^a-z0-9_]/g, '_')))
+      .map((v, i) => ({
+        value: v.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+        label: { en: v },
+        sort_order: existingValues.length + i
+      }));
+    updateData.values = [...existingValues, ...newValues];
+  }
+
+  // Update visibility settings
+  if (updates.is_filterable !== undefined) updateData.is_filterable = updates.is_filterable;
+  if (updates.is_visible !== undefined) updateData.is_visible = updates.is_visible;
+
+  const { error } = await db.from('attributes').update(updateData).eq('id', attr.id);
+  if (error) return { error: error.message };
+
+  const currentName = attr.translations?.en?.name || code;
+  const changes = Object.entries(updates).map(([k, v]) =>
+    Array.isArray(v) ? `${k}=[${v.join(', ')}]` : `${k}=${v}`
+  ).join(', ');
+
+  return {
+    success: true,
+    message: `Updated attribute "${currentName}" (${code}): ${changes}`,
+    attribute: { id: attr.id, code, name: updates.name || currentName },
+    refreshPreview: true,
+    action: 'update'
   };
 }
 
