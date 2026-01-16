@@ -13,6 +13,31 @@ const { generateTokenPair } = require('../utils/jwt');
 const masterEmailService = require('../services/master-email-service');
 
 /**
+ * Helper: Get affiliate from decoded token
+ * Handles both affiliate portal tokens (role=affiliate) and store owner tokens (role=store_owner)
+ */
+async function getAffiliateFromToken(decoded) {
+  if (decoded.role === 'affiliate') {
+    // Affiliate portal - lookup by affiliate ID
+    const { data } = await masterDbClient
+      .from('affiliates')
+      .select('*')
+      .eq('id', decoded.id)
+      .single();
+    return data;
+  } else {
+    // Store owner - lookup by user_id
+    const userId = decoded.userId || decoded.id;
+    const { data } = await masterDbClient
+      .from('affiliates')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    return data;
+  }
+}
+
+/**
  * POST /api/affiliates/auth/login
  * Affiliate login
  */
@@ -588,11 +613,12 @@ router.get('/stats', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    if (decoded.role !== 'affiliate') {
-      return res.status(403).json({ success: false, error: 'Not an affiliate account' });
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
     }
 
-    const affiliateId = decoded.id;
+    const affiliateId = affiliate.id;
 
     // Get referral stats
     const { data: referrals } = await masterDbClient
@@ -671,10 +697,15 @@ router.get('/referrals', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
+
     const { data: referrals, error } = await masterDbClient
       .from('affiliate_referrals')
       .select('id, referred_email, status, first_purchase_amount, total_purchases, created_at')
-      .eq('affiliate_id', decoded.id)
+      .eq('affiliate_id', affiliate.id)
       .neq('status', 'clicked') // Don't show just clicks
       .order('created_at', { ascending: false })
       .limit(50);
@@ -720,10 +751,15 @@ router.get('/commissions', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
+
     const { data: commissions, error } = await masterDbClient
       .from('affiliate_commissions')
       .select('id, source_type, purchase_amount, commission_amount, status, created_at, paid_at')
-      .eq('affiliate_id', decoded.id)
+      .eq('affiliate_id', affiliate.id)
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -760,10 +796,15 @@ router.get('/payouts', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
+
     const { data: payouts, error } = await masterDbClient
       .from('affiliate_payouts')
       .select('*')
-      .eq('affiliate_id', decoded.id)
+      .eq('affiliate_id', affiliate.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -800,17 +841,19 @@ router.post('/request-payout', async (req, res) => {
     }
 
     // Get affiliate with tier info
-    const { data: affiliate } = await masterDbClient
-      .from('affiliates')
-      .select('*, affiliate_tiers(min_payout_amount)')
-      .eq('id', decoded.id)
-      .single();
-
+    const affiliate = await getAffiliateFromToken(decoded);
     if (!affiliate) {
       return res.status(404).json({ success: false, error: 'Affiliate not found' });
     }
 
-    const minPayout = parseFloat(affiliate.affiliate_tiers?.min_payout_amount || 50);
+    // Get tier info
+    const { data: affiliateWithTier } = await masterDbClient
+      .from('affiliates')
+      .select('*, affiliate_tiers(min_payout_amount)')
+      .eq('id', affiliate.id)
+      .single();
+
+    const minPayout = parseFloat(affiliateWithTier?.affiliate_tiers?.min_payout_amount || 50);
     const availableBalance = parseFloat(affiliate.pending_balance || 0);
 
     if (availableBalance < minPayout) {
@@ -824,7 +867,7 @@ router.post('/request-payout', async (req, res) => {
     const { data: existingPayout } = await masterDbClient
       .from('affiliate_payouts')
       .select('id')
-      .eq('affiliate_id', decoded.id)
+      .eq('affiliate_id', affiliate.id)
       .in('status', ['pending', 'processing'])
       .limit(1);
 
@@ -839,7 +882,7 @@ router.post('/request-payout', async (req, res) => {
     const { data: payout, error } = await masterDbClient
       .from('affiliate_payouts')
       .insert({
-        affiliate_id: decoded.id,
+        affiliate_id: affiliate.id,
         amount: availableBalance,
         status: 'pending',
         requested_at: new Date().toISOString()
@@ -853,7 +896,7 @@ router.post('/request-payout', async (req, res) => {
     await masterDbClient
       .from('affiliates')
       .update({ pending_balance: 0 })
-      .eq('id', decoded.id);
+      .eq('id', affiliate.id);
 
     res.json({
       success: true,
@@ -900,8 +943,13 @@ router.put('/reward-preference', async (req, res) => {
       });
     }
 
+    const existingAffiliate = await getAffiliateFromToken(decoded);
+    if (!existingAffiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
+
     const affiliateService = require('../services/affiliate-service');
-    const affiliate = await affiliateService.updateRewardPreference(decoded.id, reward_type);
+    const affiliate = await affiliateService.updateRewardPreference(existingAffiliate.id, reward_type);
 
     res.json({
       success: true,
@@ -940,8 +988,13 @@ router.get('/store-owner-stats', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
+
     const affiliateService = require('../services/affiliate-service');
-    const stats = await affiliateService.getStoreOwnerAffiliateStats(decoded.id);
+    const stats = await affiliateService.getStoreOwnerAffiliateStats(affiliate.id);
 
     res.json({
       success: true,
@@ -974,8 +1027,13 @@ router.get('/credit-awards', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
+
     const affiliateService = require('../services/affiliate-service');
-    const awards = await affiliateService.getAffiliateCreditAwards(decoded.id);
+    const awards = await affiliateService.getAffiliateCreditAwards(affiliate.id);
 
     res.json({
       success: true,
@@ -1008,14 +1066,13 @@ router.post('/claim-credit-awards', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    // Check if affiliate prefers credits
-    const { data: affiliate } = await masterDbClient
-      .from('affiliates')
-      .select('reward_type')
-      .eq('id', decoded.id)
-      .single();
+    // Get affiliate from token
+    const affiliate = await getAffiliateFromToken(decoded);
+    if (!affiliate) {
+      return res.status(404).json({ success: false, error: 'Affiliate account not found' });
+    }
 
-    if (!affiliate || affiliate.reward_type !== 'credits') {
+    if (affiliate.reward_type !== 'credits') {
       return res.status(400).json({
         success: false,
         error: 'Credit awards only available when reward preference is set to "credits"'
@@ -1023,12 +1080,12 @@ router.post('/claim-credit-awards', async (req, res) => {
     }
 
     const affiliateService = require('../services/affiliate-service');
-    const qualifyingStores = await affiliateService.getQualifyingStoresForCredit(decoded.id);
+    const qualifyingStores = await affiliateService.getQualifyingStoresForCredit(affiliate.id);
     const awards = [];
 
     for (const store of qualifyingStores) {
       const award = await affiliateService.awardCreditsForStore(
-        decoded.id,
+        affiliate.id,
         store.store_id,
         store.referral_id
       );
