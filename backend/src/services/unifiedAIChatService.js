@@ -496,6 +496,8 @@ RULES:
 1. USE TOOLS for actionable requests - don't just explain
 2. When updating entities, find them by name/SKU first
 3. Be concise and confirm actions taken
+4. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions (e.g., "I couldn't find a product with SKU 'xyz'. Try using list_products to see available products.")
+5. NEVER say "technical issues" or generic errors - always explain the specific problem
 4. If something fails, explain why
 
 ${ragContext ? `\nPLATFORM KNOWLEDGE:\n${ragContext}\n` : ''}
@@ -648,7 +650,7 @@ async function findProductByNameOrSku(db, search) {
   // Try SKU first (exact match)
   let { data: bySku, error: skuError } = await db
     .from('products')
-    .select('id, sku, price, stock_quantity, status, featured, translations')
+    .select('id, sku, price, stock_quantity, status, featured')
     .ilike('sku', searchLower)
     .limit(1);
 
@@ -659,13 +661,20 @@ async function findProductByNameOrSku(db, search) {
   if (bySku?.[0]) {
     console.log('   [findProduct] Found by SKU exact:', bySku[0].sku);
     const p = bySku[0];
-    return { ...p, name: p.translations?.en?.name || p.sku };
+    // Get name from product_translations
+    const { data: trans } = await db
+      .from('product_translations')
+      .select('name')
+      .eq('product_id', p.id)
+      .eq('language_code', 'en')
+      .limit(1);
+    return { ...p, name: trans?.[0]?.name || p.sku };
   }
 
   // Try SKU partial match
   ({ data: bySku, error: skuError } = await db
     .from('products')
-    .select('id, sku, price, stock_quantity, status, featured, translations')
+    .select('id, sku, price, stock_quantity, status, featured')
     .ilike('sku', `%${searchLower}%`)
     .limit(1));
 
@@ -676,25 +685,39 @@ async function findProductByNameOrSku(db, search) {
   if (bySku?.[0]) {
     console.log('   [findProduct] Found by SKU partial:', bySku[0].sku);
     const p = bySku[0];
-    return { ...p, name: p.translations?.en?.name || p.sku };
+    // Get name from product_translations
+    const { data: trans } = await db
+      .from('product_translations')
+      .select('name')
+      .eq('product_id', p.id)
+      .eq('language_code', 'en')
+      .limit(1);
+    return { ...p, name: trans?.[0]?.name || p.sku };
   }
 
-  // Try name in translations
-  console.log('   [findProduct] Trying name search...');
-  const { data: products, error: nameError } = await db
-    .from('products')
-    .select('id, sku, price, stock_quantity, status, featured, translations')
-    .limit(100);
+  // Try name in product_translations
+  console.log('   [findProduct] Trying name search in product_translations...');
+  const { data: byName, error: nameError } = await db
+    .from('product_translations')
+    .select('product_id, name')
+    .ilike('name', `%${searchLower}%`)
+    .eq('language_code', 'en')
+    .limit(1);
 
   if (nameError) {
     console.log('   [findProduct] Name search error:', nameError.message);
   }
 
-  for (const p of products || []) {
-    const name = p.translations?.en?.name || p.translations?.default?.name || '';
-    if (name.toLowerCase().includes(searchLower)) {
-      console.log('   [findProduct] Found by name:', p.sku);
-      return { ...p, name };
+  if (byName?.[0]) {
+    // Get full product data
+    const { data: product } = await db
+      .from('products')
+      .select('id, sku, price, stock_quantity, status, featured')
+      .eq('id', byName[0].product_id)
+      .single();
+    if (product) {
+      console.log('   [findProduct] Found by name:', product.sku);
+      return { ...product, name: byName[0].name };
     }
   }
 
@@ -811,7 +834,7 @@ async function listProducts({ filter, search, limit = 20 }, storeId) {
   const db = await ConnectionManager.getStoreConnection(storeId);
 
   let query = db.from('products')
-    .select('id, sku, price, compare_price, stock_quantity, low_stock_threshold, status, featured, translations')
+    .select('id, sku, price, compare_price, stock_quantity, low_stock_threshold, status, featured')
     .limit(limit);
 
   if (filter === 'in_stock') query = query.gt('stock_quantity', 0);
@@ -822,10 +845,20 @@ async function listProducts({ filter, search, limit = 20 }, storeId) {
   const { data, error } = await query;
   if (error) return { error: error.message };
 
+  // Get names from product_translations
+  const productIds = (data || []).map(p => p.id);
+  const { data: translations } = await db
+    .from('product_translations')
+    .select('product_id, name')
+    .in('product_id', productIds)
+    .eq('language_code', 'en');
+
+  const nameMap = new Map(translations?.map(t => [t.product_id, t.name]) || []);
+
   let products = (data || []).map(p => ({
     id: p.id,
     sku: p.sku,
-    name: p.translations?.en?.name || p.translations?.default?.name || 'Unnamed',
+    name: nameMap.get(p.id) || p.sku,
     price: p.price,
     compare_price: p.compare_price,
     stock: p.stock_quantity,
@@ -888,21 +921,27 @@ async function createProduct({ name, sku, price, stock_quantity = 0, description
 
   const generatedSku = sku || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
 
+  // Insert product
   const { data: created, error } = await db
     .from('products')
     .insert({
       sku: generatedSku,
       price,
       stock_quantity,
-      status,
-      translations: {
-        en: { name, description: description || '' }
-      }
+      status
     })
     .select('id, sku')
     .single();
 
   if (error) return { error: error.message };
+
+  // Insert translation
+  await db.from('product_translations').insert({
+    product_id: created.id,
+    language_code: 'en',
+    name,
+    description: description || ''
+  });
 
   return {
     success: true,
