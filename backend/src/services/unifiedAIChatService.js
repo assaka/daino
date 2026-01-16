@@ -21,16 +21,82 @@
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
+const OpenAI = require('openai');
 const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('./database/ConnectionManager');
 const aiContextService = require('./aiContextService');
 const aiLearningService = require('./aiLearningService');
 const aiEntityService = require('./aiEntityService');
 
-// Response verbosity: 'concise' | 'detailed'
-const AI_RESPONSE_VERBOSITY = process.env.AI_RESPONSE_VERBOSITY || 'detailed';
+// LLM Clients - initialized lazily
+let anthropicClient = null;
+let openaiClient = null;
 
-const anthropic = new Anthropic();
+function getAnthropicClient() {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic();
+  }
+  return anthropicClient;
+}
+
+function getOpenAIClient() {
+  if (!openaiClient) {
+    openaiClient = new OpenAI();
+  }
+  return openaiClient;
+}
+
+/**
+ * Response verbosity levels (A-F):
+ * A = Minimal    - Just "Done" or "✓ Updated"
+ * B = Brief      - One short sentence
+ * C = Standard   - Confirmation with key details
+ * D = Detailed   - Previous values, context, formatting
+ * E = Comprehensive - All details, related items, suggestions
+ * F = Expert     - Full analysis, recommendations, follow-ups
+ */
+const AI_RESPONSE_VERBOSITY = process.env.AI_RESPONSE_VERBOSITY || 'D';
+
+const VERBOSITY_PROMPTS = {
+  A: `RESPONSE STYLE (Minimal):
+- Respond with just "Done", "Updated", or "✓" plus the action
+- No formatting, no details, no follow-up
+- Example: "✓ Stock set to 99"`,
+
+  B: `RESPONSE STYLE (Brief):
+- One short sentence confirming the action
+- Include only the most essential detail
+- Example: "Updated stock of alans-art-11x14 to 99 units."`,
+
+  C: `RESPONSE STYLE (Standard):
+- Clear confirmation with key details
+- Use simple formatting (bold for important values)
+- Example: "**Stock updated** for alans-art-11x14: now **99 units**"`,
+
+  D: `RESPONSE STYLE (Detailed):
+- Rich response with context and previous values
+- Show what changed: "updated from X to Y"
+- Use markdown formatting with bullets
+- Include relevant details like price, status
+- Use emojis sparingly (✅ for success)`,
+
+  E: `RESPONSE STYLE (Comprehensive):
+- Full detailed response with all relevant context
+- Show previous values, current state, related items
+- Include summary tables when multiple items involved
+- Provide relevant suggestions or warnings
+- Use headers, bullets, bold, and formatting
+- End with contextual follow-up question`,
+
+  F: `RESPONSE STYLE (Expert):
+- Complete analysis with full context
+- Show all related data (variants, categories, stock levels)
+- Provide business insights and recommendations
+- Include data summaries and statistics
+- Suggest next actions or optimizations
+- Format as a mini-report with sections
+- Always end with actionable suggestions`
+};
 
 /**
  * Tool definitions - Smart tools that find entities by name
@@ -524,18 +590,7 @@ RULES:
 3. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions
 4. If you get a DATABASE ERROR (column not found, etc.), use search_knowledge to look up the correct schema before retrying
 5. NEVER say "technical issues" or generic errors - always explain the specific problem
-${AI_RESPONSE_VERBOSITY === 'detailed' ? `
-RESPONSE STYLE (Detailed Mode):
-- Provide rich, informative responses with context
-- Show previous values when updating (e.g., "updated from X to Y")
-- Include relevant details like price, status, related items
-- Use markdown formatting with headers, bullets, and bold for key info
-- End with a helpful follow-up question when appropriate
-- Use emojis sparingly for visual clarity (✅ for success, ❌ for errors)` : `
-RESPONSE STYLE (Concise Mode):
-- Keep responses brief and to the point
-- Confirm the action in one short sentence
-- Only include essential information`}
+${VERBOSITY_PROMPTS[AI_RESPONSE_VERBOSITY] || VERBOSITY_PROMPTS['D']}
 
 ${ragContext ? `\nPLATFORM KNOWLEDGE:\n${ragContext}\n` : ''}
 ${learnedExamples ? `\nLEARNED PATTERNS:\n${learnedExamples}\n` : ''}`;
@@ -1612,7 +1667,44 @@ async function getStoreStats({ period = 'all' }, storeId) {
 // MAIN CHAT FUNCTION
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function chat({ message, conversationHistory = [], storeId, userId, mode = 'general', images }) {
+/**
+ * Determine LLM provider from model ID
+ */
+function getProviderFromModel(modelId) {
+  if (!modelId) return 'anthropic';
+  if (modelId.startsWith('claude')) return 'anthropic';
+  if (modelId.startsWith('gpt-') || modelId.startsWith('o1') || modelId.startsWith('o3')) return 'openai';
+  if (modelId.startsWith('gemini')) return 'google';
+  return 'anthropic'; // default
+}
+
+/**
+ * Get default model for provider
+ */
+function getDefaultModel(provider) {
+  switch (provider) {
+    case 'openai': return 'gpt-4o';
+    case 'google': return 'gemini-pro';
+    case 'anthropic':
+    default: return 'claude-sonnet-4-20250514';
+  }
+}
+
+/**
+ * Convert tools to OpenAI format
+ */
+function convertToolsToOpenAI(tools) {
+  return tools.map(tool => ({
+    type: 'function',
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.input_schema
+    }
+  }));
+}
+
+async function chat({ message, conversationHistory = [], storeId, userId, mode = 'general', images, modelId }) {
   console.log('═══════════════════════════════════════════════════════════');
   console.log('🤖 UNIFIED AI CHAT');
   console.log('═══════════════════════════════════════════════════════════');
@@ -1620,8 +1712,28 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
   console.log('🏪 Store:', storeId);
   console.log('🎯 Mode:', mode);
 
+  // Determine provider and model
+  const provider = getProviderFromModel(modelId);
+  const model = modelId || getDefaultModel(provider);
+  console.log('🤖 Provider:', provider, '| Model:', model);
+
   // Build system prompt with RAG
   const systemPrompt = await buildSystemPrompt(storeId, message);
+
+  // Route to appropriate provider
+  if (provider === 'openai') {
+    return await chatWithOpenAI({ message, conversationHistory, storeId, userId, images, model, systemPrompt });
+  }
+
+  // Default: Anthropic
+  return await chatWithAnthropic({ message, conversationHistory, storeId, userId, images, model, systemPrompt });
+}
+
+/**
+ * Chat with Anthropic (Claude)
+ */
+async function chatWithAnthropic({ message, conversationHistory, storeId, userId, images, model, systemPrompt }) {
+  const anthropic = getAnthropicClient();
 
   // Build messages
   const messages = [];
@@ -1656,7 +1768,7 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
 
   // Call Anthropic with tools
   let response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model,
     max_tokens: 4096,
     system: systemPrompt,
     tools: TOOLS,
@@ -1689,7 +1801,7 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
     messages.push({ role: 'user', content: toolResults });
 
     response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 4096,
       system: systemPrompt,
       tools: TOOLS,
@@ -1704,10 +1816,10 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
   const textBlocks = response.content.filter(b => b.type === 'text');
   const finalMessage = textBlocks.map(b => b.text).join('\n');
 
-  // Calculate credits
+  // Calculate credits (Anthropic pricing)
   const credits = Math.ceil((totalTokens.input * 3 + totalTokens.output * 15) / 1000);
 
-  console.log('✅ Complete:', { tools: toolCalls.length, tokens: totalTokens, credits });
+  console.log('✅ Complete:', { provider: 'anthropic', model, tools: toolCalls.length, tokens: totalTokens, credits });
 
   // Determine if refresh is needed
   const needsRefresh = toolCalls.some(t =>
@@ -1721,7 +1833,121 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
     data: {
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
       refreshPreview: needsRefresh,
-      usage: totalTokens
+      usage: totalTokens,
+      model
+    },
+    creditsDeducted: credits
+  };
+}
+
+/**
+ * Chat with OpenAI (GPT-4, etc.)
+ */
+async function chatWithOpenAI({ message, conversationHistory, storeId, userId, images, model, systemPrompt }) {
+  const openai = getOpenAIClient();
+
+  // Build messages with system prompt
+  const messages = [
+    { role: 'system', content: systemPrompt }
+  ];
+
+  // Add history (last 10)
+  for (const msg of conversationHistory.slice(-10)) {
+    if (msg.role === 'user' || msg.role === 'assistant') {
+      messages.push({
+        role: msg.role,
+        content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+      });
+    }
+  }
+
+  // Add current message with images if present
+  if (images && images.length > 0) {
+    const content = [
+      { type: 'text', text: message || 'Please analyze this image.' },
+      ...images.map(img => ({
+        type: 'image_url',
+        image_url: { url: `data:${img.type || 'image/jpeg'};base64,${img.base64}` }
+      }))
+    ];
+    messages.push({ role: 'user', content });
+  } else {
+    messages.push({ role: 'user', content: message });
+  }
+
+  // Convert tools to OpenAI format
+  const openaiTools = convertToolsToOpenAI(TOOLS);
+
+  // Call OpenAI with tools
+  let response = await openai.chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages,
+    tools: openaiTools,
+    tool_choice: 'auto'
+  });
+
+  const toolCalls = [];
+  let totalTokens = {
+    input: response.usage?.prompt_tokens || 0,
+    output: response.usage?.completion_tokens || 0
+  };
+
+  // Handle tool calls loop
+  while (response.choices[0]?.finish_reason === 'tool_calls') {
+    const assistantMessage = response.choices[0].message;
+    messages.push(assistantMessage);
+
+    // Process each tool call
+    for (const toolCall of assistantMessage.tool_calls || []) {
+      const toolName = toolCall.function.name;
+      const toolInput = JSON.parse(toolCall.function.arguments);
+      const result = await executeTool(toolName, toolInput, { storeId, userId });
+
+      toolCalls.push({ name: toolName, input: toolInput, result });
+
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result)
+      });
+    }
+
+    // Continue conversation
+    response = await openai.chat.completions.create({
+      model,
+      max_tokens: 4096,
+      messages,
+      tools: openaiTools,
+      tool_choice: 'auto'
+    });
+
+    totalTokens.input += response.usage?.prompt_tokens || 0;
+    totalTokens.output += response.usage?.completion_tokens || 0;
+  }
+
+  // Extract final text
+  const finalMessage = response.choices[0]?.message?.content || '';
+
+  // Calculate credits (OpenAI pricing - adjust multipliers as needed)
+  const credits = Math.ceil((totalTokens.input * 2 + totalTokens.output * 10) / 1000);
+
+  console.log('✅ Complete:', { provider: 'openai', model, tools: toolCalls.length, tokens: totalTokens, credits });
+
+  // Determine if refresh is needed
+  const needsRefresh = toolCalls.some(t =>
+    t.result?.refreshPreview ||
+    t.result?.action
+  );
+
+  return {
+    success: true,
+    message: finalMessage,
+    data: {
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      refreshPreview: needsRefresh,
+      usage: totalTokens,
+      model
     },
     creditsDeducted: credits
   };
