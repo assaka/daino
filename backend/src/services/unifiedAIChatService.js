@@ -512,87 +512,127 @@ ${learnedExamples ? `\nLEARNED PATTERNS:\n${learnedExamples}\n` : ''}`;
 async function executeTool(name, input, context) {
   const { storeId, userId } = context;
   console.log(`🔧 Tool: ${name}`, JSON.stringify(input).substring(0, 200));
+  console.log(`   Store ID: ${storeId}`);
 
   try {
+    let result;
     switch (name) {
       case 'search_knowledge':
-        return await searchKnowledge(input.query);
+        result = await searchKnowledge(input.query);
+        break;
 
       // Product tools
       case 'list_products':
-        return await listProducts(input, storeId);
+        result = await listProducts(input, storeId);
+        break;
       case 'update_product':
-        return await updateProduct(input, storeId);
+        result = await updateProduct(input, storeId);
+        break;
       case 'create_product':
-        return await createProduct(input, storeId);
+        result = await createProduct(input, storeId);
+        break;
       case 'delete_product':
-        return await deleteProduct(input, storeId);
+        result = await deleteProduct(input, storeId);
+        break;
 
       // Category tools
       case 'list_categories':
-        return await listCategories(input, storeId);
+        result = await listCategories(input, storeId);
+        break;
       case 'update_category':
-        return await updateCategory(input, storeId);
+        result = await updateCategory(input, storeId);
+        break;
       case 'set_category_visible':
-        return await setCategoryVisibility(input.category, true, storeId);
+        result = await setCategoryVisibility(input.category, true, storeId);
+        break;
       case 'set_category_hidden':
-        return await setCategoryVisibility(input.category, false, storeId);
+        result = await setCategoryVisibility(input.category, false, storeId);
+        break;
       case 'create_category':
-        return await createCategory(input, storeId);
+        result = await createCategory(input, storeId);
+        break;
       case 'delete_category':
-        return await deleteCategory(input, storeId);
+        result = await deleteCategory(input, storeId);
+        break;
       case 'add_product_to_category':
-        return await addProductToCategory(input, storeId);
+        result = await addProductToCategory(input, storeId);
+        break;
       case 'remove_product_from_category':
-        return await removeProductFromCategory(input, storeId);
+        result = await removeProductFromCategory(input, storeId);
+        break;
 
       // Attribute tools
       case 'list_attributes':
-        return await listAttributes(storeId);
+        result = await listAttributes(storeId);
+        break;
       case 'create_attribute':
-        return await createAttribute(input, storeId);
+        result = await createAttribute(input, storeId);
+        break;
       case 'delete_attribute':
-        return await deleteAttribute(input, storeId);
+        result = await deleteAttribute(input, storeId);
+        break;
 
       // Order tools
       case 'list_orders':
-        return await listOrders(input, storeId);
+        result = await listOrders(input, storeId);
+        break;
       case 'update_order_status':
-        return await updateOrderStatus(input, storeId);
+        result = await updateOrderStatus(input, storeId);
+        break;
 
       // Customer tools
       case 'list_customers':
-        return await listCustomers(input, storeId);
+        result = await listCustomers(input, storeId);
+        break;
 
       // Coupon tools
       case 'list_coupons':
-        return await listCoupons(storeId);
+        result = await listCoupons(storeId);
+        break;
       case 'create_coupon':
-        return await createCoupon(input, storeId);
+        result = await createCoupon(input, storeId);
+        break;
       case 'delete_coupon':
-        return await deleteCoupon(input, storeId);
+        result = await deleteCoupon(input, storeId);
+        break;
 
       // Settings tools
       case 'get_store_settings':
-        return await getStoreSettings(input.area, storeId);
+        result = await getStoreSettings(input.area, storeId);
+        break;
       case 'update_store_setting':
-        return await updateStoreSetting(input.setting_path, input.value, storeId);
+        result = await updateStoreSetting(input.setting_path, input.value, storeId);
+        break;
 
       // Layout tools
       case 'modify_slot':
-        return await modifySlot(input, storeId);
+        result = await modifySlot(input, storeId);
+        break;
 
       // Other tools
       case 'translate_content':
-        return await translateContent(input, storeId);
+        result = await translateContent(input, storeId);
+        break;
       case 'get_store_stats':
-        return await getStoreStats(input, storeId);
+        result = await getStoreStats(input, storeId);
+        break;
 
       default:
-        return { error: `Unknown tool: ${name}` };
+        result = { error: `Unknown tool: ${name}` };
     }
+
+    // Log result
+    if (result?.error) {
+      console.log(`   ❌ Result: ERROR - ${result.error}`);
+    } else if (result?.success) {
+      console.log(`   ✅ Result: ${result.message || 'Success'}`);
+    } else {
+      console.log(`   📦 Result:`, JSON.stringify(result).substring(0, 200));
+    }
+
+    return result;
   } catch (err) {
-    console.error(`Tool ${name} error:`, err);
+    console.error(`❌ Tool ${name} EXCEPTION:`, err);
     return { error: err.message };
   }
 }
@@ -603,44 +643,62 @@ async function executeTool(name, input, context) {
 
 async function findProductByNameOrSku(db, search) {
   const searchLower = search.toLowerCase();
+  console.log('   [findProduct] Searching for:', searchLower);
 
   // Try SKU first (exact match)
-  let { data: bySku } = await db
+  let { data: bySku, error: skuError } = await db
     .from('products')
     .select('id, sku, price, stock_quantity, status, featured, translations')
     .ilike('sku', searchLower)
     .limit(1);
 
+  if (skuError) {
+    console.log('   [findProduct] SKU exact search error:', skuError.message);
+  }
+
   if (bySku?.[0]) {
+    console.log('   [findProduct] Found by SKU exact:', bySku[0].sku);
     const p = bySku[0];
     return { ...p, name: p.translations?.en?.name || p.sku };
   }
 
   // Try SKU partial match
-  ({ data: bySku } = await db
+  ({ data: bySku, error: skuError } = await db
     .from('products')
     .select('id, sku, price, stock_quantity, status, featured, translations')
     .ilike('sku', `%${searchLower}%`)
     .limit(1));
 
+  if (skuError) {
+    console.log('   [findProduct] SKU partial search error:', skuError.message);
+  }
+
   if (bySku?.[0]) {
+    console.log('   [findProduct] Found by SKU partial:', bySku[0].sku);
     const p = bySku[0];
     return { ...p, name: p.translations?.en?.name || p.sku };
   }
 
   // Try name in translations
-  const { data: products } = await db
+  console.log('   [findProduct] Trying name search...');
+  const { data: products, error: nameError } = await db
     .from('products')
     .select('id, sku, price, stock_quantity, status, featured, translations')
     .limit(100);
 
+  if (nameError) {
+    console.log('   [findProduct] Name search error:', nameError.message);
+  }
+
   for (const p of products || []) {
     const name = p.translations?.en?.name || p.translations?.default?.name || '';
     if (name.toLowerCase().includes(searchLower)) {
+      console.log('   [findProduct] Found by name:', p.sku);
       return { ...p, name };
     }
   }
 
+  console.log('   [findProduct] NOT FOUND');
   return null;
 }
 
@@ -791,9 +849,14 @@ async function listProducts({ filter, search, limit = 20 }, storeId) {
 }
 
 async function updateProduct({ product, updates }, storeId) {
+  console.log('   [updateProduct] Starting...', { product, updates, storeId });
+
   const db = await ConnectionManager.getStoreConnection(storeId);
+  console.log('   [updateProduct] Got DB connection');
 
   const found = await findProductByNameOrSku(db, product);
+  console.log('   [updateProduct] Find result:', found ? { id: found.id, sku: found.sku } : 'NOT FOUND');
+
   if (!found) {
     return { error: `Product "${product}" not found` };
   }
@@ -803,9 +866,14 @@ async function updateProduct({ product, updates }, storeId) {
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', found.id);
 
-  if (error) return { error: error.message };
+  if (error) {
+    console.log('   [updateProduct] Update error:', error);
+    return { error: error.message };
+  }
 
   const changes = Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ');
+  console.log('   [updateProduct] Success:', changes);
+
   return {
     success: true,
     message: `Updated "${found.name}" (${found.sku}): ${changes}`,
