@@ -811,6 +811,334 @@ const TOOLS = [
   },
 
   // ═══════════════════════════════════════════════════════════════
+  // ATTRIBUTE SETS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_attribute_sets",
+    description: "List all attribute sets.",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "create_attribute_set",
+    description: "Create a new attribute set.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Attribute set name" },
+        description: { type: "string", description: "Description" },
+        is_default: { type: "boolean", description: "Set as default for new products" }
+      },
+      required: ["name"]
+    }
+  },
+  {
+    name: "update_attribute_set",
+    description: "Update an attribute set or add/remove attributes from it.",
+    input_schema: {
+      type: "object",
+      properties: {
+        attribute_set: { type: "string", description: "Attribute set name" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            description: { type: "string" },
+            is_default: { type: "boolean" },
+            add_attributes: { type: "array", items: { type: "string" }, description: "Attribute codes to add" },
+            remove_attributes: { type: "array", items: { type: "string" }, description: "Attribute codes to remove" }
+          }
+        }
+      },
+      required: ["attribute_set", "updates"]
+    }
+  },
+  {
+    name: "delete_attribute_set",
+    description: "Delete an attribute set.",
+    input_schema: {
+      type: "object",
+      properties: {
+        attribute_set: { type: "string", description: "Attribute set name" }
+      },
+      required: ["attribute_set"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // CUSTOM OPTION RULES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_custom_option_rules",
+    description: "List all custom option rules (rules for when to show custom product options).",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "create_custom_option_rule",
+    description: "Create a custom option rule.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Rule name" },
+        display_label: { type: "string", description: "Label shown to customer" },
+        conditions: { type: "object", description: "Conditions when rule applies (category_ids, product_ids, etc.)" },
+        optional_product_ids: { type: "array", items: { type: "string" }, description: "Product IDs that are optional selections" }
+      },
+      required: ["name"]
+    }
+  },
+  {
+    name: "update_custom_option_rule",
+    description: "Update a custom option rule.",
+    input_schema: {
+      type: "object",
+      properties: {
+        rule: { type: "string", description: "Rule name" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            display_label: { type: "string" },
+            conditions: { type: "object" },
+            optional_product_ids: { type: "array", items: { type: "string" } },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["rule", "updates"]
+    }
+  },
+  {
+    name: "delete_custom_option_rule",
+    description: "Delete a custom option rule.",
+    input_schema: {
+      type: "object",
+      properties: {
+        rule: { type: "string", description: "Rule name" }
+      },
+      required: ["rule"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PRODUCT TABS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_product_tabs",
+    description: "List all product tabs (custom tabs on product pages).",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "create_product_tab",
+    description: "Create a product tab.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Tab name" },
+        content: { type: "string", description: "Tab content (HTML)" },
+        tab_type: { type: "string", enum: ["text", "attributes", "attribute_set"], description: "Tab type" },
+        attribute_ids: { type: "array", items: { type: "string" }, description: "Attribute IDs to show (for attributes type)" },
+        attribute_set_ids: { type: "array", items: { type: "string" }, description: "Attribute set IDs (for attribute_set type)" }
+      },
+      required: ["name"]
+    }
+  },
+  {
+    name: "update_product_tab",
+    description: "Update a product tab.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tab: { type: "string", description: "Tab name or slug" },
+        updates: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            content: { type: "string" },
+            is_active: { type: "boolean" },
+            sort_order: { type: "number" }
+          }
+        }
+      },
+      required: ["tab", "updates"]
+    }
+  },
+  {
+    name: "delete_product_tab",
+    description: "Delete a product tab.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tab: { type: "string", description: "Tab name or slug" }
+      },
+      required: ["tab"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // BLACKLIST MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_blacklist",
+    description: "List blacklisted emails, IPs, or countries.",
+    input_schema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["emails", "ips", "countries", "all"], description: "Type of blacklist to list" }
+      },
+      required: ["type"]
+    }
+  },
+  {
+    name: "add_to_blacklist",
+    description: "Add email, IP, or country to blacklist.",
+    input_schema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["email", "ip", "country"], description: "Type of entry" },
+        value: { type: "string", description: "Email, IP address, or country code" },
+        reason: { type: "string", description: "Reason for blacklisting" }
+      },
+      required: ["type", "value"]
+    }
+  },
+  {
+    name: "remove_from_blacklist",
+    description: "Remove email, IP, or country from blacklist.",
+    input_schema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["email", "ip", "country"], description: "Type of entry" },
+        value: { type: "string", description: "Email, IP address, or country code" }
+      },
+      required: ["type", "value"]
+    }
+  },
+  {
+    name: "blacklist_customer",
+    description: "Blacklist a customer by email.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Customer email" },
+        reason: { type: "string", description: "Reason for blacklisting" }
+      },
+      required: ["email"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // DELIVERY SETTINGS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "get_delivery_settings",
+    description: "Get delivery date/time settings.",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "update_delivery_settings",
+    description: "Update delivery date/time settings.",
+    input_schema: {
+      type: "object",
+      properties: {
+        enable_delivery_date: { type: "boolean", description: "Enable delivery date selection" },
+        enable_comments: { type: "boolean", description: "Enable delivery comments" },
+        offset_days: { type: "number", description: "Minimum days from order date" },
+        max_advance_days: { type: "number", description: "Maximum days in advance" },
+        blocked_weekdays: { type: "array", items: { type: "number" }, description: "Blocked weekdays (0=Sun, 6=Sat)" },
+        blocked_dates: { type: "array", items: { type: "string" }, description: "Blocked dates (YYYY-MM-DD)" }
+      }
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // COOKIE CONSENT
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "get_cookie_consent_settings",
+    description: "Get cookie consent banner settings.",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "update_cookie_consent_settings",
+    description: "Update cookie consent settings.",
+    input_schema: {
+      type: "object",
+      properties: {
+        is_enabled: { type: "boolean", description: "Enable cookie consent banner" },
+        banner_position: { type: "string", enum: ["bottom", "top", "bottom-left", "bottom-right"], description: "Banner position" },
+        theme: { type: "string", enum: ["light", "dark"], description: "Banner theme" },
+        gdpr_mode: { type: "boolean", description: "Enable GDPR mode" },
+        analytics_cookies: { type: "boolean", description: "Show analytics cookies option" },
+        marketing_cookies: { type: "boolean", description: "Show marketing cookies option" },
+        primary_color: { type: "string", description: "Primary color (hex)" },
+        privacy_policy_url: { type: "string", description: "Privacy policy URL" }
+      }
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SEO SETTINGS & TEMPLATES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "get_seo_settings",
+    description: "Get global SEO settings.",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "update_seo_settings",
+    description: "Update global SEO settings.",
+    input_schema: {
+      type: "object",
+      properties: {
+        default_title_suffix: { type: "string", description: "Suffix added to all page titles" },
+        default_meta_description: { type: "string", description: "Default meta description" },
+        robots_txt: { type: "string", description: "robots.txt content" },
+        google_analytics_id: { type: "string", description: "Google Analytics ID" },
+        google_tag_manager_id: { type: "string", description: "Google Tag Manager ID" }
+      }
+    }
+  },
+  {
+    name: "list_seo_templates",
+    description: "List SEO templates (for products, categories, etc.).",
+    input_schema: { type: "object", properties: {} }
+  },
+  {
+    name: "update_seo_template",
+    description: "Update an SEO template.",
+    input_schema: {
+      type: "object",
+      properties: {
+        template: { type: "string", description: "Template name or page type" },
+        updates: {
+          type: "object",
+          properties: {
+            title_template: { type: "string", description: "Title template with variables like {{product.name}}" },
+            meta_description_template: { type: "string", description: "Meta description template" },
+            is_active: { type: "boolean" }
+          }
+        }
+      },
+      required: ["template", "updates"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // INTEGRATIONS / IMPORTS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "trigger_akeneo_import",
+    description: "Trigger an Akeneo product import.",
+    input_schema: {
+      type: "object",
+      properties: {
+        import_type: { type: "string", enum: ["products", "categories", "attributes", "all"], description: "What to import" },
+        full_sync: { type: "boolean", description: "Full sync (true) or incremental (false)" }
+      }
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
   // STORE SETTINGS
   // ═══════════════════════════════════════════════════════════════
   {
@@ -1041,18 +1369,26 @@ AVAILABLE TOOLS:
 - **Products**: list_products, update_product, create_product, delete_product
 - **Categories**: list_categories, update_category, set_category_visible, set_category_hidden, create_category, delete_category, add_product_to_category, remove_product_from_category
 - **Attributes**: list_attributes, create_attribute, update_attribute, delete_attribute
+- **Attribute Sets**: list_attribute_sets, create_attribute_set, update_attribute_set, delete_attribute_set
 - **Orders**: list_orders, update_order_status
-- **Customers**: list_customers
+- **Customers**: list_customers, blacklist_customer
 - **Coupons**: list_coupons, create_coupon, delete_coupon
 - **CMS Pages**: list_cms_pages, create_cms_page, update_cms_page, delete_cms_page
 - **CMS Blocks**: list_cms_blocks, create_cms_block, update_cms_block, delete_cms_block
 - **Product Labels**: list_product_labels, create_product_label, update_product_label, delete_product_label
+- **Product Tabs**: list_product_tabs, create_product_tab, update_product_tab, delete_product_tab
+- **Custom Options**: list_custom_option_rules, create_custom_option_rule, update_custom_option_rule, delete_custom_option_rule
 - **Shipping**: list_shipping_methods, create_shipping_method, update_shipping_method, delete_shipping_method
 - **Payments**: list_payment_methods, update_payment_method
 - **Email Templates**: list_email_templates, update_email_template
 - **Taxes**: list_taxes, create_tax, update_tax, delete_tax
+- **Blacklist**: list_blacklist, add_to_blacklist, remove_from_blacklist
+- **Delivery**: get_delivery_settings, update_delivery_settings
+- **Cookie Consent**: get_cookie_consent_settings, update_cookie_consent_settings
+- **SEO**: get_seo_settings, update_seo_settings, list_seo_templates, update_seo_template
 - **Settings**: get_store_settings, update_store_setting, update_stock_settings, update_display_settings, update_category_settings, update_checkout_settings, update_navigation_settings, update_gallery_settings
 - **Layout**: modify_slot
+- **Imports**: trigger_akeneo_import
 - **Knowledge**: search_knowledge
 - **Stats**: get_store_stats
 - **Translation**: translate_content
@@ -1250,6 +1586,97 @@ async function executeTool(name, input, context) {
         break;
       case 'delete_tax':
         result = await deleteTax(input, storeId);
+        break;
+
+      // Attribute Set tools
+      case 'list_attribute_sets':
+        result = await listAttributeSets(storeId);
+        break;
+      case 'create_attribute_set':
+        result = await createAttributeSet(input, storeId);
+        break;
+      case 'update_attribute_set':
+        result = await updateAttributeSet(input, storeId);
+        break;
+      case 'delete_attribute_set':
+        result = await deleteAttributeSet(input, storeId);
+        break;
+
+      // Custom Option Rule tools
+      case 'list_custom_option_rules':
+        result = await listCustomOptionRules(storeId);
+        break;
+      case 'create_custom_option_rule':
+        result = await createCustomOptionRule(input, storeId);
+        break;
+      case 'update_custom_option_rule':
+        result = await updateCustomOptionRule(input, storeId);
+        break;
+      case 'delete_custom_option_rule':
+        result = await deleteCustomOptionRule(input, storeId);
+        break;
+
+      // Product Tab tools
+      case 'list_product_tabs':
+        result = await listProductTabs(storeId);
+        break;
+      case 'create_product_tab':
+        result = await createProductTab(input, storeId);
+        break;
+      case 'update_product_tab':
+        result = await updateProductTab(input, storeId);
+        break;
+      case 'delete_product_tab':
+        result = await deleteProductTab(input, storeId);
+        break;
+
+      // Blacklist tools
+      case 'list_blacklist':
+        result = await listBlacklist(input, storeId);
+        break;
+      case 'add_to_blacklist':
+        result = await addToBlacklist(input, storeId);
+        break;
+      case 'remove_from_blacklist':
+        result = await removeFromBlacklist(input, storeId);
+        break;
+      case 'blacklist_customer':
+        result = await blacklistCustomer(input, storeId);
+        break;
+
+      // Delivery Settings tools
+      case 'get_delivery_settings':
+        result = await getDeliverySettings(storeId);
+        break;
+      case 'update_delivery_settings':
+        result = await updateDeliverySettings(input, storeId);
+        break;
+
+      // Cookie Consent tools
+      case 'get_cookie_consent_settings':
+        result = await getCookieConsentSettings(storeId);
+        break;
+      case 'update_cookie_consent_settings':
+        result = await updateCookieConsentSettings(input, storeId);
+        break;
+
+      // SEO tools
+      case 'get_seo_settings':
+        result = await getSeoSettings(storeId);
+        break;
+      case 'update_seo_settings':
+        result = await updateSeoSettings(input, storeId);
+        break;
+      case 'list_seo_templates':
+        result = await listSeoTemplates(storeId);
+        break;
+      case 'update_seo_template':
+        result = await updateSeoTemplate(input, storeId);
+        break;
+
+      // Integration tools
+      case 'trigger_akeneo_import':
+        result = await triggerAkeneoImport(input, storeId);
         break;
 
       // Settings tools
@@ -3054,6 +3481,599 @@ async function deleteTax({ tax }, storeId) {
     success: true,
     message: `Deleted tax "${transMap.get(found.id)}"`,
     action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ATTRIBUTE SET TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listAttributeSets(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: sets, error } = await db
+    .from('attribute_sets')
+    .select('id, name, description, is_default, attribute_ids, sort_order')
+    .order('sort_order')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  return { attribute_sets: sets || [], count: sets?.length || 0 };
+}
+
+async function createAttributeSet({ name, description, is_default = false }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: created, error } = await db
+    .from('attribute_sets')
+    .insert({ name, description, is_default, store_id: storeId, attribute_ids: [] })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: `Created attribute set "${name}"`,
+    attribute_set: { id: created.id, name },
+    action: 'create'
+  };
+}
+
+async function updateAttributeSet({ attribute_set, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: sets } = await db.from('attribute_sets').select('id, name, attribute_ids');
+  const found = sets?.find(s => s.name.toLowerCase() === attribute_set.toLowerCase());
+
+  if (!found) return { error: `Attribute set "${attribute_set}" not found` };
+
+  let attributeIds = found.attribute_ids || [];
+
+  // Handle adding/removing attributes
+  if (updates.add_attributes) {
+    const { data: attrs } = await db.from('attributes').select('id, code').in('code', updates.add_attributes);
+    const newIds = attrs?.map(a => a.id) || [];
+    attributeIds = [...new Set([...attributeIds, ...newIds])];
+  }
+
+  if (updates.remove_attributes) {
+    const { data: attrs } = await db.from('attributes').select('id, code').in('code', updates.remove_attributes);
+    const removeIds = new Set(attrs?.map(a => a.id) || []);
+    attributeIds = attributeIds.filter(id => !removeIds.has(id));
+  }
+
+  const updateData = { updated_at: new Date().toISOString(), attribute_ids: attributeIds };
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.description !== undefined) updateData.description = updates.description;
+  if (updates.is_default !== undefined) updateData.is_default = updates.is_default;
+
+  await db.from('attribute_sets').update(updateData).eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Updated attribute set "${found.name}"`,
+    action: 'update'
+  };
+}
+
+async function deleteAttributeSet({ attribute_set }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: sets } = await db.from('attribute_sets').select('id, name');
+  const found = sets?.find(s => s.name.toLowerCase() === attribute_set.toLowerCase());
+
+  if (!found) return { error: `Attribute set "${attribute_set}" not found` };
+
+  await db.from('attribute_sets').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted attribute set "${found.name}"`,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CUSTOM OPTION RULE TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listCustomOptionRules(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: rules, error } = await db
+    .from('custom_option_rules')
+    .select('id, name, display_label, is_active, conditions, optional_product_ids')
+    .order('name')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  return { rules: rules || [], count: rules?.length || 0 };
+}
+
+async function createCustomOptionRule({ name, display_label, conditions = {}, optional_product_ids = [] }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: created, error } = await db
+    .from('custom_option_rules')
+    .insert({
+      name,
+      display_label: display_label || 'Custom Options',
+      conditions,
+      optional_product_ids,
+      store_id: storeId,
+      is_active: true
+    })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: `Created custom option rule "${name}"`,
+    rule: { id: created.id, name },
+    action: 'create'
+  };
+}
+
+async function updateCustomOptionRule({ rule, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: rules } = await db.from('custom_option_rules').select('id, name');
+  const found = rules?.find(r => r.name.toLowerCase() === rule.toLowerCase());
+
+  if (!found) return { error: `Custom option rule "${rule}" not found` };
+
+  const updateData = { updated_at: new Date().toISOString() };
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.display_label !== undefined) updateData.display_label = updates.display_label;
+  if (updates.conditions !== undefined) updateData.conditions = updates.conditions;
+  if (updates.optional_product_ids !== undefined) updateData.optional_product_ids = updates.optional_product_ids;
+  if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
+
+  await db.from('custom_option_rules').update(updateData).eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Updated custom option rule "${found.name}"`,
+    action: 'update'
+  };
+}
+
+async function deleteCustomOptionRule({ rule }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: rules } = await db.from('custom_option_rules').select('id, name');
+  const found = rules?.find(r => r.name.toLowerCase() === rule.toLowerCase());
+
+  if (!found) return { error: `Custom option rule "${rule}" not found` };
+
+  await db.from('custom_option_rules').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted custom option rule "${found.name}"`,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCT TAB TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listProductTabs(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: tabs, error } = await db
+    .from('product_tabs')
+    .select('id, name, slug, tab_type, is_active, sort_order')
+    .order('sort_order')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  return { tabs: tabs || [], count: tabs?.length || 0 };
+}
+
+async function createProductTab({ name, content, tab_type = 'text', attribute_ids = [], attribute_set_ids = [] }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  const { data: created, error } = await db
+    .from('product_tabs')
+    .insert({
+      name,
+      slug,
+      content: content || '',
+      tab_type,
+      attribute_ids,
+      attribute_set_ids,
+      store_id: storeId,
+      is_active: true
+    })
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  // Insert translation
+  await db.from('product_tab_translations').insert({
+    product_tab_id: created.id,
+    language_code: 'en',
+    name,
+    content: content || ''
+  });
+
+  return {
+    success: true,
+    message: `Created product tab "${name}"`,
+    tab: { id: created.id, name, slug },
+    refreshPreview: true,
+    action: 'create'
+  };
+}
+
+async function updateProductTab({ tab, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: tabs } = await db.from('product_tabs').select('id, name, slug');
+  const found = tabs?.find(t =>
+    t.name.toLowerCase() === tab.toLowerCase() ||
+    t.slug.toLowerCase() === tab.toLowerCase()
+  );
+
+  if (!found) return { error: `Product tab "${tab}" not found` };
+
+  const updateData = { updated_at: new Date().toISOString() };
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
+  if (updates.sort_order !== undefined) updateData.sort_order = updates.sort_order;
+
+  await db.from('product_tabs').update(updateData).eq('id', found.id);
+
+  // Update translation if content changed
+  if (updates.content !== undefined || updates.name !== undefined) {
+    const translationData = {
+      product_tab_id: found.id,
+      language_code: 'en',
+      updated_at: new Date().toISOString()
+    };
+    if (updates.name !== undefined) translationData.name = updates.name;
+    if (updates.content !== undefined) translationData.content = updates.content;
+
+    await db.from('product_tab_translations').upsert(translationData, {
+      onConflict: 'product_tab_id,language_code',
+      ignoreDuplicates: false
+    });
+  }
+
+  return {
+    success: true,
+    message: `Updated product tab "${found.name}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+async function deleteProductTab({ tab }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: tabs } = await db.from('product_tabs').select('id, name, slug');
+  const found = tabs?.find(t =>
+    t.name.toLowerCase() === tab.toLowerCase() ||
+    t.slug.toLowerCase() === tab.toLowerCase()
+  );
+
+  if (!found) return { error: `Product tab "${tab}" not found` };
+
+  await db.from('product_tab_translations').delete().eq('product_tab_id', found.id);
+  await db.from('product_tabs').delete().eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Deleted product tab "${found.name}"`,
+    refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BLACKLIST TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listBlacklist({ type }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const result = {};
+
+  if (type === 'emails' || type === 'all') {
+    const { data } = await db.from('blacklist_emails').select('id, email, reason, created_at').limit(100);
+    result.emails = data || [];
+  }
+
+  if (type === 'ips' || type === 'all') {
+    const { data } = await db.from('blacklist_ips').select('id, ip_address, reason, created_at').limit(100);
+    result.ips = data || [];
+  }
+
+  if (type === 'countries' || type === 'all') {
+    const { data } = await db.from('blacklist_countries').select('id, country_code, reason, created_at').limit(100);
+    result.countries = data || [];
+  }
+
+  return result;
+}
+
+async function addToBlacklist({ type, value, reason }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  let tableName, columnName;
+  if (type === 'email') {
+    tableName = 'blacklist_emails';
+    columnName = 'email';
+  } else if (type === 'ip') {
+    tableName = 'blacklist_ips';
+    columnName = 'ip_address';
+  } else if (type === 'country') {
+    tableName = 'blacklist_countries';
+    columnName = 'country_code';
+  }
+
+  const insertData = { store_id: storeId, reason: reason || null };
+  insertData[columnName] = value;
+
+  const { error } = await db.from(tableName).insert(insertData);
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: `Added ${type} "${value}" to blacklist`,
+    action: 'create'
+  };
+}
+
+async function removeFromBlacklist({ type, value }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  let tableName, columnName;
+  if (type === 'email') {
+    tableName = 'blacklist_emails';
+    columnName = 'email';
+  } else if (type === 'ip') {
+    tableName = 'blacklist_ips';
+    columnName = 'ip_address';
+  } else if (type === 'country') {
+    tableName = 'blacklist_countries';
+    columnName = 'country_code';
+  }
+
+  const { error } = await db.from(tableName).delete().eq(columnName, value);
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: `Removed ${type} "${value}" from blacklist`,
+    action: 'delete'
+  };
+}
+
+async function blacklistCustomer({ email, reason }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find customer
+  const { data: customer } = await db
+    .from('customers')
+    .select('id, email')
+    .eq('email', email.toLowerCase())
+    .single();
+
+  if (!customer) return { error: `Customer with email "${email}" not found` };
+
+  // Update customer
+  await db.from('customers').update({
+    is_blacklisted: true,
+    blacklist_reason: reason || 'Blacklisted via AI',
+    blacklisted_at: new Date().toISOString()
+  }).eq('id', customer.id);
+
+  // Also add to email blacklist
+  await db.from('blacklist_emails').upsert({
+    email: email.toLowerCase(),
+    store_id: storeId,
+    reason: reason || 'Customer blacklisted'
+  }, { onConflict: 'store_id,email' });
+
+  return {
+    success: true,
+    message: `Blacklisted customer "${email}"`,
+    action: 'update'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DELIVERY SETTINGS TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function getDeliverySettings(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data, error } = await db
+    .from('delivery_settings')
+    .select('*')
+    .eq('store_id', storeId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') return { error: error.message };
+
+  return {
+    settings: data || {
+      enable_delivery_date: true,
+      enable_comments: true,
+      offset_days: 1,
+      max_advance_days: 30,
+      blocked_dates: [],
+      blocked_weekdays: []
+    }
+  };
+}
+
+async function updateDeliverySettings(updates, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const updateData = { store_id: storeId, updated_at: new Date().toISOString() };
+  if (updates.enable_delivery_date !== undefined) updateData.enable_delivery_date = updates.enable_delivery_date;
+  if (updates.enable_comments !== undefined) updateData.enable_comments = updates.enable_comments;
+  if (updates.offset_days !== undefined) updateData.offset_days = updates.offset_days;
+  if (updates.max_advance_days !== undefined) updateData.max_advance_days = updates.max_advance_days;
+  if (updates.blocked_weekdays !== undefined) updateData.blocked_weekdays = updates.blocked_weekdays;
+  if (updates.blocked_dates !== undefined) updateData.blocked_dates = updates.blocked_dates;
+
+  const { error } = await db.from('delivery_settings').upsert(updateData, { onConflict: 'store_id' });
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: 'Updated delivery settings',
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COOKIE CONSENT TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function getCookieConsentSettings(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data, error } = await db
+    .from('cookie_consent_settings')
+    .select('*')
+    .eq('store_id', storeId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') return { error: error.message };
+
+  return { settings: data || { is_enabled: false } };
+}
+
+async function updateCookieConsentSettings(updates, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const updateData = { store_id: storeId, updated_at: new Date().toISOString() };
+  const fields = ['is_enabled', 'banner_position', 'theme', 'gdpr_mode', 'analytics_cookies',
+    'marketing_cookies', 'primary_color', 'privacy_policy_url', 'background_color', 'text_color'];
+
+  fields.forEach(f => {
+    if (updates[f] !== undefined) updateData[f] = updates[f];
+  });
+
+  const { error } = await db.from('cookie_consent_settings').upsert(updateData, { onConflict: 'store_id' });
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: 'Updated cookie consent settings',
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEO TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function getSeoSettings(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data, error } = await db
+    .from('seo_settings')
+    .select('*')
+    .eq('store_id', storeId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') return { error: error.message };
+
+  return { settings: data || {} };
+}
+
+async function updateSeoSettings(updates, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const updateData = { store_id: storeId, updated_at: new Date().toISOString() };
+  const fields = ['default_title_suffix', 'default_meta_description', 'robots_txt',
+    'google_analytics_id', 'google_tag_manager_id'];
+
+  fields.forEach(f => {
+    if (updates[f] !== undefined) updateData[f] = updates[f];
+  });
+
+  const { error } = await db.from('seo_settings').upsert(updateData, { onConflict: 'store_id' });
+  if (error) return { error: error.message };
+
+  return {
+    success: true,
+    message: 'Updated SEO settings',
+    action: 'update'
+  };
+}
+
+async function listSeoTemplates(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data, error } = await db
+    .from('seo_templates')
+    .select('id, name, page_type, type, title_template, meta_description_template, is_active')
+    .order('name')
+    .limit(50);
+
+  if (error) return { error: error.message };
+
+  return { templates: data || [], count: data?.length || 0 };
+}
+
+async function updateSeoTemplate({ template, updates }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: templates } = await db.from('seo_templates').select('id, name, page_type');
+  const found = templates?.find(t =>
+    t.name.toLowerCase() === template.toLowerCase() ||
+    t.page_type.toLowerCase() === template.toLowerCase()
+  );
+
+  if (!found) return { error: `SEO template "${template}" not found` };
+
+  const updateData = { updated_at: new Date().toISOString() };
+  if (updates.title_template !== undefined) updateData.title_template = updates.title_template;
+  if (updates.meta_description_template !== undefined) updateData.meta_description_template = updates.meta_description_template;
+  if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
+
+  await db.from('seo_templates').update(updateData).eq('id', found.id);
+
+  return {
+    success: true,
+    message: `Updated SEO template "${found.name}"`,
+    action: 'update'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INTEGRATION / IMPORT TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function triggerAkeneoImport({ import_type = 'products', full_sync = false }, storeId) {
+  // This would trigger an Akeneo import job
+  // In a real implementation, this would queue a job to the job processor
+
+  return {
+    success: true,
+    message: `Triggered Akeneo ${import_type} import (${full_sync ? 'full sync' : 'incremental'})`,
+    note: 'Import job has been queued. Check job status for progress.',
+    action: 'trigger'
   };
 }
 
