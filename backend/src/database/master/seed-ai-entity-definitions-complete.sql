@@ -148,7 +148,84 @@ INSERT INTO ai_entity_definitions (entity_name, display_name, description, table
  ]',
  '["theme", "colors", "styling", "font", "header", "buttons", "checkout", "breadcrumb", "pagination"]',
  '["change primary button color", "update header background", "set font to Roboto", "change add to cart button color"]',
- 'settings', 90, true);
+ 'settings', 90, true),
+
+-- Store Settings Structure (documentation entity for stores.settings JSON - ALL sections)
+('store_settings', 'Store Settings Structure', 'Complete documentation of stores.settings JSON structure. Contains theme (colors/styling), display, stock, category, checkout, navigation, and product gallery settings. Use update_store_setting tool with setting_path.', '_schema_store_settings', 'N/A', NULL,
+ '["stores", "theme_defaults"]',
+ '["get", "update"]',
+ '[
+   {"section": "STOCK SETTINGS", "description": "Inventory and stock display settings"},
+   {"name": "enable_inventory", "type": "boolean", "default": true, "description": "Enable inventory tracking"},
+   {"name": "display_out_of_stock", "type": "boolean", "default": true, "description": "Show out of stock products"},
+   {"name": "hide_stock_quantity", "type": "boolean", "default": false, "description": "Hide exact stock quantity"},
+   {"name": "display_low_stock_threshold", "type": "integer", "default": 0, "description": "Show low stock warning below this threshold (0=disabled)"},
+   {"name": "show_stock_label", "type": "boolean", "default": false, "description": "Show In Stock/Out of Stock labels"},
+
+   {"section": "DISPLAY SETTINGS", "description": "General display and UI visibility settings"},
+   {"name": "enable_reviews", "type": "boolean", "default": true, "description": "Enable product reviews"},
+   {"name": "allow_guest_checkout", "type": "boolean", "default": true, "description": "Allow checkout without account"},
+   {"name": "require_shipping_address", "type": "boolean", "default": true, "description": "Require shipping address at checkout"},
+   {"name": "collect_phone_number_at_checkout", "type": "boolean", "default": false, "description": "Show phone number field at checkout"},
+   {"name": "phone_number_required_at_checkout", "type": "boolean", "default": true, "description": "Make phone number required if shown"},
+   {"name": "hide_currency_category", "type": "boolean", "default": false, "description": "Hide currency symbol on category pages"},
+   {"name": "hide_currency_product", "type": "boolean", "default": false, "description": "Hide currency symbol on product pages"},
+   {"name": "hide_header_cart", "type": "boolean", "default": false, "description": "Hide cart icon in header"},
+   {"name": "hide_header_checkout", "type": "boolean", "default": false, "description": "Hide checkout link in header"},
+   {"name": "hide_header_search", "type": "boolean", "default": false, "description": "Hide search icon in header"},
+   {"name": "hide_quantity_selector", "type": "boolean", "default": false, "description": "Hide quantity selector on product pages"},
+   {"name": "show_permanent_search", "type": "boolean", "default": true, "description": "Always show search bar (not icon)"},
+   {"name": "show_category_in_breadcrumb", "type": "boolean", "default": true, "description": "Show category in breadcrumb navigation"},
+   {"name": "show_language_selector", "type": "boolean", "default": false, "description": "Show language selector in header"},
+
+   {"section": "CATEGORY PAGE SETTINGS", "description": "Category/collection page behavior"},
+   {"name": "enable_product_filters", "type": "boolean", "default": true, "description": "Show filter sidebar on category pages"},
+   {"name": "collapse_filters", "type": "boolean", "default": false, "description": "Collapse filter groups by default"},
+   {"name": "max_visible_attributes", "type": "integer", "default": 5, "description": "Max filter attributes shown before Show More"},
+   {"name": "enable_view_mode_toggle", "type": "boolean", "default": true, "description": "Show grid/list view toggle"},
+   {"name": "default_view_mode", "type": "string", "default": "grid", "enum": ["grid", "list"], "description": "Default product view mode"},
+
+   {"section": "NAVIGATION SETTINGS", "description": "Menu and navigation behavior"},
+   {"name": "excludeRootFromMenu", "type": "boolean", "default": false, "description": "Hide root category from navigation menu"},
+   {"name": "expandAllMenuItems", "type": "boolean", "default": false, "description": "Expand all menu items by default"},
+   {"name": "rootCategoryId", "type": "string", "default": null, "description": "ID of category to use as navigation root"},
+
+   {"section": "PRODUCT GALLERY SETTINGS", "description": "Product page image gallery layout"},
+   {"name": "product_gallery_layout", "type": "string", "default": "horizontal", "enum": ["horizontal", "vertical"], "description": "Thumbnail gallery orientation"},
+   {"name": "vertical_gallery_position", "type": "string", "default": "left", "enum": ["left", "right"], "description": "Position of vertical thumbnails"},
+   {"name": "mobile_gallery_layout", "type": "string", "default": "below", "enum": ["below", "hidden"], "description": "Thumbnail position on mobile"},
+
+   {"section": "CHECKOUT SETTINGS", "description": "Checkout flow and layout configuration"},
+   {"name": "checkout_steps_count", "type": "integer", "default": 2, "enum": [1, 2, 3], "description": "Number of checkout steps (1, 2, or 3)"},
+   {"name": "checkout_2step_step1_name", "type": "string", "default": "Information", "description": "Step 1 name for 2-step checkout"},
+   {"name": "checkout_2step_step2_name", "type": "string", "default": "Payment", "description": "Step 2 name for 2-step checkout"},
+   {"name": "checkout_3step_step1_name", "type": "string", "default": "Information", "description": "Step 1 name for 3-step checkout"},
+   {"name": "checkout_3step_step2_name", "type": "string", "default": "Shipping", "description": "Step 2 name for 3-step checkout"},
+   {"name": "checkout_3step_step3_name", "type": "string", "default": "Payment", "description": "Step 3 name for 3-step checkout"},
+   {"name": "checkout_1step_columns", "type": "integer", "default": 3, "description": "Columns for 1-step checkout layout"},
+   {"name": "checkout_2step_columns", "type": "integer", "default": 2, "description": "Columns for 2-step checkout layout"},
+   {"name": "checkout_3step_columns", "type": "integer", "default": 2, "description": "Columns for 3-step checkout layout"},
+   {"name": "checkout_1step_layout", "type": "json", "description": "Column sections layout for 1-step checkout"},
+   {"name": "checkout_2step_layout", "type": "json", "description": "Column sections layout for 2-step checkout"},
+   {"name": "checkout_3step_layout", "type": "json", "description": "Column sections layout for 3-step checkout"},
+
+   {"section": "PRODUCT GRID SETTINGS", "description": "Category page product grid configuration"},
+   {"name": "product_grid.rows", "type": "integer", "default": 4, "description": "Number of product rows per page"},
+   {"name": "product_grid.breakpoints.default", "type": "integer", "default": 1, "description": "Columns on smallest screens"},
+   {"name": "product_grid.breakpoints.sm", "type": "integer", "default": 2, "description": "Columns on small screens (640px+)"},
+   {"name": "product_grid.breakpoints.lg", "type": "integer", "default": 2, "description": "Columns on large screens (1024px+)"},
+
+   {"section": "CURRENCY SETTINGS", "description": "Store currency configuration"},
+   {"name": "currency_code", "type": "string", "description": "Currency code (USD, EUR, GBP, etc.)"},
+
+   {"section": "COOKIE CONSENT", "description": "Cookie consent banner settings"},
+   {"name": "cookie_consent.enabled", "type": "boolean", "default": false, "description": "Enable cookie consent banner"},
+
+   {"section": "THEME (nested)", "description": "See theme_settings entity for complete theme/color settings"}
+ ]',
+ '["settings", "stock", "display", "checkout", "navigation", "gallery", "grid", "category", "cart", "search", "breadcrumb", "filters"]',
+ '["hide header cart", "show stock labels", "enable 3-step checkout", "hide filters on category page", "show language selector", "set checkout to 2 steps"]',
+ 'settings', 88, true);
 
 -- ═══════════════════════════════════════════════════════════════
 -- CATALOG - PRODUCTS

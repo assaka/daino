@@ -465,25 +465,115 @@ const TOOLS = [
   // ═══════════════════════════════════════════════════════════════
   {
     name: "get_store_settings",
-    description: "Get store configuration.",
+    description: "Get store configuration for a specific area or all settings.",
     input_schema: {
       type: "object",
       properties: {
-        area: { type: "string", enum: ["theme", "display", "payments", "shipping", "all"] }
+        area: { type: "string", enum: ["theme", "display", "stock", "category", "checkout", "navigation", "gallery", "all"], description: "Settings area to retrieve" }
       },
       required: ["area"]
     }
   },
   {
     name: "update_store_setting",
-    description: "Update a store setting.",
+    description: "Update a single store setting by path.",
     input_schema: {
       type: "object",
       properties: {
-        setting_path: { type: "string", description: "Setting path like 'theme.primaryColor'" },
+        setting_path: { type: "string", description: "Setting path like 'theme.primary_button_color' or 'hide_header_cart'" },
         value: { description: "New value" }
       },
       required: ["setting_path", "value"]
+    }
+  },
+  {
+    name: "update_stock_settings",
+    description: "Update stock/inventory display settings: enable_inventory, display_out_of_stock, hide_stock_quantity, display_low_stock_threshold, show_stock_label.",
+    input_schema: {
+      type: "object",
+      properties: {
+        enable_inventory: { type: "boolean", description: "Enable inventory tracking" },
+        display_out_of_stock: { type: "boolean", description: "Show out of stock products" },
+        hide_stock_quantity: { type: "boolean", description: "Hide exact stock quantity from customers" },
+        display_low_stock_threshold: { type: "number", description: "Show low stock warning below this threshold (0=disabled)" },
+        show_stock_label: { type: "boolean", description: "Show In Stock/Out of Stock labels" }
+      }
+    }
+  },
+  {
+    name: "update_display_settings",
+    description: "Update display/UI settings: hide_header_cart, hide_header_checkout, hide_header_search, show_permanent_search, show_category_in_breadcrumb, show_language_selector, hide_quantity_selector, hide_currency_category, hide_currency_product.",
+    input_schema: {
+      type: "object",
+      properties: {
+        hide_header_cart: { type: "boolean", description: "Hide cart icon in header" },
+        hide_header_checkout: { type: "boolean", description: "Hide checkout link in header" },
+        hide_header_search: { type: "boolean", description: "Hide search icon in header" },
+        show_permanent_search: { type: "boolean", description: "Always show search bar (not just icon)" },
+        show_category_in_breadcrumb: { type: "boolean", description: "Show category in breadcrumb" },
+        show_language_selector: { type: "boolean", description: "Show language selector in header" },
+        hide_quantity_selector: { type: "boolean", description: "Hide quantity selector on product page" },
+        hide_currency_category: { type: "boolean", description: "Hide currency symbol on category pages" },
+        hide_currency_product: { type: "boolean", description: "Hide currency symbol on product pages" },
+        enable_reviews: { type: "boolean", description: "Enable product reviews" }
+      }
+    }
+  },
+  {
+    name: "update_category_settings",
+    description: "Update category page settings: enable_product_filters, collapse_filters, max_visible_attributes, enable_view_mode_toggle, default_view_mode.",
+    input_schema: {
+      type: "object",
+      properties: {
+        enable_product_filters: { type: "boolean", description: "Show filter sidebar on category pages" },
+        collapse_filters: { type: "boolean", description: "Collapse filter groups by default" },
+        max_visible_attributes: { type: "number", description: "Max filter attributes shown before Show More" },
+        enable_view_mode_toggle: { type: "boolean", description: "Show grid/list view toggle" },
+        default_view_mode: { type: "string", enum: ["grid", "list"], description: "Default product view mode" }
+      }
+    }
+  },
+  {
+    name: "update_checkout_settings",
+    description: "Update checkout flow settings: checkout_steps_count (1, 2, or 3), step names, allow_guest_checkout, require_shipping_address, phone collection settings.",
+    input_schema: {
+      type: "object",
+      properties: {
+        checkout_steps_count: { type: "number", enum: [1, 2, 3], description: "Number of checkout steps" },
+        checkout_2step_step1_name: { type: "string", description: "Step 1 name for 2-step checkout" },
+        checkout_2step_step2_name: { type: "string", description: "Step 2 name for 2-step checkout" },
+        checkout_3step_step1_name: { type: "string", description: "Step 1 name for 3-step checkout" },
+        checkout_3step_step2_name: { type: "string", description: "Step 2 name for 3-step checkout" },
+        checkout_3step_step3_name: { type: "string", description: "Step 3 name for 3-step checkout" },
+        allow_guest_checkout: { type: "boolean", description: "Allow checkout without account" },
+        require_shipping_address: { type: "boolean", description: "Require shipping address" },
+        collect_phone_number_at_checkout: { type: "boolean", description: "Show phone number field" },
+        phone_number_required_at_checkout: { type: "boolean", description: "Make phone number required" }
+      }
+    }
+  },
+  {
+    name: "update_navigation_settings",
+    description: "Update navigation/menu settings: excludeRootFromMenu, expandAllMenuItems, rootCategoryId.",
+    input_schema: {
+      type: "object",
+      properties: {
+        excludeRootFromMenu: { type: "boolean", description: "Hide root category from navigation menu" },
+        expandAllMenuItems: { type: "boolean", description: "Expand all menu items by default" },
+        rootCategoryId: { type: "string", description: "ID of category to use as navigation root (null for default)" }
+      }
+    }
+  },
+  {
+    name: "update_gallery_settings",
+    description: "Update product gallery layout settings.",
+    input_schema: {
+      type: "object",
+      properties: {
+        product_gallery_layout: { type: "string", enum: ["horizontal", "vertical"], description: "Thumbnail gallery orientation" },
+        vertical_gallery_position: { type: "string", enum: ["left", "right"], description: "Position of vertical thumbnails" },
+        mobile_gallery_layout: { type: "string", enum: ["below", "hidden"], description: "Thumbnail position on mobile" }
+      }
     }
   },
 
@@ -604,7 +694,7 @@ AVAILABLE TOOLS:
 - **Orders**: list_orders, update_order_status
 - **Customers**: list_customers
 - **Coupons**: list_coupons, create_coupon, delete_coupon
-- **Settings**: get_store_settings, update_store_setting
+- **Settings**: get_store_settings, update_store_setting, update_stock_settings, update_display_settings, update_category_settings, update_checkout_settings, update_navigation_settings, update_gallery_settings
 - **Layout**: modify_slot
 - **Knowledge**: search_knowledge
 - **Stats**: get_store_stats
@@ -725,6 +815,24 @@ async function executeTool(name, input, context) {
         break;
       case 'update_store_setting':
         result = await updateStoreSetting(input.setting_path, input.value, storeId);
+        break;
+      case 'update_stock_settings':
+        result = await updateSettingsSection(input, storeId, 'stock');
+        break;
+      case 'update_display_settings':
+        result = await updateSettingsSection(input, storeId, 'display');
+        break;
+      case 'update_category_settings':
+        result = await updateSettingsSection(input, storeId, 'category');
+        break;
+      case 'update_checkout_settings':
+        result = await updateSettingsSection(input, storeId, 'checkout');
+        break;
+      case 'update_navigation_settings':
+        result = await updateSettingsSection(input, storeId, 'navigation');
+        break;
+      case 'update_gallery_settings':
+        result = await updateSettingsSection(input, storeId, 'gallery');
         break;
 
       // Layout tools
@@ -1750,7 +1858,87 @@ async function getStoreSettings(area, storeId) {
   const settings = store?.settings || {};
 
   if (area === 'all') return { settings };
-  return { [area]: settings[area] || {} };
+
+  // Return grouped settings based on area
+  switch (area) {
+    case 'theme':
+      return { theme: settings.theme || {} };
+
+    case 'stock':
+      return {
+        stock: {
+          enable_inventory: settings.enable_inventory ?? true,
+          display_out_of_stock: settings.display_out_of_stock ?? true,
+          hide_stock_quantity: settings.hide_stock_quantity ?? false,
+          display_low_stock_threshold: settings.display_low_stock_threshold ?? 0,
+          show_stock_label: settings.show_stock_label ?? false
+        }
+      };
+
+    case 'display':
+      return {
+        display: {
+          hide_header_cart: settings.hide_header_cart ?? false,
+          hide_header_checkout: settings.hide_header_checkout ?? false,
+          hide_header_search: settings.hide_header_search ?? false,
+          show_permanent_search: settings.show_permanent_search ?? true,
+          show_category_in_breadcrumb: settings.show_category_in_breadcrumb ?? true,
+          show_language_selector: settings.show_language_selector ?? false,
+          hide_quantity_selector: settings.hide_quantity_selector ?? false,
+          hide_currency_category: settings.hide_currency_category ?? false,
+          hide_currency_product: settings.hide_currency_product ?? false,
+          enable_reviews: settings.enable_reviews ?? true
+        }
+      };
+
+    case 'category':
+      return {
+        category: {
+          enable_product_filters: settings.enable_product_filters ?? true,
+          collapse_filters: settings.collapse_filters ?? false,
+          max_visible_attributes: settings.max_visible_attributes ?? 5,
+          enable_view_mode_toggle: settings.enable_view_mode_toggle ?? true,
+          default_view_mode: settings.default_view_mode ?? 'grid'
+        }
+      };
+
+    case 'checkout':
+      return {
+        checkout: {
+          checkout_steps_count: settings.checkout_steps_count ?? 2,
+          checkout_2step_step1_name: settings.checkout_2step_step1_name ?? 'Information',
+          checkout_2step_step2_name: settings.checkout_2step_step2_name ?? 'Payment',
+          checkout_3step_step1_name: settings.checkout_3step_step1_name ?? 'Information',
+          checkout_3step_step2_name: settings.checkout_3step_step2_name ?? 'Shipping',
+          checkout_3step_step3_name: settings.checkout_3step_step3_name ?? 'Payment',
+          allow_guest_checkout: settings.allow_guest_checkout ?? true,
+          require_shipping_address: settings.require_shipping_address ?? true,
+          collect_phone_number_at_checkout: settings.collect_phone_number_at_checkout ?? false,
+          phone_number_required_at_checkout: settings.phone_number_required_at_checkout ?? true
+        }
+      };
+
+    case 'navigation':
+      return {
+        navigation: {
+          excludeRootFromMenu: settings.excludeRootFromMenu ?? false,
+          expandAllMenuItems: settings.expandAllMenuItems ?? false,
+          rootCategoryId: settings.rootCategoryId ?? null
+        }
+      };
+
+    case 'gallery':
+      return {
+        gallery: {
+          product_gallery_layout: settings.product_gallery_layout ?? 'horizontal',
+          vertical_gallery_position: settings.vertical_gallery_position ?? 'left',
+          mobile_gallery_layout: settings.mobile_gallery_layout ?? 'below'
+        }
+      };
+
+    default:
+      return { [area]: settings[area] || {} };
+  }
 }
 
 async function updateStoreSetting(path, value, storeId) {
@@ -1774,6 +1962,53 @@ async function updateStoreSetting(path, value, storeId) {
     success: true,
     message: `Updated ${path} = ${JSON.stringify(value)}`,
     refreshPreview: path.startsWith('theme'),
+    action: 'update'
+  };
+}
+
+/**
+ * Update multiple settings at once for a specific section
+ * @param {Object} updates - Key-value pairs of settings to update
+ * @param {string} storeId - Store ID
+ * @param {string} section - Section name for logging
+ */
+async function updateSettingsSection(updates, storeId, section) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Get current settings
+  const { data: store } = await db.from('stores').select('settings').eq('id', storeId).single();
+  const settings = store?.settings || {};
+
+  // Track what was updated
+  const updatedFields = [];
+  const previousValues = {};
+
+  // Apply each update
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined && value !== null) {
+      previousValues[key] = settings[key];
+      settings[key] = value;
+      updatedFields.push(`${key}=${JSON.stringify(value)}`);
+    }
+  }
+
+  if (updatedFields.length === 0) {
+    return { error: 'No valid settings provided to update' };
+  }
+
+  // Save updated settings
+  await db.from('stores').update({ settings }).eq('id', storeId);
+
+  // Determine if preview should refresh (theme-related settings need refresh)
+  const themeRelatedSections = ['display', 'gallery'];
+  const refreshPreview = themeRelatedSections.includes(section);
+
+  return {
+    success: true,
+    message: `Updated ${section} settings: ${updatedFields.join(', ')}`,
+    updatedCount: updatedFields.length,
+    section,
+    refreshPreview,
     action: 'update'
   };
 }
