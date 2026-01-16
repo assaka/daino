@@ -429,11 +429,12 @@ router.post('/activate', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    // Get user info
+    // Get user info - token uses 'userId' field, not 'id'
+    const userId = decoded.userId || decoded.id;
     const { data: user, error: userError } = await masterDbClient
       .from('users')
       .select('id, email, name')
-      .eq('id', decoded.id)
+      .eq('id', userId)
       .single();
 
     if (userError || !user) {
