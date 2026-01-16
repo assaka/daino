@@ -431,14 +431,23 @@ router.post('/activate', async (req, res) => {
 
     // Get user info - token uses 'userId' field, not 'id'
     const userId = decoded.userId || decoded.id;
+    console.log('[AFFILIATE ACTIVATE] Token decoded:', JSON.stringify(decoded, null, 2));
+    console.log('[AFFILIATE ACTIVATE] Looking for userId:', userId);
+
     const { data: user, error: userError } = await masterDbClient
       .from('users')
       .select('id, email, name')
       .eq('id', userId)
       .single();
 
+    console.log('[AFFILIATE ACTIVATE] User query result:', { user, userError });
+
     if (userError || !user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+        debug: { userId, decoded: { userId: decoded.userId, id: decoded.id, email: decoded.email, role: decoded.role } }
+      });
     }
 
     // Check if already an affiliate
