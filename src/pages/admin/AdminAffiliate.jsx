@@ -234,7 +234,7 @@ export default function AdminAffiliate() {
   // Not an affiliate - show signup prompt
   if (!affiliate) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-6 max-w-7xl mx-auto">
         <Card>
           <CardHeader className="text-center">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
