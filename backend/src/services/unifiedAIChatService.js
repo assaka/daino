@@ -27,6 +27,9 @@ const aiContextService = require('./aiContextService');
 const aiLearningService = require('./aiLearningService');
 const aiEntityService = require('./aiEntityService');
 
+// Response verbosity: 'concise' | 'detailed'
+const AI_RESPONSE_VERBOSITY = process.env.AI_RESPONSE_VERBOSITY || 'detailed';
+
 const anthropic = new Anthropic();
 
 /**
@@ -518,10 +521,21 @@ ${entitySchemas ? `\nDATABASE SCHEMA:\n${entitySchemas}\n` : ''}
 RULES:
 1. USE TOOLS for actionable requests - don't just explain
 2. When updating entities, find them by name/SKU first
-3. Be concise and confirm actions taken
-4. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions
-5. If you get a DATABASE ERROR (column not found, etc.), use search_knowledge to look up the correct schema before retrying
-6. NEVER say "technical issues" or generic errors - always explain the specific problem
+3. If a tool returns an error (e.g., "Product not found"), TELL THE USER clearly what went wrong and suggest solutions
+4. If you get a DATABASE ERROR (column not found, etc.), use search_knowledge to look up the correct schema before retrying
+5. NEVER say "technical issues" or generic errors - always explain the specific problem
+${AI_RESPONSE_VERBOSITY === 'detailed' ? `
+RESPONSE STYLE (Detailed Mode):
+- Provide rich, informative responses with context
+- Show previous values when updating (e.g., "updated from X to Y")
+- Include relevant details like price, status, related items
+- Use markdown formatting with headers, bullets, and bold for key info
+- End with a helpful follow-up question when appropriate
+- Use emojis sparingly for visual clarity (✅ for success, ❌ for errors)` : `
+RESPONSE STYLE (Concise Mode):
+- Keep responses brief and to the point
+- Confirm the action in one short sentence
+- Only include essential information`}
 
 ${ragContext ? `\nPLATFORM KNOWLEDGE:\n${ragContext}\n` : ''}
 ${learnedExamples ? `\nLEARNED PATTERNS:\n${learnedExamples}\n` : ''}`;
@@ -917,6 +931,13 @@ async function updateProduct({ product, updates }, storeId) {
     return { error: `Product "${product}" not found` };
   }
 
+  // Store previous values for detailed response
+  const previousValues = {};
+  if (updates.stock_quantity !== undefined) previousValues.stock_quantity = found.stock_quantity;
+  if (updates.price !== undefined) previousValues.price = found.price;
+  if (updates.status !== undefined) previousValues.status = found.status;
+  if (updates.featured !== undefined) previousValues.featured = found.featured;
+
   const { error } = await db
     .from('products')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -933,7 +954,16 @@ async function updateProduct({ product, updates }, storeId) {
   return {
     success: true,
     message: `Updated "${found.name}" (${found.sku}): ${changes}`,
-    product: { id: found.id, sku: found.sku, name: found.name },
+    product: {
+      id: found.id,
+      sku: found.sku,
+      name: found.name,
+      price: updates.price ?? found.price,
+      stock_quantity: updates.stock_quantity ?? found.stock_quantity,
+      status: updates.status ?? found.status
+    },
+    previousValues,
+    changes: updates,
     refreshPreview: true,
     action: 'update'
   };
