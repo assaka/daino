@@ -715,7 +715,19 @@ export const trackSignOut = () => {
 };
 
 /**
- * EMAIL VERIFIED
+ * EMAIL VERIFY PAGE VISIT
+ */
+export const trackEmailVerify = (email = null) => {
+  const event = {
+    event: 'email_verify',
+    email: email
+  };
+  console.log('📧 DataLayer Email Verify Page Event:', event);
+  pushToDataLayer(event);
+};
+
+/**
+ * EMAIL VERIFIED (successful verification)
  */
 export const trackEmailVerified = (email = null) => {
   const event = {
@@ -974,6 +986,7 @@ export default function DataLayerManager() {
         trackCustomerLogin,
         trackCustomerRegistration,
         trackSignOut,
+        trackEmailVerify,
         trackEmailVerified,
         // Additional tracking
         trackConsentUpdate,

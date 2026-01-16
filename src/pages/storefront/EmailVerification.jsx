@@ -5,7 +5,7 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Mail, AlertCircle } from 'lucide-react';
-import { trackEmailVerified } from '@/components/storefront/DataLayerManager';
+import { trackEmailVerify, trackEmailVerified } from '@/components/storefront/DataLayerManager';
 
 export default function EmailVerification() {
   const [searchParams] = useSearchParams();
@@ -29,6 +29,9 @@ export default function EmailVerification() {
   useEffect(() => {
     if (!email) {
       navigate(buildPath('/login'));
+    } else {
+      // Track email verify page visit
+      trackEmailVerify(email);
     }
   }, [email, navigate, storeCode, isCustomDomain]);
 

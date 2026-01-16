@@ -118,8 +118,13 @@ export default function HeaderSearch({ styles = {} }) {
           return matchesDirectFields || matchesTranslations;
         });
 
-        setSearchResults(filteredProducts.slice(0, 5));
+        const results = filteredProducts.slice(0, 5);
+        setSearchResults(results);
         setShowResults(true);
+
+        // Track search when results are displayed
+        console.log('🔍 Tracking search (results shown):', searchQuery.trim(), 'results:', results.length);
+        trackSearch(searchQuery.trim(), results.length);
       } catch (error) {
         console.error("Error searching products:", error);
         setSearchResults([]);
@@ -137,10 +142,6 @@ export default function HeaderSearch({ styles = {} }) {
     e.preventDefault();
 
     if (searchQuery.trim()) {
-      // Track search event
-      console.log('🔍 Tracking search:', searchQuery.trim(), 'results:', searchResults.length);
-      trackSearch(searchQuery.trim(), searchResults.length);
-
       // Navigate to Storefront page with search parameter
       if (storeCode) {
         const searchUrl = createPublicUrl(storeCode, 'STOREFRONT', { search: searchQuery.trim() });
@@ -154,12 +155,6 @@ export default function HeaderSearch({ styles = {} }) {
   };
 
   const handleProductClick = (product) => {
-    // Track search when user clicks on a search result
-    if (searchQuery.trim()) {
-      console.log('🔍 Tracking search (from click):', searchQuery.trim(), 'results:', searchResults.length);
-      trackSearch(searchQuery.trim(), searchResults.length);
-    }
-
     if (storeCode) {
       const productUrl = createProductUrl(storeCode, product.slug);
       navigate(productUrl);

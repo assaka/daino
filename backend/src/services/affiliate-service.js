@@ -7,6 +7,11 @@ const COMMISSION_HOLD_DAYS = 14;
 // Cookie expiration in days
 const REFERRAL_COOKIE_DAYS = 30;
 
+// Store Owner Affiliate Program constants
+const STORE_OWNER_COMMISSION_RATE = 0.20; // 20% commission
+const STORE_OWNER_CREDITS_REWARD = 30; // 30 credits per qualifying store
+const STORE_QUALIFICATION_DAYS = 30; // Store must be published for 30 days
+
 class AffiliateService {
   constructor() {
     // Service initialization
@@ -1082,6 +1087,322 @@ class AffiliateService {
     return {
       valid: !!affiliate,
       affiliate_id: affiliate?.id
+    };
+  }
+
+  // ============================================
+  // STORE OWNER AFFILIATE PROGRAM
+  // ============================================
+
+  /**
+   * Update affiliate reward preference (commission or credits)
+   * Only applicable for store owner affiliates
+   */
+  async updateRewardPreference(affiliateId, rewardType) {
+    if (!['commission', 'credits'].includes(rewardType)) {
+      throw new Error('Invalid reward type. Must be "commission" or "credits"');
+    }
+
+    const { data: affiliate, error } = await masterDbClient
+      .from('affiliates')
+      .update({
+        reward_type: rewardType,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', affiliateId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`[AFFILIATE] Updated reward preference for ${affiliateId} to ${rewardType}`);
+    return affiliate;
+  }
+
+  /**
+   * Mark an affiliate as a store owner affiliate
+   * Assigns them to the Store Owner tier with 20% commission
+   */
+  async setAsStoreOwnerAffiliate(affiliateId) {
+    // Get the store owner tier
+    const { data: storeOwnerTier } = await masterDbClient
+      .from('affiliate_tiers')
+      .select('id')
+      .eq('code', 'store_owner')
+      .maybeSingle();
+
+    const updates = {
+      is_store_owner_affiliate: true,
+      updated_at: new Date().toISOString()
+    };
+
+    // Assign store owner tier if it exists
+    if (storeOwnerTier) {
+      updates.tier_id = storeOwnerTier.id;
+    }
+
+    const { data: affiliate, error } = await masterDbClient
+      .from('affiliates')
+      .update(updates)
+      .eq('id', affiliateId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`[AFFILIATE] Marked affiliate ${affiliateId} as store owner affiliate`);
+    return affiliate;
+  }
+
+  /**
+   * Get qualifying stores for credit reward
+   * A store qualifies when: published = true AND created >= 30 days ago
+   * Returns stores that haven't been credited yet
+   */
+  async getQualifyingStoresForCredit(affiliateId) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - STORE_QUALIFICATION_DAYS);
+
+    // Get all referrals with stores for this affiliate
+    const { data: referrals, error: refError } = await masterDbClient
+      .from('affiliate_referrals')
+      .select('id, referred_store_id, referred_user_id, referred_email')
+      .eq('affiliate_id', affiliateId)
+      .not('referred_store_id', 'is', null);
+
+    if (refError) throw refError;
+    if (!referrals || referrals.length === 0) return [];
+
+    const storeIds = referrals.map(r => r.referred_store_id).filter(Boolean);
+    if (storeIds.length === 0) return [];
+
+    // Get stores that are published and created 30+ days ago
+    const { data: stores, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, slug, published, created_at')
+      .in('id', storeIds)
+      .eq('published', true)
+      .lte('created_at', thirtyDaysAgo.toISOString());
+
+    if (storeError) throw storeError;
+    if (!stores || stores.length === 0) return [];
+
+    // Get already credited stores for this affiliate
+    const { data: credited } = await masterDbClient
+      .from('affiliate_store_credit_awards')
+      .select('referred_store_id')
+      .eq('affiliate_id', affiliateId);
+
+    const creditedStoreIds = new Set((credited || []).map(c => c.referred_store_id));
+
+    // Filter out already credited stores and join with referral data
+    const qualifyingStores = stores
+      .filter(store => !creditedStoreIds.has(store.id))
+      .map(store => {
+        const referral = referrals.find(r => r.referred_store_id === store.id);
+        return {
+          store_id: store.id,
+          store_slug: store.slug,
+          created_at: store.created_at,
+          referral_id: referral?.id,
+          referred_email: referral?.referred_email
+        };
+      });
+
+    return qualifyingStores;
+  }
+
+  /**
+   * Award credits for a qualifying store
+   * One-time award of 30 credits when store meets criteria
+   */
+  async awardCreditsForStore(affiliateId, storeId, referralId) {
+    // Verify the affiliate prefers credits
+    const { data: affiliate, error: affError } = await masterDbClient
+      .from('affiliates')
+      .select('id, user_id, reward_type, is_store_owner_affiliate')
+      .eq('id', affiliateId)
+      .single();
+
+    if (affError) throw affError;
+    if (!affiliate) throw new Error('Affiliate not found');
+
+    if (affiliate.reward_type !== 'credits') {
+      console.log(`[AFFILIATE] Affiliate ${affiliateId} prefers commission, not credits`);
+      return null;
+    }
+
+    // Check if already awarded for this store
+    const { data: existingAward } = await masterDbClient
+      .from('affiliate_store_credit_awards')
+      .select('id')
+      .eq('affiliate_id', affiliateId)
+      .eq('referred_store_id', storeId)
+      .maybeSingle();
+
+    if (existingAward) {
+      console.log(`[AFFILIATE] Credits already awarded for store ${storeId}`);
+      return null;
+    }
+
+    // Get store info for logging
+    const { data: store } = await masterDbClient
+      .from('stores')
+      .select('slug, created_at, published')
+      .eq('id', storeId)
+      .single();
+
+    if (!store || !store.published) {
+      console.log(`[AFFILIATE] Store ${storeId} not published or not found`);
+      return null;
+    }
+
+    // Verify store is 30+ days old
+    const storeAge = Math.floor((new Date() - new Date(store.created_at)) / (1000 * 60 * 60 * 24));
+    if (storeAge < STORE_QUALIFICATION_DAYS) {
+      console.log(`[AFFILIATE] Store ${storeId} only ${storeAge} days old, needs ${STORE_QUALIFICATION_DAYS}`);
+      return null;
+    }
+
+    // Create the credit award record
+    const { data: award, error: awardError } = await masterDbClient
+      .from('affiliate_store_credit_awards')
+      .insert({
+        id: uuidv4(),
+        affiliate_id: affiliateId,
+        referral_id: referralId,
+        referred_store_id: storeId,
+        credits_awarded: STORE_OWNER_CREDITS_REWARD,
+        store_qualified_at: new Date().toISOString(),
+        notes: `Store ${store.slug} qualified after ${storeAge} days`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (awardError) throw awardError;
+
+    // Award credits to the affiliate's user account
+    if (affiliate.user_id) {
+      const creditService = require('./credit-service');
+      await creditService.awardBonusCredits(
+        affiliate.user_id,
+        null, // No specific store context
+        STORE_OWNER_CREDITS_REWARD,
+        `Affiliate reward: Store ${store.slug} qualified (30+ days published)`
+      );
+
+      console.log(`[AFFILIATE] Awarded ${STORE_OWNER_CREDITS_REWARD} credits to user ${affiliate.user_id} for store ${store.slug}`);
+    }
+
+    return award;
+  }
+
+  /**
+   * Process all pending credit awards for store owner affiliates
+   * Call this periodically (e.g., daily cron job) to award credits
+   */
+  async processStoreOwnerCreditAwards() {
+    console.log('[AFFILIATE] Processing store owner credit awards...');
+
+    // Get all store owner affiliates who prefer credits
+    const { data: affiliates, error: affError } = await masterDbClient
+      .from('affiliates')
+      .select('id, user_id, email')
+      .eq('reward_type', 'credits')
+      .eq('status', 'approved');
+
+    if (affError) {
+      console.error('[AFFILIATE] Error fetching affiliates:', affError);
+      throw affError;
+    }
+
+    if (!affiliates || affiliates.length === 0) {
+      console.log('[AFFILIATE] No affiliates with credits preference found');
+      return { processed: 0, awards: [] };
+    }
+
+    const awards = [];
+
+    for (const affiliate of affiliates) {
+      try {
+        const qualifyingStores = await this.getQualifyingStoresForCredit(affiliate.id);
+
+        for (const store of qualifyingStores) {
+          const award = await this.awardCreditsForStore(
+            affiliate.id,
+            store.store_id,
+            store.referral_id
+          );
+
+          if (award) {
+            awards.push({
+              affiliate_id: affiliate.id,
+              affiliate_email: affiliate.email,
+              store_id: store.store_id,
+              store_slug: store.store_slug,
+              credits: STORE_OWNER_CREDITS_REWARD
+            });
+          }
+        }
+      } catch (err) {
+        console.error(`[AFFILIATE] Error processing affiliate ${affiliate.id}:`, err.message);
+      }
+    }
+
+    console.log(`[AFFILIATE] Processed ${awards.length} credit awards`);
+    return { processed: awards.length, awards };
+  }
+
+  /**
+   * Get credit awards history for an affiliate
+   */
+  async getAffiliateCreditAwards(affiliateId) {
+    const { data, error } = await masterDbClient
+      .from('affiliate_store_credit_awards')
+      .select('*, stores(slug)')
+      .eq('affiliate_id', affiliateId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Get store owner affiliate stats
+   * Includes both commission and credit award totals
+   */
+  async getStoreOwnerAffiliateStats(affiliateId) {
+    const affiliate = await this.getAffiliateById(affiliateId);
+    if (!affiliate) throw new Error('Affiliate not found');
+
+    // Get credit awards
+    const { data: awards } = await masterDbClient
+      .from('affiliate_store_credit_awards')
+      .select('credits_awarded')
+      .eq('affiliate_id', affiliateId);
+
+    const totalCreditsAwarded = (awards || []).reduce(
+      (sum, a) => sum + parseFloat(a.credits_awarded || 0), 0
+    );
+
+    // Get qualifying stores count (pending awards)
+    const qualifyingStores = await this.getQualifyingStoresForCredit(affiliateId);
+
+    return {
+      affiliate_id: affiliateId,
+      reward_type: affiliate.reward_type || 'commission',
+      is_store_owner_affiliate: affiliate.is_store_owner_affiliate || false,
+      // Commission stats (if reward_type is commission)
+      total_earnings: parseFloat(affiliate.total_earnings || 0),
+      total_paid_out: parseFloat(affiliate.total_paid_out || 0),
+      pending_balance: parseFloat(affiliate.pending_balance || 0),
+      // Credit stats (if reward_type is credits)
+      total_credits_awarded: totalCreditsAwarded,
+      stores_credited: (awards || []).length,
+      stores_pending_credit: qualifyingStores.length,
+      pending_stores: qualifyingStores
     };
   }
 }

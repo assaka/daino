@@ -552,4 +552,62 @@ router.put('/affiliate-payouts/:id/cancel', async (req, res) => {
   }
 });
 
+// ============================================
+// STORE OWNER AFFILIATE CREDIT AWARDS
+// ============================================
+
+/**
+ * POST /api/superadmin/affiliates/process-credit-awards
+ * Process credit awards for all store owner affiliates with credit preference
+ * Call this via cron job to automatically award credits for qualifying stores
+ */
+router.post('/affiliates/process-credit-awards', async (req, res) => {
+  try {
+    const result = await affiliateService.processStoreOwnerCreditAwards();
+    res.json({
+      success: true,
+      message: `Processed ${result.processed} credit award(s)`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Process credit awards error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/superadmin/affiliates/:id/set-store-owner
+ * Mark an affiliate as a store owner affiliate
+ */
+router.put('/affiliates/:id/set-store-owner', async (req, res) => {
+  try {
+    const affiliate = await affiliateService.setAsStoreOwnerAffiliate(req.params.id);
+    res.json({
+      success: true,
+      message: 'Affiliate marked as store owner affiliate',
+      data: affiliate
+    });
+  } catch (error) {
+    console.error('Set store owner affiliate error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/superadmin/affiliates/:id/credit-awards
+ * Get credit awards for a specific affiliate
+ */
+router.get('/affiliates/:id/credit-awards', async (req, res) => {
+  try {
+    const awards = await affiliateService.getAffiliateCreditAwards(req.params.id);
+    res.json({
+      success: true,
+      data: { awards }
+    });
+  } catch (error) {
+    console.error('Get credit awards error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

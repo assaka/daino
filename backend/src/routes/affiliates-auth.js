@@ -705,4 +705,195 @@ router.post('/request-payout', async (req, res) => {
   }
 });
 
+// ============================================
+// STORE OWNER AFFILIATE ENDPOINTS
+// ============================================
+
+/**
+ * PUT /api/affiliates/auth/reward-preference
+ * Update reward preference (commission or credits)
+ */
+router.put('/reward-preference', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+
+    const token = authHeader.substring(7);
+    const { verifyToken } = require('../utils/jwt');
+
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    const { reward_type } = req.body;
+
+    if (!reward_type || !['commission', 'credits'].includes(reward_type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid reward_type. Must be "commission" or "credits"'
+      });
+    }
+
+    const affiliateService = require('../services/affiliate-service');
+    const affiliate = await affiliateService.updateRewardPreference(decoded.id, reward_type);
+
+    res.json({
+      success: true,
+      message: `Reward preference updated to ${reward_type}`,
+      data: {
+        reward_type: affiliate.reward_type,
+        description: reward_type === 'commission'
+          ? '20% commission on referred purchases'
+          : '30 credits per active store (published 30+ days)'
+      }
+    });
+  } catch (error) {
+    console.error('Update reward preference error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to update preference' });
+  }
+});
+
+/**
+ * GET /api/affiliates/auth/store-owner-stats
+ * Get store owner affiliate stats (includes credit awards)
+ */
+router.get('/store-owner-stats', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+
+    const token = authHeader.substring(7);
+    const { verifyToken } = require('../utils/jwt');
+
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    const affiliateService = require('../services/affiliate-service');
+    const stats = await affiliateService.getStoreOwnerAffiliateStats(decoded.id);
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Get store owner stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get store owner stats' });
+  }
+});
+
+/**
+ * GET /api/affiliates/auth/credit-awards
+ * Get credit awards history
+ */
+router.get('/credit-awards', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+
+    const token = authHeader.substring(7);
+    const { verifyToken } = require('../utils/jwt');
+
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    const affiliateService = require('../services/affiliate-service');
+    const awards = await affiliateService.getAffiliateCreditAwards(decoded.id);
+
+    res.json({
+      success: true,
+      data: awards
+    });
+  } catch (error) {
+    console.error('Get credit awards error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get credit awards' });
+  }
+});
+
+/**
+ * POST /api/affiliates/auth/claim-credit-awards
+ * Manually trigger credit awards check for current affiliate
+ */
+router.post('/claim-credit-awards', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+
+    const token = authHeader.substring(7);
+    const { verifyToken } = require('../utils/jwt');
+
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    // Check if affiliate prefers credits
+    const { data: affiliate } = await masterDbClient
+      .from('affiliates')
+      .select('reward_type')
+      .eq('id', decoded.id)
+      .single();
+
+    if (!affiliate || affiliate.reward_type !== 'credits') {
+      return res.status(400).json({
+        success: false,
+        error: 'Credit awards only available when reward preference is set to "credits"'
+      });
+    }
+
+    const affiliateService = require('../services/affiliate-service');
+    const qualifyingStores = await affiliateService.getQualifyingStoresForCredit(decoded.id);
+    const awards = [];
+
+    for (const store of qualifyingStores) {
+      const award = await affiliateService.awardCreditsForStore(
+        decoded.id,
+        store.store_id,
+        store.referral_id
+      );
+      if (award) {
+        awards.push({
+          store_slug: store.store_slug,
+          credits: 30
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: awards.length > 0
+        ? `Claimed ${awards.length * 30} credits for ${awards.length} store(s)`
+        : 'No new stores qualify for credit awards',
+      data: {
+        awards_claimed: awards.length,
+        total_credits: awards.length * 30,
+        stores: awards
+      }
+    });
+  } catch (error) {
+    console.error('Claim credit awards error:', error);
+    res.status(500).json({ success: false, error: 'Failed to claim credit awards' });
+  }
+});
+
 module.exports = router;

@@ -29,9 +29,15 @@ import {
   AlertCircle,
   Wallet,
   ArrowRight,
-  MousePointerClick
+  MousePointerClick,
+  Coins,
+  Store,
+  Gift,
+  Percent
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 export default function AdminAffiliate() {
   const [loading, setLoading] = useState(true);
@@ -40,8 +46,12 @@ export default function AdminAffiliate() {
   const [referrals, setReferrals] = useState([]);
   const [commissions, setCommissions] = useState([]);
   const [payouts, setPayouts] = useState([]);
+  const [creditAwards, setCreditAwards] = useState([]);
+  const [storeOwnerStats, setStoreOwnerStats] = useState(null);
   const [copied, setCopied] = useState(false);
   const [requestingPayout, setRequestingPayout] = useState(false);
+  const [updatingRewardType, setUpdatingRewardType] = useState(false);
+  const [claimingCredits, setClaimingCredits] = useState(false);
 
   useEffect(() => {
     loadAffiliateData();
@@ -62,18 +72,22 @@ export default function AdminAffiliate() {
 
       setAffiliate(meResponse.data);
 
-      // Load stats, referrals, commissions, payouts in parallel
-      const [statsRes, referralsRes, commissionsRes, payoutsRes] = await Promise.all([
+      // Load stats, referrals, commissions, payouts, store owner stats in parallel
+      const [statsRes, referralsRes, commissionsRes, payoutsRes, storeOwnerStatsRes, creditAwardsRes] = await Promise.all([
         apiClient.get('/affiliates/auth/stats'),
         apiClient.get('/affiliates/auth/referrals'),
         apiClient.get('/affiliates/auth/commissions'),
-        apiClient.get('/affiliates/auth/payouts')
+        apiClient.get('/affiliates/auth/payouts'),
+        apiClient.get('/affiliates/auth/store-owner-stats'),
+        apiClient.get('/affiliates/auth/credit-awards')
       ]);
 
       if (statsRes.success) setStats(statsRes.data);
       if (referralsRes.success) setReferrals(referralsRes.data || []);
       if (commissionsRes.success) setCommissions(commissionsRes.data || []);
       if (payoutsRes.success) setPayouts(payoutsRes.data || []);
+      if (storeOwnerStatsRes.success) setStoreOwnerStats(storeOwnerStatsRes.data);
+      if (creditAwardsRes.success) setCreditAwards(creditAwardsRes.data || []);
 
     } catch (error) {
       console.error('Error loading affiliate data:', error);
@@ -113,6 +127,48 @@ export default function AdminAffiliate() {
       toast.error(error.message || 'Failed to request payout');
     } finally {
       setRequestingPayout(false);
+    }
+  };
+
+  const handleRewardTypeChange = async (newType) => {
+    try {
+      setUpdatingRewardType(true);
+      const response = await apiClient.put('/affiliates/auth/reward-preference', {
+        reward_type: newType
+      });
+
+      if (response.success) {
+        toast.success(`Reward type changed to ${newType === 'commission' ? '20% commission' : '30 credits per store'}`);
+        loadAffiliateData(); // Refresh data
+      } else {
+        toast.error(response.error || 'Failed to update reward type');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to update reward type');
+    } finally {
+      setUpdatingRewardType(false);
+    }
+  };
+
+  const handleClaimCredits = async () => {
+    try {
+      setClaimingCredits(true);
+      const response = await apiClient.post('/affiliates/auth/claim-credit-awards');
+
+      if (response.success) {
+        if (response.data.awards_claimed > 0) {
+          toast.success(response.message);
+        } else {
+          toast.info('No new stores qualify for credit awards yet');
+        }
+        loadAffiliateData(); // Refresh data
+      } else {
+        toast.error(response.error || 'Failed to claim credits');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to claim credits');
+    } finally {
+      setClaimingCredits(false);
     }
   };
 
@@ -171,11 +227,26 @@ export default function AdminAffiliate() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-purple-600">Up to 20%</p>
-                <p className="text-sm text-gray-600">Commission Rate</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Percent className="h-5 w-5 text-purple-600" />
+                  <p className="font-semibold text-purple-700">Option 1: Commission</p>
+                </div>
+                <p className="text-2xl font-bold text-purple-600">20%</p>
+                <p className="text-sm text-gray-600">Of all referred purchases</p>
               </div>
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Coins className="h-5 w-5 text-green-600" />
+                  <p className="font-semibold text-green-700">Option 2: Credits</p>
+                </div>
+                <p className="text-2xl font-bold text-green-600">30 Credits</p>
+                <p className="text-sm text-gray-600">Per active store (30+ days published)</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-purple-600">30 Days</p>
                 <p className="text-sm text-gray-600">Cookie Duration</p>
@@ -228,7 +299,7 @@ export default function AdminAffiliate() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Your Referral Link</CardTitle>
-          <CardDescription>Share this link to earn commissions</CardDescription>
+          <CardDescription>Share this link to earn rewards</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2">
@@ -249,6 +320,117 @@ export default function AdminAffiliate() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Reward Type Selector */}
+      <Card className="border-2 border-purple-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Gift className="h-5 w-5 text-purple-600" />
+            Choose Your Reward Type
+          </CardTitle>
+          <CardDescription>
+            Select how you want to earn from your referrals
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={storeOwnerStats?.reward_type || affiliate?.reward_type || 'commission'}
+            onValueChange={handleRewardTypeChange}
+            disabled={updatingRewardType}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <div className={`relative flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+              (storeOwnerStats?.reward_type || affiliate?.reward_type || 'commission') === 'commission'
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-gray-200 hover:border-purple-300'
+            }`}>
+              <RadioGroupItem value="commission" id="commission" className="mt-1" />
+              <Label htmlFor="commission" className="cursor-pointer flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Percent className="h-4 w-4 text-purple-600" />
+                  <span className="font-semibold">20% Commission</span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Earn 20% of every purchase made by your referred store owners
+                </p>
+              </Label>
+            </div>
+
+            <div className={`relative flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+              (storeOwnerStats?.reward_type || affiliate?.reward_type) === 'credits'
+                ? 'border-green-500 bg-green-50'
+                : 'border-gray-200 hover:border-green-300'
+            }`}>
+              <RadioGroupItem value="credits" id="credits" className="mt-1" />
+              <Label htmlFor="credits" className="cursor-pointer flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Coins className="h-4 w-4 text-green-600" />
+                  <span className="font-semibold">30 Credits per Store</span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Earn 30 free credits for each referred store that stays published for 30+ days
+                </p>
+              </Label>
+            </div>
+          </RadioGroup>
+
+          {updatingRewardType && (
+            <p className="text-sm text-gray-500 mt-2">Updating preference...</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Credit Awards Summary (only show if credits preference) */}
+      {(storeOwnerStats?.reward_type === 'credits') && storeOwnerStats && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2 text-green-700">
+              <Store className="h-5 w-5" />
+              Credit Rewards Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-2xl font-bold text-green-600">{storeOwnerStats.total_credits_awarded}</p>
+                <p className="text-sm text-gray-600">Total Credits Awarded</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-2xl font-bold text-green-600">{storeOwnerStats.stores_credited}</p>
+                <p className="text-sm text-gray-600">Stores Credited</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg">
+                <p className="text-2xl font-bold text-amber-600">{storeOwnerStats.stores_pending_credit}</p>
+                <p className="text-sm text-gray-600">Stores Pending</p>
+              </div>
+            </div>
+
+            {storeOwnerStats.stores_pending_credit > 0 && (
+              <Button
+                onClick={handleClaimCredits}
+                disabled={claimingCredits}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {claimingCredits ? 'Claiming...' : `Claim ${storeOwnerStats.stores_pending_credit * 30} Credits`}
+              </Button>
+            )}
+
+            {storeOwnerStats.pending_stores && storeOwnerStats.pending_stores.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-green-700 mb-2">Stores ready to claim:</p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {storeOwnerStats.pending_stores.map((store, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      {store.store_slug} - 30 credits
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       {stats && (
@@ -320,12 +502,15 @@ export default function AdminAffiliate() {
         </div>
       )}
 
-      {/* Tabs for Referrals, Commissions, Payouts */}
+      {/* Tabs for Referrals, Commissions, Payouts, Credit Awards */}
       <Tabs defaultValue="referrals">
         <TabsList>
           <TabsTrigger value="referrals">Referrals ({referrals.length})</TabsTrigger>
           <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
           <TabsTrigger value="payouts">Payouts ({payouts.length})</TabsTrigger>
+          {(storeOwnerStats?.reward_type === 'credits') && (
+            <TabsTrigger value="credit-awards">Credit Awards ({creditAwards.length})</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="referrals" className="mt-4">
@@ -434,6 +619,51 @@ export default function AdminAffiliate() {
                         {payout.completed_at
                           ? new Date(payout.completed_at).toLocaleDateString()
                           : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* Credit Awards Tab (only visible when credits preference is selected) */}
+        <TabsContent value="credit-awards" className="mt-4">
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Store</TableHead>
+                  <TableHead>Credits</TableHead>
+                  <TableHead>Qualified Date</TableHead>
+                  <TableHead>Awarded Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {creditAwards.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                      No credit awards yet. Refer store owners and earn 30 credits when their stores are published for 30+ days.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  creditAwards.map((award) => (
+                    <TableRow key={award.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4 text-gray-400" />
+                          {award.stores?.slug || 'Unknown Store'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-green-600 font-medium">
+                        +{award.credits_awarded} credits
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {new Date(award.store_qualified_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-gray-500">
+                        {new Date(award.awarded_at || award.created_at).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
                   ))
