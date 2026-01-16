@@ -649,7 +649,7 @@ router.get('/stats', async (req, res) => {
       .reduce((sum, c) => sum + parseFloat(c.commission_amount || 0), 0) || 0;
 
     // Get affiliate for pending balance
-    const { data: affiliate } = await masterDbClient
+    const { data: affiliateData } = await masterDbClient
       .from('affiliates')
       .select('pending_balance, total_earnings, total_paid_out, affiliate_tiers(min_payout_amount)')
       .eq('id', affiliateId)
@@ -664,10 +664,10 @@ router.get('/stats', async (req, res) => {
         conversionRate: signups > 0 ? ((conversions / signups) * 100).toFixed(1) : 0,
         pendingEarnings,
         approvedEarnings,
-        availableBalance: parseFloat(affiliate?.pending_balance || 0),
-        totalEarnings: parseFloat(affiliate?.total_earnings || 0),
-        totalPaidOut: parseFloat(affiliate?.total_paid_out || 0),
-        minPayoutAmount: parseFloat(affiliate?.affiliate_tiers?.min_payout_amount || 50)
+        availableBalance: parseFloat(affiliateData?.pending_balance || 0),
+        totalEarnings: parseFloat(affiliateData?.total_earnings || 0),
+        totalPaidOut: parseFloat(affiliateData?.total_paid_out || 0),
+        minPayoutAmount: parseFloat(affiliateData?.affiliate_tiers?.min_payout_amount || 50)
       }
     });
   } catch (error) {
