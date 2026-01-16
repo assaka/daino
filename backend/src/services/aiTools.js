@@ -118,7 +118,7 @@ const PLATFORM_TOOLS = [
   },
   {
     name: "manage_entity",
-    description: "Create, update, or delete store entities like products, categories, coupons, cms pages, etc.",
+    description: "Create, update, or delete store entities like products, categories, coupons, cms pages, etc. For categories, you can search by name and set visibility (is_active, hide_in_menu).",
     input_schema: {
       type: "object",
       properties: {
@@ -129,8 +129,8 @@ const PLATFORM_TOOLS = [
         },
         operation: {
           type: "string",
-          enum: ["create", "update", "delete", "list"],
-          description: "Operation to perform"
+          enum: ["create", "update", "delete", "list", "set_visible", "set_hidden"],
+          description: "Operation to perform. For categories: set_visible makes is_active=true and hide_in_menu=false, set_hidden does the opposite"
         },
         data: {
           type: "object",
@@ -139,6 +139,10 @@ const PLATFORM_TOOLS = [
         identifier: {
           type: "string",
           description: "Entity ID or identifier for update/delete operations"
+        },
+        search_term: {
+          type: "string",
+          description: "Search term to find entity by name or slug (for categories, products). Used when identifier is not known."
         }
       },
       required: ["entity_type", "operation"]
@@ -572,7 +576,7 @@ async function modifyPageLayout({ page_type, action, slot_id, details = {} }, st
 /**
  * Manage store entities (CRUD)
  */
-async function manageEntity({ entity_type, operation, data = {}, identifier }, storeId, userId) {
+async function manageEntity({ entity_type, operation, data = {}, identifier, search_term }, storeId, userId) {
   if (!storeId) {
     return { error: 'Store ID required' };
   }
@@ -594,6 +598,11 @@ async function manageEntity({ entity_type, operation, data = {}, identifier }, s
     const table = tableMap[entity_type];
     if (!table) {
       return { error: `Unknown entity type: ${entity_type}` };
+    }
+
+    // Handle category-specific operations
+    if (entity_type === 'category') {
+      return await manageCategoryEntity(tenantDb, operation, data, identifier, search_term, storeId);
     }
 
     switch (operation) {
@@ -663,6 +672,252 @@ async function manageEntity({ entity_type, operation, data = {}, identifier }, s
     }
   } catch (error) {
     return { error: error.message };
+  }
+}
+
+/**
+ * Handle category-specific entity management
+ * Supports finding by name/slug and setting visibility
+ */
+async function manageCategoryEntity(tenantDb, operation, data, identifier, search_term, storeId) {
+  // Helper to find category by search term (name or slug)
+  async function findCategoryBySearchTerm(term) {
+    if (!term) return null;
+
+    const searchLower = term.toLowerCase();
+
+    // First try to find by slug
+    const { data: bySlug } = await tenantDb
+      .from('categories')
+      .select('id, slug, is_active, hide_in_menu')
+      .ilike('slug', `%${searchLower}%`)
+      .limit(5);
+
+    if (bySlug && bySlug.length > 0) {
+      // Get translations for these categories
+      const categoryIds = bySlug.map(c => c.id);
+      const { data: translations } = await tenantDb
+        .from('category_translations')
+        .select('category_id, name, language_code')
+        .in('category_id', categoryIds);
+
+      return bySlug.map(cat => ({
+        ...cat,
+        names: translations?.filter(t => t.category_id === cat.id).map(t => t.name) || []
+      }));
+    }
+
+    // If not found by slug, search in translations
+    const { data: byName } = await tenantDb
+      .from('category_translations')
+      .select('category_id, name, language_code')
+      .ilike('name', `%${searchLower}%`)
+      .limit(10);
+
+    if (byName && byName.length > 0) {
+      const categoryIds = [...new Set(byName.map(t => t.category_id))];
+      const { data: categories } = await tenantDb
+        .from('categories')
+        .select('id, slug, is_active, hide_in_menu')
+        .in('id', categoryIds);
+
+      return (categories || []).map(cat => ({
+        ...cat,
+        names: byName.filter(t => t.category_id === cat.id).map(t => t.name)
+      }));
+    }
+
+    return null;
+  }
+
+  switch (operation) {
+    case 'list': {
+      const { data: categories, error } = await tenantDb
+        .from('categories')
+        .select('id, slug, is_active, hide_in_menu')
+        .limit(20);
+
+      if (error) return { error: error.message };
+
+      // Get translations for all categories
+      const categoryIds = (categories || []).map(c => c.id);
+      const { data: translations } = await tenantDb
+        .from('category_translations')
+        .select('category_id, name, language_code')
+        .in('category_id', categoryIds);
+
+      const enrichedCategories = (categories || []).map(cat => ({
+        id: cat.id,
+        slug: cat.slug,
+        name: translations?.find(t => t.category_id === cat.id)?.name || cat.slug,
+        is_active: cat.is_active,
+        hide_in_menu: cat.hide_in_menu,
+        visible: cat.is_active && !cat.hide_in_menu
+      }));
+
+      return { entity_type: 'category', operation, data: enrichedCategories, count: enrichedCategories.length };
+    }
+
+    case 'set_visible':
+    case 'set_hidden': {
+      // Find the category by identifier or search_term
+      let categoryId = identifier;
+      let foundCategories = null;
+
+      if (!categoryId && search_term) {
+        foundCategories = await findCategoryBySearchTerm(search_term);
+        if (!foundCategories || foundCategories.length === 0) {
+          return {
+            error: `No category found matching "${search_term}"`,
+            suggestion: 'Try using the exact category name or slug'
+          };
+        }
+
+        if (foundCategories.length > 1) {
+          return {
+            error: `Multiple categories found matching "${search_term}"`,
+            matches: foundCategories.map(c => ({
+              id: c.id,
+              slug: c.slug,
+              names: c.names,
+              current_visibility: c.is_active && !c.hide_in_menu ? 'visible' : 'hidden'
+            })),
+            suggestion: 'Please specify which category by using its exact slug or ID'
+          };
+        }
+
+        categoryId = foundCategories[0].id;
+      }
+
+      if (!categoryId) {
+        return { error: 'Category identifier or search_term is required' };
+      }
+
+      const isVisible = operation === 'set_visible';
+      const updateData = {
+        is_active: isVisible,
+        hide_in_menu: !isVisible,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await tenantDb
+        .from('categories')
+        .update(updateData)
+        .eq('id', categoryId);
+
+      if (updateError) return { error: updateError.message };
+
+      // Get updated category info
+      const { data: updated } = await tenantDb
+        .from('categories')
+        .select('id, slug, is_active, hide_in_menu')
+        .eq('id', categoryId)
+        .single();
+
+      const { data: trans } = await tenantDb
+        .from('category_translations')
+        .select('name')
+        .eq('category_id', categoryId)
+        .limit(1)
+        .single();
+
+      return {
+        success: true,
+        message: `Category "${trans?.name || updated?.slug}" is now ${isVisible ? 'visible' : 'hidden'}`,
+        entity_type: 'category',
+        operation,
+        data: {
+          id: categoryId,
+          slug: updated?.slug,
+          name: trans?.name,
+          is_active: updated?.is_active,
+          hide_in_menu: updated?.hide_in_menu,
+          visible: updated?.is_active && !updated?.hide_in_menu
+        }
+      };
+    }
+
+    case 'update': {
+      if (!identifier && search_term) {
+        const found = await findCategoryBySearchTerm(search_term);
+        if (!found || found.length === 0) {
+          return { error: `No category found matching "${search_term}"` };
+        }
+        if (found.length > 1) {
+          return {
+            error: `Multiple categories found matching "${search_term}"`,
+            matches: found.map(c => ({ id: c.id, slug: c.slug, names: c.names }))
+          };
+        }
+        identifier = found[0].id;
+      }
+
+      if (!identifier) return { error: 'Identifier or search_term required for update' };
+
+      const { error } = await tenantDb
+        .from('categories')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', identifier);
+
+      if (error) return { error: error.message };
+      return {
+        success: true,
+        message: `Updated category ${identifier}`,
+        entity_type: 'category',
+        operation
+      };
+    }
+
+    case 'create': {
+      const { data: created, error } = await tenantDb
+        .from('categories')
+        .insert({ ...data, store_id: storeId })
+        .select()
+        .single();
+
+      if (error) return { error: error.message };
+      return {
+        success: true,
+        message: `Created category`,
+        entity_type: 'category',
+        operation,
+        data: created
+      };
+    }
+
+    case 'delete': {
+      if (!identifier && search_term) {
+        const found = await findCategoryBySearchTerm(search_term);
+        if (!found || found.length === 0) {
+          return { error: `No category found matching "${search_term}"` };
+        }
+        if (found.length > 1) {
+          return {
+            error: `Multiple categories found matching "${search_term}"`,
+            matches: found.map(c => ({ id: c.id, slug: c.slug, names: c.names }))
+          };
+        }
+        identifier = found[0].id;
+      }
+
+      if (!identifier) return { error: 'Identifier or search_term required for delete' };
+
+      const { error } = await tenantDb
+        .from('categories')
+        .delete()
+        .eq('id', identifier);
+
+      if (error) return { error: error.message };
+      return {
+        success: true,
+        message: `Deleted category ${identifier}`,
+        entity_type: 'category',
+        operation
+      };
+    }
+
+    default:
+      return { error: `Unknown operation: ${operation}` };
   }
 }
 
