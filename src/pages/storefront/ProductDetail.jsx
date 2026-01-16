@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, Fragment } from "react";
+import React, { useState, useEffect, useCallback, Fragment, useRef } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
@@ -135,6 +135,9 @@ export default function ProductDetail() {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [displayProduct, setDisplayProduct] = useState(null);
 
+  // Ref to prevent duplicate view_item tracking
+  const trackedProductIdRef = useRef(null);
+
   // A/B Testing - Get active tests for product page
   const { activeTests, isLoading: abTestsLoading, error: abTestError } = useABTesting(store?.id, 'product');
 
@@ -169,9 +172,12 @@ export default function ProductDetail() {
       setProductTabs(productData.productTabs || []);
       setCustomOptions(productData.customOptions || []);
 
-      // Track product view with enhanced analytics
+      // Track product view with enhanced analytics (only once per product)
       if (typeof window !== 'undefined' && window.daino?.trackProductView) {
-        window.daino.trackProductView(productData.product);
+        if (trackedProductIdRef.current !== productData.product.id) {
+          trackedProductIdRef.current = productData.product.id;
+          window.daino.trackProductView(productData.product);
+        }
       }
 
       // Check wishlist status using shared hook data (no additional API call!)
