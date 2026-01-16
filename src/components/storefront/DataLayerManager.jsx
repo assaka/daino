@@ -808,12 +808,17 @@ export const trackPurchase = (order) => {
 /**
  * SEARCH
  */
-export const trackSearch = (query, resultsCount = 0, filters = {}) => {
+export const trackSearch = (query, resultsCount = 0, filters = {}, products = []) => {
+  const items = products.map((product, index) => formatProduct(product, index));
+
   const event = {
     event: 'search',
     search_term: query,
     search_results: resultsCount,
-    search_filters: filters
+    search_filters: filters,
+    ecommerce: {
+      items: items
+    }
   };
   console.log('🔍 DataLayer Search Event:', event);
   pushToDataLayer(event);

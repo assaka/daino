@@ -122,9 +122,9 @@ export default function HeaderSearch({ styles = {} }) {
         setSearchResults(results);
         setShowResults(true);
 
-        // Track search when results are displayed
+        // Track search when results are displayed (with product items)
         console.log('🔍 Tracking search (results shown):', searchQuery.trim(), 'results:', results.length);
-        trackSearch(searchQuery.trim(), results.length);
+        trackSearch(searchQuery.trim(), results.length, {}, results);
       } catch (error) {
         console.error("Error searching products:", error);
         setSearchResults([]);
