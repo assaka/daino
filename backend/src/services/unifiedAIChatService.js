@@ -1816,11 +1816,13 @@ async function chatWithAnthropic({ message, conversationHistory, storeId, userId
   const textBlocks = response.content.filter(b => b.type === 'text');
   const finalMessage = textBlocks.map(b => b.text).join('\n');
 
-  // Calculate credits (Anthropic pricing: 1 credit = $0.10)
-  // Formula: (input × $3/1M + output × $15/1M) converted to credits
-  const credits = (totalTokens.input * 3 + totalTokens.output * 15) / 100000;
+  // Calculate cost and credits (Anthropic pricing)
+  // Actual API cost: $3/1M input, $15/1M output
+  const costPrice = (totalTokens.input * 3 + totalTokens.output * 15) / 1000000;
+  // Credits to charge user (1 credit = $0.10, so costPrice / 0.10)
+  const credits = costPrice / 0.10;
 
-  console.log('✅ Complete:', { provider: 'anthropic', model, tools: toolCalls.length, tokens: totalTokens, credits });
+  console.log('✅ Complete:', { provider: 'anthropic', model, tools: toolCalls.length, tokens: totalTokens, credits: credits.toFixed(2), costPrice: costPrice.toFixed(4) });
 
   // Determine if refresh is needed
   const needsRefresh = toolCalls.some(t =>
@@ -1837,7 +1839,8 @@ async function chatWithAnthropic({ message, conversationHistory, storeId, userId
       usage: totalTokens,
       model
     },
-    creditsDeducted: credits
+    creditsDeducted: credits,
+    costPrice
   };
 }
 
@@ -1930,11 +1933,13 @@ async function chatWithOpenAI({ message, conversationHistory, storeId, userId, i
   // Extract final text
   const finalMessage = response.choices[0]?.message?.content || '';
 
-  // Calculate credits (OpenAI GPT-4o pricing: 1 credit = $0.10)
-  // GPT-4o: $2.50/1M input, $10/1M output
-  const credits = (totalTokens.input * 2.5 + totalTokens.output * 10) / 100000;
+  // Calculate cost and credits (OpenAI GPT-4o pricing)
+  // Actual API cost: $2.50/1M input, $10/1M output
+  const costPrice = (totalTokens.input * 2.5 + totalTokens.output * 10) / 1000000;
+  // Credits to charge user (1 credit = $0.10)
+  const credits = costPrice / 0.10;
 
-  console.log('✅ Complete:', { provider: 'openai', model, tools: toolCalls.length, tokens: totalTokens, credits });
+  console.log('✅ Complete:', { provider: 'openai', model, tools: toolCalls.length, tokens: totalTokens, credits: credits.toFixed(2), costPrice: costPrice.toFixed(4) });
 
   // Determine if refresh is needed
   const needsRefresh = toolCalls.some(t =>
@@ -1951,7 +1956,8 @@ async function chatWithOpenAI({ message, conversationHistory, storeId, userId, i
       usage: totalTokens,
       model
     },
-    creditsDeducted: credits
+    creditsDeducted: credits,
+    costPrice
   };
 }
 

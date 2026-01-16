@@ -91,19 +91,21 @@ class CreditService {
     const { v4: uuidv4 } = require('uuid');
     const recordId = uuidv4();
 
-    // Extract model info from metadata
+    // Extract model info and cost from metadata
     const modelUsed = metadata?.modelId || metadata?.model || null;
+    const costPrice = metadata?.costPrice ?? null;
 
     const insertData = {
       id: recordId,
       user_id: userId,
       store_id: storeId || null,
       credits_used: creditAmount,
+      cost_price: costPrice,  // Actual API cost in USD
+      model: modelUsed,       // AI model used
       usage_type: referenceType || 'general',
       reference_id: referenceId ? String(referenceId) : null,
       reference_type: referenceType || null,
       description: description,
-      model_used: modelUsed,
       metadata: {
         ...metadata,
         balance_before: balance,

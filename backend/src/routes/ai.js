@@ -79,20 +79,22 @@ router.post('/unified-chat', authMiddleware, async (req, res) => {
       storeId,
       userId,
       mode,
-      images
+      images,
+      modelId
     });
 
     // Deduct credits after successful response
-    if (result.success !== false) {
+    if (result.success !== false && result.creditsDeducted > 0) {
       const creditsDeducted = await aiService.deductCredits(userId, 'general', {
         storeId,
-        modelId,
+        modelId: result.data?.model || modelId,
+        costPrice: result.costPrice,  // Actual API cost
         mode,
         tokensInput: result.data?.usage?.input || 0,
         tokensOutput: result.data?.usage?.output || 0
       });
       result.creditsDeducted = creditsDeducted;
-      console.log(`💳 Credits deducted: ${creditsDeducted} for unified-chat (user: ${userId})`);
+      console.log(`💳 Credits deducted: ${result.creditsDeducted?.toFixed(2)} (cost: $${result.costPrice?.toFixed(4)}) for unified-chat (user: ${userId})`);
     }
 
     res.json(result);
