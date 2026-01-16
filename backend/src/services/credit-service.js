@@ -101,7 +101,7 @@ class CreditService {
       store_id: storeId || null,
       credits_used: creditAmount,
       cost_price: costPrice,  // Actual API cost in USD
-      model: modelUsed,       // AI model used
+      model_used: modelUsed,  // AI model used
       usage_type: referenceType || 'general',
       reference_id: referenceId ? String(referenceId) : null,
       reference_type: referenceType || null,
