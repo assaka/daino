@@ -976,6 +976,247 @@ if (window.daino) {
 
 ---
 
+## Adding DataLayer Events via Plugins
+
+Store owners can extend the built-in tracking by creating custom plugins. The plugin system allows you to listen to store events and push your own dataLayer events, integrate with third-party webhooks (like n8n), or add custom tracking logic.
+
+### How Plugin-Based Tracking Works
+
+1. **Create a plugin** with event listeners for store events (e.g., `customer.login`, `product.viewed`)
+2. **The plugin code** runs on the storefront and can push to `window.dataLayer`
+3. **Optional webhook integration** sends data to external services like n8n, Zapier, or custom endpoints
+
+### Example: DataLayer Events Plugin
+
+Here's an example plugin structure that demonstrates custom tracking:
+
+#### Plugin Manifest
+
+```json
+{
+  "name": "DataLayer Events",
+  "slug": "datalayer-events",
+  "version": "1.0.0",
+  "description": "Push customer events to dataLayer for GTM and optionally send to n8n webhook",
+  "category": "analytics",
+  "permissions": ["customers:read", "orders:read"]
+}
+```
+
+#### Event Listener: Product Viewed
+
+Create a file `product-viewed-track.js` that listens for the `product.viewed` event:
+
+```javascript
+function onProductViewedTrack(data) {
+  console.log('📊 Plugin: Tracking product view');
+
+  const product = data?.product || data;
+  if (!product?.id) return;
+
+  // Push to dataLayer
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'view_item',
+    timestamp: new Date().toISOString(),
+    ecommerce: {
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        price: product.price,
+        item_category: product.category,
+        currency: product.currency || 'USD'
+      }]
+    }
+  });
+}
+```
+
+#### Event Listener: Customer Login with Webhook
+
+```javascript
+async function onCustomerLoginTrack(data) {
+  console.log('📊 Plugin: Tracking customer login');
+
+  const customer = data?.customer || data;
+  if (!customer?.id) return;
+
+  // Push to dataLayer
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'customer_login',
+    timestamp: new Date().toISOString(),
+    user: {
+      id: customer.id,
+      email: customer.email,
+      name: customer.name,
+      isLoggedIn: true,
+      customerType: customer.customer_type || 'registered'
+    }
+  });
+
+  // Send to n8n webhook if configured
+  try {
+    const configResponse = await fetch('/api/plugins/datalayer-events/exec/config');
+    const configResult = await configResponse.json();
+
+    if (configResult.success && configResult.config.n8nWebhookUrl) {
+      await fetch(configResult.config.n8nWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'customer_login',
+          timestamp: new Date().toISOString(),
+          customer: {
+            id: customer.id,
+            email: customer.email,
+            name: customer.name
+          },
+          source: 'datalayer-events-plugin'
+        })
+      });
+      console.log('📊 Sent to n8n webhook');
+    }
+  } catch (error) {
+    console.error('📊 Error sending to webhook:', error);
+  }
+}
+```
+
+#### Event Listener: Order Completed
+
+```javascript
+async function onOrderCompletedTrack(data) {
+  console.log('📊 Plugin: Tracking order completion');
+
+  const order = data?.order || data;
+  if (!order?.id) return;
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'purchase',
+    timestamp: new Date().toISOString(),
+    ecommerce: {
+      transaction_id: order.id,
+      value: order.total,
+      currency: order.currency || 'USD',
+      items: (order.items || []).map(item => ({
+        item_id: item.product_id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    }
+  });
+
+  // Send to webhook for order fulfillment automation
+  // ... webhook code here
+}
+```
+
+#### Event Listener: Add to Cart
+
+```javascript
+function onCartItemAddedTrack(data) {
+  console.log('📊 Plugin: Tracking add to cart');
+
+  const item = data?.item || data;
+  if (!item) return;
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'add_to_cart',
+    timestamp: new Date().toISOString(),
+    ecommerce: {
+      items: [{
+        item_id: item.product_id || item.id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity || 1
+      }]
+    }
+  });
+}
+```
+
+### Available Store Events for Plugins
+
+| Event Name | When It Fires | Data Available |
+|------------|---------------|----------------|
+| `customer.login` | Customer logs in | `customer` object with id, email, name |
+| `customer.registered` | New customer registers | `customer` object |
+| `product.viewed` | Product page viewed | `product` object with id, name, price |
+| `cart.item_added` | Item added to cart | `item` object with product_id, name, price, quantity |
+| `cart.item_removed` | Item removed from cart | `item` object |
+| `order.completed` | Order placed | `order` object with id, total, items, customer |
+| `wishlist.item_added` | Item added to wishlist | `product` object |
+| `wishlist.item_removed` | Item removed from wishlist | `product` object |
+
+### Plugin Configuration Storage
+
+Store plugin settings (like webhook URLs) using the plugin data API:
+
+```javascript
+// Get config endpoint
+async function getConfig(req, res, { sequelize }) {
+  const result = await sequelize.query(`
+    SELECT value FROM plugin_data
+    WHERE plugin_id = (SELECT id FROM plugin_registry WHERE slug = 'your-plugin' LIMIT 1)
+    AND key = 'config'
+  `, { type: sequelize.QueryTypes.SELECT });
+
+  const config = result[0]?.value || {
+    enabled: true,
+    webhookUrl: null,
+    trackProductViews: true,
+    trackOrders: true
+  };
+
+  return res.json({ success: true, config });
+}
+
+// Update config endpoint
+async function updateConfig(req, res, { sequelize }) {
+  const config = req.body;
+
+  await sequelize.query(`
+    INSERT INTO plugin_data (plugin_id, key, value, created_at, updated_at)
+    SELECT id, 'config', $1::jsonb, NOW(), NOW()
+    FROM plugin_registry WHERE slug = 'your-plugin'
+    ON CONFLICT (plugin_id, key) DO UPDATE
+    SET value = $1::jsonb, updated_at = NOW()
+  `, { bind: [JSON.stringify(config)] });
+
+  return res.json({ success: true, config });
+}
+```
+
+### Best Practices for Plugin Tracking
+
+1. **Don't duplicate core events** - The built-in DataLayerManager already tracks 32 events. Only add custom events or extend with webhook integrations.
+
+2. **Use timestamps** - Always include `timestamp: new Date().toISOString()` for event ordering.
+
+3. **Handle errors gracefully** - Wrap webhook calls in try/catch to prevent breaking the storefront.
+
+4. **Make it configurable** - Allow store owners to enable/disable specific tracking features.
+
+5. **Log for debugging** - Use `console.log('📊 Plugin: ...')` for easy identification in DevTools.
+
+6. **Respect privacy** - Don't track PII without consent. Check consent status before tracking.
+
+### Installing the Example Plugin
+
+1. Go to **Plugins** in your admin dashboard
+2. Click **Import Plugin**
+3. Upload the `datalayer-events.json` from `/public/example-plugins/`
+4. Configure webhook URL and tracking options
+5. Enable the plugin
+
+The plugin will now push events alongside the core tracking, allowing you to extend functionality or integrate with external automation tools.
+
+---
+
 ## Need Help?
 
 - **Test events**: Use the **Test Datalayer** button in the Analytics page
