@@ -174,26 +174,6 @@ export default function ProductDetail() {
         window.daino.trackProductView(productData.product);
       }
 
-      // Send Google Analytics 'view_item' event
-      if (window.dataLayer) {
-        window.dataLayer.push({
-          event: 'view_item',
-          ecommerce: {
-            items: [{
-              item_id: productData.product.id,
-              item_name: getProductName(productData.product, getCurrentLanguage()) || productData.product.name,
-              price: safeNumber(productData.product.price),
-              item_brand: productData.product.brand,
-              item_category: (() => {
-                const category = categories.find(cat => cat.id === productData.product.category_ids?.[0]);
-                return category ? getTranslatedCategoryName(category) : '';
-              })(),
-              currency: settings?.currency_code || 'No Currency'
-            }]
-          }
-        });
-      }
-
       // Check wishlist status using shared hook data (no additional API call!)
       if (productData.product.id && wishlistData) {
         const isProductInWishlist = wishlistData.some(item => item.product_id === productData.product.id);
