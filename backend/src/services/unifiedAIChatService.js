@@ -3657,11 +3657,12 @@ async function updateCmsPage({ page, updates }, storeId) {
     .eq('language_code', 'en');
 
   const transMap = new Map(translations?.map(t => [t.cms_page_id, t.title]) || []);
+  const searchTerm = page.toLowerCase();
 
-  const found = pages?.find(p =>
-    p.slug.toLowerCase() === page.toLowerCase() ||
-    (transMap.get(p.id) || '').toLowerCase() === page.toLowerCase()
-  );
+  // Find by exact slug, exact title, slug starts with, or slug contains
+  const found = pages?.find(p => p.slug.toLowerCase() === searchTerm || (transMap.get(p.id) || '').toLowerCase() === searchTerm) ||
+    pages?.find(p => p.slug.toLowerCase().startsWith(searchTerm + '-') || p.slug.toLowerCase().startsWith(searchTerm)) ||
+    pages?.find(p => p.slug.toLowerCase().includes(searchTerm) || (transMap.get(p.id) || '').toLowerCase().includes(searchTerm));
 
   if (!found) return { error: `CMS page "${page}" not found` };
 
@@ -3738,10 +3739,12 @@ async function deleteCmsPage({ page }, storeId) {
   const { data: translations } = await db.from('cms_page_translations').select('cms_page_id, title').eq('language_code', 'en');
 
   const transMap = new Map(translations?.map(t => [t.cms_page_id, t.title]) || []);
-  const found = pages?.find(p =>
-    p.slug.toLowerCase() === page.toLowerCase() ||
-    (transMap.get(p.id) || '').toLowerCase() === page.toLowerCase()
-  );
+  const searchTerm = page.toLowerCase();
+
+  // Find by exact slug, exact title, slug starts with, or slug contains
+  const found = pages?.find(p => p.slug.toLowerCase() === searchTerm || (transMap.get(p.id) || '').toLowerCase() === searchTerm) ||
+    pages?.find(p => p.slug.toLowerCase().startsWith(searchTerm + '-') || p.slug.toLowerCase().startsWith(searchTerm)) ||
+    pages?.find(p => p.slug.toLowerCase().includes(searchTerm) || (transMap.get(p.id) || '').toLowerCase().includes(searchTerm));
 
   if (!found) return { error: `CMS page "${page}" not found` };
 
@@ -3825,28 +3828,70 @@ async function updateCmsBlock({ block, updates }, storeId) {
   const { data: translations } = await db.from('cms_block_translations').select('cms_block_id, title').eq('language_code', 'en');
 
   const transMap = new Map(translations?.map(t => [t.cms_block_id, t.title]) || []);
-  const found = blocks?.find(b =>
-    b.identifier.toLowerCase() === block.toLowerCase() ||
-    (transMap.get(b.id) || '').toLowerCase() === block.toLowerCase()
-  );
+  const searchTerm = block.toLowerCase();
+
+  // Find by exact identifier, exact title, identifier starts with, or identifier contains
+  const found = blocks?.find(b => b.identifier.toLowerCase() === searchTerm || (transMap.get(b.id) || '').toLowerCase() === searchTerm) ||
+    blocks?.find(b => b.identifier.toLowerCase().startsWith(searchTerm + '-') || b.identifier.toLowerCase().startsWith(searchTerm)) ||
+    blocks?.find(b => b.identifier.toLowerCase().includes(searchTerm) || (transMap.get(b.id) || '').toLowerCase().includes(searchTerm));
 
   if (!found) return { error: `CMS block "${block}" not found` };
 
   if (updates.is_active !== undefined) {
-    await db.from('cms_blocks').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+    const { error: blockError } = await db.from('cms_blocks').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+    if (blockError) return { error: `Failed to update block: ${blockError.message}` };
   }
 
+  // Update translations using composite key
   if (updates.title !== undefined || updates.content !== undefined) {
-    const translationData = {
-      cms_block_id: found.id,
-      language_code: 'en',
-      updated_at: new Date().toISOString()
-    };
-    if (updates.title !== undefined) translationData.title = updates.title;
-    if (updates.content !== undefined) translationData.content = updates.content;
+    // First check if translation exists
+    const { data: existingTrans } = await db
+      .from('cms_block_translations')
+      .select('cms_block_id')
+      .eq('cms_block_id', found.id)
+      .eq('language_code', 'en')
+      .maybeSingle();
 
-    await db.from('cms_block_translations').upsert(translationData, {
-      onConflict: 'cms_block_id,language_code'    });
+    if (existingTrans) {
+      // Update existing translation
+      const updateData = { updated_at: new Date().toISOString() };
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.content !== undefined) updateData.content = updates.content;
+
+      console.log(`   📝 Updating CMS block translation for ${found.identifier}:`, { hasTitle: !!updates.title, contentLength: updates.content?.length });
+
+      const { error: updateError } = await db
+        .from('cms_block_translations')
+        .update(updateData)
+        .eq('cms_block_id', found.id)
+        .eq('language_code', 'en');
+
+      if (updateError) {
+        console.log(`   ❌ Update failed: ${updateError.message}`);
+        return { error: `Failed to update block translation: ${updateError.message}` };
+      }
+    } else {
+      // Insert new translation
+      const insertData = {
+        cms_block_id: found.id,
+        language_code: 'en',
+        title: updates.title || found.identifier.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        content: updates.content || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log(`   📝 Creating CMS block translation for ${found.identifier}`);
+
+      const { error: insertError } = await db
+        .from('cms_block_translations')
+        .insert(insertData);
+
+      if (insertError) {
+        console.log(`   ❌ Insert failed: ${insertError.message}`);
+        return { error: `Failed to create block translation: ${insertError.message}` };
+      }
+    }
   }
 
   return {
@@ -3861,7 +3906,12 @@ async function deleteCmsBlock({ block }, storeId) {
   const db = await ConnectionManager.getStoreConnection(storeId);
 
   const { data: blocks } = await db.from('cms_blocks').select('id, identifier');
-  const found = blocks?.find(b => b.identifier.toLowerCase() === block.toLowerCase());
+  const searchTerm = block.toLowerCase();
+
+  // Find by exact identifier, identifier starts with, or identifier contains
+  const found = blocks?.find(b => b.identifier.toLowerCase() === searchTerm) ||
+    blocks?.find(b => b.identifier.toLowerCase().startsWith(searchTerm + '-') || b.identifier.toLowerCase().startsWith(searchTerm)) ||
+    blocks?.find(b => b.identifier.toLowerCase().includes(searchTerm));
 
   if (!found) return { error: `CMS block "${block}" not found` };
 
