@@ -28,6 +28,7 @@ const aiContextService = require('./aiContextService');
 const aiLearningService = require('./aiLearningService');
 const aiEntityService = require('./aiEntityService');
 const aiModelsService = require('./AIModelsService');
+const StorageManager = require('./storage-manager');
 
 // LLM Clients - initialized lazily
 let anthropicClient = null;
@@ -2707,31 +2708,40 @@ async function addProductImage({ product, use_attached_image, image_file, image_
       return { error: 'Invalid image data provided' };
     }
 
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+
     // Generate file name
     const ext = mimeType.split('/')[1] || 'jpg';
-    fileName = `product-${foundProduct.sku}-${Date.now()}.${ext}`;
+    fileName = `${foundProduct.sku}-${Date.now()}.${ext}`;
 
-    // Store the base64 directly (in production, upload to storage)
-    const { data: newAsset, error: uploadError } = await db
-      .from('media_assets')
-      .insert({
-        store_id: storeId,
-        file_name: fileName,
-        original_name: fileName,
-        file_path: `/products/${fileName}`,
-        file_url: `data:${mimeType};base64,${base64Data}`,
-        mime_type: mimeType,
-        folder: 'products',
-        description: alt_text || `Image for ${foundProduct.sku}`
-      })
-      .select('id')
-      .single();
+    // Prepare file object for StorageManager (multer-like format)
+    const fileObject = {
+      buffer: imageBuffer,
+      mimetype: mimeType,
+      size: imageBuffer.length,
+      originalname: fileName
+    };
 
-    if (uploadError) {
+    // Upload using StorageManager - handles storage provider detection and media_assets creation
+    try {
+      const uploadResult = await StorageManager.uploadFile(storeId, fileObject, {
+        folder: 'product',
+        type: 'product',
+        public: true
+      });
+
+      if (!uploadResult || !uploadResult.mediaAssetId) {
+        return { error: 'Failed to upload image: No media asset ID returned' };
+      }
+
+      mediaAssetId = uploadResult.mediaAssetId;
+      fileName = uploadResult.filename || fileName;
+      console.log(`   ✅ Uploaded to storage: ${uploadResult.url}, mediaAssetId: ${mediaAssetId}`);
+    } catch (uploadError) {
+      console.error('   ❌ Storage upload error:', uploadError.message);
       return { error: `Failed to upload image: ${uploadError.message}` };
     }
-    mediaAssetId = newAsset.id;
-    console.log('   ✅ Created media asset:', mediaAssetId);
   }
 
   // If setting as primary, unset other primaries first
