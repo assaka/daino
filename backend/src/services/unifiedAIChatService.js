@@ -375,6 +375,19 @@ const TOOLS = [
       required: ["code"]
     }
   },
+  {
+    name: "set_product_attribute",
+    description: "Set/assign an attribute value to a product. For example: set 'color' to 'red' for product 'my-shirt'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        product: { type: "string", description: "Product name or SKU" },
+        attribute: { type: "string", description: "Attribute code (e.g., 'color', 'size', 'age_group')" },
+        value: { type: "string", description: "Attribute value to assign (e.g., 'red', 'large', 'toddler')" }
+      },
+      required: ["product", "attribute", "value"]
+    }
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // ORDER TOOLS
@@ -1680,7 +1693,7 @@ You have DIRECT DATABASE ACCESS through tools. You EXECUTE actions, not explain 
 AVAILABLE TOOLS:
 - **Products**: list_products, update_product, create_product, delete_product
 - **Categories**: list_categories, update_category, set_category_visible, set_category_hidden, create_category, delete_category, add_product_to_category, remove_product_from_category
-- **Attributes**: list_attributes, create_attribute, update_attribute, delete_attribute
+- **Attributes**: list_attributes, create_attribute, update_attribute, delete_attribute, set_product_attribute
 - **Attribute Sets**: list_attribute_sets, create_attribute_set, update_attribute_set, delete_attribute_set
 - **Orders**: list_orders, update_order_status
 - **Customers**: list_customers, blacklist_customer
@@ -1795,6 +1808,9 @@ async function executeTool(name, input, context) {
         break;
       case 'delete_attribute':
         result = await deleteAttribute(input, storeId);
+        break;
+      case 'set_product_attribute':
+        result = await setProductAttribute(input, storeId);
         break;
 
       // Order tools
@@ -2965,6 +2981,105 @@ async function deleteAttribute({ code }, storeId) {
     message: `Deleted attribute "${code}"`,
     refreshPreview: true,
     action: 'delete'
+  };
+}
+
+async function setProductAttribute({ product, attribute, value }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find product
+  const foundProduct = await findProductByNameOrSku(db, product);
+  if (!foundProduct) {
+    return { error: `Product "${product}" not found` };
+  }
+
+  // Find attribute by code
+  const { data: attr } = await db
+    .from('attributes')
+    .select('id, code')
+    .eq('code', attribute)
+    .single();
+
+  if (!attr) {
+    // Try case-insensitive search
+    const { data: attrAlt } = await db
+      .from('attributes')
+      .select('id, code')
+      .ilike('code', attribute)
+      .single();
+
+    if (!attrAlt) {
+      return { error: `Attribute "${attribute}" not found` };
+    }
+    attr.id = attrAlt.id;
+    attr.code = attrAlt.code;
+  }
+
+  // Find attribute value by name (check attribute_value_translations)
+  const { data: attrValues } = await db
+    .from('attribute_values')
+    .select('id, code')
+    .eq('attribute_id', attr.id);
+
+  if (!attrValues || attrValues.length === 0) {
+    return { error: `Attribute "${attribute}" has no values defined` };
+  }
+
+  // Get translations for these values
+  const valueIds = attrValues.map(v => v.id);
+  const { data: valueTrans } = await db
+    .from('attribute_value_translations')
+    .select('attribute_value_id, label')
+    .in('attribute_value_id', valueIds)
+    .eq('language_code', 'en');
+
+  // Find matching value by label (case-insensitive)
+  const valueTransMap = new Map((valueTrans || []).map(t => [t.attribute_value_id, t.label]));
+  const matchedValue = attrValues.find(v => {
+    const label = valueTransMap.get(v.id) || v.code;
+    return label.toLowerCase() === value.toLowerCase() || v.code.toLowerCase() === value.toLowerCase();
+  });
+
+  if (!matchedValue) {
+    const availableValues = attrValues.map(v => valueTransMap.get(v.id) || v.code).join(', ');
+    return { error: `Value "${value}" not found for attribute "${attribute}". Available: ${availableValues}` };
+  }
+
+  // Check if product already has this attribute assigned
+  const { data: existing } = await db
+    .from('product_attribute_values')
+    .select('id')
+    .eq('product_id', foundProduct.id)
+    .eq('attribute_id', attr.id)
+    .single();
+
+  if (existing) {
+    // Update existing
+    const { error } = await db
+      .from('product_attribute_values')
+      .update({ value_id: matchedValue.id, updated_at: new Date().toISOString() })
+      .eq('id', existing.id);
+
+    if (error) return { error: `Failed to update attribute: ${error.message}` };
+  } else {
+    // Insert new
+    const { error } = await db
+      .from('product_attribute_values')
+      .insert({
+        product_id: foundProduct.id,
+        attribute_id: attr.id,
+        value_id: matchedValue.id
+      });
+
+    if (error) return { error: `Failed to set attribute: ${error.message}` };
+  }
+
+  const valueName = valueTransMap.get(matchedValue.id) || matchedValue.code;
+  return {
+    success: true,
+    message: `Set "${attr.code}" to "${valueName}" for product "${foundProduct.sku}"`,
+    refreshPreview: true,
+    action: existing ? 'update' : 'create'
   };
 }
 
