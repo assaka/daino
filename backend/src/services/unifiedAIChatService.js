@@ -3948,17 +3948,36 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
     p.slug.toLowerCase().includes(page.toLowerCase())
   );
 
-  if (!found) return { error: `CMS page "${page}" not found` };
+  if (!found) {
+    console.log(`   ❌ CMS page "${page}" not found. Available pages:`, pages?.map(p => p.slug).join(', '));
+    return { error: `CMS page "${page}" not found` };
+  }
+  console.log(`   ✅ Found CMS page: ${found.slug} (id: ${found.id})`);
 
-  // Get current content
-  const { data: trans } = await db
+  // Get current content - try 'en' first, then fall back to any available translation
+  let { data: trans } = await db
     .from('cms_page_translations')
-    .select('id, title, content')
+    .select('id, title, content, language_code')
     .eq('cms_page_id', found.id)
     .eq('language_code', 'en')
     .single();
 
-  if (!trans) return { error: `CMS page translation not found` };
+  if (!trans) {
+    // Fallback: get any available translation
+    const { data: anyTrans } = await db
+      .from('cms_page_translations')
+      .select('id, title, content, language_code')
+      .eq('cms_page_id', found.id)
+      .limit(1)
+      .single();
+    trans = anyTrans;
+  }
+
+  if (!trans) {
+    console.log(`   ❌ No translation found for page ${found.slug}`);
+    return { error: `CMS page translation not found for "${found.slug}"` };
+  }
+  console.log(`   ✅ Found translation (${trans.language_code}): "${trans.title}"`);
 
   let imageUrl = '';
   let fileName = '';
@@ -4030,17 +4049,36 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
     b.identifier.toLowerCase().includes(block.toLowerCase())
   );
 
-  if (!found) return { error: `CMS block "${block}" not found` };
+  if (!found) {
+    console.log(`   ❌ CMS block "${block}" not found. Available blocks:`, blocks?.map(b => b.identifier).join(', '));
+    return { error: `CMS block "${block}" not found` };
+  }
+  console.log(`   ✅ Found CMS block: ${found.identifier} (id: ${found.id})`);
 
-  // Get current content
-  const { data: trans } = await db
+  // Get current content - try 'en' first, then fall back to any available translation
+  let { data: trans } = await db
     .from('cms_block_translations')
-    .select('id, title, content')
+    .select('id, title, content, language_code')
     .eq('cms_block_id', found.id)
     .eq('language_code', 'en')
     .single();
 
-  if (!trans) return { error: `CMS block translation not found` };
+  if (!trans) {
+    // Fallback: get any available translation
+    const { data: anyTrans } = await db
+      .from('cms_block_translations')
+      .select('id, title, content, language_code')
+      .eq('cms_block_id', found.id)
+      .limit(1)
+      .single();
+    trans = anyTrans;
+  }
+
+  if (!trans) {
+    console.log(`   ❌ No translation found for block ${found.identifier}`);
+    return { error: `CMS block translation not found for "${found.identifier}"` };
+  }
+  console.log(`   ✅ Found translation (${trans.language_code}): "${trans.title}"`);
 
   let imageUrl = '';
   let fileName = '';
