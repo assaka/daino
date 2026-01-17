@@ -604,10 +604,13 @@ export const SetupGuide = ({ store }) => {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-amber-600">
                         <RefreshCw className="w-5 h-5" />
-                        Restore Store?
+                        Clear Demo Data?
                     </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Store: <strong>{store?.name}</strong>
+                    </p>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-900 font-medium mb-2">What this does:</p>
                         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
@@ -617,11 +620,6 @@ export const SetupGuide = ({ store }) => {
                             <li>You can then run the store or add your own data</li>
                         </ul>
                     </div>
-
-                    <p className="text-sm text-gray-600">
-                        Store: <strong>{store?.name}</strong>
-                    </p>
-
                     <div className="flex justify-end space-x-2 pt-2">
                         <Button
                             variant="outline"
@@ -643,7 +641,7 @@ export const SetupGuide = ({ store }) => {
                             ) : (
                                 <>
                                     <RefreshCw className="w-4 h-4 mr-2" />
-                                    Restore Store
+                                    Clear Demo Data
                                 </>
                             )}
                         </Button>
