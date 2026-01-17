@@ -3939,6 +3939,15 @@ function insertImageIntoContent(content, imageUrl, position, options = {}) {
 
 async function insertCmsPageImage(input, storeId, attachedImages = []) {
   const { page, use_attached_image, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
+
+  console.log('   📄 insertCmsPageImage called with:', {
+    page,
+    use_attached_image,
+    has_image_file: !!image_file,
+    has_image_base64: !!image_base64,
+    attachedImages_count: attachedImages?.length || 0
+  });
+
   const db = await ConnectionManager.getStoreConnection(storeId);
 
   // Find CMS page
@@ -3990,9 +3999,16 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
     }
     const attachedImg = attachedImages[0];
     console.log('   📷 Using attached image from chat for CMS page');
-    const asset = await uploadImageToMediaLibrary(storeId, attachedImg.base64, null, alt_text, 'library');
-    imageUrl = asset.file_url;
-    fileName = asset.file_name;
+    console.log('   📷 Attached image has base64:', !!attachedImg.base64, 'type:', attachedImg.type);
+    try {
+      const asset = await uploadImageToMediaLibrary(storeId, attachedImg.base64, null, alt_text, 'library');
+      imageUrl = asset.file_url;
+      fileName = asset.file_name;
+      console.log('   ✅ Uploaded image:', fileName, imageUrl?.substring(0, 80));
+    } catch (uploadErr) {
+      console.error('   ❌ Upload failed:', uploadErr.message);
+      return { error: `Failed to upload image: ${uploadErr.message}` };
+    }
   } else if (image_file) {
     // Find existing media asset
     const { data: asset } = await db

@@ -8,6 +8,7 @@
 
 const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('./database/ConnectionManager');
+const aiTrainingService = require('./aiTrainingService');
 
 /**
  * Tool definitions for Anthropic's tool use API
@@ -182,13 +183,13 @@ const PLATFORM_TOOLS = [
  * Execute a tool call and return the result
  */
 async function executeTool(toolName, toolInput, context = {}) {
-  const { storeId, userId } = context;
+  const { storeId, userId, userMessage, sessionId } = context;
 
   console.log(`🔧 Executing tool: ${toolName}`, JSON.stringify(toolInput).substring(0, 200));
 
   switch (toolName) {
     case 'get_platform_knowledge':
-      return await getPlatformKnowledge(toolInput);
+      return await getPlatformKnowledge(toolInput, { storeId, userId, userMessage, sessionId });
 
     case 'query_database':
       return await queryDatabase(toolInput, storeId);
@@ -209,6 +210,18 @@ async function executeTool(toolName, toolInput, context = {}) {
       return await translateContent(toolInput, storeId);
 
     default:
+      // Log unknown tool for training
+      aiTrainingService.logUnresolvedQuestion({
+        storeId,
+        userId,
+        sessionId,
+        userMessage: userMessage || 'Unknown',
+        failureType: 'unknown_tool',
+        toolName,
+        toolInput,
+        errorMessage: `Unknown tool: ${toolName}`
+      }).catch(err => console.error('Error logging unknown tool:', err));
+
       return { error: `Unknown tool: ${toolName}` };
   }
 }
@@ -216,7 +229,9 @@ async function executeTool(toolName, toolInput, context = {}) {
 /**
  * Get platform knowledge from the knowledge base (database only, no hardcoded fallback)
  */
-async function getPlatformKnowledge({ topic, question }) {
+async function getPlatformKnowledge({ topic, question }, context = {}) {
+  const { storeId, userId, userMessage, sessionId } = context;
+
   try {
     // Search knowledge base by topic keywords
     const searchTerms = topic.toLowerCase().split(' ');
@@ -247,6 +262,16 @@ async function getPlatformKnowledge({ topic, question }) {
     });
 
     if (matchingDocs.length === 0) {
+      // Log knowledge gap for training
+      aiTrainingService.logKnowledgeGap({
+        storeId,
+        userId,
+        sessionId,
+        userMessage: userMessage || question || topic,
+        topic,
+        aiResponse: `No documentation found for "${topic}".`
+      }).catch(err => console.error('Error logging knowledge gap:', err));
+
       return {
         found: false,
         topic,
@@ -375,6 +400,16 @@ async function queryDatabase({ entity, query_type, filters = {} }, storeId) {
       }
 
       default:
+        // Log unsupported entity for training
+        aiTrainingService.logEntityNotSupported({
+          storeId,
+          userId: null,
+          sessionId: null,
+          userMessage: `Query ${entity} with ${query_type}`,
+          entityType: entity,
+          operation: query_type
+        }).catch(err => console.error('Error logging unsupported entity:', err));
+
         return { error: `Query for entity "${entity}" not implemented yet` };
     }
   } catch (error) {

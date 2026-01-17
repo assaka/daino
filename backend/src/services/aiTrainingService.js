@@ -785,6 +785,412 @@ class AITrainingService {
   clearPendingConfirmation(sessionId) {
     AITrainingService.pendingConfirmations.delete(sessionId);
   }
+
+  // ============================================
+  // UNRESOLVED QUESTIONS LOGGING
+  // For AI training on failures/gaps
+  // ============================================
+
+  /**
+   * Failure type constants
+   */
+  static FAILURE_TYPES = {
+    KNOWLEDGE_GAP: 'knowledge_gap',
+    UNKNOWN_TOOL: 'unknown_tool',
+    TOOL_ERROR: 'tool_error',
+    ENTITY_NOT_SUPPORTED: 'entity_not_supported',
+    MISSING_CONTEXT: 'missing_context',
+    API_ERROR: 'api_error',
+    UNKNOWN_INTENT: 'unknown_intent',
+    PARTIAL_RESPONSE: 'partial_response',
+    OTHER: 'other'
+  };
+
+  /**
+   * Log an unresolved question for training purposes
+   * This logs questions the AI couldn't fully answer
+   */
+  async logUnresolvedQuestion({
+    storeId,
+    userId,
+    sessionId,
+    userMessage,
+    failureType,
+    failureSubtype = null,
+    errorMessage = null,
+    toolName = null,
+    toolInput = null,
+    aiResponse = null,
+    conversationContext = [],
+    metadata = {}
+  }) {
+    try {
+      // Validate failure type
+      const validTypes = Object.values(AITrainingService.FAILURE_TYPES);
+      if (!validTypes.includes(failureType)) {
+        console.warn(`[AITrainingService] Invalid failure type: ${failureType}, using 'other'`);
+        failureType = 'other';
+      }
+
+      // Try using the database function first (handles deduplication)
+      const { data, error } = await masterDbClient.rpc('log_unresolved_question', {
+        p_store_id: storeId || null,
+        p_user_id: userId || null,
+        p_session_id: sessionId || null,
+        p_user_message: userMessage,
+        p_failure_type: failureType,
+        p_failure_subtype: failureSubtype,
+        p_error_message: errorMessage,
+        p_tool_name: toolName,
+        p_tool_input: toolInput,
+        p_ai_response: aiResponse,
+        p_conversation_context: JSON.stringify(conversationContext),
+        p_metadata: JSON.stringify({
+          ...metadata,
+          logged_at: new Date().toISOString()
+        })
+      });
+
+      if (error) {
+        // Fallback to direct insert if function doesn't exist
+        console.log('[AITrainingService] Falling back to direct insert for unresolved question');
+        return await this.logUnresolvedQuestionDirect({
+          storeId,
+          userId,
+          sessionId,
+          userMessage,
+          failureType,
+          failureSubtype,
+          errorMessage,
+          toolName,
+          toolInput,
+          aiResponse,
+          conversationContext,
+          metadata
+        });
+      }
+
+      console.log(`[AITrainingService] Logged unresolved question (${failureType}): ${userMessage.substring(0, 50)}...`);
+      return { logged: true, id: data };
+    } catch (error) {
+      console.error('[AITrainingService] Error logging unresolved question:', error);
+      return { logged: false, error: error.message };
+    }
+  }
+
+  /**
+   * Direct insert fallback for logging unresolved questions
+   */
+  async logUnresolvedQuestionDirect({
+    storeId,
+    userId,
+    sessionId,
+    userMessage,
+    failureType,
+    failureSubtype,
+    errorMessage,
+    toolName,
+    toolInput,
+    aiResponse,
+    conversationContext,
+    metadata
+  }) {
+    try {
+      // Check for similar existing question
+      const { data: existing } = await masterDbClient
+        .from('ai_unresolved_questions')
+        .select('id, occurrence_count')
+        .eq('failure_type', failureType)
+        .eq('resolution_status', 'unresolved')
+        .eq('user_message', userMessage)
+        .limit(1)
+        .single();
+
+      if (existing) {
+        // Update occurrence count
+        await masterDbClient
+          .from('ai_unresolved_questions')
+          .update({
+            occurrence_count: existing.occurrence_count + 1,
+            updated_at: new Date().toISOString(),
+            metadata: masterDbClient.raw(`
+              COALESCE(metadata, '{}'::jsonb) || '${JSON.stringify({
+                last_occurrence: new Date().toISOString(),
+                last_store_id: storeId,
+                last_user_id: userId
+              })}'::jsonb
+            `)
+          })
+          .eq('id', existing.id);
+
+        return { logged: true, id: existing.id, updated: true };
+      }
+
+      // Insert new question
+      const { data, error } = await masterDbClient
+        .from('ai_unresolved_questions')
+        .insert({
+          store_id: storeId,
+          user_id: userId,
+          session_id: sessionId,
+          user_message: userMessage,
+          failure_type: failureType,
+          failure_subtype: failureSubtype,
+          error_message: errorMessage,
+          tool_name: toolName,
+          tool_input: toolInput,
+          ai_response: aiResponse,
+          conversation_context: conversationContext,
+          metadata: {
+            ...metadata,
+            logged_at: new Date().toISOString()
+          }
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      return { logged: true, id: data.id };
+    } catch (error) {
+      console.error('[AITrainingService] Error in direct insert:', error);
+      return { logged: false, error: error.message };
+    }
+  }
+
+  /**
+   * Log a knowledge base gap specifically
+   */
+  async logKnowledgeGap({ storeId, userId, sessionId, userMessage, topic, aiResponse }) {
+    return this.logUnresolvedQuestion({
+      storeId,
+      userId,
+      sessionId,
+      userMessage,
+      failureType: AITrainingService.FAILURE_TYPES.KNOWLEDGE_GAP,
+      failureSubtype: topic,
+      aiResponse,
+      metadata: { topic }
+    });
+  }
+
+  /**
+   * Log a tool execution error
+   */
+  async logToolError({ storeId, userId, sessionId, userMessage, toolName, toolInput, errorMessage, aiResponse }) {
+    return this.logUnresolvedQuestion({
+      storeId,
+      userId,
+      sessionId,
+      userMessage,
+      failureType: AITrainingService.FAILURE_TYPES.TOOL_ERROR,
+      toolName,
+      toolInput,
+      errorMessage,
+      aiResponse
+    });
+  }
+
+  /**
+   * Log an unsupported entity/operation request
+   */
+  async logEntityNotSupported({ storeId, userId, sessionId, userMessage, entityType, operation, aiResponse }) {
+    return this.logUnresolvedQuestion({
+      storeId,
+      userId,
+      sessionId,
+      userMessage,
+      failureType: AITrainingService.FAILURE_TYPES.ENTITY_NOT_SUPPORTED,
+      failureSubtype: `${entityType}:${operation}`,
+      aiResponse,
+      metadata: { entityType, operation }
+    });
+  }
+
+  /**
+   * Log an API error (Anthropic, etc.)
+   */
+  async logApiError({ storeId, userId, sessionId, userMessage, errorMessage, provider = 'anthropic' }) {
+    return this.logUnresolvedQuestion({
+      storeId,
+      userId,
+      sessionId,
+      userMessage,
+      failureType: AITrainingService.FAILURE_TYPES.API_ERROR,
+      failureSubtype: provider,
+      errorMessage
+    });
+  }
+
+  /**
+   * Get unresolved questions for admin review
+   */
+  async getUnresolvedQuestions({
+    failureType,
+    status = 'unresolved',
+    priority,
+    page = 1,
+    limit = 20
+  }) {
+    try {
+      let query = masterDbClient
+        .from('ai_unresolved_questions')
+        .select('*', { count: 'exact' });
+
+      if (failureType) {
+        query = query.eq('failure_type', failureType);
+      }
+      if (status) {
+        query = query.eq('resolution_status', status);
+      }
+      if (priority) {
+        query = query.eq('priority', priority);
+      }
+
+      const offset = (page - 1) * limit;
+      query = query
+        .order('occurrence_count', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      const { data, count, error } = await query;
+
+      if (error) throw error;
+
+      return {
+        questions: data || [],
+        total: count || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((count || 0) / limit)
+      };
+    } catch (error) {
+      console.error('[AITrainingService] Error getting unresolved questions:', error);
+      return { questions: [], total: 0, page, limit, totalPages: 0 };
+    }
+  }
+
+  /**
+   * Get training priorities - most impactful issues to fix
+   */
+  async getTrainingPriorities(limit = 20) {
+    try {
+      const { data, error } = await masterDbClient.rpc('get_training_priorities', {
+        p_limit: limit
+      });
+
+      if (error) {
+        // Fallback query
+        const { data: fallbackData } = await masterDbClient
+          .from('ai_unresolved_questions')
+          .select('failure_type, failure_subtype, tool_name, user_message, occurrence_count')
+          .eq('resolution_status', 'unresolved')
+          .order('occurrence_count', { ascending: false })
+          .limit(limit);
+
+        // Group manually
+        const grouped = {};
+        (fallbackData || []).forEach(q => {
+          const key = `${q.failure_type}:${q.failure_subtype || ''}:${q.tool_name || ''}`;
+          if (!grouped[key]) {
+            grouped[key] = {
+              failure_type: q.failure_type,
+              failure_subtype: q.failure_subtype,
+              tool_name: q.tool_name,
+              total_count: 0,
+              total_occurrences: 0,
+              sample_messages: []
+            };
+          }
+          grouped[key].total_count++;
+          grouped[key].total_occurrences += q.occurrence_count;
+          if (grouped[key].sample_messages.length < 3) {
+            grouped[key].sample_messages.push(q.user_message.substring(0, 200));
+          }
+        });
+
+        return {
+          priorities: Object.values(grouped).sort((a, b) =>
+            (b.total_occurrences * 0.6 + b.total_count * 0.4) -
+            (a.total_occurrences * 0.6 + a.total_count * 0.4)
+          )
+        };
+      }
+
+      return { priorities: data || [] };
+    } catch (error) {
+      console.error('[AITrainingService] Error getting training priorities:', error);
+      return { priorities: [], error: error.message };
+    }
+  }
+
+  /**
+   * Resolve an unresolved question (mark as fixed)
+   */
+  async resolveQuestion(questionId, resolvedBy, resolution) {
+    try {
+      const { error } = await masterDbClient
+        .from('ai_unresolved_questions')
+        .update({
+          resolution_status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          resolved_by: resolvedBy,
+          resolution_details: resolution.details,
+          suggested_solution: resolution.solution,
+          required_tool: resolution.requiredTool,
+          required_knowledge: resolution.requiredKnowledge,
+          training_notes: resolution.notes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', questionId);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      console.error('[AITrainingService] Error resolving question:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get unresolved questions summary by type
+   */
+  async getUnresolvedSummary() {
+    try {
+      const { data, error } = await masterDbClient
+        .from('ai_unresolved_summary')
+        .select('*');
+
+      if (error) {
+        // View might not exist, do manual query
+        const { data: manual } = await masterDbClient
+          .from('ai_unresolved_questions')
+          .select('failure_type, failure_subtype, tool_name')
+          .eq('resolution_status', 'unresolved');
+
+        const summary = {};
+        (manual || []).forEach(q => {
+          const key = q.failure_type;
+          if (!summary[key]) {
+            summary[key] = { failure_type: key, count: 0, subtypes: {} };
+          }
+          summary[key].count++;
+          if (q.failure_subtype) {
+            summary[key].subtypes[q.failure_subtype] =
+              (summary[key].subtypes[q.failure_subtype] || 0) + 1;
+          }
+        });
+
+        return { summary: Object.values(summary) };
+      }
+
+      return { summary: data || [] };
+    } catch (error) {
+      console.error('[AITrainingService] Error getting summary:', error);
+      return { summary: [], error: error.message };
+    }
+  }
 }
 
 module.exports = new AITrainingService();

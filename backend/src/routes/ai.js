@@ -102,6 +102,18 @@ router.post('/unified-chat', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Unified AI chat error:', error);
 
+    // Log error for AI training (non-blocking)
+    const { message: userMessage, storeId: bodyStoreId } = req.body;
+    const storeId = req.headers['x-store-id'] || bodyStoreId;
+    aiTrainingService.logApiError({
+      storeId,
+      userId: req.user?.id,
+      sessionId: req.headers['x-session-id'],
+      userMessage: userMessage || 'Unknown message',
+      errorMessage: error.message,
+      provider: 'anthropic'
+    }).catch(err => console.error('Error logging AI failure:', err));
+
     // Handle insufficient credits error
     if (error.message?.includes('Insufficient credits')) {
       return res.status(402).json({

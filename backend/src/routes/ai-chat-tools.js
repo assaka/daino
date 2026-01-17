@@ -11,6 +11,7 @@ const router = express.Router();
 const Anthropic = require('@anthropic-ai/sdk');
 const { PLATFORM_TOOLS, executeTool } = require('../services/aiTools');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const aiTrainingService = require('../services/aiTrainingService');
 
 const anthropic = new Anthropic();
 
@@ -145,6 +146,30 @@ router.post('/', authMiddleware, async (req, res) => {
           result
         });
 
+        // Log tool errors for training
+        if (result && result.error) {
+          aiTrainingService.logToolError({
+            storeId: resolvedStoreId,
+            userId,
+            sessionId: req.headers['x-session-id'],
+            userMessage: message,
+            toolName: toolUse.name,
+            toolInput: toolUse.input,
+            errorMessage: result.error
+          }).catch(err => console.error('Error logging tool failure:', err));
+        }
+
+        // Log knowledge gaps
+        if (result && result.found === false && toolUse.name === 'get_platform_knowledge') {
+          aiTrainingService.logKnowledgeGap({
+            storeId: resolvedStoreId,
+            userId,
+            sessionId: req.headers['x-session-id'],
+            userMessage: message,
+            topic: toolUse.input?.topic || 'unknown'
+          }).catch(err => console.error('Error logging knowledge gap:', err));
+        }
+
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
@@ -205,6 +230,19 @@ router.post('/', authMiddleware, async (req, res) => {
 
   } catch (error) {
     console.error('AI Chat Tools Error:', error);
+
+    // Log API error for training
+    const { message: userMessage, storeId } = req.body;
+    const resolvedStoreId = req.headers['x-store-id'] || storeId || req.body.store_id;
+    aiTrainingService.logApiError({
+      storeId: resolvedStoreId,
+      userId: req.user?.id,
+      sessionId: req.headers['x-session-id'],
+      userMessage: userMessage || 'Unknown message',
+      errorMessage: error.message,
+      provider: 'anthropic'
+    }).catch(err => console.error('Error logging API failure:', err));
+
     return res.status(500).json({
       success: false,
       message: `AI error: ${error.message}`
