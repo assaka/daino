@@ -793,7 +793,7 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
           }
           setFlashMessage({ type: 'success', message: msg });
           if (onOptimized) onOptimized({ applied: true, refresh: true });
-          // Don't close modal - user can close manually with Cancel/X
+          onClose();
         } else {
           throw new Error(replaceResponse.error || 'Replace failed');
         }

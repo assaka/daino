@@ -1627,8 +1627,6 @@ export default function Products() {
               } catch (error) {
                 console.error('Failed to refresh product:', error);
               }
-              // Re-open the product form
-              setShowProductForm(true);
             }
             // Refresh the products list to show updated images
             await loadData();
