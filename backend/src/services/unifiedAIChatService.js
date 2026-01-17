@@ -2601,9 +2601,7 @@ async function updateCategory({ category, updates }, storeId) {
     const { error: transError } = await db
       .from('category_translations')
       .upsert(translationData, {
-        onConflict: 'category_id,language_code',
-        ignoreDuplicates: false
-      });
+        onConflict: 'category_id,language_code'      });
 
     if (transError) return { error: transError.message };
   }
@@ -3233,9 +3231,7 @@ async function updateCmsPage({ page, updates }, storeId) {
     if (updates.content !== undefined) translationData.content = updates.content;
 
     await db.from('cms_page_translations').upsert(translationData, {
-      onConflict: 'cms_page_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'cms_page_id,language_code'    });
   }
 
   return {
@@ -3361,9 +3357,7 @@ async function updateCmsBlock({ block, updates }, storeId) {
     if (updates.content !== undefined) translationData.content = updates.content;
 
     await db.from('cms_block_translations').upsert(translationData, {
-      onConflict: 'cms_block_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'cms_block_id,language_code'    });
   }
 
   return {
@@ -3590,9 +3584,7 @@ async function updateShippingMethod({ method, updates }, storeId) {
     if (updates.estimated_days !== undefined) translationData.description = updates.estimated_days;
 
     await db.from('shipping_method_translations').upsert(translationData, {
-      onConflict: 'shipping_method_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'shipping_method_id,language_code'    });
   }
 
   return {
@@ -3685,9 +3677,7 @@ async function updatePaymentMethod({ method, updates }, storeId) {
       name: updates.name,
       updated_at: new Date().toISOString()
     }, {
-      onConflict: 'payment_method_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'payment_method_id,language_code'    });
   }
 
   return {
@@ -3755,9 +3745,7 @@ async function updateEmailTemplate({ template, updates }, storeId) {
     if (updates.content !== undefined) translationData.content = updates.content;
 
     await db.from('email_template_translations').upsert(translationData, {
-      onConflict: 'email_template_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'email_template_id,language_code'    });
   }
 
   return {
@@ -3857,9 +3845,7 @@ async function updateTax({ tax, updates }, storeId) {
       name: updates.name,
       updated_at: new Date().toISOString()
     }, {
-      onConflict: 'tax_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'tax_id,language_code'    });
   }
 
   return {
@@ -4152,9 +4138,7 @@ async function updateProductTab({ tab, updates }, storeId) {
     if (updates.content !== undefined) translationData.content = updates.content;
 
     await db.from('product_tab_translations').upsert(translationData, {
-      onConflict: 'product_tab_id,language_code',
-      ignoreDuplicates: false
-    });
+      onConflict: 'product_tab_id,language_code'    });
   }
 
   return {
