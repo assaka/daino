@@ -526,8 +526,8 @@ export default function Stores() {
             <Card key={store.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg">{store.name}</CardTitle>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-500 mt-1">
+                <div className="flex justify-between pt-2">
+                  <p className="text-sm text-gray-500">
                     Created: {store.created_at ?
                       new Date(store.created_at).toLocaleDateString() :
                       'Unknown'
