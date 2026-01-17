@@ -201,6 +201,45 @@ const TOOLS = [
       required: ["product"]
     }
   },
+  {
+    name: "add_product_image",
+    description: "Add an image to a product. Can use an existing media asset by file name, or upload a new image from base64 data.",
+    input_schema: {
+      type: "object",
+      properties: {
+        product: { type: "string", description: "Product name or SKU" },
+        image_file: { type: "string", description: "Existing media asset file name to use" },
+        image_base64: { type: "string", description: "Base64 image data to upload as new image" },
+        is_primary: { type: "boolean", description: "Set as primary/main product image (default false)" },
+        alt_text: { type: "string", description: "Alt text for accessibility" },
+        position: { type: "number", description: "Display position/order (default 0)" }
+      },
+      required: ["product"]
+    }
+  },
+  {
+    name: "remove_product_image",
+    description: "Remove an image from a product.",
+    input_schema: {
+      type: "object",
+      properties: {
+        product: { type: "string", description: "Product name or SKU" },
+        image_file: { type: "string", description: "Media asset file name to remove" }
+      },
+      required: ["product", "image_file"]
+    }
+  },
+  {
+    name: "list_product_images",
+    description: "List all images attached to a product.",
+    input_schema: {
+      type: "object",
+      properties: {
+        product: { type: "string", description: "Product name or SKU" }
+      },
+      required: ["product"]
+    }
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // CATEGORY TOOLS - Smart find by name, visibility control
@@ -1692,7 +1731,7 @@ async function buildSystemPrompt(storeId, message) {
 You have DIRECT DATABASE ACCESS through tools. You EXECUTE actions, not explain them.
 
 AVAILABLE TOOLS:
-- **Products**: list_products, update_product, create_product, delete_product
+- **Products**: list_products, update_product, create_product, delete_product, add_product_image, remove_product_image, list_product_images
 - **Categories**: list_categories, update_category, set_category_visible, set_category_hidden, create_category, delete_category, add_product_to_category, remove_product_from_category
 - **Attributes**: list_attributes, create_attribute, update_attribute, delete_attribute, set_product_attribute
 - **Attribute Sets**: list_attribute_sets, create_attribute_set, update_attribute_set, delete_attribute_set
@@ -1769,6 +1808,15 @@ async function executeTool(name, input, context) {
         break;
       case 'delete_product':
         result = await deleteProduct(input, storeId);
+        break;
+      case 'add_product_image':
+        result = await addProductImage(input, storeId);
+        break;
+      case 'remove_product_image':
+        result = await removeProductImage(input, storeId);
+        break;
+      case 'list_product_images':
+        result = await listProductImages(input, storeId);
         break;
 
       // Category tools
@@ -2543,6 +2591,203 @@ async function deleteProduct({ product }, storeId) {
     message: `Deleted product "${found.name}" (${found.sku})`,
     refreshPreview: true,
     action: 'delete'
+  };
+}
+
+async function addProductImage({ product, image_file, image_base64, is_primary = false, alt_text, position = 0 }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+  const crypto = require('crypto');
+
+  // Find product
+  const foundProduct = await findProductByNameOrSku(db, product);
+  if (!foundProduct) {
+    return { error: `Product "${product}" not found` };
+  }
+
+  let mediaAssetId = null;
+  let fileName = '';
+
+  if (image_file) {
+    // Use existing media asset by file name
+    const { data: asset } = await db
+      .from('media_assets')
+      .select('id, file_name')
+      .eq('store_id', storeId)
+      .ilike('file_name', `%${image_file}%`)
+      .single();
+
+    if (!asset) {
+      return { error: `Media asset "${image_file}" not found in library` };
+    }
+    mediaAssetId = asset.id;
+    fileName = asset.file_name;
+  } else if (image_base64) {
+    // Upload new image to media library
+    // Strip data URL prefix if present
+    let base64Data = image_base64;
+    let mimeType = 'image/jpeg';
+    if (base64Data.includes(',')) {
+      const parts = base64Data.split(',');
+      base64Data = parts[1];
+      const prefixMatch = parts[0].match(/data:([^;]+)/);
+      if (prefixMatch) mimeType = prefixMatch[1];
+    }
+
+    // Generate file name
+    const ext = mimeType.split('/')[1] || 'jpg';
+    fileName = `product-${foundProduct.sku}-${Date.now()}.${ext}`;
+
+    // For now, store the base64 directly (in production, upload to storage)
+    const { data: newAsset, error: uploadError } = await db
+      .from('media_assets')
+      .insert({
+        store_id: storeId,
+        file_name: fileName,
+        original_name: fileName,
+        file_path: `/products/${fileName}`,
+        file_url: `data:${mimeType};base64,${base64Data}`,
+        mime_type: mimeType,
+        folder: 'products',
+        description: alt_text || `Image for ${foundProduct.sku}`
+      })
+      .select('id')
+      .single();
+
+    if (uploadError) {
+      return { error: `Failed to upload image: ${uploadError.message}` };
+    }
+    mediaAssetId = newAsset.id;
+  } else {
+    return { error: 'Either image_file or image_base64 is required' };
+  }
+
+  // If setting as primary, unset other primaries first
+  if (is_primary) {
+    await db
+      .from('product_files')
+      .update({ is_primary: false })
+      .eq('product_id', foundProduct.id)
+      .eq('is_primary', true);
+  }
+
+  // Check if this image is already attached
+  const { data: existing } = await db
+    .from('product_files')
+    .select('id')
+    .eq('product_id', foundProduct.id)
+    .eq('media_asset_id', mediaAssetId)
+    .single();
+
+  if (existing) {
+    return { error: `Image "${fileName}" is already attached to this product` };
+  }
+
+  // Insert product_files record
+  const { error: insertError } = await db
+    .from('product_files')
+    .insert({
+      product_id: foundProduct.id,
+      media_asset_id: mediaAssetId,
+      file_type: 'image',
+      position,
+      is_primary,
+      alt_text: alt_text || '',
+      store_id: storeId
+    });
+
+  if (insertError) {
+    return { error: `Failed to attach image: ${insertError.message}` };
+  }
+
+  return {
+    success: true,
+    message: `Added image "${fileName}" to product "${foundProduct.sku}"${is_primary ? ' (set as primary)' : ''}`,
+    refreshPreview: true,
+    action: 'create'
+  };
+}
+
+async function removeProductImage({ product, image_file }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find product
+  const foundProduct = await findProductByNameOrSku(db, product);
+  if (!foundProduct) {
+    return { error: `Product "${product}" not found` };
+  }
+
+  // Find media asset
+  const { data: asset } = await db
+    .from('media_assets')
+    .select('id, file_name')
+    .eq('store_id', storeId)
+    .ilike('file_name', `%${image_file}%`)
+    .single();
+
+  if (!asset) {
+    return { error: `Media asset "${image_file}" not found` };
+  }
+
+  // Delete product_files record
+  const { error, count } = await db
+    .from('product_files')
+    .delete()
+    .eq('product_id', foundProduct.id)
+    .eq('media_asset_id', asset.id);
+
+  if (error) {
+    return { error: `Failed to remove image: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    message: `Removed image "${asset.file_name}" from product "${foundProduct.sku}"`,
+    refreshPreview: true,
+    action: 'delete'
+  };
+}
+
+async function listProductImages({ product }, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find product
+  const foundProduct = await findProductByNameOrSku(db, product);
+  if (!foundProduct) {
+    return { error: `Product "${product}" not found` };
+  }
+
+  // Get product files with media asset info
+  const { data: files, error } = await db
+    .from('product_files')
+    .select(`
+      id,
+      position,
+      is_primary,
+      alt_text,
+      file_type,
+      media_assets:media_asset_id (id, file_name, file_url, mime_type)
+    `)
+    .eq('product_id', foundProduct.id)
+    .eq('file_type', 'image')
+    .order('position');
+
+  if (error) {
+    return { error: `Failed to list images: ${error.message}` };
+  }
+
+  const images = (files || []).map(f => ({
+    id: f.id,
+    file_name: f.media_assets?.file_name,
+    url: f.media_assets?.file_url,
+    is_primary: f.is_primary,
+    position: f.position,
+    alt_text: f.alt_text
+  }));
+
+  return {
+    product: foundProduct.sku,
+    images,
+    count: images.length
   };
 }
 
