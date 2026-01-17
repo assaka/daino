@@ -87,14 +87,15 @@ router.post('/unified-chat', authMiddleware, async (req, res) => {
     if (result.success !== false && result.creditsDeducted > 0) {
       const creditsDeducted = await aiService.deductCredits(userId, 'general', {
         storeId,
-        modelId: result.data?.model || modelId,
+        modelId,  // Use original short model ID for service key lookup (e.g., 'claude-haiku')
+        apiModel: result.data?.model,  // Full API model name for logging (e.g., 'claude-3-5-haiku-20241022')
         costPrice: result.costPrice,  // Actual API cost
         mode,
         tokensInput: result.data?.usage?.input || 0,
         tokensOutput: result.data?.usage?.output || 0
       });
       result.creditsDeducted = creditsDeducted;
-      console.log(`💳 Credits deducted: ${result.creditsDeducted?.toFixed(2)} (cost: $${result.costPrice?.toFixed(4)}) for unified-chat (user: ${userId})`);
+      console.log(`💳 Credits deducted: ${result.creditsDeducted?.toFixed(2)} (cost: $${result.costPrice?.toFixed(4)}) for unified-chat (user: ${userId}, model: ${modelId})`);
     }
 
     res.json(result);

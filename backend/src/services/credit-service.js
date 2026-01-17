@@ -92,7 +92,9 @@ class CreditService {
     const recordId = uuidv4();
 
     // Extract model info and cost from metadata
-    const modelUsed = metadata?.modelId || metadata?.model || null;
+    // Use apiModel (full API name like 'claude-3-5-haiku-20241022') if available,
+    // otherwise fall back to modelId (short ID like 'claude-haiku')
+    const modelUsed = metadata?.apiModel || metadata?.modelId || metadata?.model || null;
     const costPrice = metadata?.costPrice ?? null;
 
     const insertData = {
