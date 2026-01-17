@@ -5,6 +5,7 @@
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Get products from tenant database with pagination
@@ -229,7 +230,77 @@ async function syncProductFiles(tenantDb, storeId, productId, files) {
     }
 
     // Filter files that have media_asset_id from upload
-    const validFiles = files.filter(file => file.media_asset_id);
+    let validFiles = files.filter(file => file.media_asset_id);
+
+    if (validFiles.length > 0) {
+      // Verify media_asset_ids exist in media_assets table
+      const mediaAssetIds = validFiles.map(f => f.media_asset_id);
+      const { data: existingAssets } = await tenantDb
+        .from('media_assets')
+        .select('id')
+        .in('id', mediaAssetIds);
+
+      const existingIds = new Set((existingAssets || []).map(a => a.id));
+
+      // For files with missing media_assets, try to create them from URL
+      for (const file of validFiles) {
+        if (!existingIds.has(file.media_asset_id) && (file.url || file.metadata?.original_url)) {
+          const fileUrl = file.url || file.metadata?.original_url;
+
+          // Check if media_asset already exists by URL
+          const { data: existingByUrl } = await tenantDb
+            .from('media_assets')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('file_url', fileUrl)
+            .maybeSingle();
+
+          if (existingByUrl) {
+            // Use existing media_asset_id
+            console.log(`📦 Found existing media_asset by URL, using id: ${existingByUrl.id}`);
+            file.media_asset_id = existingByUrl.id;
+            existingIds.add(existingByUrl.id);
+          } else {
+            // Create new media_asset from file data
+            const newId = uuidv4();
+            const fileName = file.metadata?.upload_result?.filename || file.filename || fileUrl.split('/').pop();
+
+            const assetData = {
+              id: newId,
+              store_id: storeId,
+              file_name: fileName,
+              original_name: fileName,
+              file_path: file.metadata?.upload_result?.relativePath || fileName,
+              file_url: fileUrl,
+              mime_type: file.contentType || 'image/jpeg',
+              folder: 'product',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+
+            const { error: insertError } = await tenantDb
+              .from('media_assets')
+              .insert(assetData);
+
+            if (insertError) {
+              console.error(`❌ Failed to create media_asset for ${fileName}:`, insertError.message);
+            } else {
+              console.log(`✅ Created missing media_asset: ${newId} for ${fileName}`);
+              file.media_asset_id = newId;
+              existingIds.add(newId);
+            }
+          }
+        }
+      }
+
+      const originalCount = validFiles.length;
+      // Filter to only files with valid media_asset_id
+      validFiles = validFiles.filter(file => existingIds.has(file.media_asset_id));
+
+      if (validFiles.length < originalCount) {
+        console.warn(`⚠️ Filtered out ${originalCount - validFiles.length} files with non-existent media_asset_id`);
+      }
+    }
 
     if (validFiles.length === 0) {
       console.log(`📁 No files with media_asset_id to sync`);

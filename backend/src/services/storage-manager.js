@@ -408,7 +408,30 @@ class StorageManager {
         console.error('   Details:', dbError.details);
         console.error('   Hint:', dbError.hint);
         console.error('   Full error:', JSON.stringify(dbError, null, 2));
-        // Don't fail the upload if database tracking fails
+
+        // Try to find existing media_asset by URL as fallback
+        try {
+          const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+          const fileUrl = result.url || result.publicUrl;
+          const { data: existingByUrl } = await tenantDb
+            .from('media_assets')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('file_url', fileUrl)
+            .maybeSingle();
+
+          if (existingByUrl) {
+            console.log('📦 Found existing media_asset by URL:', existingByUrl.id);
+            return {
+              ...result,
+              provider: storeProvider.type,
+              fallbackUsed: false,
+              mediaAssetId: existingByUrl.id
+            };
+          }
+        } catch (fallbackError) {
+          console.error('   Fallback lookup also failed:', fallbackError.message);
+        }
       }
 
       return {
