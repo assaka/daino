@@ -181,26 +181,57 @@ async function updateProduct(storeId, productId, productData, locale = 'en_US') 
 }
 
 /**
- * Determine file_type from contentType/mimeType
+ * Determine file_type from contentType/mimeType or URL extension
  * Valid types: 'image', 'video', 'document', '3d_model', 'pdf'
  */
-function getFileTypeFromContentType(contentType) {
-  if (!contentType) return 'document';
+function getFileTypeFromContentType(contentType, url = null) {
+  // If we have a valid contentType, use it
+  if (contentType) {
+    const ct = contentType.toLowerCase();
 
-  const ct = contentType.toLowerCase();
+    if (ct === 'application/pdf') return 'pdf';
+    if (ct.startsWith('image/')) return 'image';
+    if (ct.startsWith('video/')) return 'video';
+    if (ct.includes('gltf') || ct.includes('glb') || ct.includes('3d')) return '3d_model';
 
-  if (ct === 'application/pdf') return 'pdf';
-  if (ct.startsWith('image/')) return 'image';
-  if (ct.startsWith('video/')) return 'video';
-  if (ct.includes('gltf') || ct.includes('glb') || ct.includes('3d')) return '3d_model';
-
-  // Common document types
-  if (ct.includes('word') || ct.includes('document') ||
-      ct.includes('spreadsheet') || ct.includes('excel') ||
-      ct.includes('powerpoint') || ct.includes('presentation') ||
-      ct.includes('text/') || ct.includes('application/rtf')) {
-    return 'document';
+    // Common document types
+    if (ct.includes('word') || ct.includes('document') ||
+        ct.includes('spreadsheet') || ct.includes('excel') ||
+        ct.includes('powerpoint') || ct.includes('presentation') ||
+        ct.includes('text/') || ct.includes('application/rtf')) {
+      return 'document';
+    }
   }
+
+  // Fallback: detect from URL extension
+  if (url) {
+    try {
+      const urlPath = new URL(url).pathname.toLowerCase();
+      const ext = urlPath.split('.').pop();
+
+      // Image extensions
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'].includes(ext)) {
+        return 'image';
+      }
+      // Video extensions
+      if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv'].includes(ext)) {
+        return 'video';
+      }
+      // PDF
+      if (ext === 'pdf') {
+        return 'pdf';
+      }
+      // 3D model extensions
+      if (['gltf', 'glb', 'obj', 'fbx', 'stl'].includes(ext)) {
+        return '3d_model';
+      }
+    } catch (e) {
+      // Invalid URL, ignore
+    }
+  }
+
+  // Default to document if we can't determine
+  if (!contentType) return 'document';
 
   return 'document';
 }
@@ -311,7 +342,8 @@ async function syncProductFiles(tenantDb, storeId, productId, files) {
     let hasPrimaryImage = false;
 
     const insertRecords = validFiles.map((file, index) => {
-      const fileType = getFileTypeFromContentType(file.contentType);
+      const fileUrl = file.url || file.metadata?.original_url;
+      const fileType = getFileTypeFromContentType(file.contentType, fileUrl);
       const isImage = fileType === 'image';
 
       // First image becomes primary
@@ -321,7 +353,7 @@ async function syncProductFiles(tenantDb, storeId, productId, files) {
       // Extract attribute_code from metadata
       const attributeCode = file.metadata?.attribute || file.attribute_code || null;
 
-      console.log(`  📄 File ${index + 1}: ${file.contentType || 'unknown'} -> ${fileType}, attribute: ${attributeCode || 'none'}`);
+      console.log(`  📄 File ${index + 1}: ${file.contentType || 'unknown'} -> ${fileType}, attribute: ${attributeCode || 'none'}, url: ${fileUrl?.substring(0, 50) || 'none'}`);
 
       return {
         product_id: productId,
