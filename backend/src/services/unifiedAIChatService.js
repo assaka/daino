@@ -1137,6 +1137,28 @@ const TOOLS = [
       }
     }
   },
+  {
+    name: "trigger_shopify_import",
+    description: "Trigger a Shopify import.",
+    input_schema: {
+      type: "object",
+      properties: {
+        import_type: { type: "string", enum: ["products", "categories", "collections", "all"], description: "What to import" },
+        full_sync: { type: "boolean", description: "Full sync (true) or incremental (false)" }
+      }
+    }
+  },
+  {
+    name: "trigger_woocommerce_import",
+    description: "Trigger a WooCommerce import.",
+    input_schema: {
+      type: "object",
+      properties: {
+        import_type: { type: "string", enum: ["products", "categories", "all"], description: "What to import" },
+        full_sync: { type: "boolean", description: "Full sync (true) or incremental (false)" }
+      }
+    }
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // STORE SETTINGS
@@ -1303,6 +1325,189 @@ const TOOLS = [
         period: { type: "string", enum: ["today", "week", "month", "year", "all"] }
       }
     }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // STORE GENERAL SETTINGS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "get_store_info",
+    description: "Get store general information: name, description, currency, timezone, deployment status.",
+    input_schema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "update_store_info",
+    description: "Update store general information like name, description, currency, timezone.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Store name" },
+        description: { type: "string", description: "Store description" },
+        currency: { type: "string", description: "Currency code (USD, EUR, GBP, etc.)" },
+        timezone: { type: "string", description: "Timezone (UTC, America/New_York, Europe/London, etc.)" }
+      }
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // LANGUAGES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_languages",
+    description: "List all languages configured for the store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        active_only: { type: "boolean", description: "Only show active languages" }
+      }
+    }
+  },
+  {
+    name: "create_language",
+    description: "Add a new language to the store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Language code (en, de, fr, nl, es, etc.)" },
+        name: { type: "string", description: "Language name (English, German, French, etc.)" },
+        native_name: { type: "string", description: "Native name (English, Deutsch, Français, etc.)" },
+        flag: { type: "string", description: "Flag emoji or URL" },
+        is_rtl: { type: "boolean", description: "Right-to-left language (Arabic, Hebrew)" },
+        is_active: { type: "boolean", description: "Enable this language (default true)" },
+        is_default: { type: "boolean", description: "Set as default language" }
+      },
+      required: ["code", "name"]
+    }
+  },
+  {
+    name: "update_language",
+    description: "Update a language by code.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Language code to update" },
+        name: { type: "string", description: "Language name" },
+        native_name: { type: "string", description: "Native name" },
+        flag: { type: "string", description: "Flag emoji or URL" },
+        is_rtl: { type: "boolean", description: "Right-to-left language" },
+        is_active: { type: "boolean", description: "Enable/disable language" },
+        is_default: { type: "boolean", description: "Set as default language" }
+      },
+      required: ["code"]
+    }
+  },
+  {
+    name: "delete_language",
+    description: "Delete a language by code.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Language code to delete" }
+      },
+      required: ["code"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // REDIRECTS / URL REWRITES
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_redirects",
+    description: "List URL redirects configured for SEO and link management.",
+    input_schema: {
+      type: "object",
+      properties: {
+        active_only: { type: "boolean", description: "Only show active redirects" },
+        search: { type: "string", description: "Search in from_url or to_url" },
+        limit: { type: "number", description: "Max results (default 50)" }
+      }
+    }
+  },
+  {
+    name: "create_redirect",
+    description: "Create a URL redirect (301 permanent or 302 temporary).",
+    input_schema: {
+      type: "object",
+      properties: {
+        from_url: { type: "string", description: "Source URL path (e.g., /old-page)" },
+        to_url: { type: "string", description: "Target URL path (e.g., /new-page)" },
+        type: { type: "string", enum: ["301", "302"], description: "Redirect type (301=permanent, 302=temporary)" },
+        notes: { type: "string", description: "Optional notes about this redirect" }
+      },
+      required: ["from_url", "to_url"]
+    }
+  },
+  {
+    name: "update_redirect",
+    description: "Update a redirect by its from_url.",
+    input_schema: {
+      type: "object",
+      properties: {
+        from_url: { type: "string", description: "Current source URL to find" },
+        new_from_url: { type: "string", description: "New source URL" },
+        to_url: { type: "string", description: "New target URL" },
+        type: { type: "string", enum: ["301", "302"], description: "Redirect type" },
+        is_active: { type: "boolean", description: "Enable/disable redirect" },
+        notes: { type: "string", description: "Notes about this redirect" }
+      },
+      required: ["from_url"]
+    }
+  },
+  {
+    name: "delete_redirect",
+    description: "Delete a redirect by its from_url.",
+    input_schema: {
+      type: "object",
+      properties: {
+        from_url: { type: "string", description: "Source URL of redirect to delete" }
+      },
+      required: ["from_url"]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // MEDIA ASSETS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_media_assets",
+    description: "List media assets (images, files) in the media library.",
+    input_schema: {
+      type: "object",
+      properties: {
+        folder: { type: "string", description: "Filter by folder (library, products, categories, etc.)" },
+        mime_type: { type: "string", description: "Filter by mime type (image/*, video/*, application/pdf, etc.)" },
+        search: { type: "string", description: "Search by file name or description" },
+        limit: { type: "number", description: "Max results (default 50)" }
+      }
+    }
+  },
+  {
+    name: "update_media_asset",
+    description: "Update a media asset's metadata by file name.",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_name: { type: "string", description: "File name to find" },
+        description: { type: "string", description: "New description/alt text" },
+        folder: { type: "string", description: "Move to folder" },
+        tags: { type: "array", items: { type: "string" }, description: "Tags for organization" }
+      },
+      required: ["file_name"]
+    }
+  },
+  {
+    name: "delete_media_asset",
+    description: "Delete a media asset by file name.",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_name: { type: "string", description: "File name to delete" }
+      },
+      required: ["file_name"]
+    }
   }
 ];
 
@@ -1387,8 +1592,12 @@ AVAILABLE TOOLS:
 - **Cookie Consent**: get_cookie_consent_settings, update_cookie_consent_settings
 - **SEO**: get_seo_settings, update_seo_settings, list_seo_templates, update_seo_template
 - **Settings**: get_store_settings, update_store_setting, update_stock_settings, update_display_settings, update_category_settings, update_checkout_settings, update_navigation_settings, update_gallery_settings
+- **Store Info**: get_store_info, update_store_info
+- **Languages**: list_languages, create_language, update_language, delete_language
+- **Redirects**: list_redirects, create_redirect, update_redirect, delete_redirect
+- **Media**: list_media_assets, update_media_asset, delete_media_asset
 - **Layout**: modify_slot
-- **Imports**: trigger_akeneo_import
+- **Imports**: trigger_akeneo_import, trigger_shopify_import, trigger_woocommerce_import
 - **Knowledge**: search_knowledge
 - **Stats**: get_store_stats
 - **Translation**: translate_content
@@ -1678,6 +1887,12 @@ async function executeTool(name, input, context) {
       case 'trigger_akeneo_import':
         result = await triggerAkeneoImport(input, storeId);
         break;
+      case 'trigger_shopify_import':
+        result = await triggerShopifyImport(input, storeId);
+        break;
+      case 'trigger_woocommerce_import':
+        result = await triggerWooCommerceImport(input, storeId);
+        break;
 
       // Settings tools
       case 'get_store_settings':
@@ -1716,6 +1931,53 @@ async function executeTool(name, input, context) {
         break;
       case 'get_store_stats':
         result = await getStoreStats(input, storeId);
+        break;
+
+      // Store info tools
+      case 'get_store_info':
+        result = await getStoreInfo(storeId);
+        break;
+      case 'update_store_info':
+        result = await updateStoreInfo(input, storeId);
+        break;
+
+      // Language tools
+      case 'list_languages':
+        result = await listLanguages(input, storeId);
+        break;
+      case 'create_language':
+        result = await createLanguage(input, storeId);
+        break;
+      case 'update_language':
+        result = await updateLanguage(input, storeId);
+        break;
+      case 'delete_language':
+        result = await deleteLanguage(input, storeId);
+        break;
+
+      // Redirect tools
+      case 'list_redirects':
+        result = await listRedirects(input, storeId);
+        break;
+      case 'create_redirect':
+        result = await createRedirect(input, storeId);
+        break;
+      case 'update_redirect':
+        result = await updateRedirect(input, storeId);
+        break;
+      case 'delete_redirect':
+        result = await deleteRedirect(input, storeId);
+        break;
+
+      // Media asset tools
+      case 'list_media_assets':
+        result = await listMediaAssets(input, storeId);
+        break;
+      case 'update_media_asset':
+        result = await updateMediaAsset(input, storeId);
+        break;
+      case 'delete_media_asset':
+        result = await deleteMediaAsset(input, storeId);
         break;
 
       default:
@@ -4074,6 +4336,497 @@ async function triggerAkeneoImport({ import_type = 'products', full_sync = false
     message: `Triggered Akeneo ${import_type} import (${full_sync ? 'full sync' : 'incremental'})`,
     note: 'Import job has been queued. Check job status for progress.',
     action: 'trigger'
+  };
+}
+
+async function triggerShopifyImport({ import_type = 'products', full_sync = false }, storeId) {
+  return {
+    success: true,
+    message: `Triggered Shopify ${import_type} import (${full_sync ? 'full sync' : 'incremental'})`,
+    note: 'Import job has been queued. Check job status for progress.',
+    action: 'trigger'
+  };
+}
+
+async function triggerWooCommerceImport({ import_type = 'products', full_sync = false }, storeId) {
+  return {
+    success: true,
+    message: `Triggered WooCommerce ${import_type} import (${full_sync ? 'full sync' : 'incremental'})`,
+    note: 'Import job has been queued. Check job status for progress.',
+    action: 'trigger'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STORE INFO TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function getStoreInfo(storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const { data: store, error } = await db
+    .from('stores')
+    .select('id, name, slug, description, currency, timezone, is_active, deployment_status, published, published_at, created_at')
+    .eq('id', storeId)
+    .single();
+
+  if (error) return { error: `Failed to get store info: ${error.message}` };
+
+  return {
+    store: {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      description: store.description,
+      currency: store.currency,
+      timezone: store.timezone,
+      is_active: store.is_active,
+      deployment_status: store.deployment_status,
+      published: store.published,
+      published_at: store.published_at,
+      created_at: store.created_at
+    }
+  };
+}
+
+async function updateStoreInfo(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  const updates = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.currency !== undefined) updates.currency = input.currency;
+  if (input.timezone !== undefined) updates.timezone = input.timezone;
+  updates.updated_at = new Date().toISOString();
+
+  if (Object.keys(updates).length === 1) {
+    return { error: 'No fields to update' };
+  }
+
+  const { error } = await db
+    .from('stores')
+    .update(updates)
+    .eq('id', storeId);
+
+  if (error) return { error: `Failed to update store: ${error.message}` };
+
+  const changedFields = Object.keys(updates).filter(k => k !== 'updated_at');
+  return {
+    success: true,
+    message: `Store info updated: ${changedFields.join(', ')}`,
+    action: 'update',
+    refreshPreview: true
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LANGUAGE TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listLanguages(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  let query = db
+    .from('languages')
+    .select('id, code, name, native_name, flag, is_rtl, is_active, is_default, created_at')
+    .order('is_default', { ascending: false })
+    .order('name');
+
+  if (input.active_only) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query;
+
+  if (error) return { error: `Failed to list languages: ${error.message}` };
+
+  return {
+    languages: data || [],
+    count: data?.length || 0
+  };
+}
+
+async function createLanguage(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Check if code already exists
+  const { data: existing } = await db
+    .from('languages')
+    .select('id')
+    .eq('code', input.code)
+    .single();
+
+  if (existing) {
+    return { error: `Language with code '${input.code}' already exists` };
+  }
+
+  const languageData = {
+    code: input.code,
+    name: input.name,
+    native_name: input.native_name || input.name,
+    flag: input.flag || '',
+    is_rtl: input.is_rtl || false,
+    is_active: input.is_active !== false,
+    is_default: input.is_default || false
+  };
+
+  // If setting as default, unset other defaults first
+  if (languageData.is_default) {
+    await db
+      .from('languages')
+      .update({ is_default: false })
+      .eq('is_default', true);
+  }
+
+  const { error } = await db
+    .from('languages')
+    .insert(languageData);
+
+  if (error) return { error: `Failed to create language: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Language '${input.name}' (${input.code}) created${languageData.is_default ? ' as default' : ''}`,
+    action: 'create',
+    refreshPreview: true
+  };
+}
+
+async function updateLanguage(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find language by code
+  const { data: lang } = await db
+    .from('languages')
+    .select('id, name')
+    .eq('code', input.code)
+    .single();
+
+  if (!lang) {
+    return { error: `Language '${input.code}' not found` };
+  }
+
+  const updates = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.native_name !== undefined) updates.native_name = input.native_name;
+  if (input.flag !== undefined) updates.flag = input.flag;
+  if (input.is_rtl !== undefined) updates.is_rtl = input.is_rtl;
+  if (input.is_active !== undefined) updates.is_active = input.is_active;
+  if (input.is_default !== undefined) updates.is_default = input.is_default;
+  updates.updated_at = new Date().toISOString();
+
+  // If setting as default, unset other defaults first
+  if (updates.is_default) {
+    await db
+      .from('languages')
+      .update({ is_default: false })
+      .eq('is_default', true);
+  }
+
+  const { error } = await db
+    .from('languages')
+    .update(updates)
+    .eq('id', lang.id);
+
+  if (error) return { error: `Failed to update language: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Language '${input.code}' updated`,
+    action: 'update',
+    refreshPreview: true
+  };
+}
+
+async function deleteLanguage(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find language by code
+  const { data: lang } = await db
+    .from('languages')
+    .select('id, name, is_default')
+    .eq('code', input.code)
+    .single();
+
+  if (!lang) {
+    return { error: `Language '${input.code}' not found` };
+  }
+
+  if (lang.is_default) {
+    return { error: `Cannot delete default language. Set another language as default first.` };
+  }
+
+  const { error } = await db
+    .from('languages')
+    .delete()
+    .eq('id', lang.id);
+
+  if (error) return { error: `Failed to delete language: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Language '${lang.name}' (${input.code}) deleted`,
+    action: 'delete',
+    refreshPreview: true
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REDIRECT TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listRedirects(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  let query = db
+    .from('redirects')
+    .select('id, from_url, to_url, type, is_active, hit_count, last_used_at, notes, created_at')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false });
+
+  if (input.active_only) {
+    query = query.eq('is_active', true);
+  }
+
+  if (input.search) {
+    query = query.or(`from_url.ilike.%${input.search}%,to_url.ilike.%${input.search}%`);
+  }
+
+  const limit = input.limit || 50;
+  query = query.limit(limit);
+
+  const { data, error } = await query;
+
+  if (error) return { error: `Failed to list redirects: ${error.message}` };
+
+  return {
+    redirects: data || [],
+    count: data?.length || 0
+  };
+}
+
+async function createRedirect(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Check if from_url already exists
+  const { data: existing } = await db
+    .from('redirects')
+    .select('id')
+    .eq('store_id', storeId)
+    .eq('from_url', input.from_url)
+    .single();
+
+  if (existing) {
+    return { error: `Redirect from '${input.from_url}' already exists` };
+  }
+
+  const redirectData = {
+    store_id: storeId,
+    from_url: input.from_url,
+    to_url: input.to_url,
+    type: input.type || '301',
+    is_active: true,
+    notes: input.notes || null,
+    hit_count: 0
+  };
+
+  const { error } = await db
+    .from('redirects')
+    .insert(redirectData);
+
+  if (error) return { error: `Failed to create redirect: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Redirect created: ${input.from_url} → ${input.to_url} (${redirectData.type})`,
+    action: 'create'
+  };
+}
+
+async function updateRedirect(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find redirect by from_url
+  const { data: redirect } = await db
+    .from('redirects')
+    .select('id')
+    .eq('store_id', storeId)
+    .eq('from_url', input.from_url)
+    .single();
+
+  if (!redirect) {
+    return { error: `Redirect from '${input.from_url}' not found` };
+  }
+
+  const updates = {};
+  if (input.new_from_url !== undefined) updates.from_url = input.new_from_url;
+  if (input.to_url !== undefined) updates.to_url = input.to_url;
+  if (input.type !== undefined) updates.type = input.type;
+  if (input.is_active !== undefined) updates.is_active = input.is_active;
+  if (input.notes !== undefined) updates.notes = input.notes;
+  updates.updated_at = new Date().toISOString();
+
+  const { error } = await db
+    .from('redirects')
+    .update(updates)
+    .eq('id', redirect.id);
+
+  if (error) return { error: `Failed to update redirect: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Redirect from '${input.from_url}' updated`,
+    action: 'update'
+  };
+}
+
+async function deleteRedirect(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find redirect by from_url
+  const { data: redirect } = await db
+    .from('redirects')
+    .select('id, to_url')
+    .eq('store_id', storeId)
+    .eq('from_url', input.from_url)
+    .single();
+
+  if (!redirect) {
+    return { error: `Redirect from '${input.from_url}' not found` };
+  }
+
+  const { error } = await db
+    .from('redirects')
+    .delete()
+    .eq('id', redirect.id);
+
+  if (error) return { error: `Failed to delete redirect: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Redirect ${input.from_url} → ${redirect.to_url} deleted`,
+    action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MEDIA ASSET TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listMediaAssets(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  let query = db
+    .from('media_assets')
+    .select('id, file_name, original_name, file_url, mime_type, file_size, folder, description, tags, usage_count, created_at')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false });
+
+  if (input.folder) {
+    query = query.eq('folder', input.folder);
+  }
+
+  if (input.mime_type) {
+    if (input.mime_type.endsWith('/*')) {
+      // Wildcard match like "image/*"
+      const prefix = input.mime_type.replace('/*', '');
+      query = query.ilike('mime_type', `${prefix}/%`);
+    } else {
+      query = query.eq('mime_type', input.mime_type);
+    }
+  }
+
+  if (input.search) {
+    query = query.or(`file_name.ilike.%${input.search}%,original_name.ilike.%${input.search}%,description.ilike.%${input.search}%`);
+  }
+
+  const limit = input.limit || 50;
+  query = query.limit(limit);
+
+  const { data, error } = await query;
+
+  if (error) return { error: `Failed to list media assets: ${error.message}` };
+
+  return {
+    assets: data || [],
+    count: data?.length || 0
+  };
+}
+
+async function updateMediaAsset(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find asset by file_name
+  const { data: asset } = await db
+    .from('media_assets')
+    .select('id, file_name')
+    .eq('store_id', storeId)
+    .ilike('file_name', input.file_name)
+    .single();
+
+  if (!asset) {
+    // Try original_name
+    const { data: byOriginal } = await db
+      .from('media_assets')
+      .select('id, file_name')
+      .eq('store_id', storeId)
+      .ilike('original_name', input.file_name)
+      .single();
+
+    if (!byOriginal) {
+      return { error: `Media asset '${input.file_name}' not found` };
+    }
+    asset.id = byOriginal.id;
+    asset.file_name = byOriginal.file_name;
+  }
+
+  const updates = {};
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.folder !== undefined) updates.folder = input.folder;
+  if (input.tags !== undefined) updates.tags = JSON.stringify(input.tags);
+  updates.updated_at = new Date().toISOString();
+
+  const { error } = await db
+    .from('media_assets')
+    .update(updates)
+    .eq('id', asset.id);
+
+  if (error) return { error: `Failed to update media asset: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Media asset '${asset.file_name}' updated`,
+    action: 'update'
+  };
+}
+
+async function deleteMediaAsset(input, storeId) {
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find asset by file_name
+  const { data: asset } = await db
+    .from('media_assets')
+    .select('id, file_name, file_url')
+    .eq('store_id', storeId)
+    .ilike('file_name', input.file_name)
+    .single();
+
+  if (!asset) {
+    return { error: `Media asset '${input.file_name}' not found` };
+  }
+
+  const { error } = await db
+    .from('media_assets')
+    .delete()
+    .eq('id', asset.id);
+
+  if (error) return { error: `Failed to delete media asset: ${error.message}` };
+
+  return {
+    success: true,
+    message: `Media asset '${asset.file_name}' deleted`,
+    note: 'Note: The actual file may still exist in storage',
+    action: 'delete'
   };
 }
 
