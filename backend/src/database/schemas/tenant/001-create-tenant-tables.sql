@@ -1423,6 +1423,7 @@ CREATE TABLE IF NOT EXISTS category_translations (
 );
 
 CREATE TABLE IF NOT EXISTS cms_block_translations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cms_block_id UUID NOT NULL,
   language_code VARCHAR(10) NOT NULL,
   title VARCHAR(255),
@@ -1430,7 +1431,7 @@ CREATE TABLE IF NOT EXISTS cms_block_translations (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   demo BOOLEAN DEFAULT false,
-  PRIMARY KEY (cms_block_id, language_code)
+  UNIQUE (cms_block_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS cms_blocks (
@@ -1468,6 +1469,7 @@ CREATE TABLE IF NOT EXISTS cms_page_seo (
 );
 
 CREATE TABLE IF NOT EXISTS cms_page_translations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cms_page_id UUID NOT NULL,
   language_code VARCHAR(10) NOT NULL,
   title VARCHAR(255) NOT NULL,
@@ -1476,7 +1478,7 @@ CREATE TABLE IF NOT EXISTS cms_page_translations (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   demo BOOLEAN DEFAULT false,
-  PRIMARY KEY (cms_page_id, language_code)
+  UNIQUE (cms_page_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS cms_pages (

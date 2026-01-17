@@ -3706,12 +3706,12 @@ async function updateCmsPage({ page, updates }, storeId) {
     if (pageError) return { error: `Failed to update page: ${pageError.message}` };
   }
 
-  // Update translations using composite key
+  // Update translations
   if (updates.title !== undefined || updates.content !== undefined) {
     // First check if translation exists
     const { data: existingTrans } = await db
       .from('cms_page_translations')
-      .select('cms_page_id')
+      .select('id')
       .eq('cms_page_id', found.id)
       .eq('language_code', 'en')
       .maybeSingle();
@@ -3727,8 +3727,7 @@ async function updateCmsPage({ page, updates }, storeId) {
       const { error: updateError } = await db
         .from('cms_page_translations')
         .update(updateData)
-        .eq('cms_page_id', found.id)
-        .eq('language_code', 'en');
+        .eq('id', existingTrans.id);
 
       if (updateError) {
         console.log(`   ❌ Update failed: ${updateError.message}`);
@@ -3876,12 +3875,12 @@ async function updateCmsBlock({ block, updates }, storeId) {
     if (blockError) return { error: `Failed to update block: ${blockError.message}` };
   }
 
-  // Update translations using composite key
+  // Update translations
   if (updates.title !== undefined || updates.content !== undefined) {
     // First check if translation exists
     const { data: existingTrans } = await db
       .from('cms_block_translations')
-      .select('cms_block_id')
+      .select('id')
       .eq('cms_block_id', found.id)
       .eq('language_code', 'en')
       .maybeSingle();
@@ -3897,8 +3896,7 @@ async function updateCmsBlock({ block, updates }, storeId) {
       const { error: updateError } = await db
         .from('cms_block_translations')
         .update(updateData)
-        .eq('cms_block_id', found.id)
-        .eq('language_code', 'en');
+        .eq('id', existingTrans.id);
 
       if (updateError) {
         console.log(`   ❌ Update failed: ${updateError.message}`);
@@ -4087,10 +4085,9 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
   console.log(`   ✅ Found CMS page: ${found.slug} (id: ${found.id})`);
 
   // Get current content - try 'en' first, then fall back to any available translation
-  // Note: cms_page_translations uses composite PK (cms_page_id, language_code), no 'id' column
   let { data: trans, error: transError } = await db
     .from('cms_page_translations')
-    .select('cms_page_id, language_code, title, content')
+    .select('id, cms_page_id, language_code, title, content')
     .eq('cms_page_id', found.id)
     .eq('language_code', 'en')
     .maybeSingle();
@@ -4101,7 +4098,7 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
     // Fallback: get any available translation
     const { data: anyTrans, error: anyError } = await db
       .from('cms_page_translations')
-      .select('cms_page_id, language_code, title, content')
+      .select('id, cms_page_id, language_code, title, content')
       .eq('cms_page_id', found.id)
       .limit(1)
       .maybeSingle();
@@ -4121,7 +4118,7 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
         title: found.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         content: ''
       })
-      .select('cms_page_id, language_code, title, content')
+      .select('id, cms_page_id, language_code, title, content')
       .single();
 
     if (createError) {
@@ -4184,12 +4181,11 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
     cssClass: css_class
   });
 
-  // Update the page content (using composite key)
+  // Update the page content
   const { error: updateError } = await db
     .from('cms_page_translations')
     .update({ content: newContent, updated_at: new Date().toISOString() })
-    .eq('cms_page_id', trans.cms_page_id)
-    .eq('language_code', trans.language_code);
+    .eq('id', trans.id);
 
   if (updateError) return { error: `Failed to update page: ${updateError.message}` };
 
@@ -4219,10 +4215,9 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
   console.log(`   ✅ Found CMS block: ${found.identifier} (id: ${found.id})`);
 
   // Get current content - try 'en' first, then fall back to any available translation
-  // Note: cms_block_translations uses composite PK (cms_block_id, language_code), no 'id' column
   let { data: trans, error: transError } = await db
     .from('cms_block_translations')
-    .select('cms_block_id, language_code, title, content')
+    .select('id, cms_block_id, language_code, title, content')
     .eq('cms_block_id', found.id)
     .eq('language_code', 'en')
     .maybeSingle();
@@ -4233,7 +4228,7 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
     // Fallback: get any available translation
     const { data: anyTrans, error: anyError } = await db
       .from('cms_block_translations')
-      .select('cms_block_id, language_code, title, content')
+      .select('id, cms_block_id, language_code, title, content')
       .eq('cms_block_id', found.id)
       .limit(1)
       .maybeSingle();
@@ -4253,7 +4248,7 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
         title: found.identifier.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         content: ''
       })
-      .select('cms_block_id, language_code, title, content')
+      .select('id, cms_block_id, language_code, title, content')
       .single();
 
     if (createError) {
@@ -4313,8 +4308,7 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
   const { error: updateError } = await db
     .from('cms_block_translations')
     .update({ content: newContent, updated_at: new Date().toISOString() })
-    .eq('cms_block_id', trans.cms_block_id)
-    .eq('language_code', trans.language_code);
+    .eq('id', trans.id);
 
   if (updateError) return { error: `Failed to update block: ${updateError.message}` };
 
@@ -4345,7 +4339,7 @@ async function removeCmsPageImage({ page, image_src, image_alt, remove_all = fal
   // Get current translation
   const { data: trans } = await db
     .from('cms_page_translations')
-    .select('cms_page_id, language_code, title, content')
+    .select('id, title, content')
     .eq('cms_page_id', found.id)
     .eq('language_code', 'en')
     .maybeSingle();
@@ -4364,8 +4358,7 @@ async function removeCmsPageImage({ page, image_src, image_alt, remove_all = fal
   const { error: updateError } = await db
     .from('cms_page_translations')
     .update({ content: newContent, updated_at: new Date().toISOString() })
-    .eq('cms_page_id', trans.cms_page_id)
-    .eq('language_code', trans.language_code);
+    .eq('id', trans.id);
 
   if (updateError) return { error: `Failed to update page: ${updateError.message}` };
 
@@ -4396,7 +4389,7 @@ async function removeCmsBlockImage({ block, image_src, image_alt, remove_all = f
   // Get current translation
   const { data: trans } = await db
     .from('cms_block_translations')
-    .select('cms_block_id, language_code, title, content')
+    .select('id, title, content')
     .eq('cms_block_id', found.id)
     .eq('language_code', 'en')
     .maybeSingle();
@@ -4415,8 +4408,7 @@ async function removeCmsBlockImage({ block, image_src, image_alt, remove_all = f
   const { error: updateError } = await db
     .from('cms_block_translations')
     .update({ content: newContent, updated_at: new Date().toISOString() })
-    .eq('cms_block_id', trans.cms_block_id)
-    .eq('language_code', trans.language_code);
+    .eq('id', trans.id);
 
   if (updateError) return { error: `Failed to update block: ${updateError.message}` };
 
