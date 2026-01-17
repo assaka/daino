@@ -3667,21 +3667,60 @@ async function updateCmsPage({ page, updates }, storeId) {
 
   // Update cms_pages table
   if (updates.is_active !== undefined) {
-    await db.from('cms_pages').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+    const { error: pageError } = await db.from('cms_pages').update({ is_active: updates.is_active, updated_at: new Date().toISOString() }).eq('id', found.id);
+    if (pageError) return { error: `Failed to update page: ${pageError.message}` };
   }
 
-  // Update translations - UPSERT
+  // Update translations using composite key
   if (updates.title !== undefined || updates.content !== undefined) {
-    const translationData = {
-      cms_page_id: found.id,
-      language_code: 'en',
-      updated_at: new Date().toISOString()
-    };
-    if (updates.title !== undefined) translationData.title = updates.title;
-    if (updates.content !== undefined) translationData.content = updates.content;
+    // First check if translation exists
+    const { data: existingTrans } = await db
+      .from('cms_page_translations')
+      .select('cms_page_id')
+      .eq('cms_page_id', found.id)
+      .eq('language_code', 'en')
+      .maybeSingle();
 
-    await db.from('cms_page_translations').upsert(translationData, {
-      onConflict: 'cms_page_id,language_code'    });
+    if (existingTrans) {
+      // Update existing translation
+      const updateData = { updated_at: new Date().toISOString() };
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.content !== undefined) updateData.content = updates.content;
+
+      console.log(`   📝 Updating CMS page translation for ${found.slug}:`, { hasTitle: !!updates.title, contentLength: updates.content?.length });
+
+      const { error: updateError } = await db
+        .from('cms_page_translations')
+        .update(updateData)
+        .eq('cms_page_id', found.id)
+        .eq('language_code', 'en');
+
+      if (updateError) {
+        console.log(`   ❌ Update failed: ${updateError.message}`);
+        return { error: `Failed to update page translation: ${updateError.message}` };
+      }
+    } else {
+      // Insert new translation
+      const insertData = {
+        cms_page_id: found.id,
+        language_code: 'en',
+        title: updates.title || found.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        content: updates.content || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log(`   📝 Creating CMS page translation for ${found.slug}`);
+
+      const { error: insertError } = await db
+        .from('cms_page_translations')
+        .insert(insertData);
+
+      if (insertError) {
+        console.log(`   ❌ Insert failed: ${insertError.message}`);
+        return { error: `Failed to create page translation: ${insertError.message}` };
+      }
+    }
   }
 
   return {
