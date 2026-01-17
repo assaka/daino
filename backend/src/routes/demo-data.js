@@ -10,56 +10,19 @@
 
 const express = require('express');
 const router = express.Router();
-const { masterDbClient } = require('../database/masterConnection');
 const DemoDataProvisioningService = require('../services/demo-data-provisioning-service');
 const DemoDataRestorationService = require('../services/demo-data-restoration-service');
+const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 /**
- * Middleware to check store ownership
+ * Helper to check if user has permission to manage store demo data
+ * Requires direct ownership or admin/all permissions
  */
-async function checkStoreOwnership(req, res, next) {
-  const { id } = req.params;
-  const userId = req.user?.id;
-
-  if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication required'
-    });
-  }
-
-  try {
-    const { data: store, error } = await masterDbClient
-      .from('stores')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching store:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to verify store ownership'
-      });
-    }
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        error: 'Store not found or access denied'
-      });
-    }
-
-    req.store = store;
-    next();
-  } catch (err) {
-    console.error('Store ownership check error:', err);
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
+function hasStoreDemoPermission(req) {
+  return req.storeAccess?.isDirectOwner ||
+         req.storeAccess?.permissions?.all ||
+         req.storeAccess?.permissions?.canManageStore ||
+         req.storeAccess?.teamRole === 'admin';
 }
 
 /**
@@ -69,6 +32,14 @@ async function checkStoreOwnership(req, res, next) {
 router.post('/:id/provision-demo', checkStoreOwnership, async (req, res) => {
   try {
     const store = req.store;
+
+    // Check permission - only owners or admins can provision demo data
+    if (!hasStoreDemoPermission(req)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions to provision demo data'
+      });
+    }
 
     // Validate store can receive demo data
     // Only active stores that are not published can receive demo data
@@ -113,6 +84,14 @@ router.post('/:id/provision-demo', checkStoreOwnership, async (req, res) => {
 router.post('/:id/restore-demo', checkStoreOwnership, async (req, res) => {
   try {
     const store = req.store;
+
+    // Check permission - only owners or admins can restore demo data
+    if (!hasStoreDemoPermission(req)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions to restore demo data'
+      });
+    }
 
     // Only demo stores can be restored
     if (store.status !== 'demo') {
