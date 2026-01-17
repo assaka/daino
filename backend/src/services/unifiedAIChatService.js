@@ -2430,18 +2430,21 @@ async function updateProduct({ product, updates }, storeId) {
     if (newName !== undefined) translationData.name = newName;
     if (newDescription !== undefined) translationData.description = newDescription;
 
-    // Use upsert to insert or update
-    const { error: transError } = await db
+    console.log('   [updateProduct] Upserting translation:', translationData);
+
+    // Use upsert to insert or update (same syntax as shippingMethodHelpers)
+    const { data: upsertResult, error: transError } = await db
       .from('product_translations')
       .upsert(translationData, {
-        onConflict: 'product_id,language_code',
-        ignoreDuplicates: false
-      });
+        onConflict: 'product_id,language_code'
+      })
+      .select();
 
     if (transError) {
       console.log('   [updateProduct] Translation upsert error:', transError);
       return { error: transError.message };
     }
+    console.log('   [updateProduct] Translation upsert result:', upsertResult);
   }
 
   const changes = Object.entries(updates).map(([k, v]) =>
