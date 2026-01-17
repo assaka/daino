@@ -203,11 +203,12 @@ const TOOLS = [
   },
   {
     name: "add_product_image",
-    description: "Add an image to a product. Can use an existing media asset by file name, or upload a new image from base64 data.",
+    description: "Add an image to a product. Can use an attached image from the chat, an existing media asset by file name, or upload a new image from base64 data.",
     input_schema: {
       type: "object",
       properties: {
         product: { type: "string", description: "Product name or SKU" },
+        use_attached_image: { type: "boolean", description: "Use the image attached to the current chat message (default true if an image is attached)" },
         image_file: { type: "string", description: "Existing media asset file name to use" },
         image_base64: { type: "string", description: "Base64 image data to upload as new image" },
         is_primary: { type: "boolean", description: "Set as primary/main product image (default false)" },
@@ -1829,7 +1830,7 @@ ${learnedExamples ? `\nLEARNED PATTERNS:\n${learnedExamples}\n` : ''}`;
  * Execute a tool
  */
 async function executeTool(name, input, context) {
-  const { storeId, userId } = context;
+  const { storeId, userId, images } = context;
   console.log(`🔧 Tool: ${name}`, JSON.stringify(input).substring(0, 200));
   console.log(`   Store ID: ${storeId}`);
 
@@ -1854,7 +1855,7 @@ async function executeTool(name, input, context) {
         result = await deleteProduct(input, storeId);
         break;
       case 'add_product_image':
-        result = await addProductImage(input, storeId);
+        result = await addProductImage(input, storeId, images);
         break;
       case 'remove_product_image':
         result = await removeProductImage(input, storeId);
@@ -2644,9 +2645,8 @@ async function deleteProduct({ product }, storeId) {
   };
 }
 
-async function addProductImage({ product, image_file, image_base64, is_primary = false, alt_text, position = 0 }, storeId) {
+async function addProductImage({ product, use_attached_image, image_file, image_base64, is_primary = false, alt_text, position = 0 }, storeId, attachedImages = []) {
   const db = await ConnectionManager.getStoreConnection(storeId);
-  const crypto = require('crypto');
 
   // Find product
   const foundProduct = await findProductByNameOrSku(db, product);
@@ -2657,37 +2657,61 @@ async function addProductImage({ product, image_file, image_base64, is_primary =
   let mediaAssetId = null;
   let fileName = '';
 
-  if (image_file) {
+  // Determine image source - priority: use_attached_image > image_file > image_base64 > auto-detect attached
+  let imageSource = null;
+
+  if (use_attached_image === true || (use_attached_image !== false && !image_file && !image_base64 && attachedImages?.length > 0)) {
+    // Use attached image from chat
+    if (!attachedImages || attachedImages.length === 0) {
+      return { error: 'No image attached to the chat message. Please attach an image or provide image_file.' };
+    }
+    const attachedImg = attachedImages[0];
+    imageSource = { type: 'attached', data: attachedImg.base64, mediaType: attachedImg.type || 'image/jpeg' };
+    console.log('   📷 Using attached image from chat');
+  } else if (image_file) {
+    imageSource = { type: 'file', name: image_file };
+  } else if (image_base64) {
+    imageSource = { type: 'base64', data: image_base64 };
+  } else {
+    return { error: 'No image source provided. Attach an image to the chat, specify image_file, or provide image_base64.' };
+  }
+
+  if (imageSource.type === 'file') {
     // Use existing media asset by file name
     const { data: asset } = await db
       .from('media_assets')
       .select('id, file_name')
       .eq('store_id', storeId)
-      .ilike('file_name', `%${image_file}%`)
+      .ilike('file_name', `%${imageSource.name}%`)
       .single();
 
     if (!asset) {
-      return { error: `Media asset "${image_file}" not found in library` };
+      return { error: `Media asset "${imageSource.name}" not found in library` };
     }
     mediaAssetId = asset.id;
     fileName = asset.file_name;
-  } else if (image_base64) {
-    // Upload new image to media library
+  } else {
+    // Upload new image (either from attached or base64)
+    let base64Data = imageSource.data;
+    let mimeType = imageSource.mediaType || 'image/jpeg';
+
     // Strip data URL prefix if present
-    let base64Data = image_base64;
-    let mimeType = 'image/jpeg';
-    if (base64Data.includes(',')) {
+    if (base64Data && base64Data.includes(',')) {
       const parts = base64Data.split(',');
       base64Data = parts[1];
       const prefixMatch = parts[0].match(/data:([^;]+)/);
       if (prefixMatch) mimeType = prefixMatch[1];
     }
 
+    if (!base64Data) {
+      return { error: 'Invalid image data provided' };
+    }
+
     // Generate file name
     const ext = mimeType.split('/')[1] || 'jpg';
     fileName = `product-${foundProduct.sku}-${Date.now()}.${ext}`;
 
-    // For now, store the base64 directly (in production, upload to storage)
+    // Store the base64 directly (in production, upload to storage)
     const { data: newAsset, error: uploadError } = await db
       .from('media_assets')
       .insert({
@@ -2707,8 +2731,7 @@ async function addProductImage({ product, image_file, image_base64, is_primary =
       return { error: `Failed to upload image: ${uploadError.message}` };
     }
     mediaAssetId = newAsset.id;
-  } else {
-    return { error: 'Either image_file or image_base64 is required' };
+    console.log('   ✅ Created media asset:', mediaAssetId);
   }
 
   // If setting as primary, unset other primaries first
@@ -6419,7 +6442,7 @@ async function chatWithAnthropic({ message, conversationHistory, storeId, userId
     const toolResults = [];
 
     for (const tool of toolUseBlocks) {
-      const result = await executeTool(tool.name, tool.input, { storeId, userId });
+      const result = await executeTool(tool.name, tool.input, { storeId, userId, images });
       toolCalls.push({ name: tool.name, input: tool.input, result });
       toolResults.push({
         type: 'tool_result',
@@ -6552,7 +6575,7 @@ async function chatWithOpenAI({ message, conversationHistory, storeId, userId, i
     for (const toolCall of assistantMessage.tool_calls || []) {
       const toolName = toolCall.function.name;
       const toolInput = JSON.parse(toolCall.function.arguments);
-      const result = await executeTool(toolName, toolInput, { storeId, userId });
+      const result = await executeTool(toolName, toolInput, { storeId, userId, images });
 
       toolCalls.push({ name: toolName, input: toolInput, result });
 
