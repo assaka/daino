@@ -27,6 +27,7 @@ const ConnectionManager = require('./database/ConnectionManager');
 const aiContextService = require('./aiContextService');
 const aiLearningService = require('./aiLearningService');
 const aiEntityService = require('./aiEntityService');
+const aiModelsService = require('./AIModelsService');
 
 // LLM Clients - initialized lazily
 let anthropicClient = null;
@@ -5686,9 +5687,16 @@ async function chat({ message, conversationHistory = [], storeId, userId, mode =
   console.log('🏪 Store:', storeId);
   console.log('🎯 Mode:', mode);
 
-  // Determine provider and model
+  // Determine provider and resolve model ID to full API model name
   const provider = getProviderFromModel(modelId);
-  const model = modelId || getDefaultModel(provider);
+  let model;
+  if (modelId) {
+    // Resolve short model IDs (e.g., 'claude-haiku') to full API names (e.g., 'claude-3-5-haiku-20241022')
+    const modelConfig = await aiModelsService.getModelConfig(modelId);
+    model = modelConfig?.model || modelId;
+  } else {
+    model = getDefaultModel(provider);
+  }
   console.log('🤖 Provider:', provider, '| Model:', model);
 
   // Build system prompt with RAG
