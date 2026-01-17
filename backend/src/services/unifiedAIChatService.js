@@ -675,6 +675,34 @@ const TOOLS = [
       required: ["block"]
     }
   },
+  {
+    name: "remove_cms_page_image",
+    description: "Remove an image from a CMS page content. Removes <img> tags matching the criteria while preserving all other content.",
+    input_schema: {
+      type: "object",
+      properties: {
+        page: { type: "string", description: "Page title or slug" },
+        image_src: { type: "string", description: "Part of the image src/URL to match (optional - if not provided, removes first image)" },
+        image_alt: { type: "string", description: "Alt text to match (optional)" },
+        remove_all: { type: "boolean", description: "Remove all images from the page (default false)" }
+      },
+      required: ["page"]
+    }
+  },
+  {
+    name: "remove_cms_block_image",
+    description: "Remove an image from a CMS block content. Removes <img> tags matching the criteria while preserving all other content.",
+    input_schema: {
+      type: "object",
+      properties: {
+        block: { type: "string", description: "Block identifier or title" },
+        image_src: { type: "string", description: "Part of the image src/URL to match (optional - if not provided, removes first image)" },
+        image_alt: { type: "string", description: "Alt text to match (optional)" },
+        remove_all: { type: "boolean", description: "Remove all images from the block (default false)" }
+      },
+      required: ["block"]
+    }
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // PRODUCT LABELS
@@ -1786,8 +1814,8 @@ AVAILABLE TOOLS:
 - **Orders**: list_orders, update_order_status
 - **Customers**: list_customers, blacklist_customer
 - **Coupons**: list_coupons, create_coupon, delete_coupon
-- **CMS Pages**: list_cms_pages, create_cms_page, update_cms_page, delete_cms_page, insert_cms_page_image
-- **CMS Blocks**: list_cms_blocks, create_cms_block, update_cms_block, delete_cms_block, insert_cms_block_image
+- **CMS Pages**: list_cms_pages, create_cms_page, update_cms_page, delete_cms_page, insert_cms_page_image, remove_cms_page_image
+- **CMS Blocks**: list_cms_blocks, create_cms_block, update_cms_block, delete_cms_block, insert_cms_block_image, remove_cms_block_image
 - **Product Labels**: list_product_labels, create_product_label, update_product_label, delete_product_label
 - **Product Tabs**: list_product_tabs, create_product_tab, update_product_tab, delete_product_tab
 - **Custom Options**: list_custom_option_rules, create_custom_option_rule, update_custom_option_rule, delete_custom_option_rule
@@ -1966,6 +1994,12 @@ async function executeTool(name, input, context) {
         break;
       case 'insert_cms_block_image':
         result = await insertCmsBlockImage(input, storeId, images);
+        break;
+      case 'remove_cms_page_image':
+        result = await removeCmsPageImage(input, storeId);
+        break;
+      case 'remove_cms_block_image':
+        result = await removeCmsBlockImage(input, storeId);
         break;
 
       // Product Label tools
@@ -4290,6 +4324,156 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
     refreshPreview: true,
     action: 'update'
   };
+}
+
+/**
+ * Remove image(s) from CMS page content
+ */
+async function removeCmsPageImage({ page, image_src, image_alt, remove_all = false }, storeId) {
+  console.log(`   🗑️ removeCmsPageImage called for page "${page}"`);
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find CMS page (flexible matching)
+  const { data: pages } = await db.from('cms_pages').select('id, slug');
+  const searchTerm = page.toLowerCase();
+  const found = pages?.find(p => p.slug.toLowerCase() === searchTerm) ||
+    pages?.find(p => p.slug.toLowerCase().startsWith(searchTerm + '-') || p.slug.toLowerCase().startsWith(searchTerm)) ||
+    pages?.find(p => p.slug.toLowerCase().includes(searchTerm));
+
+  if (!found) return { error: `CMS page "${page}" not found` };
+
+  // Get current translation
+  const { data: trans } = await db
+    .from('cms_page_translations')
+    .select('cms_page_id, language_code, title, content')
+    .eq('cms_page_id', found.id)
+    .eq('language_code', 'en')
+    .maybeSingle();
+
+  if (!trans) return { error: `No translation found for page "${page}"` };
+  if (!trans.content) return { error: `Page "${page}" has no content` };
+
+  // Remove images from content
+  const { newContent, removedCount } = removeImagesFromContent(trans.content, { image_src, image_alt, remove_all });
+
+  if (removedCount === 0) {
+    return { error: `No matching images found in page "${page}"` };
+  }
+
+  // Update the page content
+  const { error: updateError } = await db
+    .from('cms_page_translations')
+    .update({ content: newContent, updated_at: new Date().toISOString() })
+    .eq('cms_page_id', trans.cms_page_id)
+    .eq('language_code', trans.language_code);
+
+  if (updateError) return { error: `Failed to update page: ${updateError.message}` };
+
+  return {
+    success: true,
+    message: `Removed ${removedCount} image${removedCount > 1 ? 's' : ''} from CMS page "${found.slug}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+/**
+ * Remove image(s) from CMS block content
+ */
+async function removeCmsBlockImage({ block, image_src, image_alt, remove_all = false }, storeId) {
+  console.log(`   🗑️ removeCmsBlockImage called for block "${block}"`);
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find CMS block (flexible matching)
+  const { data: blocks } = await db.from('cms_blocks').select('id, identifier');
+  const searchTerm = block.toLowerCase();
+  const found = blocks?.find(b => b.identifier.toLowerCase() === searchTerm) ||
+    blocks?.find(b => b.identifier.toLowerCase().startsWith(searchTerm + '-') || b.identifier.toLowerCase().startsWith(searchTerm)) ||
+    blocks?.find(b => b.identifier.toLowerCase().includes(searchTerm));
+
+  if (!found) return { error: `CMS block "${block}" not found` };
+
+  // Get current translation
+  const { data: trans } = await db
+    .from('cms_block_translations')
+    .select('cms_block_id, language_code, title, content')
+    .eq('cms_block_id', found.id)
+    .eq('language_code', 'en')
+    .maybeSingle();
+
+  if (!trans) return { error: `No translation found for block "${block}"` };
+  if (!trans.content) return { error: `Block "${block}" has no content` };
+
+  // Remove images from content
+  const { newContent, removedCount } = removeImagesFromContent(trans.content, { image_src, image_alt, remove_all });
+
+  if (removedCount === 0) {
+    return { error: `No matching images found in block "${block}"` };
+  }
+
+  // Update the block content
+  const { error: updateError } = await db
+    .from('cms_block_translations')
+    .update({ content: newContent, updated_at: new Date().toISOString() })
+    .eq('cms_block_id', trans.cms_block_id)
+    .eq('language_code', trans.language_code);
+
+  if (updateError) return { error: `Failed to update block: ${updateError.message}` };
+
+  return {
+    success: true,
+    message: `Removed ${removedCount} image${removedCount > 1 ? 's' : ''} from CMS block "${found.identifier}"`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+/**
+ * Helper: Remove images from HTML content
+ */
+function removeImagesFromContent(content, { image_src, image_alt, remove_all }) {
+  let removedCount = 0;
+  let newContent = content;
+
+  // Regex to match <img> tags (self-closing or not)
+  const imgRegex = /<img\s+[^>]*>/gi;
+
+  if (remove_all) {
+    // Remove all images
+    const matches = newContent.match(imgRegex);
+    removedCount = matches ? matches.length : 0;
+    newContent = newContent.replace(imgRegex, '');
+  } else if (image_src || image_alt) {
+    // Remove images matching specific criteria
+    newContent = newContent.replace(imgRegex, (match) => {
+      const srcMatch = image_src && match.toLowerCase().includes(image_src.toLowerCase());
+      const altMatch = image_alt && match.toLowerCase().includes(`alt="${image_alt.toLowerCase()}"`);
+
+      if ((image_src && srcMatch) || (image_alt && altMatch)) {
+        removedCount++;
+        return '';
+      }
+      return match;
+    });
+  } else {
+    // Remove first image only
+    let removed = false;
+    newContent = newContent.replace(imgRegex, (match) => {
+      if (!removed) {
+        removed = true;
+        removedCount = 1;
+        return '';
+      }
+      return match;
+    });
+  }
+
+  // Clean up empty paragraphs or divs that might be left after image removal
+  newContent = newContent.replace(/<p>\s*<\/p>/gi, '');
+  newContent = newContent.replace(/<div>\s*<\/div>/gi, '');
+  newContent = newContent.replace(/\n\s*\n\s*\n/g, '\n\n'); // Reduce multiple blank lines
+
+  return { newContent, removedCount };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
