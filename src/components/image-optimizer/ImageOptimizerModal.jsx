@@ -828,10 +828,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
       try {
         const format = result.result?.format || 'png';
         const base64Data = result.result.image;
-        const originalName = result.original.name || 'image';
-        const newName = applyToOriginal
-          ? originalName
-          : `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
+        const originalFile = result.original;
+        const originalName = originalFile.name || 'image';
 
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
@@ -841,12 +839,33 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: `image/${format}` });
 
-        const file = new File([blob], newName, { type: `image/${format}` });
-        const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
+        if (applyToOriginal) {
+          // REPLACE: Use replace endpoint to preserve database references
+          const fileFolder = originalFile.folder || originalFile.path?.split('/')[0] || 'library';
+          const filePath = `${fileFolder}/${originalFile.name}`;
+          const newName = originalName.replace(/\.[^.]+$/, `.${format}`);
 
-        if (uploadResponse.success) {
-          result.applied = true;
-          savedCount++;
+          const file = new File([blob], newName, { type: `image/${format}` });
+          const replaceResponse = await apiClient.uploadFile('storage/replace', file, {
+            oldFileUrl: originalFile.url,
+            oldFilePath: filePath,
+            folder: fileFolder
+          });
+
+          if (replaceResponse.success) {
+            result.applied = true;
+            savedCount++;
+          }
+        } else {
+          // SAVE COPY: Upload as new file
+          const newName = `optimized-${originalName.replace(/\.[^.]+$/, '')}.${format}`;
+          const file = new File([blob], newName, { type: `image/${format}` });
+          const uploadResponse = await apiClient.uploadFile('storage/upload', file, { folder: 'library' });
+
+          if (uploadResponse.success) {
+            result.applied = true;
+            savedCount++;
+          }
         }
       } catch (err) {
         console.error('Failed to save:', err);
@@ -854,8 +873,8 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
     }
 
     setResults([...results]);
-    setFlashMessage({ type: 'success', message: `${applyToOriginal ? 'Applied' : 'Saved'} ${savedCount} images` });
-    if (onOptimized) onOptimized({ applied: true });
+    setFlashMessage({ type: 'success', message: `${applyToOriginal ? 'Replaced' : 'Saved'} ${savedCount} images` });
+    if (onOptimized) onOptimized({ applied: true, refresh: true });
     setIsApplying(false);
   };
 

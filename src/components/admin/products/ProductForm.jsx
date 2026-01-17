@@ -659,9 +659,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const openImageOptimizer = (image) => {
     // If parent provides onOpenOptimizer, use that (closes edit modal, shows optimizer)
     if (onOpenOptimizer) {
+      // Extract just the filename (not full path) from filepath or URL
+      const filename = image.filepath?.split('/').pop() || image.url?.split('/').pop();
       onOpenOptimizer({
         url: image.url,
-        name: image.filepath || image.url?.split('/').pop(),
+        name: filename,
         folder: 'product'
       });
     } else {
@@ -3330,7 +3332,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         storeId={getSelectedStoreId()}
         fileToOptimize={imageToOptimize ? {
           url: imageToOptimize.url,
-          name: imageToOptimize.filepath || imageToOptimize.url?.split('/').pop(),
+          name: imageToOptimize.filepath?.split('/').pop() || imageToOptimize.url?.split('/').pop(),
           folder: 'product'
         } : null}
         productContext={{
