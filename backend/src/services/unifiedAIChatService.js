@@ -5836,14 +5836,30 @@ async function chatWithAnthropic({ message, conversationHistory, storeId, userId
   if (images && images.length > 0) {
     const content = [
       { type: 'text', text: message || 'Please analyze this image.' },
-      ...images.map(img => ({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: img.type || 'image/jpeg',
-          data: img.base64
+      ...images.map(img => {
+        // Strip data URL prefix if present (e.g., "data:image/jpeg;base64,")
+        let base64Data = img.base64 || '';
+        let mediaType = img.type || 'image/jpeg';
+
+        if (base64Data.includes(',')) {
+          const parts = base64Data.split(',');
+          base64Data = parts[1]; // Get the actual base64 data after the comma
+          // Extract media type from the prefix if available
+          const prefixMatch = parts[0].match(/data:([^;]+)/);
+          if (prefixMatch) {
+            mediaType = prefixMatch[1];
+          }
         }
-      }))
+
+        return {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: base64Data
+          }
+        };
+      })
     ];
     messages.push({ role: 'user', content });
   } else {
@@ -5953,10 +5969,24 @@ async function chatWithOpenAI({ message, conversationHistory, storeId, userId, i
   if (images && images.length > 0) {
     const content = [
       { type: 'text', text: message || 'Please analyze this image.' },
-      ...images.map(img => ({
-        type: 'image_url',
-        image_url: { url: `data:${img.type || 'image/jpeg'};base64,${img.base64}` }
-      }))
+      ...images.map(img => {
+        let base64Data = img.base64 || '';
+        let mediaType = img.type || 'image/jpeg';
+
+        // If it's already a data URL, use it as-is
+        if (base64Data.startsWith('data:')) {
+          return {
+            type: 'image_url',
+            image_url: { url: base64Data }
+          };
+        }
+
+        // Otherwise, construct the data URL
+        return {
+          type: 'image_url',
+          image_url: { url: `data:${mediaType};base64,${base64Data}` }
+        };
+      })
     ];
     messages.push({ role: 'user', content });
   } else {
