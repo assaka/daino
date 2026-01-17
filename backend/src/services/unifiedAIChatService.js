@@ -148,7 +148,7 @@ const TOOLS = [
   },
   {
     name: "update_product",
-    description: "Update a product by name or SKU. Can update: name, description, price, stock_quantity, status, featured, compare_price.",
+    description: "Update a product by name or SKU. Can update: name, description, price, stock_quantity, infinite_stock, status, featured, compare_price. Use infinite_stock=true for unlimited stock.",
     input_schema: {
       type: "object",
       properties: {
@@ -164,6 +164,7 @@ const TOOLS = [
             description: { type: "string", description: "Product description" },
             price: { type: "number" },
             stock_quantity: { type: "number" },
+            infinite_stock: { type: "boolean", description: "Set to true for unlimited/infinite stock" },
             status: { type: "string", enum: ["active", "draft", "archived"] },
             featured: { type: "boolean" },
             compare_price: { type: "number" }
@@ -2463,9 +2464,12 @@ async function updateProduct({ product, updates }, storeId) {
     console.log('   [updateProduct] Translation upsert result:', upsertResult);
   }
 
-  const changes = Object.entries(updates).map(([k, v]) =>
-    typeof v === 'string' && v.length > 50 ? `${k}="${v.substring(0, 50)}..."` : `${k}=${v}`
-  ).join(', ');
+  const changes = Object.entries(updates).map(([k, v]) => {
+    if (k === 'infinite_stock' && v === true) return 'infinite_stock=true (unlimited stock)';
+    if (k === 'infinite_stock' && v === false) return 'infinite_stock=false (track stock quantity)';
+    if (typeof v === 'string' && v.length > 50) return `${k}="${v.substring(0, 50)}..."`;
+    return `${k}=${v}`;
+  }).join(', ');
   console.log('   [updateProduct] Success:', changes);
 
   return {
@@ -2477,6 +2481,7 @@ async function updateProduct({ product, updates }, storeId) {
       name: newName ?? found.name,
       price: updates.price ?? found.price,
       stock_quantity: updates.stock_quantity ?? found.stock_quantity,
+      infinite_stock: updates.infinite_stock,
       status: updates.status ?? found.status
     },
     previousValues,
