@@ -1719,8 +1719,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         .in('id', teamStoreIds);
 
       if (!teamStoreError && teamStoreData) {
-        // Filter to only active stores
-        teamStores = teamStoreData.filter(s => s.is_active && s.status === 'active');
+        // Filter to only active stores (but allow any status like demo, provisioning, etc.)
+        teamStores = teamStoreData.filter(s => s.is_active);
       }
     }
 
