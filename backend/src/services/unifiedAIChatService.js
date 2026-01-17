@@ -3964,9 +3964,10 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
   console.log(`   ✅ Found CMS page: ${found.slug} (id: ${found.id})`);
 
   // Get current content - try 'en' first, then fall back to any available translation
+  // Note: cms_page_translations uses composite PK (cms_page_id, language_code), no 'id' column
   let { data: trans, error: transError } = await db
     .from('cms_page_translations')
-    .select('id, title, content, language_code')
+    .select('cms_page_id, language_code, title, content')
     .eq('cms_page_id', found.id)
     .eq('language_code', 'en')
     .maybeSingle();
@@ -3977,7 +3978,7 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
     // Fallback: get any available translation
     const { data: anyTrans, error: anyError } = await db
       .from('cms_page_translations')
-      .select('id, title, content, language_code')
+      .select('cms_page_id, language_code, title, content')
       .eq('cms_page_id', found.id)
       .limit(1)
       .maybeSingle();
@@ -3997,7 +3998,7 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
         title: found.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         content: ''
       })
-      .select('id, title, content, language_code')
+      .select('cms_page_id, language_code, title, content')
       .single();
 
     if (createError) {
@@ -4060,11 +4061,12 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
     cssClass: css_class
   });
 
-  // Update the page content
+  // Update the page content (using composite key)
   const { error: updateError } = await db
     .from('cms_page_translations')
     .update({ content: newContent, updated_at: new Date().toISOString() })
-    .eq('id', trans.id);
+    .eq('cms_page_id', trans.cms_page_id)
+    .eq('language_code', trans.language_code);
 
   if (updateError) return { error: `Failed to update page: ${updateError.message}` };
 
@@ -4094,21 +4096,26 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
   console.log(`   ✅ Found CMS block: ${found.identifier} (id: ${found.id})`);
 
   // Get current content - try 'en' first, then fall back to any available translation
-  let { data: trans } = await db
+  // Note: cms_block_translations uses composite PK (cms_block_id, language_code), no 'id' column
+  let { data: trans, error: transError } = await db
     .from('cms_block_translations')
-    .select('id, title, content, language_code')
+    .select('cms_block_id, language_code, title, content')
     .eq('cms_block_id', found.id)
     .eq('language_code', 'en')
-    .single();
+    .maybeSingle();
+
+  console.log(`   📋 Block translation query:`, { trans: !!trans, error: transError?.message });
 
   if (!trans) {
     // Fallback: get any available translation
-    const { data: anyTrans } = await db
+    const { data: anyTrans, error: anyError } = await db
       .from('cms_block_translations')
-      .select('id, title, content, language_code')
+      .select('cms_block_id, language_code, title, content')
       .eq('cms_block_id', found.id)
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    console.log(`   📋 Block fallback query:`, { anyTrans: !!anyTrans, error: anyError?.message });
     trans = anyTrans;
   }
 
@@ -4123,7 +4130,7 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
         title: found.identifier.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         content: ''
       })
-      .select('id, title, content, language_code')
+      .select('cms_block_id, language_code, title, content')
       .single();
 
     if (createError) {
@@ -4183,7 +4190,8 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
   const { error: updateError } = await db
     .from('cms_block_translations')
     .update({ content: newContent, updated_at: new Date().toISOString() })
-    .eq('id', trans.id);
+    .eq('cms_block_id', trans.cms_block_id)
+    .eq('language_code', trans.language_code);
 
   if (updateError) return { error: `Failed to update block: ${updateError.message}` };
 
