@@ -1508,6 +1508,112 @@ const TOOLS = [
       },
       required: ["file_name"]
     }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // CREDITS (Info Only)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "get_credit_balance",
+    description: "Get current credit balance and recent usage summary.",
+    input_schema: {
+      type: "object",
+      properties: {
+        include_usage: { type: "boolean", description: "Include recent usage breakdown (default true)" }
+      }
+    }
+  },
+  {
+    name: "get_credit_pricing",
+    description: "Get pricing for all services that consume credits.",
+    input_schema: {
+      type: "object",
+      properties: {
+        category: { type: "string", enum: ["store_operations", "plugin_management", "ai_services", "data_migration", "storage", "akeneo_integration", "all"], description: "Filter by category" }
+      }
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // TEAM MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════
+  {
+    name: "list_team_members",
+    description: "List all team members for the current store with their roles and status.",
+    input_schema: {
+      type: "object",
+      properties: {
+        include_pending: { type: "boolean", description: "Include pending invitations (default true)" }
+      }
+    }
+  },
+  {
+    name: "invite_team_member",
+    description: "Invite a new team member by email.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Email address to invite" },
+        role: { type: "string", enum: ["admin", "editor", "viewer"], description: "Role to assign (default viewer)" },
+        message: { type: "string", description: "Optional personal message in the invitation" }
+      },
+      required: ["email"]
+    }
+  },
+  {
+    name: "update_team_member",
+    description: "Update a team member's role or permissions.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Email of team member to update" },
+        role: { type: "string", enum: ["admin", "editor", "viewer"], description: "New role" }
+      },
+      required: ["email"]
+    }
+  },
+  {
+    name: "remove_team_member",
+    description: "Remove a team member from the store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Email of team member to remove" }
+      },
+      required: ["email"]
+    }
+  },
+  {
+    name: "list_invitations",
+    description: "List all pending invitations sent for this store.",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["pending", "accepted", "expired", "cancelled", "all"], description: "Filter by status (default pending)" }
+      }
+    }
+  },
+  {
+    name: "cancel_invitation",
+    description: "Cancel a pending invitation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Email of the invitation to cancel" }
+      },
+      required: ["email"]
+    }
+  },
+  {
+    name: "resend_invitation",
+    description: "Resend an invitation email to a pending invitee.",
+    input_schema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Email to resend invitation to" }
+      },
+      required: ["email"]
+    }
   }
 ];
 
@@ -1596,6 +1702,9 @@ AVAILABLE TOOLS:
 - **Languages**: list_languages, create_language, update_language, delete_language
 - **Redirects**: list_redirects, create_redirect, update_redirect, delete_redirect
 - **Media**: list_media_assets, update_media_asset, delete_media_asset
+- **Credits**: get_credit_balance, get_credit_pricing
+- **Team**: list_team_members, invite_team_member, update_team_member, remove_team_member
+- **Invitations**: list_invitations, cancel_invitation, resend_invitation
 - **Layout**: modify_slot
 - **Imports**: trigger_akeneo_import, trigger_shopify_import, trigger_woocommerce_import
 - **Knowledge**: search_knowledge
@@ -1978,6 +2087,37 @@ async function executeTool(name, input, context) {
         break;
       case 'delete_media_asset':
         result = await deleteMediaAsset(input, storeId);
+        break;
+
+      // Credit tools (info only)
+      case 'get_credit_balance':
+        result = await getCreditBalance(input, storeId, userId);
+        break;
+      case 'get_credit_pricing':
+        result = await getCreditPricing(input);
+        break;
+
+      // Team management tools
+      case 'list_team_members':
+        result = await listTeamMembers(input, storeId);
+        break;
+      case 'invite_team_member':
+        result = await inviteTeamMember(input, storeId, userId);
+        break;
+      case 'update_team_member':
+        result = await updateTeamMember(input, storeId);
+        break;
+      case 'remove_team_member':
+        result = await removeTeamMember(input, storeId);
+        break;
+      case 'list_invitations':
+        result = await listInvitations(input, storeId);
+        break;
+      case 'cancel_invitation':
+        result = await cancelInvitation(input, storeId);
+        break;
+      case 'resend_invitation':
+        result = await resendInvitation(input, storeId);
         break;
 
       default:
@@ -4827,6 +4967,424 @@ async function deleteMediaAsset(input, storeId) {
     message: `Media asset '${asset.file_name}' deleted`,
     note: 'Note: The actual file may still exist in storage',
     action: 'delete'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREDIT TOOLS (Info Only - Master DB)
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function getCreditBalance(input, storeId, userId) {
+  const masterDb = masterDbClient;
+
+  // Get user's credit balance
+  const { data: user, error: userError } = await masterDb
+    .from('users')
+    .select('id, email, credits')
+    .eq('id', userId)
+    .single();
+
+  if (userError || !user) {
+    return { error: 'Could not retrieve user information' };
+  }
+
+  const result = {
+    balance: parseFloat(user.credits) || 0,
+    email: user.email
+  };
+
+  // Include recent usage if requested
+  if (input.include_usage !== false) {
+    const { data: usage } = await masterDb
+      .from('credit_usage')
+      .select('usage_type, credits_used, description, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    result.recent_usage = usage || [];
+
+    // Calculate usage summary by type
+    const { data: usageSummary } = await masterDb
+      .from('credit_usage')
+      .select('usage_type, credits_used')
+      .eq('user_id', userId)
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (usageSummary) {
+      const summary = {};
+      usageSummary.forEach(u => {
+        summary[u.usage_type] = (summary[u.usage_type] || 0) + parseFloat(u.credits_used);
+      });
+      result.usage_last_30_days = summary;
+    }
+  }
+
+  result.purchase_url = '/settings/billing';
+  result.message = `Current balance: ${result.balance.toFixed(2)} credits`;
+
+  return result;
+}
+
+async function getCreditPricing(input) {
+  const masterDb = masterDbClient;
+
+  let query = masterDb
+    .from('service_credit_costs')
+    .select('service_key, service_name, service_category, cost_per_unit, billing_type, description, is_active')
+    .eq('is_active', true)
+    .eq('is_visible', true)
+    .order('service_category')
+    .order('display_order');
+
+  if (input.category && input.category !== 'all') {
+    query = query.eq('service_category', input.category);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return { error: `Failed to get pricing: ${error.message}` };
+  }
+
+  // Group by category
+  const grouped = {};
+  (data || []).forEach(service => {
+    const cat = service.service_category || 'other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push({
+      service: service.service_name,
+      key: service.service_key,
+      cost: parseFloat(service.cost_per_unit),
+      billing: service.billing_type,
+      description: service.description
+    });
+  });
+
+  return {
+    pricing: grouped,
+    total_services: data?.length || 0,
+    purchase_url: '/settings/billing'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TEAM MANAGEMENT TOOLS (Master DB)
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function listTeamMembers(input, storeId) {
+  const masterDb = masterDbClient;
+
+  // Get active team members
+  const { data: members, error } = await masterDb
+    .from('store_teams')
+    .select(`
+      id,
+      role,
+      status,
+      invited_at,
+      accepted_at,
+      users:user_id (id, email, first_name, last_name)
+    `)
+    .eq('store_id', storeId)
+    .in('status', ['active', 'pending']);
+
+  if (error) {
+    return { error: `Failed to list team members: ${error.message}` };
+  }
+
+  const teamList = (members || []).map(m => ({
+    id: m.id,
+    email: m.users?.email,
+    name: m.users ? `${m.users.first_name} ${m.users.last_name}`.trim() : null,
+    role: m.role,
+    status: m.status,
+    invited_at: m.invited_at,
+    accepted_at: m.accepted_at
+  }));
+
+  const result = {
+    members: teamList,
+    count: teamList.length
+  };
+
+  // Include pending invitations if requested
+  if (input.include_pending !== false) {
+    const { data: invitations } = await masterDb
+      .from('store_invitations')
+      .select('id, invited_email, role, status, expires_at, created_at')
+      .eq('store_id', storeId)
+      .eq('status', 'pending');
+
+    result.pending_invitations = (invitations || []).map(inv => ({
+      email: inv.invited_email,
+      role: inv.role,
+      status: inv.status,
+      expires_at: inv.expires_at,
+      sent_at: inv.created_at
+    }));
+  }
+
+  return result;
+}
+
+async function inviteTeamMember(input, storeId, userId) {
+  const masterDb = masterDbClient;
+  const crypto = require('crypto');
+
+  // Check if already a team member
+  const { data: existingMember } = await masterDb
+    .from('store_teams')
+    .select('id, status')
+    .eq('store_id', storeId)
+    .eq('users.email', input.email)
+    .single();
+
+  if (existingMember && existingMember.status === 'active') {
+    return { error: `${input.email} is already a team member` };
+  }
+
+  // Check if there's already a pending invitation
+  const { data: existingInvite } = await masterDb
+    .from('store_invitations')
+    .select('id, status, expires_at')
+    .eq('store_id', storeId)
+    .eq('invited_email', input.email.toLowerCase())
+    .eq('status', 'pending')
+    .single();
+
+  if (existingInvite) {
+    return { error: `An invitation is already pending for ${input.email}. Use resend_invitation to resend.` };
+  }
+
+  // Create invitation
+  const invitationToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  const { error } = await masterDb
+    .from('store_invitations')
+    .insert({
+      store_id: storeId,
+      invited_email: input.email.toLowerCase(),
+      invited_by: userId,
+      role: input.role || 'viewer',
+      invitation_token: invitationToken,
+      expires_at: expiresAt.toISOString(),
+      status: 'pending',
+      message: input.message || null
+    });
+
+  if (error) {
+    return { error: `Failed to create invitation: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    message: `Invitation sent to ${input.email} with role '${input.role || 'viewer'}'`,
+    note: 'Invitation expires in 7 days',
+    action: 'invite'
+  };
+}
+
+async function updateTeamMember(input, storeId) {
+  const masterDb = masterDbClient;
+
+  // Find the team member by email
+  const { data: users } = await masterDb
+    .from('users')
+    .select('id')
+    .eq('email', input.email.toLowerCase())
+    .single();
+
+  if (!users) {
+    return { error: `User with email '${input.email}' not found` };
+  }
+
+  const { data: member } = await masterDb
+    .from('store_teams')
+    .select('id, role')
+    .eq('store_id', storeId)
+    .eq('user_id', users.id)
+    .single();
+
+  if (!member) {
+    return { error: `${input.email} is not a team member of this store` };
+  }
+
+  // Cannot change owner role
+  if (member.role === 'owner') {
+    return { error: 'Cannot change the role of the store owner' };
+  }
+
+  const updates = { updated_at: new Date().toISOString() };
+  if (input.role) updates.role = input.role;
+
+  const { error } = await masterDb
+    .from('store_teams')
+    .update(updates)
+    .eq('id', member.id);
+
+  if (error) {
+    return { error: `Failed to update team member: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    message: `Updated ${input.email} role to '${input.role}'`,
+    action: 'update'
+  };
+}
+
+async function removeTeamMember(input, storeId) {
+  const masterDb = masterDbClient;
+
+  // Find the user
+  const { data: users } = await masterDb
+    .from('users')
+    .select('id')
+    .eq('email', input.email.toLowerCase())
+    .single();
+
+  if (!users) {
+    return { error: `User with email '${input.email}' not found` };
+  }
+
+  const { data: member } = await masterDb
+    .from('store_teams')
+    .select('id, role')
+    .eq('store_id', storeId)
+    .eq('user_id', users.id)
+    .single();
+
+  if (!member) {
+    return { error: `${input.email} is not a team member of this store` };
+  }
+
+  // Cannot remove owner
+  if (member.role === 'owner') {
+    return { error: 'Cannot remove the store owner' };
+  }
+
+  const { error } = await masterDb
+    .from('store_teams')
+    .delete()
+    .eq('id', member.id);
+
+  if (error) {
+    return { error: `Failed to remove team member: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    message: `${input.email} has been removed from the team`,
+    action: 'delete'
+  };
+}
+
+async function listInvitations(input, storeId) {
+  const masterDb = masterDbClient;
+
+  let query = masterDb
+    .from('store_invitations')
+    .select('id, invited_email, role, status, expires_at, message, created_at')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false });
+
+  if (input.status && input.status !== 'all') {
+    query = query.eq('status', input.status);
+  } else if (!input.status) {
+    query = query.eq('status', 'pending');
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return { error: `Failed to list invitations: ${error.message}` };
+  }
+
+  return {
+    invitations: (data || []).map(inv => ({
+      email: inv.invited_email,
+      role: inv.role,
+      status: inv.status,
+      expires_at: inv.expires_at,
+      message: inv.message,
+      sent_at: inv.created_at,
+      is_expired: new Date(inv.expires_at) < new Date()
+    })),
+    count: data?.length || 0
+  };
+}
+
+async function cancelInvitation(input, storeId) {
+  const masterDb = masterDbClient;
+
+  const { data: invitation } = await masterDb
+    .from('store_invitations')
+    .select('id, status')
+    .eq('store_id', storeId)
+    .eq('invited_email', input.email.toLowerCase())
+    .eq('status', 'pending')
+    .single();
+
+  if (!invitation) {
+    return { error: `No pending invitation found for ${input.email}` };
+  }
+
+  const { error } = await masterDb
+    .from('store_invitations')
+    .update({ status: 'cancelled' })
+    .eq('id', invitation.id);
+
+  if (error) {
+    return { error: `Failed to cancel invitation: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    message: `Invitation to ${input.email} has been cancelled`,
+    action: 'cancel'
+  };
+}
+
+async function resendInvitation(input, storeId) {
+  const masterDb = masterDbClient;
+  const crypto = require('crypto');
+
+  const { data: invitation } = await masterDb
+    .from('store_invitations')
+    .select('id, status, role')
+    .eq('store_id', storeId)
+    .eq('invited_email', input.email.toLowerCase())
+    .eq('status', 'pending')
+    .single();
+
+  if (!invitation) {
+    return { error: `No pending invitation found for ${input.email}` };
+  }
+
+  // Generate new token and extend expiration
+  const newToken = crypto.randomBytes(32).toString('hex');
+  const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const { error } = await masterDb
+    .from('store_invitations')
+    .update({
+      invitation_token: newToken,
+      expires_at: newExpiry.toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', invitation.id);
+
+  if (error) {
+    return { error: `Failed to resend invitation: ${error.message}` };
+  }
+
+  return {
+    success: true,
+    message: `Invitation resent to ${input.email}`,
+    note: 'New invitation link generated, expires in 7 days',
+    action: 'resend'
   };
 }
 
