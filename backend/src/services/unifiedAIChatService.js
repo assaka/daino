@@ -3983,10 +3983,28 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
   }
 
   if (!trans) {
-    console.log(`   ❌ No translation found for page ${found.slug}`);
-    return { error: `CMS page translation not found for "${found.slug}"` };
+    // Create a default translation if none exists
+    console.log(`   ⚠️ No translation found for page ${found.slug}, creating one...`);
+    const { data: newTrans, error: createError } = await db
+      .from('cms_page_translations')
+      .insert({
+        cms_page_id: found.id,
+        language_code: 'en',
+        title: found.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        content: ''
+      })
+      .select('id, title, content, language_code')
+      .single();
+
+    if (createError) {
+      console.log(`   ❌ Failed to create translation: ${createError.message}`);
+      return { error: `Failed to create translation for page: ${createError.message}` };
+    }
+    trans = newTrans;
+    console.log(`   ✅ Created translation (${trans.language_code}): "${trans.title}"`);
+  } else {
+    console.log(`   ✅ Found translation (${trans.language_code}): "${trans.title}"`);
   }
-  console.log(`   ✅ Found translation (${trans.language_code}): "${trans.title}"`);
 
   let imageUrl = '';
   let fileName = '';
@@ -4091,10 +4109,28 @@ async function insertCmsBlockImage(input, storeId, attachedImages = []) {
   }
 
   if (!trans) {
-    console.log(`   ❌ No translation found for block ${found.identifier}`);
-    return { error: `CMS block translation not found for "${found.identifier}"` };
+    // Create a default translation if none exists
+    console.log(`   ⚠️ No translation found for block ${found.identifier}, creating one...`);
+    const { data: newTrans, error: createError } = await db
+      .from('cms_block_translations')
+      .insert({
+        cms_block_id: found.id,
+        language_code: 'en',
+        title: found.identifier.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        content: ''
+      })
+      .select('id, title, content, language_code')
+      .single();
+
+    if (createError) {
+      console.log(`   ❌ Failed to create translation: ${createError.message}`);
+      return { error: `Failed to create translation for block: ${createError.message}` };
+    }
+    trans = newTrans;
+    console.log(`   ✅ Created translation (${trans.language_code}): "${trans.title}"`);
+  } else {
+    console.log(`   ✅ Found translation (${trans.language_code}): "${trans.title}"`);
   }
-  console.log(`   ✅ Found translation (${trans.language_code}): "${trans.title}"`);
 
   let imageUrl = '';
   let fileName = '';

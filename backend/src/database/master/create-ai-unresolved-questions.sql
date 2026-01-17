@@ -180,7 +180,7 @@ BEGIN
     uq.tool_name,
     COUNT(*)::BIGINT as total_count,
     SUM(uq.occurrence_count)::BIGINT as total_occurrences,
-    ARRAY_AGG(DISTINCT LEFT(uq.user_message, 200)) FILTER (WHERE uq.user_message IS NOT NULL)[1:5] as sample_messages,
+    (ARRAY_AGG(DISTINCT LEFT(uq.user_message, 200)) FILTER (WHERE uq.user_message IS NOT NULL))[1:5] as sample_messages,
     (COUNT(*) * 0.4 + SUM(uq.occurrence_count) * 0.6)::FLOAT as priority_score
   FROM ai_unresolved_questions uq
   WHERE uq.resolution_status = 'unresolved'
