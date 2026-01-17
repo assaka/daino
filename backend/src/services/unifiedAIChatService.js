@@ -627,6 +627,50 @@ const TOOLS = [
       required: ["block"]
     }
   },
+  {
+    name: "insert_cms_page_image",
+    description: "Insert an image into a CMS page content at a specific position.",
+    input_schema: {
+      type: "object",
+      properties: {
+        page: { type: "string", description: "Page title or slug" },
+        image_file: { type: "string", description: "Existing media asset file name" },
+        image_base64: { type: "string", description: "Base64 image data to upload" },
+        position: {
+          type: "string",
+          enum: ["top", "bottom", "after_title", "after_paragraph"],
+          description: "Where to insert: top, bottom, after_title, after_paragraph"
+        },
+        after_text: { type: "string", description: "Insert after this specific text (alternative to position)" },
+        paragraph_number: { type: "number", description: "Which paragraph to insert after (for after_paragraph, default 1)" },
+        alt_text: { type: "string", description: "Alt text for the image" },
+        css_class: { type: "string", description: "CSS class for styling (e.g., 'w-full', 'float-left')" }
+      },
+      required: ["page"]
+    }
+  },
+  {
+    name: "insert_cms_block_image",
+    description: "Insert an image into a CMS block content at a specific position.",
+    input_schema: {
+      type: "object",
+      properties: {
+        block: { type: "string", description: "Block identifier or title" },
+        image_file: { type: "string", description: "Existing media asset file name" },
+        image_base64: { type: "string", description: "Base64 image data to upload" },
+        position: {
+          type: "string",
+          enum: ["top", "bottom", "after_title", "after_paragraph"],
+          description: "Where to insert: top, bottom, after_title, after_paragraph"
+        },
+        after_text: { type: "string", description: "Insert after this specific text (alternative to position)" },
+        paragraph_number: { type: "number", description: "Which paragraph to insert after (for after_paragraph, default 1)" },
+        alt_text: { type: "string", description: "Alt text for the image" },
+        css_class: { type: "string", description: "CSS class for styling (e.g., 'w-full', 'float-left')" }
+      },
+      required: ["block"]
+    }
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // PRODUCT LABELS
@@ -1738,8 +1782,8 @@ AVAILABLE TOOLS:
 - **Orders**: list_orders, update_order_status
 - **Customers**: list_customers, blacklist_customer
 - **Coupons**: list_coupons, create_coupon, delete_coupon
-- **CMS Pages**: list_cms_pages, create_cms_page, update_cms_page, delete_cms_page
-- **CMS Blocks**: list_cms_blocks, create_cms_block, update_cms_block, delete_cms_block
+- **CMS Pages**: list_cms_pages, create_cms_page, update_cms_page, delete_cms_page, insert_cms_page_image
+- **CMS Blocks**: list_cms_blocks, create_cms_block, update_cms_block, delete_cms_block, insert_cms_block_image
 - **Product Labels**: list_product_labels, create_product_label, update_product_label, delete_product_label
 - **Product Tabs**: list_product_tabs, create_product_tab, update_product_tab, delete_product_tab
 - **Custom Options**: list_custom_option_rules, create_custom_option_rule, update_custom_option_rule, delete_custom_option_rule
@@ -1912,6 +1956,12 @@ async function executeTool(name, input, context) {
         break;
       case 'delete_cms_block':
         result = await deleteCmsBlock(input, storeId);
+        break;
+      case 'insert_cms_page_image':
+        result = await insertCmsPageImage(input, storeId);
+        break;
+      case 'insert_cms_block_image':
+        result = await insertCmsBlockImage(input, storeId);
         break;
 
       // Product Label tools
@@ -3749,6 +3799,238 @@ async function deleteCmsBlock({ block }, storeId) {
     message: `Deleted CMS block "${found.identifier}"`,
     refreshPreview: true,
     action: 'delete'
+  };
+}
+
+/**
+ * Helper: Upload image to media library and return URL
+ */
+async function uploadImageToMediaLibrary(db, storeId, imageBase64, fileName, altText, folder = 'cms') {
+  // Strip data URL prefix if present
+  let base64Data = imageBase64;
+  let mimeType = 'image/jpeg';
+  if (base64Data.includes(',')) {
+    const parts = base64Data.split(',');
+    base64Data = parts[1];
+    const prefixMatch = parts[0].match(/data:([^;]+)/);
+    if (prefixMatch) mimeType = prefixMatch[1];
+  }
+
+  const ext = mimeType.split('/')[1] || 'jpg';
+  const finalFileName = fileName || `cms-image-${Date.now()}.${ext}`;
+
+  const { data: newAsset, error } = await db
+    .from('media_assets')
+    .insert({
+      store_id: storeId,
+      file_name: finalFileName,
+      original_name: finalFileName,
+      file_path: `/${folder}/${finalFileName}`,
+      file_url: `data:${mimeType};base64,${base64Data}`,
+      mime_type: mimeType,
+      folder: folder,
+      description: altText || ''
+    })
+    .select('id, file_url, file_name')
+    .single();
+
+  if (error) throw new Error(`Failed to upload image: ${error.message}`);
+  return newAsset;
+}
+
+/**
+ * Helper: Insert image tag into HTML content at specified position
+ */
+function insertImageIntoContent(content, imageUrl, position, options = {}) {
+  const { afterText, paragraphNumber = 1, altText = '', cssClass = '' } = options;
+  const imgTag = `<img src="${imageUrl}" alt="${altText}"${cssClass ? ` class="${cssClass}"` : ''} />`;
+
+  if (!content || content.trim() === '') {
+    return imgTag;
+  }
+
+  // Insert after specific text
+  if (afterText) {
+    const idx = content.indexOf(afterText);
+    if (idx !== -1) {
+      const insertPos = idx + afterText.length;
+      return content.slice(0, insertPos) + '\n' + imgTag + content.slice(insertPos);
+    }
+  }
+
+  switch (position) {
+    case 'top':
+      return imgTag + '\n' + content;
+
+    case 'bottom':
+      return content + '\n' + imgTag;
+
+    case 'after_title': {
+      // Find first heading tag
+      const headingMatch = content.match(/<\/h[1-6]>/i);
+      if (headingMatch) {
+        const insertPos = headingMatch.index + headingMatch[0].length;
+        return content.slice(0, insertPos) + '\n' + imgTag + content.slice(insertPos);
+      }
+      // No heading found, insert at top
+      return imgTag + '\n' + content;
+    }
+
+    case 'after_paragraph': {
+      // Find Nth paragraph
+      const paragraphs = content.split(/<\/p>/i);
+      if (paragraphs.length > paragraphNumber) {
+        paragraphs[paragraphNumber - 1] += '</p>\n' + imgTag;
+        return paragraphs.slice(0, -1).join('</p>') + (paragraphs.length > 1 ? '</p>' : '') + paragraphs[paragraphs.length - 1];
+      }
+      // Not enough paragraphs, append at end
+      return content + '\n' + imgTag;
+    }
+
+    default:
+      return content + '\n' + imgTag;
+  }
+}
+
+async function insertCmsPageImage(input, storeId) {
+  const { page, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find CMS page
+  const { data: pages } = await db.from('cms_pages').select('id, slug');
+  const found = pages?.find(p =>
+    p.slug.toLowerCase() === page.toLowerCase() ||
+    p.slug.toLowerCase().includes(page.toLowerCase())
+  );
+
+  if (!found) return { error: `CMS page "${page}" not found` };
+
+  // Get current content
+  const { data: trans } = await db
+    .from('cms_page_translations')
+    .select('id, title, content')
+    .eq('cms_page_id', found.id)
+    .eq('language_code', 'en')
+    .single();
+
+  if (!trans) return { error: `CMS page translation not found` };
+
+  let imageUrl = '';
+  let fileName = '';
+
+  if (image_file) {
+    // Find existing media asset
+    const { data: asset } = await db
+      .from('media_assets')
+      .select('id, file_name, file_url')
+      .eq('store_id', storeId)
+      .ilike('file_name', `%${image_file}%`)
+      .single();
+
+    if (!asset) return { error: `Media asset "${image_file}" not found` };
+    imageUrl = asset.file_url;
+    fileName = asset.file_name;
+  } else if (image_base64) {
+    // Upload new image
+    const asset = await uploadImageToMediaLibrary(db, storeId, image_base64, null, alt_text, 'cms');
+    imageUrl = asset.file_url;
+    fileName = asset.file_name;
+  } else {
+    return { error: 'Either image_file or image_base64 is required' };
+  }
+
+  // Insert image into content
+  const newContent = insertImageIntoContent(trans.content || '', imageUrl, position, {
+    afterText: after_text,
+    paragraphNumber: paragraph_number,
+    altText: alt_text || fileName,
+    cssClass: css_class
+  });
+
+  // Update the page content
+  const { error: updateError } = await db
+    .from('cms_page_translations')
+    .update({ content: newContent, updated_at: new Date().toISOString() })
+    .eq('id', trans.id);
+
+  if (updateError) return { error: `Failed to update page: ${updateError.message}` };
+
+  return {
+    success: true,
+    message: `Inserted image "${fileName}" into CMS page "${found.slug}" at ${position}`,
+    refreshPreview: true,
+    action: 'update'
+  };
+}
+
+async function insertCmsBlockImage(input, storeId) {
+  const { block, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
+  const db = await ConnectionManager.getStoreConnection(storeId);
+
+  // Find CMS block
+  const { data: blocks } = await db.from('cms_blocks').select('id, identifier');
+  const found = blocks?.find(b =>
+    b.identifier.toLowerCase() === block.toLowerCase() ||
+    b.identifier.toLowerCase().includes(block.toLowerCase())
+  );
+
+  if (!found) return { error: `CMS block "${block}" not found` };
+
+  // Get current content
+  const { data: trans } = await db
+    .from('cms_block_translations')
+    .select('id, title, content')
+    .eq('cms_block_id', found.id)
+    .eq('language_code', 'en')
+    .single();
+
+  if (!trans) return { error: `CMS block translation not found` };
+
+  let imageUrl = '';
+  let fileName = '';
+
+  if (image_file) {
+    // Find existing media asset
+    const { data: asset } = await db
+      .from('media_assets')
+      .select('id, file_name, file_url')
+      .eq('store_id', storeId)
+      .ilike('file_name', `%${image_file}%`)
+      .single();
+
+    if (!asset) return { error: `Media asset "${image_file}" not found` };
+    imageUrl = asset.file_url;
+    fileName = asset.file_name;
+  } else if (image_base64) {
+    // Upload new image
+    const asset = await uploadImageToMediaLibrary(db, storeId, image_base64, null, alt_text, 'cms');
+    imageUrl = asset.file_url;
+    fileName = asset.file_name;
+  } else {
+    return { error: 'Either image_file or image_base64 is required' };
+  }
+
+  // Insert image into content
+  const newContent = insertImageIntoContent(trans.content || '', imageUrl, position, {
+    afterText: after_text,
+    paragraphNumber: paragraph_number,
+    altText: alt_text || fileName,
+    cssClass: css_class
+  });
+
+  // Update the block content
+  const { error: updateError } = await db
+    .from('cms_block_translations')
+    .update({ content: newContent, updated_at: new Date().toISOString() })
+    .eq('id', trans.id);
+
+  if (updateError) return { error: `Failed to update block: ${updateError.message}` };
+
+  return {
+    success: true,
+    message: `Inserted image "${fileName}" into CMS block "${found.identifier}" at ${position}`,
+    refreshPreview: true,
+    action: 'update'
   };
 }
 
