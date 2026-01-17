@@ -631,11 +631,12 @@ const TOOLS = [
   },
   {
     name: "insert_cms_page_image",
-    description: "Insert an image into a CMS page content at a specific position.",
+    description: "Insert an image into a CMS page content at a specific position. Can use attached chat image, existing media asset, or base64 data.",
     input_schema: {
       type: "object",
       properties: {
         page: { type: "string", description: "Page title or slug" },
+        use_attached_image: { type: "boolean", description: "Use the image attached to the current chat message" },
         image_file: { type: "string", description: "Existing media asset file name" },
         image_base64: { type: "string", description: "Base64 image data to upload" },
         position: {
@@ -653,11 +654,12 @@ const TOOLS = [
   },
   {
     name: "insert_cms_block_image",
-    description: "Insert an image into a CMS block content at a specific position.",
+    description: "Insert an image into a CMS block content at a specific position. Can use attached chat image, existing media asset, or base64 data.",
     input_schema: {
       type: "object",
       properties: {
         block: { type: "string", description: "Block identifier or title" },
+        use_attached_image: { type: "boolean", description: "Use the image attached to the current chat message" },
         image_file: { type: "string", description: "Existing media asset file name" },
         image_base64: { type: "string", description: "Base64 image data to upload" },
         position: {
@@ -1960,10 +1962,10 @@ async function executeTool(name, input, context) {
         result = await deleteCmsBlock(input, storeId);
         break;
       case 'insert_cms_page_image':
-        result = await insertCmsPageImage(input, storeId);
+        result = await insertCmsPageImage(input, storeId, images);
         break;
       case 'insert_cms_block_image':
-        result = await insertCmsBlockImage(input, storeId);
+        result = await insertCmsBlockImage(input, storeId, images);
         break;
 
       // Product Label tools
@@ -3838,7 +3840,7 @@ async function deleteCmsBlock({ block }, storeId) {
 /**
  * Helper: Upload image to media library and return URL
  */
-async function uploadImageToMediaLibrary(db, storeId, imageBase64, fileName, altText, folder = 'cms') {
+async function uploadImageToMediaLibrary(storeId, imageBase64, fileName, altText, folder = 'library') {
   // Strip data URL prefix if present
   let base64Data = imageBase64;
   let mimeType = 'image/jpeg';
@@ -3849,26 +3851,36 @@ async function uploadImageToMediaLibrary(db, storeId, imageBase64, fileName, alt
     if (prefixMatch) mimeType = prefixMatch[1];
   }
 
+  // Convert base64 to buffer
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+
   const ext = mimeType.split('/')[1] || 'jpg';
-  const finalFileName = fileName || `cms-image-${Date.now()}.${ext}`;
+  const finalFileName = fileName || `image-${Date.now()}.${ext}`;
 
-  const { data: newAsset, error } = await db
-    .from('media_assets')
-    .insert({
-      store_id: storeId,
-      file_name: finalFileName,
-      original_name: finalFileName,
-      file_path: `/${folder}/${finalFileName}`,
-      file_url: `data:${mimeType};base64,${base64Data}`,
-      mime_type: mimeType,
-      folder: folder,
-      description: altText || ''
-    })
-    .select('id, file_url, file_name')
-    .single();
+  // Prepare file object for StorageManager
+  const fileObject = {
+    buffer: imageBuffer,
+    mimetype: mimeType,
+    size: imageBuffer.length,
+    originalname: finalFileName
+  };
 
-  if (error) throw new Error(`Failed to upload image: ${error.message}`);
-  return newAsset;
+  // Upload using StorageManager
+  const uploadResult = await StorageManager.uploadFile(storeId, fileObject, {
+    folder: folder,
+    type: folder,
+    public: true
+  });
+
+  if (!uploadResult || !uploadResult.mediaAssetId) {
+    throw new Error('Failed to upload image: No media asset ID returned');
+  }
+
+  return {
+    id: uploadResult.mediaAssetId,
+    file_url: uploadResult.url,
+    file_name: uploadResult.filename || finalFileName
+  };
 }
 
 /**
@@ -3925,8 +3937,8 @@ function insertImageIntoContent(content, imageUrl, position, options = {}) {
   }
 }
 
-async function insertCmsPageImage(input, storeId) {
-  const { page, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
+async function insertCmsPageImage(input, storeId, attachedImages = []) {
+  const { page, use_attached_image, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
   const db = await ConnectionManager.getStoreConnection(storeId);
 
   // Find CMS page
@@ -3951,7 +3963,18 @@ async function insertCmsPageImage(input, storeId) {
   let imageUrl = '';
   let fileName = '';
 
-  if (image_file) {
+  // Determine image source - priority: use_attached_image > image_file > image_base64 > auto-detect attached
+  if (use_attached_image === true || (use_attached_image !== false && !image_file && !image_base64 && attachedImages?.length > 0)) {
+    // Use attached image from chat
+    if (!attachedImages || attachedImages.length === 0) {
+      return { error: 'No image attached to the chat message. Please attach an image or provide image_file.' };
+    }
+    const attachedImg = attachedImages[0];
+    console.log('   📷 Using attached image from chat for CMS page');
+    const asset = await uploadImageToMediaLibrary(storeId, attachedImg.base64, null, alt_text, 'library');
+    imageUrl = asset.file_url;
+    fileName = asset.file_name;
+  } else if (image_file) {
     // Find existing media asset
     const { data: asset } = await db
       .from('media_assets')
@@ -3965,11 +3988,11 @@ async function insertCmsPageImage(input, storeId) {
     fileName = asset.file_name;
   } else if (image_base64) {
     // Upload new image
-    const asset = await uploadImageToMediaLibrary(db, storeId, image_base64, null, alt_text, 'cms');
+    const asset = await uploadImageToMediaLibrary(storeId, image_base64, null, alt_text, 'library');
     imageUrl = asset.file_url;
     fileName = asset.file_name;
   } else {
-    return { error: 'Either image_file or image_base64 is required' };
+    return { error: 'No image source provided. Attach an image to the chat, specify image_file, or provide image_base64.' };
   }
 
   // Insert image into content
@@ -3996,8 +4019,8 @@ async function insertCmsPageImage(input, storeId) {
   };
 }
 
-async function insertCmsBlockImage(input, storeId) {
-  const { block, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
+async function insertCmsBlockImage(input, storeId, attachedImages = []) {
+  const { block, use_attached_image, image_file, image_base64, position = 'bottom', after_text, paragraph_number, alt_text, css_class } = input;
   const db = await ConnectionManager.getStoreConnection(storeId);
 
   // Find CMS block
@@ -4022,7 +4045,18 @@ async function insertCmsBlockImage(input, storeId) {
   let imageUrl = '';
   let fileName = '';
 
-  if (image_file) {
+  // Determine image source - priority: use_attached_image > image_file > image_base64 > auto-detect attached
+  if (use_attached_image === true || (use_attached_image !== false && !image_file && !image_base64 && attachedImages?.length > 0)) {
+    // Use attached image from chat
+    if (!attachedImages || attachedImages.length === 0) {
+      return { error: 'No image attached to the chat message. Please attach an image or provide image_file.' };
+    }
+    const attachedImg = attachedImages[0];
+    console.log('   📷 Using attached image from chat for CMS block');
+    const asset = await uploadImageToMediaLibrary(storeId, attachedImg.base64, null, alt_text, 'library');
+    imageUrl = asset.file_url;
+    fileName = asset.file_name;
+  } else if (image_file) {
     // Find existing media asset
     const { data: asset } = await db
       .from('media_assets')
@@ -4036,11 +4070,11 @@ async function insertCmsBlockImage(input, storeId) {
     fileName = asset.file_name;
   } else if (image_base64) {
     // Upload new image
-    const asset = await uploadImageToMediaLibrary(db, storeId, image_base64, null, alt_text, 'cms');
+    const asset = await uploadImageToMediaLibrary(storeId, image_base64, null, alt_text, 'library');
     imageUrl = asset.file_url;
     fileName = asset.file_name;
   } else {
-    return { error: 'Either image_file or image_base64 is required' };
+    return { error: 'No image source provided. Attach an image to the chat, specify image_file, or provide image_base64.' };
   }
 
   // Insert image into content
