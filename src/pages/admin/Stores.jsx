@@ -525,16 +525,14 @@ export default function Stores() {
           {filteredStores.map((store) => (
             <Card key={store.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
+                <CardTitle className="text-lg">{store.name}</CardTitle>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{store.name}</CardTitle>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Created: {store.created_at ?
-                        new Date(store.created_at).toLocaleDateString() :
-                        'Unknown'
-                      }
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Created: {store.created_at ?
+                      new Date(store.created_at).toLocaleDateString() :
+                      'Unknown'
+                    }
+                  </p>
                   <div className="flex gap-2 flex-wrap">
                     {/* Check multiple ways to determine ownership */}
                     {(store.user_id === user?.id || store.is_direct_owner || store.access_role === 'owner') ? (
