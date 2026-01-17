@@ -3964,21 +3964,25 @@ async function insertCmsPageImage(input, storeId, attachedImages = []) {
   console.log(`   ✅ Found CMS page: ${found.slug} (id: ${found.id})`);
 
   // Get current content - try 'en' first, then fall back to any available translation
-  let { data: trans } = await db
+  let { data: trans, error: transError } = await db
     .from('cms_page_translations')
     .select('id, title, content, language_code')
     .eq('cms_page_id', found.id)
     .eq('language_code', 'en')
-    .single();
+    .maybeSingle();
+
+  console.log(`   📋 Translation query for cms_page_id=${found.id}, lang=en:`, { trans: !!trans, error: transError?.message });
 
   if (!trans) {
     // Fallback: get any available translation
-    const { data: anyTrans } = await db
+    const { data: anyTrans, error: anyError } = await db
       .from('cms_page_translations')
       .select('id, title, content, language_code')
       .eq('cms_page_id', found.id)
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    console.log(`   📋 Fallback translation query:`, { anyTrans: !!anyTrans, error: anyError?.message });
     trans = anyTrans;
   }
 
