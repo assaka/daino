@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
 
@@ -108,6 +109,54 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
       totalFailed: failed.length
     };
 
+    // Get current max position for product_files
+    const { data: existingFiles } = await tenantDb
+      .from('product_files')
+      .select('position')
+      .eq('product_id', productId)
+      .order('position', { ascending: false })
+      .limit(1);
+
+    let nextPosition = (existingFiles?.[0]?.position ?? -1) + 1;
+
+    // Create product_files records for each successful upload
+    const productFilesRecords = [];
+    for (const upload of uploadResult.uploaded) {
+      if (upload.mediaAssetId) {
+        const fileId = uuidv4();
+        productFilesRecords.push({
+          id: fileId,
+          product_id: productId,
+          media_asset_id: upload.mediaAssetId,
+          file_type: 'image',
+          position: nextPosition++,
+          is_primary: nextPosition === 1,
+          alt_text: req.body.alt || `${product.name} image`,
+          metadata: {
+            original_name: upload.filename,
+            uploaded_by: req.user.id,
+            uploaded_at: new Date().toISOString()
+          },
+          store_id: storeId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
+    }
+
+    // Insert product_files records
+    if (productFilesRecords.length > 0) {
+      const { error: pfError } = await tenantDb
+        .from('product_files')
+        .insert(productFilesRecords);
+
+      if (pfError) {
+        console.error('Error creating product_files records:', pfError);
+      } else {
+        console.log(`✅ Created ${productFilesRecords.length} product_files records`);
+      }
+    }
+
     // Update product images array
     const currentImages = product.images || [];
     const newImages = uploadResult.uploaded.map((upload, index) => ({
@@ -127,7 +176,8 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
         size: upload.size,
         provider: 'supabase',
         uploaded_at: new Date().toISOString(),
-        original_name: req.files[index].originalname
+        original_name: req.files[index].originalname,
+        media_asset_id: upload.mediaAssetId
       }
     }));
 

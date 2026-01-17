@@ -392,7 +392,13 @@ class SupabaseStorageService extends StorageInterface {
       console.error('Direct upload error:', error.response?.data || error.message);
       
       // Handle duplicate file error (409) - return existing file URL
-      if (error.response?.status === 409 || error.response?.data?.error === 'Duplicate' || error.response?.data?.message?.includes('already exists')) {
+      // Check multiple conditions to catch all 409 formats
+      const is409Error = error.response?.status === 409 || error.response?.status === '409' ||
+        error.response?.data?.error === 'Duplicate' ||
+        error.response?.data?.statusCode === '409' || error.response?.data?.statusCode === 409 ||
+        error.response?.data?.message?.includes('already exists');
+
+      if (is409Error) {
         console.log('🔄 File already exists in storage (direct API), returning existing URL for:', filePath);
         
         // Construct the public URL for the existing file
@@ -519,7 +525,13 @@ class SupabaseStorageService extends StorageInterface {
         });
         
         // Handle duplicate file error (409) - return existing file URL
-        if (error.statusCode === '409' || error.message?.includes('already exists') || error.message?.includes('Duplicate')) {
+        // Check multiple conditions to catch all 409 formats (string/number statusCode, nested error object)
+        const is409Error = error.statusCode === '409' || error.statusCode === 409 ||
+          error.error?.statusCode === '409' || error.error?.statusCode === 409 ||
+          error.message?.includes('already exists') || error.message?.includes('Duplicate') ||
+          error.error?.message?.includes('already exists') || error.error?.error === 'Duplicate';
+
+        if (is409Error) {
           console.log('🔄 File already exists in storage, returning existing URL for:', filePath);
           
           // Get the public URL of the existing file
