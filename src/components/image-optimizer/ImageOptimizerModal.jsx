@@ -374,11 +374,16 @@ const ImageOptimizerModal = ({ isOpen, onClose, storeId, fileToOptimize, selecte
 
   // Set default operation when modal opens
   useEffect(() => {
-    if (isOpen && defaultOperation) {
-      setSelectedOperation(defaultOperation);
-      // Use Flux as default for generation (best quality)
-      if (defaultOperation === 'generate') {
-        setSelectedProvider('flux');
+    if (isOpen) {
+      if (defaultOperation) {
+        setSelectedOperation(defaultOperation);
+        // Use Flux as default for generation (best quality)
+        if (defaultOperation === 'generate') {
+          setSelectedProvider('flux');
+        }
+      } else {
+        // Reset to default operation when no defaultOperation specified (editing existing image)
+        setSelectedOperation('remove_bg');
       }
     }
   }, [isOpen, defaultOperation]);
