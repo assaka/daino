@@ -158,7 +158,7 @@ export default function AdminResetPassword() {
                   The password reset link is invalid or has expired.
                 </p>
                 <Link
-                  to="/admin/forgotpassword"
+                  to="/admin/forgot-password"
                   className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Request a new reset link

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -192,7 +191,7 @@ export default function StoreOwnerAuthLayout({ loading, error, success, onAuth, 
                     </Label>
                   </div>
                   <Link
-                    to={createPageUrl("ForgotPassword")}
+                    to="/admin/forgot-password"
                     className="text-sm text-blue-600 hover:text-blue-800"
                   >
                     Forgot password?

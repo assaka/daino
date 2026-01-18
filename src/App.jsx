@@ -476,7 +476,7 @@ function App() {
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/translations" element={<PageWrapper Component={Pages.Translations} pageName="Translations" />} />
           <Route path="/admin/auth" element={<Pages.MarketingLogin />} />
-          <Route path="/admin/forgotpassword" element={<Pages.AdminForgotPassword />} />
+          <Route path="/admin/forgot-password" element={<Pages.AdminForgotPassword />} />
           <Route path="/admin/reset-password" element={<Pages.AdminResetPassword />} />
 
           {/* Plugins Section */}
